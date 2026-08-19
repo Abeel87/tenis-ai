@@ -34,6 +34,8 @@ jobs:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           FIXTURE_DAYS: '1'
         run: python backend/update.py
+      - name: Capture green history
+        run: python backend/degraded_history.py
       - name: Save tennis history cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4
