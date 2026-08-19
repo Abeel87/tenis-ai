@@ -22,11 +22,24 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Restore tennis history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
       - name: Update analysis
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           FIXTURE_DAYS: '1'
         run: python backend/update.py
+      - name: Save tennis history cache
+        if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}
       - name: Commit refreshed JSON
         run: |
           git config user.name "tenis-ai-bot"
