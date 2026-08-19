@@ -7,12 +7,18 @@ import pandas as pd
 import requests
 
 from model import normalize_matches, analyse_match
+from history_tracker import (
+    archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
+    save_history as save_prediction_history, settle_history,
+)
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'frontend'/'data'
 DATA=ROOT/'data'
 OUT.mkdir(parents=True, exist_ok=True)
 DATA.mkdir(parents=True, exist_ok=True)
+HISTORY_PATH=OUT/'history.json'
+HISTORY_STATS_PATH=OUT/'history_stats.json'
 
 TML_URLS=[
     ('ATP','https://stats.tennismylife.org/data/ongoing_tourneys.csv'),
@@ -26,7 +32,7 @@ TML_URLS=[
     ('WTA','https://stats.tennismylife.org/data/2025_wta.csv'),
 ]
 
-UA='TenisAI-EarlyHold/0.5 (personal non-commercial analytics)'
+UA='TenisAI-EarlyHold/0.5.1 (personal non-commercial analytics)'
 
 
 def download_csv(url):
@@ -58,7 +64,6 @@ def fetch_fixtures():
     base={'status':'upcoming','from':str(today),'to':str(today+timedelta(days=days-1)),'limit':200}
 
     rows=[]; seen=set(); offset=0
-    # API ma limit 200 na stronę. Pobieramy kolejne strony, żeby nie ucinać dnia przy dużej liczbie ITF/CH.
     for _ in range(10):
         params={**base,'offset':offset}
         r=requests.get('https://api.livetennisapi.com/api/public/v1/matches', params=params, headers=headers, timeout=30)
@@ -79,16 +84,16 @@ def fetch_fixtures():
             rows.append({
                 'id':mid,'tour':m.get('tour') or '', 'tournament':m.get('tournament') or '',
                 'surface':m.get('surface') or '', 'p1':p1, 'p2':p2,
-                'scheduled_time':m.get('scheduled_time') or ''
+                'scheduled_time':m.get('scheduled_time') or '',
+                'feed_status':m.get('status') or 'upcoming',
+                'event_status':m.get('event_status'),
             })
-        count=meta.get('count')
-        total=meta.get('total')
         offset += len(page)
+        total=meta.get('total')
         if not page or len(page) < 200:
             break
         if isinstance(total,(int,float)) and offset >= int(total):
             break
-        # Nie wszystkie wersje meta mają total; wtedy kolejna pusta/krótka strona kończy pętlę.
     return rows, 'live-tennis-api-free'
 
 
@@ -114,11 +119,26 @@ def save_sqlite(long_df):
 
 
 def main():
+    now=datetime.now(timezone.utc)
     hist, errors=load_history()
     long_df=normalize_matches(hist)
     save_sqlite(long_df)
     fixtures, mode=fetch_fixtures()
-    results=[analyse_match(long_df,m) for m in fixtures]
+    analysed=[analyse_match(long_df,m) for m in fixtures]
+
+    # Freeze green pre-match signals, then try to settle older entries from the result files
+    # we already download for the model. This does not consume extra Live Tennis API quota.
+    prediction_history=load_prediction_history(HISTORY_PATH)
+    prediction_history=archive_predictions(prediction_history, analysed, now=now)
+    prediction_history=settle_history(prediction_history, hist, now=now)
+    # Keep the file bounded while preserving roughly a year of normal use.
+    prediction_history=sorted(prediction_history, key=lambda e:e.get('scheduled_time') or '', reverse=True)[:2500]
+    save_prediction_history(HISTORY_PATH, prediction_history)
+    HISTORY_STATS_PATH.write_text(json.dumps(history_stats(prediction_history),ensure_ascii=False,indent=2),encoding='utf-8')
+
+    # Feed occasionally leaves a past fixture marked upcoming. Hide it after a 30-minute grace window.
+    results=[r for r in analysed if is_current_match(r, now=now, grace_minutes=30)]
+    hidden_stale=len(analysed)-len(results)
     ready=sum(1 for r in results if r.get('model_ready'))
 
     def default(o):
@@ -128,9 +148,10 @@ def main():
 
     (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2,default=default),encoding='utf-8')
     meta={
-        'updated_at':datetime.now(timezone.utc).isoformat(),'fixtures_mode':mode,
-        'fixtures':len(fixtures),'model_ready':ready,
-        'history_rows_raw':len(hist),'player_rows':len(long_df),'download_warnings':errors
+        'updated_at':now.isoformat(),'fixtures_mode':mode,
+        'fixtures':len(fixtures),'visible_fixtures':len(results),'hidden_stale':hidden_stale,'model_ready':ready,
+        'history_rows_raw':len(hist),'player_rows':len(long_df),'download_warnings':errors,
+        'history_matches':sum(1 for e in prediction_history if e.get('signals')),
     }
     (OUT/'meta.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(meta,ensure_ascii=False,indent=2))
