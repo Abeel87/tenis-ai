@@ -1,7 +1,7 @@
-const C='tenis-ai-v64-accounts';
+const C='tenis-ai-v65-community';
 const ASSETS=[
-  './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css',
-  'app.js','player-search.js','multi-model.js','account.js','supabase-config.js','manifest.webmanifest',
+  './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css',
+  'app.js','player-search.js','multi-model.js','account.js','community.js','supabase-config.js','manifest.webmanifest',
   'brand-symbol.png','brand-wordmark.png','favicon.png',
   'apple-touch-icon.png','icon-192.png','icon-512.png'
 ];
