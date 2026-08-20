@@ -168,11 +168,16 @@ def _candidate_ok(m: dict, as_of: datetime | None = None) -> bool:
     return m.get("id") is not None
 
 
-def _refresh_player_index(api: API, index: dict, player: str, as_of: datetime, now: datetime) -> dict:
+def _refresh_player_index(api: API, index: dict, player: str, player_id: int, as_of: datetime, now: datetime) -> dict:
+    """Refresh one player's completed-match index.
+
+    IMPORTANT: /history/matches?player= expects a numeric roster player id,
+    not a player name. v7.0 used the name and the API correctly returned HTTP 400.
+    """
     players = index.setdefault("players", {})
     k = _key(player)
     prior = players.get(k)
-    if _entry_fresh(prior, now):
+    if _entry_fresh(prior, now) and int(prior.get("player_id") or 0) == int(player_id):
         return prior
 
     rows: list[dict] = []
@@ -181,13 +186,14 @@ def _refresh_player_index(api: API, index: dict, player: str, as_of: datetime, n
         payload = api.get(
             "/history/matches",
             {
-                "player": player,
+                "player": int(player_id),
                 "to": as_of.date().isoformat(),
                 "limit": LIST_LIMIT,
                 "offset": page_no * LIST_LIMIT,
             },
         )
         page = payload.get("data") or []
+        meta = payload.get("meta") or {}
         for m in page:
             mid = m.get("id")
             if mid in seen or not _candidate_ok(m, as_of):
@@ -196,12 +202,14 @@ def _refresh_player_index(api: API, index: dict, player: str, as_of: datetime, n
             rows.append(m)
         if len(rows) >= MAX_PROFILE_MATCHES:
             break
-        if not page:
+        # No coverage filter is sent, so an empty page really is an end signal.
+        if not page or meta.get("has_more") is False:
             break
 
     rows.sort(key=lambda m: m.get("scheduled_time") or "", reverse=True)
     entry = {
         "player": player,
+        "player_id": int(player_id),
         "fetched_at": now.isoformat(),
         "matches": rows[: max(MAX_PROFILE_MATCHES + 2, MAX_PROFILE_MATCHES)],
     }
@@ -352,6 +360,69 @@ def extract_first_set_games(tape_payload: dict) -> dict | None:
     }
 
 
+def _match_object(payload: dict) -> dict:
+    if not isinstance(payload, dict):
+        return {}
+    data = payload.get("data")
+    return data if isinstance(data, dict) else payload
+
+
+def resolve_current_player_ids(api: API, targets: list[dict], counters: dict) -> dict[str, int]:
+    """Resolve stable roster ids from the current fixture's match detail.
+
+    This avoids ambiguous name-search matching and gives the exact id required
+    by /history/matches?player=<integer>.
+    """
+    out: dict[str, int] = {}
+    for m in targets:
+        # Future-proof: if update.py starts carrying ids, use them without an extra call.
+        for side in ("p1", "p2"):
+            name = m.get(side)
+            pid = m.get(f"{side}_id")
+            try:
+                if name and pid is not None:
+                    out[_key(name)] = int(pid)
+            except (TypeError, ValueError):
+                pass
+
+        if all(_key(m.get(s)) in out for s in ("p1", "p2")):
+            continue
+
+        mid = m.get("id")
+        if mid is None:
+            continue
+        try:
+            detail = _match_object(api.get(f"/matches/{mid}"))
+            counters["match_detail_calls"] += 1
+        except Exception:
+            counters["match_detail_errors"] += 1
+            continue
+
+        players = detail.get("players") or {}
+        for side in ("p1", "p2"):
+            target_name = m.get(side)
+            target_key = _key(target_name)
+            # Prefer the same side, but verify the name to avoid accidental swaps.
+            cand = players.get(side) or {}
+            cand_name = cand.get("name")
+            cand_id = cand.get("id")
+            if cand_id is not None and (not target_key or _key(cand_name) == target_key):
+                try:
+                    out[target_key] = int(cand_id)
+                    continue
+                except (TypeError, ValueError):
+                    pass
+            # Safe fallback: scan both participants for an exact normalized name.
+            for obj in players.values():
+                if isinstance(obj, dict) and _key(obj.get("name")) == target_key and obj.get("id") is not None:
+                    try:
+                        out[target_key] = int(obj["id"])
+                    except (TypeError, ValueError):
+                        pass
+                    break
+    return out
+
+
 def _participant_side(payload: dict, player: str) -> int | None:
     match = payload.get("match") or {}
     players = match.get("players") or {}
@@ -385,11 +456,21 @@ def _weighted_mean(pairs: list[tuple[float, float]]) -> float | None:
     return sum(v * w for v, w in pairs) / z if z else None
 
 
-def build_profile(api: API, index: dict, player: str, surface: str, as_of: datetime, now: datetime, counters: dict) -> dict:
+def build_profile(api: API, index: dict, player: str, player_id: int | None, surface: str, as_of: datetime, now: datetime, counters: dict) -> dict:
+    if player_id is None:
+        return {"player": player, "matches": 0, "ready": False, "ehs": None, "quality": "N/D", "error": "player_id_unresolved"}
     try:
-        entry = _refresh_player_index(api, index, player, as_of, now)
+        entry = _refresh_player_index(api, index, player, int(player_id), as_of, now)
+    except requests.HTTPError as e:
+        status = getattr(e.response, "status_code", None)
+        detail = ""
+        try:
+            detail = str((e.response.json() or {}).get("error") or "")
+        except Exception:
+            pass
+        return {"player": player, "player_id": player_id, "matches": 0, "ready": False, "ehs": None, "quality": "N/D", "error": f"HTTP_{status}:{detail}"}
     except Exception as e:
-        return {"player": player, "matches": 0, "ready": False, "ehs": None, "error": type(e).__name__}
+        return {"player": player, "player_id": player_id, "matches": 0, "ready": False, "ehs": None, "quality": "N/D", "error": type(e).__name__}
 
     samples = []
     for summary in (entry.get("matches") or [])[: MAX_PROFILE_MATCHES + 2]:
@@ -464,6 +545,7 @@ def build_profile(api: API, index: dict, player: str, surface: str, as_of: datet
 
     return {
         "player": player,
+        "player_id": int(player_id),
         "matches": n,
         "surface_matches": surface_matches,
         "ready": bool(reliable),
@@ -735,13 +817,20 @@ def main() -> None:
                 seen.add(k)
                 unique.append((name, str(m.get("surface") or "").lower(), m.get("scheduled_time")))
 
-    counters = {"tape_downloads": 0, "tape_cache_hits": 0, "tape_errors": 0}
+    counters = {
+        "tape_downloads": 0,
+        "tape_cache_hits": 0,
+        "tape_errors": 0,
+        "match_detail_calls": 0,
+        "match_detail_errors": 0,
+    }
+    player_ids = resolve_current_player_ids(api, targets, counters)
     profiles = {}
     for name, surface, scheduled in unique:
         if api.calls >= api.call_cap:
             break
         as_of = _parse_dt(scheduled) or now
-        profiles[_key(name)] = build_profile(api, index, name, surface, as_of, now, counters)
+        profiles[_key(name)] = build_profile(api, index, name, player_ids.get(_key(name)), surface, as_of, now, counters)
 
     ready_matches = 0
     for m in rows:
@@ -769,6 +858,9 @@ def main() -> None:
             "pbp_v7_ready_matches": ready_matches,
             "pbp_v7_target_matches": len(targets),
             "pbp_v7_profiles": len(profiles),
+            "pbp_v7_player_ids_resolved": len(player_ids),
+            "pbp_v7_match_detail_calls": counters["match_detail_calls"],
+            "pbp_v7_match_detail_errors": counters["match_detail_errors"],
             "pbp_v7_api_calls": api.calls + 1,  # + usage request
             "pbp_v7_tape_downloads": counters["tape_downloads"],
             "pbp_v7_tape_cache_hits": counters["tape_cache_hits"],

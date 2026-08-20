@@ -83,3 +83,40 @@ def test_nd_under_five_matches():
     enrich_match(m,p,profile("B"))
     assert m["early_hold_v7"]["ready"] is False
     assert "score_joint_builder" not in m
+
+
+class FakeAPI:
+    def __init__(self):
+        self.calls = []
+    def get(self, path, params=None):
+        self.calls.append((path, params))
+        if path.startswith("/matches/"):
+            return {
+                "id": 99,
+                "players": {
+                    "p1": {"id": 101, "name": "Jessica Pegula"},
+                    "p2": {"id": 202, "name": "Amanda Anisimova"},
+                },
+            }
+        if path == "/history/matches":
+            assert isinstance(params["player"], int)
+            return {"data": [], "meta": {"has_more": False}}
+        raise AssertionError(path)
+
+
+def test_resolve_current_player_ids_and_numeric_history_filter(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+    api=FakeAPI()
+    counters={"match_detail_calls":0,"match_detail_errors":0}
+    ids=mod.resolve_current_player_ids(api,[{
+        "id":99,"p1":"Jessica Pegula","p2":"Amanda Anisimova"
+    }],counters)
+    assert ids[mod._key("Jessica Pegula")] == 101
+    assert ids[mod._key("Amanda Anisimova")] == 202
+
+    index={"players":{}}
+    now=mod.datetime.now(mod.timezone.utc)
+    mod._refresh_player_index(api,index,"Jessica Pegula",101,now,now)
+    history_calls=[c for c in api.calls if c[0]=="/history/matches"]
+    assert history_calls
+    assert history_calls[-1][1]["player"] == 101
