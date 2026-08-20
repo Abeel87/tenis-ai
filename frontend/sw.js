@@ -1,7 +1,7 @@
-const C='tenis-ai-v651-community-ux';
+const C='tenis-ai-v652-avatar-persist';
 const ASSETS=[
   './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css','community-fix.css',
-  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','supabase-config.js','manifest.webmanifest',
+  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','supabase-config.js','manifest.webmanifest',
   'brand-symbol.png','brand-wordmark.png','favicon.png',
   'apple-touch-icon.png','icon-192.png','icon-512.png'
 ];
