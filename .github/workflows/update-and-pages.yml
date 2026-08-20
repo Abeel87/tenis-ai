@@ -51,6 +51,10 @@ jobs:
         run: python backend/pbp_tracker.py
       - name: Capture green history
         run: python backend/degraded_history.py
+      - name: Settle history from Live Tennis API
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: python backend/live_history_settle.py
       - name: Save tennis history + PBP cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4

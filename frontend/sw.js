@@ -1,4 +1,4 @@
-const C='tenis-ai-v730-pbp-validation';
+const C='tenis-ai-v731-live-history-settle';
 const ASSETS=[
   './','index.html','style.css','neon.css','player-search.css','player-trends-v71.css','match-tendencies-v712.css','serve-props-v72.css','pbp-validation-v73.css','multi-model.css','model-guide.css','account.css','community.css','community-fix.css','community-hub.css','early-hold-v7.css',
   'app.js','player-search.js','player-trends-v71.js','multi-model.js','model-guide.js','clarity-labels-v711.js','match-tendencies-v712.js','serve-props-v72.js','pbp-validation-v73.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','community-count-fix.js','early-hold-v7.js','supabase-config.js','manifest.webmanifest',
