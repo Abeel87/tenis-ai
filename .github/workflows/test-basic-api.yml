@@ -1,4 +1,4 @@
-name: Test BASIC historical API
+name: Test BASIC historical API v2
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Check BASIC history and point-by-point
+      - name: Find full singles point-by-point samples
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: |
@@ -26,7 +26,7 @@ jobs:
               raise SystemExit('LIVE_TENNIS_API_KEY is missing')
 
           base='https://api.livetennisapi.com/api/public/v1'
-          headers={'Authorization':f'Bearer {key}','User-Agent':'TenisAI-BASIC-SmokeTest/1.0'}
+          headers={'Authorization':f'Bearer {key}','User-Agent':'TenisAI-BASIC-SmokeTest/2.0'}
 
           def get(path, params=None):
               url=base+path
@@ -37,54 +37,93 @@ jobs:
                   return json.load(r)
 
           usage=get('/usage')
+          limits=usage.get('limits') or {}
+          today=usage.get('today') or {}
           print('USAGE:', json.dumps({
-              'tier': usage.get('tier') or usage.get('plan'),
-              'limit_per_day': usage.get('limit_per_day') or usage.get('daily_limit'),
-              'used_today': usage.get('used_today') or usage.get('requests_today')
-          }, ensure_ascii=False))
-
-          hist=get('/history/matches', {'limit':25})
-          rows=hist.get('data') or []
-          print('HISTORY_LIST_COUNT:', len(rows))
-          if not rows:
-              raise SystemExit('BASIC endpoint works but returned no completed matches')
-
-          chosen=None
-          for m in rows:
-              tape=m.get('tape') or {}
-              cov=tape.get('coverage') if isinstance(tape,dict) else None
-              if cov and cov!='none':
-                  chosen=m
-                  break
-          if chosen is None:
-              chosen=rows[0]
-
-          mid=chosen.get('id')
-          players=chosen.get('players') or {}
-          p1=(players.get('p1') or {}).get('name') if isinstance(players,dict) else None
-          p2=(players.get('p2') or {}).get('name') if isinstance(players,dict) else None
-          print('MATCH:', json.dumps({
-              'id':mid,'p1':p1,'p2':p2,'tour':chosen.get('tour'),
-              'surface':chosen.get('surface'),'tape':chosen.get('tape')
+              'tier':usage.get('tier'),
+              'per_minute':limits.get('per_minute'),
+              'per_day':limits.get('per_day'),
+              'calls_today':today.get('calls'),
+              'remaining_day':today.get('remaining_day')
           },ensure_ascii=False))
-          if mid is None:
-              raise SystemExit('No match id found')
 
-          tape=get(f'/history/matches/{mid}', {'sequence':'clean'})
-          points=tape.get('tape') or []
-          meta=tape.get('meta') or {}
-          print('TAPE_SUMMARY:', json.dumps({
-              'rows':len(points),
+          candidates=[]
+          for tour in ('atp','wta','challenger'):
+              found=[]
+              for offset in (0,200,400):
+                  page=get('/history/matches',{
+                      'tour':tour,'coverage':'from_start',
+                      'limit':200,'offset':offset
+                  })
+                  rows=page.get('data') or []
+                  for m in rows:
+                      if m.get('is_doubles'):
+                          continue
+                      tape=m.get('tape') or {}
+                      if tape.get('coverage')!='from_start':
+                          continue
+                      found.append(m)
+                  if found:
+                      break
+
+              found.sort(
+                  key=lambda m:(
+                      bool((m.get('tape') or {}).get('points_complete')),
+                      int((m.get('tape') or {}).get('rows') or 0)
+                  ),
+                  reverse=True
+              )
+              if found:
+                  best=found[0]
+                  candidates.append(best)
+                  p=best.get('players') or {}
+                  print('CANDIDATE:',json.dumps({
+                      'tour':tour,
+                      'id':best.get('id'),
+                      'p1':(p.get('p1') or {}).get('name'),
+                      'p2':(p.get('p2') or {}).get('name'),
+                      'surface':best.get('surface'),
+                      'is_doubles':best.get('is_doubles'),
+                      'tape':best.get('tape')
+                  },ensure_ascii=False))
+              else:
+                  print('NO_FROM_START_SINGLES:',tour)
+
+          if not candidates:
+              raise SystemExit('No singles match with coverage=from_start found in scanned pages')
+
+          best=max(candidates,key=lambda m:(
+              bool((m.get('tape') or {}).get('points_complete')),
+              int((m.get('tape') or {}).get('rows') or 0)
+          ))
+          mid=best['id']
+          detail=get(f'/history/matches/{mid}',{'sequence':'clean'})
+          tape=detail.get('tape') or []
+          meta=detail.get('meta') or {}
+
+          server_rows=sum(1 for r in tape if r.get('server') is not None)
+          point_rows=sum(1 for r in tape if isinstance(r.get('points'),list) and any(x is not None for x in r.get('points')))
+          unique_game_states=len({json.dumps(r.get('games'),sort_keys=True) for r in tape if r.get('games') is not None})
+
+          print('BEST_DETAIL:',json.dumps({
+              'id':mid,
+              'rows':len(tape),
               'coverage':meta.get('coverage'),
               'point_source':meta.get('point_source'),
-              'profiles':len(tape.get('profiles') or []),
-              'tiebreaks':tape.get('tiebreaks')
+              'server_rows':server_rows,
+              'point_rows':point_rows,
+              'unique_game_states':unique_game_states,
+              'profiles':len(detail.get('profiles') or []),
+              'tiebreaks':detail.get('tiebreaks')
           },ensure_ascii=False))
 
-          if points:
-              first=points[0]
-              last=points[-1]
-              keys=['sets','games','points','server','tiebreak','timestamp','win_probability_p1','danger']
-              print('FIRST_POINT:', json.dumps({k:first.get(k) for k in keys},ensure_ascii=False))
-              print('LAST_POINT:', json.dumps({k:last.get(k) for k in keys},ensure_ascii=False))
+          keys=['sets','games','points','server','tiebreak','timestamp']
+          sample=tape[:3] + (tape[-3:] if len(tape)>3 else [])
+          for i,row in enumerate(sample,1):
+              print(f'SAMPLE_{i}:',json.dumps({k:row.get(k) for k in keys},ensure_ascii=False))
+
+          if len(tape)<30 or server_rows<10 or point_rows<10:
+              raise SystemExit('Point-by-point exists, but this sample is still too sparse for Early Hold training')
+
+          print('RESULT: GOOD_SAMPLE_FOR_EARLY_HOLD')
           PY
