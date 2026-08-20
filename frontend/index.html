@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="neon.css">
+  <link rel="stylesheet" href="player-search.css">
 </head>
 <body>
   <header class="app-header neon-header">
@@ -18,7 +19,7 @@
       <img class="brand-symbol" src="brand-symbol.png" alt="">
       <div class="brand-copy">
         <img class="brand-wordmark" src="brand-wordmark.png" alt="Tenis AI">
-        <p>Early Hold v6.1 · Adaptive + Community</p>
+        <p>Early Hold v6.2 · Player Search + Profile</p>
       </div>
     </div>
     <button id="refresh" class="icon-btn neon-refresh" title="Odśwież" aria-label="Odśwież">↻</button>
@@ -30,6 +31,20 @@
     <span id="history-mode"></span>
     <span id="matched">Dopasowane: —</span>
   </section>
+
+  <section id="player-search-shell" class="player-search-shell" aria-label="Wyszukiwarka zawodnika">
+    <div class="player-search-head">
+      <div><b>🔎 Wyszukaj zawodnika</b><small>Dzisiejszy mecz · najlepsze typy · historia Tenis AI</small></div>
+    </div>
+    <div class="player-search-input-wrap">
+      <span class="search-icon">⌕</span>
+      <input id="player-search-input" type="search" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Np. Iga Świątek, Swiatek, Fritz…" aria-label="Wyszukaj zawodnika">
+      <button id="player-search-clear" type="button" aria-label="Wyczyść wyszukiwanie" hidden>✕</button>
+    </div>
+    <div id="player-search-suggestions" class="player-search-suggestions" hidden></div>
+  </section>
+
+  <section id="player-profile-panel" class="player-profile-panel" hidden></section>
 
   <div class="main-tabs neon-tabs" role="tablist">
     <button class="active" data-view="matches">🎾 <span>Mecze</span></button>
@@ -61,5 +76,6 @@
   </footer>
 
   <script src="app.js"></script>
+  <script src="player-search.js"></script>
 </body>
 </html>
