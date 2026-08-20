@@ -1,4 +1,4 @@
-/* Tenis AI v6.5.2 — persist avatar display after reload */
+/* Tenis AI v6.5.3 — persistent avatar without profile freeze */
 (() => {
   const $ = s => document.querySelector(s);
 
@@ -13,28 +13,25 @@
       .map(x => x[0]).join('').toUpperCase() || '?';
   }
 
+  function setAvatar(el, profile){
+    if(!el || !profile) return;
+
+    if(profile.avatar_url){
+      const img = el.querySelector('img');
+      if(img && img.getAttribute('src') === profile.avatar_url) return;
+      el.innerHTML = `<img src="${escAttr(profile.avatar_url)}" alt="">`;
+      return;
+    }
+
+    const text = initials(profile.username);
+    if(el.textContent !== text || el.querySelector('img')) el.textContent = text;
+  }
+
   function applyAvatar(){
-    const acc = window.tenisAIAccount;
-    const p = acc?.profile;
-    if(!p) return;
-
-    const buttonAvatar = $('#account-button .account-button-avatar');
-    if(buttonAvatar){
-      if(p.avatar_url){
-        buttonAvatar.innerHTML = `<img src="${escAttr(p.avatar_url)}" alt="">`;
-      } else {
-        buttonAvatar.textContent = initials(p.username);
-      }
-    }
-
-    const modalAvatar = $('#account-modal-content .account-profile-avatar');
-    if(modalAvatar){
-      if(p.avatar_url){
-        modalAvatar.innerHTML = `<img src="${escAttr(p.avatar_url)}" alt="">`;
-      } else {
-        modalAvatar.textContent = initials(p.username);
-      }
-    }
+    const profile = window.tenisAIAccount?.profile;
+    if(!profile) return;
+    setAvatar($('#account-button .account-button-avatar'), profile);
+    setAvatar($('#account-modal-content .account-profile-avatar'), profile);
   }
 
   window.addEventListener('tenis-ai-auth-change', () => {
@@ -44,11 +41,13 @@
 
   document.addEventListener('click', e => {
     if(e.target.closest('#account-button')){
-      setTimeout(applyAvatar, 80);
-      setTimeout(applyAvatar, 220);
+      setTimeout(applyAvatar, 40);
+      setTimeout(applyAvatar, 140);
     }
   });
 
+  // Modal content is recreated by account.js. Observe it, but only write when
+  // the rendered avatar actually differs, so the observer cannot loop forever.
   const observer = new MutationObserver(() => {
     if($('#account-modal-content .account-profile-avatar')) applyAvatar();
   });

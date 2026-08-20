@@ -1,4 +1,4 @@
-const C='tenis-ai-v652-avatar-persist';
+const C='tenis-ai-v653-profile-freeze-fix';
 const ASSETS=[
   './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css','community-fix.css',
   'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','supabase-config.js','manifest.webmanifest',
