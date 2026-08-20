@@ -1,8 +1,68 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b1018"><title>Tenis AI — Early Hold</title><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css"></head>
-<body><header><div><h1>🎾 Tenis AI</h1><p>Early Hold v5.3 · Adaptive Model</p></div><button id="refresh">↻</button></header>
-<section class="status"><span id="updated">Ładowanie…</span><span id="mode"></span><span id="history-mode"></span><span id="matched">Dopasowane: —</span></section>
-<div class="main-tabs"><button class="active" data-view="matches">🎾 Mecze</button><button data-view="stats">📊 Statystyki</button><button data-view="history">🕘 Historia</button></div>
-<div id="match-controls"><nav id="tour-nav"><button class="active" data-filter="all">Wszystkie <small class="count">0</small></button><button data-filter="atp">ATP <small class="count">0</small></button><button data-filter="wta">WTA <small class="count">0</small></button><button data-filter="challenger">CH <small class="count">0</small></button><button data-filter="itf">ITF <small class="count">0</small></button></nav></div>
-<main id="app"></main><footer>Zielone = wynik modelu ≥72/100. Historia zapisuje zielone sygnały przed meczem i rozlicza je po pojawieniu się wyniku. Rynki po konkretnych gemach nie są automatycznie rozliczane bez danych point-by-point. Wyniki 0–100 są estymacjami modelu, nie gwarancją ani kursem bukmacherskim.</footer>
-<script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08111b">
+  <title>Tenis AI — Early Hold</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-mark" aria-label="Tenis AI">
+        <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
+          <circle cx="32" cy="32" r="25" class="ball"/>
+          <path d="M10 27c10 2 16 8 18 18M54 37c-10-2-16-8-18-18" class="seam"/>
+          <circle cx="43" cy="18" r="3.4" class="node"/>
+          <path d="M39 21l-8 7 7 6" class="circuit"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Tenis AI</h1>
+        <p>Early Hold v6 · Adaptive + Community</p>
+      </div>
+    </div>
+    <button id="refresh" class="icon-btn" title="Odśwież">↻</button>
+  </header>
+
+  <section class="status">
+    <span id="updated">Ładowanie…</span>
+    <span id="mode"></span>
+    <span id="history-mode"></span>
+    <span id="matched">Dopasowane: —</span>
+  </section>
+
+  <div class="main-tabs" role="tablist">
+    <button class="active" data-view="matches">🎾 Mecze</button>
+    <button data-view="stats">📊 Statystyki</button>
+    <button data-view="history">🕘 Historia</button>
+    <button data-view="feedback">💡 Pomysły</button>
+    <button data-view="coupons">🧾 Kupony</button>
+  </div>
+
+  <div id="match-controls">
+    <nav id="tour-nav">
+      <button class="active" data-filter="all">Wszystkie <small class="count">0</small></button>
+      <button data-filter="atp">ATP <small class="count">0</small></button>
+      <button data-filter="wta">WTA <small class="count">0</small></button>
+      <button data-filter="challenger">CH <small class="count">0</small></button>
+      <button data-filter="itf">ITF <small class="count">0</small></button>
+    </nav>
+    <div class="collapse-bar">
+      <button id="collapse-all">Zwiń wszystkie</button>
+      <button id="expand-all">Rozwiń wszystkie</button>
+    </div>
+  </div>
+
+  <main id="app"></main>
+
+  <footer>
+    <div class="footer-brand">Tenis AI · stworzone przez <b>Abeel87 × ChatGPT</b></div>
+    <div>Zielone = wynik modelu ≥72/100. Historia zapisuje zielone sygnały przed meczem i rozlicza je po wyniku. Wyniki 0–100 są estymacją modelu, nie gwarancją ani kursem bukmacherskim.</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
