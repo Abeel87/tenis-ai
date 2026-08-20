@@ -20,7 +20,7 @@ STATE_PATH = CACHE / "live_result_settle_v731.json"
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v7.3.1-HistorySettlement/1.0"
 MIN_AGE_MINUTES = 75
-RETRY_HOURS = 4
+RETRY_HOURS = 2
 MAX_CALLS_PER_RUN = 40
 DAILY_RESERVE = 150
 
@@ -118,6 +118,7 @@ def final_from_match(match: dict, entry: dict):
 def settle_entry(entry: dict, final: dict, now: datetime):
     x=dict(entry); x["result"]=final; x["settled_at"]=now.isoformat(); x["settlement_source"]="Live Tennis API /matches/{id}"
     x["status"]="void" if final.get("status")=="void" else "settled"
+    x.pop("live_status", None); x.pop("live_status_updated_at", None)
     signals=[]
     for s in x.get("signals") or []:
         s=dict(s)
@@ -162,7 +163,15 @@ def main():
                 errors+=1; continue
             match=_obj(r.json()); final=final_from_match(match,e)
             if final is None:
-                not_ready+=1; rec["last_feed_status"]=match.get("status") or match.get("event_status"); continue
+                not_ready+=1
+                feed_status=str(match.get("event_status") or match.get("status") or "").strip()
+                rec["last_feed_status"]=feed_status
+                pending=dict(e)
+                if feed_status:
+                    pending["live_status"]=feed_status
+                    pending["live_status_updated_at"]=now.isoformat()
+                hist[idx]=pending
+                continue
             hist[idx]=settle_entry(e,final,now)
             rec["settled_at"]=now.isoformat(); rec["settled_status"]=final.get("status")
             if final.get("status")=="void": voided+=1
