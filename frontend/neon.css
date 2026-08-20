@@ -1,0 +1,333 @@
+
+/* Tenis AI v6.1 — Neon identity layer
+   This file intentionally overrides the existing v6 UI without touching model logic. */
+
+:root{
+  --neon-bg:#020812;
+  --neon-bg2:#04101d;
+  --neon-panel:#061522;
+  --neon-panel2:#081a2a;
+  --neon-line:#0a5a9e;
+  --neon-cyan:#00ddff;
+  --neon-blue:#087cff;
+  --neon-blue2:#0952ff;
+  --neon-lime:#c9ff00;
+  --neon-lime2:#7ee600;
+  --neon-text:#f3fbff;
+  --neon-muted:#8ca9bf;
+}
+
+html{background:var(--neon-bg)!important}
+
+body{
+  color:var(--neon-text)!important;
+  background:
+    radial-gradient(circle at 50% -10%,rgba(0,126,255,.24),transparent 31%),
+    radial-gradient(circle at 88% 12%,rgba(0,221,255,.10),transparent 22%),
+    linear-gradient(180deg,#020812 0%,#03101c 52%,#020812 100%)!important;
+}
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  opacity:.22;
+  background-image:
+    linear-gradient(rgba(0,221,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,221,255,.025) 1px,transparent 1px);
+  background-size:28px 28px;
+  mask-image:linear-gradient(to bottom,black,transparent 70%);
+}
+
+/* Header / exact selected identity */
+.neon-header{
+  padding-top:16px!important;
+  border-bottom:1px solid rgba(0,221,255,.16);
+  margin-bottom:9px;
+}
+.neon-brand{gap:12px!important;min-width:0}
+.brand-symbol{
+  width:74px;
+  height:74px;
+  object-fit:cover;
+  border-radius:50%;
+  flex:0 0 auto;
+  box-shadow:
+    0 0 0 1px rgba(0,221,255,.45),
+    0 0 18px rgba(0,221,255,.42),
+    0 0 40px rgba(8,124,255,.20);
+}
+.brand-copy{min-width:0}
+.brand-wordmark{
+  display:block;
+  width:min(245px,42vw);
+  max-height:68px;
+  object-fit:contain;
+  object-position:left center;
+  filter:drop-shadow(0 0 9px rgba(0,221,255,.20));
+}
+.brand-copy p{
+  margin:3px 0 0!important;
+  color:#a7bed0!important;
+  font-size:12px!important;
+  letter-spacing:.2px;
+}
+.neon-refresh{
+  width:50px!important;
+  height:50px!important;
+  border-radius:16px!important;
+  border:1px solid rgba(0,221,255,.34)!important;
+  color:var(--neon-cyan)!important;
+  background:linear-gradient(180deg,#071a2d,#04101d)!important;
+  box-shadow:inset 0 0 20px rgba(8,124,255,.10),0 0 18px rgba(0,221,255,.12);
+}
+
+/* Status */
+.neon-status{gap:7px!important}
+.neon-status span{
+  color:#9ab4c8!important;
+  background:linear-gradient(180deg,rgba(7,25,43,.96),rgba(3,15,27,.96))!important;
+  border:1px solid rgba(31,119,181,.42)!important;
+  box-shadow:inset 0 0 14px rgba(0,126,255,.04);
+}
+
+/* Main navigation */
+.neon-tabs{
+  gap:7px!important;
+  padding:6px!important;
+  border:1px solid rgba(0,143,255,.35);
+  border-radius:18px;
+  background:rgba(3,13,24,.82);
+  box-shadow:0 10px 30px rgba(0,0,0,.28),inset 0 0 24px rgba(0,126,255,.05);
+}
+.neon-tabs button{
+  border:1px solid transparent!important;
+  background:transparent!important;
+  color:#b8cadd!important;
+  min-height:48px!important;
+  border-radius:13px!important;
+}
+.neon-tabs button.active{
+  color:white!important;
+  border-color:var(--neon-cyan)!important;
+  background:linear-gradient(180deg,rgba(8,124,255,.42),rgba(4,36,68,.82))!important;
+  box-shadow:
+    0 0 0 1px rgba(0,221,255,.28),
+    0 0 18px rgba(0,221,255,.34),
+    inset 0 0 20px rgba(0,221,255,.08)!important;
+}
+
+/* Tour filters */
+.neon-tour-nav button{
+  border-color:rgba(0,126,255,.38)!important;
+  color:#b8c9db!important;
+  background:#061421!important;
+  min-height:46px;
+}
+.neon-tour-nav button.active{
+  color:white!important;
+  border-color:var(--neon-cyan)!important;
+  background:linear-gradient(180deg,#087cff,#0648a6)!important;
+  box-shadow:0 0 17px rgba(0,174,255,.30)!important;
+}
+.neon-tour-nav .count{
+  background:rgba(0,0,0,.22)!important;
+  color:#d8ecff!important;
+}
+.collapse-bar button{
+  border-color:rgba(0,126,255,.32)!important;
+  background:#061421!important;
+  color:#9eb8cd!important;
+}
+
+/* Tournament and match cards */
+.tournament-group{
+  border-color:rgba(8,124,255,.34)!important;
+  background:#03101b!important;
+  box-shadow:0 10px 34px rgba(0,0,0,.35),0 0 22px rgba(0,126,255,.06)!important;
+}
+.tournament-summary{
+  background:linear-gradient(180deg,#071a2b,#04121f)!important;
+  border-left:3px solid rgba(0,221,255,.72);
+}
+.tournament-summary b{color:#f5fbff}
+.tournament-summary small{color:#82a3bc!important}
+.tour-badge{
+  color:#8ee9ff!important;
+  background:#08223c!important;
+  border:1px solid rgba(0,221,255,.22);
+}
+.tournament-body{
+  background:#020b14!important;
+  border-top-color:rgba(0,126,255,.18)!important;
+}
+.match-card{
+  position:relative;
+  overflow:hidden;
+  border-color:rgba(8,124,255,.42)!important;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(8,124,255,.10),transparent 28%),
+    linear-gradient(145deg,#071522,#04101c)!important;
+  box-shadow:inset 0 0 26px rgba(0,126,255,.035),0 5px 18px rgba(0,0,0,.30);
+}
+.match-card::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(0,221,255,.025);
+}
+.match-time{
+  border-right-color:rgba(0,221,255,.28)!important;
+}
+.match-time b{
+  color:#f7fbff!important;
+  font-size:18px!important;
+  text-shadow:0 0 12px rgba(0,221,255,.12);
+}
+.match-time small,.match-meta{color:#7f9db5!important}
+.match-players{color:#f5fbff!important}
+.match-players span{color:#6e8ca4!important}
+.match-score span{
+  color:var(--neon-cyan)!important;
+  border:1px solid rgba(0,221,255,.28);
+  background:#06213a!important;
+  box-shadow:0 0 14px rgba(0,221,255,.08);
+}
+.match-score small{color:#7899b2!important}
+.compact-signal.good,.compact-signal.elite{
+  color:#dfff96!important;
+  border-color:rgba(201,255,0,.62)!important;
+  background:linear-gradient(180deg,rgba(33,65,3,.60),rgba(12,32,8,.82))!important;
+  box-shadow:0 0 12px rgba(201,255,0,.10);
+}
+.match-detail{
+  border-top-color:rgba(0,126,255,.18)!important;
+  background:#04101b!important;
+}
+
+/* Prediction markets */
+.signals{
+  border-color:rgba(0,221,255,.25)!important;
+  background:linear-gradient(145deg,#071a2b,#04131f)!important;
+}
+.signals-title{color:#c6e9ff!important}
+.marketbox{
+  border-color:rgba(8,124,255,.30)!important;
+  background:#05131f!important;
+}
+.marketbox summary{background:linear-gradient(180deg,rgba(8,26,43,.92),rgba(4,17,29,.96))}
+.tag{
+  color:#9feeff!important;
+  background:#06233d!important;
+  border:1px solid rgba(0,221,255,.18);
+}
+.market{
+  border-color:#143c59!important;
+  background:#03101b!important;
+}
+.market.good,.market.elite{
+  border-color:var(--neon-lime)!important;
+  color:#efffd0!important;
+  background:linear-gradient(180deg,rgba(32,61,4,.74),rgba(9,29,10,.92))!important;
+  box-shadow:
+    0 0 0 1px rgba(201,255,0,.18),
+    0 0 16px rgba(201,255,0,.13)!important;
+}
+.market.good b,.market.elite b{color:#d9ff63}
+.market.good span,.market.elite span{color:#c8e9a0!important}
+.pick{
+  border:1px solid rgba(0,221,255,.22);
+  background:linear-gradient(145deg,#071c30,#06131f)!important;
+}
+
+/* Stats / history / community */
+.stats-hero,.stat-card,.stats-section,.history-card,.community-hero,.community-card,.coupon-card,.community-form{
+  background:linear-gradient(145deg,#071522,#04101b)!important;
+  border-color:rgba(8,124,255,.34)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.22),inset 0 0 22px rgba(0,126,255,.025);
+}
+.stats-hero>div:first-child b,.stat-card b{color:var(--neon-cyan)!important}
+.stats-mini span,.stats-row,.history-signal,.coupon-meta span,.coupon-comments>div{
+  border-color:rgba(0,126,255,.22)!important;
+  background:#04111d!important;
+}
+.history-signal.hit{
+  border-color:rgba(201,255,0,.68)!important;
+  background:#0b1d0a!important;
+}
+.history-signal.miss{
+  border-color:#ff5068!important;
+  background:#251018!important;
+}
+.primary-btn{
+  color:#021108!important;
+  background:linear-gradient(180deg,#d4ff2c,#7ce400)!important;
+  box-shadow:0 0 16px rgba(201,255,0,.16);
+}
+.community-form textarea,.community-form input,.community-form select,.coupon-comments input{
+  background:#020d17!important;
+  border-color:rgba(0,126,255,.36)!important;
+}
+.status-chip{
+  color:#a7efff!important;
+  background:#06233d!important;
+}
+
+/* Footer */
+footer{
+  border-top:1px solid rgba(0,126,255,.18);
+  padding-top:18px;
+}
+.footer-brand{
+  color:#a7bed0!important;
+  margin-bottom:6px;
+}
+.footer-brand b{color:var(--neon-cyan)!important}
+
+/* Scrollbar */
+*{scrollbar-color:#087cff #020812}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#020812}
+::-webkit-scrollbar-thumb{background:#087cff;border-radius:999px}
+
+/* Mobile polish */
+@media(max-width:700px){
+  body{padding-inline:12px!important}
+  .brand-symbol{width:60px;height:60px}
+  .brand-wordmark{width:min(205px,45vw);max-height:58px}
+  .brand-copy p{font-size:10px!important}
+  .neon-refresh{width:46px!important;height:46px!important}
+  .neon-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(68px,1fr))!important;
+    overflow-x:auto!important;
+    gap:4px!important;
+    padding:5px!important;
+  }
+  .neon-tabs button{
+    padding:8px 5px!important;
+    font-size:11px!important;
+    display:grid;
+    place-items:center;
+    gap:2px;
+  }
+  .neon-tabs button span{font-size:10px}
+  .match-summary{grid-template-columns:70px 1fr auto!important}
+  .match-score span{font-size:9px!important}
+}
+
+@media(max-width:430px){
+  .brand-symbol{width:54px;height:54px}
+  .brand-wordmark{width:175px}
+  .brand-copy p{font-size:9px!important}
+  .neon-refresh{width:42px!important;height:42px!important}
+  .neon-tabs button{font-size:10px!important;padding-inline:3px!important}
+  .neon-tabs button span{font-size:9px}
+  .match-summary{grid-template-columns:62px 1fr auto!important;padding:10px 8px!important}
+  .match-players{font-size:14px!important}
+  .compact-signals{max-width:170px}
+}
