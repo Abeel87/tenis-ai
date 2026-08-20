@@ -107,6 +107,8 @@
           <div><b>EHS</b><span>Early Hold Score 0–100: stabilność 1., 2. i 3. własnego gema serwisowego w 1. secie. To nie jest procent wygranej meczu.</span></div>
           <div><b>3/5, 4/5…</b><span>Tyle z 5 modeli specjalistycznych popiera ten sam sygnał w Consensus.</span></div>
           <div><b>MODEL BO3</b><span>Pełny mecz liczony jak best-of-3. Nie używamy tego oznaczenia jako modelu BO5.</span></div>
+          <div><b>Częstość hist.</b><span>Ile razy zdarzenie naprawdę wystąpiło w poprzednich meczach zawodnika, np. 8/10 = 80%. To opis przeszłości, nie prognoza.</span></div>
+          <div><b>Skuteczność AI</b><span>Jak często wcześniejsze zapisane typy Tenis AI zostały później trafnie rozliczone. To osobna liczba od tendencji zawodnika.</span></div>
         </section>
 
         <div class="mg-warning">

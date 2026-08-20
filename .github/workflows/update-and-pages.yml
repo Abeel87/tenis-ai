@@ -37,6 +37,8 @@ jobs:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           FIXTURE_DAYS: '1'
         run: python backend/update.py
+      - name: Build player tendency profiles
+        run: python backend/player_trends.py
       - name: Enrich Early Hold from BASIC point-by-point
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}

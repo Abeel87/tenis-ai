@@ -22,9 +22,10 @@ META_PATH = OUT / "meta.json"
 INDEX_PATH = CACHE / "players.json"
 
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
-UA = "TenisAI-EarlyHold-v7/1.0"
-PROFILE_TTL_HOURS = 18
-MAX_PROFILE_MATCHES = 8
+UA = "TenisAI-v7.1-Tendencies/1.0"
+PROFILE_TTL_HOURS = 12
+EARLY_HOLD_MATCHES = 8
+MAX_PROFILE_MATCHES = 20
 MAX_LIST_PAGES = 2
 LIST_LIMIT = 100
 RUN_CALL_CAP = 560
@@ -178,6 +179,9 @@ def _refresh_player_index(api: API, index: dict, player: str, player_id: int, as
     k = _key(player)
     prior = players.get(k)
     if _entry_fresh(prior, now) and int(prior.get("player_id") or 0) == int(player_id):
+        return prior
+    # If today's API budget is exhausted, stale cached history is better than deleting PBP from the UI.
+    if prior and int(prior.get("player_id") or 0) == int(player_id) and api.calls >= api.call_cap:
         return prior
 
     rows: list[dict] = []
@@ -367,13 +371,13 @@ def _match_object(payload: dict) -> dict:
     return data if isinstance(data, dict) else payload
 
 
-def resolve_current_player_ids(api: API, targets: list[dict], counters: dict) -> dict[str, int]:
+def resolve_current_player_ids(api: API, targets: list[dict], counters: dict, seed: dict[str, int] | None = None) -> dict[str, int]:
     """Resolve stable roster ids from the current fixture's match detail.
 
     This avoids ambiguous name-search matching and gives the exact id required
     by /history/matches?player=<integer>.
     """
-    out: dict[str, int] = {}
+    out: dict[str, int] = dict(seed or {})
     for m in targets:
         # Future-proof: if update.py starts carrying ids, use them without an extra call.
         for side in ("p1", "p2"):
@@ -456,6 +460,52 @@ def _weighted_mean(pairs: list[tuple[float, float]]) -> float | None:
     return sum(v * w for v, w in pairs) / z if z else None
 
 
+
+def _event_ratio(values: list[float | None]) -> dict:
+    x = [float(v) for v in values if v in (0.0, 1.0)]
+    if not x:
+        return {"hits": 0, "n": 0, "pct": None}
+    hits = int(sum(x))
+    n = len(x)
+    return {"hits": hits, "n": n, "pct": round(100.0 * hits / n, 1)}
+
+
+def _pbp_window(samples: list[dict], n: int) -> dict:
+    x = samples[:n]
+    def state(key, expected):
+        return _event_ratio([1.0 if s.get(key) == expected else 0.0 for s in x if s.get(key) is not None])
+    return {
+        "requested": n,
+        "sample_matches": len(x),
+        "metrics": {
+            "hold1": _event_ratio([s.get("hold1") for s in x]),
+            "hold2": _event_ratio([s.get("hold2") for s in x]),
+            "hold3": _event_ratio([s.get("hold3") for s in x]),
+            "after2_11": state("after2", "1:1"),
+            "after4_22": state("after4", "2:2"),
+            "after6_33": state("after6", "3:3"),
+            "sequence_11_22_33": _event_ratio([
+                1.0 if s.get("after2") == "1:1" and s.get("after4") == "2:2" and s.get("after6") == "3:3" else 0.0
+                for s in x
+            ]),
+            "set1_win": _event_ratio([s.get("set1_win") for s in x]),
+            "set1_over_8.5": _event_ratio([s.get("over85") for s in x]),
+            "set1_over_9.5": _event_ratio([s.get("over95") for s in x]),
+        },
+    }
+
+
+def _pbp_tendency_windows(samples: list[dict], surface: str) -> dict:
+    surf = str(surface or "").lower()
+    same_surface = [s for s in samples if surf and s.get("surface") == surf]
+    return {
+        "source": "Live Tennis API BASIC point-by-point",
+        "surface_name": surf,
+        "all": {str(n): _pbp_window(samples, n) for n in (5, 10, 20)},
+        "surface": {str(n): _pbp_window(same_surface, n) for n in (5, 10, 20)},
+    }
+
+
 def build_profile(api: API, index: dict, player: str, player_id: int | None, surface: str, as_of: datetime, now: datetime, counters: dict) -> dict:
     if player_id is None:
         return {"player": player, "matches": 0, "ready": False, "ehs": None, "quality": "N/D", "error": "player_id_unresolved"}
@@ -494,6 +544,15 @@ def build_profile(api: API, index: dict, player: str, player_id: int | None, sur
         sg = parsed["service_games"].get(side) or {}
         if not sg.get("1") in (0.0, 1.0) or not sg.get("2") in (0.0, 1.0):
             continue
+        try:
+            fs_a, fs_b = [int(v) for v in str(parsed.get("first_set_score") or "").split(":", 1)]
+            first_set_games = fs_a + fs_b
+            set1_win = 1.0 if (side == 1 and fs_a > fs_b) or (side == 2 and fs_b > fs_a) else 0.0
+            over85 = 1.0 if first_set_games > 8.5 else 0.0
+            over95 = 1.0 if first_set_games > 9.5 else 0.0
+        except Exception:
+            set1_win = over85 = over95 = None
+
         samples.append(
             {
                 "id": mid,
@@ -506,14 +565,21 @@ def build_profile(api: API, index: dict, player: str, player_id: int | None, sur
                 "after2": parsed["checkpoints"].get("2"),
                 "after4": parsed["checkpoints"].get("4"),
                 "after6": parsed["checkpoints"].get("6"),
+                "set1_win": set1_win,
+                "over85": over85,
+                "over95": over95,
             }
         )
+
+    # Early Hold score remains deliberately based on the latest 8.
+    # The longer sample (up to 20) is exposed only as descriptive player tendencies.
+    eh_samples = samples[:EARLY_HOLD_MATCHES]
 
     # Recent 5 high weight, previous 3 lower. Same surface gets a strong bonus.
     hold_pairs = {1: [], 2: [], 3: []}
     state_pairs = {"1:1": [], "2:2": [], "3:3": [], "sequence": []}
     surface_matches = 0
-    for i, s in enumerate(samples):
+    for i, s in enumerate(eh_samples):
         recency = 1.0 if i < 5 else 0.55
         same_surface = bool(surface and s["surface"] == surface.lower())
         surf_w = 1.35 if same_surface else (0.76 if surface else 1.0)
@@ -530,7 +596,7 @@ def build_profile(api: API, index: dict, player: str, player_id: int | None, sur
         seq = s["after2"] == "1:1" and s["after4"] == "2:2" and s["after6"] == "3:3"
         state_pairs["sequence"].append((1.0 if seq else 0.0, w))
 
-    n = len(samples)
+    n = len(eh_samples)
     holds = {str(i): _weighted_mean(hold_pairs[i]) for i in (1, 2, 3)}
     reliable = n >= MIN_RELIABLE_MATCHES and sum(1 for x in holds.values() if x is not None) == 3
     if reliable:
@@ -558,7 +624,9 @@ def build_profile(api: API, index: dict, player: str, player_id: int | None, sur
         "after4_22": round(100 * (_weighted_mean(state_pairs["2:2"]) or 0), 1) if n else None,
         "after6_33": round(100 * (_weighted_mean(state_pairs["3:3"]) or 0), 1) if n else None,
         "sequence_11_22_33": round(100 * (_weighted_mean(state_pairs["sequence"]) or 0), 1) if n else None,
-        "sample_ids": [s["id"] for s in samples],
+        "sample_ids": [s["id"] for s in eh_samples],
+        "trend_matches": len(samples),
+        "pbp_tendencies": _pbp_tendency_windows(samples, surface),
     }
 
 
@@ -675,7 +743,7 @@ def _reweight_terminal(terminal: dict, target_p1: float):
 
 def enrich_match(match: dict, p1: dict, p2: dict) -> dict:
     eh = {
-        "version": "v7.0-pbp",
+        "version": "v7.1-pbp",
         "ready": bool(p1.get("ready") and p2.get("ready")),
         "p1": p1,
         "p2": p2,
@@ -824,7 +892,14 @@ def main() -> None:
         "match_detail_calls": 0,
         "match_detail_errors": 0,
     }
-    player_ids = resolve_current_player_ids(api, targets, counters)
+    seed_ids = {}
+    for k, entry in (index.get("players") or {}).items():
+        try:
+            if entry.get("player_id") is not None:
+                seed_ids[k] = int(entry["player_id"])
+        except (TypeError, ValueError):
+            pass
+    player_ids = resolve_current_player_ids(api, targets, counters, seed=seed_ids)
     profiles = {}
     for name, surface, scheduled in unique:
         if api.calls >= api.call_cap:
