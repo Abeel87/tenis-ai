@@ -1,7 +1,7 @@
-const C='tenis-ai-v660-community-security';
+const C='tenis-ai-v700-pbp-early-hold';
 const ASSETS=[
-  './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css','community-fix.css','community-hub.css',
-  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','supabase-config.js','manifest.webmanifest',
+  './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css','community-fix.css','community-hub.css','early-hold-v7.css',
+  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','early-hold-v7.js','supabase-config.js','manifest.webmanifest',
   'brand-symbol.png','brand-wordmark.png','favicon.png',
   'apple-touch-icon.png','icon-192.png','icon-512.png'
 ];
