@@ -106,7 +106,8 @@
           <div><b>N/D</b><span>Za mało wiarygodnych danych. Aplikacja celowo nie zgaduje.</span></div>
           <div><b>EHS</b><span>Early Hold Score 0–100: stabilność 1., 2. i 3. własnego gema serwisowego w 1. secie. To nie jest procent wygranej meczu.</span></div>
           <div><b>3/5, 4/5…</b><span>Tyle z 5 modeli specjalistycznych popiera ten sam sygnał w Consensus.</span></div>
-          <div><b>MODEL BO3</b><span>Pełny mecz liczony jak best-of-3. Nie używamy tego oznaczenia jako modelu BO5.</span></div>
+          <div><b>PREDYKCJA BO3</b><span>Wartość policzona przez model dla meczu best-of-3. To nie jest surowa statystyka ani gwarancja wyniku.</span></div>
+          <div><b>Jakość danych</b><span>Ocena 0–100 mówi, jak kompletne i użyteczne są dane do analizy tego meczu. Nie mówi, że zawodnik ma tyle procent szans na wygraną.</span></div>
           <div><b>Częstość hist.</b><span>Ile razy zdarzenie naprawdę wystąpiło w poprzednich meczach zawodnika, np. 8/10 = 80%. To opis przeszłości, nie prognoza.</span></div>
           <div><b>Skuteczność AI</b><span>Jak często wcześniejsze zapisane typy Tenis AI zostały później trafnie rozliczone. To osobna liczba od tendencji zawodnika.</span></div>
         </section>
