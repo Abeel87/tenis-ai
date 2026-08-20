@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="account.css">
   <link rel="stylesheet" href="community.css">
   <link rel="stylesheet" href="community-fix.css">
+  <link rel="stylesheet" href="community-hub.css">
 </head>
 <body>
   <header class="app-header neon-header">
@@ -23,7 +24,7 @@
       <img class="brand-symbol" src="brand-symbol.png" alt="">
       <div class="brand-copy">
         <img class="brand-wordmark" src="brand-wordmark.png" alt="Tenis AI">
-        <p>Early Hold v6.5.3 · Profile Freeze Fix</p>
+        <p>Early Hold v6.6 · Community Security</p>
       </div>
     </div>
     <div class="header-actions">
@@ -42,15 +43,19 @@
     <span id="matched">Dopasowane: —</span>
   </section>
 
-  <section id="community-live-stats" class="community-live-stats" aria-label="Społeczność Tenis AI">
+  <section id="community-live-stats" class="community-live-stats community-hub-launch" aria-label="Społeczność Tenis AI 18+">
     <div class="community-live-title">
-      <div><b>🌐 Społeczność Tenis AI</b><small>Konta i obecność na żywo</small></div>
+      <div><b>🌐 Społeczność Tenis AI <span class="hub-18-badge">18+</span></b><small>Chat · ludzie · kupony · aktywność</small></div>
       <span id="community-connection-chip">ŁĄCZENIE…</span>
     </div>
     <div class="community-live-grid">
-      <div><span>👥 Zarejestrowani</span><b id="community-users-count">—</b></div>
-      <div><span>🟢 Online</span><b id="community-online-count">—</b></div>
-      <div><span>🧾 Kupony dziś</span><b id="community-coupons-count">—</b></div>
+      <div data-community-open="people"><span>👥 Zarejestrowani</span><b id="community-users-count">—</b></div>
+      <div data-community-open="chat"><span>🟢 Online</span><b id="community-online-count">—</b></div>
+      <div data-community-open="coupons"><span>🧾 Kupony dziś</span><b id="community-coupons-count">—</b></div>
+    </div>
+    <div id="community-hub-preview" class="community-hub-preview">
+      <span>🔒 Społeczność dostępna po zalogowaniu, potwierdzeniu 18+ i dopuszczeniu konta.</span>
+      <button id="community-hub-open" type="button">Wejdź do społeczności →</button>
     </div>
   </section>
 
@@ -109,13 +114,26 @@
 
   <footer>
     <div class="footer-brand">Tenis AI · stworzone przez <b>Abeel87 × ChatGPT</b></div>
-    <div>Zielone = wynik modelu ≥72/100. v6.5.3 naprawia zawieszanie profilu i zachowuje avatar po ponownym uruchomieniu aplikacji.</div>
+    <div>Tenis AI pomaga analizować mecze tenisowe. Wyniki modeli nie gwarantują wygranej. Społeczność i kupony: 18+.</div>
   </footer>
 
   <div id="account-overlay" class="account-overlay" hidden>
     <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
       <button id="account-modal-close" class="account-modal-close" type="button" aria-label="Zamknij">✕</button>
       <div id="account-modal-content"></div>
+    </section>
+  </div>
+
+  <div id="community-hub-overlay" class="community-hub-overlay" hidden>
+    <section class="community-hub-modal" role="dialog" aria-modal="true" aria-labelledby="community-hub-title">
+      <header class="community-hub-head">
+        <div>
+          <h2 id="community-hub-title">🌐 Społeczność Tenis AI <span class="hub-18-badge">18+</span></h2>
+          <p>Chat, użytkownicy i aktywność testerów Tenis AI.</p>
+        </div>
+        <button id="community-hub-close" type="button" aria-label="Zamknij">✕</button>
+      </header>
+      <div id="community-hub-body"></div>
     </section>
   </div>
 
@@ -128,5 +146,6 @@
   <script src="community.js"></script>
   <script src="community-fix.js"></script>
   <script src="avatar-fix.js"></script>
+  <script src="community-hub.js"></script>
 </body>
 </html>
