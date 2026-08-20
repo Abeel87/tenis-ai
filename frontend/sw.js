@@ -1,7 +1,7 @@
 const C='tenis-ai-v702-pbp-priority';
 const ASSETS=[
   './','index.html','style.css','neon.css','player-search.css','multi-model.css','account.css','community.css','community-fix.css','community-hub.css','early-hold-v7.css',
-  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','early-hold-v7.js','supabase-config.js','manifest.webmanifest',
+  'app.js','player-search.js','multi-model.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','community-count-fix.js','early-hold-v7.js','supabase-config.js','manifest.webmanifest',
   'brand-symbol.png','brand-wordmark.png','favicon.png',
   'apple-touch-icon.png','icon-192.png','icon-512.png'
 ];
