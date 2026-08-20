@@ -110,6 +110,8 @@
           <div><b>Jakość danych</b><span>Ocena 0–100 mówi, jak kompletne i użyteczne są dane do analizy tego meczu. Nie mówi, że zawodnik ma tyle procent szans na wygraną.</span></div>
           <div><b>Serve Props</b><span>Osobny model liczby asów i podwójnych błędów. Łączy ostatnią formę serwisową, nawierzchnię, przeciwnika i przewidywaną długość meczu.</span></div>
           <div><b>Fair / uczciwy kurs</b><span>Kurs wynikający wyłącznie z oceny modelu: 1 / prawdopodobieństwo. Żeby mówić o value, kurs bukmachera powinien być wyższy od fair modelu.</span></div>
+          <div><b>Production tracker</b><span>Zapisuje prognozę przed startem meczu i później rozlicza ją z prawdziwego PBP. Dzięki temu wyników nie można poprawić po fakcie.</span></div>
+          <div><b>Walk-forward</b><span>Historyczny test, w którym każdy mecz widzi tylko wcześniejsze dane. To ochrona przed „podglądaniem przyszłości”.</span></div>
           <div><b>Częstość hist.</b><span>Ile razy zdarzenie naprawdę wystąpiło w poprzednich meczach zawodnika, np. 8/10 = 80%. To opis przeszłości, nie prognoza.</span></div>
           <div><b>Skuteczność AI</b><span>Jak często wcześniejsze zapisane typy Tenis AI zostały później trafnie rozliczone. To osobna liczba od tendencji zawodnika.</span></div>
         </section>

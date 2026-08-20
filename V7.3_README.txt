@@ -1,0 +1,8 @@
+Tenis AI v7.3 — PBP Result Tracker & Backtest
+
+- Production tracker zamraża prawdziwą prognozę Early Hold przed meczem.
+- Rozlicza później: 1. set, prowadzenie po 6, over 8.5, Joint Builder, 3:3 i top stany po 2/4/6.
+- Wynik pochodzi z BASIC point-by-point; zapisujemy hit/miss i Brier.
+- Chronologiczny walk-forward testuje cache bez future leakage: target widzi tylko wcześniejsze PBP.
+- Jeśli stare game-state z historii mają target PBP w cache, v7.3 zamienia „unverifiable” na hit/miss.
+- Backtest jest offline. API jest używane tylko do brakującego target PBP po meczu, z limitem i rezerwą.

@@ -45,6 +45,10 @@ jobs:
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/pbp_enrich.py
+      - name: Track + backtest PBP
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: python backend/pbp_tracker.py
       - name: Capture green history
         run: python backend/degraded_history.py
       - name: Save tennis history + PBP cache
