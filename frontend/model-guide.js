@@ -108,6 +108,8 @@
           <div><b>3/5, 4/5…</b><span>Tyle z 5 modeli specjalistycznych popiera ten sam sygnał w Consensus.</span></div>
           <div><b>PREDYKCJA BO3</b><span>Wartość policzona przez model dla meczu best-of-3. To nie jest surowa statystyka ani gwarancja wyniku.</span></div>
           <div><b>Jakość danych</b><span>Ocena 0–100 mówi, jak kompletne i użyteczne są dane do analizy tego meczu. Nie mówi, że zawodnik ma tyle procent szans na wygraną.</span></div>
+          <div><b>Serve Props</b><span>Osobny model liczby asów i podwójnych błędów. Łączy ostatnią formę serwisową, nawierzchnię, przeciwnika i przewidywaną długość meczu.</span></div>
+          <div><b>Fair / uczciwy kurs</b><span>Kurs wynikający wyłącznie z oceny modelu: 1 / prawdopodobieństwo. Żeby mówić o value, kurs bukmachera powinien być wyższy od fair modelu.</span></div>
           <div><b>Częstość hist.</b><span>Ile razy zdarzenie naprawdę wystąpiło w poprzednich meczach zawodnika, np. 8/10 = 80%. To opis przeszłości, nie prognoza.</span></div>
           <div><b>Skuteczność AI</b><span>Jak często wcześniejsze zapisane typy Tenis AI zostały później trafnie rozliczone. To osobna liczba od tendencji zawodnika.</span></div>
         </section>

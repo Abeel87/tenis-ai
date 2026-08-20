@@ -1,0 +1,16 @@
+Tenis AI v7.2 — Serve Props
+
+Nowe:
+- statystyki asów i podwójnych błędów z historii TennisMyLife,
+- modelowana średnia asów / DF dla każdego zawodnika,
+- bierze pod uwagę recency, nawierzchnię, przeciwnika (aces allowed) i przewidywaną długość meczu,
+- dla DF lekko uwzględnia presję returnu przeciwnika,
+- przy każdym meczu można wpisać własną linię bukmachera, np. 3.5,
+- aplikacja pokazuje OVER / UNDER oraz „uczciwy kurs” modelu,
+- pełny profil gracza dostaje statystyki 5 / 10 / 20 meczów dla asów i DF,
+- gdy źródło nie ma min. 5 meczów ze statystyką, pokazujemy N/D zamiast zgadywać,
+- zero nowych wywołań Live Tennis API — model korzysta z istniejących cache CSV i danych meczu.
+
+Ważne:
+- v7.2 to pierwszy heurystyczny model count dla propsów, jeszcze nie skalibrowany backtestem.
+- „fair odds” nie oznacza gwarantowanego value; kurs bukmachera trzeba porównać z fair modelu.

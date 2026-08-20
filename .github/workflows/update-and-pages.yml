@@ -39,6 +39,8 @@ jobs:
         run: python backend/update.py
       - name: Build player tendency profiles
         run: python backend/player_trends.py
+      - name: Build serve props (aces + double faults)
+        run: python backend/serve_props.py
       - name: Enrich Early Hold from BASIC point-by-point
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
