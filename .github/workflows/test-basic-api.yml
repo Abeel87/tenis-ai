@@ -1,0 +1,90 @@
+name: Test BASIC historical API
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/test-basic-api.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check BASIC history and point-by-point
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.parse, urllib.request
+
+          key=os.environ.get('LIVE_TENNIS_API_KEY','').strip()
+          if not key:
+              raise SystemExit('LIVE_TENNIS_API_KEY is missing')
+
+          base='https://api.livetennisapi.com/api/public/v1'
+          headers={'Authorization':f'Bearer {key}','User-Agent':'TenisAI-BASIC-SmokeTest/1.0'}
+
+          def get(path, params=None):
+              url=base+path
+              if params:
+                  url += '?' + urllib.parse.urlencode(params)
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  return json.load(r)
+
+          usage=get('/usage')
+          print('USAGE:', json.dumps({
+              'tier': usage.get('tier') or usage.get('plan'),
+              'limit_per_day': usage.get('limit_per_day') or usage.get('daily_limit'),
+              'used_today': usage.get('used_today') or usage.get('requests_today')
+          }, ensure_ascii=False))
+
+          hist=get('/history/matches', {'limit':25})
+          rows=hist.get('data') or []
+          print('HISTORY_LIST_COUNT:', len(rows))
+          if not rows:
+              raise SystemExit('BASIC endpoint works but returned no completed matches')
+
+          chosen=None
+          for m in rows:
+              tape=m.get('tape') or {}
+              cov=tape.get('coverage') if isinstance(tape,dict) else None
+              if cov and cov!='none':
+                  chosen=m
+                  break
+          if chosen is None:
+              chosen=rows[0]
+
+          mid=chosen.get('id')
+          players=chosen.get('players') or {}
+          p1=(players.get('p1') or {}).get('name') if isinstance(players,dict) else None
+          p2=(players.get('p2') or {}).get('name') if isinstance(players,dict) else None
+          print('MATCH:', json.dumps({
+              'id':mid,'p1':p1,'p2':p2,'tour':chosen.get('tour'),
+              'surface':chosen.get('surface'),'tape':chosen.get('tape')
+          },ensure_ascii=False))
+          if mid is None:
+              raise SystemExit('No match id found')
+
+          tape=get(f'/history/matches/{mid}', {'sequence':'clean'})
+          points=tape.get('tape') or []
+          meta=tape.get('meta') or {}
+          print('TAPE_SUMMARY:', json.dumps({
+              'rows':len(points),
+              'coverage':meta.get('coverage'),
+              'point_source':meta.get('point_source'),
+              'profiles':len(tape.get('profiles') or []),
+              'tiebreaks':tape.get('tiebreaks')
+          },ensure_ascii=False))
+
+          if points:
+              first=points[0]
+              last=points[-1]
+              keys=['sets','games','points','server','tiebreak','timestamp','win_probability_p1','danger']
+              print('FIRST_POINT:', json.dumps({k:first.get(k) for k in keys},ensure_ascii=False))
+              print('LAST_POINT:', json.dumps({k:last.get(k) for k in keys},ensure_ascii=False))
+          PY
