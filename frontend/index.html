@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="neon.css">
   <link rel="stylesheet" href="player-search.css">
   <link rel="stylesheet" href="multi-model.css">
+  <link rel="stylesheet" href="account.css">
 </head>
 <body>
   <header class="app-header neon-header">
@@ -20,10 +21,16 @@
       <img class="brand-symbol" src="brand-symbol.png" alt="">
       <div class="brand-copy">
         <img class="brand-wordmark" src="brand-wordmark.png" alt="Tenis AI">
-        <p>Early Hold v6.3 · Multi Model + Consensus</p>
+        <p>Early Hold v6.4 · Accounts + Community</p>
       </div>
     </div>
-    <button id="refresh" class="icon-btn neon-refresh" title="Odśwież" aria-label="Odśwież">↻</button>
+    <div class="header-actions">
+      <button id="account-button" class="account-button" type="button" aria-label="Konto">
+        <span class="account-button-avatar">👤</span>
+        <span class="account-button-copy"><b>Konto</b><small>Zaloguj</small></span>
+      </button>
+      <button id="refresh" class="icon-btn neon-refresh" title="Odśwież" aria-label="Odśwież">↻</button>
+    </div>
   </header>
 
   <section class="status neon-status">
@@ -31,6 +38,18 @@
     <span id="mode"></span>
     <span id="history-mode"></span>
     <span id="matched">Dopasowane: —</span>
+  </section>
+
+  <section id="community-live-stats" class="community-live-stats" aria-label="Społeczność Tenis AI">
+    <div class="community-live-title">
+      <div><b>🌐 Społeczność Tenis AI</b><small>Konta i obecność na żywo</small></div>
+      <span id="community-connection-chip">ŁĄCZENIE…</span>
+    </div>
+    <div class="community-live-grid">
+      <div><span>👥 Zarejestrowani</span><b id="community-users-count">—</b></div>
+      <div><span>🟢 Online</span><b id="community-online-count">—</b></div>
+      <div><span>🧾 Kupony dziś</span><b id="community-coupons-count">—</b></div>
+    </div>
   </section>
 
   <section id="player-search-shell" class="player-search-shell" aria-label="Wyszukiwarka zawodnika">
@@ -88,11 +107,21 @@
 
   <footer>
     <div class="footer-brand">Tenis AI · stworzone przez <b>Abeel87 × ChatGPT</b></div>
-    <div>Zielone = wynik modelu ≥72/100. Modele v6.3 są specjalistycznymi wariantami heurystycznymi opartymi na różnych wagach tych samych danych; nie są jeszcze modelem ML. Historia główna nadal rozlicza zamrożone sygnały Adaptive.</div>
+    <div>Zielone = wynik modelu ≥72/100. Modele v6.3 są specjalistycznymi wariantami heurystycznymi, nie modelem ML. v6.4 dodaje fundament kont i społeczności. Ranking będzie później liczony wyłącznie z kuponów, które da się wiarygodnie rozliczyć.</div>
   </footer>
 
+  <div id="account-overlay" class="account-overlay" hidden>
+    <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+      <button id="account-modal-close" class="account-modal-close" type="button" aria-label="Zamknij">✕</button>
+      <div id="account-modal-content"></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script src="player-search.js"></script>
   <script src="multi-model.js"></script>
+  <script src="account.js"></script>
 </body>
 </html>
