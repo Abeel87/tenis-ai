@@ -1,6 +1,7 @@
-const C='tenis-ai-v62-player-search';
+const C='tenis-ai-v63-multi-model';
 const ASSETS=[
-  './','index.html','style.css','neon.css','player-search.css','app.js','player-search.js','manifest.webmanifest',
+  './','index.html','style.css','neon.css','player-search.css','multi-model.css',
+  'app.js','player-search.js','multi-model.js','manifest.webmanifest',
   'brand-symbol.png','brand-wordmark.png','favicon.png',
   'apple-touch-icon.png','icon-192.png','icon-512.png'
 ];

@@ -1,0 +1,38 @@
+/* Tenis AI v6.3 — Multi Model + Consensus */
+.model-switcher{
+  margin:10px 0 11px;padding:12px;border:1px solid rgba(0,221,255,.26);border-radius:18px;
+  background:linear-gradient(180deg,rgba(6,21,34,.97),rgba(3,13,24,.97));
+  box-shadow:0 12px 30px rgba(0,0,0,.24),inset 0 0 24px rgba(0,126,255,.05)
+}
+.model-switcher-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px}
+.model-switcher-head b{display:block;color:#f3fbff;font-size:14px}.model-switcher-head small{display:block;color:#819eb3;font-size:10px;margin-top:3px;line-height:1.35}
+.model-lab-badge{font-size:9px;font-weight:900;letter-spacing:.5px;color:#07100a;padding:5px 7px;border-radius:999px;background:linear-gradient(135deg,var(--neon-lime),#7ee600);box-shadow:0 0 14px rgba(201,255,0,.16);white-space:nowrap}
+.model-buttons{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.model-buttons button{min-height:42px;padding:7px 6px;border-radius:12px;border:1px solid rgba(0,126,255,.20);background:#061523;color:#aac3d5;font-size:10px;font-weight:800;line-height:1.15}
+.model-buttons button.active{color:#fff;border-color:var(--neon-cyan);background:linear-gradient(180deg,rgba(8,124,255,.42),rgba(4,36,68,.88));box-shadow:0 0 0 1px rgba(0,221,255,.18),0 0 16px rgba(0,221,255,.22),inset 0 0 16px rgba(0,221,255,.06)}
+.model-buttons button[data-model="consensus"].active{color:#081000;border-color:var(--neon-lime);background:linear-gradient(135deg,var(--neon-lime),#80e900);box-shadow:0 0 18px rgba(201,255,0,.22)}
+
+.multi-model-panel{margin:0 0 12px;border:1px solid rgba(0,221,255,.21);border-radius:15px;overflow:hidden;background:rgba(3,14,25,.76)}
+.multi-model-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 11px;border-bottom:1px solid rgba(0,221,255,.12);background:linear-gradient(180deg,rgba(8,124,255,.10),rgba(3,14,25,.2))}
+.multi-model-head b{font-size:13px}.multi-model-head span{font-size:9px;color:#8aa8bc;text-align:right}
+.multi-model-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:9px}
+.model-mini{min-width:0;padding:8px;border:1px solid rgba(0,126,255,.15);border-radius:11px;background:rgba(5,20,33,.86)}
+.model-mini.active{border-color:rgba(0,221,255,.45);box-shadow:inset 0 0 12px rgba(0,221,255,.05)}
+.model-mini-name{display:flex;align-items:center;justify-content:space-between;gap:5px;color:#8faec3;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.25px}
+.model-mini-score{font-size:16px;font-weight:900;color:#fff;margin-top:6px}.model-mini-score.good{color:var(--neon-lime)}.model-mini-score.elite{color:#dfff71;text-shadow:0 0 9px rgba(201,255,0,.22)}
+.model-mini-pick{margin-top:4px;color:#cde2ef;font-size:9px;line-height:1.25;overflow-wrap:anywhere}
+.consensus-box{margin:0 9px 9px;padding:10px;border:1px solid rgba(201,255,0,.24);border-radius:12px;background:rgba(201,255,0,.055)}
+.consensus-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}.consensus-title b{font-size:11px;color:#eaffbd}.consensus-title span{font-size:9px;color:#91aa70}
+.consensus-list{display:grid;gap:6px}.consensus-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;background:rgba(4,19,30,.68)}
+.consensus-votes{min-width:34px;text-align:center;padding:4px 6px;border-radius:8px;background:var(--neon-lime);color:#071006;font-size:10px;font-weight:950}.consensus-row span{font-size:10px;color:#e4f5e9}.consensus-row b{font-size:11px;color:var(--neon-lime);white-space:nowrap}
+.multi-model-note{padding:0 10px 10px;color:#6f8da2;font-size:9px;line-height:1.35}
+
+.signals-title .selected-model-name{color:var(--neon-cyan)}
+.compact-signal.consensus{border-color:rgba(201,255,0,.38)!important;background:rgba(201,255,0,.09)!important;color:#e9ffc0!important}
+
+@media(max-width:760px){
+  .model-buttons{grid-template-columns:repeat(3,minmax(0,1fr))}.multi-model-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.model-mini:last-child{grid-column:span 2}
+}
+@media(max-width:430px){
+  .model-switcher{padding:10px}.model-buttons button{min-height:40px;font-size:9px}.multi-model-head{align-items:flex-start}.multi-model-head span{max-width:120px}
+}
