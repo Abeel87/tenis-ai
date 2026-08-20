@@ -1,0 +1,17 @@
+Tenis AI v7.4 — Admin & Moderator
+
+1. Najpierw uruchom supabase/v7.4-admin-moderator.sql w Supabase SQL Editor.
+   - Konto AbeelGoD zostanie ustawione jako ADMIN.
+   - SQL przerwie się, jeśli nie znajdzie dokładnie jednego profilu AbeelGoD.
+2. Potem wdroż frontend.
+3. W Społeczności pojawi się przycisk „🛡️ Admin”.
+4. Admin może:
+   - nadać/odebrać moderatora,
+   - dopuścić/odrzucić dostęp,
+   - blokować/odblokować konta.
+5. Moderator może:
+   - zatwierdzać/odrzucać zwykłych użytkowników,
+   - blokować/odblokować zwykłych użytkowników,
+   - nie może nadawać ról ani moderować admina/moderatorów.
+6. Każda akcja trafia do community_admin_audit.
+7. Brak service_role w przeglądarce — akcje robią SECURITY DEFINER RPC.
