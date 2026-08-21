@@ -1,0 +1,391 @@
+/* Tenis AI v7.5.1 — PROJECT UI
+   The visual layer follows the approved three-screen mockup:
+   clean match list -> dedicated full-screen match detail -> compact history.
+   Model/tracker calculations are not changed.
+*/
+(() => {
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=x=>x==null||!Number.isFinite(Number(x))?null:Number(x);
+  const pc=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
+  const key=m=>String(m?.id ?? m?.match_id ?? [m?.p1,m?.p2,m?.scheduled_time].join('|'));
+  const tm=m=>{const d=new Date(m?.scheduled_time||'');return Number.isFinite(d.getTime())?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'—'};
+  const dt=m=>{const d=new Date(m?.scheduled_time||'');return Number.isFinite(d.getTime())?d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'}):''};
+  const surf=m=>String(m?.surface||'').trim()||'—';
+  const tour=m=>{
+    const t=String(m?.tour||'').toLowerCase();
+    if(t.includes('chall'))return 'CH';
+    if(t.includes('itf'))return 'ITF';
+    return t.toUpperCase()||'TENIS';
+  };
+
+  let focus='all';
+  let route='matches';
+
+  function status(m){
+    const raw=String(m?.event_status||m?.feed_status||m?.status||'').toLowerCase();
+    if(raw.includes('live')||raw.includes('progress')||raw.includes('started')) return {txt:'LIVE',cls:'live'};
+    if(raw.includes('interrupt')) return {txt:'PRZERWANY',cls:'interrupted'};
+    if(raw.includes('suspend')) return {txt:'ZAWIESZONY',cls:'suspended'};
+    if(raw.includes('postpon')) return {txt:'PRZEŁOŻONY',cls:'postponed'};
+    return {txt:'PRZED MECZEM',cls:'upcoming'};
+  }
+
+  function addBest(arr,label,obj,kind='model'){
+    if(!obj)return;
+    const best=Object.entries(obj).filter(([,v])=>num(v)!=null).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
+    if(best)arr.push({label:`${label}: ${best[0]}`,value:Number(best[1]),kind});
+  }
+  function signals(m){
+    const a=[];
+    addBest(a,'Mecz',m.match_win);
+    addBest(a,'1. set',m.first_set_win);
+    addBest(a,'2. set',m.second_set_win);
+    addBest(a,'Sety',m.total_sets);
+
+    Object.entries(m.over_under||{}).forEach(([ln,v])=>{
+      const o=num(v?.over),u=num(v?.under); if(o==null||u==null)return;
+      a.push({label:`1S ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'set'});
+    });
+    Object.entries(m.match_over_under||{}).forEach(([ln,v])=>{
+      const o=num(v?.over),u=num(v?.under); if(o==null||u==null)return;
+      a.push({label:`Mecz ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'match'});
+    });
+    if(m.early_hold_v7?.ready){
+      if(num(m.score_first_set_early)!=null)a.push({label:`Early Hold: ${m.pick_first_set_early||'1. set'}`,value:Number(m.score_first_set_early),kind:'pbp'});
+      if(num(m.score_lead_after6)!=null)a.push({label:'Prowadzi po 6',value:Number(m.score_lead_after6),kind:'pbp'});
+      if(num(m.score_joint_builder)!=null)a.push({label:'Joint Builder',value:Number(m.score_joint_builder),kind:'pbp'});
+    }
+    const seen=new Set();
+    return a.filter(x=>!seen.has(x.label)&&seen.add(x.label)).sort((x,y)=>y.value-x.value);
+  }
+  const top=(m,n=1)=>signals(m).filter(x=>x.value>=55).slice(0,n);
+  const strength=m=>top(m,1)[0]?.value ?? num(m.model_confidence) ?? 0;
+  const greens=m=>signals(m).filter(x=>x.value>=72).length;
+
+  function currentRows(){
+    let rows=(typeof filteredReady==='function'?filteredReady():Array.isArray(all)?all:[]).filter(Boolean);
+    if(typeof filter!=='undefined'&&filter!=='all'&&typeof tourKey==='function')rows=rows.filter(m=>tourKey(m)===filter);
+    if(focus==='strong')rows=rows.filter(m=>strength(m)>=80);
+    if(focus==='pbp')rows=rows.filter(m=>m.early_hold_v7?.ready);
+    if(focus==='live')rows=rows.filter(m=>status(m).cls==='live');
+    rows.sort((a,b)=>new Date(a.scheduled_time||0)-new Date(b.scheduled_time||0));
+    return rows;
+  }
+
+  function signalBars(v){
+    return `<span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${v>=i*18?'on':''}"></i>`).join('')}</span>`;
+  }
+
+  function topStrip(rows){
+    const picks=rows.map(m=>({m,s:top(m,1)[0]})).filter(x=>x.s&&x.s.value>=72).sort((a,b)=>b.s.value-a.s.value).slice(0,3);
+    if(!picks.length)return '';
+    return `<section class="p751-top">
+      <header><b>⚡ Top sygnały</b><span>${picks.length} najmocniejsze</span></header>
+      <div>${picks.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}">
+        <small>${esc(m.p1)} vs ${esc(m.p2)}</small>
+        <b>${esc(s.label)}</b>
+        <strong>${Math.round(s.value)}%</strong>
+        ${signalBars(s.value)}
+      </button>`).join('')}</div>
+    </section>`;
+  }
+
+  function card(m){
+    const s=top(m,1)[0],v=strength(m),st=status(m);
+    return `<button class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}">
+      <div class="p751-match-meta">
+        <span class="p751-status ${st.cls}">${esc(st.txt)}</span>
+        <b>${esc(tour(m))}</b>
+        <span>${esc(m.tournament||'Turniej')}</span>
+        <span>• ${esc(surf(m))}</span>
+        <time>${esc(tm(m))}</time>
+      </div>
+      <div class="p751-card-center">
+        <div class="p751-names">
+          <b>${esc(m.p1)}</b>
+          <span>VS</span>
+          <b>${esc(m.p2)}</b>
+        </div>
+        <div class="p751-top-pick">
+          <span>◎ Top typ</span>
+          <b>${esc(s?.label||'Brak mocnego sygnału')}</b>
+          <em>${s?Math.round(s.value)+'%':'—'}</em>
+        </div>
+      </div>
+      <aside class="p751-strength">
+        <span>Siła sygnału</span>
+        <b>${Math.round(v)||'—'}%</b>
+        ${signalBars(v)}
+        <small>${greens(m)} zielonych</small>
+      </aside>
+      <footer>
+        <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧠 Adaptive'}</span>
+        <span>DANE ${esc(m.quality||'—')}</span>
+        <b>Analiza ›</b>
+      </footer>
+    </button>`;
+  }
+
+  function groupRows(rows){
+    const groups=new Map();
+    rows.forEach(m=>{
+      const k=`${tour(m)}|${m.tournament||'Turniej'}`;
+      if(!groups.has(k))groups.set(k,{tour:tour(m),name:m.tournament||'Turniej',rows:[]});
+      groups.get(k).rows.push(m);
+    });
+    return [...groups.values()];
+  }
+
+  function focusBar(){
+    return `<div class="p751-focus">
+      <button class="${focus==='all'?'active':''}" data-p751-focus="all">Wszystkie</button>
+      <button class="${focus==='live'?'active':''}" data-p751-focus="live">● LIVE</button>
+      <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">⭐ 80+</button>
+      <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">🧬 PBP OK</button>
+      <button class="model" data-p751-models>🧠 Model</button>
+    </div>`;
+  }
+
+  renderMatches=function(){
+    route='matches';
+    navActive('matches');
+    const app=document.querySelector('#app');
+    const rows=currentRows();
+    if(!rows.length){
+      app.innerHTML=`${focusBar()}<div class="p751-empty"><b>Brak meczów dla tego filtra.</b><span>Wybierz „Wszystkie” albo inny filtr.</span></div>`;
+      bindHome();
+      return;
+    }
+    app.innerHTML=`${focusBar()}${topStrip(rows)}
+      <div class="p751-groups">${groupRows(rows).map((g,i)=>`<details class="p751-group" ${i<4?'open':''}>
+        <summary><div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b><small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'} · ${esc([...new Set(g.rows.map(surf))].join('/'))}</small></div><i>⌄</i></summary>
+        <div class="p751-group-body">${g.rows.map(card).join('')}</div>
+      </details>`).join('')}</div>`;
+    bindHome();
+  };
+
+  function bindHome(){
+    document.querySelectorAll('[data-p751-focus]').forEach(b=>b.onclick=()=>{focus=b.dataset.p751Focus;renderMatches()});
+    document.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
+    document.querySelectorAll('[data-p751-open]').forEach(b=>b.onclick=()=>openMatch(decodeURIComponent(b.dataset.p751Open)));
+  }
+
+  function binaryBest(obj){
+    if(!obj)return null;
+    const e=Object.entries(obj).filter(([,v])=>num(v)!=null).sort((a,b)=>Number(b[1])-Number(a[1]))[0];
+    return e?{name:e[0],value:Number(e[1])}:null;
+  }
+
+  function verdict(m){
+    const ss=top(m,3),a=ss[0],b=ss[1],trust=Math.round(Math.min(100,(num(m.model_confidence)||0)+(m.early_hold_v7?.ready?4:0)));
+    return `<section class="p751-verdict">
+      <header><span>⚡</span><b>Szybki werdykt</b></header>
+      <div>
+        <article><span>Najlepszy typ</span><b>${esc(a?.label||'—')}</b><strong>${a?Math.round(a.value)+'%':'—'}</strong></article>
+        <article><span>Alternatywa</span><b>${esc(b?.label||'—')}</b><strong>${b?Math.round(b.value)+'%':'—'}</strong></article>
+        <article><span>Ryzyko</span><b>${(a?.value||0)>=85?'Niskie':(a?.value||0)>=72?'Średnie':'Wyższe'}</b><strong>${Math.round(a?.value||0)||'—'}/100</strong></article>
+        <article><span>Zaufanie danych</span><b>${trust>=85?'Wysokie':trust>=65?'Średnie':'Niskie'}</b><strong>${trust||'—'}%</strong></article>
+      </div>
+    </section>`;
+  }
+
+  function marketRow(label,left,right='',hot=false){
+    return `<div class="p751-market-row"><span>${esc(label)}</span><b class="${hot?'hot':''}">${esc(left)}</b><em>${esc(right)}</em></div>`;
+  }
+
+  function coreMarkets(m){
+    const gs=m.game_states||{},fs=binaryBest(m.first_set_win),mw=binaryBest(m.match_win);
+    const p11=num(gs?.['2']?.['1:1']),p22=num(gs?.['4']?.['2:2']),p33=num(gs?.['6']?.['3:3']);
+    const lead=num(m.score_lead_after6),leadName=m.pick_first_set_early||m.pick_first_set||fs?.name||'—';
+    const over85=num(m.over_under?.['8.5']?.over);
+    const lines=m.market_lab_v741?.set1_total||m.over_under||{};
+    return `<details class="p751-acc" open>
+      <summary><div><span>🎯</span><b>Typy meczowe</b><small>najważniejsze rynki</small></div><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        ${p11!=null?marketRow('1:1 po 2 gemach',pc(p11),`inny ${pc(100-p11)}`,p11>=72):''}
+        ${p22!=null?marketRow('2:2 po 4 gemach',pc(p22),`inny ${pc(100-p22)}`,p22>=72):''}
+        ${p33!=null?marketRow('3:3 po 6 gemach',pc(p33),`inny ${pc(100-p33)}`,p33>=72):''}
+        ${lead!=null?marketRow('Prowadzi po 6',`${leadName} ${pc(lead)}`,`pozostałe ${pc(100-lead)}`,lead>=72):''}
+        ${over85!=null?marketRow('OVER 8.5 · 1. set',pc(over85),`UNDER ${pc(100-over85)}`,over85>=72):''}
+        ${fs?marketRow('Wygrany 1. set',`${fs.name} ${pc(fs.value)}`,`rywal ${pc(100-fs.value)}`,fs.value>=72):''}
+        ${mw?marketRow('Wygrany mecz',`${mw.name} ${pc(mw.value)}`,`rywal ${pc(100-mw.value)}`,mw.value>=72):''}
+        <div class="p751-lines"><label>Linie gemów · 1. set</label><div>${Object.entries(lines).map(([ln,x])=>{
+          const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';
+          return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(mx)}</small></span>`;
+        }).join('')}</div></div>
+      </div>
+    </details>`;
+  }
+
+  function stats(m){
+    const a=m.p1_stats||{},b=m.p2_stats||{};
+    const pv=(v,ratio=false)=>num(v)==null?'—':ratio?Math.round(Number(v)*100)+'%':String(Math.round(Number(v)*10)/10);
+    const row=(l,x,y)=>`<div class="p751-compare-row"><span>${esc(l)}</span><b>${esc(x)}</b><b>${esc(y)}</b></div>`;
+    return `<details class="p751-acc">
+      <summary><div><span>📊</span><b>Statystyki zawodników</b><small>porównanie obok siebie</small></div><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        <div class="p751-compare-head"><span></span><b>${esc(m.p1)}</b><b>${esc(m.p2)}</b></div>
+        ${row('Ranking',a.rank??'—',b.rank??'—')}
+        ${row('Mecze próbki',a.matches??'—',b.matches??'—')}
+        ${row('Ta nawierzchnia',a.surface_matches??'—',b.surface_matches??'—')}
+        ${row('Win rate',pv(a.won,true),pv(b.won,true))}
+        ${row('Hold',pv(a.hold_rate,true),pv(b.hold_rate,true))}
+        ${row('Return points',pv(a.return_points_won,true),pv(b.return_points_won,true))}
+        ${row('1. set win hist.',pv(a.first_set_won,true),pv(b.first_set_won,true))}
+        ${m.service_model?row('Model hold',pc(m.service_model.p1_hold),pc(m.service_model.p2_hold)):''}
+      </div>
+    </details>`;
+  }
+
+  function pbp(m){
+    const e=m.early_hold_v7;if(!e)return '';
+    const player=x=>x?`<article class="p751-pbp-player"><header><b>${esc(x.player||'—')}</b><span class="${x.ready?'ok':''}">${x.ready?'PBP OK':'N/D'}</span></header><strong>EHS ${x.ehs==null?'N/D':Number(x.ehs).toFixed(1)+'/100'}</strong><div><span>1. hold <b>${pc(x.hold1)}</b></span><span>2. hold <b>${pc(x.hold2)}</b></span><span>3. hold <b>${pc(x.hold3)}</b></span><span>1:1/2 <b>${pc(x.after2_11)}</b></span><span>2:2/4 <b>${pc(x.after4_22)}</b></span><span>3:3/6 <b>${pc(x.after6_33)}</b></span></div><small>${x.matches||0} meczów PBP</small></article>`:'';
+    return `<details class="p751-acc ${e.ready?'ready':''}">
+      <summary><div><span>🧬</span><b>Early Hold · PBP</b><small>${e.ready?'prawdziwy początek seta':'brak pełnej próbki'}</small></div><em>${e.ready?'PBP OK':'N/D'}</em><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        ${e.ready?`<div class="p751-pbp-top"><span>Pick 1S <b>${esc(m.pick_first_set_early||'—')} ${pc(m.score_first_set_early)}</b></span><span>Prowadzi po 6 <b>${pc(m.score_lead_after6)}</b></span><span>Joint Builder <b>${pc(m.score_joint_builder)}</b></span></div>`:`<p class="p751-note">Brak minimum 5 wiarygodnych PBP dla obu zawodników. Tutaj bazą pozostaje Adaptive.</p>`}
+        <div class="p751-pbp-grid">${player(e.p1)}${player(e.p2)}</div>
+      </div>
+    </details>`;
+  }
+
+  function serve(m){
+    const s=m.serve_props_v72;if(!s)return '';
+    const one=(side)=>{
+      const p=s[side]||{},name=m[side]||'—';
+      const market=(label,x)=>{
+        if(!x?.ready)return `<div class="p751-serve-line"><span>${label}</span><b>N/D</b></div>`;
+        return `<div class="p751-serve-line"><span>${label}</span><b>MODEL ŚR. ${Number(x.mean).toFixed(1)}</b><small>${x.sample||0} meczów</small></div>`;
+      };
+      return `<article><h4>${esc(name)}</h4>${market('🎯 Asy',p.aces)}${market('⚠️ Podwójne błędy',p.double_faults)}</article>`;
+    };
+    return `<details class="p751-acc"><summary><div><span>⚡</span><b>Asy i podwójne błędy</b><small>forma serwisowa + nawierzchnia</small></div><em>${s.ready?'MODEL':'N/D'}</em><i>⌄</i></summary><div class="p751-acc-body"><div class="p751-serve-grid">${one('p1')}${one('p2')}</div></div></details>`;
+  }
+
+  function lab(m){
+    const l=m.market_lab_v741;if(!l)return '';
+    return `<details class="p751-acc">
+      <summary><div><span>🧪</span><b>Market Lab</b><small>nowe rynki · osobna walidacja</small></div><em>LAB</em><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        <p class="p751-note">Te rynki uczą się osobno i na razie nie zwiększają głównego wyniku modelu.</p>
+        <div class="p751-lab-grid">
+          <span>Dokładnie 6 gemów 1S <b>${pc(l.set1_exact_six_games)}</b></span>
+          <span>Tie-break 1S <b>${pc(l.set1_tiebreak?.yes)}</b></span>
+          <span>Tie-break mecz <b>${pc(l.match_tiebreak?.yes)}</b></span>
+          <span>Obaj wygrają seta <b>${pc(l.both_players_win_set?.yes)}</b></span>
+        </div>
+      </div>
+    </details>`;
+  }
+
+  function models(m){
+    const block=(title,obj)=>obj?`<article><h4>${esc(title)}</h4>${Object.entries(obj).map(([n,v])=>`<span>${esc(n)} <b>${pc(v)}</b></span>`).join('')}</article>`:'';
+    return `<details class="p751-acc"><summary><div><span>🧠</span><b>Modele</b><small>pełny mecz i dodatkowe prognozy</small></div><i>⌄</i></summary><div class="p751-acc-body"><div class="p751-model-grid">${block('Mecz',m.match_win)}${block('1. set',m.first_set_win)}${block('2. set',m.second_set_win)}${block('Liczba setów',m.total_sets)}${block('Dokładny wynik',m.exact_match_score)}</div></div></details>`;
+  }
+
+  function detailHtml(m){
+    return `<div class="p751-detail-screen">
+      <header class="p751-detail-header">
+        <button data-p751-close aria-label="Wróć">‹</button>
+        <div><b>Szczegóły meczu</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(surf(m))} · ${esc(dt(m))} · ${esc(tm(m))}</small></div>
+        <button data-p751-models aria-label="Modele">🧠</button>
+      </header>
+      <section class="p751-matchup">
+        <b>${esc(m.p1)}</b><span>VS</span><b>${esc(m.p2)}</b>
+        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>LIVE DATA</em><em>MODEL ${Math.round(num(m.model_confidence)||0)}</em></div>
+      </section>
+      ${verdict(m)}
+      <div class="p751-acc-list">${coreMarkets(m)}${stats(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
+      <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
+    </div>`;
+  }
+
+  function ensureOverlay(){
+    let o=document.querySelector('#p751-match-overlay');
+    if(!o){
+      o=document.createElement('div');o.id='p751-match-overlay';o.className='p751-overlay';o.hidden=true;
+      document.body.appendChild(o);
+    }
+    return o;
+  }
+  function findMatch(k){return (Array.isArray(all)?all:[]).find(m=>key(m)===k)}
+  function openMatch(k){
+    const m=findMatch(k);if(!m)return;
+    const o=ensureOverlay();o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
+    o.scrollTop=0;
+    o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
+    o.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
+  }
+  function closeMatch(){
+    const o=ensureOverlay();o.hidden=true;o.innerHTML='';document.body.classList.remove('p751-modal-open');
+  }
+
+  function openModels(){
+    let o=document.querySelector('#p751-model-overlay');
+    if(!o){o=document.createElement('div');o.id='p751-model-overlay';o.className='p751-model-overlay';document.body.appendChild(o)}
+    const defs=[['consensus','⚡ Consensus'],['adaptive','🧠 Adaptive'],['early','🎯 Early Hold'],['serve','🎾 Serve/Return'],['form','🔥 Form'],['surface','🏟️ Surface']];
+    o.innerHTML=`<section><header><div><b>🧠 Wybierz model</b><small>Modele dalej pracują tak samo — tutaj tylko czystszy wybór.</small></div><button data-p751-model-close>✕</button></header><div>${defs.map(([id,label])=>`<button data-p751-model="${id}">${label}</button>`).join('')}</div></section>`;
+    o.classList.add('show');
+    o.querySelector('[data-p751-model-close]').onclick=()=>o.classList.remove('show');
+    o.querySelectorAll('[data-p751-model]').forEach(b=>b.onclick=()=>{
+      document.querySelector(`#model-switcher [data-model="${b.dataset.p751Model}"]`)?.click();
+      o.classList.remove('show');
+      setTimeout(()=>{if(route==='matches')renderMatches()},30);
+    });
+  }
+
+  function signalPage(){
+    route='signals';navActive('signals');
+    const app=document.querySelector('#app');
+    const rows=(typeof filteredReady==='function'?filteredReady():[]).flatMap(m=>signals(m).filter(s=>s.value>=68).map(s=>({m,s}))).sort((a,b)=>b.s.value-a.s.value).slice(0,40);
+    app.innerHTML=`<section class="p751-signals-page"><header><div><b>⚡ Najmocniejsze sygnały</b><small>posortowane po sile modelu</small></div><button data-p751-validation>📊 Walidacja</button></header><div>${rows.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}"><div><b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(tm(m))}</small></div><span>${esc(s.label)}</span><strong>${Math.round(s.value)}%</strong></button>`).join('')}</div></section>`;
+    document.querySelectorAll('[data-p751-open]').forEach(b=>b.onclick=()=>openMatch(decodeURIComponent(b.dataset.p751Open)));
+    document.querySelector('[data-p751-validation]')?.addEventListener('click',()=>{
+      document.querySelector('.main-tabs [data-view="stats"]')?.click();
+      route='signals';navActive('signals');
+    });
+  }
+
+  // History: v7.5's grouping/status logic is kept, but this styles it exactly like the project.
+  const oldHistory=typeof renderHistory==='function'?renderHistory:null;
+  renderHistory=function(){
+    route='history';navActive('history');
+    if(oldHistory)oldHistory();
+  };
+
+  function ensureBottomNav(){
+    if(document.querySelector('#p751-bottom-nav'))return;
+    const n=document.createElement('nav');n.id='p751-bottom-nav';n.className='p751-bottom-nav';
+    n.innerHTML=`<button data-p751-nav="matches" class="active"><span>🎾</span><b>Mecze</b></button>
+      <button data-p751-nav="signals"><span>⚡</span><b>Sygnały</b></button>
+      <button data-p751-nav="history"><span>◴</span><b>Historia</b></button>
+      <button data-p751-nav="community"><span>👥</span><b>Społeczność</b></button>
+      <button data-p751-nav="profile"><span>👤</span><b>Profil</b></button>`;
+    document.body.appendChild(n);
+    n.querySelector('[data-p751-nav="matches"]').onclick=()=>{
+      document.querySelector('.main-tabs [data-view="matches"]')?.click();route='matches';renderMatches();
+    };
+    n.querySelector('[data-p751-nav="signals"]').onclick=signalPage;
+    n.querySelector('[data-p751-nav="history"]').onclick=()=>{
+      document.querySelector('.main-tabs [data-view="history"]')?.click();route='history';setTimeout(()=>{renderHistory();navActive('history')},0);
+    };
+    n.querySelector('[data-p751-nav="community"]').onclick=()=>{
+      document.querySelector('#community-hub-open')?.click() || document.querySelector('[data-community-open="chat"]')?.click();
+    };
+    n.querySelector('[data-p751-nav="profile"]').onclick=()=>document.querySelector('#account-button')?.click();
+  }
+  function navActive(which){
+    ensureBottomNav();
+    document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(b=>b.classList.toggle('active',b.dataset.p751Nav===which));
+  }
+
+  function simplifyShell(){
+    document.documentElement.classList.add('p751-project-ui');
+    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.5.1 · Match Center');
+    ensureBottomNav();
+  }
+
+  simplifyShell();
+  setTimeout(()=>{simplifyShell();if(typeof view!=='undefined'&&view==='matches')renderMatches()},250);
+  setTimeout(()=>{if(typeof view!=='undefined'&&view==='matches')renderMatches()},1000);
+})();
