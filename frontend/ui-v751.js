@@ -21,6 +21,13 @@
   let focus='all';
   let route='matches';
 
+  const modelApi=()=>window.TENIS_AI_MODEL_API||null;
+  const activeModelId=()=>modelApi()?.active||'adaptive';
+  const activeModelName=()=>modelApi()?.activeName?.()||'🧠 Adaptive';
+  function modelAllSignals(m){try{return modelApi()?.allSignals?.(m)||[]}catch{return []}}
+  function modelMarketRows(m,market){return modelAllSignals(m).filter(x=>x&&x.market===market&&num(x.v)!=null)}
+  function modelLine(x){const p=String(x?.key||'').split('|');return p.length>1?p[1]:''}
+
   function status(m){
     const raw=String(m?.event_status||m?.feed_status||m?.status||'').toLowerCase();
     if(raw.includes('live')||raw.includes('progress')||raw.includes('started')) return {txt:'LIVE',cls:'live'};
@@ -36,27 +43,16 @@
     if(best)arr.push({label:`${label}: ${best[0]}`,value:Number(best[1]),kind});
   }
   function signals(m){
-    const a=[];
-    addBest(a,'Mecz',m.match_win);
-    addBest(a,'1. set',m.first_set_win);
-    addBest(a,'2. set',m.second_set_win);
-    addBest(a,'Sety',m.total_sets);
-
-    Object.entries(m.over_under||{}).forEach(([ln,v])=>{
-      const o=num(v?.over),u=num(v?.under); if(o==null||u==null)return;
-      a.push({label:`1S ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'set'});
-    });
-    Object.entries(m.match_over_under||{}).forEach(([ln,v])=>{
-      const o=num(v?.over),u=num(v?.under); if(o==null||u==null)return;
-      a.push({label:`Mecz ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'match'});
-    });
-    if(m.early_hold_v7?.ready){
-      if(num(m.score_first_set_early)!=null)a.push({label:`Early Hold: ${m.pick_first_set_early||'1. set'}`,value:Number(m.score_first_set_early),kind:'pbp'});
-      if(num(m.score_lead_after6)!=null)a.push({label:'Prowadzi po 6',value:Number(m.score_lead_after6),kind:'pbp'});
-      if(num(m.score_joint_builder)!=null)a.push({label:'Joint Builder',value:Number(m.score_joint_builder),kind:'pbp'});
+    const api=modelApi();
+    if(api?.allSignals){
+      return modelAllSignals(m).map(x=>({label:x.label||x.key||'Sygnał',value:Number(x.v),kind:'selected-model',market:x.market,pick:x.pick,key:x.key,source_model:activeModelId()}))
+        .filter(x=>num(x.value)!=null).sort((a,b)=>b.value-a.value);
     }
-    const seen=new Set();
-    return a.filter(x=>!seen.has(x.label)&&seen.add(x.label)).sort((x,y)=>y.value-x.value);
+    const a=[];
+    addBest(a,'Mecz',m.match_win);addBest(a,'1. set',m.first_set_win);addBest(a,'2. set',m.second_set_win);addBest(a,'Sety',m.total_sets);
+    Object.entries(m.over_under||{}).forEach(([ln,v])=>{const o=num(v?.over),u=num(v?.under);if(o==null||u==null)return;a.push({label:`1S ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'set'})});
+    Object.entries(m.match_over_under||{}).forEach(([ln,v])=>{const o=num(v?.over),u=num(v?.under);if(o==null||u==null)return;a.push({label:`Mecz ${o>=u?'OVER':'UNDER'} ${ln}`,value:Math.max(o,u),kind:'match'})});
+    const seen=new Set();return a.filter(x=>!seen.has(x.label)&&seen.add(x.label)).sort((x,y)=>y.value-x.value);
   }
   const top=(m,n=1)=>signals(m).filter(x=>x.value>=55).slice(0,n);
   const strength=m=>top(m,1)[0]?.value ?? num(m.model_confidence) ?? 0;
@@ -92,36 +88,18 @@
 
 
   function matchGamesPreview(m){
-    const entries=Object.entries(m.match_over_under||{}).map(([ln,x])=>{
-      const o=num(x?.over),u=num(x?.under);
-      if(o==null||u==null)return null;
-      return {ln,o,u,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)};
-    }).filter(Boolean).sort((a,b)=>b.v-a.v);
-    if(!entries.length){
-      return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz</span><b>N/D</b></div>`;
-    }
-    const z=entries[0],exp=num(m.expected_match_games);
-    return `<div class="p753-match-total-preview">
-      <span>📊 Gemy · cały mecz</span>
-      <b>${z.side} ${esc(z.ln)}</b>
-      <strong>${Math.round(z.v)}%</strong>
-      ${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}
-    </div>`;
+    const selected=modelMarketRows(m,'match_total').map(x=>({ln:modelLine(x),side:String(x.pick||'').toUpperCase(),v:Number(x.v)})).filter(x=>x.ln&&num(x.v)!=null).sort((a,b)=>b.v-a.v);
+    if(selected.length){const z=selected[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · ${esc(activeModelName())}</span><b>${esc(z.side)} ${esc(z.ln)}</b><strong>${Math.round(z.v)}%</strong>${exp!=null?`<em>śr. Adaptive ${exp.toFixed(1)}</em>`:''}</div>`}
+    const e=Object.entries(m.match_over_under||{}).map(([ln,x])=>{const o=num(x?.over),u=num(x?.under);return o==null||u==null?null:{ln,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)}}).filter(Boolean).sort((a,b)=>b.v-a.v);
+    if(!e.length)return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz</span><b>N/D</b></div>`;
+    const z=e[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · Adaptive baza</span><b>${z.side} ${esc(z.ln)}</b><strong>${Math.round(z.v)}%</strong>${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}</div>`;
   }
 
   function matchGamesLines(m){
-    const entries=Object.entries(m.match_over_under||{});
-    const exp=num(m.expected_match_games);
-    if(!entries.length){
-      return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz</label><p class="p751-note">Brak danych O/U całego meczu.</p></div>`;
-    }
-    return `<div class="p751-lines p756-match-lines">
-      <label>📊 Linie gemów · cały mecz${exp!=null?` · śr. ${exp.toFixed(1)}`:''}</label>
-      <div>${entries.map(([ln,x])=>{
-        const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';
-        return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(mx)}%</small></span>`;
-      }).join('')}</div>
-    </div>`;
+    const selected=modelMarketRows(m,'match_total'),exp=num(m.expected_match_games);
+    if(selected.length)return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz · ${esc(activeModelName())}${exp!=null?` · śr. Adaptive ${exp.toFixed(1)}`:''}</label><div>${selected.map(x=>{const ln=modelLine(x),v=Number(x.v),side=String(x.pick||'').toUpperCase().startsWith('O')?'O':'U';return `<span class="${v>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(v)}%</small></span>`}).join('')}</div></div>`;
+    const e=Object.entries(m.match_over_under||{});if(!e.length)return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz</label><p class="p751-note">Brak danych O/U całego meczu.</p></div>`;
+    return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz · Adaptive baza${exp!=null?` · śr. ${exp.toFixed(1)}`:''}</label><div>${e.map(([ln,x])=>{const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(mx)}%</small></span>`}).join('')}</div></div>`;
   }
 
   function card(m){
@@ -154,7 +132,8 @@
       </aside>
       ${matchGamesPreview(m)}
       <footer>
-        <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧠 Adaptive'}</span>
+        <span>🧠 ${esc(activeModelName())}</span>
+        <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧬 PBP N/D'}</span>
         <span>DANE ${esc(m.quality||'—')}</span>
         <b>Analiza ›</b>
       </footer>
@@ -218,7 +197,7 @@
       <div>
         <article><span>Najlepszy typ</span><b>${esc(a?.label||'—')}</b><strong>${a?Math.round(a.value)+'%':'—'}</strong></article>
         <article><span>Alternatywa</span><b>${esc(b?.label||'—')}</b><strong>${b?Math.round(b.value)+'%':'—'}</strong></article>
-        <article><span>Ryzyko</span><b>${(a?.value||0)>=85?'Niskie':(a?.value||0)>=72?'Średnie':'Wyższe'}</b><strong>${Math.round(a?.value||0)||'—'}/100</strong></article>
+        <article><span>Siła sygnału</span><b>${(a?.value||0)>=85?'Bardzo mocny':(a?.value||0)>=72?'Mocny':'Umiarkowany'}</b><strong>${Math.round(a?.value||0)||'—'}/100</strong></article>
         <article><span>Zaufanie danych</span><b>${trust>=85?'Wysokie':trust>=65?'Średnie':'Niskie'}</b><strong>${trust||'—'}%</strong></article>
       </div>
     </section>`;
@@ -234,9 +213,12 @@
     const lead=num(m.score_lead_after6),leadName=m.pick_first_set_early||m.pick_first_set||fs?.name||'—';
     const over85=num(m.over_under?.['8.5']?.over);
     const lines=m.market_lab_v741?.set1_total||m.over_under||{};
+    const selectedSetLines=modelMarketRows(m,'set1_total');
+    const modelContext=activeModelId()==='adaptive'?'':`<p class="p772-context"><b>Aktywny model: ${esc(activeModelName())}.</b> Top typ, siła i linie modelowe korzystają z tego modelu. 1:1 / 2:2 / 3:3 pozostają osobną warstwą stanów gemowych PBP/Adaptive.</p>`;
     return `<details class="p751-acc" open>
       <summary><div><span>🎯</span><b>Typy meczowe</b><small>najważniejsze rynki</small></div><i>⌄</i></summary>
       <div class="p751-acc-body">
+        ${modelContext}
         ${p11!=null?marketRow('1:1 po 2 gemach',pc(p11),`inny ${pc(100-p11)}`,p11>=72):''}
         ${p22!=null?marketRow('2:2 po 4 gemach',pc(p22),`inny ${pc(100-p22)}`,p22>=72):''}
         ${p33!=null?marketRow('3:3 po 6 gemach',pc(p33),`inny ${pc(100-p33)}`,p33>=72):''}
@@ -244,10 +226,7 @@
         ${over85!=null?marketRow('OVER 8.5 · 1. set',pc(over85),`UNDER ${pc(100-over85)}`,over85>=72):''}
         ${fs?marketRow('Wygrany 1. set',`${fs.name} ${pc(fs.value)}`,`rywal ${pc(100-fs.value)}`,fs.value>=72):''}
         ${mw?marketRow('Wygrany mecz',`${mw.name} ${pc(mw.value)}`,`rywal ${pc(100-mw.value)}`,mw.value>=72):''}
-        <div class="p751-lines"><label>Linie gemów · 1. set</label><div>${Object.entries(lines).map(([ln,x])=>{
-          const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';
-          return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(mx)}</small></span>`;
-        }).join('')}</div></div>
+        <div class="p751-lines"><label>Linie gemów · 1. set · ${selectedSetLines.length?esc(activeModelName()):'Adaptive baza'}</label><div>${selectedSetLines.length?selectedSetLines.map(x=>{const ln=modelLine(x),v=Number(x.v),side=String(x.pick||'').toUpperCase().startsWith('O')?'O':'U';return `<span class="${v>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(v)}</small></span>`}).join(''):Object.entries(lines).map(([ln,x])=>{const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(mx)}</small></span>`}).join('')}</div></div>
         ${matchGamesLines(m)}
       </div>
     </details>`;
@@ -287,31 +266,18 @@
 
   function serve(m){
     const s=m.serve_props_v72;if(!s)return '';
-    const one=(side)=>{
-      const p=s[side]||{},name=m[side]||'—';
-      const market=(label,x)=>{
-        if(!x?.ready)return `<div class="p751-serve-line"><span>${label}</span><b>N/D</b></div>`;
-        return `<div class="p751-serve-line"><span>${label}</span><b>MODEL ŚR. ${Number(x.mean).toFixed(1)}</b><small>${x.sample||0} meczów</small></div>`;
-      };
-      return `<article><h4>${esc(name)}</h4>${market('🎯 Asy',p.aces)}${market('⚠️ Podwójne błędy',p.double_faults)}</article>`;
-    };
-    return `<details class="p751-acc"><summary><div><span>⚡</span><b>Asy i podwójne błędy</b><small>forma serwisowa + nawierzchnia</small></div><em>${s.ready?'MODEL':'N/D'}</em><i>⌄</i></summary><div class="p751-acc-body"><div class="p751-serve-grid">${one('p1')}${one('p2')}</div></div></details>`;
+    const one=(side)=>{const p=s[side]||{},name=m[side]||'—',hist=p.history?.all?.['10']||{};const avg=k=>hist?.[k]?.avg==null?'N/D':`${Number(hist[k].avg).toFixed(1)} · n=${hist[k].sample||0}`;
+      const tool=(kind,x)=>{const title=kind==='aces'?'🎯 Asy':'⚠️ Podwójne błędy';if(!x?.ready)return `<div class="sp72-market nd"><div class="sp72-market-head"><b>${title}</b><span>N/D</span></div><p>Za mała próbka.</p></div>`;const mean=Number(x.mean),def=num(x.suggested_line)??Math.max(.5,Math.floor(mean)-.5),max=kind==='aces'?'20.5':'12.5';return `<div class="sp72-market" data-sp-market="p772-${esc(m.id||'m')}-${side}-${kind}" data-sp-mean="${mean}"><div class="sp72-market-head"><b>${title}</b><span>MODEL ŚR. ${mean.toFixed(1)}</span></div><div class="sp72-market-meta"><span>${x.sample||0} meczów</span><span>BO3 · model count</span></div><div class="sp72-line-tool"><label>Linia buka <input type="number" inputmode="decimal" min="0.5" max="${max}" step="0.5" value="${Number(def).toFixed(1)}" data-sp-line></label><div class="sp72-probs" data-sp-output></div></div></div>`};
+      return `<article><h4>${esc(name)}</h4><div class="p772-serve-history"><span>Asy · ostatnie 10<b>${esc(avg('aces'))}</b></span><span>DF · ostatnie 10<b>${esc(avg('double_faults'))}</b></span></div>${tool('aces',p.aces)}${tool('df',p.double_faults)}</article>`};
+    return `<details class="p751-acc"><summary><div><span>⚡</span><b>Asy i podwójne błędy</b><small>przeciwnik + nawierzchnia + długość meczu</small></div><em>${s.ready?'MODEL':'N/D'}</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">Wpisz linię buka. OVER/UNDER i fair odds odświeżają się automatycznie.</p><div class="p751-serve-grid">${one('p1')}${one('p2')}</div></div></details>`;
   }
 
   function lab(m){
     const l=m.market_lab_v741;if(!l)return '';
-    return `<details class="p751-acc">
-      <summary><div><span>🧪</span><b>Market Lab</b><small>nowe rynki · osobna walidacja</small></div><em>LAB</em><i>⌄</i></summary>
-      <div class="p751-acc-body">
-        <p class="p751-note">Te rynki uczą się osobno i na razie nie zwiększają głównego wyniku modelu.</p>
-        <div class="p751-lab-grid">
-          <span>Dokładnie 6 gemów 1S <b>${pc(l.set1_exact_six_games)}</b></span>
-          <span>Tie-break 1S <b>${pc(l.set1_tiebreak?.yes)}</b></span>
-          <span>Tie-break mecz <b>${pc(l.match_tiebreak?.yes)}</b></span>
-          <span>Obaj wygrają seta <b>${pc(l.both_players_win_set?.yes)}</b></span>
-        </div>
-      </div>
-    </details>`;
+    const lr=(label,x)=>{const o=num(x?.over),u=num(x?.under);if(o==null||u==null)return '';return marketRow(label,`O ${pc(o)}`,`U ${pc(u)}`,Math.max(o,u)>=72)};
+    const best=(o,n=6)=>Object.entries(o||{}).sort((a,b)=>Math.max(Number(b[1]?.over||0),Number(b[1]?.under||0))-Math.max(Number(a[1]?.over||0),Number(a[1]?.under||0))).slice(0,n),pg=l.player_total_games||{};
+    const combo=(obj,stage)=>`<div class="p772-lab-grid">${marketRow(`${stage} · ${m.p1} wygra + U6.5`,pc(obj?.p1?.under),'wspólne zdarzenie',num(obj?.p1?.under)>=72)}${marketRow(`${stage} · ${m.p1} wygra + O6.5`,pc(obj?.p1?.over),'wspólne zdarzenie',num(obj?.p1?.over)>=72)}${marketRow(`${stage} · ${m.p2} wygra + U6.5`,pc(obj?.p2?.under),'wspólne zdarzenie',num(obj?.p2?.under)>=72)}${marketRow(`${stage} · ${m.p2} wygra + O6.5`,pc(obj?.p2?.over),'wspólne zdarzenie',num(obj?.p2?.over)>=72)}</div>`;
+    return `<details class="p751-acc"><summary><div><span>🧪</span><b>Market Lab</b><small>pełne rynki · osobna walidacja</small></div><em>LAB</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">LAB nie podbija głównego score. v7.7.2 tracker rozlicza też liczbę tie-breaków oraz „zwycięzca seta + własne gemy”.</p><div class="p751-lab-grid"><span>Dokładnie 6 gemów 1S <b>${pc(l.set1_exact_six_games)}</b></span><span>Tie-break 1S <b>${pc(l.set1_tiebreak?.yes)}</b></span><span>Tie-break mecz <b>${pc(l.match_tiebreak?.yes)}</b></span><span>Obaj wygrają seta <b>${pc(l.both_players_win_set?.yes)}</b></span></div><div class="p772-lab-section"><h4>🎾 1. set · O/U</h4><div>${Object.entries(l.set1_total||{}).map(([ln,x])=>lr(`1S ${ln}`,x)).join('')}</div></div><div class="p772-lab-section"><h4>👤 Gemy zawodnika · cały mecz</h4><div class="p772-lab-grid"><div><b>${esc(m.p1)}</b>${best(pg[m.p1]).map(([ln,x])=>lr(ln,x)).join('')}</div><div><b>${esc(m.p2)}</b>${best(pg[m.p2]).map(([ln,x])=>lr(ln,x)).join('')}</div></div></div><div class="p772-lab-section"><h4>🔀 Dokładna liczba tie-breaków</h4><div class="p772-lab-grid">${Object.entries(l.tiebreak_count||{}).map(([k,v])=>marketRow(`${k} tie-break`,pc(v),'event',num(v)>=72)).join('')}</div></div><div class="p772-lab-section"><h4>🧩 Zwycięzca seta + własne gemy</h4>${combo(l.set1_winner_player_games_6_5,'1. set')}${combo(l.set2_winner_player_games_6_5,'2. set')}</div></div></details>`;
   }
 
   function models(m){
@@ -330,36 +296,14 @@
     return ok.reduce((s,[v,w])=>s+Number(v)*w,0)/z;
   }
   function pro76Side(m,side){
-    const st=m[`${side}_stats`]||{};
-    const eh=m.early_hold_v7?.[side]||{};
-    const tr=m.tendencies_v71?.[side]||{};
-    const surf=tr.surface?.['10']||{};
-    const sm=surf.metrics||{},sa=surf.averages||{};
-    const get=(k)=>num(st[k])==null?null:Number(st[k])*100;
-    const serve=pro76Weighted([
-      [pro76Range(get('hold_rate'),60,90),.38],
-      [pro76Range(get('serve_points_won'),50,72),.25],
-      [pro76Range(get('first_serve_won'),55,85),.20],
-      [pro76Range(get('second_serve_won'),35,65),.17]
-    ]);
-    const ret=pro76Weighted([
-      [pro76Range(get('break_rate'),10,45),.46],
-      [pro76Range(get('return_points_won'),28,52),.54]
-    ]);
-    const form=pro76Weighted([[get('won'),.45],[get('first_set_won'),.32],[get('second_set_won'),.23]]);
-    const early=eh.ready?num(eh.ehs):null;
-    const mental=pro76Weighted([
-      [get('second_after_first_win'),.32],
-      [get('second_after_first_loss'),.32],
-      [get('third_set_won'),.26],
-      [get('second_set_won'),.10]
-    ]);
-    const surface=Number(surf.sample_matches||0)>=3?pro76Weighted([
-      [sm.match_win?.pct,.42],
-      [pro76Range(sa.hold_rate,60,90),.28],
-      [pro76Range(sa.return_points_won,28,52),.18],
-      [sm.set1_win?.pct,.12]
-    ]):null;
+    const tr=m.tendencies_v71?.[side]||{},eh=m.early_hold_v7?.[side]||{},g=tr.all?.['10']||{},surf=tr.surface?.['10']||{},p=eh.pbp_tendencies?.all?.['10']||{};
+    const metric=(b,k)=>num(b?.metrics?.[k]?.pct),av=(b,k)=>num(b?.averages?.[k]);
+    const serve=pro76Weighted([[pro76Range(av(g,'hold_rate'),60,90),.38],[pro76Range(av(g,'serve_points_won'),50,72),.25],[pro76Range(av(g,'first_serve_won'),55,85),.20],[pro76Range(av(g,'second_serve_won'),35,65),.17]]);
+    const ret=pro76Weighted([[pro76Range(av(g,'break_rate'),10,45),.46],[pro76Range(av(g,'return_points_won'),28,52),.54]]);
+    const form=pro76Weighted([[metric(g,'match_win'),.45],[metric(g,'set1_win'),.32],[metric(g,'set2_win'),.23]]);
+    const early=Number(p?.sample_matches||0)>=3?pro76Weighted([[metric(p,'hold1'),.42],[metric(p,'hold2'),.32],[metric(p,'hold3'),.18],[metric(p,'sequence_11_22_33'),.08]]):null;
+    const mental=pro76Weighted([[metric(g,'closeout_after_set1_win'),.32],[metric(g,'comeback_set2_after_set1_loss'),.32],[metric(g,'deciding_set_win'),.26],[metric(g,'set2_win'),.10]]);
+    const surface=Number(surf?.sample_matches||0)>=3?pro76Weighted([[metric(surf,'match_win'),.40],[pro76Range(av(surf,'hold_rate'),60,90),.25],[pro76Range(av(surf,'return_points_won'),28,52),.20],[metric(surf,'set1_win'),.15]]):null;
     return {serve,ret,form,early,mental,surface};
   }
   function analyticsPro76(m){
@@ -383,7 +327,7 @@
         ${row('🧬 Early Hold','early')}
         ${row('🧠 Mental','mental')}
         ${row('🏟️ Nawierzchnia','surface')}
-        <p class="p751-note">Indeksy opisują profil danych zawodnika i służą do porównania. Nie są szansą wygranej meczu.</p>
+        <p class="p751-note">Indeksy liczone identycznie jak w profilu: ostatnie 10 · wszystkie mecze; „Nawierzchnia” używa ostatnich 10 na tej nawierzchni. Nie są szansą wygranej meczu.</p>
       </div>
     </details>`;
   }
@@ -397,7 +341,7 @@
       </header>
       <section class="p751-matchup">
         <b>${esc(m.p1)}</b><span>VS</span><b>${esc(m.p2)}</b>
-        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>LIVE DATA</em><em>MODEL ${Math.round(num(m.model_confidence)||0)}</em></div>
+        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
       <div class="p751-acc-list">${coreMarkets(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
@@ -486,7 +430,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.7.1 · Hold Paths');
+    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.7.2 · Logic Audit Fix');
     ensureBottomNav();
   }
 

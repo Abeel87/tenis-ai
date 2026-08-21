@@ -63,23 +63,20 @@ def ou(dist):
                          "under":pct(sum(p for (a,b),p in dist.items() if a+b<ln))}
             for ln in SET_LINES}
 
-def build_match(first,second,third):
+def build_match(first,second_if_win,second_if_loss,third):
     joint={};tb={0:0.0,1:0.0,2:0.0,3:0.0};exact={"2:0":0.0,"2:1":0.0,"1:2":0.0,"0:2":0.0}
     for s1,p1 in first.items():
-        w1=s1[0]>s1[1];t1=int(set(s1)=={6,7})
+        w1=s1[0]>s1[1];t1=int(set(s1)=={6,7});second=second_if_win if w1 else second_if_loss
         for s2,p2 in second.items():
-            w2=s2[0]>s2[1];t2=int(set(s2)=={6,7});p12=p1*p2
-            a=s1[0]+s2[0];b=s1[1]+s2[1]
-            if w1 and w2:
-                joint[(a,b)]=joint.get((a,b),0)+p12;exact["2:0"]+=p12;tb[t1+t2]+=p12
-            elif not w1 and not w2:
-                joint[(a,b)]=joint.get((a,b),0)+p12;exact["0:2"]+=p12;tb[t1+t2]+=p12
+            w2=s2[0]>s2[1];t2=int(set(s2)=={6,7});p12=p1*p2;a=s1[0]+s2[0];b=s1[1]+s2[1]
+            if w1 and w2:joint[(a,b)]=joint.get((a,b),0)+p12;exact["2:0"]+=p12;tb[t1+t2]+=p12
+            elif not w1 and not w2:joint[(a,b)]=joint.get((a,b),0)+p12;exact["0:2"]+=p12;tb[t1+t2]+=p12
             else:
                 for s3,p3 in third.items():
-                    pr=p12*p3;aa=a+s3[0];bb=b+s3[1];t3=int(set(s3)=={6,7})
-                    joint[(aa,bb)]=joint.get((aa,bb),0)+pr;tb[t1+t2+t3]+=pr
-                    exact["2:1" if s3[0]>s3[1] else "1:2"]+=pr
+                    pr=p12*p3;aa=a+s3[0];bb=b+s3[1];t3=int(set(s3)=={6,7});joint[(aa,bb)]=joint.get((aa,bb),0)+pr;tb[t1+t2+t3]+=pr;exact["2:1" if s3[0]>s3[1] else "1:2"]+=pr
     return norm(joint),norm(tb),norm(exact)
+def mix_dist(a,b,wa):
+    wa=clamp(wa);keys=set(a)|set(b);return norm({k:wa*a.get(k,0)+(1-wa)*b.get(k,0) for k in keys})
 
 def player_lines(joint,idx):
     out={}
@@ -105,15 +102,19 @@ def enrich(m):
     def target(obj,name,default):
         try:return float((obj or {}).get(name))/100
         except Exception:return default
-    second=reweight(raw,target(m.get("second_set_win"),p1,p1win(first)))
+    second_default=target(m.get("second_set_win"),p1,p1win(first))
+    ctx=m.get("second_set_context") or {}
+    second_if_win=reweight(raw,target(ctx,"p1_if_p1_wins_set1",second_default))
+    second_if_loss=reweight(raw,target(ctx,"p1_if_p1_loses_set1",second_default))
+    second=mix_dist(second_if_win,second_if_loss,p1win(first))
     third=reweight(raw,target(m.get("third_set_win"),p1,p1win(first)))
-    joint,tb,exact=build_match(first,second,third)
+    joint,tb,exact=build_match(first,second_if_win,second_if_loss,third)
     tb1=sum(p for s,p in first.items() if set(s)=={6,7})
     six=sum(p for s,p in first.items() if sum(s)==6)
     anytb=1-tb.get(0,0);three=exact.get("2:1",0)+exact.get("1:2",0)
     m["market_lab_v741"]={
       "status":"LAB",
-      "note":"Nowe rynki są osobno zamrażane i walidowane; nie podnoszą jeszcze głównego score.",
+      "note":"LAB walidowany osobno; 2. set używa warunkowego kontekstu po wyniku 1. seta; nie podnosi głównego score.",
       "set1_total":ou(first),"set2_total":ou(second),
       "set1_exact_six_games":pct(six),
       "set1_tiebreak":{"yes":pct(tb1),"no":pct(1-tb1)},

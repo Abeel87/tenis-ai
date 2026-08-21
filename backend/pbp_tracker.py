@@ -201,39 +201,23 @@ def actual_from_tape(payload: dict, entry: dict) -> dict | None:
 
 
 def _result_signal(name: str, pred: dict | None, actual: dict, entry: dict):
-    if not pred or pred.get("prob") is None:
-        return None
-    p = float(pred["prob"])
-    pick = pred.get("pick")
-    states = actual.get("states") or {}
-    if name == "first_set":
-        y = _key(pick) == _key(actual.get("first_set_winner"))
-    elif name == "lead_after6":
-        st = states.get("6")
-        if not st: return None
-        a, b = [int(x) for x in st.split(":")]
-        y = (a > b and _key(pick) == _key(entry.get("p1"))) or (b > a and _key(pick) == _key(entry.get("p2")))
-    elif name == "over85":
-        y = bool(actual.get("over85"))
-    elif name == "balanced_after6":
-        y = states.get("6") == "3:3"
-    elif name == "joint_builder":
-        st = states.get("6")
-        if not st: return None
-        a, b = [int(x) for x in st.split(":")]
-        lead = (a > b and _key(pick) == _key(entry.get("p1"))) or (b > a and _key(pick) == _key(entry.get("p2")))
-        win = _key(pick) == _key(actual.get("first_set_winner"))
-        y = lead and bool(actual.get("over85")) and win
-    elif name in ("state2", "state4", "state6"):
-        cp = name.replace("state", "")
-        y = str(pick) == str(states.get(cp))
-    else:
-        return None
-    return {
-        "market": name, "pick": pick, "prob": round(p, 4), "actual": bool(y),
-        "result": "hit" if y else "miss",
-        "brier": round((p - (1.0 if y else 0.0)) ** 2, 6),
-    }
+    if not pred or pred.get("prob") is None: return None
+    p=float(pred["prob"]); pick=pred.get("pick"); states=actual.get("states") or {}
+    if name=="first_set": y=_key(pick)==_key(actual.get("first_set_winner"))
+    elif name=="lead_after6":
+        st=states.get("6")
+        if not st:return None
+        a,b=[int(x) for x in st.split(":")];y=(a>b and _key(pick)==_key(entry.get("p1"))) or (b>a and _key(pick)==_key(entry.get("p2")))
+    elif name=="over85": y=bool(actual.get("over85"))
+    elif name=="balanced_after6": y=states.get("6")=="3:3"
+    elif name=="joint_builder":
+        st=states.get("6")
+        if not st:return None
+        a,b=[int(x) for x in st.split(":")];lead=(a>b and _key(pick)==_key(entry.get("p1"))) or (b>a and _key(pick)==_key(entry.get("p2")));win=_key(pick)==_key(actual.get("first_set_winner"));y=lead and bool(actual.get("over85")) and win
+    elif name in ("state2","state4","state6"): y=str(pick)==str(states.get(name.replace("state","")))
+    else:return None
+    direction_yes=p>=.5;correct=bool(y) if direction_yes else not bool(y);conf=max(p,1-p)
+    return {"market":name,"pick":pick,"prob":round(p,4),"event_actual":bool(y),"actual":bool(y),"direction":"YES" if direction_yes else "NO","confidence":round(conf,4),"correct":bool(correct),"result":"hit" if correct else "miss","brier":round((p-(1.0 if y else 0.0))**2,6)}
 
 
 def settle_one(entry: dict, payload: dict, now: datetime) -> dict | None:
@@ -314,15 +298,23 @@ def settle(entries: list[dict], base_history: list[dict], key: str, now: datetim
     return out,settled_n,remote_calls
 
 
+def _signal_confidence(s):
+    try:p=float(s.get("prob"))
+    except (TypeError,ValueError):return 0.0
+    return max(p,1-p)
+
+def _signal_correct(s):
+    if s.get("correct") is not None:return bool(s.get("correct"))
+    try:p=float(s.get("prob"))
+    except (TypeError,ValueError):return False
+    event=bool(s.get("event_actual") if s.get("event_actual") is not None else s.get("actual"))
+    return event if p>=.5 else not event
+
 def _summary(signals):
     n=len(signals)
-    if not n:
-        return {"settled":0,"hits":0,"misses":0,"accuracy":None,"avg_predicted":None,"brier":None}
-    hits=sum(1 for s in signals if s.get("actual"))
-    return {"settled":n,"hits":hits,"misses":n-hits,
-            "accuracy":round(100*hits/n,1),
-            "avg_predicted":round(100*sum(float(s["prob"]) for s in signals)/n,1),
-            "brier":round(sum(float(s["brier"]) for s in signals)/n,4)}
+    if not n:return {"settled":0,"hits":0,"misses":0,"accuracy":None,"avg_predicted":None,"avg_confidence":None,"brier":None}
+    hits=sum(1 for s in signals if _signal_correct(s));c=sum(_signal_confidence(s) for s in signals)/n
+    return {"settled":n,"hits":hits,"misses":n-hits,"accuracy":round(100*hits/n,1),"avg_predicted":round(100*c,1),"avg_confidence":round(100*c,1),"brier":round(sum(float(s["brier"]) for s in signals)/n,4)}
 
 
 def tracker_stats(entries):
@@ -331,16 +323,16 @@ def tracker_stats(entries):
     for s in sig: by[s["market"]].append(s)
     buckets={}
     for lo,hi,label in ((0,.6,"<60"),(.6,.7,"60–69"),(.7,.8,"70–79"),(.8,.9,"80–89"),(.9,1.01,"90+")):
-        rows=[s for s in sig if lo<=float(s.get("prob") or 0)<hi]
+        rows=[s for s in sig if lo<=_signal_confidence(s)<hi]
         if rows: buckets[label]=_summary(rows)
-    green=[s for s in sig if float(s.get("prob") or 0)>=GREEN]
-    return {"version":"v7.3","production_matches_captured":len(entries),
+    green=[s for s in sig if _signal_confidence(s)>=GREEN]
+    return {"version":"v7.7.2-directional","production_matches_captured":len(entries),
             "production_matches_settled":sum(1 for e in entries if e.get("status")=="settled"),
             "production_matches_pending":sum(1 for e in entries if e.get("status")!="settled"),
             "overall":_summary(sig),"green_72_plus":_summary(green),
             "markets":{k:_summary(v) for k,v in sorted(by.items())},
             "calibration_bands":buckets,
-            "note":"Production tracker freezes the real pre-match Early Hold output and settles it from BASIC PBP."}
+            "note":"Production accuracy = poprawny kierunek TAK/NIE; green = max(p,1-p)>=72%; Brier = surowe p zdarzenia."}
 
 
 def _weighted(items):

@@ -45,6 +45,7 @@
           surface:normSurface(m.surface),
           tournament:m.tournament||'N/D',
           version:m.model_version||'N/D',
+          sourceModel:s.source_model||'legacy',
           matchKey:m.match_key||String(m.match_id||[m.p1,m.p2,m.scheduled_time].join('|'))
         });
       }
@@ -119,8 +120,8 @@
   function modelValidation(cur,ex){
     const t=ex?.tracker||{},b=ex?.backtest||{},l=ex?.lab||{},m=ex?.meta||{};
     const rows=[
-      {name:'Adaptive · zielona historia',value:cur.accuracy,n:cur.n,note:'rzeczywiście zamrożone i rozliczone sygnały'},
-      {name:'Early Hold · production PBP',value:t.green_72_plus?.accuracy,n:t.green_72_plus?.settled||0,note:`${t.production_matches_pending||0} meczów czeka na rozliczenie`},
+      {name:'Główna historia zamrożonych sygnałów',value:cur.accuracy,n:cur.n,note:'Adaptive + PBP game states; źródło modelu zapisywane per sygnał od v7.7.2'},
+      {name:'Early Hold · production PBP',value:t.green_72_plus?.accuracy,n:t.green_72_plus?.settled||0,note:`kierunek TAK/NIE · confidence=max(p,1-p) · ${t.production_matches_pending||0} meczów czeka`},
       {name:'Early Hold · walk-forward',value:b.overall?.green_accuracy,n:b.overall?.green_n||0,note:'diagnostyczny replay chronologiczny, nie pełny model produkcyjny'},
       {name:'Market Lab · zielone',value:l.overall?.green_accuracy,n:l.overall?.green_n||0,note:`LAB · ${m.market_lab_tracker_settled_total||0} rozliczone mecze źródłowe`}
     ];

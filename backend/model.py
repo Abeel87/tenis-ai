@@ -558,6 +558,7 @@ def analyse_match(long_df: pd.DataFrame, match: dict) -> dict:
     game_states = first_set_win = second_set_win = third_set_win = None
     over_under = exact_first_set = match_over_under = None
     expected_match_games = match_win = total_sets = exact_match_score = None
+    second_set_context = None
     pick = first_score = over85 = None
     model_confidence = round(min(float(p1.get('data_confidence') or 0), float(p2.get('data_confidence') or 0)), 0)
 
@@ -576,6 +577,7 @@ def analyse_match(long_df: pd.DataFrame, match: dict) -> dict:
 
         q_win, q_loss, q2 = _second_set_context(p1, p2, first_target, model_confidence)
         q3 = _third_set_target(p1, p2, first_target, model_confidence)
+        second_set_context = {'p1_if_p1_wins_set1': round(q_win*100,1), 'p1_if_p1_loses_set1': round(q_loss*100,1), 'p1_unconditional': round(q2*100,1)}
         second_set_win = {match['p1']: round(q2 * 100, 1), match['p2']: round((1 - q2) * 100, 1)}
         third_set_win = {match['p1']: round(q3 * 100, 1), match['p2']: round((1 - q3) * 100, 1)}
 
@@ -614,6 +616,7 @@ def analyse_match(long_df: pd.DataFrame, match: dict) -> dict:
         'game_states': game_states,
         'first_set_win': first_set_win,
         'second_set_win': second_set_win,
+        'second_set_context': second_set_context,
         'third_set_win': third_set_win,
         'over_under': over_under,
         'exact_first_set': exact_first_set,

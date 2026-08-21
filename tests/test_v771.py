@@ -8,7 +8,7 @@ def test_frontend_scope_and_paths():
         "PORÓWNANIE MECZU",
         "HOLD–HOLD",
         "BREAK–BREAK",
-        "6 CZYSTYCH HOLDÓW",
+        "CZYSTYCH HOLDÓW",
         "oba warianty po 50%",
     ]:
         assert x in s

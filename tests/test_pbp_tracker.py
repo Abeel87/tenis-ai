@@ -23,7 +23,7 @@ def test_capture():
 def test_settle():
     e={"match_id":77,"p1":"A","p2":"B","status":"pending","prediction":{"first_set":{"pick":"A","prob":.62},"lead_after6":{"pick":"A","prob":.38},"over85":{"pick":"over","prob":.76},"joint_builder":{"pick":"A","prob":.22},"balanced_after6":{"pick":"3:3","prob":.4},"state2":{"state":"1:1","prob":.7},"state4":{"state":"2:2","prob":.55},"state6":{"state":"3:3","prob":.4}}}
     a=actual_from_tape(tape(),e);assert a["states"]["6"]=="3:3";assert a["first_set_winner"]=="A"
-    s=settle_one(e,tape(),datetime.now(timezone.utc));assert s["status"]=="settled";by={x["market"]:x for x in s["signals"]};assert by["first_set"]["result"]=="hit";assert by["balanced_after6"]["result"]=="hit"
+    s=settle_one(e,tape(),datetime.now(timezone.utc));assert s["status"]=="settled";by={x["market"]:x for x in s["signals"]};assert by["first_set"]["result"]=="hit";assert by["balanced_after6"]["result"]=="miss"
 def test_stats():
     e={"status":"settled","signals":[{"market":"first_set","prob":.8,"actual":True,"brier":.04},{"market":"over85","prob":.75,"actual":False,"brier":.5625},{"market":"lead_after6","prob":.6,"actual":True,"brier":.16}]}
     s=tracker_stats([e]);assert s["overall"]["settled"]==3;assert s["green_72_plus"]["settled"]==2;assert s["green_72_plus"]["hits"]==1

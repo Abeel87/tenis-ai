@@ -73,11 +73,11 @@ def extract_green_signals(match: dict, threshold: float = GREEN_THRESHOLD) -> li
     """Freeze every market that is visually green in the app (score >= threshold)."""
     out = []
 
-    def add_binary(field, market, label, **extra):
+    def add_binary(field, market, label, source_model="adaptive", **extra):
         obj = match.get(field) or {}
         for pick, value in obj.items():
             if value is not None and float(value) >= threshold:
-                out.append(_signal(market, label, pick, value, **extra))
+                out.append(_signal(market, label, pick, value, source_model=source_model, **extra))
 
     add_binary('match_win', 'match_winner', 'Zwycięzca meczu')
     add_binary('first_set_win', 'set1_winner', 'Zwycięzca 1. seta')
@@ -92,6 +92,7 @@ def extract_green_signals(match: dict, threshold: float = GREEN_THRESHOLD) -> li
                 out.append(_signal(
                     'game_state', f'Wynik po {checkpoint} gemach', pick, value,
                     checkpoint=int(checkpoint), resolvable=False,
+                    source_model='early_hold_pbp' if (match.get('early_hold_v7') or {}).get('ready') else 'adaptive',
                 ))
 
     for line, sides in (match.get('over_under') or {}).items():
@@ -100,7 +101,7 @@ def extract_green_signals(match: dict, threshold: float = GREEN_THRESHOLD) -> li
             if value is not None and float(value) >= threshold:
                 out.append(_signal(
                     'set1_total', f'1. set · {side.upper()} {line}', side, value,
-                    line=float(line),
+                    line=float(line), source_model='adaptive',
                 ))
 
     for line, sides in (match.get('match_over_under') or {}).items():
@@ -109,12 +110,12 @@ def extract_green_signals(match: dict, threshold: float = GREEN_THRESHOLD) -> li
             if value is not None and float(value) >= threshold:
                 out.append(_signal(
                     'match_total', f'Mecz · {side.upper()} {line}', side, value,
-                    line=float(line),
+                    line=float(line), source_model='adaptive',
                 ))
 
     for pick, value in (match.get('exact_first_set') or {}).items():
         if value is not None and float(value) >= threshold:
-            out.append(_signal('exact_set1', 'Dokładny wynik 1. seta', pick, value))
+            out.append(_signal('exact_set1', 'Dokładny wynik 1. seta', pick, value, source_model='adaptive'))
 
     return sorted(out, key=lambda s: (-s['score'], s['label'], s['pick']))
 

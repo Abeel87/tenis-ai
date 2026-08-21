@@ -157,6 +157,21 @@
 
   function selectedName(){return `${META[activeModel]?.icon||''} ${META[activeModel]?.name||activeModel}`.trim()}
 
+  window.TENIS_AI_MODEL_API={
+    version:'v7.7.2',
+    get active(){return activeModel},
+    activeName:()=>selectedName(),
+    signals:(m,limit=20)=>selectedSignals(m,limit).map(x=>({...x})),
+    allSignals:(m)=>{
+      const rows=activeModel==='consensus'?consensusSignals(m):modelSignals(activeModel,m).sort((a,b)=>b.v-a.v);
+      return rows.map(x=>({...x}));
+    },
+    signalsFor:(id,m)=>{
+      const rows=id==='consensus'?consensusSignals(m):modelSignals(id,m).sort((a,b)=>b.v-a.v);
+      return rows.map(x=>({...x}));
+    }
+  };
+
   bestSignalsData=(m,limit=3)=>selectedSignals(m,limit);
   bestSignals=(m)=>{
     const top=selectedSignals(m,3);if(!top.length)return '';

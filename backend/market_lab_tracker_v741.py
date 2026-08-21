@@ -24,10 +24,12 @@ def flatten(x):
     l=x.get("market_lab_v741") or {};m={}
     for n,o in (l.get("set1_total") or {}).items():add(m,f"set1_over_{n}",o.get("over"))
     for n,o in (l.get("set2_total") or {}).items():add(m,f"set2_over_{n}",o.get("over"))
-    add(m,"set1_exact_6_games",l.get("set1_exact_six_games"))
-    add(m,"set1_tiebreak",(l.get("set1_tiebreak") or {}).get("yes"))
-    add(m,"match_tiebreak",(l.get("match_tiebreak") or {}).get("yes"))
-    add(m,"both_players_win_set",(l.get("both_players_win_set") or {}).get("yes"))
+    add(m,"set1_exact_6_games",l.get("set1_exact_six_games"));add(m,"set1_tiebreak",(l.get("set1_tiebreak") or {}).get("yes"));add(m,"match_tiebreak",(l.get("match_tiebreak") or {}).get("yes"));add(m,"both_players_win_set",(l.get("both_players_win_set") or {}).get("yes"))
+    for k,p in (l.get("tiebreak_count") or {}).items():add(m,f"tiebreak_count_{k}",p)
+    for stage,key in (("set1","set1_winner_player_games_6_5"),("set2","set2_winner_player_games_6_5")):
+        c=l.get(key) or {}
+        for tag in ("p1","p2"):
+            add(m,f"{stage}_winner_{tag}_under_6.5",(c.get(tag) or {}).get("under"));add(m,f"{stage}_winner_{tag}_over_6.5",(c.get(tag) or {}).get("over"))
     for player,tag in ((x.get("p1"),"p1"),(x.get("p2"),"p2")):
         for n,o in ((l.get("player_total_games") or {}).get(player) or {}).items():add(m,f"{tag}_games_over_{n}",o.get("over"))
     return m
@@ -39,9 +41,10 @@ def outcomes(final):
     for i,s in enumerate(sets[:2],1):
         g=sum(s)
         for n in (6.5,7.5,8.5,9.5,10.5,11.5,12.5):o[f"set{i}_over_{n:.1f}"]=int(g>n)
-    o["set1_exact_6_games"]=int(sum(sets[0])==6)
-    o["set1_tiebreak"]=int(set(sets[0])=={6,7})
-    o["match_tiebreak"]=int(any(set(s)=={6,7} for s in sets))
+        a,b=s;p1=a>b;p2=b>a
+        o[f"set{i}_winner_p1_under_6.5"]=int(p1 and a<6.5);o[f"set{i}_winner_p1_over_6.5"]=int(p1 and a>6.5);o[f"set{i}_winner_p2_under_6.5"]=int(p2 and b<6.5);o[f"set{i}_winner_p2_over_6.5"]=int(p2 and b>6.5)
+    o["set1_exact_6_games"]=int(sum(sets[0])==6);o["set1_tiebreak"]=int(set(sets[0])=={6,7});tb=sum(1 for s in sets if set(s)=={6,7});o["match_tiebreak"]=int(tb>0)
+    for k in range(4):o[f"tiebreak_count_{k}"]=int(tb==k)
     o["both_players_win_set"]=int(len(sets)>=3)
     for tag,g in (("p1",sum(s[0] for s in sets)),("p2",sum(s[1] for s in sets))):
         for n in (6.5,7.5,8.5,9.5,10.5,11.5,12.5,13.5,14.5,15.5):o[f"{tag}_games_over_{n:.1f}"]=int(g>n)
@@ -53,16 +56,23 @@ def make_stats(rows):
         ac=r.get("actual") or {}
         for k,p in (r.get("metrics") or {}).items():
             if k not in ac:continue
-            y=ac[k];v=a.setdefault(k,{"n":0,"h":0,"g":0,"gh":0,"b":0.0})
-            v["n"]+=1;v["h"]+=int((p>=.5)==bool(y));v["b"]+=(p-y)**2
+            y=bool(ac[k]);v=a.setdefault(k,{"n":0,"h":0,"g":0,"gh":0,"dg":0,"dgh":0,"b":0.0})
+            v["n"]+=1;v["h"]+=int((p>=.5)==y);v["b"]+=(p-int(y))**2
+            # green = zdarzenie, które aplikacja faktycznie mogłaby pokazać jako mocny pozytywny typ.
+            if p>=.72:
+                v["g"]+=1;v["gh"]+=int(y)
+            # osobno diagnostyczny kierunek TAK/NIE.
             if max(p,1-p)>=.72:
-                v["g"]+=1;v["gh"]+=int((p>=.5)==bool(y))
+                v["dg"]+=1;v["dgh"]+=int((p>=.5)==y)
     markets={k:{"n":v["n"],"accuracy":round(100*v["h"]/v["n"],1),"green_n":v["g"],
                 "green_accuracy":round(100*v["gh"]/v["g"],1) if v["g"] else None,
+                "directional_green_n":v["dg"],"directional_green_accuracy":round(100*v["dgh"]/v["dg"],1) if v["dg"] else None,
                 "brier":round(v["b"]/v["n"],4)} for k,v in a.items()}
-    n=sum(v["n"] for v in a.values());h=sum(v["h"] for v in a.values());g=sum(v["g"] for v in a.values());gh=sum(v["gh"] for v in a.values());b=sum(v["b"] for v in a.values())
-    overall={"n":n,"accuracy":round(100*h/n,1) if n else None,"green_n":g,"green_accuracy":round(100*gh/g,1) if g else None,"brier":round(b/n,4) if n else None}
-    return {"version":"v7.4.1","overall":overall,"markets":markets}
+    n=sum(v["n"] for v in a.values());h=sum(v["h"] for v in a.values());g=sum(v["g"] for v in a.values());gh=sum(v["gh"] for v in a.values());dg=sum(v["dg"] for v in a.values());dgh=sum(v["dgh"] for v in a.values());b=sum(v["b"] for v in a.values())
+    overall={"n":n,"accuracy":round(100*h/n,1) if n else None,"green_n":g,"green_accuracy":round(100*gh/g,1) if g else None,
+             "directional_green_n":dg,"directional_green_accuracy":round(100*dgh/dg,1) if dg else None,
+             "brier":round(b/n,4) if n else None}
+    return {"version":"v7.7.2","overall":overall,"markets":markets}
 
 def main():
     now=datetime.now(timezone.utc);cur=read(RESULTS,[]);hist=read(HISTORY,[]);rows=read(OUT,[])
