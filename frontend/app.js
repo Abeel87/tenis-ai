@@ -132,4 +132,5 @@ document.querySelector('#expand-all').onclick=()=>setAllDetails(true);
 document.querySelector('#refresh').onclick=load;
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 load();
-setInterval(()=>{if(view==='matches'){updateCounts();renderMatches()}},60000);
+// v7.8E2.3: nie przebudowuj całej listy co minutę podczas dotyku/przewijania.
+setInterval(()=>{if(view==='matches')updateCounts()},60000);
