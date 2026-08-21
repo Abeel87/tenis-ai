@@ -679,6 +679,35 @@ def _state_probs(seq1, seq2, base1, base2, games: int):
     }
 
 
+def _balanced_path_breakdown(seq1, seq2, base1, base2, games: int) -> dict:
+    # total = all paths ending at 1:1 / 2:2 / 3:3.
+    # clean_holds = every service game is held.
+    # with_breaks = remaining balanced paths containing at least one break.
+    # For 1:1 after two games, with_breaks is exactly BREAK-BREAK.
+    if games not in (2, 4, 6):
+        raise ValueError("games must be 2, 4 or 6")
+    target = games // 2
+    first = _states_for_n(seq1, seq2, base1, base2, games, True)
+    second = _states_for_n(seq1, seq2, base1, base2, games, False)
+    total = 0.5 * (first.get((target, target), 0.0) + second.get((target, target), 0.0))
+
+    clean = 1.0
+    for service_no in range(1, target + 1):
+        clean *= _game_hold(seq1, base1, service_no)
+        clean *= _game_hold(seq2, base2, service_no)
+
+    clean = _clamp(clean, 0.0, total)
+    with_breaks = max(0.0, total - clean)
+    return {
+        "games": games,
+        "state": f"{target}:{target}",
+        "total": round(100.0 * total, 1),
+        "clean_holds": round(100.0 * clean, 1),
+        "with_breaks": round(100.0 * with_breaks, 1),
+        "break_break": round(100.0 * with_breaks, 1) if games == 2 else None,
+    }
+
+
 def _tb_p1(base1: float, base2: float) -> float:
     strength = (base1 + (1.0 - base2)) / 2.0
     return _clamp(1.0 / (1.0 + math.exp(-(strength - 0.5) * 8.0)), 0.20, 0.80)
@@ -766,6 +795,10 @@ def enrich_match(match: dict, p1: dict, p2: dict) -> dict:
     blended2 = 0.45 * seq2[0] + 0.33 * seq2[1] + 0.22 * seq2[2]
 
     state_probs = {str(n): _state_probs(seq1, seq2, blended1, blended2, n) for n in (1, 2, 4, 6)}
+    checkpoint_breakdown = {
+        str(n): _balanced_path_breakdown(seq1, seq2, blended1, blended2, n)
+        for n in (2, 4, 6)
+    }
     terminal_raw = _set_sim(seq1, seq2, blended1, blended2)
     raw_p1 = sum(pr for (a, b, _), pr in terminal_raw.items() if a > b)
 
@@ -838,6 +871,9 @@ def enrich_match(match: dict, p1: dict, p2: dict) -> dict:
             "lead_after6": match["score_lead_after6"],
             "joint_builder": match["score_joint_builder"],
             "balanced_after6": state_probs["6"].get("3:3"),
+            "checkpoint_breakdown": checkpoint_breakdown,
+            "comparison_note": "Balanced checkpoints split into clean-hold paths vs paths containing breaks.",
+            "first_server_assumption": "50/50 when pre-match first server is unknown",
         }
     )
     return match

@@ -1,0 +1,17 @@
+Tenis AI v7.7.1 — Hold Paths
+
+Zmiany:
+- Profil zawodnika ma jawny podpis „DANE ZAWODNIKA · [imię]”.
+- Player Analytics PRO pokazuje „DANE: [imię]”.
+- Analiza meczu dostaje osobny panel „PORÓWNANIE MECZU · A vs B”.
+- Panel pokazuje Hold #1 / #2 / #3 obu zawodników używany przez Early Hold.
+- 1:1 po 2 gemach: cały stan + HOLD–HOLD + BREAK–BREAK.
+- 2:2 po 4 gemach: cały stan + 4 czyste holdy + ścieżki z przełamaniami.
+- 3:3 po 6 gemach: cały stan + 6 czystych holdów + ścieżki z przełamaniami.
+- Historyczne 1:1/2:2/3:3 zawodnika są opisane jako sam stan wyniku, a nie dowód czystych holdów.
+- UI wyjaśnia: serwis A jest zestawiany z returnem B i odwrotnie; przy nieznanym pierwszym serwerze model liczy obie kolejności po 50%.
+- Backend zapisuje checkpoint_breakdown w early_hold_v7.
+- Frontend ma fallback z aktualnych sekwencji holdów, więc rozbicie może być widoczne jeszcze przed pierwszym odświeżeniem backendu.
+
+Nie zmieniamy progu PBP: nadal minimum 5 wiarygodnych meczów na zawodnika.
+Nie dodajemy nowych requestów do Live Tennis API.
