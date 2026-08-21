@@ -319,6 +319,75 @@
     return `<details class="p751-acc"><summary><div><span>🧠</span><b>Modele</b><small>pełny mecz i dodatkowe prognozy</small></div><i>⌄</i></summary><div class="p751-acc-body"><div class="p751-model-grid">${block('Mecz',m.match_win)}${block('1. set',m.first_set_win)}${block('2. set',m.second_set_win)}${block('Liczba setów',m.total_sets)}${block('Dokładny wynik',m.exact_match_score)}</div></div></details>`;
   }
 
+  function pro76Range(x,lo,hi){
+    x=num(x);if(x==null)return null;
+    return Math.max(0,Math.min(100,(x-lo)/(hi-lo)*100));
+  }
+  function pro76Weighted(pairs){
+    const ok=pairs.filter(([v,w])=>num(v)!=null&&w>0);
+    if(!ok.length)return null;
+    const z=ok.reduce((s,[,w])=>s+w,0);
+    return ok.reduce((s,[v,w])=>s+Number(v)*w,0)/z;
+  }
+  function pro76Side(m,side){
+    const st=m[`${side}_stats`]||{};
+    const eh=m.early_hold_v7?.[side]||{};
+    const tr=m.tendencies_v71?.[side]||{};
+    const surf=tr.surface?.['10']||{};
+    const sm=surf.metrics||{},sa=surf.averages||{};
+    const get=(k)=>num(st[k])==null?null:Number(st[k])*100;
+    const serve=pro76Weighted([
+      [pro76Range(get('hold_rate'),60,90),.38],
+      [pro76Range(get('serve_points_won'),50,72),.25],
+      [pro76Range(get('first_serve_won'),55,85),.20],
+      [pro76Range(get('second_serve_won'),35,65),.17]
+    ]);
+    const ret=pro76Weighted([
+      [pro76Range(get('break_rate'),10,45),.46],
+      [pro76Range(get('return_points_won'),28,52),.54]
+    ]);
+    const form=pro76Weighted([[get('won'),.45],[get('first_set_won'),.32],[get('second_set_won'),.23]]);
+    const early=eh.ready?num(eh.ehs):null;
+    const mental=pro76Weighted([
+      [get('second_after_first_win'),.32],
+      [get('second_after_first_loss'),.32],
+      [get('third_set_won'),.26],
+      [get('second_set_won'),.10]
+    ]);
+    const surface=Number(surf.sample_matches||0)>=3?pro76Weighted([
+      [sm.match_win?.pct,.42],
+      [pro76Range(sa.hold_rate,60,90),.28],
+      [pro76Range(sa.return_points_won,28,52),.18],
+      [sm.set1_win?.pct,.12]
+    ]):null;
+    return {serve,ret,form,early,mental,surface};
+  }
+  function analyticsPro76(m){
+    const a=pro76Side(m,'p1'),b=pro76Side(m,'p2');
+    const row=(label,key)=>{
+      const x=a[key],y=b[key];
+      const best=x==null||y==null?'':x>y?'p1':y>x?'p2':'';
+      return `<div class="pa76-compare-row">
+        <span>${esc(label)}</span>
+        <b class="${best==='p1'?'best':''}">${x==null?'N/D':Math.round(x)}</b>
+        <b class="${best==='p2'?'best':''}">${y==null?'N/D':Math.round(y)}</b>
+      </div>`;
+    };
+    return `<details class="p751-acc pa76-match-compare">
+      <summary><div><span>🧠</span><b>Player Analytics PRO</b><small>profil 0–100 · nie prawdopodobieństwo</small></div><em>PRO</em><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        <div class="pa76-compare-head"><span></span><b>${esc(m.p1)}</b><b>${esc(m.p2)}</b></div>
+        ${row('🎾 Serwis','serve')}
+        ${row('↩️ Return','ret')}
+        ${row('🔥 Forma','form')}
+        ${row('🧬 Early Hold','early')}
+        ${row('🧠 Mental','mental')}
+        ${row('🏟️ Nawierzchnia','surface')}
+        <p class="p751-note">Indeksy opisują profil danych zawodnika i służą do porównania. Nie są szansą wygranej meczu.</p>
+      </div>
+    </details>`;
+  }
+
   function detailHtml(m){
     return `<div class="p751-detail-screen">
       <header class="p751-detail-header">
@@ -331,7 +400,7 @@
         <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>LIVE DATA</em><em>MODEL ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
-      <div class="p751-acc-list">${coreMarkets(m)}${stats(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
+      <div class="p751-acc-list">${coreMarkets(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
       <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
     </div>`;
   }

@@ -76,6 +76,14 @@ def _window(rows: pd.DataFrame, n: int) -> dict:
         metrics["match_win"] = _binary_metric(x["won"])
     if "first_set_won" in x:
         metrics["set1_win"] = _binary_metric(x["first_set_won"])
+    if "second_set_won" in x:
+        metrics["set2_win"] = _binary_metric(x["second_set_won"])
+    if "second_after_first_win" in x:
+        metrics["closeout_after_set1_win"] = _binary_metric(x["second_after_first_win"])
+    if "second_after_first_loss" in x:
+        metrics["comeback_set2_after_set1_loss"] = _binary_metric(x["second_after_first_loss"])
+    if "third_set_won" in x:
+        metrics["deciding_set_win"] = _binary_metric(x["third_set_won"])
     for line, col in (
         ("8.5", "first_set_over85"),
         ("9.5", "first_set_over95"),
@@ -98,6 +106,10 @@ def _window(rows: pd.DataFrame, n: int) -> dict:
         averages["serve_points_won"] = _avg_metric(x["serve_points_won"], 100.0)
     if "return_points_won" in x:
         averages["return_points_won"] = _avg_metric(x["return_points_won"], 100.0)
+    if "first_serve_won" in x:
+        averages["first_serve_won"] = _avg_metric(x["first_serve_won"], 100.0)
+    if "second_serve_won" in x:
+        averages["second_serve_won"] = _avg_metric(x["second_serve_won"], 100.0)
     if "first_set_games" in x:
         averages["first_set_games"] = _avg_metric(x["first_set_games"], 1.0)
 
@@ -107,6 +119,33 @@ def _window(rows: pd.DataFrame, n: int) -> dict:
         "metrics": metrics,
         "averages": averages,
     }
+
+
+def _trend_pack(rows: pd.DataFrame) -> dict:
+    # latest 5 minus previous 5, in percentage points; descriptive only
+    if rows is None or rows.empty:
+        return {}
+    a=rows.head(5)
+    b=rows.iloc[5:10]
+    if len(a)<3 or len(b)<3:
+        return {}
+    out={}
+    for col in (
+        "won","first_set_won","second_set_won","hold_rate","break_rate",
+        "serve_points_won","return_points_won","first_serve_won","second_serve_won"
+    ):
+        if col not in rows.columns:
+            continue
+        x=pd.to_numeric(a[col],errors="coerce").dropna()
+        y=pd.to_numeric(b[col],errors="coerce").dropna()
+        if len(x)<2 or len(y)<2:
+            continue
+        out[col]=round(100.0*(float(x.mean())-float(y.mean())),1)
+    aliases={"won":"match_win","first_set_won":"set1_win","second_set_won":"set2_win"}
+    for src,dst in aliases.items():
+        if src in out:
+            out[dst]=out[src]
+    return out
 
 
 def build_player_tendencies(long_df: pd.DataFrame, player: str, surface: str = "", as_of=None) -> dict:
@@ -144,6 +183,10 @@ def build_player_tendencies(long_df: pd.DataFrame, player: str, surface: str = "
         "surface_name": surf,
         "all": {str(n): _window(x, n) for n in WINDOWS},
         "surface": {str(n): _window(sx, n) for n in WINDOWS},
+        "trend": {
+            "all": _trend_pack(x),
+            "surface": _trend_pack(sx),
+        },
     }
 
 
