@@ -90,6 +90,40 @@
     </section>`;
   }
 
+
+  function matchGamesPreview(m){
+    const entries=Object.entries(m.match_over_under||{}).map(([ln,x])=>{
+      const o=num(x?.over),u=num(x?.under);
+      if(o==null||u==null)return null;
+      return {ln,o,u,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)};
+    }).filter(Boolean).sort((a,b)=>b.v-a.v);
+    if(!entries.length){
+      return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz</span><b>N/D</b></div>`;
+    }
+    const z=entries[0],exp=num(m.expected_match_games);
+    return `<div class="p753-match-total-preview">
+      <span>📊 Gemy · cały mecz</span>
+      <b>${z.side} ${esc(z.ln)}</b>
+      <strong>${Math.round(z.v)}%</strong>
+      ${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}
+    </div>`;
+  }
+
+  function matchGamesLines(m){
+    const entries=Object.entries(m.match_over_under||{});
+    const exp=num(m.expected_match_games);
+    if(!entries.length){
+      return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz</label><p class="p751-note">Brak danych O/U całego meczu.</p></div>`;
+    }
+    return `<div class="p751-lines p756-match-lines">
+      <label>📊 Linie gemów · cały mecz${exp!=null?` · śr. ${exp.toFixed(1)}`:''}</label>
+      <div>${entries.map(([ln,x])=>{
+        const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';
+        return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(mx)}%</small></span>`;
+      }).join('')}</div>
+    </div>`;
+  }
+
   function card(m){
     const s=top(m,1)[0],v=strength(m),st=status(m);
     return `<button class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}">
@@ -118,6 +152,7 @@
         ${signalBars(v)}
         <small>${greens(m)} zielonych</small>
       </aside>
+      ${matchGamesPreview(m)}
       <footer>
         <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧠 Adaptive'}</span>
         <span>DANE ${esc(m.quality||'—')}</span>
@@ -213,6 +248,7 @@
           const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';
           return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(mx)}</small></span>`;
         }).join('')}</div></div>
+        ${matchGamesLines(m)}
       </div>
     </details>`;
   }
