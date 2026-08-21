@@ -136,6 +136,7 @@
       <footer>
         <span>🧠 ${esc(activeModelName())}</span>
         <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧬 PBP N/D'}</span>
+        <span>${m.joint_builder_v78b?.status==='READY'?`🧩 Joint ${pc(m.joint_builder_v78b.best?.joint_all_3)}`:'🧩 Joint N/D'}</span>
         <span>DANE ${esc(m.quality||'—')}</span>
         <b>Analiza ›</b>
       </footer>
@@ -230,6 +231,32 @@
         ${mw?marketRow('Wygrany mecz',`${mw.name} ${pc(mw.value)}`,`rywal ${pc(100-mw.value)}`,mw.value>=72):''}
         <div class="p751-lines"><label>Linie gemów · 1. set · ${selectedSetLines.length?esc(activeModelName()):'Adaptive baza'}</label><div>${selectedSetLines.length?selectedSetLines.map(x=>{const ln=modelLine(x),v=Number(x.v),side=String(x.pick||'').toUpperCase().startsWith('O')?'O':'U';return `<span class="${v>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(v)}</small></span>`}).join(''):Object.entries(lines).map(([ln,x])=>{const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side}${Math.round(mx)}</small></span>`}).join('')}</div></div>
         ${matchGamesLines(m)}
+      </div>
+    </details>`;
+  }
+
+  function jointBuilder78b(m){
+    const j=m.joint_builder_v78b;
+    if(!j){
+      return `<details class="p751-acc"><summary><div><span>🧩</span><b>Joint Builder v7.8B</b><small>wspólna kombinacja 1. seta</small></div><em>N/D</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">Brak jeszcze wyniku Joint Buildera w tym rekordzie. Po kolejnym przebiegu danych zostanie policzony automatycznie.</p></div></details>`;
+    }
+    if(j.status!=='READY'){
+      const why=j.reason||((j.validation_errors||[]).join(' · '))||j.status||'N/D';
+      return `<details class="p751-acc"><summary><div><span>🧩</span><b>Joint Builder v7.8B</b><small>wspólna kombinacja 1. seta</small></div><em>${esc(j.status||'N/D')}</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">N/D: ${esc(why)}. Nie zgadujemy wyniku bez modelu serwisowego i pełnego rozkładu.</p></div></details>`;
+    }
+    const b=j.best||{},p=b.player||'—';
+    const r=(j.p1?.player===p?j.p1:j.p2?.player===p?j.p2:null)||{};
+    const dep=num(b.dependency_ratio),joint=num(b.joint_all_3),naive=num(b.naive_independent);
+    return `<details class="p751-acc ready" open>
+      <summary><div><span>🧩</span><b>Joint Builder v7.8B</b><small>3 zdarzenia liczone z tej samej ścieżki seta</small></div><em>${joint==null?'N/D':pc(joint)}</em><i>⌄</i></summary>
+      <div class="p751-acc-body">
+        <p class="p751-note"><b>${esc(p)}</b>: prowadzi po 6 gemach + OVER 8.5 w 1. secie + wygrywa 1. set. To jest wspólne prawdopodobieństwo, a nie iloczyn trzech niezależnych procentów.</p>
+        ${marketRow('Kombinacja 3/3',joint==null?'N/D':pc(joint),naive==null?'':`naiwne mnożenie ${pc(naive)}`,false)}
+        ${marketRow('1 · Prowadzi po 6 gemach',`${esc(p)} ${pc(r.lead_after_6)}`,'',num(r.lead_after_6)>=72)}
+        ${marketRow('2 · OVER 8.5 · 1. set',pc(r.over_8_5_set1),'',num(r.over_8_5_set1)>=72)}
+        ${marketRow('3 · Wygrywa 1. set',`${esc(p)} ${pc(r.win_set1)}`,'',num(r.win_set1)>=72)}
+        ${dep!=null?marketRow('Wpływ zależności',`×${dep.toFixed(2)}`,dep>1?'zdarzenia wzajemnie się wzmacniają':'zależność nie podbija kombinacji',dep>=1.25):''}
+        <p class="p751-note">Joint zawsze musi być ≤ każdej składowej. Integralność v7.8A sprawdza ten warunek automatycznie.</p>
       </div>
     </details>`;
   }
@@ -346,7 +373,7 @@
         <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
-      <div class="p751-acc-list">${coreMarkets(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
+      <div class="p751-acc-list">${coreMarkets(m)}${jointBuilder78b(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
       <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
     </div>`;
   }
@@ -432,7 +459,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8A · Integrity Guard');
+    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8B · Joint Builder');
     ensureBottomNav();
   }
 

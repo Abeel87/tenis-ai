@@ -1,0 +1,19 @@
+Tenis AI v7.8B — Joint Builder Engine
+
+ETAP 1:
+- wspólny rozkład ścieżek 1. seta,
+- zapamiętuje stan po 6 gemach,
+- liczy OVER 8.5 i zwycięzcę 1. seta na tych samych ścieżkach,
+- Joint = P(prowadzi po 6 AND OVER 8.5 AND wygrywa 1. set),
+- pokazuje też naiwny iloczyn niezależny wyłącznie do porównania,
+- wymusza Joint <= każdy marginal,
+- zachowuje działanie dla BO5, bo dotyczy wyłącznie 1. seta,
+- Integrity Guard v7.8A sprawdza wynik Joint Buildera.
+
+Instalacja:
+python install_v78b.py
+python -m pytest -q tests/test_v78b_joint_builder.py
+python backend/update.py
+python backend/prediction_integrity_v78a.py
+
+Nie commitować, dopóki wszystkie testy i integrity nie przejdą.

@@ -102,6 +102,15 @@ def check_match(match: dict):
     errors, warnings = [], []
     tag = f"{match.get('p1','?')} vs {match.get('p2','?')} [{match.get('id','?')}]"
 
+    joint = match.get("joint_builder_v78b")
+    if joint:
+        try:
+            from joint_builder_v78b import validate_joint_builder
+            for err in validate_joint_builder(joint):
+                errors.append(f"{tag}: Joint Builder v7.8B — {err}")
+        except Exception as exc:
+            errors.append(f"{tag}: Joint Builder v7.8B validator error: {type(exc).__name__}")
+
     for name in (
         "match_win", "first_set_win", "second_set_win", "third_set_win",
         "total_sets", "exact_match_score", "exact_first_set",

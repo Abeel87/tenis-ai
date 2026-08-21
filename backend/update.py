@@ -10,6 +10,7 @@ import requests
 from model import normalize_matches, analyse_match
 from history_hygiene_v78a import clean_history
 from prediction_integrity_v78a import apply_pre_output_guards
+from joint_builder_v78b import add_joint_builder
 from history_tracker import (
     archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
     save_history as save_prediction_history, settle_history,
@@ -302,7 +303,7 @@ def main():
     long_df=normalize_matches(hist)
     save_sqlite(long_df)
     fixtures,mode=fetch_fixtures()
-    analysed=[apply_pre_output_guards(analyse_match(long_df,m)) for m in fixtures]
+    analysed=[add_joint_builder(apply_pre_output_guards(analyse_match(long_df,m))) for m in fixtures]
 
     prediction_history=load_prediction_history(HISTORY_PATH)
     prediction_history=archive_predictions(prediction_history,analysed,now=now)
