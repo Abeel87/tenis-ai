@@ -11,8 +11,9 @@ from model import normalize_matches, analyse_match
 from history_hygiene_v78a import clean_history
 from prediction_integrity_v78a import apply_pre_output_guards
 from joint_builder_v78b import add_joint_builder
+from calibration_guard_v78d import add_calibration_to_matches, build_calibration_report
 from history_tracker import (
-    archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
+    MODEL_VERSION, archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
     save_history as save_prediction_history, settle_history,
 )
 
@@ -310,7 +311,11 @@ def main():
     prediction_history=settle_history(prediction_history,hist,now=now)
     prediction_history=sorted(prediction_history,key=lambda e:e.get('scheduled_time') or '',reverse=True)[:2500]
     save_prediction_history(HISTORY_PATH,prediction_history)
-    _write_json(HISTORY_STATS_PATH,history_stats(prediction_history))
+    stats=history_stats(prediction_history)
+    _write_json(HISTORY_STATS_PATH,stats)
+    calibration=build_calibration_report(prediction_history,MODEL_VERSION)
+    _write_json(OUT/'calibration_v78d.json',calibration)
+    analysed=add_calibration_to_matches(analysed,calibration)
 
     results=[r for r in analysed if is_current_match(r,now=now,grace_minutes=30)]
     hidden_stale=len(analysed)-len(results)

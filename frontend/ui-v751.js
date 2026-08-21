@@ -261,6 +261,26 @@
     </details>`;
   }
 
+  function calibration78d(m){
+    const c=m.calibration_v78d;
+    const specialist=activeModelId()!=='adaptive';
+    if(!c){
+      return `<details class="p751-acc"><summary><div><span>🎚️</span><b>Calibration Guard v7.8D</b><small>realna skuteczność ≠ wynik modelu</small></div><em>N/D</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">Kalibracja pojawi się po następnym automatycznym odświeżeniu danych.</p></div></details>`;
+    }
+    const rows=(c.signals||[]).slice(0,6);
+    const one=x=>{
+      const cur=x.current||{},leg=x.legacy_reference||{},n=Number(cur.settled||0);
+      const acc=cur.display_accuracy;
+      const ci=Array.isArray(cur.ci95)?` · CI ${cur.ci95[0]}–${cur.ci95[1]}%`:'';
+      const legacy=Number(leg.settled||0)>0?`LEGACY ${leg.accuracy==null?'N/D':Number(leg.accuracy).toFixed(1)+'%'} · n=${leg.settled}`:'LEGACY N/D';
+      return `<div class="p78d-cal-row"><div><b>${esc(x.label||x.market||'Sygnał')}</b><small>Wynik modelu ${Math.round(Number(x.score||0))}${specialist?'/100':'%'} · obecna wersja n=${n}${ci}</small><small class="p78d-legacy">${esc(legacy)} · tylko odniesienie</small></div><strong class="${acc==null?'nd':''}">${acc==null?'N/D':Number(acc).toFixed(1)+'%'}</strong></div>`;
+    };
+    return `<details class="p751-acc" open><summary><div><span>🎚️</span><b>Calibration Guard v7.8D</b><small>bieżąca wersja osobno od LEGACY</small></div><em>${esc(c.status||'N/D')}</em><i>⌄</i></summary><div class="p751-acc-body">
+      <div class="p78d-cal-note"><b>${specialist?'Wynik /100 = siła modelu, nie prawdopodobieństwo.':'Estymacja modelu i historyczna trafność są pokazywane osobno.'}</b><span>Stare wersje mają etykietę LEGACY i nie wpływają na skuteczność bieżącej wersji. Minimum do publikacji historycznej accuracy: n=${Number(c.min_sample||10)}.</span></div>
+      ${rows.length?`<div class="p78d-cal-grid">${rows.map(one).join('')}</div>`:'<p class="p751-note">Brak zielonych sygnałów Adaptive do kalibracji dla tego meczu.</p>'}
+    </div></details>`;
+  }
+
   function stats(m){
     const a=m.p1_stats||{},b=m.p2_stats||{};
     const pv=(v,ratio=false)=>num(v)==null?'—':ratio?Math.round(Number(v)*100)+'%':String(Math.round(Number(v)*10)/10);
@@ -373,7 +393,7 @@
         <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
-      <div class="p751-acc-list">${coreMarkets(m)}${jointBuilder78b(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
+      <div class="p751-acc-list">${coreMarkets(m)}${calibration78d(m)}${jointBuilder78b(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
       <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
     </div>`;
   }
@@ -459,7 +479,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8B · Joint Builder');
+    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8D · Calibration Guard');
     ensureBottomNav();
   }
 

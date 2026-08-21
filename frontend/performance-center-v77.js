@@ -4,6 +4,7 @@
 
   const legacyRenderStats=renderStats;
   const KEY='tenis-ai-v77-performance-state';
+  const CURRENT_MODEL_VERSION='v7.8D-calibration-guard';
   const state=Object.assign({period:'all',tour:'all',surface:'all',minSample:10},readState());
   let extras=null, extrasPromise=null;
 
@@ -45,6 +46,7 @@
           surface:normSurface(m.surface),
           tournament:m.tournament||'N/D',
           version:m.model_version||'N/D',
+          legacy:m.model_version!==CURRENT_MODEL_VERSION,
           sourceModel:s.source_model||'legacy',
           matchKey:m.match_key||String(m.match_id||[m.p1,m.p2,m.scheduled_time].join('|'))
         });
@@ -73,6 +75,7 @@
   function filtered(all,period=state.period,previous=false){
     const bounds=periodBounds(period,previous?1:0);
     return all.filter(x=>{
+      if(x.legacy)return false;
       if(bounds&&(x.time<bounds[0]||x.time>=bounds[1]))return false;
       if(state.tour!=='all'&&x.tour!==state.tour)return false;
       if(state.surface!=='all'&&x.surface!==state.surface)return false;

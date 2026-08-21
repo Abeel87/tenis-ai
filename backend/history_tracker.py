@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 GREEN_THRESHOLD = 72.0
-MODEL_VERSION = 'v7.8A-adaptive-hygiene'
+MODEL_VERSION = 'v7.8D-calibration-guard'
 VOID_RE = re.compile(r'\b(RET|W/O|WO|DEF|ABD|ABN)\b', re.I)
 SET_RE = re.compile(r'(\d+)\s*[-:]\s*(\d+)')
 
@@ -347,14 +347,22 @@ def _bucket(score: float) -> str:
 
 
 def history_stats(entries: list[dict]) -> dict:
-    settled = []
+    """Headline accuracy = current model version only. Older versions are LEGACY."""
+    all_settled = []
+    current = []
+    legacy = []
+
     for entry in entries:
+        is_current = entry.get('model_version') == MODEL_VERSION
         for signal in entry.get('signals') or []:
-            if signal.get('result') in ('hit', 'miss'):
-                settled.append((entry, signal))
+            if signal.get('result') not in ('hit', 'miss'):
+                continue
+            pair = (entry, signal)
+            all_settled.append(pair)
+            (current if is_current else legacy).append(pair)
 
     def summarize(items):
-        hits = sum(1 for _, s in items if s.get('result') == 'hit')
+        hits = sum(1 for _, sig in items if sig.get('result') == 'hit')
         total = len(items)
         return {
             'settled': total,
@@ -363,26 +371,40 @@ def history_stats(entries: list[dict]) -> dict:
             'accuracy': round(hits * 100 / total, 1) if total else None,
         }
 
-    def grouped(key_fn):
+    def grouped(items, key_fn):
         groups = {}
-        for pair in settled:
+        for pair in items:
             key = key_fn(*pair)
             groups.setdefault(key, []).append(pair)
         return {k: summarize(v) for k, v in sorted(groups.items())}
 
-    pending = sum(1 for e in entries if e.get('status') in ('pending', 'upcoming') and (e.get('signals') or []))
-    unverifiable = sum(
-        1 for e in entries for s in (e.get('signals') or [])
-        if s.get('result') in ('unverifiable', 'void')
+    current_entries = [e for e in entries if e.get('model_version') == MODEL_VERSION]
+    legacy_entries = [e for e in entries if e.get('model_version') != MODEL_VERSION]
+
+    pending = sum(
+        1 for e in current_entries
+        if e.get('status') in ('pending', 'upcoming') and (e.get('signals') or [])
     )
+    unverifiable = sum(
+        1 for e in current_entries for sig in (e.get('signals') or [])
+        if sig.get('result') in ('unverifiable', 'void')
+    )
+
     return {
-        'overall': summarize(settled),
-        'matches_tracked': sum(1 for e in entries if e.get('signals')),
+        'overall': summarize(current),
+        'current_model_version': MODEL_VERSION,
+        'legacy_overall': summarize(legacy),
+        'all_versions_overall': summarize(all_settled),
+        'matches_tracked': sum(1 for e in current_entries if e.get('signals')),
         'matches_pending': pending,
+        'legacy_matches_tracked': sum(1 for e in legacy_entries if e.get('signals')),
+        'all_matches_tracked': sum(1 for e in entries if e.get('signals')),
         'excluded_signals': unverifiable,
-        'by_market': grouped(lambda e, s: s.get('label') or s.get('market') or 'Inne'),
-        'by_tour': grouped(lambda e, s: (e.get('tour') or 'inne').upper()),
-        'by_score_band': grouped(lambda e, s: _bucket(s.get('score') or GREEN_THRESHOLD)),
+        'by_market': grouped(current, lambda e, sig: sig.get('label') or sig.get('market') or 'Inne'),
+        'by_tour': grouped(current, lambda e, sig: (e.get('tour') or 'inne').upper()),
+        'by_score_band': grouped(current, lambda e, sig: _bucket(sig.get('score') or GREEN_THRESHOLD)),
+        'by_version': grouped(all_settled, lambda e, sig: e.get('model_version') or 'N/D'),
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'green_threshold': GREEN_THRESHOLD,
+        'legacy_policy': 'reference_only',
     }
