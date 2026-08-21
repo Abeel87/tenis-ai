@@ -7,6 +7,7 @@
   const num=x=>x==null||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const mkey=m=>String(m?.id ?? m?.match_id ?? [m?.p1,m?.p2,m?.scheduled_time].join('|'));
+  const rows=()=>typeof all!=='undefined'&&Array.isArray(all)?all:[];
 
   function bestTotal(m){
     const entries=Object.entries(m?.match_over_under||{}).map(([line,x])=>{
@@ -20,12 +21,12 @@
   }
 
   function decorateCards(){
-    if(!Array.isArray(window.all))return;
+    if(!rows().length)return;
     document.querySelectorAll('.p751-match-card[data-p751-open]').forEach(card=>{
       if(card.querySelector('.p753-match-total-preview'))return;
       let raw='';
       try{raw=decodeURIComponent(card.dataset.p751Open||'')}catch{raw=card.dataset.p751Open||''}
-      const m=window.all.find(x=>mkey(x)===raw);
+      const m=rows().find(x=>mkey(x)===raw);
       if(!m)return;
       const best=bestTotal(m);
       const expected=num(m.expected_match_games);
@@ -67,10 +68,10 @@
 
   function findOpenMatch(){
     const overlay=document.querySelector('#p751-match-overlay');
-    if(!overlay || overlay.hidden || !Array.isArray(window.all))return null;
+    if(!overlay || overlay.hidden || !rows().length)return null;
     const names=[...overlay.querySelectorAll('.p751-matchup>b')].map(x=>x.textContent.trim());
     if(names.length<2)return null;
-    return window.all.find(m=>String(m.p1)===names[0]&&String(m.p2)===names[1])||null;
+    return rows().find(m=>String(m.p1)===names[0]&&String(m.p2)===names[1])||null;
   }
 
   function decorateDetail(){
