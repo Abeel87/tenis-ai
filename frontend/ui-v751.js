@@ -24,7 +24,21 @@
   const modelApi=()=>window.TENIS_AI_MODEL_API||null;
   const activeModelId=()=>modelApi()?.active||'adaptive';
   const activeModelName=()=>modelApi()?.activeName?.()||'🧠 Adaptive';
-  function modelAllSignals(m){try{return modelApi()?.allSignals?.(m)||[]}catch{return []}}
+
+  // v7.8E2.3: cache expensive allSignals() per match + active model.
+  const signalCache78e23=new WeakMap();
+  function modelAllSignals(m){
+    try{
+      if(!m || typeof m!=='object') return modelApi()?.allSignals?.(m)||[];
+      let byModel=signalCache78e23.get(m);
+      if(!byModel){byModel=new Map();signalCache78e23.set(m,byModel)}
+      const id=activeModelId();
+      if(byModel.has(id)) return byModel.get(id);
+      const rows=modelApi()?.allSignals?.(m)||[];
+      byModel.set(id,rows);
+      return rows;
+    }catch{return []}
+  }
   function modelMarketRows(m,market){return modelAllSignals(m).filter(x=>x&&x.market===market&&num(x.v)!=null)}
   function modelLine(x){const p=String(x?.key||'').split('|');return p.length>1?p[1]:''}
   const signalIsProbability=()=>activeModelId()==='adaptive';
@@ -381,6 +395,49 @@
     </details>`;
   }
 
+  function lazySection78e23(id,icon,title,small,badge=''){
+    return `<details class="p751-acc" data-p751-lazy78e23="${id}">
+      <summary><div><span>${icon}</span><b>${title}</b><small>${small}</small></div>${badge?`<em>${badge}</em>`:''}<i>⌄</i></summary>
+    </details>`;
+  }
+
+  function lazySections78e23(m){
+    const out=[
+      lazySection78e23('stats','📊','Statystyki zawodników','porównanie obok siebie'),
+      lazySection78e23('analytics','🧠','Player Analytics PRO','profil 0–100 · nie prawdopodobieństwo','PRO')
+    ];
+    if(m.early_hold_v7) out.push(lazySection78e23('pbp','🧬','Early Hold · PBP',m.early_hold_v7.ready?'prawdziwy początek seta':'brak pełnej próbki',m.early_hold_v7.ready?'PBP OK':'N/D'));
+    if(m.serve_props_v72) out.push(lazySection78e23('serve','⚡','Asy i podwójne błędy','przeciwnik + nawierzchnia + długość meczu',m.serve_props_v72.ready?'MODEL':'N/D'));
+    if(m.market_lab_v741) out.push(lazySection78e23('lab','🧪','Market Lab','pełne rynki · osobna walidacja','LAB'));
+    out.push(lazySection78e23('models','🧠','Modele','pełny mecz i dodatkowe prognozy'));
+    return out.join('');
+  }
+
+  function bindLazySections78e23(root,m){
+    const renderers={stats,analytics:analyticsPro76,pbp,serve,lab,models};
+    root.querySelectorAll('[data-p751-lazy78e23]').forEach(d=>{
+      d.addEventListener('toggle',()=>{
+        if(!d.open || d.dataset.loaded78e23==='1') return;
+        const fn=renderers[d.dataset.p751Lazy78e23];
+        if(typeof fn!=='function') return;
+        const html=fn(m);
+        d.dataset.loaded78e23='1';
+        if(!html) return;
+        const t=document.createElement('template');
+        t.innerHTML=html.trim();
+        const full=t.content.firstElementChild;
+        if(!full) return;
+        full.classList.forEach(c=>d.classList.add(c));
+        const body=full.querySelector('.p751-acc-body');
+        if(!body) return;
+        d.appendChild(body);
+        requestAnimationFrame(()=>{
+          d.querySelectorAll('input[data-sp-line]').forEach(i=>i.dispatchEvent(new Event('input',{bubbles:true})));
+        });
+      },{passive:true});
+    });
+  }
+
   function detailHtml(m){
     return `<div class="p751-detail-screen">
       <header class="p751-detail-header">
@@ -393,7 +450,7 @@
         <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
-      <div class="p751-acc-list">${coreMarkets(m)}${calibration78d(m)}${jointBuilder78b(m)}${stats(m)}${analyticsPro76(m)}${pbp(m)}${serve(m)}${lab(m)}${models(m)}</div>
+      <div class="p751-acc-list">${coreMarkets(m)}${calibration78d(m)}${jointBuilder78b(m)}${lazySections78e23(m)}</div>
       <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
     </div>`;
   }
@@ -410,6 +467,7 @@
   function openMatch(k){
     const m=findMatch(k);if(!m)return;
     const o=ensureOverlay();o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
+    bindLazySections78e23(o,m);
     o.scrollTop=0;
     o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
     o.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
