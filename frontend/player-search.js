@@ -194,6 +194,9 @@
     }
     if(e.key==='Escape'){suggestions.hidden=true}
   });
-  // v7.6.1: public bridge for clickable player names in Match Center.\n  window.tenisAIPlayerProfileOpen=selectPlayer;\n\n  clearBtn.onclick=closeProfile;
+  // v7.6.3: public bridge for clickable player names in Match Center.
+  window.tenisAIPlayerProfileOpen=selectPlayer;
+
+  clearBtn.onclick=closeProfile;
   document.addEventListener('click',e=>{if(!document.querySelector('#player-search-shell')?.contains(e.target))suggestions.hidden=true});
 })();

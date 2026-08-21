@@ -68,7 +68,7 @@
       if(error) throw error;
       const d = data || {};
       const ue = $('#community-users-count'), oe = $('#community-online-count'), ce = $('#community-coupons-count');
-      if(ue) ue.textContent = d.registered ?? '—';
+      if(ue && !hasAccess()) ue.textContent = d.registered ?? '—';
       if(oe) oe.textContent = d.online ?? '—';
       if(ce) ce.textContent = d.coupons_today ?? '—';
       const chip = $('#community-connection-chip');

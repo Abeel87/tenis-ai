@@ -1,0 +1,18 @@
+Tenis AI v7.6.3 — Audit hardening
+
+Znalezione i poprawione:
+- core player-search nadal miał literalne \n z v7.6.1;
+- ui-v751.js cofał napis wersji do v7.5.1 po starcie;
+- Statystyki/Skuteczność znikały, gdy nie było grup meczów;
+- Player Analytics PRO milczał dla gracza dostępnego tylko w historii;
+- community count mógł co 15 s przeskakiwać z „Członkowie” na wszystkie konta;
+- meta nadal nazywała płatne źródło Live Tennis API jako FREE;
+- Service Worker nie cache’ował części rejestracji i Market Lab;
+- doprecyzowany opis PBP walk-forward.
+
+Opcjonalny Supabase fix:
+supabase/v7.6.3-admin-delete-fk-fix.sql
+Naprawia edge-case kasowania byłego moderatora, który wcześniej zatwierdzał dostęp.
+Ten SQL trzeba uruchomić ręcznie w Supabase SQL Editor — sam push go nie wykona.
+
+Obliczenia modeli nie są zmieniane.

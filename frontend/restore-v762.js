@@ -73,17 +73,24 @@
 
   function decorateHome(){
     const app=$('#app');
+    if(!app||$('#v762-home-tools',app))return;
     const groups=$('.p751-groups',app);
-    if(!groups||$('#v762-home-tools',app))return;
+    const focus=$('.p751-focus',app);
+    const empty=$('.p751-empty',app);
+    if(!groups&&!focus&&!empty)return;
 
     const bar=document.createElement('div');
     bar.id='v762-home-tools';
     bar.className='v762-home-tools';
     bar.innerHTML=`
-      <button type="button" data-v762="collapse">− Zwiń wszystko</button>
-      <button type="button" data-v762="expand">+ Rozwiń wszystko</button>
+      <button type="button" data-v762="collapse" ${groups?'':'disabled'}>− Zwiń wszystko</button>
+      <button type="button" data-v762="expand" ${groups?'':'disabled'}>+ Rozwiń wszystko</button>
       <button type="button" class="stats" data-v762="stats">📊 Statystyki / skuteczność</button>`;
-    groups.insertAdjacentElement('beforebegin',bar);
+
+    const anchor=groups||empty;
+    if(anchor)anchor.insertAdjacentElement('beforebegin',bar);
+    else if(focus)focus.insertAdjacentElement('afterend',bar);
+    else app.prepend(bar);
 
     $('[data-v762="collapse"]',bar).onclick=()=>collapseAll(false);
     $('[data-v762="expand"]',bar).onclick=()=>collapseAll(true);

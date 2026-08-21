@@ -249,7 +249,7 @@
   function inject(){
     if(injecting||panel.hidden||panel.querySelector('#player-analytics-v76'))return;
     const name=input.value.trim(); if(!name)return;
-    const d=dataFor(name); if(!d)return;
+    const d=dataFor(name);
     injecting=true;
     try{
       const section=document.createElement('section');
@@ -264,6 +264,12 @@
         const sections=[...panel.querySelectorAll('.player-section')];
         const stats=sections.find(s=>s.textContent.includes('Statystyki zawodnika'));
         if(stats)stats.insertAdjacentElement('afterend',section);else panel.appendChild(section);
+      }
+      if(!d){
+        section.querySelector('#pa76-content').innerHTML=
+          '<div class="pa76-head"><div><b>🧠 Player Analytics PRO</b><span>profil 5/10/20</span></div><em>N/D</em></div>'+
+          '<div class="player-empty">Ten zawodnik jest obecnie dostępny tylko w historii Tenis AI. Rozszerzony profil PRO powstaje z bieżącego pakietu tendencies/PBP i pojawi się, gdy zawodnik znajdzie się w aktualnych spotkaniach.</div>';
+        return;
       }
       const ui=state();
       const surfSample=Number(d.trends?.surface?.[ui.window]?.sample_matches||0);

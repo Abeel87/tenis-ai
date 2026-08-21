@@ -226,7 +226,7 @@ def fetch_fixtures():
             break
         if isinstance(total,(int,float)) and offset>=int(total):
             break
-    return rows,'live-tennis-api-free'
+    return rows,'live-tennis-api-basic'
 
 
 def manual_fixtures():
