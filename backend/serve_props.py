@@ -10,6 +10,8 @@ from typing import Any
 
 import pandas as pd
 
+from history_hygiene_v78a import clean_history
+
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache"
 OUT = ROOT / "frontend" / "data"
@@ -361,6 +363,7 @@ def enrich(results_path: Path = RESULTS_PATH, meta_path: Path = META_PATH):
         return {"status": "no_results"}
 
     raw = load_raw_history()
+    raw,hygiene = clean_history(raw)
     hist = normalize_serve_props(raw)
     if hist.empty:
         for m in results:
@@ -370,6 +373,18 @@ def enrich(results_path: Path = RESULTS_PATH, meta_path: Path = META_PATH):
 
     profile_cache = {}
     for m in results:
+        try:
+            best_of=5 if int(m.get("best_of") or 3)==5 else 3
+        except (TypeError,ValueError):
+            best_of=3
+        if best_of==5:
+            m["serve_props_v72"]={
+                "version":"v7.8A-serve-props-hygiene",
+                "ready":False,
+                "reason":"bo5_full_match_not_supported",
+                "format":"BO5 · N/D until dedicated engine",
+            }
+            continue
         surface = str(m.get("surface") or "").strip().lower()
         as_of = m.get("scheduled_time")
         pp = {}
@@ -404,6 +419,7 @@ def enrich(results_path: Path = RESULTS_PATH, meta_path: Path = META_PATH):
         {
             "serve_props_v72_updated_at": datetime.now(timezone.utc).isoformat(),
             "serve_props_v72_history_rows": int(len(hist)),
+            "serve_props_v78a_hygiene_removed": int(hygiene.get("removed_rows",0)),
             "serve_props_v72_profiles": int(len(profile_cache)),
             "serve_props_v72_ready_matches": int(sum(1 for m in results if (m.get("serve_props_v72") or {}).get("ready"))),
         }

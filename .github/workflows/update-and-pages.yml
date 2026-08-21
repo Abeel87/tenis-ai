@@ -47,6 +47,8 @@ jobs:
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/pbp_enrich.py
+      - name: Prediction integrity gate v7.8A
+        run: python backend/prediction_integrity_v78a.py
       - name: Track + backtest PBP
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}

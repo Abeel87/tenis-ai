@@ -6,7 +6,7 @@
   const MODEL_KEY='tenis-ai-v63-active-model';
   const MODEL_IDS=['adaptive','early','serve','form','surface'];
   const META={
-    consensus:{name:'Consensus',icon:'⚡',desc:'Łączy 5 modeli. Wysoko trafia tylko typy, które dostają poparcie kilku niezależnych wag.'},
+    consensus:{name:'Consensus',icon:'⚡',desc:'Łączy 5 wariantów modelu współdzielących część danych. Wynik Consensus to siła zgodności /100, nie niezależne prawdopodobieństwo.'},
     adaptive:{name:'Adaptive',icon:'🧠',desc:'Obecny główny model Tenis AI — pełny miks formy, serwisu, returnu, nawierzchni i obciążenia.'},
     early:{name:'Early Hold',icon:'🎯',desc:'Specjalista początku 1. seta: holdy, 1:1 / 2:2 / 3:3, overy pierwszego seta i stabilność serwisu.'},
     serve:{name:'Serve/Return',icon:'🎾',desc:'Najmocniej waży hold, break, punkty po serwisie i return. Dobrze pokazuje przewagę jakości gry.'},

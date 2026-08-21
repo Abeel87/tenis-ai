@@ -162,8 +162,8 @@ def build_player_tendencies(long_df: pd.DataFrame, player: str, surface: str = "
     if "date" in x.columns:
         x["date"] = pd.to_datetime(x["date"], utc=True, errors="coerce")
         if cut is not None:
-            # Source history has day precision, so same-day completed matches may legitimately be included.
-            x = x[x["date"].isna() | (x["date"].dt.date <= cut.date())]
+            # v7.8A: source history has day precision; exclude target day to prevent pre-match leakage.
+            x = x[x["date"].isna() | (x["date"].dt.date < cut.date())]
         x = x.sort_values("date", ascending=False, na_position="last")
     else:
         x = x.iloc[::-1]

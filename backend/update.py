@@ -8,6 +8,8 @@ import pandas as pd
 import requests
 
 from model import normalize_matches, analyse_match
+from history_hygiene_v78a import clean_history
+from prediction_integrity_v78a import apply_pre_output_guards
 from history_tracker import (
     archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
     save_history as save_prediction_history, settle_history,
@@ -187,6 +189,22 @@ def load_history(cache_dir=CACHE_DIR, sources=None, now=None, downloader=downloa
     return pd.concat(frames,ignore_index=True,sort=False),warnings,info
 
 
+def _extract_best_of(match):
+    for key in ('best_of','best_of_sets'):
+        try:
+            value=int(match.get(key))
+            if value in (3,5):
+                return value
+        except (TypeError,ValueError):
+            pass
+    text=str(match.get('format') or match.get('match_format') or '').lower()
+    if 'best of 5' in text or 'bo5' in text:
+        return 5
+    if 'best of 3' in text or 'bo3' in text:
+        return 3
+    return None
+
+
 def fetch_fixtures():
     key=os.getenv('LIVE_TENNIS_API_KEY','').strip()
     if not key:
@@ -218,6 +236,7 @@ def fetch_fixtures():
                 'id':mid,'tour':m.get('tour') or '', 'tournament':m.get('tournament') or '',
                 'surface':m.get('surface') or '', 'p1':p1, 'p2':p2,
                 'scheduled_time':m.get('scheduled_time') or '',
+                'best_of':_extract_best_of(m),
                 'feed_status':m.get('status') or 'upcoming','event_status':m.get('event_status'),
             })
         offset += len(page)
@@ -279,10 +298,11 @@ def main():
         print(json.dumps({'degraded':True,'history_info':history_info,'warnings':errors},ensure_ascii=False,indent=2))
         return
 
+    hist,hygiene=clean_history(hist)
     long_df=normalize_matches(hist)
     save_sqlite(long_df)
     fixtures,mode=fetch_fixtures()
-    analysed=[analyse_match(long_df,m) for m in fixtures]
+    analysed=[apply_pre_output_guards(analyse_match(long_df,m)) for m in fixtures]
 
     prediction_history=load_prediction_history(HISTORY_PATH)
     prediction_history=archive_predictions(prediction_history,analysed,now=now)
@@ -305,6 +325,8 @@ def main():
         'updated_at':now.isoformat(),'fixtures_mode':mode,
         'fixtures':len(fixtures),'visible_fixtures':len(results),'hidden_stale':hidden_stale,'model_ready':ready,
         'history_rows_raw':len(hist),'player_rows':len(long_df),'download_warnings':errors,
+        'history_hygiene_removed':hygiene.get('removed_rows',0),
+        'history_hygiene_kept':hygiene.get('kept_rows',len(hist)),
         'history_matches':sum(1 for e in prediction_history if e.get('signals')),
         'history_mode':history_info.get('mode'),'history_fresh_sources':history_info.get('fresh_sources',0),
         'history_cache_sources':history_info.get('cached_sources',0),'history_missing_sources':history_info.get('missing_sources',0),

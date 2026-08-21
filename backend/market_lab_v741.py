@@ -98,7 +98,24 @@ def enrich(m):
     except Exception:return m
     first=parse_exact(m.get("exact_first_set"))
     if not first:return m
-    raw=base_set(h1,h2);p1=m.get("p1");p2=m.get("p2")
+    p1=m.get("p1");p2=m.get("p2")
+    try:
+        best_of=5 if int(m.get("best_of") or 3)==5 else 3
+    except (TypeError,ValueError):
+        best_of=3
+    if best_of==5:
+        tb1=sum(p for s,p in first.items() if set(s)=={6,7})
+        six=sum(p for s,p in first.items() if sum(s)==6)
+        m["market_lab_v741"]={
+          "status":"LAB_SET1_ONLY",
+          "note":"BO5 guard: tylko 1. set; pełne rynki meczu N/D do czasu dedykowanego silnika BO5.",
+          "set1_total":ou(first),
+          "set1_exact_six_games":pct(six),
+          "set1_tiebreak":{"yes":pct(tb1),"no":pct(1-tb1)},
+          "set1_winner_player_games_6_5":combo(first),
+        }
+        return m
+    raw=base_set(h1,h2)
     def target(obj,name,default):
         try:return float((obj or {}).get(name))/100
         except Exception:return default

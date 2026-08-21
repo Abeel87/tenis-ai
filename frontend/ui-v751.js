@@ -27,6 +27,8 @@
   function modelAllSignals(m){try{return modelApi()?.allSignals?.(m)||[]}catch{return []}}
   function modelMarketRows(m,market){return modelAllSignals(m).filter(x=>x&&x.market===market&&num(x.v)!=null)}
   function modelLine(x){const p=String(x?.key||'').split('|');return p.length>1?p[1]:''}
+  const signalIsProbability=()=>activeModelId()==='adaptive';
+  const signalText=v=>num(v)==null?'—':(signalIsProbability()?`${Math.round(Number(v))}%`:`${Math.round(Number(v))}/100`);
 
   function status(m){
     const raw=String(m?.event_status||m?.feed_status||m?.status||'').toLowerCase();
@@ -80,7 +82,7 @@
       <div>${picks.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}">
         <small>${esc(m.p1)} vs ${esc(m.p2)}</small>
         <b>${esc(s.label)}</b>
-        <strong>${Math.round(s.value)}%</strong>
+        <strong>${signalText(s.value)}</strong>
         ${signalBars(s.value)}
       </button>`).join('')}</div>
     </section>`;
@@ -89,7 +91,7 @@
 
   function matchGamesPreview(m){
     const selected=modelMarketRows(m,'match_total').map(x=>({ln:modelLine(x),side:String(x.pick||'').toUpperCase(),v:Number(x.v)})).filter(x=>x.ln&&num(x.v)!=null).sort((a,b)=>b.v-a.v);
-    if(selected.length){const z=selected[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · ${esc(activeModelName())}</span><b>${esc(z.side)} ${esc(z.ln)}</b><strong>${Math.round(z.v)}%</strong>${exp!=null?`<em>śr. Adaptive ${exp.toFixed(1)}</em>`:''}</div>`}
+    if(selected.length){const z=selected[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · ${esc(activeModelName())}</span><b>${esc(z.side)} ${esc(z.ln)}</b><strong>${signalText(z.v)}</strong>${exp!=null?`<em>śr. Adaptive ${exp.toFixed(1)}</em>`:''}</div>`}
     const e=Object.entries(m.match_over_under||{}).map(([ln,x])=>{const o=num(x?.over),u=num(x?.under);return o==null||u==null?null:{ln,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)}}).filter(Boolean).sort((a,b)=>b.v-a.v);
     if(!e.length)return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz</span><b>N/D</b></div>`;
     const z=e[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · Adaptive baza</span><b>${z.side} ${esc(z.ln)}</b><strong>${Math.round(z.v)}%</strong>${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}</div>`;
@@ -97,7 +99,7 @@
 
   function matchGamesLines(m){
     const selected=modelMarketRows(m,'match_total'),exp=num(m.expected_match_games);
-    if(selected.length)return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz · ${esc(activeModelName())}${exp!=null?` · śr. Adaptive ${exp.toFixed(1)}`:''}</label><div>${selected.map(x=>{const ln=modelLine(x),v=Number(x.v),side=String(x.pick||'').toUpperCase().startsWith('O')?'O':'U';return `<span class="${v>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(v)}%</small></span>`}).join('')}</div></div>`;
+    if(selected.length)return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz · ${esc(activeModelName())}${exp!=null?` · śr. Adaptive ${exp.toFixed(1)}`:''}</label><div>${selected.map(x=>{const ln=modelLine(x),v=Number(x.v),side=String(x.pick||'').toUpperCase().startsWith('O')?'O':'U';return `<span class="${v>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${signalText(v)}</small></span>`}).join('')}</div></div>`;
     const e=Object.entries(m.match_over_under||{});if(!e.length)return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz</label><p class="p751-note">Brak danych O/U całego meczu.</p></div>`;
     return `<div class="p751-lines p756-match-lines"><label>📊 Linie gemów · cały mecz · Adaptive baza${exp!=null?` · śr. ${exp.toFixed(1)}`:''}</label><div>${e.map(([ln,x])=>{const o=num(x?.over),u=num(x?.under),mx=Math.max(o||0,u||0),side=(o||0)>=(u||0)?'O':'U';return `<span class="${mx>=72?'strong':''}"><b>${esc(ln)}</b><small>${side} ${Math.round(mx)}%</small></span>`}).join('')}</div></div>`;
   }
@@ -121,7 +123,7 @@
         <div class="p751-top-pick">
           <span>◎ Top typ</span>
           <b>${esc(s?.label||'Brak mocnego sygnału')}</b>
-          <em>${s?Math.round(s.value)+'%':'—'}</em>
+          <em>${s?signalText(s.value):'—'}</em>
         </div>
       </div>
       <aside class="p751-strength">
@@ -195,8 +197,8 @@
     return `<section class="p751-verdict">
       <header><span>⚡</span><b>Szybki werdykt</b></header>
       <div>
-        <article><span>Najlepszy typ</span><b>${esc(a?.label||'—')}</b><strong>${a?Math.round(a.value)+'%':'—'}</strong></article>
-        <article><span>Alternatywa</span><b>${esc(b?.label||'—')}</b><strong>${b?Math.round(b.value)+'%':'—'}</strong></article>
+        <article><span>Najlepszy typ</span><b>${esc(a?.label||'—')}</b><strong>${a?signalText(a.value):'—'}</strong></article>
+        <article><span>Alternatywa</span><b>${esc(b?.label||'—')}</b><strong>${b?signalText(b.value):'—'}</strong></article>
         <article><span>Siła sygnału</span><b>${(a?.value||0)>=85?'Bardzo mocny':(a?.value||0)>=72?'Mocny':'Umiarkowany'}</b><strong>${Math.round(a?.value||0)||'—'}/100</strong></article>
         <article><span>Zaufanie danych</span><b>${trust>=85?'Wysokie':trust>=65?'Średnie':'Niskie'}</b><strong>${trust||'—'}%</strong></article>
       </div>
@@ -387,7 +389,7 @@
     route='signals';navActive('signals');
     const app=document.querySelector('#app');
     const rows=(typeof filteredReady==='function'?filteredReady():[]).flatMap(m=>signals(m).filter(s=>s.value>=68).map(s=>({m,s}))).sort((a,b)=>b.s.value-a.s.value).slice(0,40);
-    app.innerHTML=`<section class="p751-signals-page"><header><div><b>⚡ Najmocniejsze sygnały</b><small>posortowane po sile modelu</small></div><button data-p751-validation>📊 Walidacja</button></header><div>${rows.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}"><div><b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(tm(m))}</small></div><span>${esc(s.label)}</span><strong>${Math.round(s.value)}%</strong></button>`).join('')}</div></section>`;
+    app.innerHTML=`<section class="p751-signals-page"><header><div><b>⚡ Najmocniejsze sygnały</b><small>posortowane po sile modelu</small></div><button data-p751-validation>📊 Walidacja</button></header><div>${rows.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}"><div><b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(tm(m))}</small></div><span>${esc(s.label)}</span><strong>${signalText(s.value)}</strong></button>`).join('')}</div></section>`;
     document.querySelectorAll('[data-p751-open]').forEach(b=>b.onclick=()=>openMatch(decodeURIComponent(b.dataset.p751Open)));
     document.querySelector('[data-p751-validation]')?.addEventListener('click',()=>{
       document.querySelector('.main-tabs [data-view="stats"]')?.click();
@@ -430,7 +432,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.7.2 · Logic Audit Fix');
+    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8A · Integrity Guard');
     ensureBottomNav();
   }
 

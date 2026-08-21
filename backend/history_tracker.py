@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 
 GREEN_THRESHOLD = 72.0
-MODEL_VERSION = 'v5-adaptive'
+MODEL_VERSION = 'v7.8A-adaptive-hygiene'
 VOID_RE = re.compile(r'\b(RET|W/O|WO|DEF|ABD|ABN)\b', re.I)
 SET_RE = re.compile(r'(\d+)\s*[-:]\s*(\d+)')
 
