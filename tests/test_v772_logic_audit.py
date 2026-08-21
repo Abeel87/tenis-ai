@@ -48,5 +48,5 @@ def test_market_lab_conditional_second_set():
 def test_history_source_and_pwa():
     h=(ROOT/'backend/history_tracker.py').read_text(encoding='utf-8');sw=(ROOT/'frontend/sw.js').read_text(encoding='utf-8');idx=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
     assert "source_model='early_hold_pbp'" in h
-    assert 'tenis-ai-v78a-integrity-guard' in sw
-    assert 'Tenis AI v7.8A · Integrity Guard' in idx
+    assert 'tenis-ai-v78d-calibration-guard' in sw
+    assert 'Tenis AI v7.8D · Calibration Guard' in idx

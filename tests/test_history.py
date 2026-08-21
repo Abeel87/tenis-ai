@@ -7,6 +7,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
 from history_tracker import (
+    MODEL_VERSION,
     archive_predictions, extract_green_signals, history_stats, is_current_match,
     parse_final_row, settle_signal,
 )
@@ -76,6 +77,7 @@ def test_third_set_prediction_is_void_when_no_third_set():
 
 def test_history_stats_excludes_void_and_unverifiable():
     entries = [{
+        'model_version': MODEL_VERSION,
         'tour':'atp','signals':[
             {'label':'A','score':80,'result':'hit'},
             {'label':'A','score':75,'result':'miss'},
