@@ -37,6 +37,8 @@ jobs:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           FIXTURE_DAYS: '1'
         run: python backend/update.py
+      - name: Build Market Lab v7.4.1
+        run: python backend/market_lab_v741.py
       - name: Build player tendency profiles
         run: python backend/player_trends.py
       - name: Build serve props (aces + double faults)
@@ -55,6 +57,8 @@ jobs:
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/live_history_settle.py
+      - name: Track Market Lab learning data
+        run: python backend/market_lab_tracker_v741.py
       - name: Save tennis history + PBP cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4
