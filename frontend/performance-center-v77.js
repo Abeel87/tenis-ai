@@ -162,15 +162,27 @@
     const all=flatten(),rows=filtered(all),prev=filtered(all,state.period,true),cur=stats(rows),pr=stats(prev),delta=deltaText(cur,pr),rank=topSegments(rows),bs=baseStats();
     const byMarket=group(rows,x=>x.label),byTour=group(rows,x=>x.tour),bySurface=group(rows,x=>x.surface),byBand=group(rows,x=>scoreBand(x.score)),byVersion=group(rows,x=>x.version),byTournament=group(rows,x=>x.tournament);
     const best=rank.best[0];
+    const legacy=bs.legacy_overall||{};
+    const pending=fmtInt(bs.matches_pending||0);
     app.innerHTML=`<section id="pc77" class="pc77-wrap">
-      <div class="pc77-head"><div><span>📊 MODEL PERFORMANCE CENTER</span><h2>Skuteczność modelu</h2><p>Filtruj okres, tour i nawierzchnię. Procent zawsze pokazujemy razem z wielkością próbki.</p></div><b>v7.7</b></div>
+      <div class="pc77-head"><div><span>📊 MODEL PERFORMANCE CENTER</span><h2>Skuteczność modelu</h2><p>Aktualny model i historia referencyjna są liczone osobno — bez mieszania wersji.</p></div><b>v7.8E4</b></div>
       ${controls(all)}
       <div class="pc77-kpis">
-        <div class="hero"><span>Skuteczność · ${esc77(periodLabel())}</span><b>${pct77(cur.accuracy)}</b><small>${cur.h} ✅ · ${cur.m} ❌</small></div>
+        <div class="hero"><span>v7.8D · skuteczność · ${esc77(periodLabel())}</span><b>${pct77(cur.accuracy)}</b><small>${cur.h} ✅ · ${cur.m} ❌ · ${pending} meczów czeka</small></div>
         <div><span>Rozliczone sygnały</span><b>${fmtInt(cur.n)}</b><small>${fmtInt(cur.matches)} meczów</small></div>
         <div><span>Zmiana vs poprzedni okres</span><b class="${delta.cls}">${delta.txt}</b><small>${state.period==='all'?'wybierz Dziś / 7 / 30 dni':'ten sam filtr'}</small></div>
         <div><span>Najlepszy segment</span><b>${best?pct77(best.accuracy):'—'}</b><small>${best?`${esc77(best.name)} · n=${best.n}`:'za mała próbka'}</small></div>
       </div>
+
+      <section class="pc77-card">
+        <div class="pc77-card-head"><div><b>📚 Historia referencyjna</b><small>starsze wersje modelu · nie miesza się z v7.8D</small></div><span>cała baza</span></div>
+        <div class="pc77-pbp-kpis">
+          <div><span>Skuteczność</span><b>${pct77(legacy.accuracy)}</b><small>n=${fmtInt(legacy.settled)}</small></div>
+          <div><span>Trafione</span><b>${fmtInt(legacy.hits)}</b><small>✅ historyczne</small></div>
+          <div><span>Nietrafione</span><b>${fmtInt(legacy.misses)}</b><small>❌ historyczne</small></div>
+        </div>
+        <p class="pc77-note">To baza referencyjna starszych wersji. Aktualny v7.8D zbiera własną próbkę od zera, dlatego jego skuteczność pojawi się dopiero po rozliczeniu nowych sygnałów.</p>
+      </section>
 
       <section class="pc77-card"><div class="pc77-card-head"><div><b>📈 Trend skuteczności</b><small>do 30 ostatnich aktywnych dni</small></div><span>linia 72%</span></div>${trend(rows)}</section>
 
