@@ -256,8 +256,10 @@
       section.id='player-analytics-v76';
       section.className='player-section pa76-section';
       section.innerHTML='<div id="pa76-content"></div>';
+      const kpis=panel.querySelector('.player-profile-kpis');
       const pt=panel.querySelector('#player-tendencies-v71');
-      if(pt)pt.insertAdjacentElement('afterend',section);
+      if(kpis)kpis.insertAdjacentElement('afterend',section);
+      else if(pt)pt.insertAdjacentElement('afterend',section);
       else{
         const sections=[...panel.querySelectorAll('.player-section')];
         const stats=sections.find(s=>s.textContent.includes('Statystyki zawodnika'));
@@ -277,5 +279,6 @@
   });
   obs.observe(panel,{childList:true,subtree:true});
   input.addEventListener('change',()=>setTimeout(inject,60));
-  setTimeout(inject,900);
+  setTimeout(inject,200);
+  setInterval(inject,700);
 })();
