@@ -11,12 +11,48 @@
   if(!button||!overlay||!closeBtn||!content)return;
   const cfg=window.TENIS_AI_SUPABASE||{};
   const configured=Boolean(cfg.url&&cfg.publishableKey&&!String(cfg.url).includes('PASTE_')&&!String(cfg.publishableKey).includes('PASTE_')&&window.supabase?.createClient);
-  let client=null,currentUser=null,currentProfile=null,authMode='login',heartbeat=null;
+  const REGISTER_RATE_KEY='tenis-ai-register-rate-limit-until';
+  const REGISTER_ATTEMPT_COOLDOWN_MS=90*1000;
+  const REGISTER_LIMIT_COOLDOWN_MS=10*60*1000;
+  let client=null,currentUser=null,currentProfile=null,authMode='login',heartbeat=null,signupBusy=false;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const initials=s=>String(s||'?').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';
   const fmtDate=x=>{const d=new Date(x||'');return Number.isFinite(d.getTime())?d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'};
   const setChip=(text,cls='')=>{chip.textContent=text;chip.className=cls};
   const notify=(name,detail={})=>window.dispatchEvent(new CustomEvent(name,{detail}));
+
+  function registerRateUntil(){
+    const t=Number(localStorage.getItem(REGISTER_RATE_KEY)||0);
+    return Number.isFinite(t)?t:0;
+  }
+  function setRegisterRate(ms){
+    localStorage.setItem(
+      REGISTER_RATE_KEY,
+      String(Date.now()+Math.max(0,Number(ms)||0))
+    );
+  }
+  function clearRegisterRate(){
+    localStorage.removeItem(REGISTER_RATE_KEY);
+  }
+  function registerWaitText(){
+    const sec=Math.max(
+      1,
+      Math.ceil((registerRateUntil()-Date.now())/1000)
+    );
+    return `Odczekaj ${sec} s przed kolejną próbą rejestracji.`;
+  }
+  function isEmailRateLimitError(err){
+    const text=[
+      err?.message,
+      err?.code,
+      err?.status,
+      err?.name
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    return text.includes('rate limit')
+      || text.includes('over_email_send_rate_limit')
+      || text.includes('429');
+  }
   if(configured){client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});setChip('POŁĄCZONO','online')}else setChip('WYMAGA KONFIGURACJI','setup');
   window.tenisAIAccount={get client(){return client},get user(){return currentUser},get profile(){return currentProfile},refreshStats:refreshCommunityStats};
   function openModal(){overlay.hidden=false;document.body.style.overflow='hidden';renderModal()}
@@ -29,7 +65,105 @@
   function renderModal(){if(!configured){content.innerHTML=setupHtml();return}if(currentUser&&currentProfile){content.innerHTML=profileHtml();document.querySelector('#account-signout').onclick=signOut;return}content.innerHTML=authHtml();content.querySelectorAll('[data-auth-mode]').forEach(b=>b.onclick=()=>{authMode=b.dataset.authMode;renderModal()});document.querySelector('#account-auth-form').onsubmit=submitAuth}
   function showMessage(text,type='info'){const el=document.querySelector('#account-form-message');if(el)el.innerHTML=`<div class="account-message ${type}">${esc(text)}</div>`}
   async function usernameTaken(username){const {count,error}=await client.from('profiles').select('id',{count:'exact',head:true}).ilike('username',username);if(error)throw error;return Number(count||0)>0}
-  async function submitAuth(e){e.preventDefault();const form=e.currentTarget,fd=new FormData(form),email=String(fd.get('email')||'').trim(),password=String(fd.get('password')||''),submit=form.querySelector('button[type="submit"]');submit.disabled=true;submit.textContent='Chwila…';try{if(authMode==='register'){const username=String(fd.get('username')||'').trim(),password2=String(fd.get('password2')||'');if(username.length<3||username.length>24)throw new Error('Nick musi mieć od 3 do 24 znaków.');if(password!==password2)throw new Error('Hasła nie są takie same.');if(await usernameTaken(username))throw new Error('Ten nick jest już zajęty.');const {data,error}=await client.auth.signUp({email,password,options:{data:{username},emailRedirectTo:cfg.siteUrl||location.origin+location.pathname}});if(error)throw error;showMessage(data.session?'Konto utworzone. Jesteś zalogowany ✅':'Konto utworzone. Sprawdź e-mail i potwierdź rejestrację ✅','ok')}else{const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;closeModal()}}catch(err){showMessage(err?.message||'Nie udało się wykonać operacji.','error')}finally{submit.disabled=false;submit.textContent=authMode==='register'?'Utwórz konto':'Zaloguj'}}
+  async function submitAuth(e){
+    e.preventDefault();
+
+    const form=e.currentTarget;
+    const fd=new FormData(form);
+    const email=String(fd.get('email')||'').trim();
+    const password=String(fd.get('password')||'');
+    const submit=form.querySelector('button[type="submit"]');
+    const registering=authMode==='register';
+
+    if(registering){
+      if(signupBusy){
+        showMessage(
+          'Rejestracja jest już wysyłana. Poczekaj na odpowiedź.',
+          'info'
+        );
+        return;
+      }
+
+      if(Date.now()<registerRateUntil()){
+        showMessage(registerWaitText(),'error');
+        return;
+      }
+
+      signupBusy=true;
+    }
+
+    submit.disabled=true;
+    submit.textContent='Chwila…';
+
+    try{
+      if(registering){
+        const username=String(fd.get('username')||'').trim();
+        const password2=String(fd.get('password2')||'');
+
+        if(username.length<3||username.length>24)
+          throw new Error('Nick musi mieć od 3 do 24 znaków.');
+
+        if(password!==password2)
+          throw new Error('Hasła nie są takie same.');
+
+        if(await usernameTaken(username))
+          throw new Error('Ten nick jest już zajęty.');
+
+        setRegisterRate(REGISTER_ATTEMPT_COOLDOWN_MS);
+
+        const {data,error}=await client.auth.signUp({
+          email,
+          password,
+          options:{
+            data:{username},
+            emailRedirectTo:cfg.siteUrl||location.origin+location.pathname
+          }
+        });
+
+        if(error)throw error;
+
+        setRegisterRate(REGISTER_ATTEMPT_COOLDOWN_MS);
+
+        showMessage(
+          data.session
+            ? 'Konto utworzone. Jesteś zalogowany ✅'
+            : 'Konto utworzone. Sprawdź e-mail i potwierdź rejestrację ✅',
+          'ok'
+        );
+      }else{
+        const {error}=await client.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if(error)throw error;
+        closeModal();
+      }
+    }catch(err){
+      if(registering && isEmailRateLimitError(err)){
+        setRegisterRate(REGISTER_LIMIT_COOLDOWN_MS);
+
+        showMessage(
+          'Wysłano zbyt wiele maili potwierdzających. Rejestracja jest chwilowo zablokowana — spróbuj ponownie za kilka minut.',
+          'error'
+        );
+      }else{
+        if(registering)clearRegisterRate();
+
+        showMessage(
+          err?.message||'Nie udało się wykonać operacji.',
+          'error'
+        );
+      }
+    }finally{
+      if(registering)signupBusy=false;
+
+      submit.disabled=false;
+      submit.textContent=
+        authMode==='register'?'Utwórz konto':'Zaloguj';
+    }
+  }
+
   async function signOut(){try{await client.auth.signOut()}finally{closeModal()}}
   async function loadProfile(user){if(!user){currentProfile=null;return}const {data,error}=await client.from('profiles').select('id,username,avatar_url,bio,last_seen_at,created_at').eq('id',user.id).maybeSingle();if(error){console.warn('Tenis AI profile:',error.message);currentProfile=null;return}currentProfile=data||null}
   async function touchPresence(){if(!client||!currentUser)return;try{await client.from('profiles').update({last_seen_at:new Date().toISOString()}).eq('id',currentUser.id)}catch{}}
