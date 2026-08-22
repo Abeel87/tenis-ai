@@ -76,15 +76,48 @@
   function activateNav(){
     document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(b=>b.classList.toggle('active',b.dataset.p751Nav==='shadow'));
   }
-  async function openShadow(){try{view='shadow'}catch{};await reload();renderShadow()}
+
+  function restoreShell(target='matches'){
+    const mc=document.querySelector('#match-controls');
+    if(mc)mc.style.display='';
+
+    const p=document.querySelector('.brand-copy p');
+    if(p)p.textContent='Tenis AI v7.8D · Calibration Guard';
+
+    try{
+      view=target==='history'?'history':'matches';
+    }catch{}
+  }
+
+  async function openShadow(){
+    try{view='shadow'}catch{}
+    await reload();
+    renderShadow();
+  }
+
   function ensureNav(){
     const nav=document.querySelector('#p751-bottom-nav');
-    if(!nav||nav.querySelector('[data-p751-nav="shadow"]'))return;
+    if(!nav)return;
+
+    if(!nav.dataset.shadowLeaveBound){
+      nav.dataset.shadowLeaveBound='1';
+
+      nav.addEventListener('click',e=>{
+        const b=e.target.closest('[data-p751-nav]');
+        if(!b||b.dataset.p751Nav==='shadow')return;
+        restoreShell(b.dataset.p751Nav);
+      },true);
+    }
+
+    if(nav.querySelector('[data-p751-nav="shadow"]'))return;
+
     const b=document.createElement('button');
     b.dataset.p751Nav='shadow';
     b.innerHTML='<span>🧪</span><b>Odrzucone</b>';
+
     const h=nav.querySelector('[data-p751-nav="history"]');
     nav.insertBefore(b,h||null);
+
     b.onclick=openShadow;
   }
 
@@ -100,5 +133,4 @@
   reload();
   setTimeout(ensureNav,50);setTimeout(ensureNav,350);setTimeout(ensureNav,1200);
   setInterval(ensureNav,5000);
-  setTimeout(()=>{const p=document.querySelector('.brand-copy p');if(p)p.textContent='Tenis AI v7.8E6 · Shadow Lab'},1300);
 })();
