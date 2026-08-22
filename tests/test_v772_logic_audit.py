@@ -9,7 +9,8 @@ def test_frontend_bridge_and_ui():
     mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
-    assert 'Zielone sygnały' in ui
+    assert 'Siła sygnału' in ui
+    assert 'zielonych' in ui
     assert 'Ocena sygnału' in ui
     assert 'data-sp-market="p772-' in ui
     assert 'tracker rozlicza też liczbę tie-breaków' in ui

@@ -203,9 +203,10 @@
         </div>
       </div>
       <aside class="p751-strength">
-        <span>Zielone sygnały</span>
-        <b>${greens(m)}</b>
-        <small>próg ≥72</small>
+        <span>Siła sygnału</span>
+        <b>${v>0?signalText(v):'—'}</b>
+        ${signalBars(v)}
+        <small>${greens(m)} zielonych</small>
       </aside>
       ${matchGamesPreview(m,s)}
       <footer>
@@ -262,10 +263,12 @@
 
     const shadow=document.querySelector('[data-shadow-open]');
     if(shadow){
-      shadow.onclick=e=>{
+      shadow.onclick=async e=>{
         e.preventDefault();
         e.stopPropagation();
-        window.TENIS_AI_SHADOW_LAB?.open?.();
+        await window.TENIS_AI_SHADOW_LAB?.open?.();
+        route='shadow';
+        navActive('shadow');
       };
     }
 
@@ -310,8 +313,8 @@
     </section>`;
   }
 
-  function marketRow(label,left,right='',hot=false){
-    return `<div class="p751-market-row"><span>${esc(label)}</span><b class="${hot?'hot':''}">${esc(left)}</b><em>${esc(right)}</em></div>`;
+  function marketRow(label,left,right='',hot=false,rightHot=false){
+    return `<div class="p751-market-row"><span>${esc(label)}</span><b class="${hot?'hot':''}">${esc(left)}</b><em class="${rightHot?'hot':''}">${esc(right)}</em></div>`;
   }
 
   function coreMarkets(m){
@@ -427,7 +430,7 @@
 
   function lab(m){
     const l=m.market_lab_v741;if(!l)return '';
-    const lr=(label,x)=>{const o=num(x?.over),u=num(x?.under);if(o==null||u==null)return '';return marketRow(label,`O ${pc(o)}`,`U ${pc(u)}`,Math.max(o,u)>=72)};
+    const lr=(label,x)=>{const o=num(x?.over),u=num(x?.under);if(o==null||u==null)return '';return marketRow(label,`O ${pc(o)}`,`U ${pc(u)}`,o>=72,u>=72)};
     const best=(o,n=6)=>Object.entries(o||{}).sort((a,b)=>Math.max(Number(b[1]?.over||0),Number(b[1]?.under||0))-Math.max(Number(a[1]?.over||0),Number(a[1]?.under||0))).slice(0,n),pg=l.player_total_games||{};
     const combo=(obj,stage)=>`<div class="p772-lab-grid">${marketRow(`${stage} · ${m.p1} wygra + U6.5`,pc(obj?.p1?.under),'wspólne zdarzenie',num(obj?.p1?.under)>=72)}${marketRow(`${stage} · ${m.p1} wygra + O6.5`,pc(obj?.p1?.over),'wspólne zdarzenie',num(obj?.p1?.over)>=72)}${marketRow(`${stage} · ${m.p2} wygra + U6.5`,pc(obj?.p2?.under),'wspólne zdarzenie',num(obj?.p2?.under)>=72)}${marketRow(`${stage} · ${m.p2} wygra + O6.5`,pc(obj?.p2?.over),'wspólne zdarzenie',num(obj?.p2?.over)>=72)}</div>`;
     return `<details class="p751-acc"><summary><div><span>🧪</span><b>Market Lab</b><small>pełne rynki · osobna walidacja</small></div><em>LAB</em><i>⌄</i></summary><div class="p751-acc-body"><p class="p751-note">LAB nie podbija głównego score. v7.7.2 tracker rozlicza też liczbę tie-breaków oraz „zwycięzca seta + własne gemy”.</p><div class="p751-lab-grid"><span>Dokładnie 6 gemów 1S <b>${pc(l.set1_exact_six_games)}</b></span><span>Tie-break 1S <b>${pc(l.set1_tiebreak?.yes)}</b></span><span>Tie-break mecz <b>${pc(l.match_tiebreak?.yes)}</b></span><span>Obaj wygrają seta <b>${pc(l.both_players_win_set?.yes)}</b></span></div><div class="p772-lab-section"><h4>🎾 1. set · O/U</h4><div>${Object.entries(l.set1_total||{}).map(([ln,x])=>lr(`1S ${ln}`,x)).join('')}</div></div><div class="p772-lab-section"><h4>👤 Gemy zawodnika · cały mecz</h4><div class="p772-lab-grid"><div><b>${esc(m.p1)}</b>${best(pg[m.p1]).map(([ln,x])=>lr(ln,x)).join('')}</div><div><b>${esc(m.p2)}</b>${best(pg[m.p2]).map(([ln,x])=>lr(ln,x)).join('')}</div></div></div><div class="p772-lab-section"><h4>🔀 Dokładna liczba tie-breaków</h4><div class="p772-lab-grid">${Object.entries(l.tiebreak_count||{}).map(([k,v])=>marketRow(`${k} tie-break`,pc(v),'event',num(v)>=72)).join('')}</div></div><div class="p772-lab-section"><h4>🧩 Zwycięzca seta + własne gemy</h4>${combo(l.set1_winner_player_games_6_5,'1. set')}${combo(l.set2_winner_player_games_6_5,'2. set')}</div></div></details>`;
@@ -604,6 +607,7 @@
     const n=document.createElement('nav');n.id='p751-bottom-nav';n.className='p751-bottom-nav';
     n.innerHTML=`<button data-p751-nav="matches" class="active"><span>🎾</span><b>Mecze</b></button>
       <button data-p751-nav="signals"><span>⚡</span><b>Sygnały</b></button>
+      <button data-p751-nav="shadow"><span>🧪</span><b>Odrzucone</b></button>
       <button data-p751-nav="history"><span>◴</span><b>Historia</b></button>
       <button data-p751-nav="community"><span>👥</span><b>Społeczność</b></button>
       <button data-p751-nav="profile"><span>👤</span><b>Profil</b></button>`;
@@ -612,6 +616,11 @@
       document.querySelector('.main-tabs [data-view="matches"]')?.click();route='matches';renderMatches();
     };
     n.querySelector('[data-p751-nav="signals"]').onclick=signalPage;
+    n.querySelector('[data-p751-nav="shadow"]').onclick=async()=>{
+      await window.TENIS_AI_SHADOW_LAB?.open?.();
+      route='shadow';
+      navActive('shadow');
+    };
     n.querySelector('[data-p751-nav="history"]').onclick=()=>{
       document.querySelector('.main-tabs [data-view="history"]')?.click();route='history';setTimeout(()=>{renderHistory();navActive('history')},0);
     };

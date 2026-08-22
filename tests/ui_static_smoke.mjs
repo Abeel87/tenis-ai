@@ -59,8 +59,16 @@ const checks = [
     !index.includes('readability-v753.js')
   ],
   [
-    'Main card strength box reports green-signal count',
-    ui.includes('Zielone sygnały')
+    'Main card shows signal strength plus green count',
+    ui.includes('Siła sygnału') && ui.includes('zielonych')
+  ],
+  [
+    'Bottom nav contains Shadow/Odrzucone',
+    /data-p751-nav="shadow"[\s\S]{0,120}Odrzucone/.test(ui)
+  ],
+  [
+    'Market Lab highlights OVER and UNDER independently',
+    ui.includes("o>=72,u>=72") && ui.includes("rightHot?'hot':''")
   ],
   [
     'Shadow strength box reports rejected-signal count',

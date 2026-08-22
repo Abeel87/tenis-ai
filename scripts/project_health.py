@@ -111,7 +111,7 @@ if workflows.exists():
                 f"{wf}: workflow pushujący do repo nie ma concurrency guard."
             )
 
-print("=== Tenis AI v7.8E10.1 Project Health ===")
+print("=== Tenis AI v7.8E11.4 Project Health ===")
 print(f"JS files:  {len(js_files)}")
 print(f"CSS files: {len(css_files)}")
 

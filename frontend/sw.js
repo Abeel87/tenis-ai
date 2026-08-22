@@ -1,5 +1,5 @@
 /* Tenis AI v7.8E10 — resilient PWA cache */
-const CACHE = 'tenis-ai-v78e11-clarity-cleanup';
+const CACHE = 'tenis-ai-v78e114-ou-highlight-nav-restore';
 
 const CORE = [
   './',
