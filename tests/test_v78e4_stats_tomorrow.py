@@ -16,4 +16,9 @@ def test_v78e4_keeps_current_and_legacy_separate():
 
 def test_v78e4_bumps_pwa_cache():
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
-    assert "tenis-ai-v78d-calibration-guard-v78e4-stats-tomorrow" in sw
+
+    # E10 replaced the historical chained cache name with one
+    # resilient current cache version. The test should verify that
+    # the cache was bumped, not freeze the project on an old name.
+    assert "tenis-ai-v78e10-maintenance" in sw
+    assert "cache.addAll(ASSETS)" not in sw

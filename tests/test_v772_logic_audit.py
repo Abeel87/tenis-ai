@@ -46,7 +46,16 @@ def test_market_lab_conditional_second_set():
     assert 'second=mix_dist(second_if_win,second_if_loss,p1win(first))' in lab
 
 def test_history_source_and_pwa():
-    h=(ROOT/'backend/history_tracker.py').read_text(encoding='utf-8');sw=(ROOT/'frontend/sw.js').read_text(encoding='utf-8');idx=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
+    h=(ROOT/'backend/history_tracker.py').read_text(encoding='utf-8')
+    sw=(ROOT/'frontend/sw.js').read_text(encoding='utf-8')
+    idx=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
+    meta=(ROOT/'frontend/app-meta.js').read_text(encoding='utf-8')
+
     assert "source_model='early_hold_pbp'" in h
-    assert 'tenis-ai-v78d-calibration-guard' in sw
-    assert 'Tenis AI v7.8D · Calibration Guard' in idx
+
+    # PWA version is maintained centrally from E10 onward.
+    assert 'tenis-ai-v78e10-maintenance' in sw
+    assert "appVersion: 'v7.8E10'" in meta
+    assert "modelVersion: 'v7.8D'" in meta
+    assert "modelName: 'Calibration Guard'" in meta
+    assert 'app-meta.js?v=78e10' in idx
