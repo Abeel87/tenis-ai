@@ -156,10 +156,11 @@
     const source=String(sig?.source_model||'adaptive');
 
     return `
-      <button
+      <article
         class="p751-match-card sl78-main-card ${hasShadow?'':'sl78-main-nodata'}"
         ${canOpen?`data-shadow-match="${esc(String(x.match_id))}"`:''}
-        type="button"
+        role="button"
+        tabindex="0"
       >
         <div class="p751-match-meta">
           <span class="p751-status sl78-shadow-status">${state}</span>
@@ -243,7 +244,7 @@
           <span>DANE ${esc(x.quality||'—')}</span>
           <b>${canOpen?'Analiza ›':hasShadow?'Sygnał Shadow':'N/D'}</b>
         </footer>
-      </button>
+      </article>
     `;
   }
 
@@ -415,7 +416,7 @@
     document
       .querySelectorAll('[data-shadow-match]')
       .forEach(b=>{
-        b.onclick=()=>{
+        const open=()=>{
           const id=String(b.dataset.shadowMatch||'');
 
           const x=current.find(
@@ -427,6 +428,18 @@
           if(x){
             overlayShadowInfo(x);
           }
+        };
+
+        b.onclick=e=>{
+          if(e.target.closest?.('.v762-player-link'))return;
+          open();
+        };
+
+        b.onkeydown=e=>{
+          if(e.target.closest?.('.v762-player-link'))return;
+          if(e.key!=='Enter'&&e.key!==' ')return;
+          e.preventDefault();
+          open();
         };
       });
   }

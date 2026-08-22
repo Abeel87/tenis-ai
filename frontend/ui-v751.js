@@ -120,7 +120,7 @@
 
   function card(m){
     const s=top(m,1)[0],v=strength(m),st=status(m);
-    return `<button class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}">
+    return `<article class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}" role="button" tabindex="0">
       <div class="p751-match-meta">
         <span class="p751-status ${st.cls}">${esc(st.txt)}</span>
         <b>${esc(tour(m))}</b>
@@ -154,7 +154,7 @@
         <span>DANE ${esc(m.quality||'—')}</span>
         <b>Analiza ›</b>
       </footer>
-    </button>`;
+    </article>`;
   }
 
   function groupRows(rows){
@@ -209,7 +209,25 @@
     }
 
     document.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
-    document.querySelectorAll('[data-p751-open]').forEach(b=>b.onclick=()=>openMatch(decodeURIComponent(b.dataset.p751Open)));
+    document.querySelectorAll('[data-p751-open]').forEach(b=>{
+      const open=()=>openMatch(decodeURIComponent(b.dataset.p751Open));
+
+      if(b.classList.contains('p751-match-card')){
+        b.onclick=e=>{
+          if(e.target.closest?.('.v762-player-link'))return;
+          open();
+        };
+
+        b.onkeydown=e=>{
+          if(e.target.closest?.('.v762-player-link'))return;
+          if(e.key!=='Enter'&&e.key!==' ')return;
+          e.preventDefault();
+          open();
+        };
+      }else{
+        b.onclick=open;
+      }
+    });
   }
 
   function binaryBest(obj){

@@ -1,9 +1,91 @@
-const C='tenis-ai-v78e9-responsive-performance-shadow';
-const ASSETS=[
-  './','index.html','style.css','neon.css','player-search.css','player-trends-v71.css','player-analytics-v76.css','restore-v762.css','match-tendencies-v712.css','serve-props-v72.css','pbp-validation-v73.css','performance-center-v77.css','history-days-v732.css','multi-model.css','model-guide.css','account.css','registration-ux-v752.css','community.css','community-fix.css','community-hub.css','community-admin-v74.css','admin-delete-v754.css','early-hold-v7.css','early-hold-paths-v771.css','logic-audit-v772.css','integrity-v78a.css','calibration-v78d.css','shadow-lab-v78e6.css','ui-v75.css','ui-v751.css','readability-v753.css',
-  'app.js','player-search.js','player-trends-v71.js','player-analytics-v76.js','multi-model.js','model-guide.js','clarity-labels-v711.js','match-tendencies-v712.js','serve-props-v72.js','pbp-validation-v73.js','history-days-v732.js','account.js','community.js','community-fix.js','avatar-fix.js','community-hub.js','community-count-fix.js','community-admin-v74.js','admin-delete-v754.js','early-hold-v7.js','ui-v75.js','ui-v751.js','readability-v753.js','restore-v762.js','early-hold-paths-v771.js','integrity-v78a.js','shadow-lab-v78e6.js','performance-center-v77.js','supabase-config.js','registration-fix-v741.js','registration-ux-v752.js','market-lab-v741.js','market-lab-v741.css','manifest.webmanifest',
-  'brand-symbol.png','brand-wordmark.png','favicon.png','apple-touch-icon.png','icon-192.png','icon-512.png'
+/* Tenis AI v7.8E10 — resilient PWA cache */
+const CACHE = 'tenis-ai-v78e10-maintenance';
+
+const CORE = [
+  './',
+  'index.html',
+  'manifest.webmanifest',
+  'favicon.png',
+  'icon-192.png',
+  'icon-512.png'
 ];
-self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(ASSETS)))});
-self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==C).map(k=>caches.delete(k))))])));
-self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});
+
+self.addEventListener('install', event => {
+  self.skipWaiting();
+
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+
+    // One missing optional asset must never kill the whole SW install.
+    await Promise.allSettled(
+      CORE.map(asset => cache.add(asset))
+    );
+  })());
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+
+    await Promise.all(
+      keys
+        .filter(key => key.startsWith('tenis-ai-') && key !== CACHE)
+        .map(key => caches.delete(key))
+    );
+
+    await self.clients.claim();
+  })());
+});
+
+async function networkFirst(request){
+  const cache = await caches.open(CACHE);
+
+  try{
+    const response = await fetch(request);
+
+    if(response && response.ok){
+      cache.put(request, response.clone()).catch(() => {});
+    }
+
+    return response;
+  }catch(error){
+    const cached = await cache.match(request);
+    if(cached) return cached;
+    throw error;
+  }
+}
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+
+  if(request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // Do not interfere with Supabase/CDN/other external services.
+  if(url.origin !== self.location.origin) return;
+
+  if(request.mode === 'navigate'){
+    event.respondWith((async () => {
+      try{
+        const response = await fetch(request);
+        const cache = await caches.open(CACHE);
+
+        if(response && response.ok){
+          cache.put('index.html', response.clone()).catch(() => {});
+        }
+
+        return response;
+      }catch{
+        const cache = await caches.open(CACHE);
+        return (await cache.match('index.html')) ||
+               (await cache.match('./')) ||
+               Response.error();
+      }
+    })());
+    return;
+  }
+
+  // Data, JS, CSS, images: prefer fresh network, keep last good copy offline.
+  event.respondWith(networkFirst(request));
+});
