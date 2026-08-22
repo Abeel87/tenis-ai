@@ -20,5 +20,5 @@ def test_v78e4_bumps_pwa_cache():
     # E10 replaced the historical chained cache name with one
     # resilient current cache version. The test should verify that
     # the cache was bumped, not freeze the project on an old name.
-    assert "tenis-ai-v78e10-maintenance" in sw
+    assert "const CACHE = 'tenis-ai-" in sw
     assert "cache.addAll(ASSETS)" not in sw

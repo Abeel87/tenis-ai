@@ -103,12 +103,74 @@
   }
 
 
-  function matchGamesPreview(m){
-    const selected=modelMarketRows(m,'match_total').map(x=>({ln:modelLine(x),side:String(x.pick||'').toUpperCase(),v:Number(x.v)})).filter(x=>x.ln&&num(x.v)!=null).sort((a,b)=>b.v-a.v);
-    if(selected.length){const z=selected[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · ${esc(activeModelName())}</span><b>${esc(z.side)} ${esc(z.ln)}</b><strong>${signalText(z.v)}</strong>${exp!=null?`<em>śr. Adaptive ${exp.toFixed(1)}</em>`:''}</div>`}
-    const e=Object.entries(m.match_over_under||{}).map(([ln,x])=>{const o=num(x?.over),u=num(x?.under);return o==null||u==null?null:{ln,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)}}).filter(Boolean).sort((a,b)=>b.v-a.v);
-    if(!e.length)return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz</span><b>N/D</b></div>`;
-    const z=e[0],exp=num(m.expected_match_games);return `<div class="p753-match-total-preview"><span>📊 Gemy · cały mecz · Adaptive baza</span><b>${z.side} ${esc(z.ln)}</b><strong>${Math.round(z.v)}%</strong>${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}</div>`;
+  function sameMatchTotalAsTop(s,z){
+    if(!s||!z)return false;
+
+    const line=String(z.ln||'').trim();
+    const side=String(z.side||'').toUpperCase().startsWith('O')?'O':'U';
+
+    if(s.market==='match_total'){
+      const sLine=String(modelLine(s)||'').trim();
+      const sSide=String(s.pick||'').toUpperCase().startsWith('O')?'O':'U';
+      return sLine===line && sSide===side;
+    }
+
+    const label=String(s.label||'')
+      .toUpperCase()
+      .replace(/OVER/g,'O')
+      .replace(/UNDER/g,'U')
+      .replace(/\s+/g,'');
+
+    return label.includes('MECZ') && label.includes(`${side}${line}`);
+  }
+
+  function matchGamesPreview(m,topSignal=null){
+    const selected=modelMarketRows(m,'match_total')
+      .map(x=>({
+        ln:modelLine(x),
+        side:String(x.pick||'').toUpperCase(),
+        v:Number(x.v)
+      }))
+      .filter(x=>x.ln&&num(x.v)!=null)
+      .sort((a,b)=>b.v-a.v);
+
+    if(selected.length){
+      const z=selected[0];
+      if(sameMatchTotalAsTop(topSignal,z))return '';
+
+      const exp=num(m.expected_match_games);
+
+      return `<div class="p753-match-total-preview">
+        <span>📊 Gemy · cały mecz · ${esc(activeModelName())}</span>
+        <b>${esc(z.side)} ${esc(z.ln)}</b>
+        <strong>${signalText(z.v)}</strong>
+        ${exp!=null?`<em>śr. Adaptive ${exp.toFixed(1)}</em>`:''}
+      </div>`;
+    }
+
+    const e=Object.entries(m.match_over_under||{})
+      .map(([ln,x])=>{
+        const o=num(x?.over),u=num(x?.under);
+        return o==null||u==null
+          ?null
+          :{ln,side:o>=u?'OVER':'UNDER',v:Math.max(o,u)};
+      })
+      .filter(Boolean)
+      .sort((a,b)=>b.v-a.v);
+
+    if(!e.length)return '';
+
+    const z=e[0];
+    if(sameMatchTotalAsTop(topSignal,z))return '';
+
+    const exp=num(m.expected_match_games);
+
+    return `<div class="p753-match-total-preview">
+      <span>📊 Gemy · cały mecz · Adaptive baza</span>
+      <b>${z.side} ${esc(z.ln)}</b>
+      <strong>${Math.round(z.v)}%</strong>
+      ${exp!=null?`<em>śr. ${exp.toFixed(1)}</em>`:''}
+    </div>`;
   }
 
   function matchGamesLines(m){
@@ -141,16 +203,15 @@
         </div>
       </div>
       <aside class="p751-strength">
-        <span>Siła sygnału</span>
-        <b>${Math.round(v)||'—'}%</b>
-        ${signalBars(v)}
-        <small>${greens(m)} zielonych</small>
+        <span>Zielone sygnały</span>
+        <b>${greens(m)}</b>
+        <small>próg ≥72</small>
       </aside>
-      ${matchGamesPreview(m)}
+      ${matchGamesPreview(m,s)}
       <footer>
         <span>🧠 ${esc(activeModelName())}</span>
-        <span>${m.early_hold_v7?.ready?'🧬 PBP OK':'🧬 PBP N/D'}</span>
-        <span>${m.joint_builder_v78b?.status==='READY'?`🧩 Joint ${pc(m.joint_builder_v78b.best?.joint_all_3)}`:'🧩 Joint N/D'}</span>
+        ${m.early_hold_v7?.ready?'<span>🧬 PBP OK</span>':''}
+        ${m.joint_builder_v78b?.status==='READY'?`<span>🧩 Joint ${pc(m.joint_builder_v78b.best?.joint_all_3)}</span>`:''}
         <span>DANE ${esc(m.quality||'—')}</span>
         <b>Analiza ›</b>
       </footer>
@@ -243,7 +304,7 @@
       <div>
         <article><span>Najlepszy typ</span><b>${esc(a?.label||'—')}</b><strong>${a?signalText(a.value):'—'}</strong></article>
         <article><span>Alternatywa</span><b>${esc(b?.label||'—')}</b><strong>${b?signalText(b.value):'—'}</strong></article>
-        <article><span>Siła sygnału</span><b>${(a?.value||0)>=85?'Bardzo mocny':(a?.value||0)>=72?'Mocny':'Umiarkowany'}</b><strong>${Math.round(a?.value||0)||'—'}/100</strong></article>
+        <article><span>Ocena sygnału</span><b>${(a?.value||0)>=85?'Bardzo mocny':(a?.value||0)>=72?'Mocny':'Umiarkowany'}</b><strong>${a?signalText(a.value):'—'}</strong></article>
         <article><span>Zaufanie danych</span><b>${trust>=85?'Wysokie':trust>=65?'Średnie':'Niskie'}</b><strong>${trust||'—'}%</strong></article>
       </div>
     </section>`;

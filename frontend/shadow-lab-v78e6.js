@@ -210,16 +210,9 @@
         </div>
 
         <aside class="p751-strength">
-          <span>Siła sygnału</span>
-          <b>${score==null?'N/D':Math.round(score)+'/100'}</b>
-
-          <span class="p751-bars">
-            ${[1,2,3,4,5].map(i=>
-              `<i class="${score!=null&&score>=i*18?'on':''}"></i>`
-            ).join('')}
-          </span>
-
-          <small>${hasShadow?'poniżej 72':'brak próbki'}</small>
+          <span>Odrzucone sygnały</span>
+          <b>${hasShadow?rows.length:'—'}</b>
+          <small>${hasShadow?'zakres 55–71':'brak próbki'}</small>
         </aside>
 
         <div class="p753-match-total-preview sl78-reason">

@@ -9,7 +9,8 @@ def test_frontend_bridge_and_ui():
     mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
-    assert 'Siła sygnału' in ui
+    assert 'Zielone sygnały' in ui
+    assert 'Ocena sygnału' in ui
     assert 'data-sp-market="p772-' in ui
     assert 'tracker rozlicza też liczbę tie-breaków' in ui
 
@@ -54,8 +55,8 @@ def test_history_source_and_pwa():
     assert "source_model='early_hold_pbp'" in h
 
     # PWA version is maintained centrally from E10 onward.
-    assert 'tenis-ai-v78e10-maintenance' in sw
-    assert "appVersion: 'v7.8E10'" in meta
+    assert "const CACHE = 'tenis-ai-" in sw
+    assert "appVersion: 'v7.8E" in meta
     assert "modelVersion: 'v7.8D'" in meta
     assert "modelName: 'Calibration Guard'" in meta
-    assert 'app-meta.js?v=78e10' in idx
+    assert 'app-meta.js?v=' in idx

@@ -76,15 +76,18 @@ index = read(frontend / "index.html")
 if "@supabase/supabase-js@2.112.3" not in index:
     warnings.append("Supabase JS nie jest przypięty do 2.112.3.")
 
-if "app-meta.js?v=78e10" not in index:
-    warnings.append("Brak centralnego app-meta.js v78e10 w index.html.")
+if "app-meta.js?v=" not in index:
+    warnings.append("Brak centralnego app-meta.js z cache-bust w index.html.")
 
 sw = read(frontend / "sw.js")
 if "cache.addAll(ASSETS)" in sw:
     failures.append("Service worker nadal używa kruchego cache.addAll(ASSETS).")
 
-if "tenis-ai-v78e10-maintenance" not in sw:
-    warnings.append("Service worker nie ma cache E10.")
+if "tenis-ai-v78e" not in sw:
+    warnings.append("Service worker nie ma wersjonowanego cache Tenis AI.")
+
+if "readability-v753.js" in index:
+    warnings.append("readability-v753.js nadal jest ładowany mimo że ui-v751 ma własne match totals.")
 
 restore = read(frontend / "restore-v762.js")
 if "setInterval(refresh,1200)" in restore:

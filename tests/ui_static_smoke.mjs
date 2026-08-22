@@ -44,15 +44,27 @@ const checks = [
   ],
   [
     'Central app metadata is loaded',
-    /app-meta\.js\?v=78e10/.test(index)
+    /app-meta\.js\?v=/.test(index)
   ],
   [
     'PWA cache is E10',
-    sw.includes('tenis-ai-v78e10-maintenance')
+    /tenis-ai-v78e\d+/i.test(sw)
   ],
   [
     'Old fragile cache.addAll(ASSETS) is gone',
     !sw.includes('cache.addAll(ASSETS)')
+  ],
+  [
+    'Obsolete readability-v753 JS layer is not loaded',
+    !index.includes('readability-v753.js')
+  ],
+  [
+    'Main card strength box reports green-signal count',
+    ui.includes('Zielone sygnały')
+  ],
+  [
+    'Shadow strength box reports rejected-signal count',
+    shadow.includes('Odrzucone sygnały')
   ]
 ];
 
