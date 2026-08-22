@@ -86,7 +86,7 @@
   function group(rows,keyfn){const m=new Map();for(const x of rows){const k=keyfn(x);if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return [...m.entries()].map(([name,r])=>({name,...stats(r)}))}
   function wilson(h,n){if(!n)return null;const z=1.96,p=h/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,half=z*Math.sqrt((p*(1-p)+z*z/(4*n))/n)/d;return [Math.max(0,(c-half)*100),Math.min(100,(c+half)*100)]}
   function sampleMeta(n){if(n>=50)return['MOCNA','strong'];if(n>=20)return['ŚREDNIA','medium'];if(n>=10)return['OK','ok'];if(n>=5)return['MAŁA','small'];return['BARDZO MAŁA','tiny']}
-  function sampleBadge(n){const [t,c]=sampleMeta(n);return `<em class="pc77-sample ${c}">${t} · n=${n}</em>`}
+  function sampleBadge(n){const [t,c]=sampleMeta(n);return `<em class="pc77-sample ${c}">${t} próba · ${n} wyników</em>`}
   function ciText(x){const ci=wilson(x.h,x.n);return ci?`95% CI ${ci[0].toFixed(0)}–${ci[1].toFixed(0)}%`:'CI —'}
   function deltaText(cur,prev){if(cur.accuracy==null||prev.accuracy==null)return {txt:'—',cls:''};const d=cur.accuracy-prev.accuracy;return {txt:`${d>=0?'+':''}${d.toFixed(1)} pp`,cls:d>=0?'up':'down'}}
   function periodLabel(){return ({today:'Dzisiaj','7d':'7 dni','30d':'30 dni',all:'Wszystko'})[state.period]||'Wszystko'}
@@ -150,56 +150,155 @@
 
   function labPanel(ex){const l=ex?.lab||{};const o=l.overall||{};const rows=Object.entries(l.markets||{}).map(([name,v])=>({name,n:v.green_n||0,h:Math.round((v.green_accuracy||0)*(v.green_n||0)/100),m:Math.max(0,(v.green_n||0)-Math.round((v.green_accuracy||0)*(v.green_n||0)/100)),accuracy:v.green_accuracy,brier:v.brier})).filter(x=>x.n).sort((a,b)=>b.n-a.n);return `<details class="pc77-details"><summary><b>🧰 Market Lab</b><span>osobna walidacja eksperymentalna</span></summary><div class="pc77-pbp-kpis"><div><span>Wszystkie</span><b>${pct77(o.accuracy)}</b><small>n=${o.n||0}</small></div><div><span>Zielone</span><b>${pct77(o.green_accuracy)}</b><small>n=${o.green_n||0}</small></div><div><span>Brier</span><b>${o.brier==null?'—':Number(o.brier).toFixed(3)}</b><small>niżej = lepiej</small></div></div>${rows.length?`<div class="pc77-table">${rows.slice(0,20).map(x=>`<div class="pc77-row"><div><b>${esc77(x.name)}</b><small>green n=${x.n} · Brier ${x.brier==null?'—':Number(x.brier).toFixed(3)}</small></div><div><strong>${pct77(x.accuracy)}</strong>${sampleBadge(x.n)}</div></div>`).join('')}</div>`:''}<p class="pc77-note">LAB ma obecnie mało rozliczonych meczów źródłowych, więc wysokie procenty pojedynczych rynków mogą być przypadkowe. Patrz przede wszystkim na n i Brier.</p></details>`}
 
+
+  function simpleTrust(n){
+    if(n>=50)return {label:'Mocna próba',cls:'strong',note:'wynik jest już oparty na dużej liczbie rozliczeń'};
+    if(n>=20)return {label:'Średnia próba',cls:'medium',note:'warto brać wynik pod uwagę, ale nadal obserwujemy'};
+    if(n>=10)return {label:'Wstępna próba',cls:'ok',note:'kierunek jest ciekawy, lecz danych wciąż nie ma dużo'};
+    if(n>=5)return {label:'Mała próba',cls:'small',note:'procent może mocno się zmienić po kilku kolejnych wynikach'};
+    return {label:'Za mało danych',cls:'tiny',note:'nie wyciągamy jeszcze wniosków'};
+  }
+
+  function simpleStatus(acc,n){
+    if(acc==null||!n)return {label:'Brak danych',cls:'neutral'};
+    if(n<5)return {label:'Tylko obserwuj',cls:'warn'};
+    if(acc>=80&&n>=20)return {label:'Bardzo dobrze',cls:'good'};
+    if(acc>=72)return {label:'Na plus',cls:'good'};
+    if(acc>=60)return {label:'Neutralnie',cls:'neutral'};
+    return {label:'Uważać',cls:'bad'};
+  }
+
+  function simpleMarketRows(rows){
+    return group(rows,x=>x.label)
+      .filter(x=>x.n>=5&&x.accuracy!=null)
+      .sort((a,b)=>{
+        const ta=simpleTrust(a.n),tb=simpleTrust(b.n);
+        const rank={strong:5,medium:4,ok:3,small:2,tiny:1};
+        return (rank[tb.cls]-rank[ta.cls]) || (b.accuracy-a.accuracy) || (b.n-a.n);
+      });
+  }
+
+  function simpleMarketCard(x){
+    const t=simpleTrust(x.n),s=simpleStatus(x.accuracy,x.n);
+    return `<article class="pc12-market ${s.cls}">
+      <div class="pc12-market-top"><b>${esc77(x.name)}</b><strong>${pct77(x.accuracy)}</strong></div>
+      <div class="pc12-market-meta"><span>${x.h} trafionych z ${x.n}</span><em class="${t.cls}">${t.label}</em></div>
+      <small>${esc77(t.note)}</small>
+    </article>`;
+  }
+
+  function simpleOverall(cur,delta){
+    const trust=simpleTrust(cur.n),status=simpleStatus(cur.accuracy,cur.n);
+    const base=cur.accuracy==null
+      ? 'Nie ma jeszcze wystarczająco rozliczonych sygnałów dla tego filtra.'
+      : `Model trafił ${cur.h} z ${cur.n} rozliczonych sygnałów w ${cur.matches} meczach.`;
+    const caution=cur.matches<10
+      ? ' Liczba meczów jest jeszcze mała, więc nie traktuj tego procentu jako stałej skuteczności.'
+      : '';
+    return `<section class="pc12-summary">
+      <div class="pc12-hero ${status.cls}">
+        <span>Jak idzie modelowi?</span>
+        <b>${pct77(cur.accuracy)}</b>
+        <strong>${status.label}</strong>
+        <small>${esc77(base+caution)}</small>
+      </div>
+      <div class="pc12-mini">
+        <article><span>Ile mamy danych?</span><b>${cur.n} sygnałów</b><small>${cur.matches} meczów</small></article>
+        <article><span>Czy ufać próbce?</span><b class="${trust.cls}">${trust.label}</b><small>${esc77(trust.note)}</small></article>
+        <article><span>Zmiana formy</span><b class="${delta.cls}">${delta.txt}</b><small>vs poprzedni taki sam okres</small></article>
+      </div>
+    </section>`;
+  }
+
+  function simpleLegend(){
+    return `<div class="pc12-legend">
+      <div><i class="good"></i><b>Mocny kierunek</b><span>dobry wynik + sensowna próbka</span></div>
+      <div><i class="warn"></i><b>Obserwuj</b><span>procent wygląda dobrze, ale danych jest mało</span></div>
+      <div><i class="bad"></i><b>Uważać</b><span>ta grupa nie wspiera dziś kuponu</span></div>
+    </div>`;
+  }
+
   function controls(all){
     const surfaces=[...new Set(all.map(x=>x.surface).filter(Boolean))].sort();
     const tours=[...new Set(all.map(x=>x.tour).filter(Boolean))].sort();
     const pbtn=(id,txt)=>`<button type="button" data-pc77-period="${id}" class="${state.period===id?'active':''}">${txt}</button>`;
-    return `<div class="pc77-controls"><div class="pc77-periods">${pbtn('today','Dziś')}${pbtn('7d','7 dni')}${pbtn('30d','30 dni')}${pbtn('all','Wszystko')}</div><div class="pc77-selects"><label>Tour<select data-pc77="tour"><option value="all">Wszystkie</option>${tours.map(x=>`<option value="${esc77(x)}" ${state.tour===x?'selected':''}>${esc77(x)}</option>`).join('')}</select></label><label>Nawierzchnia<select data-pc77="surface"><option value="all">Wszystkie</option>${surfaces.map(x=>`<option value="${esc77(x)}" ${state.surface===x?'selected':''}>${esc77(x)}</option>`).join('')}</select></label><label>Min. próbka<select data-pc77="minSample">${[5,10,20,50].map(x=>`<option value="${x}" ${Number(state.minSample)===x?'selected':''}>n ≥ ${x}</option>`).join('')}</select></label></div></div>`
+    return `<div class="pc77-controls"><div class="pc77-periods">${pbtn('today','Dziś')}${pbtn('7d','7 dni')}${pbtn('30d','30 dni')}${pbtn('all','Wszystko')}</div><div class="pc77-selects"><label>Rozgrywki<select data-pc77="tour"><option value="all">Wszystkie</option>${tours.map(x=>`<option value="${esc77(x)}" ${state.tour===x?'selected':''}>${esc77(x)}</option>`).join('')}</select></label><label>Nawierzchnia<select data-pc77="surface"><option value="all">Wszystkie</option>${surfaces.map(x=>`<option value="${esc77(x)}" ${state.surface===x?'selected':''}>${esc77(x)}</option>`).join('')}</select></label><label>Minimum wyników<select data-pc77="minSample">${[5,10,20,50].map(x=>`<option value="${x}" ${Number(state.minSample)===x?'selected':''}>co najmniej ${x}</option>`).join('')}</select></label></div></div>`
   }
 
   function renderPage(ex){
     const app=document.querySelector('#app');if(!app)return;
     const all=flatten(),rows=filtered(all),prev=filtered(all,state.period,true),cur=stats(rows),pr=stats(prev),delta=deltaText(cur,pr),rank=topSegments(rows),bs=baseStats();
     const byMarket=group(rows,x=>x.label),byTour=group(rows,x=>x.tour),bySurface=group(rows,x=>x.surface),byBand=group(rows,x=>scoreBand(x.score)),byVersion=group(rows,x=>x.version),byTournament=group(rows,x=>x.tournament);
-    const best=rank.best[0];
     const legacy=bs.legacy_overall||{};
-    const pending=fmtInt(bs.matches_pending||0);
-    app.innerHTML=`<section id="pc77" class="pc77-wrap">
-      <div class="pc77-head"><div><span>📊 MODEL PERFORMANCE CENTER</span><h2>Skuteczność modelu</h2><p>Aktualny model i historia referencyjna są liczone osobno — bez mieszania wersji.</p></div><b>v7.8E4</b></div>
-      ${controls(all)}
-      <div class="pc77-kpis">
-        <div class="hero"><span>v7.8D · skuteczność · ${esc77(periodLabel())}</span><b>${pct77(cur.accuracy)}</b><small>${cur.h} ✅ · ${cur.m} ❌ · ${pending} meczów czeka</small></div>
-        <div><span>Rozliczone sygnały</span><b>${fmtInt(cur.n)}</b><small>${fmtInt(cur.matches)} meczów</small></div>
-        <div><span>Zmiana vs poprzedni okres</span><b class="${delta.cls}">${delta.txt}</b><small>${state.period==='all'?'wybierz Dziś / 7 / 30 dni':'ten sam filtr'}</small></div>
-        <div><span>Najlepszy segment</span><b>${best?pct77(best.accuracy):'—'}</b><small>${best?`${esc77(best.name)} · n=${best.n}`:'za mała próbka'}</small></div>
+    const markets=simpleMarketRows(rows);
+    const bestMarkets=markets.slice(0,4);
+    const weakMarkets=[...markets].filter(x=>x.n>=10).sort((a,b)=>a.accuracy-b.accuracy||b.n-a.n).slice(0,3);
+    const appVer=window.TENIS_AI_META?.appVersion||'v7.8E12';
+
+    app.innerHTML=`<section id="pc77" class="pc77-wrap pc12-wrap">
+      <div class="pc77-head pc12-head">
+        <div>
+          <span>📊 SKUTECZNOŚĆ MODELU</span>
+          <h2>Czy modelowi można dziś ufać?</h2>
+          <p>Najpierw prosty wniosek. Szczegóły statystyczne są niżej dla chętnych.</p>
+        </div>
+        <b>${esc77(appVer)}</b>
       </div>
 
-      <section class="pc77-card">
-        <div class="pc77-card-head"><div><b>📚 Historia referencyjna</b><small>starsze wersje modelu · nie miesza się z v7.8D</small></div><span>cała baza</span></div>
-        <div class="pc77-pbp-kpis">
-          <div><span>Skuteczność</span><b>${pct77(legacy.accuracy)}</b><small>n=${fmtInt(legacy.settled)}</small></div>
-          <div><span>Trafione</span><b>${fmtInt(legacy.hits)}</b><small>✅ historyczne</small></div>
-          <div><span>Nietrafione</span><b>${fmtInt(legacy.misses)}</b><small>❌ historyczne</small></div>
+      ${controls(all)}
+      ${simpleOverall(cur,delta)}
+
+      <section class="pc77-card pc12-card">
+        <div class="pc77-card-head">
+          <div><b>🎯 Najlepiej działające rynki</b><small>najpierw patrzymy na wielkość próbki, potem na procent</small></div>
         </div>
-        <p class="pc77-note">To baza referencyjna starszych wersji. Aktualny v7.8D zbiera własną próbkę od zera, dlatego jego skuteczność pojawi się dopiero po rozliczeniu nowych sygnałów.</p>
+        ${bestMarkets.length
+          ? `<div class="pc12-market-grid">${bestMarkets.map(simpleMarketCard).join('')}</div>`
+          : '<div class="pc77-empty">Za mało rozliczonych wyników, żeby wskazać sensowny rynek.</div>'}
       </section>
 
-      <section class="pc77-card"><div class="pc77-card-head"><div><b>📈 Trend skuteczności</b><small>do 30 ostatnich aktywnych dni</small></div><span>linia 72%</span></div>${trend(rows)}</section>
+      ${weakMarkets.length?`<section class="pc77-card pc12-card">
+        <div class="pc77-card-head"><div><b>⚠️ Rynki do obserwacji</b><small>tu skuteczność jest najsłabsza przy sensownej próbce</small></div></div>
+        <div class="pc12-market-grid">${weakMarkets.map(simpleMarketCard).join('')}</div>
+      </section>`:''}
 
-      <section class="pc77-card"><div class="pc77-card-head"><div><b>🏆 Najmocniejsze i najsłabsze segmenty</b><small>minimum ustawione wyżej: n ≥ ${Number(state.minSample)}</small></div></div><div class="pc77-rank-grid"><div><h3>Najmocniejsze historycznie</h3>${rank.best.length?rank.best.map(segmentRow).join(''):'<div class="pc77-empty">Brak segmentów z taką próbką.</div>'}</div><div><h3>Do poprawy / obserwacji</h3>${rank.weak.length?rank.weak.map(segmentRow).join(''):'<div class="pc77-empty">Brak segmentów z taką próbką.</div>'}</div></div></section>
+      <section class="pc77-card pc12-card">
+        <div class="pc77-card-head"><div><b>🧭 Jak to czytać?</b><small>bez statystycznego żargonu</small></div></div>
+        ${simpleLegend()}
+        <p class="pc12-help"><b>Najważniejsze:</b> 90% przy 5 wynikach jest mniej wiarygodne niż 78% przy 50 wynikach. Dlatego aplikacja pokazuje teraz wielkość próbki obok procentu.</p>
+      </section>
 
-      ${section('🎯 Według rynku',byMarket,true)}
-      ${section('🏟️ Według touru',byTour,true)}
-      ${section('🧱 Według nawierzchni',bySurface)}
-      ${section('⚡ Według siły sygnału',byBand,true)}
-      ${section('🧠 Według wersji modelu',byVersion)}
-      ${section('🏆 Według turnieju',byTournament,false,20)}
+      <details class="pc77-details pc12-pro">
+        <summary><b>📊 Statystyki PRO</b><span>trend, stare wersje, CI, segmenty, PBP, Market Lab</span></summary>
+        <div class="pc12-pro-body">
+          <section class="pc77-card">
+            <div class="pc77-card-head"><div><b>📚 Historia referencyjna</b><small>starsze wersje modelu · nie miesza się z bieżącą</small></div><span>cała baza</span></div>
+            <div class="pc77-pbp-kpis">
+              <div><span>Skuteczność</span><b>${pct77(legacy.accuracy)}</b><small>${fmtInt(legacy.settled)} wyników</small></div>
+              <div><span>Trafione</span><b>${fmtInt(legacy.hits)}</b><small>✅ historyczne</small></div>
+              <div><span>Nietrafione</span><b>${fmtInt(legacy.misses)}</b><small>❌ historyczne</small></div>
+            </div>
+          </section>
 
-      <details class="pc77-details" open><summary><b>🤖 Modele i walidatory</b><span>bez mieszania różnych typów testu</span></summary>${modelValidation(cur,ex)}</details>
-      <details class="pc77-details"><summary><b>🧬 Jakość danych teraz</b><span>co faktycznie jest gotowe</span></summary>${dataQuality(ex,bs)}</details>
-      ${pbpPanel(ex)}
-      ${labPanel(ex)}
-      <p class="pc77-final-note"><b>Ważne:</b> skuteczność historyczna ≠ gwarancja kolejnego typu i ≠ rentowność. Bez kursów bukmachera nie liczymy ROI. Przy małych próbkach patrz na n i przedział 95% CI, a nie sam procent.</p>
+          <section class="pc77-card"><div class="pc77-card-head"><div><b>📈 Trend skuteczności</b><small>do 30 ostatnich aktywnych dni</small></div><span>linia 72%</span></div>${trend(rows)}</section>
+
+          <section class="pc77-card"><div class="pc77-card-head"><div><b>🏆 Najmocniejsze i najsłabsze kategorie</b><small>minimum ${Number(state.minSample)} wyników</small></div></div><div class="pc77-rank-grid"><div><h3>Najmocniejsze historycznie</h3>${rank.best.length?rank.best.map(segmentRow).join(''):'<div class="pc77-empty">Brak kategorii z taką próbką.</div>'}</div><div><h3>Do poprawy / obserwacji</h3>${rank.weak.length?rank.weak.map(segmentRow).join(''):'<div class="pc77-empty">Brak kategorii z taką próbką.</div>'}</div></div></section>
+
+          ${section('🎯 Według rynku',byMarket,true)}
+          ${section('🏟️ Według rozgrywek',byTour,true)}
+          ${section('🧱 Według nawierzchni',bySurface)}
+          ${section('⚡ Według siły sygnału',byBand,true)}
+          ${section('🧠 Według wersji modelu',byVersion)}
+          ${section('🏆 Według turnieju',byTournament,false,20)}
+
+          <details class="pc77-details"><summary><b>🤖 Modele i walidatory</b><span>różne typy testów</span></summary>${modelValidation(cur,ex)}</details>
+          <details class="pc77-details"><summary><b>🧬 Jakość danych</b><span>co faktycznie jest gotowe</span></summary>${dataQuality(ex,bs)}</details>
+          ${pbpPanel(ex)}
+          ${labPanel(ex)}
+        </div>
+      </details>
+
+      <p class="pc77-final-note"><b>Pamiętaj:</b> skuteczność historyczna nie gwarantuje kolejnego wyniku. Najpierw patrz na wielkość próbki, potem na procent.</p>
     </section>`;
     bind();
   }

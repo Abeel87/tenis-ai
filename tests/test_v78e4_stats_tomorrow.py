@@ -12,7 +12,8 @@ def test_v78e4_keeps_current_and_legacy_separate():
     assert "if(x.legacy)return false;" in js
     assert "Historia referencyjna" in js
     assert "legacy=bs.legacy_overall" in js
-    assert "v7.8E4" in js
+    assert "window.TENIS_AI_META?.appVersion" in js
+    assert "<b>v7.8E4</b>" not in js
 
 def test_v78e4_bumps_pwa_cache():
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")

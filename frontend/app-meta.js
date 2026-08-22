@@ -1,10 +1,10 @@
 /* Tenis AI v7.8E10 — central app metadata */
 (() => {
   const META = Object.freeze({
-    appVersion: 'v7.8E11.4',
+    appVersion: 'v7.8E12',
     modelVersion: 'v7.8D',
     modelName: 'Calibration Guard',
-    cacheVersion: 'v78e114'
+    cacheVersion: 'v78e12'
   });
 
   window.TENIS_AI_META = META;
