@@ -544,4 +544,13 @@
   simplifyShell();
   setTimeout(()=>{simplifyShell();if(typeof view!=='undefined'&&view==='matches')renderMatches()},250);
   setTimeout(()=>{if(typeof view!=='undefined'&&view==='matches')renderMatches()},1000);
+
+  // v7.8E8 — public bridge for Shadow Lab.
+  // Shadow uses the SAME Match Center detail overlay as normal matches.
+  window.TENIS_AI_PROJECT_UI = {
+    openMatch,
+    findMatch,
+    renderMatches: () => renderMatches()
+  };
+
 })();

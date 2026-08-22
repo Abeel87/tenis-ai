@@ -1,136 +1,481 @@
-/* Tenis AI v7.8E6 — Shadow Lab / Odrzucone */
+/* Tenis AI v7.8E8 — Shadow Lab inline Match Center */
 (() => {
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const pc=x=>x==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
-  const sc=x=>x==null?'—':`${Math.round(Number(x))}/100`;
-  let current=[],stats={},hist=[];
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
 
-  async function safeJson(url,fallback){
-    try{const r=await fetch(url+'?v='+Date.now());return r.ok?await r.json():fallback}catch{return fallback}
+  const sc = x => x == null || !Number.isFinite(Number(x))
+    ? 'N/D'
+    : `${Math.round(Number(x))}/100`;
+
+  const pc = x => x == null || !Number.isFinite(Number(x))
+    ? '—'
+    : `${Number(x).toFixed(1).replace('.0','')}%`;
+
+  let current = [];
+  let stats = {};
+  let active = false;
+
+  async function safeJson(url, fallback) {
+    try {
+      const r = await fetch(url + '?v=' + Date.now());
+      return r.ok ? await r.json() : fallback;
+    } catch {
+      return fallback;
+    }
   }
-  async function reload(){
-    [current,stats,hist]=await Promise.all([
-      safeJson('data/shadow_current.json',[]),
-      safeJson('data/shadow_stats.json',{}),
-      safeJson('data/history.json',[])
+
+  async function reload() {
+    [current, stats] = await Promise.all([
+      safeJson('data/shadow_current.json', []),
+      safeJson('data/shadow_stats.json', {})
     ]);
+
+    if (!Array.isArray(current)) current = [];
+    if (!stats || typeof stats !== 'object') stats = {};
   }
 
-  const ri=r=>({hit:'✅',miss:'❌',pending:'⏳',void:'↩️',unverifiable:'➖'}[r]||'⏳');
-  const rt=r=>({hit:'WESZŁO',miss:'NIE WESZŁO',pending:'OCZEKUJE',void:'VOID',unverifiable:'NIEWERYF.'}[r]||'OCZEKUJE');
-
-  function statCard(label,data){
-    const d=data||{};
-    return `<article class="sl78-stat"><span>${esc(label)}</span><b>${d.accuracy==null?'—':pc(d.accuracy)}</b><small>${d.hits||0} ✅ · ${d.misses||0} ❌ · n=${d.settled||0}</small></article>`;
+  function tour(x) {
+    const t = String(x?.tour || '').toLowerCase();
+    if (t.includes('chall')) return 'CH';
+    if (t.includes('itf')) return 'ITF';
+    return t.toUpperCase() || 'TENIS';
   }
 
-  function currentCard(x){
-    const weak=x.signals||[],noData=!x.model_ready;
-    return `<article class="sl78-card ${noData?'nodata':''}">
-      <header><span>${esc((x.tour||'').toUpperCase())} · ${esc(x.tournament||'—')}</span><b>${noData?'BRAK DANYCH':'SHADOW'}</b></header>
-      <h3>${esc(x.p1)} <i>vs</i> ${esc(x.p2)}</h3>
-      <p>${esc(x.rejection_reason||'Odrzucone przez filtr.')}</p>
-      ${noData?`<div class="sl78-samples"><span>${esc(x.p1)} <b>n=${x.p1_matches??'—'} · ${esc(x.p1_quality||'LOW')}</b></span><span>${esc(x.p2)} <b>n=${x.p2_matches??'—'} · ${esc(x.p2_quality||'LOW')}</b></span></div>`:
-      `<div class="sl78-signals">${weak.slice(0,8).map(s=>`<div><span>${esc(s.label)}</span><b>${esc(s.pick)} · ${sc(s.score)}</b></div>`).join('')}</div>`}
-      <footer>${x.scheduled_time?new Date(x.scheduled_time).toLocaleString('pl-PL'):''}</footer>
-    </article>`;
+  function surface(x) {
+    const s = String(x?.surface || '').trim();
+    if (!s) return '—';
+
+    const k = s.toLowerCase();
+    if (k === 'hard') return 'Hard';
+    if (k === 'clay') return 'Clay';
+    if (k === 'grass') return 'Grass';
+    return s;
   }
 
-  function histCard(e){
-    const rows=e.shadow_signals||[];
-    const final=e.result?.status==='retired'?'KRECZ':e.status==='settled'?'ROZLICZONY':e.status==='void'?'VOID':'OCZEKUJE';
-    return `<article class="sl78-card history">
-      <header><span>${esc((e.tour||'').toUpperCase())} · ${esc(e.tournament||'—')}</span><b>${final}</b></header>
-      <h3>${esc(e.p1)} <i>vs</i> ${esc(e.p2)}</h3>
-      <div class="sl78-signals">${rows.map(s=>`<div class="${esc(s.result||'pending')}"><span>${ri(s.result)} ${esc(s.label)}</span><b>${esc(s.pick)} · ${sc(s.score)} · ${rt(s.result)}</b></div>`).join('')}</div>
-    </article>`;
+  function time(x) {
+    const d = new Date(x?.scheduled_time || '');
+    return Number.isFinite(d.getTime())
+      ? d.toLocaleTimeString('pl-PL', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : '—';
   }
 
-  function grouped(obj){
-    const rows=Object.entries(obj||{});
-    if(!rows.length)return '';
-    return `<div class="sl78-groups">${rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${v.accuracy==null?'—':pc(v.accuracy)}</b><small>${v.hits||0}/${v.settled||0}</small></div>`).join('')}</div>`;
+  function currentTourFilter() {
+    try {
+      return typeof filter !== 'undefined' ? String(filter || 'all') : 'all';
+    } catch {
+      return 'all';
+    }
   }
 
-  function renderShadow(){
-    try{view='shadow'}catch{}
-    const mc=document.querySelector('#match-controls');if(mc)mc.style.display='none';
-    const app=document.querySelector('#app');if(!app)return;
-    const o=stats.overall||{},history=hist.filter(e=>(e.shadow_signals||[]).length).slice(0,60);
-    app.innerHTML=`<section class="sl78-hero">
-      <div><span>🧪 SHADOW LAB v7.8E6</span><b>Odrzucone sygnały też pracują</b><p>Zakres 55–71/100 jest śledzony osobno. Nigdy nie miesza się z oficjalną skutecznością zielonych typów.</p></div>
-      <div class="sl78-badges"><span>Śledzone mecze <b>${stats.matches_tracked||0}</b></span><span>Czeka <b>${stats.matches_pending||0}</b></span><span>Cel nauki <b>${o.settled||0}/${stats.learning_target_sample||300}</b></span></div>
-    </section>
-    <div class="sl78-stat-grid">${statCard('Odrzucone · rozliczone',o)}${statCard('68–71',stats.by_score_band?.['68–71'])}${statCard('65–67',stats.by_score_band?.['65–67'])}</div>
-    <section class="sl78-note ${stats.learning_ready?'ready':''}"><b>${stats.learning_ready?'✅ Próbka gotowa pod etap Adaptive Learning':'📥 Na razie zbieramy dane'}</b><span>${stats.learning_ready?'Mamy minimalną próbkę do testowania zmian progów i wag.':'Logika samouczenia nie zmienia jeszcze modelu. Najpierw chcemy zebrać min. 300 rozliczalnych sygnałów.'}</span></section>
-    <section class="sl78-section"><header><div><b>🎯 Odrzucone teraz</b><small>Słabszy sygnał albo brak wystarczających danych</small></div><span>${current.length}</span></header>
-      <div class="sl78-list">${current.length?current.slice(0,120).map(currentCard).join(''):'<div class="sl78-empty">Brak aktualnych odrzuconych meczów.</div>'}</div>
-    </section>
-    <section class="sl78-section"><header><div><b>📈 Co odrzuciliśmy — jak wyszło</b><small>osobna kalibracja Shadow Lab</small></div><span>${o.settled||0} sygnałów</span></header>
-      ${grouped(stats.by_score_band)}
-      <details class="sl78-history"><summary>Ostatnie mecze Shadow (${history.length})</summary><div class="sl78-list">${history.map(histCard).join('')}</div></details>
-    </section>`;
-    activateNav();
+  function shadowTourKey(x) {
+    const t = String(x?.tour || '').toLowerCase();
+    if (t.includes('chall')) return 'challenger';
+    if (t.includes('itf')) return 'itf';
+    if (t.includes('wta')) return 'wta';
+    if (t.includes('atp')) return 'atp';
+    return t || 'other';
   }
 
-  function activateNav(){
-    document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(b=>b.classList.toggle('active',b.dataset.p751Nav==='shadow'));
+  function filteredRows() {
+    const f = currentTourFilter();
+
+    return current
+      .filter(Boolean)
+      .filter(x => f === 'all' || shadowTourKey(x) === f)
+      .sort((a,b) =>
+        new Date(a.scheduled_time || 0) -
+        new Date(b.scheduled_time || 0)
+      );
   }
 
-  function restoreShell(target='matches'){
-    const mc=document.querySelector('#match-controls');
-    if(mc)mc.style.display='';
+  function bestSignal(x) {
+    const rows = Array.isArray(x?.signals) ? x.signals : [];
 
-    const p=document.querySelector('.brand-copy p');
-    if(p)p.textContent='Tenis AI v7.8D · Calibration Guard';
-
-    try{
-      view=target==='history'?'history':'matches';
-    }catch{}
+    return rows
+      .filter(s => Number.isFinite(Number(s?.score)))
+      .sort((a,b) => Number(b.score) - Number(a.score))[0] || null;
   }
 
-  async function openShadow(){
-    try{view='shadow'}catch{}
+  function matchExists(x) {
+    try {
+      return !!window.TENIS_AI_PROJECT_UI?.findMatch?.(
+        String(x?.match_id ?? '')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function card(x) {
+    const sig = bestSignal(x);
+    const score = sig ? Number(sig.score) : null;
+    const ready = !!x.model_ready;
+    const canOpen = matchExists(x);
+
+    const state = ready
+      ? 'SHADOW'
+      : 'BRAK DANYCH';
+
+    const topLabel = sig
+      ? `${sig.label || 'Sygnał'} · ${String(sig.pick || '').toUpperCase()}`
+      : 'Brak rozliczalnego sygnału';
+
+    const reason = x.rejection_reason || 'Odrzucone przez filtr głównego modelu.';
+
+    return `
+      <button
+        class="p751-match-card sl78-main-card ${ready ? '' : 'sl78-main-nodata'}"
+        ${canOpen ? `data-shadow-match="${esc(String(x.match_id))}"` : ''}
+        type="button"
+      >
+        <div class="p751-match-meta">
+          <span class="p751-status sl78-shadow-status">${state}</span>
+          <b>${esc(tour(x))}</b>
+          <span>${esc(x.tournament || 'Turniej')}</span>
+          <span>• ${esc(surface(x))}</span>
+          <time>${esc(time(x))}</time>
+        </div>
+
+        <div class="p751-card-center">
+          <div class="p751-names">
+            <b>${esc(x.p1)}</b>
+            <span>VS</span>
+            <b>${esc(x.p2)}</b>
+          </div>
+
+          <div class="p751-top-pick">
+            <span>🧪 Top Shadow</span>
+            <b>${esc(topLabel)}</b>
+            <em>${sc(score)}</em>
+          </div>
+        </div>
+
+        <aside class="p751-strength">
+          <span>Shadow score</span>
+          <b>${score == null ? 'N/D' : Math.round(score) + '/100'}</b>
+          <span class="p751-bars">
+            ${[1,2,3,4,5].map(i =>
+              `<i class="${score != null && score >= i * 18 ? 'on' : ''}"></i>`
+            ).join('')}
+          </span>
+          <small>${(x.signals || []).length} sygnałów</small>
+        </aside>
+
+        <div class="p753-match-total-preview sl78-reason">
+          <span>🧪 Powód odrzucenia</span>
+          <b>${esc(reason)}</b>
+          <em>
+            ${esc(x.p1)} n=${x.p1_matches ?? '—'}
+            ·
+            ${esc(x.p2)} n=${x.p2_matches ?? '—'}
+          </em>
+        </div>
+
+        <footer>
+          <span>🧪 Shadow Lab</span>
+          <span>DANE ${esc(x.quality || '—')}</span>
+          <span>${ready ? '55–71/100' : 'N/D'}</span>
+          <b>${canOpen ? 'Analiza ›' : 'Brak pełnej analizy'}</b>
+        </footer>
+      </button>
+    `;
+  }
+
+  function groupRows(rows) {
+    const groups = new Map();
+
+    rows.forEach(x => {
+      const k = `${tour(x)}|${x.tournament || 'Turniej'}`;
+
+      if (!groups.has(k)) {
+        groups.set(k, {
+          tour: tour(x),
+          name: x.tournament || 'Turniej',
+          rows: []
+        });
+      }
+
+      groups.get(k).rows.push(x);
+    });
+
+    return [...groups.values()];
+  }
+
+  function summary() {
+    const o = stats.overall || {};
+
+    return `
+      <section class="sl78-inline-summary">
+        <div>
+          <b>🧪 Shadow Lab</b>
+          <span>
+            Odrzucone przez główny model · obserwacja 55–71/100
+          </span>
+        </div>
+
+        <div class="sl78-inline-numbers">
+          <span>
+            Śledzone
+            <b>${stats.matches_tracked || 0}</b>
+          </span>
+
+          <span>
+            Oczekuje
+            <b>${stats.matches_pending || 0}</b>
+          </span>
+
+          <span>
+            Rozliczone
+            <b>${o.settled || 0}</b>
+          </span>
+
+          <span>
+            Skuteczność
+            <b>${o.accuracy == null ? '—' : pc(o.accuracy)}</b>
+          </span>
+        </div>
+
+        <small>
+          Shadow nie zmienia oficjalnej skuteczności głównego modelu.
+          Nauka progów dopiero po minimum
+          ${stats.learning_target_sample || 300}
+          rozliczalnych sygnałach.
+        </small>
+      </section>
+    `;
+  }
+
+  function ensureButton() {
+    const bar = document.querySelector('#app .p751-focus');
+    if (!bar) return;
+
+    let b = bar.querySelector('[data-shadow-open]');
+
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.shadowOpen = '1';
+      b.innerHTML = '🧪 Odrzucone';
+
+      const model = bar.querySelector('[data-p751-models]');
+
+      // EXACT PLACE:
+      // PBP OK -> Odrzucone -> Model
+      bar.insertBefore(b, model || null);
+
+      b.onclick = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        openShadow();
+      };
+    }
+
+    bar.querySelectorAll('button').forEach(x => {
+      if (x !== b && active) x.classList.remove('active');
+    });
+
+    b.classList.toggle('active', active);
+  }
+
+  function updateTourCounts(rows) {
+    const counts = {
+      all: rows.length,
+      atp: 0,
+      wta: 0,
+      challenger: 0,
+      itf: 0
+    };
+
+    current.forEach(x => {
+      const k = shadowTourKey(x);
+      if (Object.prototype.hasOwnProperty.call(counts, k)) {
+        counts[k]++;
+      }
+    });
+
+    counts.all = current.length;
+
+    document.querySelectorAll('#tour-nav [data-filter]').forEach(b => {
+      const k = b.dataset.filter;
+      const c = b.querySelector('.count');
+
+      if (c && Object.prototype.hasOwnProperty.call(counts, k)) {
+        c.textContent = String(counts[k]);
+      }
+    });
+  }
+
+  function bindCards() {
+    document.querySelectorAll('[data-shadow-match]').forEach(b => {
+      b.onclick = () => {
+        const id = String(b.dataset.shadowMatch || '');
+
+        window.TENIS_AI_PROJECT_UI?.openMatch?.(id);
+      };
+    });
+  }
+
+  function bindCollapse() {
+    const c = document.querySelector('#collapse-all');
+    const e = document.querySelector('#expand-all');
+
+    if (c && !c.dataset.shadowBound) {
+      c.dataset.shadowBound = '1';
+
+      c.addEventListener('click', () => {
+        if (!active) return;
+
+        document
+          .querySelectorAll('#app .p751-group')
+          .forEach(d => d.open = false);
+      });
+    }
+
+    if (e && !e.dataset.shadowBound) {
+      e.dataset.shadowBound = '1';
+
+      e.addEventListener('click', () => {
+        if (!active) return;
+
+        document
+          .querySelectorAll('#app .p751-group')
+          .forEach(d => d.open = true);
+      });
+    }
+  }
+
+  function renderShadow() {
+    active = true;
+
+    // Build the normal Match Center shell first.
+    // We keep its filters/navigation and replace only the match list.
+    window.TENIS_AI_PROJECT_UI?.renderMatches?.();
+
+    const app = document.querySelector('#app');
+    if (!app) return;
+
+    const focus = app.querySelector('.p751-focus');
+    if (!focus) return;
+
+    [...app.children].forEach(el => {
+      if (el !== focus) el.remove();
+    });
+
+    ensureButton();
+
+    const rows = filteredRows();
+
+    const holder = document.createElement('div');
+    holder.className = 'sl78-inline-view';
+
+    holder.innerHTML = `
+      ${summary()}
+
+      ${
+        rows.length
+          ? `<div class="p751-groups">
+              ${groupRows(rows).map((g,i) => `
+                <details
+                  class="p751-group"
+                  ${i < 4 ? 'open' : ''}
+                >
+                  <summary>
+                    <div>
+                      <span>${esc(g.tour)}</span>
+                      <b>${esc(g.name)}</b>
+                      <small>
+                        ${g.rows.length}
+                        ${g.rows.length === 1 ? 'mecz' : 'meczów'}
+                        ·
+                        ${esc([...new Set(g.rows.map(surface))].join('/'))}
+                      </small>
+                    </div>
+                    <i>⌄</i>
+                  </summary>
+
+                  <div class="p751-group-body">
+                    ${g.rows.map(card).join('')}
+                  </div>
+                </details>
+              `).join('')}
+            </div>`
+          : `<div class="p751-empty">
+              <b>Brak odrzuconych meczów dla tego filtra.</b>
+              <span>Wybierz „Wszystkie” albo inny tour.</span>
+            </div>`
+      }
+    `;
+
+    app.appendChild(holder);
+
+    ensureButton();
+    updateTourCounts(rows);
+    bindCards();
+    bindCollapse();
+  }
+
+  async function openShadow() {
+    active = true;
     await reload();
     renderShadow();
   }
 
-  function ensureNav(){
-    const nav=document.querySelector('#p751-bottom-nav');
-    if(!nav)return;
+  // Leaving Shadow through normal Match Center filters.
+  document.addEventListener('click', e => {
+    const normalFocus = e.target.closest(
+      '.p751-focus button:not([data-shadow-open])'
+    );
 
-    if(!nav.dataset.shadowLeaveBound){
-      nav.dataset.shadowLeaveBound='1';
-
-      nav.addEventListener('click',e=>{
-        const b=e.target.closest('[data-p751-nav]');
-        if(!b||b.dataset.p751Nav==='shadow')return;
-        restoreShell(b.dataset.p751Nav);
-      },true);
+    if (normalFocus) {
+      active = false;
     }
 
-    if(nav.querySelector('[data-p751-nav="shadow"]'))return;
+    const bottom = e.target.closest(
+      '#p751-bottom-nav [data-p751-nav]'
+    );
 
-    const b=document.createElement('button');
-    b.dataset.p751Nav='shadow';
-    b.innerHTML='<span>🧪</span><b>Odrzucone</b>';
+    if (bottom) {
+      active = false;
+    }
 
-    const h=nav.querySelector('[data-p751-nav="history"]');
-    nav.insertBefore(b,h||null);
+    const tourButton = e.target.closest(
+      '#tour-nav [data-filter]'
+    );
 
-    b.onclick=openShadow;
-  }
+    if (tourButton && active) {
+      setTimeout(() => renderShadow(), 0);
+    }
+  }, true);
 
-  const oldRender=typeof render==='function'?render:null;
-  if(oldRender){
-    render=function(){
-      if(typeof view!=='undefined'&&view==='shadow'){renderShadow();return}
-      return oldRender();
-    };
-  }
+  // The Match Center re-renders often, so keep Shadow button
+  // in its exact place whenever the normal filter bar exists.
+  const observer = new MutationObserver(() => {
+    if (document.querySelector('#app .p751-focus')) {
+      ensureButton();
+    }
+  });
 
-  window.TENIS_AI_SHADOW_LAB={reload,render:renderShadow,open:openShadow};
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
   reload();
-  setTimeout(ensureNav,50);setTimeout(ensureNav,350);setTimeout(ensureNav,1200);
-  setInterval(ensureNav,5000);
+  setTimeout(ensureButton, 100);
+  setTimeout(ensureButton, 500);
+  setTimeout(ensureButton, 1500);
+
+  window.TENIS_AI_SHADOW_LAB = {
+    reload,
+    open: openShadow,
+    render: renderShadow
+  };
 })();
