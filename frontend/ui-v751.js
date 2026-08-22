@@ -130,9 +130,9 @@
       </div>
       <div class="p751-card-center">
         <div class="p751-names">
-          <b>${esc(m.p1)}</b>
+          <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b>
           <span>VS</span>
-          <b>${esc(m.p2)}</b>
+          <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p2)}</b>
         </div>
         <div class="p751-top-pick">
           <span>◎ Top typ</span>
@@ -173,6 +173,7 @@
       <button class="${focus==='live'?'active':''}" data-p751-focus="live">● LIVE</button>
       <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">⭐ 80+</button>
       <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">🧬 PBP OK</button>
+      <button type="button" data-shadow-open>🧪 Odrzucone</button>
       <button class="model" data-p751-models>🧠 Model</button>
     </div>`;
   }
@@ -197,6 +198,16 @@
 
   function bindHome(){
     document.querySelectorAll('[data-p751-focus]').forEach(b=>b.onclick=()=>{focus=b.dataset.p751Focus;renderMatches()});
+
+    const shadow=document.querySelector('[data-shadow-open]');
+    if(shadow){
+      shadow.onclick=e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        window.TENIS_AI_SHADOW_LAB?.open?.();
+      };
+    }
+
     document.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
     document.querySelectorAll('[data-p751-open]').forEach(b=>b.onclick=()=>openMatch(decodeURIComponent(b.dataset.p751Open)));
   }
@@ -446,7 +457,7 @@
         <button data-p751-models aria-label="Modele">🧠</button>
       </header>
       <section class="p751-matchup">
-        <b>${esc(m.p1)}</b><span>VS</span><b>${esc(m.p2)}</b>
+        <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b><span>VS</span><b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p2)}</b>
         <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}

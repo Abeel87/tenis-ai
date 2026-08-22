@@ -27,7 +27,7 @@
   }
 
   document.addEventListener('click',e=>{
-    const el=e.target.closest?.('.p751-names > b, .p751-matchup > b');
+    const el=e.target.closest?.('.v762-player-link');
     if(!el)return;
     e.preventDefault();
     e.stopPropagation();
@@ -37,7 +37,7 @@
 
   document.addEventListener('keydown',e=>{
     if(e.key!=='Enter'&&e.key!==' ')return;
-    const el=e.target.closest?.('.p751-names > b, .p751-matchup > b');
+    const el=e.target.closest?.('.v762-player-link');
     if(!el)return;
     e.preventDefault();
     e.stopPropagation();
@@ -118,12 +118,23 @@
 
   const app=$('#app');
   if(app){
-    const obs=new MutationObserver(()=>requestAnimationFrame(refresh));
-    obs.observe(app,{childList:true,subtree:true});
-  }
-  const bodyObs=new MutationObserver(()=>requestAnimationFrame(decoratePlayerNames));
-  bodyObs.observe(document.body,{childList:true,subtree:true});
+    let queued=false;
 
-  setInterval(refresh,1200);
-  setTimeout(refresh,150);
+    const obs=new MutationObserver(()=>{
+      if(queued)return;
+      queued=true;
+
+      requestAnimationFrame(()=>{
+        queued=false;
+        refresh();
+      });
+    });
+
+    obs.observe(app,{
+      childList:true,
+      subtree:false
+    });
+  }
+
+  setTimeout(refresh,100);
 })();
