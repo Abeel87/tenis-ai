@@ -55,10 +55,14 @@ jobs:
         run: python backend/pbp_tracker.py
       - name: Capture green history
         run: python backend/degraded_history.py
+      - name: Capture Shadow Lab v7.8E6
+        run: python backend/shadow_lab_v78e6.py
       - name: Settle history from Live Tennis API
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/live_history_settle.py
+      - name: Refresh Shadow Lab stats after settlement
+        run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
       - name: Save tennis history + PBP cache

@@ -1,4 +1,4 @@
-/* Tenis AI v7.3.2 — Historia: dni + czytelne statusy */
+/* Tenis AI v7.3.2 + v7.8E5 — Historia: dni + czytelne statusy + częściowe rozliczanie RET */
 (() => {
   if (typeof renderHistory !== 'function') return;
 
@@ -23,10 +23,11 @@
   };
 
   function statusInfo(e){
+    if(e.result?.status==='retired') return {text:'KRECZ · CZĘŚCIOWO',cls:'retired',icon:'↩️'};
     if(e.status==='settled') return {text:'ROZLICZONY',cls:'settled',icon:'✅'};
     if(e.status==='void'){
       const why=String(e.result?.reason||e.result?.score_text||'').toLowerCase();
-      if(why.includes('retir')) return {text:'KRETCZ / VOID',cls:'retired',icon:'↩️'};
+      if(why.includes('retir')) return {text:'KRECZ / VOID',cls:'retired',icon:'↩️'};
       if(why.includes('walk')) return {text:'WALKOWER / VOID',cls:'walkover',icon:'↩️'};
       if(why.includes('cancel')) return {text:'ANULOWANY / VOID',cls:'cancelled',icon:'⛔'};
       return {text:'NIE LICZYMY',cls:'void',icon:'↩️'};
@@ -51,6 +52,11 @@
       if(st.cls==='live') return 'Mecz nadal trwa';
       return 'Oczekuje na wynik';
     }
+    if(r.status==='retired'){
+      const sets=r.sets?.length?r.sets.map(s=>s.join(':')).join(' · '):'wynik częściowy';
+      const winner=r.winner?` · wygrywa ${r.winner}`:'';
+      return `Krecz · ${sets}${winner}`;
+    }
     if(r.status==='void') return r.reason?`Nierozliczany · ${r.reason}`:'Mecz nierozliczany';
     if(r.sets?.length) return r.sets.map(s=>s.join(':')).join(' · ');
     return r.score_text||'Zakończony';
@@ -68,7 +74,12 @@
 
   function groupCounts(rows){
     const x={settled:0,pending:0,special:0};
-    rows.forEach(e=>{const st=statusInfo(e);if(st.cls==='settled')x.settled++;else if(['interrupted','suspended','postponed','delayed','live'].includes(st.cls))x.special++;else x.pending++});
+    rows.forEach(e=>{
+      const st=statusInfo(e);
+      if(st.cls==='settled'||st.cls==='retired')x.settled++;
+      else if(['interrupted','suspended','postponed','delayed','live'].includes(st.cls))x.special++;
+      else x.pending++;
+    });
     return x;
   }
 
