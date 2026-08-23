@@ -60,7 +60,7 @@ def test_v82a2_uses_main_match_source():
 
 def test_v82a2_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.js?v=82a6' in h
 
 
 def test_v82a3_generator_exact_count_contract():
@@ -78,7 +78,7 @@ def test_v82a3_generator_two_pass_fill():
 
 def test_v82a3_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.js?v=82a6' in h
 
 
 def test_v82a4_generator_uses_distinct_market_families():
@@ -96,15 +96,15 @@ def test_v82a4_prefers_category_diversity_before_family_fallback():
 
 def test_v82a4_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.js?v=82a6' in h
 
 def test_v82a5_market_line_guard_direction():
     s=read("frontend/scenario-studio-v82a.js")
-    assert "v8.2A.5 Market Line Guard" in s
-    assert "side==='over'" in s
-    assert "totalLine(b)-totalLine(a)" in s
-    assert "totalLine(a)-totalLine(b)" in s
-    assert "const sig=marketLineGuard(" in s
+    assert "v8.2A.6 Marketability Guard" in s
+    assert "const marketLineGuard=(m,rows)=>" in s
+    assert "marketAnchorLine(m,family)" in s
+    assert "Math.abs(totalLine(x)-anchor)<=1.01" in s
+    assert "practicalFloor=family==='match_total'?19.5:8.5" in s
 
 def test_v82a5_manual_line_change_recalculates_score():
     s=read("frontend/scenario-studio-v82a.js")
@@ -127,7 +127,7 @@ def test_v82a5_no_observer_or_interval_added():
 
 def test_v82a5_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.js?v=82a6' in h
 
 def test_v82a51_line_picker_layout():
     s=read("frontend/scenario-studio-v82a.js")
@@ -151,5 +151,40 @@ def test_v82a51_manual_builder_mentions_exact_lines():
 
 def test_v82a51_asset_cache_bust():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.js?v=82a6' in h
     assert 'scenario-studio-v82a.css?v=82a51' in h
+
+def test_v82a6_builds_full_total_ladder_from_raw_match_data():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "function rawTotalSignals(m)" in s
+    assert "m?.match_over_under" in s
+    assert "m?.over_under" in s
+    assert "function scenarioSignals(m)" in s
+
+def test_v82a6_marketability_guard_uses_model_anchor():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "v8.2A.6 Marketability Guard" in s
+    assert "function marketAnchorLine(m,family)" in s
+    assert "Math.abs(totalLine(x)-anchor)<=1.01" in s
+    assert "market_anchor_line:anchor" in s
+
+def test_v82a6_has_practical_floors_without_inventing_lines():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "family==='match_total'?19.5:8.5" in s
+    assert "rawTotalSignals(m).forEach" in s
+    assert "scenarioSignals(m).forEach" not in s
+
+def test_v82a6_manual_and_line_picker_use_full_ladder():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "let sig=scenarioSignals(m);" in s
+    assert "return scenarioSignals(m)" in s
+    assert "const next=scenarioSignals(m).find" in s
+
+def test_v82a6_snapshot_tracks_marketability_metadata():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "market_anchor_line:s.market_anchor_line??" in s
+    assert "marketability_guard:!!s.marketability_guard" in s
+
+def test_v82a6_cache_bust_is_pinned():
+    h=read("frontend/index.html")
+    assert 'scenario-studio-v82a.js?v=82a6' in h

@@ -100,6 +100,45 @@
     })).filter(x=>x.value>=50&&!seen.has(x.key)&&seen.add(x.key))
       .sort((a,b)=>b.value-a.value);
   }
+  function normalizePct(v){
+    const n=num(v);
+    if(n==null)return null;
+    return n>=0&&n<=1?n*100:n;
+  }
+  function rawTotalSignals(m){
+    const rows=[];
+    const add=(obj,market,prefix)=>{
+      Object.entries(obj||{}).forEach(([line,v])=>{
+        const ln=Number(line);if(!Number.isFinite(ln))return;
+        const over=normalizePct(v?.over),under=normalizePct(v?.under);
+        if(over!=null)rows.push({market,key:`${market}|${line}|over`,label:`${prefix}O${line}`,pick:'over',v:over,value:over});
+        if(under!=null)rows.push({market,key:`${market}|${line}|under`,label:`${prefix}U${line}`,pick:'under',v:under,value:under});
+      });
+    };
+    add(m?.match_over_under,'match_total','M ');
+    add(m?.over_under,'set1_total','1S ');
+    return rows;
+  }
+  function scenarioSignals(m){
+    const merged=new Map();
+    rawTotalSignals(m).forEach(x=>merged.set(x.key,x));
+    signalRows(m).forEach(x=>merged.set(x.key,x));
+    return [...merged.values()].map(x=>({
+      ...x,
+      value:clamp(num(x.value)??num(x.v)??0)
+    })).sort((a,b)=>Number(b.value||0)-Number(a.value||0));
+  }
+  function marketAnchorLine(m,family){
+    const obj=family==='match_total'?m?.match_over_under:m?.over_under;
+    let best=null;
+    Object.entries(obj||{}).forEach(([line,v])=>{
+      const ln=Number(line),over=normalizePct(v?.over),under=normalizePct(v?.under);
+      if(!Number.isFinite(ln)||over==null||under==null)return;
+      const gap=Math.abs(over-under);
+      if(!best||gap<best.gap||(gap===best.gap&&ln>best.line))best={line:ln,gap};
+    });
+    return best?.line??null;
+  }
   function totalLine(s){
     const market=String(s?.market||'').toLowerCase();
     if(market!=='match_total'&&market!=='set1_total')return null;
@@ -118,7 +157,7 @@
     if(!isTotalSignal(item))return [];
     const m=findMatchByKey(item.match_key);if(!m)return [];
     const side=String(item.pick||'').toLowerCase();
-    return signalRows(m)
+    return scenarioSignals(m)
       .filter(x=>String(x.market||'').toLowerCase()===String(item.market||'').toLowerCase())
       .filter(x=>String(x.pick||'').toLowerCase()===side)
       .filter(x=>totalLine(x)!=null)
@@ -129,7 +168,7 @@
     const pos=draft.items.findIndex(x=>x.match_key===match_key&&x.signal_key===old_signal_key);
     if(pos<0)return;
     const item=draft.items[pos],m=findMatchByKey(match_key);if(!m)return;
-    const next=signalRows(m).find(x=>x.key===new_signal_key);
+    const next=scenarioSignals(m).find(x=>x.key===new_signal_key);
     if(!next||!isTotalSignal(next))return;
     const original=Number.isFinite(Number(item.suggested_line))?Number(item.suggested_line):totalLine(item);
     const selected=totalLine(next);
@@ -223,6 +262,8 @@
       signal_key:s.key,
       suggested_line:totalLine(s),
       selected_line:totalLine(s),
+      market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),
+      marketability_guard:!!s.marketability_guard,
       label:s.label,
       market:s.market,
       pick:s.pick,
@@ -397,40 +438,57 @@
       return m||categoryOf(x)||k.split('|')[0]||'other';
     };
 
-    // v8.2A.5 Market Line Guard:
-    // OVER -> najwyższa linia, która nadal przechodzi próg profilu.
-    // UNDER -> najniższa linia, która nadal przechodzi próg profilu.
-    const marketLineGuard=rows=>{
+    // v8.2A.6 Marketability Guard:
+    // Używamy pełnej drabinki z surowych prognoz, a nie tylko linii widocznych
+    // w sygnale Consensus. Preferujemy linię blisko "centrum" modelu.
+    const marketLineGuard=(m,rows)=>{
       const normal=rows.filter(x=>!isTotalSignal(x));
       const guarded=[];
+      const targetScore={stable:78,balanced:72,strong:82,experimental:66}[profile]||72;
 
       for(const family of ['match_total','set1_total']){
-        const familyRows=rows.filter(x=>String(x.market||'').toLowerCase()===family&&totalLine(x)!=null);
+        const practicalFloor=family==='match_total'?19.5:8.5;
+        const anchor=marketAnchorLine(m,family);
+        const familyRows=rows
+          .filter(x=>String(x.market||'').toLowerCase()===family&&totalLine(x)!=null)
+          .filter(x=>totalLine(x)>=practicalFloor);
+
         if(!familyRows.length)continue;
 
         const sideChoices=[];
         for(const side of ['over','under']){
-          const sideRows=familyRows
+          let sideRows=familyRows
             .filter(x=>String(x.pick||'').toLowerCase()===side)
             .filter(x=>x.cs>=min);
+
+          if(anchor!=null){
+            // Główna linia / jeden krok obok. Nie uciekamy np. z 21.5 do easy O18.5.
+            sideRows=sideRows.filter(x=>Math.abs(totalLine(x)-anchor)<=1.01);
+            sideRows.sort((a,b)=>{
+              const da=Math.abs(totalLine(a)-anchor),db=Math.abs(totalLine(b)-anchor);
+              return da-db||b.cs-a.cs;
+            });
+          }else{
+            // Gdy brak pary over/under do wyznaczenia centrum, szukamy score
+            // zbliżonego do rynkowego pasma zamiast największego procentu.
+            sideRows.sort((a,b)=>Math.abs(a.cs-targetScore)-Math.abs(b.cs-targetScore)||b.cs-a.cs);
+          }
+
           if(!sideRows.length)continue;
-
-          sideRows.sort((a,b)=>side==='over'
-            ? totalLine(b)-totalLine(a)
-            : totalLine(a)-totalLine(b));
-
           const chosen=sideRows[0];
           sideChoices.push({
             ...chosen,
-            market_line_guard:true,
-            easiest_line:familyRows
-              .filter(x=>String(x.pick||'').toLowerCase()===side)
-              .sort((a,b)=>b.cs-a.cs)[0]?.key||null
+            marketability_guard:true,
+            market_anchor_line:anchor,
+            practical_floor:practicalFloor
           });
         }
 
         if(sideChoices.length){
-          sideChoices.sort((a,b)=>b.cs-a.cs);
+          sideChoices.sort((a,b)=>{
+            const da=Math.abs(a.cs-targetScore),db=Math.abs(b.cs-targetScore);
+            return da-db||b.cs-a.cs;
+          });
           guarded.push(sideChoices[0]);
         }
       }
@@ -440,7 +498,8 @@
 
     const candidates=todaysMatches().map(m=>{
       const sig=marketLineGuard(
-        signalRows(m)
+        m,
+        scenarioSignals(m)
           .map(s=>({...s,cs:composerSignalScore(m,s,profile)}))
           .filter(s=>s.cs>=min)
           .sort((a,b)=>b.cs-a.cs)
@@ -516,7 +575,7 @@
     const mk=matchKey(m);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
-      tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),label:s.label,market:s.market,pick:s.pick,
+      tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:composerSignalScore(m,s,profile),source_model:(modelApi()?.active||'adaptive'),
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
     });
@@ -532,7 +591,7 @@
     <div class="sc82-matches">${rows.length?rows.map(manualMatchHtml).join(''):'<div class="sc82-empty">Brak dzisiejszych spotkań.</div>'}</div>`;
   }
   function manualMatchHtml(m){
-    const mk=matchKey(m);let sig=signalRows(m);
+    const mk=matchKey(m);let sig=scenarioSignals(m);
     if(manualCategory==='top')sig=sig.slice(0,6);
     else if(manualCategory!=='all')sig=sig.filter(s=>categoryOf(s)===manualCategory);
     const time=(()=>{const d=new Date(m?.scheduled_time||'');return Number.isFinite(d.getTime())?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'—'})();
