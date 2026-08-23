@@ -671,7 +671,7 @@
     if(e.target.closest('[data-sc-generate]')){generateFromUi();return}
     const add=e.target.closest('[data-sc-add]');if(add){
       const mk=decodeURIComponent(add.dataset.scAdd),sk=decodeURIComponent(add.dataset.scSig);
-      const m=todaysMatches().find(x=>matchKey(x)===mk),s=m&&signalRows(m).find(x=>x.key===sk);if(m&&s)addSignal(m,s);return;
+      const m=todaysMatches().find(x=>matchKey(x)===mk),s=m&&scenarioSignals(m).find(x=>x.key===sk);if(m&&s)addSignal(m,s);return;
     }
     const lineOpen=e.target.closest('[data-sc-line-open]');if(lineOpen){
       const key=decodeURIComponent(lineOpen.dataset.scLineOpen);

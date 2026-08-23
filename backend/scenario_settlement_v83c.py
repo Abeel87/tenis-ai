@@ -10,7 +10,7 @@ HISTORY_PATH = OUT / "history.json"
 PBP_HISTORY_PATH = OUT / "pbp_history.json"
 OUTPUT_PATH = OUT / "scenario_results_v83c.json"
 META_PATH = OUT / "meta.json"
-VERSION = "v8.3C"
+VERSION = "v8.3D"
 KEEP_DAYS = 120
 
 
@@ -155,8 +155,15 @@ def build_feed(history: list[dict], pbp_history: list[dict], now: datetime | Non
         by_id[mid] = merged
         by_key[str(merged.get("match_key") or f"id:{mid}")] = merged
 
+    # v8.3D: część historycznych wpisów nie ma match_id.
+    # Nie wolno ich gubić — frontend ma bezpieczne fallbacki po match_key/nazwach.
+    idless_by_key = {
+        key: outcome
+        for key, outcome in by_key.items()
+        if outcome.get("match_id") is None
+    }
     rows = sorted(
-        by_id.values(),
+        [*by_id.values(), *idless_by_key.values()],
         key=lambda x: x.get("scheduled_time") or "",
         reverse=True,
     )
@@ -180,6 +187,7 @@ def main() -> None:
     if not isinstance(meta, dict):
         meta = {}
     meta.update({
+        "scenario_settlement_version": VERSION,
         "scenario_settlement_v83c_version": VERSION,
         "scenario_settlement_v83c_updated_at": now.isoformat(),
         "scenario_settlement_v83c_results": feed.get("count", 0),

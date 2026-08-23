@@ -6,9 +6,10 @@
 (() => {
   'use strict';
 
-  const VERSION='v8.3C';
+  const VERSION='v8.3D';
   const LOCAL_KEY='tenis-ai-v82a-scenarios-local';
   const FEED='data/scenario_results_v83c.json';
+  const PBP_GRACE_HOURS=36;
   let feedPromise=null;
   let refreshing=null;
 
@@ -32,17 +33,28 @@
     return feedPromise;
   }
 
+  function putUnique(map,key,row){
+    if(!key)return;
+    if(!map.has(key)){map.set(key,row);return}
+    if(map.get(key)!==row)map.set(key,null);
+  }
+
   function outcomeIndex(feed){
-    const byId=new Map(),byKey=new Map(),byNames=new Map();
+    const byId=new Map(),byKey=new Map(),byNamesTour=new Map(),byNames=new Map();
     for(const row of feed?.matches||[]){
       if(row?.match_id!=null)byId.set(String(row.match_id),row);
       if(row?.match_key)byKey.set(String(row.match_key),row);
       const date=String(row?.scheduled_time||'').slice(0,10);
-      const k=`${norm(row?.p1)}|${norm(row?.p2)}|${date}`;
-      const kr=`${norm(row?.p2)}|${norm(row?.p1)}|${date}`;
-      byNames.set(k,row);byNames.set(kr,row);
+      const p1=norm(row?.p1),p2=norm(row?.p2),tour=norm(row?.tournament);
+      const k=`${p1}|${p2}|${date}`;
+      const kr=`${p2}|${p1}|${date}`;
+      putUnique(byNames,k,row);putUnique(byNames,kr,row);
+      if(tour){
+        putUnique(byNamesTour,`${k}|${tour}`,row);
+        putUnique(byNamesTour,`${kr}|${tour}`,row);
+      }
     }
-    return {byId,byKey,byNames};
+    return {byId,byKey,byNamesTour,byNames};
   }
 
   function findOutcome(item,idx){
@@ -50,7 +62,13 @@
     if(item?.match_key&&idx.byKey.has(String(item.match_key)))return idx.byKey.get(String(item.match_key));
     if(item?.match_key&&idx.byKey.has(`id:${item.match_key}`))return idx.byKey.get(`id:${item.match_key}`);
     const date=String(item?.scheduled_time||'').slice(0,10);
-    return idx.byNames.get(`${norm(item?.p1)}|${norm(item?.p2)}|${date}`)||null;
+    const base=`${norm(item?.p1)}|${norm(item?.p2)}|${date}`;
+    const tour=norm(item?.tournament);
+    if(tour){
+      const exact=idx.byNamesTour.get(`${base}|${tour}`);
+      if(exact)return exact;
+    }
+    return idx.byNames.get(base)||null;
   }
 
   function signalLine(item){
@@ -74,7 +92,21 @@
 
   function resultObj(result,actual,reason=null){return {result,actual,reason,settlement_version:VERSION,settled_at:iso()}}
 
+  function terminalResult(item){
+    return ['hit','miss','void'].includes(String(item?.result||'').toLowerCase())&&String(item?.settlement_version||'')===VERSION;
+  }
+
+  function pbpUnavailable(item,outcome,reason){
+    const when=new Date(outcome?.scheduled_time||outcome?.settled_at||'');
+    if(Number.isFinite(when.getTime())){
+      const ageHours=(Date.now()-when.getTime())/36e5;
+      if(ageHours<PBP_GRACE_HOURS)return {...item,result:'pending',actual:null,reason:'oczekiwanie na pełne PBP'};
+    }
+    return {...item,...resultObj('void',null,reason)};
+  }
+
   function settleItem(item,outcome){
+    if(terminalResult(item))return item;
     if(!outcome)return {...item,result:item?.result||'pending'};
     const status=String(outcome.status||'').toLowerCase();
     if(status==='void'||status==='retired'){
@@ -102,9 +134,11 @@
       if(Array.isArray(sets[0]))total=Number(sets[0][0])+Number(sets[0][1]);
       if(!Number.isFinite(total))total=num(outcome?.pbp?.first_set_games);
       if(total==null||line==null)return {...item,result:'pending'};
+      if(total===line)return {...item,...resultObj('void',total,'push na linii')};
       actual=total;hit=pickN==='over'?total>line:pickN==='under'?total<line:null;
     }else if(market==='match_total'){
       const total=num(outcome.total_games);if(total==null||line==null)return {...item,result:'pending'};
+      if(total===line)return {...item,...resultObj('void',total,'push na linii')};
       actual=total;hit=pickN==='over'?total>line:pickN==='under'?total<line:null;
     }else if(market==='total_sets'){
       const n=num(outcome.number_of_sets);if(n==null)return {...item,result:'pending'};
@@ -114,18 +148,25 @@
       if(!outcome.match_score)return {...item,result:'pending'};actual=outcome.match_score;hit=String(pick)===String(actual);
     }else if(market==='exact_set1'){
       const fs=outcome.first_set_score||outcome?.pbp?.first_set_score;if(!fs)return {...item,result:'pending'};actual=fs;hit=String(pick)===String(actual);
-    }else if(/^state[246]$/.test(market)){
-      const n=Number(market.slice(-1));actual=stateAt(outcome,n);
-      if(!actual)return {...item,...resultObj('void',null,'brak pełnego PBP do checkpointu')};
+    }else if(/^state[246]$/.test(market)||market==='game_state'){
+      let n=/^state[246]$/.test(market)?Number(market.slice(-1)):num(item?.checkpoint);
+      if(n==null){
+        const parts=String(item?.signal_key||'').split('|');
+        const found=parts.find(x=>['2','4','6'].includes(String(x)));
+        n=found==null?null:Number(found);
+      }
+      if(![2,4,6].includes(Number(n)))return {...item,...resultObj('void',null,'nieznany checkpoint PBP')};
+      actual=stateAt(outcome,Number(n));
+      if(!actual)return pbpUnavailable(item,outcome,`brak pełnego PBP do checkpointu ${n}`);
       hit=String(pick)===String(actual);
     }else if(market==='lead_after6'){
-      const st=stateAt(outcome,6);if(!st)return {...item,...resultObj('void',null,'brak pełnego PBP po 6 gemach')};
+      const st=stateAt(outcome,6);if(!st)return pbpUnavailable(item,outcome,'brak pełnego PBP po 6 gemach');
       const [a,b]=st.split(':').map(Number);actual=a>b?outcome.p1:b>a?outcome.p2:'remis';hit=pickN===norm(actual);
     }else if(market==='balanced_after6'){
-      actual=stateAt(outcome,6);if(!actual)return {...item,...resultObj('void',null,'brak pełnego PBP po 6 gemach')};hit=actual==='3:3';
+      actual=stateAt(outcome,6);if(!actual)return pbpUnavailable(item,outcome,'brak pełnego PBP po 6 gemach');hit=actual==='3:3';
     }else if(market==='joint_builder'){
       const st=stateAt(outcome,6),fsWinner=setWinner(outcome,0),fsGames=num(outcome?.pbp?.first_set_games);
-      if(!st||!fsWinner||fsGames==null)return {...item,...resultObj('void',null,'brak pełnego PBP dla Joint Builder')};
+      if(!st||!fsWinner||fsGames==null)return pbpUnavailable(item,outcome,'brak pełnego PBP dla Joint Builder');
       const [a,b]=st.split(':').map(Number),leader=a>b?outcome.p1:b>a?outcome.p2:null;
       actual={leader_after6:leader,first_set_winner:fsWinner,first_set_games:fsGames};
       hit=norm(leader)===pickN&&norm(fsWinner)===pickN&&fsGames>8.5;

@@ -10,7 +10,10 @@ from typing import Any
 
 import requests
 
-from api_quota_v83b import quota_budget, record_calls
+try:
+    from .api_quota_v83b import quota_budget, record_calls
+except ImportError:  # uruchomienie jako python backend/history_backfill_v83.py
+    from api_quota_v83b import quota_budget, record_calls
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -337,7 +340,10 @@ def _write_report(report: dict, meta_update: bool = True) -> None:
 def _analyze_cache(report: dict) -> None:
     """Immediately analyse every newly cached tape without making another API call."""
     try:
-        from pbp_tracker import backtest_cache
+        try:
+            from .pbp_tracker import backtest_cache
+        except ImportError:
+            from pbp_tracker import backtest_cache
         result = backtest_cache()
         _write_json(PBP_BACKTEST_PATH, result)
         report["analysis"] = {
