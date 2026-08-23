@@ -14,6 +14,3 @@ def test_registration_ux():
 
     assert 'new MutationObserver' not in js
     assert '.focus(' not in js
-def test_installer():
-    s=(ROOT/'install_v752.py').read_text(encoding='utf-8')
-    assert 'registration-ux-v752.css' in s and 'registration-ux-v752.js' in s

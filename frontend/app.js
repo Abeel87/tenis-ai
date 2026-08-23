@@ -130,7 +130,7 @@ document.querySelectorAll('.main-tabs button').forEach(b=>b.onclick=()=>{documen
 document.querySelector('#collapse-all').onclick=()=>setAllDetails(false);
 document.querySelector('#expand-all').onclick=()=>setAllDetails(true);
 document.querySelector('#refresh').onclick=load;
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=79b');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=80');
 load();
 // v7.8E2.3: nie przebudowuj całej listy co minutę podczas dotyku/przewijania.
 setInterval(()=>{if(view==='matches')updateCounts()},60000);

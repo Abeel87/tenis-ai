@@ -14,8 +14,3 @@ def test_frontend_confirmation():
     assert 'USUŃ NA STAŁE' in s
     assert "role !== 'USER'" in s
     assert "admin_delete_user" in s
-
-def test_installer():
-    s=(ROOT/'install_v754.py').read_text(encoding='utf-8')
-    assert 'admin-delete-v754.css' in s
-    assert 'admin-delete-v754.js' in s

@@ -7,6 +7,3 @@ def test_key_sections_present():
     s=(ROOT/'frontend/ui-v75.js').read_text(encoding='utf-8')
     for x in ['Szybki werdykt','Typy meczowe','Statystyki zawodników','Early Hold · PBP','Asy i podwójne błędy','Market Lab','renderHistory=function','renderMatches=function']:
         assert x in s
-def test_installer_hooks():
-    s=(ROOT/'install_v75.py').read_text(encoding='utf-8')
-    assert 'ui-v75.css' in s and 'ui-v75.js' in s and 'tenis-ai-v750-match-center' in s

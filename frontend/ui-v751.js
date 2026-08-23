@@ -636,7 +636,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    document.querySelector('.brand-copy p') && (document.querySelector('.brand-copy p').textContent='Tenis AI v7.8D · Calibration Guard');
+    const meta80=window.TENIS_AI_META, brand80=document.querySelector('.brand-copy p'); if(brand80) brand80.textContent=meta80?`Tenis AI ${meta80.appVersion} · Adaptive Learning`:'Tenis AI';
     ensureBottomNav();
   }
 

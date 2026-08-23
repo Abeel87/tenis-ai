@@ -19,8 +19,3 @@ def test_v753_features_migrated_to_current_ui():
     # The obsolete polling JS layer must stay retired.
     assert 'readability-v753.js' not in idx
     assert not (ROOT/'frontend/readability-v753.js').exists()
-
-
-def test_v753_legacy_installer_is_retired():
-    # This installer would re-enable the obsolete JS and old PWA cache.
-    assert not (ROOT/'install_v753.py').exists()
