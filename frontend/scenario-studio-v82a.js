@@ -23,6 +23,7 @@
   let currentTab='home';
   let manualCategory='all';
   let manualMatchFilter=null;
+  let lineEditorKey=null;
 
   function loadDraft(){
     try{
@@ -99,6 +100,57 @@
     })).filter(x=>x.value>=50&&!seen.has(x.key)&&seen.add(x.key))
       .sort((a,b)=>b.value-a.value);
   }
+  function totalLine(s){
+    const market=String(s?.market||'').toLowerCase();
+    if(market!=='match_total'&&market!=='set1_total')return null;
+    const parts=String(s?.key||s?.signal_key||'').split('|');
+    const line=parts.length>1?Number(parts[1]):NaN;
+    return Number.isFinite(line)?line:null;
+  }
+  function isTotalSignal(s){
+    const m=String(s?.market||'').toLowerCase();
+    return m==='match_total'||m==='set1_total';
+  }
+  function findMatchByKey(k){
+    return allMatches().find(m=>matchKey(m)===String(k))||null;
+  }
+  function lineAlternatives(item){
+    if(!isTotalSignal(item))return [];
+    const m=findMatchByKey(item.match_key);if(!m)return [];
+    const side=String(item.pick||'').toLowerCase();
+    return signalRows(m)
+      .filter(x=>String(x.market||'').toLowerCase()===String(item.market||'').toLowerCase())
+      .filter(x=>String(x.pick||'').toLowerCase()===side)
+      .filter(x=>totalLine(x)!=null)
+      .map(x=>({...x,composer_score:composerSignalScore(m,x,draft.profile||'balanced'),line:totalLine(x)}))
+      .sort((a,b)=>a.line-b.line);
+  }
+  function changeDraftLine(match_key,old_signal_key,new_signal_key){
+    const pos=draft.items.findIndex(x=>x.match_key===match_key&&x.signal_key===old_signal_key);
+    if(pos<0)return;
+    const item=draft.items[pos],m=findMatchByKey(match_key);if(!m)return;
+    const next=signalRows(m).find(x=>x.key===new_signal_key);
+    if(!next||!isTotalSignal(next))return;
+    const original=Number.isFinite(Number(item.suggested_line))?Number(item.suggested_line):totalLine(item);
+    const selected=totalLine(next);
+    draft.items[pos]={
+      ...item,
+      signal_key:next.key,
+      label:next.label,
+      market:next.market,
+      pick:next.pick,
+      value:Number(next.value),
+      composer_score:composerSignalScore(m,next,draft.profile||'balanced'),
+      suggested_line:original,
+      selected_line:selected,
+      line_adjusted:selected!==original,
+      line_adjusted_at:nowIso()
+    };
+    lineEditorKey=null;
+    persistDraft();
+    renderCurrent();
+    toast(`Linia zmieniona na ${selected}. Ocena scenariusza przeliczona.`);
+  }
   function categoryOf(s){
     const m=s.market.toLowerCase(),l=s.label.toLowerCase();
     if(m.includes('state')||/po [246]|1:1|2:2|3:3/.test(l))return 'start';
@@ -169,6 +221,8 @@
       tournament:m?.tournament||null,
       surface:m?.surface||null,
       signal_key:s.key,
+      suggested_line:totalLine(s),
+      selected_line:totalLine(s),
       label:s.label,
       market:s.market,
       pick:s.pick,
@@ -343,11 +397,54 @@
       return m||categoryOf(x)||k.split('|')[0]||'other';
     };
 
+    // v8.2A.5 Market Line Guard:
+    // OVER -> najwyższa linia, która nadal przechodzi próg profilu.
+    // UNDER -> najniższa linia, która nadal przechodzi próg profilu.
+    const marketLineGuard=rows=>{
+      const normal=rows.filter(x=>!isTotalSignal(x));
+      const guarded=[];
+
+      for(const family of ['match_total','set1_total']){
+        const familyRows=rows.filter(x=>String(x.market||'').toLowerCase()===family&&totalLine(x)!=null);
+        if(!familyRows.length)continue;
+
+        const sideChoices=[];
+        for(const side of ['over','under']){
+          const sideRows=familyRows
+            .filter(x=>String(x.pick||'').toLowerCase()===side)
+            .filter(x=>x.cs>=min);
+          if(!sideRows.length)continue;
+
+          sideRows.sort((a,b)=>side==='over'
+            ? totalLine(b)-totalLine(a)
+            : totalLine(a)-totalLine(b));
+
+          const chosen=sideRows[0];
+          sideChoices.push({
+            ...chosen,
+            market_line_guard:true,
+            easiest_line:familyRows
+              .filter(x=>String(x.pick||'').toLowerCase()===side)
+              .sort((a,b)=>b.cs-a.cs)[0]?.key||null
+          });
+        }
+
+        if(sideChoices.length){
+          sideChoices.sort((a,b)=>b.cs-a.cs);
+          guarded.push(sideChoices[0]);
+        }
+      }
+
+      return [...normal,...guarded].sort((a,b)=>b.cs-a.cs);
+    };
+
     const candidates=todaysMatches().map(m=>{
-      const sig=signalRows(m)
-        .map(s=>({...s,cs:composerSignalScore(m,s,profile)}))
-        .filter(s=>s.cs>=min)
-        .sort((a,b)=>b.cs-a.cs);
+      const sig=marketLineGuard(
+        signalRows(m)
+          .map(s=>({...s,cs:composerSignalScore(m,s,profile)}))
+          .filter(s=>s.cs>=min)
+          .sort((a,b)=>b.cs-a.cs)
+      );
 
       const picked=[];
       const families=new Set();
@@ -419,7 +516,7 @@
     const mk=matchKey(m);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
-      tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,label:s.label,market:s.market,pick:s.pick,
+      tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:composerSignalScore(m,s,profile),source_model:(modelApi()?.active||'adaptive'),
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
     });
@@ -455,9 +552,29 @@
     return `${topBack('Mój scenariusz')}
       <section class="sc82-score"><span>Ocena realizacji</span><b>${Math.round(score)}/100</b><strong>${ratingLabel(score)}</strong><small>${groups.length} spotk. · ${draft.items.length} sygnałów</small></section>
       <div class="sc82-draft-list">${groups.length?groups.map(g=>`<article><header><b>${esc(g.p1)} <span>vs</span> ${esc(g.p2)}</b><small>${g.signals.length} sygnały</small></header>
-        ${g.signals.map(s=>`<div class="sc82-draft-row"><span><b>${esc(s.label)}</b><small>${esc(s.source_model)} · ${Math.round(Number(s.composer_score||s.value))}/100${s.pbp_ready?' · PBP ✓':''}</small></span><button data-sc-remove="${encodeURIComponent(s.match_key)}" data-sc-sig="${encodeURIComponent(s.signal_key)}">✕</button></div>`).join('')}</article>`).join(''):'<div class="sc82-empty">Jeszcze nic nie wybrano.</div>'}</div>
+        ${g.signals.map(s=>{
+          const line=totalLine(s);
+          const rowKey=`${s.match_key}::${s.signal_key}`;
+          const alternatives=lineAlternatives(s);
+          const showLines=line!=null&&alternatives.length>1&&lineEditorKey===rowKey;
+          const original=Number.isFinite(Number(s.suggested_line))?Number(s.suggested_line):line;
+          const adjusted=line!=null&&Number.isFinite(original)&&Number(line)!==Number(original);
+          return `<div class="sc82-draft-entry">
+            <div class="sc82-draft-row">
+              <span>
+                <b>${esc(s.label)}</b>
+                <small>${esc(s.source_model)} · ${Math.round(Number(s.composer_score||s.value))}/100${s.pbp_ready?' · PBP ✓':''}${adjusted?` · zmieniono z ${original}`:''}</small>
+                ${line!=null&&alternatives.length>1?`<span class="sc82-choice" style="display:flex;margin-top:7px"><button data-sc-line-open="${encodeURIComponent(rowKey)}">Linia ${line} · zmień</button></span>`:''}
+              </span>
+              <button data-sc-remove="${encodeURIComponent(s.match_key)}" data-sc-sig="${encodeURIComponent(s.signal_key)}">✕</button>
+            </div>
+            ${showLines?`<div class="sc82-choice" style="padding:0 13px 10px;display:flex;gap:6px;flex-wrap:wrap">
+              ${alternatives.map(a=>`<button class="${a.key===s.signal_key?'active':''}" data-sc-line-pick="${encodeURIComponent(s.match_key)}" data-sc-old-sig="${encodeURIComponent(s.signal_key)}" data-sc-new-sig="${encodeURIComponent(a.key)}">${String(a.pick||'').toUpperCase().startsWith('O')?'O':'U'}${a.line} · ${Math.round(a.composer_score)}/100</button>`).join('')}
+            </div>`:''}
+          </div>`;
+        }).join('')}</article>`).join(''):'<div class="sc82-empty">Jeszcze nic nie wybrano.</div>'}</div>
       ${groups.length?`<div class="sc82-actions"><button data-sc-go="manual">＋ Dodaj kolejne</button><button data-sc-clear>Wyczyść</button><button class="sc82-primary" data-sc-save>💾 ZAPISZ SCENARIUSZ</button></div>`:''}
-      <div class="sc82-note"><b>Ocena Composera</b><span>To ranking jakości zestawu sygnałów, nie procent szansy wejścia. Kalibrację dodamy po zebraniu rozliczonych scenariuszy.</span></div>`;
+      <div class="sc82-note"><b>Market Line Guard</b><span>Generator wybiera bardziej rynkową linię, ale nie zna oferty konkretnego operatora. Jeśli widzisz inną dostępną linię, użyj „Zmień linię” — wynik /100 przeliczy się automatycznie.</span></div>`;
   }
   async function renderSavedAsync(body){
     const remote=await remoteSaved(),local=localSaved();
@@ -484,7 +601,7 @@
     t.textContent=msg;t.classList.add('show');clearTimeout(t._tm);t._tm=setTimeout(()=>t.classList.remove('show'),2400);
   }
   function handlePanelClick(e){
-    const go=e.target.closest('[data-sc-go]');if(go){currentTab=go.dataset.scGo;manualMatchFilter=null;render();return}
+    const go=e.target.closest('[data-sc-go]');if(go){currentTab=go.dataset.scGo;manualMatchFilter=null;lineEditorKey=null;render();return}
     if(e.target.closest('[data-sc-close]')){close();return}
     const cat=e.target.closest('[data-sc-cat]');if(cat){manualCategory=cat.dataset.scCat;render();return}
     const choice=e.target.closest('[data-sc-choice] button');if(choice){$$('button',choice.parentElement).forEach(x=>x.classList.toggle('active',x===choice));return}
@@ -494,8 +611,19 @@
       const mk=decodeURIComponent(add.dataset.scAdd),sk=decodeURIComponent(add.dataset.scSig);
       const m=todaysMatches().find(x=>matchKey(x)===mk),s=m&&signalRows(m).find(x=>x.key===sk);if(m&&s)addSignal(m,s);return;
     }
+    const lineOpen=e.target.closest('[data-sc-line-open]');if(lineOpen){
+      const key=decodeURIComponent(lineOpen.dataset.scLineOpen);
+      lineEditorKey=lineEditorKey===key?null:key;render();return;
+    }
+    const linePick=e.target.closest('[data-sc-line-pick]');if(linePick){
+      changeDraftLine(
+        decodeURIComponent(linePick.dataset.scLinePick),
+        decodeURIComponent(linePick.dataset.scOldSig),
+        decodeURIComponent(linePick.dataset.scNewSig)
+      );return;
+    }
     const rem=e.target.closest('[data-sc-remove]');if(rem){removeSignal(decodeURIComponent(rem.dataset.scRemove),decodeURIComponent(rem.dataset.scSig));return}
-    if(e.target.closest('[data-sc-clear]')){clearDraft();render();return}
+    if(e.target.closest('[data-sc-clear]')){lineEditorKey=null;clearDraft();render();return}
     if(e.target.closest('[data-sc-save]')){saveScenario();return}
   }
 
