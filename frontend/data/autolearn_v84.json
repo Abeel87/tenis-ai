@@ -1,16 +1,101 @@
 {
   "version": "v8.4A",
-  "generated_at": null,
-  "status": "COLLECTING",
+  "generated_at": "2026-08-23T23:12:29.814116+00:00",
+  "status": "ACTIVE",
   "models": {
-    "current": {"name": "Current Engine", "status": "active"},
-    "catboost": {"name": "CatBoost AutoLearn", "status": "collecting"},
-    "tabpfn": {"name": "TabPFN-2 Challenger", "status": "unavailable", "reason": "waiting_for_first_training", "model_version": "V2"},
-    "ensemble": {"name": "Ensemble Generator", "status": "fallback"}
+    "current": {
+      "name": "Current Engine",
+      "status": "active"
+    },
+    "catboost": {
+      "name": "CatBoost AutoLearn",
+      "status": "active",
+      "retrained": true
+    },
+    "tabpfn": {
+      "name": "TabPFN-2 Challenger",
+      "status": "ok",
+      "reason": null,
+      "model_version": "V2",
+      "trained_at": "2026-08-23T23:12:29.814116+00:00"
+    },
+    "ensemble": {
+      "name": "Ensemble Generator",
+      "status": "active"
+    }
   },
-  "training": {"rows": 0, "matches": 0},
-  "weights": {"current": 1.0},
-  "validation": {},
-  "tracking": {},
-  "generator": {"selection_threshold": 65.0, "policy": "quality_first_no_forced_fill"}
+  "training": {
+    "rows": 521,
+    "matches": 121,
+    "train_rows": 348,
+    "calibration_rows": 78,
+    "validation_rows": 95,
+    "minimum_rows": 80,
+    "minimum_matches": 24,
+    "retrain_hours": 20,
+    "retrain_new_rows": 40
+  },
+  "weights": {
+    "current": 0.3,
+    "catboost": 0.7,
+    "tabpfn": 0.0
+  },
+  "validation": {
+    "current": {
+      "n": 95,
+      "brier": 0.21939,
+      "log_loss": 0.63427,
+      "selected_n": 95,
+      "accuracy": 68.4,
+      "threshold": 65.0
+    },
+    "catboost": {
+      "n": 95,
+      "brier": 0.21671,
+      "log_loss": 0.622,
+      "selected_n": 67,
+      "accuracy": 68.7,
+      "threshold": 65.0
+    },
+    "tabpfn": {
+      "n": 95,
+      "brier": 0.2089,
+      "log_loss": 0.60607,
+      "selected_n": 88,
+      "accuracy": 69.3,
+      "threshold": 65.0
+    },
+    "ensemble": {
+      "n": 95,
+      "brier": 0.21344,
+      "log_loss": 0.61541,
+      "selected_n": 78,
+      "accuracy": 71.8,
+      "threshold": 65.0
+    },
+    "validation_matches": 19,
+    "calibration_matches": 18,
+    "policy": "chronological_match_grouped_70_15_15"
+  },
+  "tracking": {
+    "generator": {
+      "n": 0,
+      "selected_n": 0,
+      "accuracy": null,
+      "brier": null,
+      "log_loss": null
+    }
+  },
+  "generator": {
+    "selection_threshold": 65.0,
+    "policy": "quality_first_no_forced_fill",
+    "market_policy": "existing_signals_and_existing_lines_only",
+    "captured_matches_this_run": 79
+  },
+  "notes": [
+    "CatBoost jest meta-rankerem sygnałów, a nie zamiennikiem tenisowych modeli bazowych.",
+    "TabPFN używa wyłącznie jawnie wskazanej wersji V2; nowsze non-commercial checkpointy nie są używane.",
+    "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
+    "Awaria ML przełącza generator na Current Engine; ML nie wykonuje żadnych dodatkowych requestów Live Tennis API."
+  ]
 }
