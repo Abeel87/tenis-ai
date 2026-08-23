@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from api_quota_v83b import record_calls
 from model import normalize_matches, analyse_match
 from history_hygiene_v78a import clean_history
 from prediction_integrity_v78a import apply_pre_output_guards
@@ -220,13 +221,15 @@ def fetch_fixtures():
     for _ in range(10):
         params={**base,'offset':offset}
         r=requests.get('https://api.livetennisapi.com/api/public/v1/matches',params=params,headers=headers,timeout=(7,18))
+        record_calls('fixtures',1)
         r.raise_for_status()
         payload=r.json(); page=payload.get('data',[]) or []; meta=payload.get('meta',{}) or {}
         for m in page:
             if m.get('is_doubles'):
                 continue
             players=m.get('players') or {}
-            p1=(players.get('p1') or {}).get('name'); p2=(players.get('p2') or {}).get('name')
+            p1o=players.get('p1') or {}; p2o=players.get('p2') or {}
+            p1=p1o.get('name'); p2=p2o.get('name')
             if not p1 or not p2:
                 continue
             mid=m.get('id')
@@ -237,6 +240,7 @@ def fetch_fixtures():
             rows.append({
                 'id':mid,'tour':m.get('tour') or '', 'tournament':m.get('tournament') or '',
                 'surface':m.get('surface') or '', 'p1':p1, 'p2':p2,
+                'p1_id':p1o.get('id'),'p2_id':p2o.get('id'),
                 'scheduled_time':m.get('scheduled_time') or '',
                 'best_of':_extract_best_of(m),
                 'feed_status':m.get('status') or 'upcoming','event_status':m.get('event_status'),

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import requests
 
+from api_quota_v83b import quota_budget, record_calls
 from history_tracker import history_stats, settle_signal
 from shadow_lab_v78e6 import SHADOW_STATS_PATH, build_shadow_stats
 
@@ -295,8 +296,8 @@ def main():
         candidates.append((scheduled, i, e, migration))
     candidates.sort(key=lambda x: x[0])
 
-    remaining = _usage_remaining(key) if key and candidates else None
-    budget = min(MAX_CALLS_PER_RUN, max(0, (remaining or 0) - DAILY_RESERVE)) if remaining is not None else 0
+    budget,quota_usage = quota_budget("history_settle", MAX_CALLS_PER_RUN) if key and candidates else (0,{})
+    remaining = ((quota_usage.get("today") or {}).get("remaining_day"))
     calls = settled = voided = retired = not_ready = errors = migrated = 0
 
     for _, idx, e, migration in candidates[:budget]:
@@ -311,6 +312,7 @@ def main():
                 timeout=(7, 22),
             )
             calls += 1
+            record_calls("history_settle",1)
             rec["last_status_code"] = r.status_code
             if r.status_code != 200:
                 errors += 1

@@ -14,6 +14,8 @@ from typing import Any
 
 import requests
 
+from api_quota_v83b import quota_budget, record_calls
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
 CACHE = ROOT / "data" / "cache" / "pbp_v7"
@@ -22,7 +24,7 @@ META_PATH = OUT / "meta.json"
 INDEX_PATH = CACHE / "players.json"
 
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
-UA = "TenisAI-v7.1-Tendencies/1.0"
+UA = "TenisAI-v8.3B-CurrentPBP/1.0"
 PROFILE_TTL_HOURS = 12
 EARLY_HOLD_MATCHES = 8
 MAX_PROFILE_MATCHES = 20
@@ -94,6 +96,7 @@ class API:
             raise RuntimeError("pbp_run_budget_exhausted")
         r = self.session.get(BASE_URL + path, params=params, headers=self.headers, timeout=(7, 25))
         self.calls += 1
+        record_calls("pbp_current", 1)
         if r.status_code == 429:
             retry = min(10, max(1, int(float(r.headers.get("Retry-After", "2") or 2))))
             time.sleep(retry)
@@ -101,34 +104,14 @@ class API:
                 raise RuntimeError("pbp_run_budget_exhausted")
             r = self.session.get(BASE_URL + path, params=params, headers=self.headers, timeout=(7, 25))
             self.calls += 1
+        record_calls("pbp_current", 1)
         r.raise_for_status()
         return r.json()
 
 
 def _usage_budget(key: str) -> tuple[int, dict]:
-    """One cheap request before enrichment. Keep a daily reserve for normal fixture refreshes."""
-    try:
-        r = requests.get(
-            BASE_URL + "/usage",
-            headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
-            timeout=(7, 18),
-        )
-        r.raise_for_status()
-        u = r.json() or {}
-        today = u.get("today") or {}
-        limits = u.get("limits") or {}
-        remaining = today.get("remaining_day")
-        if remaining is None:
-            per_day = limits.get("per_day")
-            calls = today.get("calls")
-            if isinstance(per_day, (int, float)) and isinstance(calls, (int, float)):
-                remaining = int(per_day) - int(calls)
-        if isinstance(remaining, (int, float)):
-            return max(0, min(RUN_CALL_CAP, int(remaining) - DAILY_RESERVE)), u
-        return RUN_CALL_CAP, u
-    except Exception:
-        # Fail conservative if usage endpoint is temporarily unavailable.
-        return 180, {}
+    # v8.3B: one shared workflow usage snapshot + daily role cap.
+    return quota_budget("pbp_current", RUN_CALL_CAP)
 
 
 def _player_cache_entry(index: dict, player: str) -> dict | None:
@@ -972,7 +955,7 @@ def main() -> None:
             "pbp_v7_player_ids_resolved": len(player_ids),
             "pbp_v7_match_detail_calls": counters["match_detail_calls"],
             "pbp_v7_match_detail_errors": counters["match_detail_errors"],
-            "pbp_v7_api_calls": api.calls + 1,  # + usage request
+            "pbp_v7_api_calls": api.calls,  # /usage is shared by Central Quota Guard v8.3B
             "pbp_v7_tape_downloads": counters["tape_downloads"],
             "pbp_v7_tape_cache_hits": counters["tape_cache_hits"],
             "pbp_v7_tape_errors": counters["tape_errors"],

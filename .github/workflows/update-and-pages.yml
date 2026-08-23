@@ -32,6 +32,10 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-
             tennis-history-${{ runner.os }}-
+      - name: Central API Quota Guard v8.3B
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: python backend/api_quota_v83b.py begin
       - name: Update analysis
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
@@ -67,7 +71,7 @@ jobs:
         run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
-      - name: Historical backfill v8.3A (spare quota only)
+      - name: Historical backfill v8.3B (central spare quota)
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           HISTORY_BACKFILL_ENABLED: '1'
@@ -79,6 +83,8 @@ jobs:
         run: python backend/history_backfill_v83.py
       - name: Adaptive Learning v7.9B
         run: python backend/adaptive_learning_v79.py
+      - name: Final API quota report v8.3B
+        run: python backend/api_quota_v83b.py report
       - name: Save tennis history + PBP cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4

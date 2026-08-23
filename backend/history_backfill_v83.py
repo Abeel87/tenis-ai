@@ -10,6 +10,8 @@ from typing import Any
 
 import requests
 
+from api_quota_v83b import quota_budget, record_calls
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
 CACHE = ROOT / "data" / "cache" / "pbp_v7"
@@ -19,7 +21,7 @@ REPORT_PATH = OUT / "history_backfill_v83.json"
 PBP_BACKTEST_PATH = OUT / "pbp_backtest.json"
 
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
-UA = "TenisAI-v8.3A-HistoricalBackfill/1.0"
+UA = "TenisAI-v8.3B-HistoricalBackfill/1.0"
 
 DEFAULT_STOP_DATE = date(2023, 1, 1)
 DEFAULT_DAILY_FRACTION = 0.12
@@ -254,6 +256,7 @@ class API:
             timeout=(7, 25),
         )
         self.calls += 1
+        record_calls("history_backfill",1)
         self.last_call_monotonic = time.monotonic()
         if r.status_code == 429:
             self.rate_limited = True
@@ -272,7 +275,7 @@ class API:
 def _state_for_today(state: dict, today: date) -> dict:
     if not isinstance(state, dict):
         state = {}
-    state.setdefault("version", "v8.3A")
+    state["version"] = "v8.3B"
     if state.get("quota_day") != today.isoformat():
         state["quota_day"] = today.isoformat()
         state["backfill_calls_today"] = 0
@@ -391,7 +394,7 @@ def run_backfill(now: datetime | None = None) -> dict:
         state["pending"] = []
 
     base_report = {
-        "version": "v8.3A",
+        "version": "v8.3B",
         "updated_at": now.isoformat(),
         "status": "init",
         "policy": "critical-current-jobs-first; spare-quota-only; fail-closed",
@@ -426,42 +429,33 @@ def run_backfill(now: datetime | None = None) -> dict:
         _write_report(base_report)
         return base_report
 
-    usage = _usage(key)
-    if usage is None:
-        base_report["status"] = "usage-unavailable-safe-skip"
-        _write_report(base_report)
-        return base_report
-
-    per_day, remaining_day, per_minute = _usage_numbers(usage)
-    policy = compute_backfill_budget(
-        per_day=per_day,
-        remaining_day=remaining_day,
-        spent_today=int(state.get("backfill_calls_today") or 0),
-        daily_fraction=daily_fraction,
-        hard_reserve_fraction=reserve_fraction,
-        run_cap=run_cap,
-    )
+    central_budget, quota_usage = quota_budget("history_backfill", run_cap)
+    q_today = quota_usage.get("today") or {}
+    q_limits = quota_usage.get("limits") or {}
+    q_meta = quota_usage.get("quota_v83b") or {}
+    per_day = q_limits.get("per_day")
+    remaining_day = q_today.get("remaining_day")
+    per_minute = q_limits.get("per_minute") or 60
     base_report.update({
         "daily_limit": per_day,
         "remaining_before": remaining_day,
         "per_minute": per_minute,
-        "daily_cap": policy["daily_cap"],
-        "hard_reserve": policy["hard_reserve"],
+        "daily_cap": q_meta.get("daily_cap"),
+        "hard_reserve": q_meta.get("reserve"),
         "backfill_calls_today_before": int(state.get("backfill_calls_today") or 0),
-        "remote_budget": policy["remote_budget"],
+        "remote_budget": central_budget,
+        "central_quota_reason": q_meta.get("reason"),
     })
 
-    if policy["remote_budget"] <= 0:
-        base_report["status"] = f"quota-skip:{policy['reason']}"
-        # Count the usage check against our own historical allowance.
-        state["backfill_calls_today"] = int(state.get("backfill_calls_today") or 0) + 1
+    if central_budget <= 0:
+        base_report["status"] = f"quota-skip:{q_meta.get('reason') or 'central_guard'}"
         state["last_run_at"] = now.isoformat()
         _write_json(STATE_PATH, state)
-        base_report["calls_this_run"] = 1
+        base_report["calls_this_run"] = 0
         _write_report(base_report)
         return base_report
 
-    api = API(key, policy["remote_budget"], per_minute)
+    api = API(key, central_budget, per_minute)
     pending = state.get("pending") if isinstance(state.get("pending"), list) else []
     offset = int(state.get("offset") or 0)
     page_has_more = bool(state.get("page_has_more", True))
@@ -590,8 +584,8 @@ def run_backfill(now: datetime | None = None) -> dict:
     state["offset"] = offset
     state["pending"] = pending
     state["last_run_at"] = now.isoformat()
-    # The /usage call is also ours, so include it in the backfill daily allowance.
-    spent_run = api.calls + 1
+    # /usage is shared once per workflow by Central Quota Guard v8.3B.
+    spent_run = api.calls
     state["backfill_calls_today"] = int(state.get("backfill_calls_today") or 0) + spent_run
     state["updated_at"] = now.isoformat()
     _write_json(STATE_PATH, state)
@@ -630,7 +624,7 @@ def main() -> None:
     except Exception as exc:
         now = datetime.now(timezone.utc)
         report = {
-            "version": "v8.3A",
+            "version": "v8.3B",
             "updated_at": now.isoformat(),
             "status": "fatal-safe-skip",
             "error": type(exc).__name__,

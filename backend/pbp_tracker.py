@@ -13,6 +13,7 @@ from typing import Any
 
 import requests
 
+from api_quota_v83b import quota_budget, record_calls
 from pbp_enrich import extract_first_set_games, _source_weight
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -278,8 +279,7 @@ def settle(entries: list[dict], base_history: list[dict], key: str, now: datetim
         if not key or not (str(mid) in confirmed or now-scheduled >= timedelta(hours=6)):
             out.append(entry); continue
         if not usage_checked:
-            remaining=_usage_remaining(key); usage_checked=True
-            remote_budget=min(MAX_REMOTE_SETTLES_PER_RUN,max(0,(remaining or 0)-DAILY_RESERVE))
+            remote_budget,_quota=quota_budget("pbp_tracker", MAX_REMOTE_SETTLES_PER_RUN); usage_checked=True
         if remote_calls>=remote_budget:
             out.append(entry); continue
         entry=dict(entry); entry["last_attempt_at"]=now.isoformat()
@@ -287,6 +287,7 @@ def settle(entries: list[dict], base_history: list[dict], key: str, now: datetim
             r=requests.get(BASE_URL+f"/history/matches/{mid}",params={"sequence":"clean"},
                            headers={"Authorization":f"Bearer {key}","User-Agent":UA},timeout=(7,25))
             remote_calls+=1
+            record_calls("pbp_tracker",1)
             if r.status_code!=200:
                 out.append(entry); continue
             payload=r.json(); got=settle_one(entry,payload,now)
