@@ -1,0 +1,77 @@
+{
+  "version": "v8.3B",
+  "updated_at": "2026-08-23T19:23:02.341287+00:00",
+  "status": "ready",
+  "quota_day": "2026-08-23",
+  "daily_limit": 1000,
+  "calls_at_begin": 856,
+  "remaining_at_begin": 144,
+  "managed_calls_this_run": 6,
+  "remaining_estimate": 138,
+  "per_minute": 60,
+  "categories": {
+    "fixtures": {
+      "calls": 1,
+      "policy": {
+        "daily_fraction": 0.08,
+        "run_cap": 12,
+        "reserve_fraction": 0.03,
+        "fallback": 2,
+        "priority": "critical"
+      }
+    },
+    "pbp_current": {
+      "calls": 0,
+      "policy": {
+        "daily_fraction": 0.42,
+        "run_cap": 90,
+        "reserve_fraction": 0.2,
+        "fallback": 12,
+        "priority": "critical-current"
+      }
+    },
+    "pbp_tracker": {
+      "calls": 0,
+      "policy": {
+        "daily_fraction": 0.07,
+        "run_cap": 18,
+        "reserve_fraction": 0.15,
+        "fallback": 2,
+        "priority": "settlement"
+      }
+    },
+    "history_settle": {
+      "calls": 5,
+      "policy": {
+        "daily_fraction": 0.1,
+        "run_cap": 24,
+        "reserve_fraction": 0.12,
+        "fallback": 2,
+        "priority": "settlement"
+      }
+    },
+    "history_backfill": {
+      "calls": 0,
+      "policy": {
+        "daily_fraction": 0.08,
+        "run_cap": 18,
+        "reserve_fraction": 0.45,
+        "fallback": 0,
+        "priority": "background"
+      }
+    }
+  },
+  "last_allocation": {
+    "role": "history_settle",
+    "requested": 40,
+    "budget": 23,
+    "reason": "ok",
+    "remaining_before": 143,
+    "role_spent_today": 0,
+    "daily_cap": 100,
+    "reserve": 120,
+    "priority": "settlement",
+    "at": "2026-08-23T19:22:59.566102+00:00"
+  },
+  "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
+}
