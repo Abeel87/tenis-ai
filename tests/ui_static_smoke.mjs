@@ -47,8 +47,8 @@ const checks = [
     /app-meta\.js\?v=/.test(index)
   ],
   [
-    'PWA cache is E10',
-    /tenis-ai-v78e\d+/i.test(sw)
+    'PWA cache is versioned',
+    /const CACHE\s*=\s*['"]tenis-ai-v[0-9a-z._-]+['"]/i.test(sw)
   ],
   [
     'Old fragile cache.addAll(ASSETS) is gone',

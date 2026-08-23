@@ -83,7 +83,7 @@ sw = read(frontend / "sw.js")
 if "cache.addAll(ASSETS)" in sw:
     failures.append("Service worker nadal używa kruchego cache.addAll(ASSETS).")
 
-if "tenis-ai-v78e" not in sw:
+if not re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v[0-9a-z._-]+['\"]", sw, re.I):
     warnings.append("Service worker nie ma wersjonowanego cache Tenis AI.")
 
 if "readability-v753.js" in index:
@@ -111,7 +111,7 @@ if workflows.exists():
                 f"{wf}: workflow pushujący do repo nie ma concurrency guard."
             )
 
-print("=== Tenis AI v7.8E11.4 Project Health ===")
+print("=== Tenis AI v7.9B Project Health ===")
 print(f"JS files:  {len(js_files)}")
 print(f"CSS files: {len(css_files)}")
 
