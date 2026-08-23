@@ -162,9 +162,18 @@
     }
   }
 
-  function refresh(){decorateOverlay();decoratePlayerProfile();}
+  function profileActive(){return !!window.TENIS_AI_PLAYER_PROFILE_ACTIVE}
+  function refresh(){
+    // v8.1: podczas otwartego profilu nie skanujemy całej strony co 900 ms.
+    // Poza profilem zachowanie Early Hold pozostaje bez zmian.
+    if(profileActive())return;
+    decorateOverlay();
+    decoratePlayerProfile();
+  }
+  function mountProfile(){decoratePlayerProfile()}
   const obs=new MutationObserver(()=>requestAnimationFrame(refresh));
   obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
   setInterval(refresh,900);
   setTimeout(refresh,120);
+  window.TENIS_AI_EARLY_HOLD_PATHS_V81={mountProfile,refresh};
 })();

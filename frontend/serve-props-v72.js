@@ -81,7 +81,11 @@
   function refreshAll(root=document){root.querySelectorAll('[data-sp-market]').forEach(refreshMarket)}
   document.addEventListener('input',e=>{if(e.target.matches?.('[data-sp-line]'))refreshMarket(e.target.closest('[data-sp-market]'))});
   document.addEventListener('change',e=>{if(e.target.matches?.('[data-sp-line]'))refreshMarket(e.target.closest('[data-sp-market]'))});
-  const obs=new MutationObserver(()=>requestAnimationFrame(()=>refreshAll(document)));
+  const obs=new MutationObserver(()=>{
+    // v8.1: mutacje profilu nie mogą uruchamiać pełnego skanu dokumentu.
+    if(window.TENIS_AI_PLAYER_PROFILE_ACTIVE)return;
+    requestAnimationFrame(()=>refreshAll(document));
+  });
   obs.observe(document.body,{childList:true,subtree:true});
   setTimeout(()=>refreshAll(document),300);
 
@@ -121,8 +125,7 @@
     sec.querySelectorAll('[data-sps]').forEach(b=>b.onclick=()=>{scope=b.dataset.sps;sec.querySelectorAll('[data-sps]').forEach(x=>x.classList.toggle('active',x===b));render()});
     render();
   }
-  if(profile){
-    const po=new MutationObserver(()=>setTimeout(injectProfile,30));po.observe(profile,{childList:true,subtree:true});
-    setTimeout(injectProfile,700);
-  }
+  function mountProfile(){injectProfile()}
+  window.TENIS_AI_SERVE_PROPS_V81={mountProfile,refreshAll};
+  if(profile&&!profile.hidden)setTimeout(injectProfile,80);
 })();

@@ -159,6 +159,8 @@
   }
 
   function renderPlayerProfile(name){
+    window.TENIS_AI_PLAYER_PROFILE_ACTIVE=true;
+    document.documentElement.classList.add('tenis-ai-player-profile-active');
     const rowsAll=safeAll().filter(m=>same(m.p1,name)||same(m.p2,name));
     const current=rowsAll.filter(currentish).sort((a,b)=>(dt(a.scheduled_time)?.getTime()||0)-(dt(b.scheduled_time)?.getTime()||0));
     const ready=current.filter(m=>m.model_ready&&m.first_set_win);
@@ -191,14 +193,26 @@
       document.querySelector('.main-tabs [data-view="history"]')?.click();
       requestAnimationFrame(()=>window.TENIS_AI_CLEAN_CORE?.openPostMatch?.(e));
     });
-    requestAnimationFrame(()=>window.TENIS_AI_PLAYER_ANALYTICS_V801?.mount?.(name));
+    // v8.1: montujemy moduły profilu jawnie i porcjami między klatkami.
+    requestAnimationFrame(()=>{
+      window.TENIS_AI_PLAYER_TRENDS_V81?.mount?.(name);
+      window.TENIS_AI_SERVE_PROPS_V81?.mountProfile?.();
+      window.TENIS_AI_EARLY_HOLD_PATHS_V81?.mountProfile?.();
+      requestAnimationFrame(()=>window.TENIS_AI_PLAYER_ANALYTICS_V801?.mount?.(name));
+    });
   }
 
   function closeProfile(returnToOrigin=true){
     const returnKey=String(window.TENIS_AI_PLAYER_PROFILE_RETURN_KEY||'');
     window.TENIS_AI_PLAYER_PROFILE_RETURN_KEY='';
+    window.TENIS_AI_PLAYER_PROFILE_ACTIVE=false;
+    document.documentElement.classList.remove('tenis-ai-player-profile-active');
     panel.hidden=true;panel.innerHTML='';input.value='';clearBtn.hidden=true;suggestions.hidden=true;
-    if(returnToOrigin&&returnKey)requestAnimationFrame(()=>window.TENIS_AI_PROJECT_UI?.openMatch?.(returnKey));
+    requestAnimationFrame(()=>{
+      window.TENIS_AI_SERVE_PROPS_V81?.refreshAll?.(document);
+      window.TENIS_AI_EARLY_HOLD_PATHS_V81?.refresh?.();
+      if(returnToOrigin&&returnKey)window.TENIS_AI_PROJECT_UI?.openMatch?.(returnKey);
+    });
   }
 
   input.addEventListener('input',()=>{clearBtn.hidden=!input.value;showSuggestions(input.value)});

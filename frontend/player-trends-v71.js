@@ -153,12 +153,15 @@
     }finally{injecting=false}
   }
 
-  let timer=null;
-  const obs=new MutationObserver(()=>{
-    clearTimeout(timer);
-    timer=setTimeout(inject,35);
-  });
-  obs.observe(panel,{childList:true,subtree:true});
-  input.addEventListener('change',()=>setTimeout(inject,50));
-  setTimeout(inject,800);
+  function mount(name){
+    const wanted=String(name||input.value||'').trim();
+    if(!wanted||panel.hidden)return;
+    const old=panel.querySelector('#player-tendencies-v71');
+    if(old)old.remove();
+    inject();
+  }
+
+  // v8.1: profil montuje Trends jawnie. Zero subtree observera.
+  window.TENIS_AI_PLAYER_TRENDS_V81={mount,inject};
+  setTimeout(()=>{if(!panel.hidden)mount(input.value)},120);
 })();
