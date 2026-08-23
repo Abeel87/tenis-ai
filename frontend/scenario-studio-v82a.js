@@ -316,23 +316,77 @@
     const spm=Number($('.sc82-choice[data-sc-choice="signals"] .active',panel)?.dataset.scN||2);
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
     const min={stable:74,balanced:70,strong:80,experimental:62}[profile]||70;
-    const ranked=todaysMatches().map(m=>{
-      const sig=signalRows(m).map(s=>({...s,cs:composerSignalScore(m,s,profile)})).filter(s=>s.cs>=min);
-      const picked=[],cats=new Set();
-      for(const s of sig){
-        const c=categoryOf(s);
+
+    // v8.2A.3 Exact Count:
+    // najpierw różne kategorie, potem uzupełnienie najlepszymi pozostałymi.
+    const candidates=todaysMatches().map(m=>{
+      const sig=signalRows(m)
+        .map(s=>({...s,cs:composerSignalScore(m,s,profile)}))
+        .filter(s=>s.cs>=min)
+        .sort((a,b)=>b.cs-a.cs);
+
+      const picked=[];
+      const usedKeys=new Set();
+      const cats=new Set();
+
+      // Przebieg 1: preferuj różne kategorie sygnałów.
+      for(const x of sig){
         if(picked.length>=spm)break;
-        if(cats.has(c)&&picked.length<Math.min(2,spm))continue;
-        picked.push(s);cats.add(c);
+        const c=categoryOf(x);
+        if(cats.has(c))continue;
+        picked.push(x);
+        usedKeys.add(x.key);
+        cats.add(c);
       }
-      const ms=picked.length?picked.reduce((a,b)=>a+b.cs,0)/picked.length:0;
+
+      // Przebieg 2: dopełnij do dokładnie spm najlepszymi pozostałymi.
+      for(const x of sig){
+        if(picked.length>=spm)break;
+        if(usedKeys.has(x.key))continue;
+        picked.push(x);
+        usedKeys.add(x.key);
+      }
+
+      const ms=picked.length===spm
+        ? picked.reduce((a,b)=>a+b.cs,0)/picked.length
+        : 0;
+
       return {m,picked,ms};
-    }).filter(x=>x.picked.length).sort((a,b)=>b.ms-a.ms).slice(0,mc);
-    if(!ranked.length){toast('Brak wystarczających dzisiejszych sygnałów dla tego profilu.');return}
-    clearDraft();draft.mode='generator';draft.profile=profile;
-    for(const x of ranked)for(const s of x.picked)addSignalSilent(x.m,s,'generator',profile);
-    persistDraft();currentTab='draft';render();toast('Scenariusz wygenerowany.');
+    })
+      .filter(x=>x.picked.length===spm)
+      .sort((a,b)=>b.ms-a.ms);
+
+    if(candidates.length<mc){
+      toast(`Brak pełnego scenariusza: znaleziono ${candidates.length} z ${mc} spotkań mających po ${spm} wymagane sygnały. Zmień liczbę spotkań, liczbę sygnałów albo profil.`);
+      return;
+    }
+
+    const ranked=candidates.slice(0,mc);
+
+    clearDraft();
+    draft.mode='generator';
+    draft.profile=profile;
+
+    for(const x of ranked){
+      for(const sig of x.picked)addSignalSilent(x.m,sig,'generator',profile);
+    }
+
+    const expected=mc*spm;
+    const actual=draft.items.length;
+    const actualMatches=draftMatches().length;
+
+    if(actual!==expected || actualMatches!==mc){
+      clearDraft();
+      toast(`Generator przerwał: oczekiwano ${mc} spotkań i ${expected} sygnałów, otrzymano ${actualMatches} spotkań i ${actual} sygnałów.`);
+      return;
+    }
+
+    persistDraft();
+    currentTab='draft';
+    render();
+    toast(`Gotowe: ${mc} × ${spm} = ${expected} sygnałów.`);
   }
+
   function addSignalSilent(m,s,source,profile){
     const mk=matchKey(m);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({

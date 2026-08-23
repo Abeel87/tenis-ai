@@ -60,4 +60,22 @@ def test_v82a2_uses_main_match_source():
 
 def test_v82a2_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a2' in h
+    assert 'scenario-studio-v82a.js?v=82a3' in h
+
+
+def test_v82a3_generator_exact_count_contract():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert ".filter(x=>x.picked.length===spm)" in s
+    assert "if(candidates.length<mc)" in s
+    assert "const expected=mc*spm" in s
+    assert "if(actual!==expected || actualMatches!==mc)" in s
+
+def test_v82a3_generator_two_pass_fill():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "Przebieg 1: preferuj różne kategorie" in s
+    assert "Przebieg 2: dopełnij do dokładnie spm" in s
+    assert "usedKeys.has(x.key)" in s
+
+def test_v82a3_cache_bust_is_pinned():
+    h=read("frontend/index.html")
+    assert 'scenario-studio-v82a.js?v=82a3' in h
