@@ -31,3 +31,97 @@
 }
 .p751-bottom-nav button{min-width:0!important;padding-left:1px!important;padding-right:1px!important}
 .p751-bottom-nav button>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* v8.2A.5.1 Line Picker Layout */
+.sc82-draft-entry{
+  display:block;
+  position:relative;
+  clear:both;
+  border-bottom:1px solid #142f3d;
+}
+.sc82-draft-entry:last-child{border-bottom:0}
+.sc82-draft-entry .sc82-draft-row{
+  border-bottom:0;
+  align-items:flex-start;
+}
+.sc82-draft-row>span{
+  flex:1 1 auto;
+  min-width:0;
+}
+.sc82-draft-row>button[data-sc-remove]{
+  flex:0 0 32px;
+  width:32px;
+  height:32px;
+}
+.sc82-line-tools{
+  display:block!important;
+  width:100%;
+  margin-top:8px;
+}
+.sc82-draft-row .sc82-line-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:auto!important;
+  min-width:132px;
+  height:auto!important;
+  padding:8px 11px!important;
+  border:1px solid #31566a!important;
+  border-radius:10px!important;
+  background:#163040!important;
+  color:#e7f7ff!important;
+  text-align:left;
+  line-height:1.1;
+  cursor:pointer;
+}
+.sc82-line-options{
+  position:static!important;
+  display:flex!important;
+  flex-wrap:wrap;
+  gap:8px;
+  width:100%;
+  box-sizing:border-box;
+  padding:0 13px 12px;
+  margin:0;
+  clear:both;
+}
+.sc82-line-options .sc82-line-option{
+  display:inline-flex;
+  align-items:baseline;
+  gap:6px;
+  width:auto!important;
+  min-width:112px;
+  height:auto!important;
+  padding:9px 12px!important;
+  border:1px solid #31566a!important;
+  border-radius:11px!important;
+  background:#0d2230!important;
+  color:#dceefa!important;
+  cursor:pointer;
+}
+.sc82-line-options .sc82-line-option.active{
+  border-color:#51cfff!important;
+  background:#163b4f!important;
+  color:#fff!important;
+}
+@media(min-width:621px){
+  .sc82-draft-row{padding:12px 14px}
+  .sc82-line-tools{max-width:360px}
+  .sc82-line-options{padding-left:14px;padding-right:58px}
+}
+@media(max-width:620px){
+  .sc82-line-tools{margin-top:7px}
+  .sc82-draft-row .sc82-line-toggle{
+    min-width:0;
+    max-width:100%;
+    padding:7px 9px!important;
+  }
+  .sc82-line-options{
+    gap:6px;
+    padding:0 10px 10px;
+  }
+  .sc82-line-options .sc82-line-option{
+    min-width:92px;
+    padding:8px 9px!important;
+  }
+}

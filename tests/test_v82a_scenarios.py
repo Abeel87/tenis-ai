@@ -35,7 +35,7 @@ def test_scenario_persistence_targets_own_profile_table():
 
 def test_index_loads_scenario_assets_last():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.css?v=82a' in h
+    assert 'scenario-studio-v82a.css?v=82a51' in h
     assert 'scenario-studio-v82a.js?v=82a' in h
     assert h.index('clean-core-v80.js?v=801') < h.index('scenario-studio-v82a.js?v=82a')
 
@@ -60,7 +60,7 @@ def test_v82a2_uses_main_match_source():
 
 def test_v82a2_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a5' in h
+    assert 'scenario-studio-v82a.js?v=82a51' in h
 
 
 def test_v82a3_generator_exact_count_contract():
@@ -78,7 +78,7 @@ def test_v82a3_generator_two_pass_fill():
 
 def test_v82a3_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a5' in h
+    assert 'scenario-studio-v82a.js?v=82a51' in h
 
 
 def test_v82a4_generator_uses_distinct_market_families():
@@ -96,7 +96,7 @@ def test_v82a4_prefers_category_diversity_before_family_fallback():
 
 def test_v82a4_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a5' in h
+    assert 'scenario-studio-v82a.js?v=82a51' in h
 
 def test_v82a5_market_line_guard_direction():
     s=read("frontend/scenario-studio-v82a.js")
@@ -127,4 +127,29 @@ def test_v82a5_no_observer_or_interval_added():
 
 def test_v82a5_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a5' in h
+    assert 'scenario-studio-v82a.js?v=82a51' in h
+
+def test_v82a51_line_picker_layout():
+    s=read("frontend/scenario-studio-v82a.js")
+    c=read("frontend/scenario-studio-v82a.css")
+    assert 'class="sc82-line-tools"' in s
+    assert 'class="sc82-line-toggle"' in s
+    assert 'class="sc82-line-options"' in s
+    assert 'sc82-line-option' in s
+    assert ".sc82-draft-row>button[data-sc-remove]" in c
+    assert ".sc82-draft-row .sc82-line-toggle" in c
+
+def test_v82a51_line_picker_not_forced_to_square():
+    c=read("frontend/scenario-studio-v82a.css")
+    assert "width:auto!important" in c
+    assert "height:auto!important" in c
+    assert "position:static!important" in c
+
+def test_v82a51_manual_builder_mentions_exact_lines():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "Przy gemach wybierasz konkretną linię" in s
+
+def test_v82a51_asset_cache_bust():
+    h=read("frontend/index.html")
+    assert 'scenario-studio-v82a.js?v=82a51' in h
+    assert 'scenario-studio-v82a.css?v=82a51' in h

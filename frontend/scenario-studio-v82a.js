@@ -528,7 +528,7 @@
   function manualHtml(){
     let rows=todaysMatches();
     if(manualMatchFilter)rows=rows.filter(m=>matchKey(m)===manualMatchFilter);
-    return `${topBack('Własny scenariusz')}<div class="sc82-manual-head"><p>Klikasz <b>＋</b>, a wybrane sygnały wpadają do paska na dole. Maks. 8 spotkań i 4 sygnały na mecz.</p>${categoryTabs()}</div>
+    return `${topBack('Własny scenariusz')}<div class="sc82-manual-head"><p>Klikasz <b>＋</b>, a wybrane sygnały wpadają do paska na dole. Przy gemach wybierasz konkretną linię (np. O18.5 / O19.5). Maks. 8 spotkań i 4 sygnały na mecz.</p>${categoryTabs()}</div>
     <div class="sc82-matches">${rows.length?rows.map(manualMatchHtml).join(''):'<div class="sc82-empty">Brak dzisiejszych spotkań.</div>'}</div>`;
   }
   function manualMatchHtml(m){
@@ -564,12 +564,12 @@
               <span>
                 <b>${esc(s.label)}</b>
                 <small>${esc(s.source_model)} · ${Math.round(Number(s.composer_score||s.value))}/100${s.pbp_ready?' · PBP ✓':''}${adjusted?` · zmieniono z ${original}`:''}</small>
-                ${line!=null&&alternatives.length>1?`<span class="sc82-choice" style="display:flex;margin-top:7px"><button data-sc-line-open="${encodeURIComponent(rowKey)}">Linia ${line} · zmień</button></span>`:''}
+                ${line!=null&&alternatives.length>1?`<span class="sc82-line-tools"><button class="sc82-line-toggle" data-sc-line-open="${encodeURIComponent(rowKey)}">Linia ${line} · zmień</button></span>`:''}
               </span>
               <button data-sc-remove="${encodeURIComponent(s.match_key)}" data-sc-sig="${encodeURIComponent(s.signal_key)}">✕</button>
             </div>
-            ${showLines?`<div class="sc82-choice" style="padding:0 13px 10px;display:flex;gap:6px;flex-wrap:wrap">
-              ${alternatives.map(a=>`<button class="${a.key===s.signal_key?'active':''}" data-sc-line-pick="${encodeURIComponent(s.match_key)}" data-sc-old-sig="${encodeURIComponent(s.signal_key)}" data-sc-new-sig="${encodeURIComponent(a.key)}">${String(a.pick||'').toUpperCase().startsWith('O')?'O':'U'}${a.line} · ${Math.round(a.composer_score)}/100</button>`).join('')}
+            ${showLines?`<div class="sc82-line-options">
+              ${alternatives.map(a=>`<button class="sc82-line-option ${a.key===s.signal_key?'active':''}" data-sc-line-pick="${encodeURIComponent(s.match_key)}" data-sc-old-sig="${encodeURIComponent(s.signal_key)}" data-sc-new-sig="${encodeURIComponent(a.key)}">${String(a.pick||'').toUpperCase().startsWith('O')?'O':'U'}${a.line} · ${Math.round(a.composer_score)}/100</button>`).join('')}
             </div>`:''}
           </div>`;
         }).join('')}</article>`).join(''):'<div class="sc82-empty">Jeszcze nic nie wybrano.</div>'}</div>
