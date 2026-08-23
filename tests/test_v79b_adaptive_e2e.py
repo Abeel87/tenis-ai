@@ -92,7 +92,7 @@ def test_v79b_frontend_is_static_and_visible_before_domcontentloaded():
     assert 'adaptive-learning-v79.js?v=80' in idx
     assert 'data-v79-adaptive="css"' in idx
     assert 'data-v79-adaptive="js"' in idx
-    assert "tenis-ai-v80-clean-core" in sw
+    assert "tenis-ai-v801-" in sw
     assert "p751-detail-screen" in ui
     assert "v79-health" in ui
 

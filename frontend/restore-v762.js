@@ -7,6 +7,8 @@
     name=String(name||'').trim();
     if(!name)return;
 
+    const overlay=$('#p751-match-overlay');
+    window.TENIS_AI_PLAYER_PROFILE_RETURN_KEY = overlay && !overlay.hidden ? String(overlay.dataset.matchKey||'') : '';
     const close=$('#p751-match-overlay [data-p751-close]');
     if(close) close.click();
 

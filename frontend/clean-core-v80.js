@@ -1,8 +1,8 @@
-/* Tenis AI v8.0 — Clean Core + Post-Match Center */
+/* Tenis AI v8.0.1 — Clean Core + Post-Match Center */
 (() => {
   'use strict';
 
-  const VERSION='v8.0';
+  const VERSION='v8.0.1';
   const DAY_KEY='tenis-ai-v80-history-days';
   const MODEL_NAMES={
     adaptive:'🧠 Adaptive', consensus:'⚡ Consensus', early:'🎯 Early Hold',
@@ -250,9 +250,10 @@
   // Canonical History renderer: this script is intentionally loaded last.
   renderHistory=function(){renderHistoryV80()};
 
-  const observer=new MutationObserver(()=>tidy());
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  // v8.0.1: no document-wide observer.
   tidy();
+  window.addEventListener('load',tidy,{once:true});
+  setTimeout(tidy,350);
 
   window.TENIS_AI_CLEAN_CORE={version:VERSION,renderHistory:renderHistoryV80,openPostMatch:postMatch,tidy};
 })();

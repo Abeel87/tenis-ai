@@ -53,9 +53,9 @@ clean=read(frontend/'clean-core-v80.js')
 sw=read(frontend/'sw.js')
 
 required=[
-    ('clean-core-v80.css?v=80' in index,'Brak Clean Core CSS v8.0 w index.html.'),
-    ('clean-core-v80.js?v=80' in index,'Brak Clean Core JS v8.0 w index.html.'),
-    ("appVersion: 'v8.0'" in meta,'app-meta.js nie wskazuje v8.0.'),
+    ('clean-core-v80.css?v=801' in index,'Brak Clean Core CSS v8.0.1 w index.html.'),
+    ('clean-core-v80.js?v=801' in index,'Brak Clean Core JS v8.0.1 w index.html.'),
+    ("appVersion: 'v8.0.1'" in meta,'app-meta.js nie wskazuje v8.0.1.'),
     ('Post-Match Center' in clean or 'RAPORT PO MECZU' in clean,'Brak Post-Match Center w Clean Core.'),
     ('learning_signals_v79b' in clean,'Clean Core nie pokazuje specialist learning.'),
     ('adaptive_review_v79' in clean,'Clean Core nie pokazuje analizy Adaptive po meczu.'),
@@ -73,8 +73,8 @@ if 'readability-v753.js' in index:
     failures.append('Obsolete readability-v753.js nadal jest ładowany.')
 if 'cache.addAll(ASSETS)' in sw:
     failures.append('Service worker nadal używa kruchego cache.addAll(ASSETS).')
-if not re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v80-[0-9a-z._-]+['\"]",sw,re.I):
-    failures.append('Service worker nie ma cache rodziny v80.')
+if not re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v801-[0-9a-z._-]+['\"]",sw,re.I):
+    failures.append('Service worker nie ma cache rodziny v801.')
 if '@supabase/supabase-js@2.112.3' not in index:
     warnings.append('Supabase JS nie jest przypięty do 2.112.3.')
 
@@ -88,9 +88,22 @@ for name in ['PREDEPLOY_TESTS.txt','TESTS.txt','TESTS_PREUPDATE.txt','v7.4-admin
 if legacy_root:
     failures.append('Legacy śmieci w root: '+', '.join(sorted(p.name for p in legacy_root)))
 
+analytics=read(frontend/'player-analytics-v76.js')
+adaptive=read(frontend/'adaptive-learning-v79.js')
+clean_core=read(frontend/'clean-core-v80.js')
+
 restore=read(frontend/'restore-v762.js')
 if 'setInterval(refresh,1200)' in restore:
     failures.append('Stary polling UI co 1.2 s nadal istnieje.')
+
+if 'setInterval(inject,700)' in analytics:
+    failures.append('Player Analytics nadal ma stary polling co 700 ms.')
+
+if re.search(r'observer\.observe\(document\.documentElement', adaptive):
+    failures.append('Adaptive nadal obserwuje cały dokument.')
+
+if re.search(r'observer\.observe\(document\.documentElement', clean_core):
+    failures.append('Clean Core nadal obserwuje cały dokument.')
 
 if workflows.exists():
     for wf in [*workflows.glob('*.yml'),*workflows.glob('*.yaml')]:
@@ -101,7 +114,7 @@ if workflows.exists():
         if 'concurrency:' not in low:
             warnings.append(f'{wf}: workflow pushujący nie ma concurrency guard.')
 
-print('=== Tenis AI v8.0 Clean Core Project Health ===')
+print('=== Tenis AI v8.0.1 Player Profile Project Health ===')
 print(f'JS files:  {len(js_files)}')
 print(f'CSS files: {len(css_files)}')
 for w in warnings:print('WARN:',w)

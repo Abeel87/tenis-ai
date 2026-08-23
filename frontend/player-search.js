@@ -145,14 +145,16 @@
     return `<div class="player-surface-list">${rows.map(g=>`<div class="player-surface-row"><div><b>${esc(g.label.toUpperCase())}</b><small>${g.n} rozliczonych sygnałów</small></div><div class="player-market-score"><strong>${g.accuracy.toFixed(0)}%</strong><em>${g.hits}/${g.n}</em></div></div>`).join('')}</div>`;
   }
 
+  function historyEntryKey(e){return String(e?.match_key||e?.match_id||e?.id||[e?.p1,e?.p2,e?.scheduled_time].join('|'))}
+
   function historyRowsHtml(rows,name){
-    if(!rows.length)return '<div class="player-empty">Tenis AI nie ma jeszcze zapisanej historii tego zawodnika.</div>';
-    return `<div class="player-history-list">${rows.slice(0,6).map(e=>{
+    if(!rows.length)return '<div class="player-empty">Tenis AI nie ma jeszcze zamrożonego raportu dla tego zawodnika.</div>';
+    return `<div class="player-history-list">${rows.slice(0,8).map(e=>{
       const opponent=same(e.p1,name)?e.p2:e.p1;
       const sig=e.signals||[];const h=sig.filter(x=>x.result==='hit').length;const m=sig.filter(x=>x.result==='miss').length;
       const settled=h+m;const cls=settled?(m===0?'hit':h===0?'miss':'pending'):'pending';
       let scoreText='Oczekuje';try{scoreText=finalScore(e)}catch{}
-      return `<div class="player-history-row"><div class="player-history-top"><b>${esc(opponent||'—')}</b><span>${esc(displayDate(e.scheduled_time))}</span></div><div class="player-history-meta">${esc(String(e.tour||'').toUpperCase())}${e.tournament?` · ${esc(e.tournament)}`:''}${e.surface?` · ${esc(e.surface)}`:''}</div><div class="player-history-bottom"><div class="player-history-score">${esc(scoreText)}</div><div class="player-history-result ${cls}">${settled?`${h}✅ ${m}❌`:`${sig.length} ⏳`}</div></div></div>`;
+      return `<button type="button" class="player-history-row" data-player-history-key="${esc(historyEntryKey(e))}"><div class="player-history-top"><b>${esc(opponent||'—')}</b><span>${esc(displayDate(e.scheduled_time))}</span></div><div class="player-history-meta">${esc(String(e.tour||'').toUpperCase())}${e.tournament?` · ${esc(e.tournament)}`:''}${e.surface?` · ${esc(e.surface)}`:''}</div><div class="player-history-bottom"><div class="player-history-score">${esc(scoreText)}</div><div class="player-history-result ${cls}">${settled?`${h}✅ ${m}❌`:`${sig.length} ⏳`}</div></div><small class="player-history-open-label">Otwórz raport po meczu ›</small></button>`;
     }).join('')}</div>`;
   }
 
@@ -175,16 +177,29 @@
         <div class="player-kpi"><span>Rozliczone typy</span><b>${summary.settled}</b></div>
         <div class="player-kpi"><span>Skuteczność AI</span><b class="lime">${accuracy}</b></div>
       </div>
-      <section class="player-section"><div class="player-section-title"><b>🔥 Dzisiejszy / najbliższy mecz</b><small>najmocniejsze zielone ≥72</small></div><div class="player-current-list">${currentForProfile.length?currentForProfile.map(m=>currentCard(m,name)).join(''):'<div class="player-empty">Brak aktualnego meczu tego zawodnika w danych. Historia poniżej nadal jest dostępna.</div>'}</div></section>
+      <section class="player-section player-ai-history-quick"><div class="player-section-title"><b>🕘 Historia typów Tenis AI</b><small>dokładnie te mecze, które aplikacja zamroziła przed startem</small></div>${historyRowsHtml(hist,name)}</section>
+      <section class="player-section player-current-section"><div class="player-section-title"><b>🔥 Dzisiejszy / najbliższy mecz</b><small>najmocniejsze zielone ≥72</small></div><div class="player-current-list">${currentForProfile.length?currentForProfile.map(m=>currentCard(m,name)).join(''):'<div class="player-empty">Brak aktualnego meczu tego zawodnika w danych. Historia powyżej nadal jest dostępna.</div>'}</div></section>
       <section class="player-section"><div class="player-section-title"><b>📚 Statystyki zawodnika</b><small>agregaty z danych używanych przez model</small></div>${statGrid(stats)}</section>
       <section class="player-section"><div class="player-section-title"><b>🏆 Co najczęściej wchodziło</b><small>tylko rozliczone zielone typy Tenis AI</small></div>${marketRows(summary.markets)}</section>
       ${summary.surfaces.length?`<section class="player-section"><div class="player-section-title"><b>🏟️ Skuteczność wg nawierzchni</b><small>historia naszych sygnałów</small></div>${surfaceRows(summary.surfaces)}</section>`:''}
-      <section class="player-section"><div class="player-section-title"><b>🕘 Ostatnia historia Tenis AI</b><small>mecze śledzone przez aplikację</small></div>${historyRowsHtml(hist,name)}</section>
       <div class="player-profile-note">Na razie profil korzysta z danych, które już mamy: aktualnej analizy oraz historii prognoz zapisanych przez Tenis AI. Nie udajemy pełnej historii game-by-game. Po podłączeniu dokładniejszego API dołożymy pełne ostatnie 10/20 meczów, breaki, kolejność serwisu i bardziej szczegółowe rynki Early Hold.</div>`;
-    document.querySelector('#player-profile-close').onclick=closeProfile;
+    document.querySelector('#player-profile-close').onclick=()=>closeProfile(true);
+    panel.querySelectorAll('[data-player-history-key]').forEach(b=>b.onclick=()=>{
+      const e=hist.find(x=>historyEntryKey(x)===b.dataset.playerHistoryKey);
+      if(!e)return;
+      closeProfile(false);
+      document.querySelector('.main-tabs [data-view="history"]')?.click();
+      requestAnimationFrame(()=>window.TENIS_AI_CLEAN_CORE?.openPostMatch?.(e));
+    });
+    requestAnimationFrame(()=>window.TENIS_AI_PLAYER_ANALYTICS_V801?.mount?.(name));
   }
 
-  function closeProfile(){panel.hidden=true;panel.innerHTML='';input.value='';clearBtn.hidden=true;suggestions.hidden=true}
+  function closeProfile(returnToOrigin=true){
+    const returnKey=String(window.TENIS_AI_PLAYER_PROFILE_RETURN_KEY||'');
+    window.TENIS_AI_PLAYER_PROFILE_RETURN_KEY='';
+    panel.hidden=true;panel.innerHTML='';input.value='';clearBtn.hidden=true;suggestions.hidden=true;
+    if(returnToOrigin&&returnKey)requestAnimationFrame(()=>window.TENIS_AI_PROJECT_UI?.openMatch?.(returnKey));
+  }
 
   input.addEventListener('input',()=>{clearBtn.hidden=!input.value;showSuggestions(input.value)});
   input.addEventListener('focus',()=>{if(input.value)showSuggestions(input.value)});

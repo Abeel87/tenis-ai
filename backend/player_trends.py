@@ -148,6 +148,57 @@ def _trend_pack(rows: pd.DataFrame) -> dict:
     return out
 
 
+def _recent_rows(rows: pd.DataFrame, n: int = 20) -> list[dict]:
+    # JSON-safe historical source rows. These are NOT Tenis AI predictions.
+    if rows is None or rows.empty:
+        return []
+    out=[]
+    for _, row in rows.head(n).iterrows():
+        def pick(*names):
+            for name in names:
+                if name not in row.index:
+                    continue
+                v=row.get(name)
+                try:
+                    if pd.isna(v):
+                        continue
+                except Exception:
+                    pass
+                return v
+            return None
+        d=_to_dt(pick("date"))
+        won=pick("won")
+        try:
+            won=None if won is None else bool(float(won)>0.5)
+        except (TypeError,ValueError):
+            won=None
+        def number(*names):
+            v=pick(*names)
+            try:
+                x=float(v); return round(x,4) if math.isfinite(x) else None
+            except (TypeError,ValueError):
+                return None
+        opponent=pick("opponent","opponent_name","opp","opponent_key")
+        surface=pick("surface")
+        tournament=pick("tournament","tournament_name","event")
+        score=pick("score","score_text","result_score")
+        out.append({
+            "date": d.isoformat() if d is not None else None,
+            "opponent": None if opponent is None else str(opponent),
+            "surface": None if surface is None else str(surface),
+            "tournament": None if tournament is None else str(tournament),
+            "score": None if score is None else str(score),
+            "won": won,
+            "sets_played": number("sets_played"),
+            "first_set_games": number("first_set_games"),
+            "hold_rate": number("hold_rate"),
+            "break_rate": number("break_rate"),
+            "serve_points_won": number("serve_points_won"),
+            "return_points_won": number("return_points_won"),
+        })
+    return out
+
+
 def build_player_tendencies(long_df: pd.DataFrame, player: str, surface: str = "", as_of=None) -> dict:
     if long_df is None or long_df.empty:
         return {"player": player, "available": False, "all": {}, "surface": {}}
@@ -183,6 +234,8 @@ def build_player_tendencies(long_df: pd.DataFrame, player: str, surface: str = "
         "surface_name": surf,
         "all": {str(n): _window(x, n) for n in WINDOWS},
         "surface": {str(n): _window(sx, n) for n in WINDOWS},
+        "recent_matches": _recent_rows(x, 20),
+        "recent_surface_matches": _recent_rows(sx, 20),
         "trend": {
             "all": _trend_pack(x),
             "surface": _trend_pack(sx),

@@ -182,6 +182,24 @@
     </div>`;
   }
 
+  function sourceMatchesBlock(d,ui){
+    const rows=(ui.scope==='surface'?d?.trends?.recent_surface_matches:d?.trends?.recent_matches)||[];
+    const take=rows.slice(0,Number(ui.window)||10);
+    if(!take.length)return '<div class="player-empty">Brak szczegółowej listy meczów źródłowych w obecnym pakiecie. Agregaty 5/10/20 pozostają dostępne.</div>';
+    const one=x=>{
+      const when=x?.date?new Date(x.date):null;
+      const date=when&&Number.isFinite(when.getTime())?when.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+      const wl=x?.won===true?'WYGRANA':x?.won===false?'PORAŻKA':'WYNIK N/D';
+      const cls=x?.won===true?'win':x?.won===false?'loss':'nd';
+      const fs=num(x?.first_set_games),hold=num(x?.hold_rate),ret=num(x?.return_points_won);
+      const holdTxt=hold==null?'':` · hold ${(hold<=1?hold*100:hold).toFixed(0)}%`;
+      const retTxt=ret==null?'':` · return ${(ret<=1?ret*100:ret).toFixed(0)}%`;
+      return `<div class="pa801-source-row"><div><b>${esc(x?.opponent||'Przeciwnik N/D')}</b><small>${esc(date)}${x?.surface?` · ${esc(String(x.surface).toUpperCase())}`:''}${x?.tournament?` · ${esc(x.tournament)}`:''}</small></div><span class="${cls}">${wl}</span><small>${x?.score?`wynik ${esc(x.score)} · `:''}${fs==null?'':`1S ${fs.toFixed(0)} gemów`}${holdTxt}${retTxt}</small></div>`;
+    };
+    return `<div class="pa801-source-list">${take.map(one).join('')}</div><p class="pa801-source-note">To są mecze źródłowe użyte do statystyk 5/10/20. Nie oznaczają, że Tenis AI wystawił wtedy typ.</p>`;
+  }
+
+
   function surfaceBlock(d,ix,ui){
     const s=ix.surf||{};
     const n=Number(s?.sample_matches||0);
@@ -238,11 +256,13 @@
       <details class="pa76-details"><summary>↩️ Return i forma <i>⌄</i></summary>${returnBlock(ix)}</details>
       <details class="pa76-details"><summary>🧠 Mental / reakcja po secie <i>⌄</i></summary>${mentalBlock(ix)}</details>
       <details class="pa76-details"><summary>📏 Sety i linie gemów <i>⌄</i></summary>${gamesBlock(ix)}</details>
+      <details class="pa76-details"><summary>🕘 Ostatnie mecze źródłowe · ${ui.window} <i>⌄</i></summary>${sourceMatchesBlock(d,ui)}</details>
       <details class="pa76-details"><summary>🏟️ ${esc(surf)} <i>⌄</i></summary>${surfaceBlock(d,ix,ui)}</details>
     `;
 
-    host.querySelectorAll('[data-pa-window]').forEach(b=>b.onclick=()=>{ui.window=b.dataset.paWindow;save(ui);render(host,name,d,ui)});
-    host.querySelectorAll('[data-pa-scope]').forEach(b=>b.onclick=()=>{ui.scope=b.dataset.paScope;save(ui);render(host,name,d,ui)});
+    const redraw=()=>requestAnimationFrame(()=>render(host,name,d,ui));
+    host.querySelectorAll('[data-pa-window]').forEach(b=>b.onclick=()=>{if(ui.window===b.dataset.paWindow)return;ui.window=b.dataset.paWindow;save(ui);redraw()});
+    host.querySelectorAll('[data-pa-scope]').forEach(b=>b.onclick=()=>{if(ui.scope===b.dataset.paScope)return;ui.scope=b.dataset.paScope;save(ui);redraw()});
   }
 
   let injecting=false;
@@ -257,8 +277,12 @@
       section.className='player-section pa76-section';
       section.innerHTML='<div id="pa76-content"></div>';
       const kpis=panel.querySelector('.player-profile-kpis');
+      const historyQuick=panel.querySelector('.player-ai-history-quick');
+      const currentSection=panel.querySelector('.player-current-section');
       const pt=panel.querySelector('#player-tendencies-v71');
-      if(kpis)kpis.insertAdjacentElement('afterend',section);
+      if(currentSection)currentSection.insertAdjacentElement('afterend',section);
+      else if(historyQuick)historyQuick.insertAdjacentElement('afterend',section);
+      else if(kpis)kpis.insertAdjacentElement('afterend',section);
       else if(pt)pt.insertAdjacentElement('afterend',section);
       else{
         const sections=[...panel.querySelectorAll('.player-section')];
@@ -278,13 +302,15 @@
     }finally{injecting=false}
   }
 
-  let timer;
-  const obs=new MutationObserver(()=>{
-    clearTimeout(timer);
-    timer=setTimeout(inject,45);
-  });
-  obs.observe(panel,{childList:true,subtree:true});
-  input.addEventListener('change',()=>setTimeout(inject,60));
-  setTimeout(inject,200);
-  setInterval(inject,700);
+  function mount(name){
+    const wanted=String(name||input.value||'').trim();
+    if(!wanted||panel.hidden)return;
+    const old=panel.querySelector('#player-analytics-v76');
+    if(old)old.remove();
+    inject();
+  }
+
+  // v8.0.1: explicit bridge. No polling and no subtree MutationObserver.
+  window.TENIS_AI_PLAYER_ANALYTICS_V801={mount,inject};
+  setTimeout(()=>{if(!panel.hidden)mount(input.value)},200);
 })();

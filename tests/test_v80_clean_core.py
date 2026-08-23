@@ -5,12 +5,12 @@ def read(path): return (ROOT/path).read_text(encoding='utf-8')
 
 def test_v80_is_central_version():
     meta=read('frontend/app-meta.js'); idx=read('frontend/index.html'); sw=read('frontend/sw.js'); app=read('frontend/app.js')
-    assert "appVersion: 'v8.0'" in meta
-    assert "cacheVersion: 'v80'" in meta
-    assert 'clean-core-v80.js?v=80' in idx
-    assert 'clean-core-v80.css?v=80' in idx
-    assert "tenis-ai-v80-clean-core" in sw
-    assert "serviceWorker.register('sw.js?v=80')" in app
+    assert "appVersion: 'v8.0.1'" in meta
+    assert "cacheVersion: 'v801'" in meta
+    assert 'clean-core-v80.js?v=801' in idx
+    assert 'clean-core-v80.css?v=801' in idx
+    assert "tenis-ai-v801-player-profile" in sw
+    assert "serviceWorker.register('sw.js?v=801')" in app
 
 def test_history_has_one_v8_runtime_owner():
     idx=read('frontend/index.html'); clean=read('frontend/clean-core-v80.js')

@@ -248,26 +248,15 @@
     document.querySelector('#v79-health')?.remove();
     const anchor=document.querySelector('.status');
     if(anchor)anchor.insertAdjacentHTML('afterend',healthHtml(meta,report));
+    requestAnimationFrame(()=>window.TENIS_AI_CLEAN_CORE?.tidy?.());
   }
 
   if(typeof renderMatchDetail==='function'){
     const baseRenderMatchDetail=renderMatchDetail;
     renderMatchDetail=function(m){return `${baseRenderMatchDetail(m)}${livePanel(m)}`};
   }
-  if(typeof renderHistory==='function'){
-    const baseRenderHistory=renderHistory;
-    renderHistory=function(){
-      const value=baseRenderHistory.apply(this,arguments);
-      injectHistoryReviews();
-      return value;
-    };
-  }
-
-  const observer=new MutationObserver(()=>{
-    injectProjectDetail();
-    if(typeof view!=='undefined'&&view==='history')injectHistoryReviews();
-  });
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  // v8.0.1: v8 History reads adaptive_review_v79 directly.
+  // Match Center calls injectProjectDetail explicitly.
 
   window.TENIS_AI_ADAPTIVE_V79={
     version:VERSION, livePanel, reviewHtml, injectHistoryReviews,

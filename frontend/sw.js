@@ -1,5 +1,5 @@
-/* Tenis AI v8.0 — resilient PWA cache */
-const CACHE = 'tenis-ai-v80-clean-core';
+/* Tenis AI v8.0.1 — resilient PWA cache */
+const CACHE = 'tenis-ai-v801-player-profile';
 
 const CORE = [
   './','index.html','manifest.webmanifest','favicon.png','icon-192.png','icon-512.png',

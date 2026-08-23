@@ -559,14 +559,15 @@
   function findMatch(k){return (Array.isArray(all)?all:[]).find(m=>key(m)===k)}
   function openMatch(k){
     const m=findMatch(k);if(!m)return;
-    const o=ensureOverlay();o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
+    const o=ensureOverlay();o.dataset.matchKey=String(k);o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
     bindLazySections78e23(o,m);
     o.scrollTop=0;
+    requestAnimationFrame(()=>window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.());
     o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
     o.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
   }
   function closeMatch(){
-    const o=ensureOverlay();o.hidden=true;o.innerHTML='';document.body.classList.remove('p751-modal-open');
+    const o=ensureOverlay();o.hidden=true;o.innerHTML='';delete o.dataset.matchKey;document.body.classList.remove('p751-modal-open');
   }
 
   function openModels(){

@@ -57,7 +57,7 @@ def test_history_source_and_pwa():
 
     # PWA version is maintained centrally from E10 onward.
     assert "const CACHE = 'tenis-ai-" in sw
-    assert "appVersion: 'v8.0'" in meta
+    assert "appVersion: 'v8.0.1'" in meta
     assert "modelVersion: 'v7.8D'" in meta
     assert "modelName: 'Calibration Guard + Adaptive Learning'" in meta
     assert 'app-meta.js?v=' in idx
