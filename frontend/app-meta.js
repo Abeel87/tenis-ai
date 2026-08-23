@@ -1,13 +1,32 @@
-/* Tenis AI v7.8E10 — central app metadata */
+/* Tenis AI v7.9A — central app metadata + Adaptive Learning assets */
 (() => {
   const META = Object.freeze({
-    appVersion: 'v7.8E12',
+    appVersion: 'v7.9A',
     modelVersion: 'v7.8D',
-    modelName: 'Calibration Guard',
-    cacheVersion: 'v78e12'
+    modelName: 'Calibration Guard + Adaptive Learning',
+    adaptiveVersion: 'v7.9A-bayesian-meta',
+    cacheVersion: 'v79a'
   });
 
   window.TENIS_AI_META = META;
+
+  function loadAdaptiveAssets(){
+    if(!document.querySelector('link[data-v79-adaptive]')){
+      const css=document.createElement('link');
+      css.rel='stylesheet';
+      css.href=`adaptive-learning-v79.css?v=${META.cacheVersion}`;
+      css.dataset.v79Adaptive='css';
+      document.head.appendChild(css);
+    }
+
+    if(!document.querySelector('script[data-v79-adaptive]')){
+      const js=document.createElement('script');
+      js.src=`adaptive-learning-v79.js?v=${META.cacheVersion}`;
+      js.dataset.v79Adaptive='js';
+      js.async=false;
+      document.body.appendChild(js);
+    }
+  }
 
   function applyMeta(){
     document.documentElement.dataset.tenisAiVersion = META.appVersion;
@@ -17,6 +36,8 @@
     if(p){
       p.textContent = `Tenis AI ${META.appVersion} · model ${META.modelVersion} ${META.modelName}`;
     }
+
+    loadAdaptiveAssets();
   }
 
   if(document.readyState === 'loading'){

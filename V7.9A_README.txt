@@ -1,0 +1,12 @@
+Tenis AI v7.9A — Adaptive Learning (Shadow)
+
+- Dodano Bayesian Online Meta-Learner nad istniejącymi modelami.
+- Uczenie jest hierarchiczne: source_model -> rynek -> dokładny sygnał -> tour/nawierzchnia -> band score.
+- Oficjalne sygnały, Shadow Lab i Early Hold PBP mają oddzielne wagi.
+- Pojedynczy mecz nie może zmienić modelu: Bayesian shrinkage + minimum próbki + limit korekty.
+- Wyniki produkcyjne v7.8D NIE są nadpisywane. v7.9A pokazuje równolegle raw_score -> learned_score.
+- Historia meczu dostaje „Analizę po meczu”: faktyczny powód przegrania rynku, podobne przypadki, trafność i wniosek modelu.
+- Early Hold/PBP może wyjaśniać wynik po 2/4/6 gemach na podstawie faktycznego tape.
+- Powtarzające się błędy są wykrywane i raportowane.
+- Automatyczna promocja do produkcji jest zablokowana do min. 300 oficjalnych rozliczonych sygnałów oraz osobnej walidacji.
+- Workflow uruchamia uczenie po rozliczeniu wyników.

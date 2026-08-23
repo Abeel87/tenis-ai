@@ -65,8 +65,6 @@ jobs:
         run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
-      - name: Adaptive Learning v7.9A
-        run: python backend/adaptive_learning_v79.py
       - name: Save tennis history + PBP cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4
