@@ -41,8 +41,15 @@
   }
   function allMatches(){
     try{
-      const rows=Array.isArray(window.all)?window.all:[];
-      return rows.filter(Boolean);
+      // v8.2A.2: to samo źródło meczów co ekran główny.
+      // Globalne `let all` nie musi istnieć jako window.all.
+      if(typeof filteredReady==='function'){
+        const rows=filteredReady();
+        if(Array.isArray(rows))return rows.filter(Boolean);
+      }
+      if(typeof all!=='undefined'&&Array.isArray(all))return all.filter(Boolean);
+      if(Array.isArray(window.all))return window.all.filter(Boolean);
+      return [];
     }catch{return []}
   }
   function isToday(m){

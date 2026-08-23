@@ -50,3 +50,14 @@ def test_v82a1_uses_canonical_visible_bottom_nav():
     assert "$('#p751-bottom-nav [data-p751-nav=\"scenarios\"]')" in sc
     assert "nav.appendChild(navButton)" not in sc
     assert "repeat(7,minmax(0,1fr))" in css
+
+
+def test_v82a2_uses_main_match_source():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "typeof filteredReady==='function'" in s
+    assert "typeof all!=='undefined'&&Array.isArray(all)" in s
+    assert "Array.isArray(window.all)" in s
+
+def test_v82a2_cache_bust_is_pinned():
+    h=read("frontend/index.html")
+    assert 'scenario-studio-v82a.js?v=82a2' in h
