@@ -636,17 +636,20 @@
       <div class="sc82-note"><b>Market Line Guard</b><span>Generator wybiera bardziej rynkową linię, ale nie zna oferty konkretnego operatora. Jeśli widzisz inną dostępną linię, użyj „Zmień linię” — wynik /100 przeliczy się automatycznie.</span></div>`;
   }
   async function renderSavedAsync(body){
+    try{await window.TENIS_AI_SCENARIO_SETTLEMENT?.refresh?.({force:true})}catch{}
     const remote=await remoteSaved(),local=localSaved();
     const rows=[...remote,...local.filter(x=>!x.remote)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
     if(currentTab!=='saved')return;
     body.innerHTML=`${topBack('Moje scenariusze')}<div class="sc82-saved">${rows.length?rows.map(s=>{
-      const items=Array.isArray(s.items)?s.items:[],mc=s.match_count??new Set(items.map(x=>x.match_key)).size,sc=s.signal_count??items.length;
-      return `<article><header><div><b>${esc(s.title||'Scenariusz AI')}</b><small>${new Date(s.created_at||Date.now()).toLocaleString('pl-PL')}</small></div><span class="sc82-status">${esc(s.status||'active')}</span></header>
-      <div class="sc82-saved-score"><b>${Math.round(Number(s.composer_score||0))}/100</b><span>${mc} spotk. · ${sc} sygnałów</span></div>
-      <details><summary>Pokaż analizę</summary>${items.map(i=>`<div class="sc82-saved-item"><span>${esc(i.p1)} vs ${esc(i.p2)}</span><b>${esc(i.label)}</b><small>${Math.round(Number(i.composer_score||i.value||0))}/100</small></div>`).join('')}</details>
+      const items=Array.isArray(s.items)?s.items:[],mc=s.match_count??new Set(items.map(x=>x.match_key)).size,sc=s.signal_count??items.length,sm=s?.metadata?.settlement_v83c||{};
+      const statusLabel=s.status==='settled'?'ROZLICZONY':s.status==='partial'?'CZĘŚCIOWO':s.status==='archived'?'ARCHIWUM':'AKTYWNY';
+      const settleSummary=Number.isFinite(Number(sm.resolved))?` · ✅ ${Number(sm.hits||0)} · ❌ ${Number(sm.misses||0)}${Number(sm.voids||0)?` · ⚪ ${Number(sm.voids||0)}`:''}`:'';
+      return `<article><header><div><b>${esc(s.title||'Scenariusz AI')}</b><small>${new Date(s.created_at||Date.now()).toLocaleString('pl-PL')}</small></div><span class="sc82-status">${esc(statusLabel)}</span></header>
+      <div class="sc82-saved-score"><b>${Math.round(Number(s.composer_score||0))}/100</b><span>${mc} spotk. · ${sc} sygnałów${settleSummary}</span></div>
+      <details><summary>Pokaż analizę</summary>${items.map(i=>`<div class="sc82-saved-item"><span>${esc(i.p1)} vs ${esc(i.p2)}</span><b>${esc(i.label)}</b><small>${i.result==='hit'?'✅ TRAFIONY':i.result==='miss'?'❌ NIETRAFIONY':i.result==='void'?'⚪ VOID':'⏳ OCZEKUJE'} · ${Math.round(Number(i.composer_score||i.value||0))}/100${i.actual!=null?` · wynik: ${esc(typeof i.actual==='object'?JSON.stringify(i.actual):i.actual)}`:''}</small></div>`).join('')}</details>
       <footer>${s.remote!==false?'☁️ profil':'📱 lokalnie'} · ${esc(s.mode||'manual')} · ${esc(s.profile||'manual')}</footer></article>`;
     }).join(''):'<div class="sc82-empty">Nie masz jeszcze zapisanych scenariuszy.</div>'}</div>
-    <div class="sc82-note"><b>Rozliczanie wyników</b><span>W v8.2A zapisujemy pełny snapshot. Automatyczne ✅/❌ zostanie podłączone do Post‑Match po sprawdzeniu mapowania wszystkich rynków, żeby niczego nie rozliczać błędnie.</span></div>`;
+    <div class="sc82-note"><b>Rozliczanie wyników · v8.3C</b><span>Scenariusze rozliczają się automatycznie z danych Post‑Match: ✅/❌/VOID. Działa dla zapisów lokalnych i profilu; brak pełnego PBP jest rozliczany neutralnie zamiast zgadywania.</span></div>`;
   }
   function topBack(title){return `<div class="sc82-topbar"><button data-sc-go="home">‹</button><b>${esc(title)}</b><button data-sc-close>✕</button></div>`}
   function updateDock(){
