@@ -250,14 +250,10 @@
   function mountNav(){
     ensureShell();
     if(navButton?.isConnected)return true;
-    const nav=$('.main-tabs');if(!nav)return false;
-    if($('[data-view="scenarios"]',nav)){navButton=$('[data-view="scenarios"]',nav);return true}
-    navButton=document.createElement('button');
-    navButton.type='button';navButton.dataset.view='scenarios';navButton.className='sc82-nav';
-    navButton.innerHTML='<span>🧩</span><small>Scenariusze</small>';
-    navButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();open('home')});
-    nav.appendChild(navButton);
-    return true;
+    // v8.2A.1: canonical visible navigation is rendered by ui-v751.js.
+    // Never inject Scenarios into the legacy hidden .main-tabs.
+    navButton=$('#p751-bottom-nav [data-p751-nav="scenarios"]');
+    return !!navButton;
   }
   function mountRetries(){
     if(mountNav())return;

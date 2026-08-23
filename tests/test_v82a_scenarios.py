@@ -38,3 +38,15 @@ def test_index_loads_scenario_assets_last():
     assert 'scenario-studio-v82a.css?v=82a' in h
     assert 'scenario-studio-v82a.js?v=82a' in h
     assert h.index('clean-core-v80.js?v=801') < h.index('scenario-studio-v82a.js?v=82a')
+
+
+def test_v82a1_uses_canonical_visible_bottom_nav():
+    ui=read("frontend/ui-v751.js")
+    sc=read("frontend/scenario-studio-v82a.js")
+    css=read("frontend/scenario-studio-v82a.css")
+    assert 'data-p751-nav="scenarios"' in ui
+    assert "TENIS_AI_SCENARIOS?.open?.('home')" in ui
+    assert "navActive('scenarios')" in ui
+    assert "$('#p751-bottom-nav [data-p751-nav=\"scenarios\"]')" in sc
+    assert "nav.appendChild(navButton)" not in sc
+    assert "repeat(7,minmax(0,1fr))" in css

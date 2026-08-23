@@ -608,6 +608,7 @@
     const n=document.createElement('nav');n.id='p751-bottom-nav';n.className='p751-bottom-nav';
     n.innerHTML=`<button data-p751-nav="matches" class="active"><span>🎾</span><b>Mecze</b></button>
       <button data-p751-nav="signals"><span>⚡</span><b>Sygnały</b></button>
+      <button data-p751-nav="scenarios"><span>🧩</span><b>Scenariusze</b></button>
       <button data-p751-nav="shadow"><span>🧪</span><b>Odrzucone</b></button>
       <button data-p751-nav="history"><span>◴</span><b>Historia</b></button>
       <button data-p751-nav="community"><span>👥</span><b>Społeczność</b></button>
@@ -617,6 +618,11 @@
       document.querySelector('.main-tabs [data-view="matches"]')?.click();route='matches';renderMatches();
     };
     n.querySelector('[data-p751-nav="signals"]').onclick=signalPage;
+    n.querySelector('[data-p751-nav="scenarios"]').onclick=()=>{
+      window.TENIS_AI_SCENARIOS?.open?.('home');
+      route='scenarios';
+      navActive('scenarios');
+    };
     n.querySelector('[data-p751-nav="shadow"]').onclick=async()=>{
       await window.TENIS_AI_SHADOW_LAB?.open?.();
       route='shadow';
