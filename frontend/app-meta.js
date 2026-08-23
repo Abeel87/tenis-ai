@@ -1,11 +1,11 @@
-/* Tenis AI v7.9A — central app metadata + Adaptive Learning assets */
+/* Tenis AI v7.9B — central app metadata + Adaptive Learning assets */
 (() => {
   const META = Object.freeze({
-    appVersion: 'v7.9A',
+    appVersion: 'v7.9B',
     modelVersion: 'v7.8D',
     modelName: 'Calibration Guard + Adaptive Learning',
-    adaptiveVersion: 'v7.9A-bayesian-meta',
-    cacheVersion: 'v79a'
+    adaptiveVersion: 'v7.9B-bayesian-meta',
+    cacheVersion: 'v79b'
   });
 
   window.TENIS_AI_META = META;

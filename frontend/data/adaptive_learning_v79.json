@@ -1,7 +1,7 @@
 {
-  "version": "v7.9A-bayesian-meta",
+  "version": "v7.9B-bayesian-meta",
   "mode": "shadow",
-  "generated_at": "2026-08-23T07:00:23.857652+00:00",
+  "generated_at": "2026-08-23T07:17:59.604408+00:00",
   "learner": {
     "name": "Bayesian Online Meta-Learner",
     "type": "hierarchical_bayesian_residual_calibration",
@@ -9,7 +9,8 @@
     "max_logit_shift": 0.8,
     "official_weight": 1.0,
     "shadow_weight": 0.6,
-    "pbp_weight": 0.9
+    "pbp_weight": 0.9,
+    "specialist_weight": 0.85
   },
   "training": {
     "rows": 381,
@@ -60,13 +61,17 @@
   ],
   "promotion_gate": {
     "ready": false,
+    "sample_ready": false,
+    "manual_validation_required": true,
     "required_official_settled": 300,
     "current_official_effective": 135.0,
-    "policy": "shadow_first_no_automatic_production_override"
+    "blocking_error_patterns": 4,
+    "policy": "shadow_first_manual_validation_before_any_production_override"
   },
   "notes": [
     "Uczenie koryguje pewność istniejących modeli; nie zastępuje ich logiki tenisowej.",
     "Każdy source_model/rynek uczy się osobno z hierarchicznym shrinkage.",
+    "Serve/Return, Form, Surface, Early i Consensus są śledzone jako learning-only i nie mieszają się z oficjalną skutecznością.",
     "Pojedyncza wtopa nie może samodzielnie zmienić modelu produkcyjnego."
   ],
   "cells": {

@@ -1,5 +1,5 @@
-/* Tenis AI v7.8E10 — resilient PWA cache */
-const CACHE = 'tenis-ai-v78e12-performance-clarity';
+/* Tenis AI v7.9B — resilient PWA cache */
+const CACHE = 'tenis-ai-v79b-adaptive-e2e';
 
 const CORE = [
   './',

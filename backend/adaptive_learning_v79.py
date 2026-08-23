@@ -14,12 +14,13 @@ RESULTS_PATH = OUT / "results.json"
 REPORT_PATH = OUT / "adaptive_learning_v79.json"
 META_PATH = OUT / "meta.json"
 
-VERSION = "v7.9A-bayesian-meta"
+VERSION = "v7.9B-bayesian-meta"
 MODE = "shadow"
 CURRENT_MODEL_VERSION = "v7.8D-calibration-guard"
 OFFICIAL_WEIGHT = 1.0
 SHADOW_WEIGHT = 0.60
 PBP_WEIGHT = 0.90
+SPECIALIST_WEIGHT = 0.85
 MIN_CELL_SAMPLE = 6.0
 STRONG_CELL_SAMPLE = 20.0
 PROMOTION_SAMPLE = 300
@@ -159,6 +160,16 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
                     rows.append(row)
             for signal in entry.get("shadow_signals") or []:
                 row = _training_row(entry, signal, SHADOW_WEIGHT)
+                if row:
+                    rows.append(row)
+            # v7.9B: client specialist models are captured pre-match by
+            # specialist_learning_v79b.py and settled separately so they do not
+            # contaminate the official production accuracy.
+            for signal in entry.get("learning_signals_v79b") or []:
+                row = _training_row(
+                    entry, signal, SPECIALIST_WEIGHT,
+                    str(signal.get("source_model") or "specialist"),
+                )
                 if row:
                     rows.append(row)
 
@@ -529,7 +540,12 @@ def decorate_history(history: list[dict], pbp_history: list[dict], cells: dict) 
         lessons = []
         hits = 0
         misses = 0
-        for signal in list(e.get("signals") or []) + list(e.get("shadow_signals") or []):
+        all_review_signals = (
+            list(e.get("signals") or [])
+            + list(e.get("shadow_signals") or [])
+            + list(e.get("learning_signals_v79b") or [])
+        )
+        for signal in all_review_signals:
             if signal.get("result") not in ("hit", "miss"):
                 continue
             source = signal.get("source_model") or "adaptive"
@@ -538,8 +554,10 @@ def decorate_history(history: list[dict], pbp_history: list[dict], cells: dict) 
                 hits += 1
             else:
                 misses += 1
+                source_label = str(source).replace("_", " ").title()
                 lessons.append({
-                    "label": signal.get("label") or canonical_market(signal),
+                    "label": f"{source_label} · {signal.get('label') or canonical_market(signal)}",
+                    "source_model": source,
                     "pick": signal.get("pick"),
                     "result": "miss",
                     "why": explain_signal(e, signal),
@@ -608,6 +626,7 @@ def build_report(rows: list[dict], cells: dict) -> dict:
             "official_weight": OFFICIAL_WEIGHT,
             "shadow_weight": SHADOW_WEIGHT,
             "pbp_weight": PBP_WEIGHT,
+            "specialist_weight": SPECIALIST_WEIGHT,
         },
         "training": {
             "rows": len(rows),
@@ -617,14 +636,20 @@ def build_report(rows: list[dict], cells: dict) -> dict:
         },
         "repeated_errors": repeated,
         "promotion_gate": {
-            "ready": official_n >= PROMOTION_SAMPLE and len(repeated) == 0,
+            # v7.9B stays SHADOW by design. Reaching the sample target only makes
+            # the learner eligible for a separate walk-forward validation.
+            "ready": False,
+            "sample_ready": official_n >= PROMOTION_SAMPLE,
+            "manual_validation_required": True,
             "required_official_settled": PROMOTION_SAMPLE,
             "current_official_effective": round(official_n, 1),
-            "policy": "shadow_first_no_automatic_production_override",
+            "blocking_error_patterns": len(repeated),
+            "policy": "shadow_first_manual_validation_before_any_production_override",
         },
         "notes": [
             "Uczenie koryguje pewność istniejących modeli; nie zastępuje ich logiki tenisowej.",
             "Każdy source_model/rynek uczy się osobno z hierarchicznym shrinkage.",
+            "Serve/Return, Form, Surface, Early i Consensus są śledzone jako learning-only i nie mieszają się z oficjalną skutecznością.",
             "Pojedyncza wtopa nie może samodzielnie zmienić modelu produkcyjnego.",
         ],
     }
