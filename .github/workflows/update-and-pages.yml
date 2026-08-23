@@ -67,6 +67,16 @@ jobs:
         run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
+      - name: Historical backfill v8.3A (spare quota only)
+        env:
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+          HISTORY_BACKFILL_ENABLED: '1'
+          HISTORY_BACKFILL_DAILY_FRACTION: '0.12'
+          HISTORY_BACKFILL_HARD_RESERVE_FRACTION: '0.45'
+          HISTORY_BACKFILL_RUN_CAP: '18'
+          HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '3'
+          HISTORY_BACKFILL_MAX_CACHE_MB: '900'
+        run: python backend/history_backfill_v83.py
       - name: Adaptive Learning v7.9B
         run: python backend/adaptive_learning_v79.py
       - name: Save tennis history + PBP cache
