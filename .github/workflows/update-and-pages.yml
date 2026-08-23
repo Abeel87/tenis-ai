@@ -85,6 +85,24 @@ jobs:
         run: python backend/history_backfill_v83.py
       - name: Adaptive Learning v7.9B
         run: python backend/adaptive_learning_v79.py
+      - name: Optional TabPFN V2 runtime v8.4A
+        env:
+          TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
+          TABPFN_NO_BROWSER: '1'
+        run: |
+          if python backend/autolearn_v84.py --tabpfn-due; then
+            echo "TabPFN V2 challenger is due — bounded optional install"
+            timeout 240s python -m pip install "tabpfn==8.2.0" || echo "TabPFN install skipped/failed; CatBoost fallback remains active"
+          else
+            echo "TabPFN V2 challenger not due this run"
+          fi
+      - name: AutoLearn Ensemble v8.4A
+        env:
+          TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
+          TABPFN_NO_BROWSER: '1'
+        run: python backend/autolearn_v84.py
+      - name: AutoLearn Integration Guard v8.4A
+        run: python scripts/verify_v84a.py
       - name: Final API quota report v8.3B
         run: python backend/api_quota_v83b.py report
       - name: Integration Guard v8.3D

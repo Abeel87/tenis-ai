@@ -63,12 +63,16 @@ def test_v82a2_cache_bust_is_pinned():
     assert 'scenario-studio-v82a.js?v=82a6' in h
 
 
-def test_v82a3_generator_exact_count_contract():
+def test_v82a3_generator_quality_first_contract():
     s=read("frontend/scenario-studio-v82a.js")
     assert ".filter(x=>x.picked.length===spm)" in s
-    assert "if(candidates.length<mc)" in s
-    assert "const expected=mc*spm" in s
-    assert "if(actual!==expected || actualMatches!==mc)" in s
+    assert "if(!candidates.length)" in s
+    assert "const selectedMatches=ranked.length" in s
+    assert "const expected=selectedMatches*spm" in s
+    assert "if(actual!==expected || actualMatches!==selectedMatches)" in s
+    assert "if(candidates.length<mc)" not in s
+    assert "Nie dokładam słabszych na siłę" in s
+
 
 def test_v82a3_generator_two_pass_fill():
     s=read("frontend/scenario-studio-v82a.js")

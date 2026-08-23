@@ -205,6 +205,12 @@
     if(m?.joint_builder_v78b?.status==='READY')b+=2;
     return b;
   }
+  function autoLearnSnapshot(m,s){
+    try{
+      const x=window.TENIS_AI_AUTOLEARN_V84?.scoreFor?.(m,s);
+      return x&&Number.isFinite(Number(x.ensemble))?x:null;
+    }catch{return null}
+  }
   function composerSignalScore(m,s,profile='balanced'){
     let v=s.value+qualityBonus(m);
     if(profile==='stable'){
@@ -216,7 +222,11 @@
     }else if(profile==='experimental'){
       if(categoryOf(s)==='other')v+=3;
     }
-    return clamp(v);
+    const legacy=clamp(v);
+    if(profile==='manual')return legacy;
+    const ml=autoLearnSnapshot(m,s);
+    if(ml&&String(ml.status||'ACTIVE').toUpperCase()==='ACTIVE')return clamp(Number(ml.ensemble));
+    return legacy;
   }
   function draftMatches(){
     const map=new Map();
@@ -540,12 +550,13 @@
       .filter(x=>x.picked.length===spm)
       .sort((a,b)=>b.ms-a.ms);
 
-    if(candidates.length<mc){
-      toast(`Brak pełnego scenariusza: znaleziono ${candidates.length} z ${mc} spotkań mających po ${spm} różnych sygnałów. Zmień liczbę spotkań, liczbę sygnałów albo profil.`);
+    if(!candidates.length){
+      toast(`AI nie znalazło dziś spotkań spełniających próg jakości dla ${spm} różnych sygnałów.`);
       return;
     }
 
     const ranked=candidates.slice(0,mc);
+    const selectedMatches=ranked.length;
 
     clearDraft();
     draft.mode='generator';
@@ -555,28 +566,29 @@
       for(const sig of x.picked)addSignalSilent(x.m,sig,'generator',profile);
     }
 
-    const expected=mc*spm;
+    const expected=selectedMatches*spm;
     const actual=draft.items.length;
     const actualMatches=draftMatches().length;
 
-    if(actual!==expected || actualMatches!==mc){
+    if(actual!==expected || actualMatches!==selectedMatches){
       clearDraft();
-      toast(`Generator przerwał: oczekiwano ${mc} spotkań i ${expected} sygnałów, otrzymano ${actualMatches} spotkań i ${actual} sygnałów.`);
+      toast(`Generator przerwał: oczekiwano ${selectedMatches} wybranych spotkań i ${expected} sygnałów, otrzymano ${actualMatches} spotkań i ${actual} sygnałów.`);
       return;
     }
 
     persistDraft();
     currentTab='draft';
     render();
-    toast(`Gotowe: ${mc} × ${spm} = ${expected} różnych sygnałów.`);
+    toast(selectedMatches<mc?`AI znalazło ${selectedMatches}/${mc} spotkań spełniających próg. Nie dokładam słabszych na siłę.`:`Gotowe: ${selectedMatches} × ${spm} = ${expected} różnych sygnałów.`);
   }
 
   function addSignalSilent(m,s,source,profile){
-    const mk=matchKey(m);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
+    const mk=matchKey(m);const ml=autoLearnSnapshot(m,s);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
       tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:composerSignalScore(m,s,profile),source_model:(modelApi()?.active||'adaptive'),
+      ai_final_score:ml?Number(ml.ensemble):null,autolearn_v84:ml?{current:ml.current??null,catboost:ml.catboost??null,tabpfn:ml.tabpfn??null,ensemble:ml.ensemble??null,weights:ml.weights||null}:null,
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
     });
   }
