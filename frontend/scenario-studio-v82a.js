@@ -317,8 +317,32 @@
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
     const min={stable:74,balanced:70,strong:80,experimental:62}[profile]||70;
 
-    // v8.2A.3 Exact Count:
-    // najpierw różne kategorie, potem uzupełnienie najlepszymi pozostałymi.
+    // v8.2A.4 Distinct Markets:
+    // jedna rodzina rynku = maksymalnie jeden sygnał, niezależnie od linii.
+    // Przykład: M O18.5 i M O19.5 to TA SAMA rodzina i nie mogą wejść razem.
+    const marketFamily=x=>{
+      const m=String(x?.market||'').toLowerCase();
+      const k=String(x?.key||'').toLowerCase();
+      const l=String(x?.label||'').toLowerCase();
+
+      if(m==='match_total'||k.startsWith('match_total|'))return 'match_total';
+      if(m==='set1_total'||k.startsWith('set1_total|'))return 'set1_total';
+      if(m==='total_sets'||k.startsWith('total_sets|'))return 'total_sets';
+      if(m==='match_win'||k.startsWith('match_win|'))return 'match_win';
+      if(m==='set1_win'||k.startsWith('set1_win|'))return 'set1_win';
+      if(m==='set2_win'||k.startsWith('set2_win|'))return 'set2_win';
+      if(m==='set3_win'||k.startsWith('set3_win|'))return 'set3_win';
+
+      // Wszystkie checkpointy 1:1 / 2:2 / 3:3 traktujemy jako jedną rodzinę
+      // "początek seta", żeby generator nie układał sekwencji prawie tego samego typu.
+      if(m.startsWith('state')||k.startsWith('state|'))return 'early_state';
+
+      if(m.includes('ace')||l.includes('asy'))return 'aces';
+      if(m.includes('double')||m.includes('fault')||l.includes('podwój'))return 'double_faults';
+
+      return m||categoryOf(x)||k.split('|')[0]||'other';
+    };
+
     const candidates=todaysMatches().map(m=>{
       const sig=signalRows(m)
         .map(s=>({...s,cs:composerSignalScore(m,s,profile)}))
@@ -326,25 +350,29 @@
         .sort((a,b)=>b.cs-a.cs);
 
       const picked=[];
-      const usedKeys=new Set();
-      const cats=new Set();
+      const families=new Set();
+      const categories=new Set();
 
-      // Przebieg 1: preferuj różne kategorie sygnałów.
+      // Przebieg 1: maksymalna różnorodność kategorii.
       for(const x of sig){
         if(picked.length>=spm)break;
-        const c=categoryOf(x);
-        if(cats.has(c))continue;
+        const fam=marketFamily(x);
+        const cat=categoryOf(x);
+        if(families.has(fam)||categories.has(cat))continue;
         picked.push(x);
-        usedKeys.add(x.key);
-        cats.add(c);
+        families.add(fam);
+        categories.add(cat);
       }
 
-      // Przebieg 2: dopełnij do dokładnie spm najlepszymi pozostałymi.
+      // Przebieg 2: jeśli nadal brakuje, wolno powtórzyć kategorię,
+      // ale NIGDY rodzinę rynku. Czyli np. 1S total + match total może być,
+      // ale M O18.5 + M O19.5 nigdy.
       for(const x of sig){
         if(picked.length>=spm)break;
-        if(usedKeys.has(x.key))continue;
+        const fam=marketFamily(x);
+        if(families.has(fam))continue;
         picked.push(x);
-        usedKeys.add(x.key);
+        families.add(fam);
       }
 
       const ms=picked.length===spm
@@ -357,7 +385,7 @@
       .sort((a,b)=>b.ms-a.ms);
 
     if(candidates.length<mc){
-      toast(`Brak pełnego scenariusza: znaleziono ${candidates.length} z ${mc} spotkań mających po ${spm} wymagane sygnały. Zmień liczbę spotkań, liczbę sygnałów albo profil.`);
+      toast(`Brak pełnego scenariusza: znaleziono ${candidates.length} z ${mc} spotkań mających po ${spm} różnych sygnałów. Zmień liczbę spotkań, liczbę sygnałów albo profil.`);
       return;
     }
 
@@ -384,7 +412,7 @@
     persistDraft();
     currentTab='draft';
     render();
-    toast(`Gotowe: ${mc} × ${spm} = ${expected} sygnałów.`);
+    toast(`Gotowe: ${mc} × ${spm} = ${expected} różnych sygnałów.`);
   }
 
   function addSignalSilent(m,s,source,profile){

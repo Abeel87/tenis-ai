@@ -60,7 +60,7 @@ def test_v82a2_uses_main_match_source():
 
 def test_v82a2_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a3' in h
+    assert 'scenario-studio-v82a.js?v=82a4' in h
 
 
 def test_v82a3_generator_exact_count_contract():
@@ -72,10 +72,28 @@ def test_v82a3_generator_exact_count_contract():
 
 def test_v82a3_generator_two_pass_fill():
     s=read("frontend/scenario-studio-v82a.js")
-    assert "Przebieg 1: preferuj różne kategorie" in s
-    assert "Przebieg 2: dopełnij do dokładnie spm" in s
-    assert "usedKeys.has(x.key)" in s
+    assert "families.has(fam)||categories.has(cat)" in s
+    assert "if(families.has(fam))continue" in s
+    assert "picked.length>=spm" in s
 
 def test_v82a3_cache_bust_is_pinned():
     h=read("frontend/index.html")
-    assert 'scenario-studio-v82a.js?v=82a3' in h
+    assert 'scenario-studio-v82a.js?v=82a4' in h
+
+
+def test_v82a4_generator_uses_distinct_market_families():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "const marketFamily=x=>" in s
+    assert "return 'match_total'" in s
+    assert "return 'set1_total'" in s
+    assert "return 'early_state'" in s
+    assert "if(families.has(fam))continue" in s
+
+def test_v82a4_prefers_category_diversity_before_family_fallback():
+    s=read("frontend/scenario-studio-v82a.js")
+    assert "families.has(fam)||categories.has(cat)" in s
+    assert "Przebieg 2: jeśli nadal brakuje" in s
+
+def test_v82a4_cache_bust_is_pinned():
+    h=read("frontend/index.html")
+    assert 'scenario-studio-v82a.js?v=82a4' in h
