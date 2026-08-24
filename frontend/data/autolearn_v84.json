@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-24T15:56:39.622104+00:00",
+  "generated_at": "2026-08-24T16:55:56.107453+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -25,11 +25,11 @@
     }
   },
   "training": {
-    "rows": 618,
-    "matches": 137,
-    "train_rows": 393,
-    "calibration_rows": 101,
-    "validation_rows": 124,
+    "rows": 651,
+    "matches": 143,
+    "train_rows": 416,
+    "calibration_rows": 105,
+    "validation_rows": 130,
     "minimum_rows": 80,
     "minimum_matches": 24,
     "retrain_hours": 20,
@@ -46,8 +46,8 @@
     "effective_tabpfn_weight": 0.0,
     "stability": {
       "guard_active": true,
-      "applied": true,
-      "calibration_matches": 20,
+      "applied": false,
+      "calibration_matches": 21,
       "full_weight_min_matches": 40,
       "single_model_cap": 0.8,
       "current_floor": 0.1
@@ -57,7 +57,7 @@
     "version": "v8.4D",
     "status": "SAFE_FALLBACK",
     "active_signals": 0,
-    "total_signals": 1780,
+    "total_signals": 1732,
     "active_share": 0.0,
     "max_shift": 0.0,
     "dimensions_used": {},
@@ -71,59 +71,57 @@
       4,
       6
     ],
-    "current_signals": 291,
+    "current_signals": 285,
     "history_learning_signals": 363,
     "policy": "exact_top_state_hidden_learning_bounded_reservation_pbp_only"
   },
   "current_calibration": {
     "method": "platt_logit",
     "fit_scope": "train_only",
-    "fit_rows": 393,
-    "fit_matches": 95,
-    "status": "gated_identity",
-    "a": 1.0,
-    "b": 0.0,
-    "reason": "calibration_gate_rejected",
-    "train_raw_brier": 0.20457,
-    "train_calibrated_brier": 0.19924,
-    "train_raw_log_loss": 0.60036,
-    "train_calibrated_log_loss": 0.58599,
+    "fit_rows": 416,
+    "fit_matches": 100,
+    "status": "active",
+    "a": 1.133818,
+    "b": -0.532534,
+    "reason": null,
+    "train_raw_brier": 0.20282,
+    "train_calibrated_brier": 0.19826,
+    "train_raw_log_loss": 0.59663,
+    "train_calibrated_log_loss": 0.58423,
     "gate_scope": "calibration_split",
-    "gate_rows": 101,
-    "gate_matches": 20,
-    "gate_raw_brier": 0.17781,
-    "gate_calibrated_brier": 0.18141,
-    "gate_brier_delta": 0.0036,
-    "gate_raw_log_loss": 0.53933,
-    "gate_calibrated_log_loss": 0.54844,
-    "gate_log_loss_delta": 0.00911,
-    "candidate_a": 1.24044,
-    "candidate_b": -0.693723,
-    "gate_status": "rejected"
+    "gate_rows": 105,
+    "gate_matches": 21,
+    "gate_raw_brier": 0.20734,
+    "gate_calibrated_brier": 0.20079,
+    "gate_brier_delta": -0.00655,
+    "gate_raw_log_loss": 0.60587,
+    "gate_calibrated_log_loss": 0.58997,
+    "gate_log_loss_delta": -0.01589,
+    "gate_status": "accepted_improved"
   },
   "validation": {
     "current": {
-      "n": 124,
-      "brier": 0.1595,
-      "log_loss": 0.49799,
-      "selected_n": 124,
-      "accuracy": 79.8,
+      "n": 130,
+      "brier": 0.1629,
+      "log_loss": 0.50773,
+      "selected_n": 100,
+      "accuracy": 81.0,
       "threshold": 65.0
     },
     "current_raw": {
-      "n": 124,
-      "brier": 0.1595,
-      "log_loss": 0.49799,
-      "selected_n": 124,
-      "accuracy": 79.8,
+      "n": 130,
+      "brier": 0.15109,
+      "log_loss": 0.47819,
+      "selected_n": 130,
+      "accuracy": 81.5,
       "threshold": 65.0
     },
     "catboost": {
-      "n": 124,
-      "brier": 0.15517,
-      "log_loss": 0.48855,
-      "selected_n": 99,
-      "accuracy": 85.9,
+      "n": 130,
+      "brier": 0.14397,
+      "log_loss": 0.46417,
+      "selected_n": 100,
+      "accuracy": 89.0,
       "threshold": 65.0
     },
     "tabpfn": {
@@ -135,89 +133,89 @@
       "threshold": 65.0
     },
     "ensemble": {
-      "n": 124,
-      "brier": 0.15668,
-      "log_loss": 0.49074,
-      "selected_n": 124,
-      "accuracy": 79.8,
+      "n": 130,
+      "brier": 0.15767,
+      "log_loss": 0.49591,
+      "selected_n": 115,
+      "accuracy": 85.2,
       "threshold": 65.0
     },
     "validation_matches": 22,
-    "calibration_matches": 20,
+    "calibration_matches": 21,
     "policy": "chronological_match_grouped_70_15_15_calibration_gate_on_cal"
   },
   "tracking": {
     "current": {
-      "n": 63,
-      "brier": 0.18501,
-      "log_loss": 0.55355,
-      "selected_n": 37,
-      "accuracy": 81.1
+      "n": 116,
+      "brier": 0.21185,
+      "log_loss": 0.61374,
+      "selected_n": 78,
+      "accuracy": 71.8
     },
     "catboost": {
-      "n": 63,
-      "brier": 0.18079,
-      "log_loss": 0.54534,
-      "selected_n": 37,
-      "accuracy": 83.8
+      "n": 116,
+      "brier": 0.19546,
+      "log_loss": 0.57562,
+      "selected_n": 73,
+      "accuracy": 78.1
     },
     "tabpfn": {
-      "n": 26,
-      "brier": 0.13612,
-      "log_loss": 0.44963,
-      "selected_n": 25,
-      "accuracy": 88.0
+      "n": 51,
+      "brier": 0.1734,
+      "log_loss": 0.52851,
+      "selected_n": 47,
+      "accuracy": 80.9
     },
     "ensemble": {
-      "n": 63,
-      "brier": 0.18547,
-      "log_loss": 0.55451,
-      "selected_n": 43,
-      "accuracy": 79.1
+      "n": 116,
+      "brier": 0.2071,
+      "log_loss": 0.60077,
+      "selected_n": 88,
+      "accuracy": 69.3
     },
     "generator": {
-      "n": 12,
-      "selected_n": 12,
-      "accuracy": 91.7,
-      "brier": 0.09561,
-      "log_loss": 0.35353
+      "n": 24,
+      "selected_n": 24,
+      "accuracy": 87.5,
+      "brier": 0.11737,
+      "log_loss": 0.40159
     }
   },
   "tracking_all_versions": {
     "current": {
-      "n": 111,
-      "brier": 0.17641,
-      "log_loss": 0.53312,
-      "selected_n": 67,
-      "accuracy": 83.6
+      "n": 164,
+      "brier": 0.19817,
+      "log_loss": 0.58229,
+      "selected_n": 108,
+      "accuracy": 75.9
     },
     "catboost": {
-      "n": 111,
-      "brier": 0.18749,
-      "log_loss": 0.55856,
-      "selected_n": 74,
-      "accuracy": 78.4
+      "n": 164,
+      "brier": 0.1957,
+      "log_loss": 0.5757,
+      "selected_n": 110,
+      "accuracy": 76.4
     },
     "tabpfn": {
-      "n": 44,
-      "brier": 0.11487,
-      "log_loss": 0.40519,
-      "selected_n": 43,
-      "accuracy": 93.0
+      "n": 69,
+      "brier": 0.15012,
+      "log_loss": 0.47959,
+      "selected_n": 65,
+      "accuracy": 86.2
     },
     "ensemble": {
-      "n": 111,
-      "brier": 0.18398,
-      "log_loss": 0.54916,
-      "selected_n": 81,
-      "accuracy": 77.8
+      "n": 164,
+      "brier": 0.19976,
+      "log_loss": 0.58361,
+      "selected_n": 126,
+      "accuracy": 71.4
     },
     "generator": {
-      "n": 20,
-      "selected_n": 20,
-      "accuracy": 95.0,
-      "brier": 0.07398,
-      "log_loss": 0.30289
+      "n": 32,
+      "selected_n": 32,
+      "accuracy": 90.6,
+      "brier": 0.09841,
+      "log_loss": 0.35792
     }
   },
   "generator": {
@@ -248,7 +246,7 @@
         "min_average": 60
       }
     },
-    "captured_matches_this_run": 96
+    "captured_matches_this_run": 88
   },
   "notes": [
     "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
