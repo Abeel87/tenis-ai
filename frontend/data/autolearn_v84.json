@@ -1,6 +1,6 @@
 {
-  "version": "v8.4A.2",
-  "generated_at": "2026-08-24T05:54:06.681832+00:00",
+  "version": "v8.4B",
+  "generated_at": "2026-08-24T06:23:53.284699+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -10,7 +10,7 @@
     "catboost": {
       "name": "CatBoost AutoLearn",
       "status": "active",
-      "retrained": false
+      "retrained": true
     },
     "tabpfn": {
       "name": "TabPFN-2 Challenger",
@@ -36,35 +36,56 @@
     "retrain_new_rows": 40
   },
   "weights": {
-    "catboost": 1.0
+    "current": 0.45,
+    "catboost": 0.55
   },
   "weight_policy": {
     "status": "optimizer",
     "allowed": false,
     "mode": "current_catboost_only",
-    "effective_tabpfn_weight": 0.0
+    "effective_tabpfn_weight": 0.0,
+    "stability": {
+      "guard_active": true,
+      "applied": false,
+      "calibration_matches": 19,
+      "full_weight_min_matches": 40,
+      "single_model_cap": 0.8,
+      "current_floor": 0.1
+    }
   },
   "current_calibration": {
     "method": "platt_logit",
     "fit_scope": "train_only",
     "fit_rows": 371,
     "fit_matches": 90,
-    "status": "active",
-    "a": 1.139371,
-    "b": -0.565355,
-    "reason": null,
+    "status": "gated_identity",
+    "a": 1.0,
+    "b": 0.0,
+    "reason": "calibration_gate_rejected",
     "train_raw_brier": 0.20534,
     "train_calibrated_brier": 0.20009,
     "train_raw_log_loss": 0.60235,
-    "train_calibrated_log_loss": 0.58807
+    "train_calibrated_log_loss": 0.58807,
+    "gate_scope": "calibration_split",
+    "gate_rows": 93,
+    "gate_matches": 19,
+    "gate_raw_brier": 0.17169,
+    "gate_calibrated_brier": 0.17667,
+    "gate_brier_delta": 0.00498,
+    "gate_raw_log_loss": 0.52496,
+    "gate_calibrated_log_loss": 0.53773,
+    "gate_log_loss_delta": 0.01276,
+    "candidate_a": 1.139371,
+    "candidate_b": -0.565355,
+    "gate_status": "rejected"
   },
   "validation": {
     "current": {
       "n": 107,
-      "brier": 0.18531,
-      "log_loss": 0.55688,
-      "selected_n": 76,
-      "accuracy": 81.6,
+      "brier": 0.18475,
+      "log_loss": 0.5548,
+      "selected_n": 107,
+      "accuracy": 74.8,
       "threshold": 65.0
     },
     "current_raw": {
@@ -77,10 +98,10 @@
     },
     "catboost": {
       "n": 107,
-      "brier": 0.1785,
-      "log_loss": 0.53848,
-      "selected_n": 88,
-      "accuracy": 79.5,
+      "brier": 0.18904,
+      "log_loss": 0.56347,
+      "selected_n": 81,
+      "accuracy": 76.5,
       "threshold": 65.0
     },
     "tabpfn": {
@@ -93,15 +114,15 @@
     },
     "ensemble": {
       "n": 107,
-      "brier": 0.1785,
-      "log_loss": 0.53848,
-      "selected_n": 88,
-      "accuracy": 79.5,
+      "brier": 0.18382,
+      "log_loss": 0.55173,
+      "selected_n": 100,
+      "accuracy": 76.0,
       "threshold": 65.0
     },
     "validation_matches": 20,
     "calibration_matches": 19,
-    "policy": "chronological_match_grouped_70_15_15"
+    "policy": "chronological_match_grouped_70_15_15_calibration_gate_on_cal"
   },
   "tracking": {
     "generator": {
@@ -152,6 +173,7 @@
   "generator": {
     "selection_threshold": 65.0,
     "policy": "quality_first_soft_fill_v84a1",
+    "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
     "market_policy": "existing_signals_and_existing_lines_only",
     "profile_thresholds": {
       "stable": {
@@ -178,7 +200,8 @@
     "captured_matches_this_run": 124
   },
   "notes": [
-    "Current Engine /100 jest siłą sygnału; przed Brier/log-loss i Ensemble jest mapowany na probability przez monotoniczną kalibrację Platt fitowaną wyłącznie na TRAIN.",
+    "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
+    "Przy małej liczbie meczów CAL jeden model nie może dostać 100% sterowania Ensemble; działa cap + minimalny głos Current Engine.",
     "CatBoost jest meta-rankerem sygnałów, a nie zamiennikiem tenisowych modeli bazowych.",
     "TabPFN używa wyłącznie jawnie wskazanej wersji V2; nowsze non-commercial checkpointy nie są używane.",
     "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
