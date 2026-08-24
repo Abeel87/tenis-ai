@@ -557,12 +557,18 @@ def signal_probability(match: dict, signal: dict) -> tuple[float | None, list[st
         out = p if nk == p1k else (1 - p if nk == p2k else None)
     elif market in ("set1_winner", "set1_win"):
         p = _winner_probability(p1, p2, 1)
+        if p is None:
+            return None, []
         out = p if nk == p1k else (1 - p if nk == p2k else None)
     elif market in ("set2_winner", "set2_win"):
         p = _winner_probability(p1, p2, 2)
+        if p is None:
+            return None, []
         out = p if nk == p1k else (1 - p if nk == p2k else None)
     elif market in ("set3_winner", "set3_win"):
         p = _winner_probability(p1, p2, 3)
+        if p is None:
+            return None, []
         out = p if nk == p1k else (1 - p if nk == p2k else None)
     elif market == "set1_total":
         p = _over_probability(p1, p2, _num(signal.get("line")))
