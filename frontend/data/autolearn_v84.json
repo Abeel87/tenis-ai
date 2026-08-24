@@ -1,6 +1,6 @@
 {
   "version": "v8.4A",
-  "generated_at": "2026-08-24T03:18:22.692364+00:00",
+  "generated_at": "2026-08-24T05:02:03.210205+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -10,7 +10,7 @@
     "catboost": {
       "name": "CatBoost AutoLearn",
       "status": "active",
-      "retrained": false
+      "retrained": true
     },
     "tabpfn": {
       "name": "TabPFN-2 Challenger",
@@ -25,35 +25,35 @@
     }
   },
   "training": {
-    "rows": 551,
-    "matches": 126,
-    "train_rows": 364,
-    "calibration_rows": 83,
-    "validation_rows": 104,
+    "rows": 564,
+    "matches": 128,
+    "train_rows": 367,
+    "calibration_rows": 90,
+    "validation_rows": 107,
     "minimum_rows": 80,
     "minimum_matches": 24,
     "retrain_hours": 20,
     "retrain_new_rows": 40
   },
   "weights": {
-    "current": 0.35,
-    "catboost": 0.65
+    "current": 0.4,
+    "catboost": 0.6
   },
   "validation": {
     "current": {
-      "n": 104,
-      "brier": 0.20033,
-      "log_loss": 0.59127,
-      "selected_n": 104,
-      "accuracy": 72.1,
+      "n": 107,
+      "brier": 0.17605,
+      "log_loss": 0.53599,
+      "selected_n": 107,
+      "accuracy": 76.6,
       "threshold": 65.0
     },
     "catboost": {
-      "n": 104,
-      "brier": 0.1989,
-      "log_loss": 0.58292,
-      "selected_n": 75,
-      "accuracy": 76.0,
+      "n": 107,
+      "brier": 0.17187,
+      "log_loss": 0.52451,
+      "selected_n": 87,
+      "accuracy": 81.6,
       "threshold": 65.0
     },
     "tabpfn": {
@@ -65,59 +65,59 @@
       "threshold": 65.0
     },
     "ensemble": {
-      "n": 104,
-      "brier": 0.19501,
-      "log_loss": 0.57491,
-      "selected_n": 91,
-      "accuracy": 73.6,
+      "n": 107,
+      "brier": 0.1708,
+      "log_loss": 0.52194,
+      "selected_n": 98,
+      "accuracy": 79.6,
       "threshold": 65.0
     },
     "validation_matches": 20,
-    "calibration_matches": 18,
+    "calibration_matches": 19,
     "policy": "chronological_match_grouped_70_15_15"
   },
   "tracking": {
     "current": {
-      "n": 12,
-      "brier": 0.11291,
-      "log_loss": 0.39615,
-      "selected_n": 7,
-      "accuracy": 100.0
+      "n": 24,
+      "brier": 0.14325,
+      "log_loss": 0.45977,
+      "selected_n": 15,
+      "accuracy": 93.3
     },
     "catboost": {
-      "n": 12,
-      "brier": 0.09422,
-      "log_loss": 0.35086,
-      "selected_n": 12,
-      "accuracy": 91.7
+      "n": 24,
+      "brier": 0.16202,
+      "log_loss": 0.50263,
+      "selected_n": 23,
+      "accuracy": 78.3
     },
     "tabpfn": {
-      "n": 4,
-      "brier": 0.07879,
-      "log_loss": 0.32846,
-      "selected_n": 4,
+      "n": 8,
+      "brier": 0.0814,
+      "log_loss": 0.33428,
+      "selected_n": 8,
       "accuracy": 100.0
     },
     "ensemble": {
-      "n": 12,
-      "brier": 0.0957,
-      "log_loss": 0.35544,
-      "selected_n": 12,
-      "accuracy": 91.7
+      "n": 24,
+      "brier": 0.15075,
+      "log_loss": 0.47487,
+      "selected_n": 23,
+      "accuracy": 78.3
     },
     "generator": {
-      "n": 2,
-      "selected_n": 2,
+      "n": 4,
+      "selected_n": 4,
       "accuracy": 100.0,
-      "brier": 0.03609,
-      "log_loss": 0.21024
+      "brier": 0.03954,
+      "log_loss": 0.22091
     }
   },
   "generator": {
     "selection_threshold": 65.0,
     "policy": "quality_first_no_forced_fill",
     "market_policy": "existing_signals_and_existing_lines_only",
-    "captured_matches_this_run": 120
+    "captured_matches_this_run": 119
   },
   "notes": [
     "CatBoost jest meta-rankerem sygnałów, a nie zamiennikiem tenisowych modeli bazowych.",
