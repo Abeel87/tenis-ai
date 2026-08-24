@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-24T17:48:10.761073+00:00",
+  "generated_at": "2026-08-24T18:59:48.091012+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -10,7 +10,7 @@
     "catboost": {
       "name": "CatBoost AutoLearn",
       "status": "active",
-      "retrained": true
+      "retrained": false
     },
     "tabpfn": {
       "name": "TabPFN-2 Challenger",
@@ -25,11 +25,11 @@
     }
   },
   "training": {
-    "rows": 655,
-    "matches": 144,
-    "train_rows": 416,
-    "calibration_rows": 105,
-    "validation_rows": 134,
+    "rows": 691,
+    "matches": 153,
+    "train_rows": 452,
+    "calibration_rows": 119,
+    "validation_rows": 120,
     "minimum_rows": 80,
     "minimum_matches": 24,
     "retrain_hours": 20,
@@ -41,20 +41,15 @@
     "tabpfn": 0.1
   },
   "weight_policy": {
-    "status": "tracking_pass",
+    "status": "preserved",
     "allowed": true,
-    "evidence": "tracking",
-    "n": 47,
-    "floor": 0.1,
-    "cap": 0.25,
-    "raw_tabpfn_weight": 0.0,
+    "mode": "cached_challenger_weight",
     "effective_tabpfn_weight": 0.1,
-    "mode": "cached_challenger_reenabled",
-    "reason": "Poprzednia walidacja dopuściła TabPFN; przywrócono wyłącznie bounded floor.",
+    "reason": "TabPFN nie był dziś przeliczany; zachowano ostatnią zatwierdzoną wagę.",
     "stability": {
       "guard_active": true,
       "applied": false,
-      "calibration_matches": 21,
+      "calibration_matches": 22,
       "full_weight_min_matches": 40,
       "single_model_cap": 0.8,
       "current_floor": 0.1
@@ -63,14 +58,14 @@
   "dynamic_weights": {
     "version": "v8.4D",
     "status": "ACTIVE",
-    "active_signals": 994,
-    "total_signals": 1630,
-    "active_share": 0.6098,
-    "max_shift": 0.0302,
+    "active_signals": 973,
+    "total_signals": 1643,
+    "active_share": 0.5922,
+    "max_shift": 0.0352,
     "dimensions_used": {
-      "market": 716,
-      "surface": 994,
-      "tour": 549
+      "market": 750,
+      "surface": 973,
+      "tour": 601
     },
     "source": "previous_model_telemetry_v84c_snapshot",
     "policy": "bounded_segment_shrinkage_no_model_reenable"
@@ -82,57 +77,57 @@
       4,
       6
     ],
-    "current_signals": 264,
-    "history_learning_signals": 363,
+    "current_signals": 261,
+    "history_learning_signals": 384,
     "policy": "exact_top_state_hidden_learning_bounded_reservation_pbp_only"
   },
   "current_calibration": {
     "method": "platt_logit",
     "fit_scope": "train_only",
-    "fit_rows": 416,
-    "fit_matches": 100,
+    "fit_rows": 452,
+    "fit_matches": 107,
     "status": "active",
-    "a": 1.133818,
-    "b": -0.532534,
+    "a": 1.165847,
+    "b": -0.544168,
     "reason": null,
-    "train_raw_brier": 0.20282,
-    "train_calibrated_brier": 0.19826,
-    "train_raw_log_loss": 0.59663,
-    "train_calibrated_log_loss": 0.58423,
+    "train_raw_brier": 0.19991,
+    "train_calibrated_brier": 0.19604,
+    "train_raw_log_loss": 0.58972,
+    "train_calibrated_log_loss": 0.5792,
     "gate_scope": "calibration_split",
-    "gate_rows": 105,
-    "gate_matches": 21,
-    "gate_raw_brier": 0.20734,
-    "gate_calibrated_brier": 0.20079,
-    "gate_brier_delta": -0.00655,
-    "gate_raw_log_loss": 0.60587,
-    "gate_calibrated_log_loss": 0.58997,
-    "gate_log_loss_delta": -0.01589,
-    "gate_status": "accepted_improved"
+    "gate_rows": 119,
+    "gate_matches": 22,
+    "gate_raw_brier": 0.18529,
+    "gate_calibrated_brier": 0.1854,
+    "gate_brier_delta": 0.00011,
+    "gate_raw_log_loss": 0.55621,
+    "gate_calibrated_log_loss": 0.55687,
+    "gate_log_loss_delta": 0.00066,
+    "gate_status": "accepted_tolerance"
   },
   "validation": {
     "current": {
-      "n": 134,
-      "brier": 0.16022,
-      "log_loss": 0.50191,
+      "n": 120,
+      "brier": 0.1965,
+      "log_loss": 0.58113,
       "selected_n": 104,
-      "accuracy": 81.7,
+      "accuracy": 72.1,
       "threshold": 65.0
     },
     "current_raw": {
-      "n": 134,
-      "brier": 0.14786,
-      "log_loss": 0.47078,
-      "selected_n": 134,
-      "accuracy": 82.1,
+      "n": 120,
+      "brier": 0.19712,
+      "log_loss": 0.58404,
+      "selected_n": 120,
+      "accuracy": 73.3,
       "threshold": 65.0
     },
     "catboost": {
-      "n": 134,
-      "brier": 0.1548,
-      "log_loss": 0.49096,
-      "selected_n": 101,
-      "accuracy": 89.1,
+      "n": 120,
+      "brier": 0.18614,
+      "log_loss": 0.55759,
+      "selected_n": 93,
+      "accuracy": 78.5,
       "threshold": 65.0
     },
     "tabpfn": {
@@ -144,89 +139,89 @@
       "threshold": 65.0
     },
     "ensemble": {
-      "n": 134,
-      "brier": 0.15748,
-      "log_loss": 0.49637,
-      "selected_n": 117,
-      "accuracy": 84.6,
+      "n": 120,
+      "brier": 0.19221,
+      "log_loss": 0.57114,
+      "selected_n": 113,
+      "accuracy": 74.3,
       "threshold": 65.0
     },
-    "validation_matches": 23,
-    "calibration_matches": 21,
+    "validation_matches": 24,
+    "calibration_matches": 22,
     "policy": "chronological_match_grouped_70_15_15_calibration_gate_on_cal"
   },
   "tracking": {
     "current": {
-      "n": 125,
-      "brier": 0.21185,
-      "log_loss": 0.61311,
-      "selected_n": 83,
-      "accuracy": 71.1
+      "n": 201,
+      "brier": 0.2286,
+      "log_loss": 0.65037,
+      "selected_n": 135,
+      "accuracy": 66.7
     },
     "catboost": {
-      "n": 125,
-      "brier": 0.1998,
-      "log_loss": 0.58632,
-      "selected_n": 82,
-      "accuracy": 76.8
+      "n": 201,
+      "brier": 0.22332,
+      "log_loss": 0.63739,
+      "selected_n": 135,
+      "accuracy": 67.4
     },
     "tabpfn": {
-      "n": 54,
-      "brier": 0.16824,
-      "log_loss": 0.51761,
-      "selected_n": 50,
-      "accuracy": 82.0
+      "n": 82,
+      "brier": 0.18703,
+      "log_loss": 0.55957,
+      "selected_n": 76,
+      "accuracy": 77.6
     },
     "ensemble": {
-      "n": 125,
-      "brier": 0.20981,
-      "log_loss": 0.60747,
-      "selected_n": 97,
-      "accuracy": 69.1
+      "n": 201,
+      "brier": 0.2277,
+      "log_loss": 0.6471,
+      "selected_n": 148,
+      "accuracy": 66.2
     },
     "generator": {
-      "n": 26,
-      "selected_n": 26,
-      "accuracy": 84.6,
-      "brier": 0.1333,
-      "log_loss": 0.43749
+      "n": 44,
+      "selected_n": 44,
+      "accuracy": 77.3,
+      "brier": 0.17659,
+      "log_loss": 0.53842
     }
   },
   "tracking_all_versions": {
     "current": {
-      "n": 173,
-      "brier": 0.19888,
-      "log_loss": 0.58347,
-      "selected_n": 113,
-      "accuracy": 75.2
+      "n": 249,
+      "brier": 0.21636,
+      "log_loss": 0.6226,
+      "selected_n": 165,
+      "accuracy": 70.3
     },
     "catboost": {
-      "n": 173,
-      "brier": 0.19882,
-      "log_loss": 0.58343,
-      "selected_n": 119,
-      "accuracy": 75.6
+      "n": 249,
+      "brier": 0.21811,
+      "log_loss": 0.62554,
+      "selected_n": 172,
+      "accuracy": 68.6
     },
     "tabpfn": {
-      "n": 72,
-      "brier": 0.14722,
-      "log_loss": 0.47345,
-      "selected_n": 68,
-      "accuracy": 86.8
+      "n": 100,
+      "brier": 0.16851,
+      "log_loss": 0.52022,
+      "selected_n": 94,
+      "accuracy": 81.9
     },
     "ensemble": {
-      "n": 173,
-      "brier": 0.2021,
-      "log_loss": 0.58934,
-      "selected_n": 135,
-      "accuracy": 71.1
+      "n": 249,
+      "brier": 0.21889,
+      "log_loss": 0.62686,
+      "selected_n": 186,
+      "accuracy": 68.3
     },
     "generator": {
-      "n": 34,
-      "selected_n": 34,
-      "accuracy": 88.2,
-      "brier": 0.11171,
-      "log_loss": 0.38795
+      "n": 52,
+      "selected_n": 52,
+      "accuracy": 80.8,
+      "brier": 0.15581,
+      "log_loss": 0.49049
     }
   },
   "generator": {
@@ -257,7 +252,7 @@
         "min_average": 60
       }
     },
-    "captured_matches_this_run": 87
+    "captured_matches_this_run": 85
   },
   "notes": [
     "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
