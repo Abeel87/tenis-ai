@@ -184,8 +184,30 @@ def _date_from_row(row) -> datetime | None:
     return d.to_pydatetime()
 
 
+def _tournament_compatible(a, b) -> bool:
+    ak, bk = _key(a), _key(b)
+    if not ak or not bk:
+        return False
+    return ak == bk or (len(ak) >= 5 and len(bk) >= 5 and (ak in bk or bk in ak))
+
+
+def _dedupe_final_candidates(candidates: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        c for c in (
+            'winner_name', 'loser_name', 'tourney_date', 'tourney_name',
+            'tournament', 'event_name', 'score',
+        )
+        if c in candidates.columns
+    ]
+    return candidates.drop_duplicates(subset=cols) if cols else candidates.drop_duplicates()
+
+
 def find_final_result(hist: pd.DataFrame, entry: dict) -> dict | None:
-    """Resolve ATP/WTA/Challenger entries from the already-downloaded TennisMyLife result files."""
+    """Conservative TML fallback: names + closest date + tournament when possible.
+
+    If two distinct rows are still equally plausible, leave the match pending so
+    the Live Tennis API settlement step can resolve it instead of guessing.
+    """
     if hist is None or hist.empty:
         return None
     p1k, p2k = _key(entry.get('p1')), _key(entry.get('p2'))
@@ -208,15 +230,37 @@ def find_final_result(hist: pd.DataFrame, entry: dict) -> dict | None:
         candidates = candidates[candidates['_delta'] <= 2]
         if candidates.empty:
             return None
-        candidates = candidates.sort_values('_delta')
 
-    # Prefer a row that actually contains a score.
+    # Tournament is a stronger disambiguator than a one-day archive-date drift.
+    # Filter it before choosing the closest date when a compatible row exists.
+    target_tournament = entry.get('tournament')
+    if _key(target_tournament):
+        for col in ('tourney_name', 'tournament', 'event_name'):
+            if col not in candidates.columns:
+                continue
+            matched = candidates[candidates[col].map(
+                lambda value: _tournament_compatible(target_tournament, value)
+            )]
+            if not matched.empty:
+                candidates = matched.copy()
+                break
+
+    if '_delta' in candidates.columns:
+        best_delta = candidates['_delta'].min()
+        candidates = candidates[candidates['_delta'] == best_delta].copy()
+
     if 'score' in candidates.columns:
-        scored = candidates[candidates['score'].notna() & (candidates['score'].astype(str).str.strip() != '')]
+        scored = candidates[
+            candidates['score'].notna()
+            & (candidates['score'].astype(str).str.strip() != '')
+        ]
         if not scored.empty:
-            candidates = scored
-    row = candidates.iloc[0]
-    return parse_final_row(row, entry)
+            candidates = scored.copy()
+
+    candidates = _dedupe_final_candidates(candidates)
+    if len(candidates) != 1:
+        return None
+    return parse_final_row(candidates.iloc[0], entry)
 
 
 def parse_final_row(row, entry: dict) -> dict | None:

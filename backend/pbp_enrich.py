@@ -104,7 +104,7 @@ class API:
                 raise RuntimeError("pbp_run_budget_exhausted")
             r = self.session.get(BASE_URL + path, params=params, headers=self.headers, timeout=(7, 25))
             self.calls += 1
-        record_calls("pbp_current", 1)
+            record_calls("pbp_current", 1)
         r.raise_for_status()
         return r.json()
 

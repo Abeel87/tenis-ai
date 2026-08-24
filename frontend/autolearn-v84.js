@@ -1,7 +1,7 @@
 /* Tenis AI v8.4A — AutoLearn bridge + model comparison UI */
 (() => {
   'use strict';
-  const VERSION='v8.4A.2';
+  const VERSION='v8.4B';
   const REPORT='data/autolearn_v84.json';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const num=x=>Number.isFinite(Number(x))?Number(x):null;
@@ -43,7 +43,7 @@
 
   async function loadReport(force=false){
     if(force)reportPromise=null;
-    if(!reportPromise)reportPromise=fetch(`${REPORT}?v=84a3&ts=${Date.now()}`,{cache:'no-store'})
+    if(!reportPromise)reportPromise=fetch(`${REPORT}?v=84b1&ts=${Date.now()}`,{cache:'no-store'})
       .then(r=>r.ok?r.json():{}).catch(()=>({}));
     return reportPromise;
   }
@@ -66,7 +66,7 @@
     const models=report?.models||{},w=report?.weights||{},tr=report?.training||{},gen=report?.generator||{};
     const tab=models.tabpfn||{};
     return `<section id="al84-performance" class="al84-performance">
-      <div class="al84-head"><div><span>🤖 AUTOLEARN v8.4A.2</span><h3>Porównanie modeli AI</h3><p>Te same rozliczone sygnały, osobno mierzona jakość i finalny selector generatora.</p></div><b>${esc(report?.status||'COLLECTING')}</b></div>
+      <div class="al84-head"><div><span>🤖 AUTOLEARN v8.4B</span><h3>Porównanie modeli AI</h3><p>Te same rozliczone sygnały, osobno mierzona jakość i finalny selector generatora.</p></div><b>${esc(report?.status||'COLLECTING')}</b></div>
       <div class="al84-grid">
         ${card(report,'current','Current Engine · kalibrowany','🧠',models.current?.status||'active')}
         ${card(report,'catboost','CatBoost','🐱',models.catboost?.status||'collecting')}
@@ -74,7 +74,8 @@
         ${card(report,'generator','Ensemble Generator','⚡',models.ensemble?.status||'fallback')}
       </div>
       <div class="al84-weights"><b>Wagi produkcyjne</b><span>Engine ${Math.round(Number(w.current||0)*100)}%</span><span>CatBoost ${Math.round(Number(w.catboost||0)*100)}%</span><span>TabPFN ${Math.round(Number(w.tabpfn||0)*100)}%</span></div>
-      <div class="al84-policy"><b>Kalibracja Engine</b><span>${esc(report?.current_calibration?.status||'N/D')}</span><small>${report?.current_calibration?.status==='active'?`Platt · train-only · n=${Number(report?.current_calibration?.fit_rows||0)} · /100 → probability`:'Fallback identity — za mało danych lub brak obu klas'}</small></div>
+      <div class="al84-policy"><b>Kalibracja Engine</b><span>${esc(report?.current_calibration?.gate_status||report?.current_calibration?.status||'N/D')}</span><small>${report?.current_calibration?.status==='active'?`Platt · TRAIN n=${Number(report?.current_calibration?.fit_rows||0)} · gate CAL n=${Number(report?.current_calibration?.gate_rows||0)} · ΔBrier ${num(report?.current_calibration?.gate_brier_delta)==null?'—':Number(report.current_calibration.gate_brier_delta).toFixed(4)}`:`Identity · ${esc(report?.current_calibration?.reason||'gate odrzucił kalibrator lub próbka za mała')}`}</small></div>
+      <div class="al84-policy"><b>Stabilność Ensemble</b><span>${report?.weight_policy?.stability?.guard_active?'GUARD':'PEŁNA'}</span><small>${report?.weight_policy?.stability?.guard_active?`CAL ${Number(report.weight_policy.stability.calibration_matches||0)} meczów · max model ${Math.round(Number(report.weight_policy.stability.single_model_cap||0.8)*100)}% · Engine min ${Math.round(Number(report.weight_policy.stability.current_floor||0)*100)}%`:'Próbka CAL wystarczająca do pełnej optymalizacji wag'}</small></div>
       <div class="al84-policy"><b>Challenger</b><span>${esc(report?.weight_policy?.status||'N/D')}</span><small>${esc(report?.weight_policy?.reason||report?.weight_policy?.evidence||'waga ograniczona guardem jakości')}</small></div>
       <div class="al84-foot"><span>Trening: ${Number(tr.rows||0)} sygnałów · ${Number(tr.matches||0)} meczów</span><span>Próg bazowy: ${pct(gen.selection_threshold)}</span>${tab.reason?`<span>TabPFN: ${esc(tab.reason)}</span>`:''}</div>
       <p class="al84-note">Accuracy dotyczy wyborów modelu na rozliczonej próbce, nie jest gwarancją przyszłego wyniku. Brier: niżej = lepiej.</p>

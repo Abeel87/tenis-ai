@@ -27,7 +27,7 @@ TAB_INPUT_PATH = CACHE / "tabpfn_input.json"
 TAB_OUTPUT_PATH = CACHE / "tabpfn_output.json"
 TAB_MODEL_CACHE = ROOT / "data" / "cache" / "tabpfn_models"
 
-VERSION = "v8.4A.2"
+VERSION = "v8.4B"
 CATBOOST_NAME = "CatBoost AutoLearn"
 TABPFN_NAME = "TabPFN-2 Challenger"
 ENSEMBLE_NAME = "Ensemble Generator"
@@ -47,6 +47,16 @@ GENERATOR_TOP_PER_MATCH = 2
 CURRENT_CALIBRATION_MIN_ROWS = 40
 CURRENT_CALIBRATION_REG = 0.25
 CURRENT_CALIBRATION_MAX_ITERS = 80
+CURRENT_CALIBRATION_GATE_MIN_ROWS = 30
+CURRENT_CALIBRATION_GATE_MIN_MATCHES = 8
+CURRENT_CALIBRATION_BRIER_TOL = 0.0020
+CURRENT_CALIBRATION_LOGLOSS_TOL = 0.0050
+
+# v8.4B — a small calibration slice must not hand 100% control to one model.
+ENSEMBLE_SINGLE_MODEL_CAP = 0.80
+ENSEMBLE_CURRENT_FLOOR = 0.10
+ENSEMBLE_FULL_WEIGHT_MIN_CAL_MATCHES = 40
+
 TABPFN_TRAIN_CAP = 300
 TABPFN_CURRENT_CAP = 300
 TABPFN_TIMEOUT_SECONDS = 150
@@ -430,6 +440,84 @@ def _fit_current_calibration(rows):
     }
 
 
+def _gate_current_calibration(candidate: dict, cal_rows: list[dict]) -> dict:
+    """Accept Platt only on an untouched CAL slice; VAL remains final holdout."""
+    candidate = dict(candidate or {})
+    if candidate.get("status") != "active":
+        return {
+            **candidate,
+            "gate_status": "not_applicable",
+            "gate_scope": "calibration_split",
+        }
+
+    usable = [
+        r for r in (cal_rows or [])
+        if r.get("target") in (0, 1) and _num(r.get("base_score")) is not None
+    ]
+    matches = len({r.get("match_key") for r in usable if r.get("match_key")})
+    if len(usable) < CURRENT_CALIBRATION_GATE_MIN_ROWS or matches < CURRENT_CALIBRATION_GATE_MIN_MATCHES:
+        return {
+            **candidate,
+            "status": "gated_identity",
+            "reason": "insufficient_calibration_gate_sample",
+            "candidate_a": candidate.get("a"),
+            "candidate_b": candidate.get("b"),
+            "a": 1.0,
+            "b": 0.0,
+            "gate_status": "rejected",
+            "gate_scope": "calibration_split",
+            "gate_rows": len(usable),
+            "gate_matches": matches,
+        }
+
+    y = [int(r["target"]) for r in usable]
+    raw = [_raw_prob_from_score(r) for r in usable]
+    calibrated = [_apply_current_calibration(p, candidate) for p in raw]
+    raw_brier = _brier(y, raw)
+    cal_brier = _brier(y, calibrated)
+    raw_loss = _logloss(y, raw)
+    cal_loss = _logloss(y, calibrated)
+    brier_delta = None if raw_brier is None or cal_brier is None else cal_brier - raw_brier
+    loss_delta = None if raw_loss is None or cal_loss is None else cal_loss - raw_loss
+
+    accepted = (
+        brier_delta is not None
+        and loss_delta is not None
+        and brier_delta <= CURRENT_CALIBRATION_BRIER_TOL
+        and loss_delta <= CURRENT_CALIBRATION_LOGLOSS_TOL
+    )
+    gate = {
+        "gate_scope": "calibration_split",
+        "gate_rows": len(usable),
+        "gate_matches": matches,
+        "gate_raw_brier": round(raw_brier, 5) if raw_brier is not None else None,
+        "gate_calibrated_brier": round(cal_brier, 5) if cal_brier is not None else None,
+        "gate_brier_delta": round(brier_delta, 5) if brier_delta is not None else None,
+        "gate_raw_log_loss": round(raw_loss, 5) if raw_loss is not None else None,
+        "gate_calibrated_log_loss": round(cal_loss, 5) if cal_loss is not None else None,
+        "gate_log_loss_delta": round(loss_delta, 5) if loss_delta is not None else None,
+    }
+    if accepted:
+        improved = (brier_delta <= 0 and loss_delta <= 0)
+        return {
+            **candidate,
+            **gate,
+            "gate_status": "accepted_improved" if improved else "accepted_tolerance",
+        }
+
+    return {
+        **candidate,
+        **gate,
+        "status": "gated_identity",
+        "reason": "calibration_gate_rejected",
+        "candidate_a": candidate.get("a"),
+        "candidate_b": candidate.get("b"),
+        "a": 1.0,
+        "b": 0.0,
+        "gate_status": "rejected",
+    }
+
+
 def _prob_from_score(row, calibration=None):
     return _apply_current_calibration(_raw_prob_from_score(row), calibration)
 
@@ -511,6 +599,77 @@ def _normalize_weights(weights: dict[str, float]) -> dict[str, float]:
     if total <= 0:
         return {"current": 1.0}
     return {name: value / total for name, value in clean.items()}
+
+
+def _calibration_match_count(rows) -> int:
+    keys = {r.get("match_key") for r in (rows or []) if r.get("match_key")}
+    return len(keys) if keys else len(rows or [])
+
+
+def _stabilize_ensemble_weights(weights: dict[str, float], available_names, rows):
+    """Prevent a tiny CAL sample from collapsing production to one model."""
+    names = [str(x) for x in dict.fromkeys(available_names or []) if x]
+    if not names:
+        names = ["current"]
+
+    raw = {}
+    for name in names:
+        try:
+            raw[name] = max(0.0, float((weights or {}).get(name, 0.0)))
+        except (TypeError, ValueError):
+            raw[name] = 0.0
+    if sum(raw.values()) <= 0:
+        raw[names[0]] = 1.0
+    total = sum(raw.values())
+    w = {name: value / total for name, value in raw.items()}
+
+    cal_matches = _calibration_match_count(rows)
+    guard_active = len(names) >= 2 and cal_matches < ENSEMBLE_FULL_WEIGHT_MIN_CAL_MATCHES
+    applied = False
+
+    if guard_active:
+        dominant = max(names, key=lambda n: w.get(n, 0.0))
+        if w.get(dominant, 0.0) > ENSEMBLE_SINGLE_MODEL_CAP:
+            excess = w[dominant] - ENSEMBLE_SINGLE_MODEL_CAP
+            w[dominant] = ENSEMBLE_SINGLE_MODEL_CAP
+            others = [n for n in names if n != dominant]
+            other_mass = sum(w.get(n, 0.0) for n in others)
+            if other_mass > 0:
+                for n in others:
+                    w[n] += excess * (w[n] / other_mass)
+            elif others:
+                share = excess / len(others)
+                for n in others:
+                    w[n] = share
+            applied = True
+
+        if "current" in names and w.get("current", 0.0) < ENSEMBLE_CURRENT_FLOOR:
+            need = ENSEMBLE_CURRENT_FLOOR - w.get("current", 0.0)
+            donors = sorted(
+                [n for n in names if n != "current"],
+                key=lambda n: w.get(n, 0.0),
+                reverse=True,
+            )
+            for donor in donors:
+                take = min(need, max(0.0, w.get(donor, 0.0)))
+                if take <= 0:
+                    continue
+                w[donor] -= take
+                w["current"] = w.get("current", 0.0) + take
+                need -= take
+                applied = True
+                if need <= 1e-12:
+                    break
+
+    w = _normalize_weights(w)
+    return w, {
+        "guard_active": guard_active,
+        "applied": applied,
+        "calibration_matches": cal_matches,
+        "full_weight_min_matches": ENSEMBLE_FULL_WEIGHT_MIN_CAL_MATCHES,
+        "single_model_cap": ENSEMBLE_SINGLE_MODEL_CAP if guard_active else 1.0,
+        "current_floor": ENSEMBLE_CURRENT_FLOOR if guard_active and "current" in names else 0.0,
+    }
 
 
 def _challenger_gate(previous_validation: dict, previous_tracking: dict) -> dict:
@@ -626,57 +785,54 @@ def _bounded_tabpfn_weights(raw_weights: dict[str, float], previous_validation: 
 def _choose_weights(rows, probs_by_model: dict[str, list[float]], previous_weights: dict,
                     previous_validation: dict, previous_tracking: dict,
                     tab_refreshed: bool, tab_cached_available: bool = False) -> tuple[dict[str, float], dict]:
-    """Choose production weights without silently zeroing a cached challenger.
-
-    On runs where TabPFN is not retrained we keep the last approved bounded weight.
-    Individual signals without a cached TabPFN probability are automatically
-    renormalized by ensemble_probs().
-    """
+    """Choose weights, then shrink extreme allocations while CAL is still small."""
     available = {
         name: probs for name, probs in (probs_by_model or {}).items()
         if rows and len(probs) == len(rows)
     }
+
+    def finish(weights, policy, names):
+        stable, stability = _stabilize_ensemble_weights(weights, names, rows)
+        return stable, {**policy, "stability": stability}
 
     if tab_refreshed and "tabpfn" in available:
         raw = _optimize_weights(rows, available)
         weights, policy = _bounded_tabpfn_weights(
             raw, previous_validation, previous_tracking, tab_available=True
         )
-        return weights, {**policy, "mode": "fresh_calibration"}
+        return finish(weights, {**policy, "mode": "fresh_calibration"}, list(available))
 
     prev = _normalize_weights(previous_weights or {})
     if float(prev.get("tabpfn") or 0.0) > 0:
-        return prev, {
+        names = list(dict.fromkeys([*available.keys(), *prev.keys()]))
+        return finish(prev, {
             "status": "preserved",
             "allowed": True,
             "mode": "cached_challenger_weight",
             "effective_tabpfn_weight": round(float(prev.get("tabpfn") or 0.0), 4),
             "reason": "TabPFN nie był dziś przeliczany; zachowano ostatnią zatwierdzoną wagę.",
-        }
+        }, names)
 
     raw = _optimize_weights(rows, available) if rows and available else {"current": 1.0}
     raw.pop("tabpfn", None)
     if tab_cached_available:
-        # v8.4A left TabPFN at 0% on non-retrain runs even when an independent
-        # previous validation had already passed. Re-enable only a bounded floor;
-        # per-signal missing cached predictions are renormalized by ensemble_probs.
         bounded, policy = _bounded_tabpfn_weights(
             {**raw, "tabpfn": 0.0},
             previous_validation, previous_tracking, tab_available=True,
         )
         if policy.get("allowed"):
-            return bounded, {
+            return finish(bounded, {
                 **policy,
                 "mode": "cached_challenger_reenabled",
                 "reason": "Poprzednia walidacja dopuściła TabPFN; przywrócono wyłącznie bounded floor.",
-            }
+            }, list(dict.fromkeys([*available.keys(), *bounded.keys()])))
 
-    return _normalize_weights(raw), {
+    return finish(_normalize_weights(raw), {
         "status": "optimizer",
         "allowed": False,
         "mode": "current_catboost_only",
         "effective_tabpfn_weight": 0.0,
-    }
+    }, list(available) or ["current"])
 
 
 def ensemble_probs(probs_by_model: dict[str, list[float]], weights: dict[str, float], n: int) -> list[float]:
@@ -697,6 +853,7 @@ def ensemble_probs(probs_by_model: dict[str, list[float]], weights: dict[str, fl
 
 
 def _model_due(state: dict, training_rows: int, now: datetime) -> bool:
+    if state.get("version") != VERSION: return True
     if not CAT_MODEL_PATH.exists(): return True
     trained = _dt(state.get("catboost_trained_at"))
     if not trained: return True
@@ -1006,7 +1163,8 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     class_count = len({r.get("target") for r in train})
     enough = len(train_rows_all) >= MIN_TRAIN_ROWS and len({r["match_key"] for r in train_rows_all}) >= MIN_TRAIN_MATCHES and class_count >= 2
 
-    current_calibration = _fit_current_calibration(train)
+    current_calibration_candidate = _fit_current_calibration(train)
+    current_calibration = _gate_current_calibration(current_calibration_candidate, cal)
     raw_current_probs = [_raw_prob_from_score(r) for r in current_rows]
     current_probs = [_prob_from_score(r, current_calibration) for r in current_rows]
     cat_probs = [None] * len(current_rows)
@@ -1091,7 +1249,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
                 "ensemble": _metrics(val, ens_val),
                 "validation_matches": len({r["match_key"] for r in val}),
                 "calibration_matches": len({r["match_key"] for r in cal}),
-                "policy": "chronological_match_grouped_70_15_15",
+                "policy": "chronological_match_grouped_70_15_15_calibration_gate_on_cal",
             }
             if retrained:
                 state["catboost_trained_at"] = now.isoformat()
@@ -1141,6 +1299,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "generator": {
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
             "policy": "quality_first_soft_fill_v84a1",
+            "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
             "market_policy": "existing_signals_and_existing_lines_only",
             "profile_thresholds": {
                 "stable": {"strong": 65, "floor": 58, "min_average": 64},
@@ -1151,7 +1310,8 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "captured_matches_this_run": captured,
         },
         "notes": [
-            "Current Engine /100 jest siłą sygnału; przed Brier/log-loss i Ensemble jest mapowany na probability przez monotoniczną kalibrację Platt fitowaną wyłącznie na TRAIN.",
+            "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
+            "Przy małej liczbie meczów CAL jeden model nie może dostać 100% sterowania Ensemble; działa cap + minimalny głos Current Engine.",
             "CatBoost jest meta-rankerem sygnałów, a nie zamiennikiem tenisowych modeli bazowych.",
             "TabPFN używa wyłącznie jawnie wskazanej wersji V2; nowsze non-commercial checkpointy nie są używane.",
             "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
@@ -1181,6 +1341,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "autolearn_v84_weights": report["weights"],
         "autolearn_v84_weight_policy": weight_policy,
         "autolearn_v84_current_calibration": current_calibration,
+        "autolearn_v84_logic_guard": "v8.4B",
     })
     _write(META_PATH, meta)
     return report

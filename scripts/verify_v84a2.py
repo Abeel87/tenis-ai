@@ -27,7 +27,8 @@ def main():
     req(legacy_guard, "raportów v8.4A.1+", "v8.4A.1 guard nadal pinował stary base-guard tuple")
     req(legacy_test, "hf=84a3", "stary test generatora nadal pinował cache-bust hf=84a2")
 
-    req(backend, 'VERSION = "v8.4A.2"', "backend nie jest v8.4A.2")
+    if not any(v in backend for v in ('VERSION = "v8.4A.2"', 'VERSION = "v8.4B"')):
+        ERRORS.append("backend nie jest kompatybilny z v8.4A.2+")
     req(backend, "def _fit_current_calibration(rows", "brak fitu kalibracji")
     req(backend, "def _apply_current_calibration(", "brak aplikowania kalibracji")
     req(backend, '"fit_scope": "train_only"', "kalibracja nie jest train-only")
@@ -36,10 +37,12 @@ def main():
     req(backend, '"tracking_all_versions": tracking_all_versions', "brak all-versions reference")
     req(backend, '"current_calibration": current_calibration', "raport nie eksportuje kalibracji")
 
-    req(ui, "const VERSION='v8.4A.2'", "UI nie jest v8.4A.2")
+    if not any(v in ui for v in ("const VERSION='v8.4A.2'", "const VERSION='v8.4B'")):
+        ERRORS.append("UI nie jest kompatybilny z v8.4A.2+")
     req(ui, "Current Engine · kalibrowany", "UI nie opisuje kalibracji")
     req(ui, "Kalibracja Engine", "UI nie pokazuje statusu kalibracji")
-    req(index, "autolearn-v84.js?v=84a1&hf=84a3", "brak cache-bust JS")
+    if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
+        ERRORS.append("brak kompatybilnego cache-bust JS")
     req(index, "autolearn-v84.css?v=84a1&hf=84a3", "brak cache-bust CSS")
 
     if 'current_probs = [_prob_from_score(r) for r in current_rows]' in backend:

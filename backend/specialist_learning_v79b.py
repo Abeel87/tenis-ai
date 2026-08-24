@@ -284,29 +284,123 @@ def model_signals(model_id, m):
     return []
 
 
+def _consensus_family(signal: dict) -> str:
+    """Decision family without the direction/pick.
+
+    OVER and UNDER on the same line must compete with each other instead of
+    creating two independent "consensus" signals.
+    """
+    market = str(signal.get("market") or "other")
+    line = _num(signal.get("line"))
+    checkpoint = signal.get("checkpoint")
+    if market in ("set1_total", "match_total"):
+        return f"{market}|{float(line):.1f}" if line is not None else f"{market}|?"
+    if market == "game_state":
+        return f"{market}|{checkpoint or '?'}"
+    return market
+
+
+def _consensus_choice(signal: dict) -> str:
+    market = str(signal.get("market") or "")
+    pick = str(signal.get("pick") or "")
+    if market in ("set1_total", "match_total"):
+        return pick.casefold()
+    return key_safe(pick)
+
+
 def consensus_signals(m):
-    maps = {mid: {x["key"]: x for x in model_signals(mid, m)} for mid in MODEL_IDS}
-    keys = set().union(*(mp.keys() for mp in maps.values()))
+    # One directional decision per model/family. Opposing picks are counted as
+    # AGAINST, not silently ignored.
+    families = {}
+    model_rows = {}
+    for mid in MODEL_IDS:
+        rows = list(model_signals(mid, m) or [])
+        model_rows[mid] = rows
+        for s in rows:
+            family = _consensus_family(s)
+            prior = families.setdefault(family, {}).get(mid)
+            if prior is None or _num(s.get("score"), 0) > _num(prior.get("score"), 0):
+                families[family][mid] = s
+
     out = []
-    for key in keys:
-        vals = [maps[mid].get(key) for mid in MODEL_IDS if maps[mid].get(key)]
-        if len(vals) < 2:
+    for family, by_model in families.items():
+        if len(by_model) < 2:
             continue
-        supporters = [x for x in vals if x["score"] >= 68]
-        if len(supporters) < 2:
+
+        choices = {}
+        for mid, signal in by_model.items():
+            choice = _consensus_choice(signal)
+            choices.setdefault(choice, []).append((mid, signal))
+
+        ranked = sorted(
+            choices.items(),
+            key=lambda kv: (
+                -len(kv[1]),
+                -sum(_num(s.get("score"), 0) for _, s in kv[1]),
+                kv[0],
+            ),
+        )
+        if not ranked:
             continue
-        strong = sum(1 for x in supporters if x["score"] >= 72)
-        mean = sum(x["score"] for x in supporters) / len(supporters)
-        sc = clamp(mean + (len(supporters)-1)*1.7 + (1.5 if strong >= 3 else 0), 0, 98)
-        x = max(supporters, key=lambda r: r["score"])
+
+        _, winning_rows = ranked[0]
+        for_votes = len(winning_rows)
+        against_votes = len(by_model) - for_votes
+        abstain_votes = len(MODEL_IDS) - len(by_model)
+
+        # Strict directional majority. 2 OVER vs 3 UNDER can never produce an
+        # OVER consensus anymore; ties are rejected as no-consensus.
+        if for_votes <= against_votes:
+            continue
+
+        qualified = [(mid, s) for mid, s in winning_rows if _num(s.get("score"), 0) >= 68]
+        if len(qualified) < 2:
+            continue
+
+        strong = sum(1 for _, s in qualified if _num(s.get("score"), 0) >= 72)
+        mean_score = sum(_num(s.get("score"), 0) for _, s in qualified) / len(qualified)
+        net_votes = for_votes - against_votes
+        sc = clamp(
+            mean_score
+            + max(0, net_votes - 1) * 1.4
+            + max(0, len(qualified) - 2) * 0.8
+            + (1.2 if strong >= 3 else 0),
+            0,
+            98,
+        )
+        _, best = max(qualified, key=lambda pair: _num(pair[1].get("score"), 0))
+        winning_choice = _consensus_choice(best)
         out.append({
-            **x,
+            **best,
             "score": round(sc, 1),
-            "votes": len(supporters),
+            "votes": for_votes,
+            "qualified_votes": len(qualified),
+            "against_votes": against_votes,
+            "abstain_votes": abstain_votes,
+            "net_votes": net_votes,
             "strong_votes": strong,
-            "model_scores": {mid: (maps[mid].get(key) or {}).get("score") for mid in MODEL_IDS},
+            "consensus_policy": "strict_directional_majority_v84b",
+            "model_scores": {
+                mid: next((_num(s.get("score")) for s in model_rows[mid]
+                           if _consensus_family(s) == family), None)
+                for mid in MODEL_IDS
+            },
+            "model_choices": {
+                mid: next((_consensus_choice(s) for s in model_rows[mid]
+                           if _consensus_family(s) == family), None)
+                for mid in MODEL_IDS
+            },
+            "winning_choice": winning_choice,
         })
-    return sorted(out, key=lambda r: (-r["votes"], -r["strong_votes"], -r["score"]))
+    return sorted(
+        out,
+        key=lambda r: (
+            -int(r.get("net_votes") or 0),
+            -int(r.get("votes") or 0),
+            -int(r.get("strong_votes") or 0),
+            -float(r.get("score") or 0),
+        ),
+    )
 
 
 def specialist_signals(m):
