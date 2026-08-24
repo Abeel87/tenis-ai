@@ -7,3 +7,197 @@
 .al84-table-wrap{overflow:auto;border:1px solid rgba(63,151,190,.18);border-radius:12px;background:rgba(0,0,0,.12)}.al84-table{width:100%;min-width:680px;border-collapse:collapse;font-size:10px}.al84-table th,.al84-table td{padding:8px 9px;text-align:left;border-bottom:1px solid rgba(255,255,255,.045);white-space:nowrap}.al84-table th{position:sticky;top:0;background:#071521;color:#7795a3;font-size:9px;text-transform:uppercase;letter-spacing:.04em}.al84-table td{color:#9db1ba}.al84-table td:first-child b,.al84-table td:first-child small,.al84-table td small{display:block}.al84-table td:first-child b{color:#e4eef2;font-size:10px}.al84-table td small{margin-top:2px;color:#667f8a;font-size:8px}.al84-table tbody tr:last-child td{border-bottom:0}
 .al84-agreement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.al84-agreement{padding:9px;border-radius:12px;border:1px solid rgba(129,255,55,.12);background:rgba(0,0,0,.13)}.al84-agreement>b{font-size:10px;color:#dce8ec}.al84-agreement>div{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.al84-agreement span{font-size:8px;padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.025);color:#7f98a3}.al84-agreement span b{color:#a9bfca}.al84-top-segments{margin-top:10px}.al84-top-segments>b{font-size:10px;color:#dce8ec}.al84-top-segments>div{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.al84-top-segments span{font-size:8px;padding:5px 7px;border-radius:8px;background:rgba(86,255,128,.055);color:#819aa5}.al84-top-segments span b{color:#bce88f}
 @media(max-width:520px){.al84-grid{grid-template-columns:1fr}.al84-performance{padding:13px}.al84-head h3{font-size:18px}.al84-agreement-grid{grid-template-columns:1fr}}
+
+/* v8.4C.1 MOBILE TELEMETRY HOTFIX START */
+
+/* Nigdy nie pozwalaj panelowi AutoLearn wypchnąć strony poza viewport. */
+.al84-performance,
+.al84-telemetry,
+.al84-table-wrap{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+.al84-performance{
+  width:100%;
+  overflow:hidden;
+}
+
+.al84-telemetry{
+  width:100%;
+}
+
+.al84-table-wrap{
+  width:100%;
+}
+
+@media(max-width:520px){
+
+  .al84-performance{
+    width:100%;
+    max-width:100%;
+    padding:12px;
+    overflow:hidden;
+  }
+
+  .al84-head,
+  .al84-telemetry-head{
+    flex-wrap:wrap;
+    width:100%;
+    min-width:0;
+  }
+
+  .al84-head>div,
+  .al84-telemetry-head>div{
+    flex:1 1 220px;
+    min-width:0;
+    max-width:100%;
+  }
+
+  .al84-head>b,
+  .al84-telemetry-head>span{
+    flex:0 0 auto;
+    max-width:100%;
+  }
+
+  /*
+   * Desktop = klasyczna tabela.
+   * Telefon = każdy model staje się osobnym responsywnym kafelkiem.
+   */
+  .al84-table-wrap{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    overflow:hidden;
+  }
+
+  .al84-table{
+    display:block;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    table-layout:fixed;
+    font-size:10px;
+  }
+
+  .al84-table thead{
+    display:none;
+  }
+
+  .al84-table tbody{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:8px;
+    width:100%;
+    padding:8px;
+    box-sizing:border-box;
+  }
+
+  .al84-table tr{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    width:100%;
+    min-width:0;
+    padding:8px;
+    box-sizing:border-box;
+
+    border:1px solid rgba(63,151,190,.18);
+    border-radius:12px;
+    background:rgba(2,15,27,.72);
+  }
+
+  .al84-table td{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:flex-start;
+
+    min-width:0;
+    max-width:100%;
+
+    padding:7px 8px;
+    border:0;
+    border-radius:8px;
+
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:normal;
+
+    background:rgba(255,255,255,.025);
+    color:#9db1ba;
+  }
+
+  .al84-table td:first-child{
+    grid-column:1/-1;
+    padding:8px 9px;
+    background:rgba(84,209,255,.055);
+  }
+
+  .al84-table td:first-child b{
+    font-size:11px;
+    color:#e4eef2;
+  }
+
+  .al84-table td small{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .al84-table td:nth-child(n+2)::before{
+    display:block;
+    margin-bottom:3px;
+
+    font-size:7px;
+    font-weight:800;
+    line-height:1.1;
+
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:#607b87;
+  }
+
+  .al84-table td:nth-child(2)::before{
+    content:"7 dni";
+  }
+
+  .al84-table td:nth-child(3)::before{
+    content:"HIT–MISS 30d";
+  }
+
+  .al84-table td:nth-child(4)::before{
+    content:"Accuracy 30d";
+  }
+
+  .al84-table td:nth-child(5)::before{
+    content:"Brier";
+  }
+
+  .al84-table td:nth-child(6)::before{
+    content:"ROI";
+  }
+
+  .al84-agreement-grid{
+    grid-template-columns:minmax(0,1fr);
+    width:100%;
+    min-width:0;
+  }
+
+  .al84-agreement,
+  .al84-top-segments{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+
+  .al84-agreement span,
+  .al84-top-segments span,
+  .al84-note{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+}
+
+/* v8.4C.1 MOBILE TELEMETRY HOTFIX END */
