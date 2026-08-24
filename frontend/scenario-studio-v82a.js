@@ -211,6 +211,23 @@
       return x&&Number.isFinite(Number(x.ensemble))?x:null;
     }catch{return null}
   }
+  function generatorProfilePolicy(profile='balanced'){
+    return ({
+      stable:{strong:65,floor:58,minAverage:64,mlWeight:.72,mlFloor:56,legacyRescue:75},
+      balanced:{strong:64,floor:57,minAverage:63,mlWeight:.76,mlFloor:55,legacyRescue:74},
+      strong:{strong:70,floor:63,minAverage:68,mlWeight:.82,mlFloor:60,legacyRescue:80},
+      experimental:{strong:60,floor:54,minAverage:60,mlWeight:.68,mlFloor:52,legacyRescue:70}
+    })[profile]||{strong:64,floor:57,minAverage:63,mlWeight:.76,mlFloor:55,legacyRescue:74};
+  }
+  function autoLearnSourceLabel(ml){
+    if(!ml)return activeModelName();
+    const parts=[];
+    const c=num(ml.catboost),t=num(ml.tabpfn),e=num(ml.current);
+    if(c!=null)parts.push(`C${Math.round(c)}`);
+    if(t!=null)parts.push(`T${Math.round(t)}`);
+    if(e!=null)parts.push(`E${Math.round(e)}`);
+    return parts.length?`Ensemble ${parts.join('/')}`:'Ensemble';
+  }
   function composerSignalScore(m,s,profile='balanced'){
     let v=s.value+qualityBonus(m);
     if(profile==='stable'){
@@ -225,8 +242,100 @@
     const legacy=clamp(v);
     if(profile==='manual')return legacy;
     const ml=autoLearnSnapshot(m,s);
-    if(ml&&String(ml.status||'ACTIVE').toUpperCase()==='ACTIVE')return clamp(Number(ml.ensemble));
-    return legacy;
+    if(!ml||String(ml.status||'ACTIVE').toUpperCase()!=='ACTIVE')return legacy;
+    const ensemble=num(ml.ensemble);
+    if(ensemble==null)return legacy;
+    const p=generatorProfilePolicy(profile);
+    const votes=[num(ml.current),num(ml.catboost),num(ml.tabpfn)].filter(x=>x!=null);
+    const hi=votes.length?Math.max(...votes):ensemble;
+    const lo=votes.length?Math.min(...votes):ensemble;
+    const agree=votes.filter(x=>x>=65).length;
+    let score=ensemble*p.mlWeight+legacy*(1-p.mlWeight);
+    if(agree>=2)score+=1.2;
+    if(votes.length>=3&&hi-lo<=8)score+=.8;
+    if(hi-lo>=18)score-=2.0;
+    if(profile==='stable'&&['start','games'].includes(categoryOf(s)))score+=1;
+    if(ensemble<p.mlFloor&&legacy<p.legacyRescue)score=Math.min(score,p.floor-.5);
+    return clamp(score);
+  }
+  function generatorFamily(s){
+    const market=String(s?.market||'other').toLowerCase();
+    if(market==='game_state'||market.startsWith('state')){
+      const parts=String(s?.key||s?.signal_key||'').split('|');
+      const cp=parts.find(x=>['2','4','6'].includes(String(x)))||market;
+      return `state:${cp}`;
+    }
+    return market;
+  }
+  function generatorTotalMarketable(m,s){
+    if(!isTotalSignal(s))return true;
+    const line=totalLine(s);
+    if(line==null)return false;
+    const market=String(s.market||'').toLowerCase();
+    const minimum=market==='match_total'?19.5:8.5;
+    if(line<minimum)return false;
+    const anchor=marketAnchorLine(m,market);
+    if(anchor==null)return true;
+    const lines=[...new Set(
+      scenarioSignals(m)
+        .filter(x=>String(x.market||'').toLowerCase()===market)
+        .map(totalLine).filter(x=>x!=null&&x>=minimum)
+    )].sort((a,b)=>a-b);
+    if(!lines.length)return false;
+    const idx=lines.findIndex(x=>Math.abs(x-line)<.001);
+    let center=0,best=Infinity;
+    lines.forEach((x,i)=>{const d=Math.abs(x-anchor);if(d<best){best=d;center=i}});
+    return idx>=0&&Math.abs(idx-center)<=1;
+  }
+  function repairGeneratorCandidate(x,spm,profile){
+    const m=x?.m||x?.match||x?.fixture||x?.row||findMatchByKey(x?.match_key);
+    if(!m)return x;
+    const policy=generatorProfilePolicy(profile);
+    const unwrap=v=>v?.s||v?.signal||v;
+    const score=s=>composerSignalScore(m,s,profile);
+    const preference=s=>{
+      const c=categoryOf(s);
+      if(profile==='stable')return ['games','start'].includes(c)?2:0;
+      if(profile==='experimental')return c==='other'?1:0;
+      return 0;
+    };
+    const pool=scenarioSignals(m)
+      .filter(generatorTotalMarketable.bind(null,m))
+      .map(s=>({s,score:score(s),pref:preference(s)}))
+      .filter(x=>x.score>=policy.floor)
+      .sort((a,b)=>(Number(b.score>=policy.strong)-Number(a.score>=policy.strong))||b.pref-a.pref||b.score-a.score);
+
+    const chosen=[],families=new Set(),keys=new Set();
+    const push=s=>{
+      if(!s||keys.has(String(s.key)))return false;
+      if(!generatorTotalMarketable(m,s))return false;
+      const sc=score(s);
+      if(sc<policy.floor)return false;
+      const fam=generatorFamily(s);
+      if(families.has(fam))return false;
+      chosen.push({s,score:sc});
+      keys.add(String(s.key));
+      families.add(fam);
+      return true;
+    };
+
+    (Array.isArray(x?.picked)?x.picked:[])
+      .map(unwrap).sort((a,b)=>score(b)-score(a))
+      .forEach(s=>{if(chosen.length<spm)push(s)});
+    for(const row of pool){
+      if(chosen.length>=spm)break;
+      push(row.s);
+    }
+
+    if(chosen.length!==spm)return {...x,picked:[]};
+    const avg=chosen.reduce((a,z)=>a+z.score,0)/chosen.length;
+    if(avg<policy.minAverage)return {...x,picked:[]};
+    return {
+      ...x,
+      picked:chosen.map(z=>z.s),
+      avg,avgScore:avg,score:avg,composer_score:avg,
+      soft_filled:Math.max(0,chosen.length-(Array.isArray(x?.picked)?x.picked.length:0))
+    };
   }
   function draftMatches(){
     const map=new Map();
@@ -547,7 +656,7 @@
 
       return {m,picked,ms};
     })
-      .filter(x=>x.picked.length===spm)
+      .map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)
       .sort((a,b)=>b.ms-a.ms);
 
     if(!candidates.length){
@@ -583,12 +692,13 @@
   }
 
   function addSignalSilent(m,s,source,profile){
-    const mk=matchKey(m);const ml=autoLearnSnapshot(m,s);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
+    const mk=matchKey(m);const ml=autoLearnSnapshot(m,s);const finalScore=composerSignalScore(m,s,profile);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
       tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
-      value:Number(s.value),composer_score:composerSignalScore(m,s,profile),source_model:(modelApi()?.active||'adaptive'),
-      ai_final_score:ml?Number(ml.ensemble):null,autolearn_v84:ml?{current:ml.current??null,catboost:ml.catboost??null,tabpfn:ml.tabpfn??null,ensemble:ml.ensemble??null,weights:ml.weights||null}:null,
+      value:Number(s.value),composer_score:finalScore,source_model:ml?autoLearnSourceLabel(ml):(modelApi()?.active||'adaptive'),
+      base_source_model:(modelApi()?.active||'adaptive'),ai_final_score:finalScore,raw_ensemble_score:ml?Number(ml.ensemble):null,
+      autolearn_v84:ml?{current:ml.current??null,catboost:ml.catboost??null,tabpfn:ml.tabpfn??null,ensemble:ml.ensemble??null,weights:ml.weights||null}:null,
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
     });
   }

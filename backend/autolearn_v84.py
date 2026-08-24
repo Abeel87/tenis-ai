@@ -27,7 +27,7 @@ TAB_INPUT_PATH = CACHE / "tabpfn_input.json"
 TAB_OUTPUT_PATH = CACHE / "tabpfn_output.json"
 TAB_MODEL_CACHE = ROOT / "data" / "cache" / "tabpfn_models"
 
-VERSION = "v8.4A"
+VERSION = "v8.4A.1"
 CATBOOST_NAME = "CatBoost AutoLearn"
 TABPFN_NAME = "TabPFN-2 Challenger"
 ENSEMBLE_NAME = "Ensemble Generator"
@@ -43,6 +43,18 @@ GENERATOR_TOP_PER_MATCH = 2
 TABPFN_TRAIN_CAP = 300
 TABPFN_CURRENT_CAP = 300
 TABPFN_TIMEOUT_SECONDS = 150
+
+# v8.4A.1 — bounded challenger policy.
+# TabPFN dostaje mały realny głos, ale tylko w ograniczonym zakresie.
+TABPFN_WARMUP_FLOOR = 0.10
+TABPFN_VALIDATED_FLOOR = 0.10
+TABPFN_VALIDATED_CAP = 0.25
+TABPFN_STRONG_FLOOR = 0.15
+TABPFN_STRONG_CAP = 0.35
+TABPFN_GATE_MIN_N = 18
+TABPFN_TRACK_MIN_N = 30
+TABPFN_BRIER_MARGIN = 0.020
+TABPFN_LOGLOSS_MARGIN = 0.040
 
 NUMERIC_FEATURES = [
     "base_score", "adaptive", "early", "serve", "form", "surface_model",
@@ -376,6 +388,187 @@ def _optimize_weights(rows, probs_by_model: dict[str, list[float]]) -> dict[str,
     return best[1] if best else {names[0]: 1.0}
 
 
+def _normalize_weights(weights: dict[str, float]) -> dict[str, float]:
+    clean = {}
+    for name, value in (weights or {}).items():
+        try:
+            v = max(0.0, float(value))
+        except (TypeError, ValueError):
+            continue
+        if v > 0:
+            clean[name] = v
+    total = sum(clean.values())
+    if total <= 0:
+        return {"current": 1.0}
+    return {name: value / total for name, value in clean.items()}
+
+
+def _challenger_gate(previous_validation: dict, previous_tracking: dict) -> dict:
+    """Use only evidence already persisted before this run.
+
+    That keeps the current validation slice from becoming the tuning slice.
+    """
+    previous_validation = previous_validation or {}
+    previous_tracking = previous_tracking or {}
+    tv = previous_validation.get("tabpfn") or {}
+    cv = previous_validation.get("current") or {}
+    tt = previous_tracking.get("tabpfn") or {}
+    ct = previous_tracking.get("current") or {}
+
+    tn = int(tt.get("selected_n") or tt.get("n") or 0)
+    if tn >= TABPFN_TRACK_MIN_N:
+        tb, cb = _num(tt.get("brier")), _num(ct.get("brier"))
+        tl, cl = _num(tt.get("log_loss")), _num(ct.get("log_loss"))
+        ta, ca = _num(tt.get("accuracy")), _num(ct.get("accuracy"))
+        brier_ok = tb is not None and (cb is None or tb <= cb + TABPFN_BRIER_MARGIN)
+        loss_ok = tl is not None and (cl is None or tl <= cl + TABPFN_LOGLOSS_MARGIN)
+        acc_ok = ta is None or ca is None or ta >= ca - 3.0
+        if brier_ok and loss_ok and acc_ok:
+            strong = (
+                tn >= 60
+                and tb is not None and cb is not None and tb <= cb
+                and tl is not None and cl is not None and tl <= cl
+            )
+            return {
+                "status": "strong" if strong else "tracking_pass",
+                "allowed": True,
+                "evidence": "tracking",
+                "n": tn,
+                "floor": TABPFN_STRONG_FLOOR if strong else TABPFN_VALIDATED_FLOOR,
+                "cap": TABPFN_STRONG_CAP if strong else TABPFN_VALIDATED_CAP,
+            }
+        return {
+            "status": "tracking_hold",
+            "allowed": False,
+            "evidence": "tracking",
+            "n": tn,
+            "floor": 0.0,
+            "cap": 0.0,
+        }
+
+    vn = int(tv.get("selected_n") or tv.get("n") or 0)
+    if vn >= TABPFN_GATE_MIN_N:
+        tb, cb = _num(tv.get("brier")), _num(cv.get("brier"))
+        tl, cl = _num(tv.get("log_loss")), _num(cv.get("log_loss"))
+        brier_ok = tb is not None and (cb is None or tb <= cb + TABPFN_BRIER_MARGIN)
+        loss_ok = tl is not None and (cl is None or tl <= cl + TABPFN_LOGLOSS_MARGIN)
+        if brier_ok and loss_ok:
+            return {
+                "status": "validation_pass",
+                "allowed": True,
+                "evidence": "previous_validation",
+                "n": vn,
+                "floor": TABPFN_VALIDATED_FLOOR,
+                "cap": TABPFN_VALIDATED_CAP,
+            }
+        return {
+            "status": "validation_hold",
+            "allowed": False,
+            "evidence": "previous_validation",
+            "n": vn,
+            "floor": 0.0,
+            "cap": 0.0,
+        }
+
+    return {
+        "status": "warmup",
+        "allowed": True,
+        "evidence": "bounded_warmup",
+        "n": vn,
+        "floor": TABPFN_WARMUP_FLOOR,
+        "cap": 0.15,
+    }
+
+
+def _bounded_tabpfn_weights(raw_weights: dict[str, float], previous_validation: dict,
+                            previous_tracking: dict, tab_available: bool) -> tuple[dict[str, float], dict]:
+    raw = _normalize_weights(raw_weights)
+    if not tab_available:
+        raw.pop("tabpfn", None)
+        return _normalize_weights(raw), {
+            "status": "no_fresh_tabpfn",
+            "allowed": False,
+            "floor": 0.0,
+            "cap": 0.0,
+        }
+
+    gate = _challenger_gate(previous_validation, previous_tracking)
+    if not gate.get("allowed"):
+        raw.pop("tabpfn", None)
+        return _normalize_weights(raw), gate
+
+    floor = float(gate.get("floor") or 0.0)
+    cap = float(gate.get("cap") or 0.0)
+    target = max(floor, min(cap, float(raw.get("tabpfn") or 0.0)))
+
+    others = {k: v for k, v in raw.items() if k != "tabpfn"}
+    if not others:
+        others = {"current": 1.0}
+    others = _normalize_weights(others)
+    out = {k: v * (1.0 - target) for k, v in others.items()}
+    out["tabpfn"] = target
+    out = _normalize_weights(out)
+    gate = {**gate, "raw_tabpfn_weight": round(float(raw.get("tabpfn") or 0.0), 4),
+            "effective_tabpfn_weight": round(float(out.get("tabpfn") or 0.0), 4)}
+    return out, gate
+
+
+def _choose_weights(rows, probs_by_model: dict[str, list[float]], previous_weights: dict,
+                    previous_validation: dict, previous_tracking: dict,
+                    tab_refreshed: bool, tab_cached_available: bool = False) -> tuple[dict[str, float], dict]:
+    """Choose production weights without silently zeroing a cached challenger.
+
+    On runs where TabPFN is not retrained we keep the last approved bounded weight.
+    Individual signals without a cached TabPFN probability are automatically
+    renormalized by ensemble_probs().
+    """
+    available = {
+        name: probs for name, probs in (probs_by_model or {}).items()
+        if rows and len(probs) == len(rows)
+    }
+
+    if tab_refreshed and "tabpfn" in available:
+        raw = _optimize_weights(rows, available)
+        weights, policy = _bounded_tabpfn_weights(
+            raw, previous_validation, previous_tracking, tab_available=True
+        )
+        return weights, {**policy, "mode": "fresh_calibration"}
+
+    prev = _normalize_weights(previous_weights or {})
+    if float(prev.get("tabpfn") or 0.0) > 0:
+        return prev, {
+            "status": "preserved",
+            "allowed": True,
+            "mode": "cached_challenger_weight",
+            "effective_tabpfn_weight": round(float(prev.get("tabpfn") or 0.0), 4),
+            "reason": "TabPFN nie był dziś przeliczany; zachowano ostatnią zatwierdzoną wagę.",
+        }
+
+    raw = _optimize_weights(rows, available) if rows and available else {"current": 1.0}
+    raw.pop("tabpfn", None)
+    if tab_cached_available:
+        # v8.4A left TabPFN at 0% on non-retrain runs even when an independent
+        # previous validation had already passed. Re-enable only a bounded floor;
+        # per-signal missing cached predictions are renormalized by ensemble_probs.
+        bounded, policy = _bounded_tabpfn_weights(
+            {**raw, "tabpfn": 0.0},
+            previous_validation, previous_tracking, tab_available=True,
+        )
+        if policy.get("allowed"):
+            return bounded, {
+                **policy,
+                "mode": "cached_challenger_reenabled",
+                "reason": "Poprzednia walidacja dopuściła TabPFN; przywrócono wyłącznie bounded floor.",
+            }
+
+    return _normalize_weights(raw), {
+        "status": "optimizer",
+        "allowed": False,
+        "mode": "current_catboost_only",
+        "effective_tabpfn_weight": 0.0,
+    }
+
+
 def ensemble_probs(probs_by_model: dict[str, list[float]], weights: dict[str, float], n: int) -> list[float]:
     out = []
     for i in range(n):
@@ -677,7 +870,11 @@ def tracking_stats(history):
 
 def _state_tab_current(state, current_rows):
     cache = state.get("tabpfn_current") or {}
-    return [(_num(cache.get(f'{r["match_key"]}::{r["candidate_key"]}')) or None) for r in current_rows]
+    out = []
+    for r in current_rows:
+        value = _num(cache.get(f'{r["match_key"]}::{r["candidate_key"]}'))
+        out.append(value if value is not None else None)
+    return out
 
 
 def run(now=None, force_retrain=False, force_tabpfn=False):
@@ -700,8 +897,12 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     current_probs = [_prob_from_score(r) for r in current_rows]
     cat_probs = [None] * len(current_rows)
     tab_probs = _state_tab_current(state, current_rows)
-    validation = state.get("validation") or {}
-    weights = state.get("weights") or {"current": 1.0}
+    previous_validation = state.get("validation") or {}
+    previous_tracking = state.get("tracking") or {}
+    previous_weights = state.get("weights") or {"current": 1.0}
+    validation = previous_validation
+    weights = _normalize_weights(previous_weights)
+    weight_policy = state.get("weight_policy") or {"status": "bootstrap"}
     cat_status = "collecting"
     tab_status = state.get("tabpfn") or {"status": "unavailable", "reason": "not_run_yet", "model_version": "V2"}
     retrained = False
@@ -749,12 +950,18 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
                 tab_cal, tab_val = [], []
 
             probs_cal = {"current": base_cal, "catboost": cat_cal}
-            if len(tab_cal) == len(cal) and cal:
+            tab_refreshed = len(tab_cal) == len(cal) and bool(cal)
+            if tab_refreshed:
                 probs_cal["tabpfn"] = tab_cal
             if cal:
-                weights = _optimize_weights(cal, probs_cal)
+                weights, weight_policy = _choose_weights(
+                    cal, probs_cal, previous_weights, previous_validation,
+                    previous_tracking, tab_refreshed=tab_refreshed,
+                    tab_cached_available=any(p is not None for p in tab_probs),
+                )
             elif not weights:
                 weights = {"current": 1.0}
+                weight_policy = {"status": "no_calibration", "allowed": False}
 
             probs_val = {"current": base_val, "catboost": cat_val}
             if len(tab_val) == len(val) and val:
@@ -776,9 +983,11 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             cat_status = "fallback"
             cat_probs = [None] * len(current_rows)
             weights = {"current": 1.0}
+            weight_policy = {"status": "catboost_fallback", "allowed": False}
             state["last_catboost_error"] = type(exc).__name__
     else:
         weights = {"current": 1.0}
+        weight_policy = {"status": "collecting", "allowed": False}
 
     # Ensure missing challenger probabilities do not dilute the available models.
     decorated = _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights, "ACTIVE" if cat_status == "active" else "COLLECTING")
@@ -802,12 +1011,19 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "retrain_hours": RETRAIN_HOURS, "retrain_new_rows": RETRAIN_NEW_ROWS,
         },
         "weights": {k: round(float(v), 3) for k, v in weights.items()},
+        "weight_policy": weight_policy,
         "validation": validation,
         "tracking": tracking,
         "generator": {
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
-            "policy": "quality_first_no_forced_fill",
+            "policy": "quality_first_soft_fill_v84a1",
             "market_policy": "existing_signals_and_existing_lines_only",
+            "profile_thresholds": {
+                "stable": {"strong": 65, "floor": 58, "min_average": 64},
+                "balanced": {"strong": 64, "floor": 57, "min_average": 63},
+                "strong": {"strong": 70, "floor": 63, "min_average": 68},
+                "experimental": {"strong": 60, "floor": 54, "min_average": 60},
+            },
             "captured_matches_this_run": captured,
         },
         "notes": [
@@ -815,12 +1031,14 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "TabPFN używa wyłącznie jawnie wskazanej wersji V2; nowsze non-commercial checkpointy nie są używane.",
             "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
             "Awaria ML przełącza generator na Current Engine; ML nie wykonuje żadnych dodatkowych requestów Live Tennis API.",
+            "TabPFN zachowuje ostatnią zatwierdzoną wagę między retrainingami; brak świeżej predykcji dla sygnału nie rozcieńcza Ensemble.",
+            "Generator może dobrać graniczny sygnał tylko w obrębie profilu i Marketability Guard; nadal nie wymusza słabych spotkań.",
         ],
     }
 
     state.update({
         "version": VERSION, "updated_at": now.isoformat(), "weights": report["weights"],
-        "validation": validation, "tabpfn": tab_status,
+        "weight_policy": weight_policy, "validation": validation, "tracking": tracking, "tabpfn": tab_status,
     })
     _write(RESULTS_PATH, decorated)
     _write(HISTORY_PATH, history)
@@ -835,6 +1053,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "autolearn_v84_catboost_status": cat_status,
         "autolearn_v84_tabpfn_status": tab_status.get("status"),
         "autolearn_v84_weights": report["weights"],
+        "autolearn_v84_weight_policy": weight_policy,
     })
     _write(META_PATH, meta)
     return report
@@ -859,7 +1078,14 @@ def self_check():
     assert len(tr) + len(cal) + len(val) == len(demo)
     w = _optimize_weights(cal or val, {"current": [_prob_from_score(r) for r in (cal or val)], "catboost": [0.7] * len(cal or val)})
     assert abs(sum(w.values()) - 1.0) < 1e-9
-    print(json.dumps({"version": VERSION, "self_check": "PASS", "split": [len(tr), len(cal), len(val)], "weights": w}, indent=2))
+    preserved, policy = _choose_weights(
+        cal or val,
+        {"current": [_prob_from_score(r) for r in (cal or val)], "catboost": [0.7] * len(cal or val)},
+        {"current": 0.3, "catboost": 0.6, "tabpfn": 0.1},
+        {}, {}, tab_refreshed=False,
+    )
+    assert abs(preserved.get("tabpfn", 0.0) - 0.1) < 1e-9
+    print(json.dumps({"version": VERSION, "self_check": "PASS", "split": [len(tr), len(cal), len(val)], "weights": w, "policy": policy}, indent=2))
 
 
 def main():
@@ -877,6 +1103,7 @@ def main():
     print(json.dumps({
         "version": report["version"], "status": report["status"],
         "training": report["training"], "weights": report["weights"],
+        "weight_policy": report.get("weight_policy"),
         "models": report["models"], "generator": report["generator"],
     }, ensure_ascii=False, indent=2))
 

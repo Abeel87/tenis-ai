@@ -1,7 +1,7 @@
 /* Tenis AI v8.4A — AutoLearn bridge + model comparison UI */
 (() => {
   'use strict';
-  const VERSION='v8.4A';
+  const VERSION='v8.4A.1';
   const REPORT='data/autolearn_v84.json';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const num=x=>Number.isFinite(Number(x))?Number(x):null;
@@ -22,19 +22,28 @@
     const a=match?.autolearn_v84;if(!a)return null;
     const key=String(signal?.key||signal?.signal_key||'');
     const direct=a?.by_key?.[key];
-    if(direct)return {...direct,status:a.status,weights:a.weights};
+    if(direct)return {...direct,status:a.status,weights:a.weights,weight_policy:a.weight_policy||null};
     const market=marketAlias(signal?.market),pick=norm(signal?.pick),line=lineOf(signal);
     const row=(a?.signals||[]).find(x=>{
       if(marketAlias(x?.market)!==market||norm(x?.pick)!==pick)return false;
       const xl=lineOf(x);
       return line==null?xl==null:xl!=null&&Math.abs(xl-line)<0.001;
     });
-    return row?{...row,status:a.status,weights:a.weights}:null;
+    return row?{...row,status:a.status,weights:a.weights,weight_policy:a.weight_policy||null}:null;
+  }
+
+  function modelVoteText(row){
+    if(!row)return 'AI N/D';
+    const parts=[];
+    if(num(row.catboost)!=null)parts.push(`C${Math.round(Number(row.catboost))}`);
+    if(num(row.tabpfn)!=null)parts.push(`T${Math.round(Number(row.tabpfn))}`);
+    if(num(row.current)!=null)parts.push(`E${Math.round(Number(row.current))}`);
+    return parts.length?`Ensemble ${parts.join('/')}`:'Ensemble';
   }
 
   async function loadReport(force=false){
     if(force)reportPromise=null;
-    if(!reportPromise)reportPromise=fetch(`${REPORT}?v=84a1&ts=${Date.now()}`,{cache:'no-store'})
+    if(!reportPromise)reportPromise=fetch(`${REPORT}?v=84a2&ts=${Date.now()}`,{cache:'no-store'})
       .then(r=>r.ok?r.json():{}).catch(()=>({}));
     return reportPromise;
   }
@@ -64,8 +73,9 @@
         ${card(report,'tabpfn','TabPFN-2','🧬',tab.status||'unavailable')}
         ${card(report,'generator','Ensemble Generator','⚡',models.ensemble?.status||'fallback')}
       </div>
-      <div class="al84-weights"><b>Wagi Ensemble</b><span>Engine ${Math.round(Number(w.current||0)*100)}%</span><span>CatBoost ${Math.round(Number(w.catboost||0)*100)}%</span><span>TabPFN ${Math.round(Number(w.tabpfn||0)*100)}%</span></div>
-      <div class="al84-foot"><span>Trening: ${Number(tr.rows||0)} sygnałów · ${Number(tr.matches||0)} meczów</span><span>Generator próg: ${pct(gen.selection_threshold)}</span>${tab.reason?`<span>TabPFN: ${esc(tab.reason)}</span>`:''}</div>
+      <div class="al84-weights"><b>Wagi produkcyjne</b><span>Engine ${Math.round(Number(w.current||0)*100)}%</span><span>CatBoost ${Math.round(Number(w.catboost||0)*100)}%</span><span>TabPFN ${Math.round(Number(w.tabpfn||0)*100)}%</span></div>
+      <div class="al84-policy"><b>Challenger</b><span>${esc(report?.weight_policy?.status||'N/D')}</span><small>${esc(report?.weight_policy?.reason||report?.weight_policy?.evidence||'waga ograniczona guardem jakości')}</small></div>
+      <div class="al84-foot"><span>Trening: ${Number(tr.rows||0)} sygnałów · ${Number(tr.matches||0)} meczów</span><span>Próg bazowy: ${pct(gen.selection_threshold)}</span>${tab.reason?`<span>TabPFN: ${esc(tab.reason)}</span>`:''}</div>
       <p class="al84-note">Accuracy dotyczy wyborów modelu na rozliczonej próbce, nie jest gwarancją przyszłego wyniku. Brier: niżej = lepiej.</p>
     </section>`;
   }
@@ -82,5 +92,5 @@
     renderStats=function(){const r=base.apply(this,arguments);scheduleInject();return r};
   }
 
-  window.TENIS_AI_AUTOLEARN_V84={version:VERSION,scoreFor,loadReport,injectPerformance};
+  window.TENIS_AI_AUTOLEARN_V84={version:VERSION,scoreFor,modelVoteText,loadReport,injectPerformance};
 })();

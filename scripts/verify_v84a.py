@@ -47,7 +47,7 @@ def main():
     if report.exists():
         try:
             x=json.loads(report.read_text(encoding='utf-8'))
-            if x.get('version')!='v8.4A': ERRORS.append('autolearn_v84.json ma złą wersję')
+            if x.get('version') not in ('v8.4A','v8.4A.1'): ERRORS.append('autolearn_v84.json ma złą wersję')
         except Exception as exc: ERRORS.append(f'autolearn_v84.json invalid: {exc}')
     if ERRORS:
         print('❌ AutoLearn Integration Guard v8.4A — FAIL')
