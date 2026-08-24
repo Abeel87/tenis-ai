@@ -23,13 +23,15 @@ def main():
     workflow=read(".github/workflows/update-and-pages.yml")
     old_guard=read("scripts/verify_v84a.py")
 
-    req(auto,'VERSION = "v8.4A.1"',"backend AutoLearn nie jest v8.4A.1")
+    if not any(v in auto for v in ('VERSION = "v8.4A.1"', 'VERSION = "v8.4A.2"')):
+        ERRORS.append("backend AutoLearn nie jest kompatybilny z v8.4A.1+")
     req(auto,"def _choose_weights","brak zachowania wagi challengera między retrainingami")
     req(auto,"def _bounded_tabpfn_weights","brak bounded weight policy TabPFN")
     req(auto,'"quality_first_soft_fill_v84a1"',"report nie opisuje nowej polityki generatora")
     req(auto,'"weight_policy": weight_policy',"report nie publikuje weight_policy")
 
-    req(front,"const VERSION='v8.4A.1'","frontend AutoLearn nie jest v8.4A.1")
+    if not any(v in front for v in ("const VERSION='v8.4A.1'", "const VERSION='v8.4A.2'")):
+        ERRORS.append("frontend AutoLearn nie jest kompatybilny z v8.4A.1+")
     req(front,"Wagi produkcyjne","statystyki nie pokazują wag produkcyjnych")
     req(front,"Challenger","statystyki nie pokazują stanu challengera")
 
@@ -41,19 +43,25 @@ def main():
     req(scenario,"raw_ensemble_score","scenariusz nie zapisuje raw Ensemble")
     req(scenario,"base_source_model","scenariusz nie zachowuje bazowego modelu")
 
-    req(index,"autolearn-v84.js?v=84a1&hf=84a2","brak cache-bust JS v8.4A.1")
-    req(index,"autolearn-v84.css?v=84a1&hf=84a2","brak cache-bust CSS v8.4A.1")
+    if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a2", "autolearn-v84.js?v=84a1&hf=84a3")):
+        ERRORS.append("brak kompatybilnego cache-bust JS v8.4A.1+")
+    if not any(x in index for x in ("autolearn-v84.css?v=84a1&hf=84a2", "autolearn-v84.css?v=84a1&hf=84a3")):
+        ERRORS.append("brak kompatybilnego cache-bust CSS v8.4A.1+")
     req(index,"scenario-studio-v82a.js?v=82a6&hf=84a1","brak cache-bust Scenario Studio hotfix")
     req(index,"scenario-studio-v82a.js?v=82a6","naruszono chroniony pin v82a6")
 
     req(workflow,"AutoLearn Hotfix Guard v8.4A.1","workflow nie ma nowego guarda")
-    req(old_guard,"('v8.4A','v8.4A.1')","stary v8.4A guard nie akceptuje raportu v8.4A.1")
+    if not any(x in old_guard for x in (
+        "('v8.4A','v8.4A.1')",
+        "('v8.4A','v8.4A.1','v8.4A.2')",
+    )):
+        ERRORS.append("stary v8.4A guard nie akceptuje raportów v8.4A.1+")
 
     report=ROOT/"frontend/data/autolearn_v84.json"
     if report.exists():
         try:
             x=json.loads(report.read_text(encoding="utf-8"))
-            if x.get("version") not in ("v8.4A","v8.4A.1"):
+            if x.get("version") not in ("v8.4A","v8.4A.1","v8.4A.2"):
                 ERRORS.append(f"nieznana wersja autolearn_v84.json: {x.get('version')!r}")
         except Exception as exc:
             ERRORS.append(f"autolearn_v84.json invalid: {exc}")

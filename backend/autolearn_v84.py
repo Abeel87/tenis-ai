@@ -27,7 +27,7 @@ TAB_INPUT_PATH = CACHE / "tabpfn_input.json"
 TAB_OUTPUT_PATH = CACHE / "tabpfn_output.json"
 TAB_MODEL_CACHE = ROOT / "data" / "cache" / "tabpfn_models"
 
-VERSION = "v8.4A.1"
+VERSION = "v8.4A.2"
 CATBOOST_NAME = "CatBoost AutoLearn"
 TABPFN_NAME = "TabPFN-2 Challenger"
 ENSEMBLE_NAME = "Ensemble Generator"
@@ -40,6 +40,13 @@ MODEL_SELECT_THRESHOLD = 0.65
 GENERATOR_SELECT_THRESHOLD = 0.65
 MAX_TRACK_SIGNALS_PER_MATCH = 12
 GENERATOR_TOP_PER_MATCH = 2
+
+# v8.4A.2 — Current Engine /100 jest siłą sygnału, nie literalnym prawdopodobieństwem.
+# Platt/logit calibrator uczy się wyłącznie na TRAIN; CAL zostaje dla wag ensemble,
+# a VAL jest nietkniętym przyszłym holdoutem.
+CURRENT_CALIBRATION_MIN_ROWS = 40
+CURRENT_CALIBRATION_REG = 0.25
+CURRENT_CALIBRATION_MAX_ITERS = 80
 TABPFN_TRAIN_CAP = 300
 TABPFN_CURRENT_CAP = 300
 TABPFN_TIMEOUT_SECONDS = 150
@@ -320,8 +327,111 @@ def _frame(rows):
     return pd.DataFrame(data, columns=FEATURE_COLUMNS)
 
 
-def _prob_from_score(row):
+def _raw_prob_from_score(row):
+    """Raw signal-strength fraction. This is NOT a calibrated probability."""
     return _clamp(_num(row.get("base_score"), 50.0) / 100.0, 0.01, 0.99)
+
+
+def _logit(p):
+    p = _clamp(p, 1e-6, 1.0 - 1e-6)
+    return math.log(p / (1.0 - p))
+
+
+def _sigmoid(z):
+    z = max(-35.0, min(35.0, float(z)))
+    if z >= 0:
+        e = math.exp(-z)
+        return 1.0 / (1.0 + e)
+    e = math.exp(z)
+    return e / (1.0 + e)
+
+
+def _apply_current_calibration(raw_probability, calibration=None):
+    p = _clamp(raw_probability, 0.01, 0.99)
+    calibration = calibration or {}
+    if calibration.get("status") != "active":
+        return p
+    a = _num(calibration.get("a"), 1.0)
+    b = _num(calibration.get("b"), 0.0)
+    if a is None or b is None or a <= 0:
+        return p
+    return _clamp(_sigmoid(a * _logit(p) + b), 0.01, 0.99)
+
+
+def _fit_current_calibration(rows):
+    """Fit monotonic Platt scaling on TRAIN only.
+
+    CatBoost may learn nonlinear relations from the same TRAIN rows. The separate
+    CAL split remains untouched and is used only to choose ensemble weights.
+    """
+    usable = [
+        r for r in (rows or [])
+        if r.get("target") in (0, 1) and _num(r.get("base_score")) is not None
+    ]
+    matches = len({r.get("match_key") for r in usable if r.get("match_key")})
+    base = {
+        "method": "platt_logit",
+        "fit_scope": "train_only",
+        "fit_rows": len(usable),
+        "fit_matches": matches,
+        "status": "identity",
+        "a": 1.0,
+        "b": 0.0,
+    }
+    if len(usable) < CURRENT_CALIBRATION_MIN_ROWS:
+        return {**base, "reason": "insufficient_rows"}
+    ys = [int(r["target"]) for r in usable]
+    if len(set(ys)) < 2:
+        return {**base, "reason": "single_class"}
+
+    xs = [_logit(_raw_prob_from_score(r)) for r in usable]
+    raw_probs = [_raw_prob_from_score(r) for r in usable]
+
+    # Start close to identity and regularize toward identity to avoid wild slopes
+    # on a still-small tennis dataset.
+    a, b = 1.0, 0.0
+    reg = CURRENT_CALIBRATION_REG
+    for _ in range(CURRENT_CALIBRATION_MAX_ITERS):
+        probs = [_sigmoid(a * x + b) for x in xs]
+        ws = [max(1e-6, p * (1.0 - p)) for p in probs]
+
+        ga = sum((p - y) * x for p, y, x in zip(probs, ys, xs)) + reg * (a - 1.0)
+        gb = sum((p - y) for p, y in zip(probs, ys)) + reg * b
+        haa = sum(w * x * x for w, x in zip(ws, xs)) + reg
+        hab = sum(w * x for w, x in zip(ws, xs))
+        hbb = sum(ws) + reg
+        det = haa * hbb - hab * hab
+        if not math.isfinite(det) or abs(det) < 1e-10:
+            break
+
+        da = (ga * hbb - gb * hab) / det
+        db = (gb * haa - ga * hab) / det
+        next_a = max(0.05, min(8.0, a - da))
+        next_b = max(-8.0, min(8.0, b - db))
+        if abs(next_a - a) + abs(next_b - b) < 1e-8:
+            a, b = next_a, next_b
+            break
+        a, b = next_a, next_b
+
+    if not (math.isfinite(a) and math.isfinite(b) and a > 0):
+        return {**base, "reason": "numeric_fallback"}
+
+    calibrated = [_clamp(_sigmoid(a * x + b), 0.01, 0.99) for x in xs]
+    return {
+        **base,
+        "status": "active",
+        "reason": None,
+        "a": round(a, 6),
+        "b": round(b, 6),
+        "train_raw_brier": round(_brier(ys, raw_probs), 5),
+        "train_calibrated_brier": round(_brier(ys, calibrated), 5),
+        "train_raw_log_loss": round(_logloss(ys, raw_probs), 5),
+        "train_calibrated_log_loss": round(_logloss(ys, calibrated), 5),
+    }
+
+
+def _prob_from_score(row, calibration=None):
+    return _apply_current_calibration(_raw_prob_from_score(row), calibration)
 
 
 def _predict_cat(model, rows):
@@ -829,11 +939,13 @@ def _capture_frozen(history, decorated_results, now):
     return out, captured
 
 
-def tracking_stats(history):
+def tracking_stats(history, tracker_version=None):
     model_rows = defaultdict(list)
     generator_rows = []
     for e in history or []:
         for s in e.get("autolearn_signals_v84") or []:
+            if tracker_version is not None and str(s.get("tracker_version") or "") != str(tracker_version):
+                continue
             if s.get("result") not in ("hit", "miss"):
                 continue
             y = 1 if s["result"] == "hit" else 0
@@ -894,7 +1006,9 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     class_count = len({r.get("target") for r in train})
     enough = len(train_rows_all) >= MIN_TRAIN_ROWS and len({r["match_key"] for r in train_rows_all}) >= MIN_TRAIN_MATCHES and class_count >= 2
 
-    current_probs = [_prob_from_score(r) for r in current_rows]
+    current_calibration = _fit_current_calibration(train)
+    raw_current_probs = [_raw_prob_from_score(r) for r in current_rows]
+    current_probs = [_prob_from_score(r, current_calibration) for r in current_rows]
     cat_probs = [None] * len(current_rows)
     tab_probs = _state_tab_current(state, current_rows)
     previous_validation = state.get("validation") or {}
@@ -917,8 +1031,10 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
                 model = _load_catboost()
             cat_status = "active"
             cat_probs = _predict_cat(model, current_rows)
-            base_cal = [_prob_from_score(r) for r in cal]
-            base_val = [_prob_from_score(r) for r in val]
+            raw_base_cal = [_raw_prob_from_score(r) for r in cal]
+            raw_base_val = [_raw_prob_from_score(r) for r in val]
+            base_cal = [_prob_from_score(r, current_calibration) for r in cal]
+            base_val = [_prob_from_score(r, current_calibration) for r in val]
             cat_cal = _predict_cat(model, cal)
             cat_val = _predict_cat(model, val)
 
@@ -969,6 +1085,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             ens_val = ensemble_probs(probs_val, weights, len(val))
             validation = {
                 "current": _metrics(val, base_val),
+                "current_raw": _metrics(val, raw_base_val),
                 "catboost": _metrics(val, cat_val),
                 "tabpfn": _metrics(val, tab_val) if len(tab_val) == len(val) and val else (validation.get("tabpfn") or {"n": 0, "selected_n": 0, "accuracy": None, "brier": None, "log_loss": None}),
                 "ensemble": _metrics(val, ens_val),
@@ -992,7 +1109,12 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     # Ensure missing challenger probabilities do not dilute the available models.
     decorated = _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights, "ACTIVE" if cat_status == "active" else "COLLECTING")
     history, captured = _capture_frozen(history, decorated, now)
-    tracking = tracking_stats(history)
+
+    # v8.4A.2 zmienia semantykę Current Engine z raw /100 na calibrated probability.
+    # Główny tracking nie miesza starych i nowych metod; all-versions zostaje tylko
+    # referencją diagnostyczną.
+    tracking = tracking_stats(history, tracker_version=VERSION)
+    tracking_all_versions = tracking_stats(history)
 
     report = {
         "version": VERSION,
@@ -1012,8 +1134,10 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         },
         "weights": {k: round(float(v), 3) for k, v in weights.items()},
         "weight_policy": weight_policy,
+        "current_calibration": current_calibration,
         "validation": validation,
         "tracking": tracking,
+        "tracking_all_versions": tracking_all_versions,
         "generator": {
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
             "policy": "quality_first_soft_fill_v84a1",
@@ -1027,6 +1151,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "captured_matches_this_run": captured,
         },
         "notes": [
+            "Current Engine /100 jest siłą sygnału; przed Brier/log-loss i Ensemble jest mapowany na probability przez monotoniczną kalibrację Platt fitowaną wyłącznie na TRAIN.",
             "CatBoost jest meta-rankerem sygnałów, a nie zamiennikiem tenisowych modeli bazowych.",
             "TabPFN używa wyłącznie jawnie wskazanej wersji V2; nowsze non-commercial checkpointy nie są używane.",
             "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
@@ -1038,7 +1163,8 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
 
     state.update({
         "version": VERSION, "updated_at": now.isoformat(), "weights": report["weights"],
-        "weight_policy": weight_policy, "validation": validation, "tracking": tracking, "tabpfn": tab_status,
+        "weight_policy": weight_policy, "current_calibration": current_calibration,
+        "validation": validation, "tracking": tracking, "tabpfn": tab_status,
     })
     _write(RESULTS_PATH, decorated)
     _write(HISTORY_PATH, history)
@@ -1054,6 +1180,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "autolearn_v84_tabpfn_status": tab_status.get("status"),
         "autolearn_v84_weights": report["weights"],
         "autolearn_v84_weight_policy": weight_policy,
+        "autolearn_v84_current_calibration": current_calibration,
     })
     _write(META_PATH, meta)
     return report
@@ -1076,7 +1203,11 @@ def self_check():
     tr, cal, val = chronological_split(demo)
     assert set(r["match_key"] for r in tr).isdisjoint(r["match_key"] for r in val)
     assert len(tr) + len(cal) + len(val) == len(demo)
-    w = _optimize_weights(cal or val, {"current": [_prob_from_score(r) for r in (cal or val)], "catboost": [0.7] * len(cal or val)})
+    current_calibration = _fit_current_calibration(tr)
+    assert current_calibration.get("fit_scope") == "train_only"
+    current_eval = [_prob_from_score(r, current_calibration) for r in (cal or val)]
+    assert all(0.01 <= p <= 0.99 for p in current_eval)
+    w = _optimize_weights(cal or val, {"current": current_eval, "catboost": [0.7] * len(cal or val)})
     assert abs(sum(w.values()) - 1.0) < 1e-9
     preserved, policy = _choose_weights(
         cal or val,
