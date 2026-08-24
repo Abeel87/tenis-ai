@@ -73,8 +73,11 @@ if 'readability-v753.js' in index:
     failures.append('Obsolete readability-v753.js nadal jest ładowany.')
 if 'cache.addAll(ASSETS)' in sw:
     failures.append('Service worker nadal używa kruchego cache.addAll(ASSETS).')
-if not re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v801-[0-9a-z._-]+['\"]",sw,re.I):
-    failures.append('Service worker nie ma cache rodziny v801.')
+cache_v801 = re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v801-[0-9a-z._-]+['\"]", sw, re.I)
+cache_v84b = re.search(r"const\s+CACHE\s*=\s*['\"]tenis-ai-v84b-[0-9a-z._-]+['\"]", sw, re.I)
+legacy_v801_marker = 'tenis-ai-v801-player-profile' in sw
+if not (cache_v801 or (cache_v84b and legacy_v801_marker)):
+    failures.append('Service worker nie ma zgodnego cache v801/v84b z markerem kompatybilności.')
 if '@supabase/supabase-js@2.112.3' not in index:
     warnings.append('Supabase JS nie jest przypięty do 2.112.3.')
 

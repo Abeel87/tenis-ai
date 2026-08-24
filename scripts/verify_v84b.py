@@ -24,6 +24,7 @@ def main():
     ui = read("frontend/autolearn-v84.js")
     index = read("frontend/index.html")
     workflow = read(".github/workflows/update-and-pages.yml")
+    project_health = read("scripts/project_health.py")
 
     # PBP: primary + retry branch only.
     if pbp.count('record_calls("pbp_current", 1)') != 2:
@@ -56,6 +57,8 @@ def main():
     req(index, 'autolearn-v84.js?v=84a1&hf=84b1', "brak cache-bust AutoLearn v8.4B")
     req(index, 'scenario-studio-v82a.js?v=82a6', "naruszono chroniony pin Scenario Studio")
     req(ui, "🤖 AUTOLEARN v8.4B", "UI nie pokazuje v8.4B")
+    req(project_health, "cache_v84b", "Project Health nie akceptuje aktywnego cache v8.4B")
+    req(project_health, "legacy_v801_marker", "Project Health nie pilnuje kompatybilności v801")
 
     markers = [
         "AutoLearn Calibration Guard v8.4A.2",
