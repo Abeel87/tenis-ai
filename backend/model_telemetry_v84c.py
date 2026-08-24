@@ -30,6 +30,7 @@ MODEL_LABELS = {
     "catboost": "CatBoost",
     "tabpfn": "TabPFN-2",
     "ensemble": "Ensemble",
+    "dynamic": "Dynamic Ensemble v8.4D",
     "generator": "Generator AI",
 }
 MODEL_ORDER = list(MODEL_LABELS)
@@ -172,6 +173,11 @@ def collect_rows(history: list[dict]) -> list[dict]:
                 sc = _num(scores.get(model))
                 if sc is not None:
                     add(_row(entry, signal, model, score=sc))
+            dyn = signal.get("dynamic_weighting") or {}
+            if dyn.get("active"):
+                sc = _num(scores.get("ensemble"))
+                if sc is not None:
+                    add(_row(entry, signal, "dynamic", score=sc))
             if signal.get("generator_selected"):
                 sc = _num(scores.get("ensemble"))
                 if sc is not None:

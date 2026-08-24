@@ -26,6 +26,19 @@ STATE_PATH = CACHE / "state.json"
 TAB_INPUT_PATH = CACHE / "tabpfn_input.json"
 TAB_OUTPUT_PATH = CACHE / "tabpfn_output.json"
 TAB_MODEL_CACHE = ROOT / "data" / "cache" / "tabpfn_models"
+DYNAMIC_TELEMETRY_PATH = OUT / "model_telemetry_v84c.json"
+DYNAMIC_WEIGHTS_VERSION = "v8.4D"
+
+try:
+    from .dynamic_weights_v84d import (
+        resolve_weights as _resolve_dynamic_weights,
+        weighted_probability as _dynamic_weighted_probability,
+    )
+except ImportError:
+    from dynamic_weights_v84d import (
+        resolve_weights as _resolve_dynamic_weights,
+        weighted_probability as _dynamic_weighted_probability,
+    )
 
 VERSION = "v8.4B"
 CATBOOST_NAME = "CatBoost AutoLearn"
@@ -1003,20 +1016,48 @@ def build_current_rows(results: list[dict]) -> tuple[list[dict], list[tuple[int,
     return rows, locs
 
 
-def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights, status="COLLECTING"):
+def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights,
+                      status="COLLECTING", dynamic_telemetry=None):
     per_match = defaultdict(list)
-    ensemble = ensemble_probs({"current": current_probs, "catboost": cat_probs, "tabpfn": tab_probs}, weights, len(current_rows))
+    telemetry = dynamic_telemetry if isinstance(dynamic_telemetry, dict) else {}
+
     for i, row in enumerate(current_rows):
         tab = tab_probs[i] if i < len(tab_probs) else None
         cat = cat_probs[i] if i < len(cat_probs) else None
+        probs = {"current": current_probs[i], "catboost": cat, "tabpfn": tab}
+        available_base = {
+            name: float(weights.get(name, 0.0))
+            for name, probability in probs.items()
+            if probability is not None and float(weights.get(name, 0.0)) > 0
+        }
+        try:
+            local_weights, dynamic_policy = _resolve_dynamic_weights(
+                available_base, row, telemetry
+            )
+        except Exception as exc:
+            local_weights = available_base
+            dynamic_policy = {
+                "version": DYNAMIC_WEIGHTS_VERSION,
+                "active": False,
+                "status": "SAFE_FALLBACK",
+                "reason": f"resolver_{type(exc).__name__}",
+                "dimensions": [],
+                "base_weights": available_base,
+                "effective_weights": available_base,
+                "max_shift": 0.0,
+            }
+
+        ensemble_probability = _dynamic_weighted_probability(probs, local_weights)
         item = {
             "key": row["candidate_key"], "label": row["label"], "market": row["market"],
             "pick": row["pick"], "line": None if row["line"] == -1 else row["line"],
             "current": round(current_probs[i] * 100, 1),
             "catboost": round(cat * 100, 1) if cat is not None else None,
             "tabpfn": round(tab * 100, 1) if tab is not None else None,
-            "ensemble": round(ensemble[i] * 100, 1),
+            "ensemble": round(ensemble_probability * 100, 1),
             "support": int(row["support"]),
+            "local_weights": {k: round(float(v), 4) for k, v in local_weights.items()},
+            "dynamic_weighting": dynamic_policy,
         }
         per_match[row["match_key"]].append(item)
 
@@ -1029,16 +1070,54 @@ def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs
             "tournament": m.get("tournament"),
         })
         sigs = sorted(per_match.get(mk, []), key=lambda x: (-float(x.get("ensemble") or 0), x.get("key") or ""))
+        active_dynamic = sum(
+            1 for x in sigs if ((x.get("dynamic_weighting") or {}).get("active"))
+        )
         m["autolearn_v84"] = {
             "version": VERSION,
             "status": status if sigs else "COLLECTING",
             "weights": {k: round(v, 3) for k, v in weights.items()},
+            "dynamic_weights": {
+                "version": DYNAMIC_WEIGHTS_VERSION,
+                "status": "ACTIVE" if active_dynamic else "SAFE_FALLBACK",
+                "active_signals": active_dynamic,
+                "total_signals": len(sigs),
+                "policy": "previous_telemetry_bounded_segment_shrinkage",
+            },
             "signals": sigs,
             "by_key": {x["key"]: x for x in sigs},
             "note": "ML rankuje wyłącznie istniejące sygnały/linie; nie tworzy nowych rynków.",
         }
         out.append(m)
     return out
+
+
+def _summarize_dynamic(decorated_results):
+    total = active = 0
+    dimensions = defaultdict(int)
+    max_shift = 0.0
+    for match in decorated_results or []:
+        for signal in ((match.get("autolearn_v84") or {}).get("signals") or []):
+            total += 1
+            policy = signal.get("dynamic_weighting") or {}
+            if policy.get("active"):
+                active += 1
+                max_shift = max(max_shift, _num(policy.get("max_shift"), 0.0) or 0.0)
+                for item in policy.get("dimensions") or []:
+                    dimension = str(item.get("dimension") or "")
+                    if dimension:
+                        dimensions[dimension] += 1
+    return {
+        "version": DYNAMIC_WEIGHTS_VERSION,
+        "status": "ACTIVE" if active else "SAFE_FALLBACK",
+        "active_signals": active,
+        "total_signals": total,
+        "active_share": round(active / total, 4) if total else 0.0,
+        "max_shift": round(max_shift, 4),
+        "dimensions_used": dict(sorted(dimensions.items())),
+        "source": "previous_model_telemetry_v84c_snapshot",
+        "policy": "bounded_segment_shrinkage_no_model_reenable",
+    }
 
 
 def _capture_frozen(history, decorated_results, now):
@@ -1085,6 +1164,11 @@ def _capture_frozen(history, decorated_results, now):
                     "tabpfn": s.get("tabpfn"), "ensemble": s.get("ensemble"),
                 },
                 "generator_selected": s.get("key") in generator_keys,
+                "dynamic_weighting": s.get("dynamic_weighting") or {
+                    "version": DYNAMIC_WEIGHTS_VERSION, "active": False,
+                    "status": "SAFE_FALLBACK", "reason": "not_available",
+                },
+                "local_weights": s.get("local_weights") or {},
                 "tracker_version": VERSION,
             })
         if frozen:
@@ -1152,6 +1236,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     results = _read(RESULTS_PATH, [])
     meta = _read(META_PATH, {})
     state = _read(STATE_PATH, {})
+    dynamic_telemetry = _read(DYNAMIC_TELEMETRY_PATH, {})
     if not isinstance(history, list): history = []
     if not isinstance(results, list): results = []
     if not isinstance(meta, dict): meta = {}
@@ -1265,7 +1350,12 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         weight_policy = {"status": "collecting", "allowed": False}
 
     # Ensure missing challenger probabilities do not dilute the available models.
-    decorated = _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights, "ACTIVE" if cat_status == "active" else "COLLECTING")
+    decorated = _decorate_results(
+        results, current_rows, current_probs, cat_probs, tab_probs, weights,
+        "ACTIVE" if cat_status == "active" else "COLLECTING",
+        dynamic_telemetry=dynamic_telemetry,
+    )
+    dynamic_summary = _summarize_dynamic(decorated)
     history, captured = _capture_frozen(history, decorated, now)
 
     # v8.4A.2 zmienia semantykę Current Engine z raw /100 na calibrated probability.
@@ -1292,6 +1382,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         },
         "weights": {k: round(float(v), 3) for k, v in weights.items()},
         "weight_policy": weight_policy,
+        "dynamic_weights": dynamic_summary,
         "current_calibration": current_calibration,
         "validation": validation,
         "tracking": tracking,
@@ -1300,6 +1391,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
             "policy": "quality_first_soft_fill_v84a1",
             "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
+            "dynamic_weight_guard": "bounded_segment_shrinkage_v84d",
             "market_policy": "existing_signals_and_existing_lines_only",
             "profile_thresholds": {
                 "stable": {"strong": 65, "floor": 58, "min_average": 64},
@@ -1318,12 +1410,14 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
             "Awaria ML przełącza generator na Current Engine; ML nie wykonuje żadnych dodatkowych requestów Live Tennis API.",
             "TabPFN zachowuje ostatnią zatwierdzoną wagę między retrainingami; brak świeżej predykcji dla sygnału nie rozcieńcza Ensemble.",
             "Generator może dobrać graniczny sygnał tylko w obrębie profilu i Marketability Guard; nadal nie wymusza słabych spotkań.",
+            "v8.4D koryguje wagi Current/CatBoost/TabPFN per tour/nawierzchnia/rynek wyłącznie z poprzedniego snapshotu telemetryki; mała próbka wraca do wag globalnych.",
         ],
     }
 
     state.update({
         "version": VERSION, "updated_at": now.isoformat(), "weights": report["weights"],
-        "weight_policy": weight_policy, "current_calibration": current_calibration,
+        "weight_policy": weight_policy, "dynamic_weights": dynamic_summary,
+        "current_calibration": current_calibration,
         "validation": validation, "tracking": tracking, "tabpfn": tab_status,
     })
     _write(RESULTS_PATH, decorated)
@@ -1340,6 +1434,8 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "autolearn_v84_tabpfn_status": tab_status.get("status"),
         "autolearn_v84_weights": report["weights"],
         "autolearn_v84_weight_policy": weight_policy,
+        "autolearn_v84_dynamic_weights": dynamic_summary,
+        "autolearn_v84_dynamic_weights_version": DYNAMIC_WEIGHTS_VERSION,
         "autolearn_v84_current_calibration": current_calibration,
         "autolearn_v84_logic_guard": "v8.4B",
     })

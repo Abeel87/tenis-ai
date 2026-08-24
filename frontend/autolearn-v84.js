@@ -72,7 +72,7 @@
     </article>`;
   }
 
-  const TELEMETRY_ORDER=['adaptive','early','serve','form','surface','consensus','current','catboost','tabpfn','ensemble','generator'];
+  const TELEMETRY_ORDER=['adaptive','early','serve','form','surface','consensus','current','catboost','tabpfn','ensemble','dynamic','generator'];
   function scopeModel(telemetry,scope,id){return telemetry?.scopes?.[scope]?.by_model?.[id]||{}}
   function roiText(m){return num(m?.roi)==null?'N/D':pct(m.roi)}
   function telemetryRows(telemetry){
