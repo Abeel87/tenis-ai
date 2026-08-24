@@ -23,7 +23,11 @@ def main():
     req(idx,'autolearn-v84.css?v=84a1&hf=84a3',"naruszono chroniony pin AutoLearn CSS")
     req(idx,'scenario-studio-v82a.js?v=82a6',"naruszono chroniony pin Scenario Studio")
     req(idx,'dynamic-weights-v84d1.css?v=84d1',"brak CSS v8.4D.1 w index.html")
-    req(idx,'dynamic-weights-v84d1.js?v=84d1',"brak JS v8.4D.1 w index.html")
+    if not any(x in idx for x in (
+        'dynamic-weights-v84d1.js?v=84d1',
+        'dynamic-weights-v84d1.js?v=84d2',
+    )):
+        ERR.append("brak kompatybilnego JS v8.4D.1/v8.4D.2 w index.html")
 
     req(js,"DYNAMIC WEIGHTS ${VERSION}","brak nagłówka Dynamic Weights Audit")
     req(js,"local_weights","audit nie czyta lokalnych wag")

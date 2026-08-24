@@ -10,7 +10,10 @@ def test_ui_audit_is_additive_and_keeps_protected_pins():
     assert "autolearn-v84.css?v=84a1&hf=84a3" in h
     assert "scenario-studio-v82a.js?v=82a6" in h
     assert "dynamic-weights-v84d1.css?v=84d1" in h
-    assert "dynamic-weights-v84d1.js?v=84d1" in h
+    assert any(x in h for x in (
+        "dynamic-weights-v84d1.js?v=84d1",
+        "dynamic-weights-v84d1.js?v=84d2",
+    ))
 
 def test_ui_audit_exposes_dynamic_and_global_modes():
     s=read("frontend/dynamic-weights-v84d1.js")
