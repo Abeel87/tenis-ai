@@ -19,6 +19,13 @@ VERSION = "v8.4C"
 SELECT_THRESHOLD = 65.0
 MIN_SEGMENT_SAMPLE = 5
 
+TREND_VERSION = "v8.4E2"
+TREND_COMPARE_MIN = 8
+TREND_COMPARE_MAX = 20
+TREND_SERIES_WINDOW = 8
+TREND_SERIES_POINTS = 24
+
+
 MODEL_LABELS = {
     "adaptive": "Adaptive",
     "early": "Early Hold",
@@ -110,6 +117,23 @@ def _odds(signal: dict):
     return None
 
 
+def _checkpoint(signal: dict):
+    value = signal.get("checkpoint")
+    if value is None:
+        market = str(signal.get("market") or "").lower()
+        if market.startswith("state") and market != "game_state":
+            value = market.replace("state", "", 1)
+    if value is None:
+        parts = str(signal.get("key") or signal.get("signal_key") or "").split("|")
+        if len(parts) >= 2 and parts[0] in ("state", "game_state"):
+            value = parts[1]
+    try:
+        cp = int(value)
+    except (TypeError, ValueError):
+        return None
+    return cp if cp in (2, 4, 6) else None
+
+
 def _row(entry: dict, signal: dict, model: str, score=None, generator_selected=False):
     result = str(signal.get("result") or "")
     if result not in ("hit", "miss"):
@@ -129,6 +153,7 @@ def _row(entry: dict, signal: dict, model: str, score=None, generator_selected=F
         "target": 1 if result == "hit" else 0,
         "odds": _odds(signal),
         "generator_selected": bool(generator_selected),
+        "checkpoint": _checkpoint(signal),
     }
 
 
@@ -225,6 +250,178 @@ def summarize(rows: list[dict], model=None) -> dict:
         "roi": round(profit * 100.0 / len(odds_rows), 1) if odds_rows else None,
         "roi_status": "available" if odds_rows else "N/D — brak zapisanych kursów",
         "threshold": None if model == "generator" else SELECT_THRESHOLD,
+    }
+
+
+def _selected_for_trend(rows: list[dict], model=None) -> list[dict]:
+    ordered = sorted(
+        list(rows or []),
+        key=lambda r: (str(r.get("scheduled_time") or ""), str(r.get("match_key") or ""), str(r.get("candidate_key") or "")),
+    )
+    if model == "generator":
+        return ordered
+    return [r for r in ordered if _num(r.get("score"), 0.0) >= SELECT_THRESHOLD]
+
+
+def _trend_series(selected: list[dict]) -> list[dict]:
+    n = len(selected)
+    if n < 5:
+        return []
+    window = min(TREND_SERIES_WINDOW, n)
+    start = max(window, n - TREND_SERIES_POINTS + 1)
+    out = []
+    for end in range(start, n + 1):
+        sample = selected[end - window:end]
+        hits = sum(int(r.get("target") or 0) for r in sample)
+        out.append({
+            "index": end,
+            "at": sample[-1].get("scheduled_time"),
+            "n": len(sample),
+            "accuracy": round(hits * 100.0 / len(sample), 1),
+            "brier": round(_brier(sample), 5),
+        })
+    return out[-TREND_SERIES_POINTS:]
+
+
+def trend_summary(rows: list[dict], model=None) -> dict:
+    selected = _selected_for_trend(rows, model=model)
+    n = len(selected)
+    base = {
+        "version": TREND_VERSION,
+        "status": "collecting",
+        "selected_n": n,
+        "compare_window": 0,
+        "recent_accuracy": None,
+        "previous_accuracy": None,
+        "accuracy_delta_pp": None,
+        "recent_brier": None,
+        "previous_brier": None,
+        "brier_delta": None,
+        "sample_strength": "collecting",
+        "series": _trend_series(selected),
+    }
+    half = min(TREND_COMPARE_MAX, n // 2)
+    if half < TREND_COMPARE_MIN:
+        return base
+
+    previous = selected[-2 * half:-half]
+    recent = selected[-half:]
+    prev_hits = sum(int(r.get("target") or 0) for r in previous)
+    recent_hits = sum(int(r.get("target") or 0) for r in recent)
+    prev_acc = prev_hits * 100.0 / len(previous)
+    recent_acc = recent_hits * 100.0 / len(recent)
+    prev_brier = _brier(previous)
+    recent_brier = _brier(recent)
+    acc_delta = recent_acc - prev_acc
+    brier_delta = recent_brier - prev_brier
+
+    if (acc_delta >= 4.0 and brier_delta <= 0.012) or (brier_delta <= -0.020 and acc_delta >= -2.0):
+        status = "rising"
+    elif (acc_delta <= -4.0 and brier_delta >= -0.012) or (brier_delta >= 0.020 and acc_delta <= 2.0):
+        status = "falling"
+    elif abs(acc_delta) < 4.0 and abs(brier_delta) < 0.020:
+        status = "stable"
+    else:
+        status = "watch"
+
+    return {
+        **base,
+        "status": status,
+        "compare_window": half,
+        "recent_accuracy": round(recent_acc, 1),
+        "previous_accuracy": round(prev_acc, 1),
+        "accuracy_delta_pp": round(acc_delta, 1),
+        "recent_brier": round(recent_brier, 5),
+        "previous_brier": round(prev_brier, 5),
+        "brier_delta": round(brier_delta, 5),
+        "sample_strength": "strong" if half >= 15 else "medium",
+    }
+
+
+def model_trends(rows: list[dict]) -> dict:
+    grouped = defaultdict(list)
+    for row in rows or []:
+        grouped[str(row.get("model") or "")].append(row)
+    return {
+        "version": TREND_VERSION,
+        "basis": "last_settled_selected_predictions",
+        "compare_min_each_side": TREND_COMPARE_MIN,
+        "compare_max_each_side": TREND_COMPARE_MAX,
+        "models": {
+            model: trend_summary(grouped.get(model, []), model=model)
+            for model in MODEL_ORDER
+        },
+    }
+
+
+def game_state_progress(history: list[dict]) -> dict:
+    buckets = {cp: {"tracked": 0, "settled": 0, "hits": 0, "misses": 0, "void": 0, "rows": []} for cp in (2, 4, 6)}
+    seen = set()
+
+    for entry in history or []:
+        if not isinstance(entry, dict):
+            continue
+        match_key = str(entry.get("match_key") or entry.get("match_id") or entry.get("id") or "")
+        hidden = [s for s in (entry.get("game_state_learning_v84e1") or []) if isinstance(s, dict)]
+        source = hidden
+        if not source:
+            source = [
+                s for s in (entry.get("autolearn_signals_v84") or [])
+                if isinstance(s, dict) and _checkpoint(s) in (2, 4, 6)
+            ]
+
+        for signal in source:
+            cp = _checkpoint(signal)
+            if cp not in buckets:
+                continue
+            sig_id = (match_key, cp)
+            if sig_id in seen:
+                continue
+            seen.add(sig_id)
+            b = buckets[cp]
+            b["tracked"] += 1
+            result = str(signal.get("result") or "").lower()
+            if result in ("hit", "miss"):
+                b["settled"] += 1
+                b["hits"] += int(result == "hit")
+                b["misses"] += int(result == "miss")
+                score = _score(signal)
+                b["rows"].append({
+                    "scheduled_time": entry.get("scheduled_time"),
+                    "score": score if score is not None else 65.0,
+                    "target": 1 if result == "hit" else 0,
+                    "model": "generator",
+                    "match_key": match_key,
+                    "candidate_key": f"game_state|{cp}",
+                    "market": "game_state",
+                    "tour": str(entry.get("tour") or "N/D").upper(),
+                    "surface": str(entry.get("surface") or "N/D").upper(),
+                    "odds": None,
+                    "checkpoint": cp,
+                })
+            elif result == "void":
+                b["void"] += 1
+
+    checkpoints = {}
+    for cp, b in buckets.items():
+        settled = b["settled"]
+        checkpoints[str(cp)] = {
+            "tracked": b["tracked"],
+            "settled": settled,
+            "hits": b["hits"],
+            "misses": b["misses"],
+            "void": b["void"],
+            "waiting_pbp": max(0, b["tracked"] - settled - b["void"]),
+            "accuracy": round(b["hits"] * 100.0 / settled, 1) if settled else None,
+            "trend": trend_summary(b["rows"], model="generator"),
+        }
+
+    return {
+        "version": TREND_VERSION,
+        "policy": "exact_checkpoint_pbp_only_monitoring",
+        "total_tracked": sum(x["tracked"] for x in checkpoints.values()),
+        "total_settled": sum(x["settled"] for x in checkpoints.values()),
+        "checkpoints": checkpoints,
     }
 
 
@@ -367,6 +564,8 @@ def build_report(history: list[dict], now=None) -> dict:
     rows30 = _scope_rows(rows, now, 30)
     rows7 = _scope_rows(rows, now, 7)
     segments30 = segment_metrics(rows30)
+    trends = model_trends(all_rows)
+    game_state = game_state_progress(history)
     return {
         "version": VERSION,
         "generated_at": now.isoformat(),
@@ -381,6 +580,8 @@ def build_report(history: list[dict], now=None) -> dict:
         "segments_30d": segments30,
         "top_segments_30d": top_segments(segments30),
         "agreement": agreement_stats(history),
+        "trends_v84e2": trends,
+        "game_state_progress_v84e2": game_state,
         "notes": [
             "Accuracy modeli bazowych jest liczona na rozliczonych, zamrożonych sygnałach; próg wyboru to 65/100.",
             "Brier/log-loss dla modeli bazowych używa score/100 jako proxy confidence; pełna probabilistyczna kalibracja pozostaje domeną Current/CatBoost/TabPFN/Ensemble.",
@@ -405,6 +606,9 @@ def run(now=None):
         "model_telemetry_status": report["status"],
         "model_telemetry_updated_at": report["generated_at"],
         "model_telemetry_rows_30d": report["scopes"]["30d"]["rows"],
+        "model_trend_version": TREND_VERSION,
+        "model_trend_status": "ACTIVE",
+        "model_trend_game_state_settled": report["game_state_progress_v84e2"]["total_settled"],
     })
     _write(META_PATH, meta)
     return report
