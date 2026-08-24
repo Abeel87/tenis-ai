@@ -41,6 +41,16 @@
     m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|')
   );
 
+  function signalAliases(signal){
+    try{
+      const bridge=window.TENIS_AI_SIGNAL_MAPPING_V84D4;
+      const aliases=bridge?.aliasesFor?.(signal);
+      if(Array.isArray(aliases)&&aliases.length)return aliases;
+    }catch{}
+    const raw=String(signal?.key||signal?.signal_key||'');
+    return raw?[raw]:[];
+  }
+
   function dynamicInfo(signal){
     const dyn=signal?.dynamic_weighting||{};
     const weights=dyn?.effective_weights||signal?.local_weights||{};
@@ -63,13 +73,16 @@
       for(const signal of (match?.autolearn_v84?.signals||[])){
         const sk=String(signal?.key||signal?.signal_key||'');
         if(!sk)continue;
-        map.set(`${mk}::${sk}`,{
+        const row={
           matchKey:mk,
           signalKey:sk,
           label:String(signal?.label||sk),
           market:String(signal?.market||'—'),
           ...dynamicInfo(signal),
-        });
+        };
+        for(const alias of signalAliases(signal)){
+          map.set(`${mk}::${alias}`,row);
+        }
       }
     }
     return map;

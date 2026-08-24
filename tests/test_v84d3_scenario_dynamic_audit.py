@@ -8,7 +8,10 @@ def read(p):
 def test_scenario_audit_is_additive():
     h=read("frontend/index.html")
     assert "scenario-dynamic-v84d3.css?v=84d3" in h
-    assert "scenario-dynamic-v84d3.js?v=84d3" in h
+    assert any(x in h for x in (
+        "scenario-dynamic-v84d3.js?v=84d3",
+        "scenario-dynamic-v84d3.js?v=84d4",
+    ))
     assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in h
 
 def test_scenario_audit_reads_existing_dynamic_metadata():

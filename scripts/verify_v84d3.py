@@ -35,7 +35,11 @@ def main():
     req(idx,'dynamic-weights-v84d1.js?v=84d2',"naruszono pin View Scope v8.4D.2")
     req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono chroniony pin Scenario Studio")
     req(idx,'scenario-dynamic-v84d3.css?v=84d3',"brak CSS v8.4D.3 w index.html")
-    req(idx,'scenario-dynamic-v84d3.js?v=84d3',"brak JS v8.4D.3 w index.html")
+    if not any(x in idx for x in (
+        'scenario-dynamic-v84d3.js?v=84d3',
+        'scenario-dynamic-v84d3.js?v=84d4',
+    )):
+        ERR.append("brak kompatybilnego JS v8.4D.3/v8.4D.4 w index.html")
 
     req(wf,"Scenario Dynamic Audit Guard v8.4D.3","workflow nie uruchamia guarda v8.4D.3")
 
