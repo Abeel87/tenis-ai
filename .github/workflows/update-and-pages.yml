@@ -55,6 +55,8 @@ jobs:
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/pbp_enrich.py
+      - name: Player Intelligence v8.5 PRE
+        run: python backend/player_intelligence_v85.py pre
       - name: Prediction integrity gate v7.8A
         run: python backend/prediction_integrity_v78a.py
       - name: Track + backtest PBP
@@ -107,6 +109,10 @@ jobs:
         run: python backend/autolearn_v84.py
       - name: Model Telemetry v8.4C
         run: python backend/model_telemetry_v84c.py
+      - name: Player Intelligence v8.5 POST
+        run: python backend/player_intelligence_v85.py post
+      - name: Player Intelligence Guard v8.5
+        run: python scripts/verify_v85.py
       - name: AutoLearn Integration Guard v8.4A
         run: python scripts/verify_v84a.py
       - name: AutoLearn Hotfix Guard v8.4A.1

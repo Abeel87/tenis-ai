@@ -228,6 +228,16 @@
     if(e!=null)parts.push(`E${Math.round(e)}`);
     return parts.length?`Ensemble ${parts.join('/')}`:'Ensemble';
   }
+
+  // PLAYER_INTELLIGENCE_V85_ASSIST — bounded support only; production Ensemble weights stay untouched.
+  function playerAssist(m,s){
+    try{return window.TENIS_AI_PLAYER_V85?.supportFor?.(m,s)||null}catch{return null}
+  }
+  function playerBadge(m,s){
+    const p=playerAssist(m,s),v=num(p?.support_score);
+    return v==null?'':` · 🧬 ${v>=0?'+':''}${Math.round(v)}`;
+  }
+
   function composerSignalScore(m,s,profile='balanced'){
     let v=s.value+qualityBonus(m);
     if(profile==='stable'){
@@ -256,6 +266,13 @@
     if(hi-lo>=18)score-=2.0;
     if(profile==='stable'&&['start','games'].includes(categoryOf(s)))score+=1;
     if(ensemble<p.mlFloor&&legacy<p.legacyRescue)score=Math.min(score,p.floor-.5);
+    // v8.5: small bounded Generator assist. This does NOT alter Ensemble model weights.
+    const pi=playerAssist(m,s);
+    const ps=num(pi?.support_score),pq=String(pi?.quality||'N/D').toUpperCase();
+    if(ps!=null&&pq!=='N/D'){
+      const cap=pq==='HIGH'?2:pq==='MEDIUM'?1:.5;
+      score+=Math.max(-cap,Math.min(cap,ps*.20));
+    }
     return clamp(score);
   }
   function generatorFamily(s){
@@ -692,13 +709,14 @@
   }
 
   function addSignalSilent(m,s,source,profile){
-    const mk=matchKey(m);const ml=autoLearnSnapshot(m,s);const finalScore=composerSignalScore(m,s,profile);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
+    const mk=matchKey(m);const ml=autoLearnSnapshot(m,s);const pi=playerAssist(m,s);const finalScore=composerSignalScore(m,s,profile);const g=draft.items.filter(x=>x.match_key===mk);if(g.length>=MAX_PER_MATCH)return;
     draft.items.push({
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
       tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:finalScore,source_model:ml?autoLearnSourceLabel(ml):(modelApi()?.active||'adaptive'),
       base_source_model:(modelApi()?.active||'adaptive'),ai_final_score:finalScore,raw_ensemble_score:ml?Number(ml.ensemble):null,
       autolearn_v84:ml?{current:ml.current??null,catboost:ml.catboost??null,tabpfn:ml.tabpfn??null,ensemble:ml.ensemble??null,weights:ml.weights||null}:null,
+      player_intelligence_v85:pi?{probability:pi.probability??null,shadow_score:pi.shadow_score??null,support_score:pi.support_score??null,quality:pi.quality??null}:null,
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
     });
   }
@@ -722,7 +740,7 @@
       <div class="sc82-signals">${sig.length?sig.map(s=>{
         const on=selected(mk,s.key),cs=composerSignalScore(m,s,'manual');
         return `<button class="sc82-signal ${on?'selected':''}" data-sc-add="${encodeURIComponent(mk)}" data-sc-sig="${encodeURIComponent(s.key)}">
-          <span><b>${esc(s.label)}</b><small>${esc(activeModelName())} · ${esc(categoryOf(s))}</small></span>
+          <span><b>${esc(s.label)}</b><small>${esc(activeModelName())} · ${esc(categoryOf(s))}${playerBadge(m,s)}</small></span>
           <em>${Math.round(cs)}/100</em><strong>${on?'✓':'＋'}</strong>
         </button>`;
       }).join(''):'<div class="sc82-empty">Brak sygnałów w tej kategorii.</div>'}</div>
