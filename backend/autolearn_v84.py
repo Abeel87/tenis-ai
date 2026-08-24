@@ -40,6 +40,21 @@ except ImportError:
         weighted_probability as _dynamic_weighted_probability,
     )
 
+try:
+    from .game_state_tracking_v84e1 import (
+        VERSION as GAME_STATE_TRACKING_VERSION,
+        checkpoint_from_signal as _game_state_checkpoint,
+        current_signals as _game_state_current_signals,
+        select_tracking_signals as _select_game_state_tracking_signals,
+    )
+except ImportError:
+    from game_state_tracking_v84e1 import (
+        VERSION as GAME_STATE_TRACKING_VERSION,
+        checkpoint_from_signal as _game_state_checkpoint,
+        current_signals as _game_state_current_signals,
+        select_tracking_signals as _select_game_state_tracking_signals,
+    )
+
 VERSION = "v8.4B"
 CATBOOST_NAME = "CatBoost AutoLearn"
 TABPFN_NAME = "TabPFN-2 Challenger"
@@ -222,6 +237,10 @@ def _source_score_map(entry: dict) -> dict[str, dict[str, dict]]:
             continue
         src = str(signal.get("source_model") or "specialist")
         grouped[_candidate_key(signal)][src] = signal
+    for signal in entry.get("game_state_learning_v84e1") or []:
+        if not isinstance(signal, dict):
+            continue
+        grouped[_candidate_key(signal)].setdefault("adaptive", signal)
     return grouped
 
 
@@ -260,6 +279,7 @@ def _feature_row(entry: dict, key: str, sources: dict[str, dict], target=None) -
         "market": _canonical_market(reference.get("market")),
         "pick": str(reference.get("pick") or ""),
         "pick_kind": _pick_kind(reference),
+        "checkpoint": _game_state_checkpoint(reference),
         "line": _num(reference.get("line"), -1.0),
         "label": reference.get("label") or key,
         "tour": str(entry.get("tour") or "N/D").upper(),
@@ -991,6 +1011,10 @@ def _current_sources(match: dict):
     for s in cons or []:
         s = dict(s); s["source_model"] = "consensus"
         grouped[_candidate_key(s)]["consensus"] = s
+    # v8.4E1: exact top state for Po 2 / Po 4 / Po 6.
+    for s in _game_state_current_signals(match):
+        s = dict(s); s["source_model"] = "adaptive"
+        grouped[_candidate_key(s)].setdefault("adaptive", s)
     return grouped
 
 
@@ -1050,7 +1074,8 @@ def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs
         ensemble_probability = _dynamic_weighted_probability(probs, local_weights)
         item = {
             "key": row["candidate_key"], "label": row["label"], "market": row["market"],
-            "pick": row["pick"], "line": None if row["line"] == -1 else row["line"],
+            "pick": row["pick"], "checkpoint": row.get("checkpoint"),
+            "line": None if row["line"] == -1 else row["line"],
             "current": round(current_probs[i] * 100, 1),
             "catboost": round(cat * 100, 1) if cat is not None else None,
             "tabpfn": round(tab * 100, 1) if tab is not None else None,
@@ -1146,7 +1171,9 @@ def _capture_frozen(history, decorated_results, now):
         sigs = list(((match or {}).get("autolearn_v84") or {}).get("signals") or [])
         if not sigs:
             out.append(e); continue
-        sigs = [s for s in sigs if _num(s.get("ensemble"), 0) >= 55.0][:MAX_TRACK_SIGNALS_PER_MATCH]
+        sigs = _select_game_state_tracking_signals(
+            sigs, MAX_TRACK_SIGNALS_PER_MATCH
+        )
         generator_keys = {
             s["key"] for s in sorted(
                 [s for s in sigs if _num(s.get("ensemble"), 0) >= GENERATOR_SELECT_THRESHOLD * 100],
@@ -1157,8 +1184,13 @@ def _capture_frozen(history, decorated_results, now):
         for s in sigs:
             frozen.append({
                 "key": s.get("key"), "label": s.get("label"), "market": s.get("market"),
-                "pick": s.get("pick"), "line": s.get("line"), "score": s.get("ensemble"),
+                "pick": s.get("pick"),
+                "checkpoint": s.get("checkpoint") or _game_state_checkpoint(s),
+                "line": s.get("line"), "score": s.get("ensemble"),
                 "result": "pending", "source_model": "ensemble_v84",
+                "game_state_tracking_version": (
+                    GAME_STATE_TRACKING_VERSION if _game_state_checkpoint(s) else None
+                ),
                 "model_scores": {
                     "current": s.get("current"), "catboost": s.get("catboost"),
                     "tabpfn": s.get("tabpfn"), "ensemble": s.get("ensemble"),
@@ -1383,6 +1415,19 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "weights": {k: round(float(v), 3) for k, v in weights.items()},
         "weight_policy": weight_policy,
         "dynamic_weights": dynamic_summary,
+        "game_state_tracking": {
+            "version": GAME_STATE_TRACKING_VERSION,
+            "checkpoints": [2, 4, 6],
+            "current_signals": sum(
+                1 for m in decorated
+                for s in ((m.get("autolearn_v84") or {}).get("signals") or [])
+                if _game_state_checkpoint(s)
+            ),
+            "history_learning_signals": sum(
+                len(e.get("game_state_learning_v84e1") or []) for e in history
+            ),
+            "policy": "exact_top_state_hidden_learning_bounded_reservation_pbp_only",
+        },
         "current_calibration": current_calibration,
         "validation": validation,
         "tracking": tracking,
@@ -1436,6 +1481,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "autolearn_v84_weight_policy": weight_policy,
         "autolearn_v84_dynamic_weights": dynamic_summary,
         "autolearn_v84_dynamic_weights_version": DYNAMIC_WEIGHTS_VERSION,
+        "autolearn_v84_game_state_tracking": report["game_state_tracking"],
         "autolearn_v84_current_calibration": current_calibration,
         "autolearn_v84_logic_guard": "v8.4B",
     })

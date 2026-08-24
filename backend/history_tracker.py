@@ -8,6 +8,11 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from .game_state_tracking_v84e1 import learning_signals as game_state_learning_signals
+except ImportError:
+    from game_state_tracking_v84e1 import learning_signals as game_state_learning_signals
+
 GREEN_THRESHOLD = 72.0
 MODEL_VERSION = 'v7.8D-calibration-guard'
 VOID_RE = re.compile(r'\b(RET|W/O|WO|DEF|ABD|ABN)\b', re.I)
@@ -156,6 +161,7 @@ def archive_predictions(entries: list[dict], matches: list[dict], now: datetime 
             'status': 'pending',
             'result': None,
             'signals': signals,
+            'game_state_learning_v84e1': game_state_learning_signals(match),
         }
 
     return list(by_key.values())

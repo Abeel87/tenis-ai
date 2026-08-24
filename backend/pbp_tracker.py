@@ -15,6 +15,10 @@ import requests
 
 from api_quota_v83b import quota_budget, record_calls
 from pbp_enrich import extract_first_set_games, _source_weight
+try:
+    from .game_state_tracking_v84e1 import settle_from_states as settle_e1_game_state
+except ImportError:
+    from game_state_tracking_v84e1 import settle_from_states as settle_e1_game_state
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -451,10 +455,15 @@ def _general_history_stats(entries):
 
 def upgrade_general_game_states(base_history,now):
     changed=0
+    fields=("signals","game_state_learning_v84e1","autolearn_signals_v84")
     for entry in base_history:
         mid=entry.get("match_id")
         if mid is None: continue
-        candidates=[s for s in (entry.get("signals") or []) if s.get("market")=="game_state" and s.get("result")=="unverifiable"]
+        candidates=[]
+        for field in fields:
+            for s in entry.get(field) or []:
+                if s.get("market")=="game_state" and s.get("result") in ("unverifiable","pending"):
+                    candidates.append(s)
         if not candidates: continue
         payload=_read_gz(_match_cache_path(mid))
         if not payload: continue
@@ -462,10 +471,11 @@ def upgrade_general_game_states(base_history,now):
         if not actual: continue
         local=0; states=actual.get("states") or {}
         for s in candidates:
-            observed=states.get(str(s.get("checkpoint") or ""))
-            if observed:
-                s["result"]="hit" if str(s.get("pick"))==observed else "miss"
-                s["settlement_source"]="BASIC PBP v7.3"; changed+=1; local+=1
+            result=settle_e1_game_state(s,states)
+            if result:
+                s["result"]=result
+                s["settlement_source"]="BASIC PBP v7.3 / v8.4E1"
+                changed+=1; local+=1
         if local: entry["pbp_game_state_checked_at"]=now.isoformat()
     return changed
 

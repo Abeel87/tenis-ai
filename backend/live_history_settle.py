@@ -251,6 +251,10 @@ def settle_entry(entry: dict, final: dict, now: datetime):
         x["learning_signals_v79b"] = _settle_signal_list(x.get("learning_signals_v79b"), final)
     if "autolearn_signals_v84" in x:
         x["autolearn_signals_v84"] = _settle_signal_list(x.get("autolearn_signals_v84"), final)
+    if "game_state_learning_v84e1" in x:
+        x["game_state_learning_v84e1"] = _settle_signal_list(
+            x.get("game_state_learning_v84e1"), final
+        )
     return x
 
 
