@@ -101,6 +101,8 @@ jobs:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
           TABPFN_NO_BROWSER: '1'
         run: python backend/autolearn_v84.py
+      - name: Model Telemetry v8.4C
+        run: python backend/model_telemetry_v84c.py
       - name: AutoLearn Integration Guard v8.4A
         run: python scripts/verify_v84a.py
       - name: AutoLearn Hotfix Guard v8.4A.1
@@ -109,6 +111,8 @@ jobs:
         run: python scripts/verify_v84a2.py
       - name: Logic & Stability Guard v8.4B
         run: python scripts/verify_v84b.py
+      - name: Model Telemetry Guard v8.4C
+        run: python scripts/verify_v84c.py
       - name: Final API quota report v8.3B
         run: python backend/api_quota_v83b.py report
       - name: Integration Guard v8.3D
