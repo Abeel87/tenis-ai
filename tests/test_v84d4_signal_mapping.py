@@ -16,7 +16,10 @@ def test_bridge_is_loaded_before_scenario_studio():
 def test_bridge_does_not_replace_existing_model_files():
     h=read("frontend/index.html")
     assert "autolearn-v84.js?v=84a1&hf=84b1" in h
-    assert "dynamic-weights-v84d1.js?v=84d2" in h
+    assert any(x in h for x in (
+        "dynamic-weights-v84d1.js?v=84d2",
+        "dynamic-weights-v84d1.js?v=84e0",
+    ))
     assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in h
 
 def test_scenario_audit_uses_mapping_bridge():

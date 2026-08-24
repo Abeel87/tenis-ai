@@ -32,7 +32,11 @@ def main():
     req(audit,"aliasesFor","audyt nie indeksuje aliasów równoważnych kluczy")
 
     req(idx,'autolearn-v84.js?v=84a1&hf=84b1',"naruszono chroniony AutoLearn JS")
-    req(idx,'dynamic-weights-v84d1.js?v=84d2',"naruszono v8.4D.2")
+    if not any(x in idx for x in (
+        'dynamic-weights-v84d1.js?v=84d2',
+        'dynamic-weights-v84d1.js?v=84e0',
+    )):
+        ERR.append("naruszono kompatybilny pin v8.4D.2/v8.4E0")
     req(idx,'signal-mapping-v84d4.js?v=84d4',"brak Signal Mapping Bridge w index.html")
     req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono Scenario Studio")
     req(idx,'scenario-dynamic-v84d3.js?v=84d4',"brak nowego cache-bust audytu scenariusza")

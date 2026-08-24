@@ -32,7 +32,11 @@ def main():
 
     req(idx,'autolearn-v84.css?v=84a1&hf=84a3',"naruszono chroniony pin AutoLearn CSS")
     req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono chroniony pin Scenario Studio")
-    req(idx,'dynamic-weights-v84d1.js?v=84d2',"brak cache-bust v8.4D.2")
+    if not any(x in idx for x in (
+        'dynamic-weights-v84d1.js?v=84d2',
+        'dynamic-weights-v84d1.js?v=84e0',
+    )):
+        ERR.append("brak kompatybilnego cache-bust v8.4D.2/v8.4E0")
 
     req(wf,"Dynamic Weights View Scope Guard v8.4D.2","workflow nie uruchamia guarda v8.4D.2")
 

@@ -244,5 +244,5 @@
     if(e.key==='tenis-ai-v82a-scenario-draft')schedule(100);
   });
 
-  setInterval(()=>schedule(0),60000);
+  // v8.4E0: no minute-wide results.json rescan; refresh/scenario events already reschedule this audit.
 })();

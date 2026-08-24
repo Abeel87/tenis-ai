@@ -13,6 +13,7 @@ def test_ui_audit_is_additive_and_keeps_protected_pins():
     assert any(x in h for x in (
         "dynamic-weights-v84d1.js?v=84d1",
         "dynamic-weights-v84d1.js?v=84d2",
+        "dynamic-weights-v84d1.js?v=84e0",
     ))
 
 def test_ui_audit_exposes_dynamic_and_global_modes():

@@ -32,7 +32,11 @@ def main():
     req(css,"@media(max-width:520px)","brak mobile responsive dla audytu scenariusza")
 
     req(idx,'autolearn-v84.css?v=84a1&hf=84a3',"naruszono chroniony pin AutoLearn CSS")
-    req(idx,'dynamic-weights-v84d1.js?v=84d2',"naruszono pin View Scope v8.4D.2")
+    if not any(x in idx for x in (
+        'dynamic-weights-v84d1.js?v=84d2',
+        'dynamic-weights-v84d1.js?v=84e0',
+    )):
+        ERR.append("naruszono kompatybilny pin View Scope v8.4D.2/v8.4E0")
     req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono chroniony pin Scenario Studio")
     req(idx,'scenario-dynamic-v84d3.css?v=84d3',"brak CSS v8.4D.3 w index.html")
     if not any(x in idx for x in (

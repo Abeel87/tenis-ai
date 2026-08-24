@@ -26,6 +26,7 @@ def main():
     if not any(x in idx for x in (
         'dynamic-weights-v84d1.js?v=84d1',
         'dynamic-weights-v84d1.js?v=84d2',
+        'dynamic-weights-v84d1.js?v=84e0',
     )):
         ERR.append("brak kompatybilnego JS v8.4D.1/v8.4D.2 w index.html")
 

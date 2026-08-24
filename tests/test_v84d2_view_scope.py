@@ -22,4 +22,7 @@ def test_protected_pins_stay_intact():
     h=read("frontend/index.html")
     assert "autolearn-v84.css?v=84a1&hf=84a3" in h
     assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in h
-    assert "dynamic-weights-v84d1.js?v=84d2" in h
+    assert any(x in h for x in (
+        "dynamic-weights-v84d1.js?v=84d2",
+        "dynamic-weights-v84d1.js?v=84e0",
+    ))

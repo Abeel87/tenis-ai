@@ -37,4 +37,7 @@ def test_scenario_audit_mobile():
 
 def test_previous_dynamic_scope_pin_is_untouched():
     h=read("frontend/index.html")
-    assert "dynamic-weights-v84d1.js?v=84d2" in h
+    assert any(x in h for x in (
+        "dynamic-weights-v84d1.js?v=84d2",
+        "dynamic-weights-v84d1.js?v=84e0",
+    ))
