@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-24T09:36:04.249698+00:00",
+  "generated_at": "2026-08-24T10:04:29.018362+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -25,19 +25,19 @@
     }
   },
   "training": {
-    "rows": 583,
-    "matches": 131,
-    "train_rows": 375,
-    "calibration_rows": 94,
-    "validation_rows": 114,
+    "rows": 595,
+    "matches": 133,
+    "train_rows": 384,
+    "calibration_rows": 96,
+    "validation_rows": 115,
     "minimum_rows": 80,
     "minimum_matches": 24,
     "retrain_hours": 20,
     "retrain_new_rows": 40
   },
   "weights": {
-    "current": 0.75,
-    "catboost": 0.25
+    "current": 0.2,
+    "catboost": 0.8
   },
   "weight_policy": {
     "status": "optimizer",
@@ -56,12 +56,12 @@
   "dynamic_weights": {
     "version": "v8.4D",
     "status": "ACTIVE",
-    "active_signals": 1715,
-    "total_signals": 1956,
-    "active_share": 0.8768,
-    "max_shift": 0.0243,
+    "active_signals": 1709,
+    "total_signals": 1947,
+    "active_share": 0.8778,
+    "max_shift": 0.0223,
     "dimensions_used": {
-      "surface": 1715,
+      "surface": 1709,
       "tour": 442
     },
     "source": "previous_model_telemetry_v84c_snapshot",
@@ -70,52 +70,52 @@
   "current_calibration": {
     "method": "platt_logit",
     "fit_scope": "train_only",
-    "fit_rows": 375,
-    "fit_matches": 91,
+    "fit_rows": 384,
+    "fit_matches": 93,
     "status": "gated_identity",
     "a": 1.0,
     "b": 0.0,
     "reason": "calibration_gate_rejected",
-    "train_raw_brier": 0.20661,
-    "train_calibrated_brier": 0.20099,
-    "train_raw_log_loss": 0.60527,
-    "train_calibrated_log_loss": 0.59004,
+    "train_raw_brier": 0.20446,
+    "train_calibrated_brier": 0.19947,
+    "train_raw_log_loss": 0.60045,
+    "train_calibrated_log_loss": 0.58684,
     "gate_scope": "calibration_split",
-    "gate_rows": 94,
+    "gate_rows": 96,
     "gate_matches": 19,
-    "gate_raw_brier": 0.16308,
-    "gate_calibrated_brier": 0.16993,
-    "gate_brier_delta": 0.00685,
-    "gate_raw_log_loss": 0.50446,
-    "gate_calibrated_log_loss": 0.52275,
-    "gate_log_loss_delta": 0.01829,
-    "candidate_a": 1.148682,
-    "candidate_b": -0.589344,
+    "gate_raw_brier": 0.17678,
+    "gate_calibrated_brier": 0.17907,
+    "gate_brier_delta": 0.00228,
+    "gate_raw_log_loss": 0.53537,
+    "gate_calibrated_log_loss": 0.54239,
+    "gate_log_loss_delta": 0.00703,
+    "candidate_a": 1.113252,
+    "candidate_b": -0.523956,
     "gate_status": "rejected"
   },
   "validation": {
     "current": {
-      "n": 114,
-      "brier": 0.17802,
-      "log_loss": 0.5403,
-      "selected_n": 114,
-      "accuracy": 76.3,
+      "n": 115,
+      "brier": 0.173,
+      "log_loss": 0.52905,
+      "selected_n": 115,
+      "accuracy": 77.4,
       "threshold": 65.0
     },
     "current_raw": {
-      "n": 114,
-      "brier": 0.17802,
-      "log_loss": 0.5403,
-      "selected_n": 114,
-      "accuracy": 76.3,
+      "n": 115,
+      "brier": 0.173,
+      "log_loss": 0.52905,
+      "selected_n": 115,
+      "accuracy": 77.4,
       "threshold": 65.0
     },
     "catboost": {
-      "n": 114,
-      "brier": 0.18022,
-      "log_loss": 0.5444,
-      "selected_n": 89,
-      "accuracy": 78.7,
+      "n": 115,
+      "brier": 0.1751,
+      "log_loss": 0.5339,
+      "selected_n": 88,
+      "accuracy": 80.7,
       "threshold": 65.0
     },
     "tabpfn": {
@@ -127,11 +127,11 @@
       "threshold": 65.0
     },
     "ensemble": {
-      "n": 114,
-      "brier": 0.17653,
-      "log_loss": 0.53572,
-      "selected_n": 114,
-      "accuracy": 76.3,
+      "n": 115,
+      "brier": 0.17277,
+      "log_loss": 0.52838,
+      "selected_n": 97,
+      "accuracy": 79.4,
       "threshold": 65.0
     },
     "validation_matches": 21,
@@ -139,49 +139,77 @@
     "policy": "chronological_match_grouped_70_15_15_calibration_gate_on_cal"
   },
   "tracking": {
+    "current": {
+      "n": 24,
+      "brier": 0.21511,
+      "log_loss": 0.62224,
+      "selected_n": 14,
+      "accuracy": 71.4
+    },
+    "catboost": {
+      "n": 24,
+      "brier": 0.18469,
+      "log_loss": 0.55189,
+      "selected_n": 12,
+      "accuracy": 91.7
+    },
+    "tabpfn": {
+      "n": 10,
+      "brier": 0.18486,
+      "log_loss": 0.55119,
+      "selected_n": 9,
+      "accuracy": 77.8
+    },
+    "ensemble": {
+      "n": 24,
+      "brier": 0.20462,
+      "log_loss": 0.59465,
+      "selected_n": 15,
+      "accuracy": 73.3
+    },
     "generator": {
-      "n": 0,
-      "selected_n": 0,
-      "accuracy": null,
-      "brier": null,
-      "log_loss": null
+      "n": 4,
+      "selected_n": 4,
+      "accuracy": 75.0,
+      "brier": 0.16701,
+      "log_loss": 0.50324
     }
   },
   "tracking_all_versions": {
     "current": {
-      "n": 48,
-      "brier": 0.16511,
-      "log_loss": 0.50629,
-      "selected_n": 30,
-      "accuracy": 86.7
+      "n": 72,
+      "brier": 0.18178,
+      "log_loss": 0.54494,
+      "selected_n": 44,
+      "accuracy": 81.8
     },
     "catboost": {
-      "n": 48,
-      "brier": 0.19629,
-      "log_loss": 0.57591,
-      "selected_n": 37,
-      "accuracy": 73.0
+      "n": 72,
+      "brier": 0.19242,
+      "log_loss": 0.5679,
+      "selected_n": 49,
+      "accuracy": 77.6
     },
     "tabpfn": {
-      "n": 18,
-      "brier": 0.08418,
-      "log_loss": 0.34098,
-      "selected_n": 18,
-      "accuracy": 100.0
+      "n": 28,
+      "brier": 0.12014,
+      "log_loss": 0.41606,
+      "selected_n": 27,
+      "accuracy": 92.6
     },
     "ensemble": {
-      "n": 48,
-      "brier": 0.18201,
-      "log_loss": 0.54213,
-      "selected_n": 38,
-      "accuracy": 76.3
+      "n": 72,
+      "brier": 0.18955,
+      "log_loss": 0.55964,
+      "selected_n": 53,
+      "accuracy": 75.5
     },
     "generator": {
-      "n": 8,
-      "selected_n": 8,
-      "accuracy": 100.0,
-      "brier": 0.04152,
-      "log_loss": 0.22692
+      "n": 12,
+      "selected_n": 12,
+      "accuracy": 91.7,
+      "brier": 0.08335,
+      "log_loss": 0.31902
     }
   },
   "generator": {
