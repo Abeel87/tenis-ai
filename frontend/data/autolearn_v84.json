@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-24T07:37:08.539491+00:00",
+  "generated_at": "2026-08-24T08:07:54.789860+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -52,6 +52,20 @@
       "single_model_cap": 0.8,
       "current_floor": 0.1
     }
+  },
+  "dynamic_weights": {
+    "version": "v8.4D",
+    "status": "ACTIVE",
+    "active_signals": 1719,
+    "total_signals": 2000,
+    "active_share": 0.8595,
+    "max_shift": 0.0243,
+    "dimensions_used": {
+      "surface": 1719,
+      "tour": 443
+    },
+    "source": "previous_model_telemetry_v84c_snapshot",
+    "policy": "bounded_segment_shrinkage_no_model_reenable"
   },
   "current_calibration": {
     "method": "platt_logit",
@@ -174,6 +188,7 @@
     "selection_threshold": 65.0,
     "policy": "quality_first_soft_fill_v84a1",
     "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
+    "dynamic_weight_guard": "bounded_segment_shrinkage_v84d",
     "market_policy": "existing_signals_and_existing_lines_only",
     "profile_thresholds": {
       "stable": {
@@ -207,6 +222,7 @@
     "Podział walidacyjny jest chronologiczny i grupowany całymi meczami, bez losowego przecieku sygnałów.",
     "Awaria ML przełącza generator na Current Engine; ML nie wykonuje żadnych dodatkowych requestów Live Tennis API.",
     "TabPFN zachowuje ostatnią zatwierdzoną wagę między retrainingami; brak świeżej predykcji dla sygnału nie rozcieńcza Ensemble.",
-    "Generator może dobrać graniczny sygnał tylko w obrębie profilu i Marketability Guard; nadal nie wymusza słabych spotkań."
+    "Generator może dobrać graniczny sygnał tylko w obrębie profilu i Marketability Guard; nadal nie wymusza słabych spotkań.",
+    "v8.4D koryguje wagi Current/CatBoost/TabPFN per tour/nawierzchnia/rynek wyłącznie z poprzedniego snapshotu telemetryki; mała próbka wraca do wag globalnych."
   ]
 }
