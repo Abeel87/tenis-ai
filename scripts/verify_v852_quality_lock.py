@@ -41,6 +41,13 @@ def main() -> int:
 
     # 3. obecność quality_lock_no_forced_fill_v852
     req(changelog, "quality_lock_no_forced_fill_v852", "brak quality_lock_no_forced_fill_v852 w CHANGELOG.md")
+    req(auto, "quality_lock_no_forced_fill_v852", "brak quality_lock_no_forced_fill_v852 w backend/autolearn_v84.py")
+
+    # 3b. progów profilowych w backend/autolearn_v84.py
+    req(auto, '"stable": {"strong": 78, "floor": 74, "min_average": 74}', "brak nowych progów stable w backend/autolearn_v84.py")
+    req(auto, '"balanced": {"strong": 76, "floor": 72, "min_average": 72}', "brak nowych progów balanced w backend/autolearn_v84.py")
+    req(auto, '"strong": {"strong": 84, "floor": 80, "min_average": 80}', "brak nowych progów strong w backend/autolearn_v84.py")
+    req(auto, '"experimental": {"strong": 68, "floor": 62, "min_average": 62}', "brak nowych progów experimental w backend/autolearn_v84.py")
 
     # 4. obecność tracking_governor w weight_policy
     req(auto, "tracking_governor", "brak tracking_governor w backend/autolearn_v84.py")

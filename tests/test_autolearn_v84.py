@@ -102,6 +102,21 @@ def test_tracking_governor_inactive_below_sample_size_100():
     assert abs(sum(w.values()) - 1.0) < 1e-9
 
 
+def test_tracking_governor_inactive_when_current_selected_n_below_100_even_if_others_above_100():
+    tracking = {
+        "catboost": {"selected_n": 150, "accuracy": 60.0, "brier": 0.250},
+        "current": {"selected_n": 80, "accuracy": 68.0, "brier": 0.200},
+        "tabpfn": {"selected_n": 120, "accuracy": 72.0, "brier": 0.170},
+    }
+    initial_weights = {"catboost": 0.70, "current": 0.20, "tabpfn": 0.10}
+    w, policy = _apply_tracking_governor(initial_weights, tracking)
+    assert policy["active"] is False
+    assert abs(w["catboost"] - 0.70) < 1e-9
+    assert abs(w["current"] - 0.20) < 1e-9
+    assert abs(w["tabpfn"] - 0.10) < 1e-9
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+
+
 def test_tracking_governor_weights_sum_to_one():
     test_cases = [
         ({"catboost": 0.90, "current": 0.10}, {"catboost": {"selected_n": 150, "accuracy": 60.0, "brier": 0.250}, "current": {"selected_n": 150, "accuracy": 68.0, "brier": 0.190}}),

@@ -849,13 +849,13 @@ def _apply_tracking_governor(weights: dict[str, float], previous_tracking: dict,
     tabpfn_boosted = False
     rules_applied = []
 
-    if (cat_n >= 100 and cat_acc is not None and cur_acc is not None
+    if (cat_n >= 100 and cur_n >= 100 and cat_acc is not None and cur_acc is not None
             and cat_brier is not None and cur_brier is not None):
         if (cur_acc - cat_acc >= 1.0) and (cat_brier > cur_brier):
             catboost_capped = True
             rules_applied.append("catboost_capped_at_0.40")
 
-    if ("tabpfn" in weights and tab_n >= 100 and tab_acc is not None and cur_acc is not None
+    if ("tabpfn" in weights and tab_n >= 100 and cur_n >= 100 and tab_acc is not None and cur_acc is not None
             and tab_brier is not None and cur_brier is not None):
         if (tab_acc > cur_acc) and (tab_brier < cur_brier):
             tabpfn_boosted = True
@@ -1576,15 +1576,15 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "tracking_all_versions": tracking_all_versions,
         "generator": {
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
-            "policy": "quality_first_soft_fill_v84a1",
+            "policy": "quality_lock_no_forced_fill_v852",
             "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
             "dynamic_weight_guard": "bounded_segment_shrinkage_v84d",
             "market_policy": "existing_signals_and_existing_lines_only",
             "profile_thresholds": {
-                "stable": {"strong": 65, "floor": 58, "min_average": 64},
-                "balanced": {"strong": 64, "floor": 57, "min_average": 63},
-                "strong": {"strong": 70, "floor": 63, "min_average": 68},
-                "experimental": {"strong": 60, "floor": 54, "min_average": 60},
+                "stable": {"strong": 78, "floor": 74, "min_average": 74},
+                "balanced": {"strong": 76, "floor": 72, "min_average": 72},
+                "strong": {"strong": 84, "floor": 80, "min_average": 80},
+                "experimental": {"strong": 68, "floor": 62, "min_average": 62},
             },
             "captured_matches_this_run": captured,
         },

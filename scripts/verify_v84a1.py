@@ -29,6 +29,7 @@ def main():
     req(auto,"def _bounded_tabpfn_weights","brak bounded weight policy TabPFN")
     changelog=read("CHANGELOG.md")
     req(changelog,'quality_lock_no_forced_fill_v852',"CHANGELOG nie opisuje nowej polityki quality_lock_no_forced_fill_v852")
+    req(auto,'quality_lock_no_forced_fill_v852',"backend/autolearn_v84.py nie ustawia polityki quality_lock_no_forced_fill_v852")
     req(auto,'"weight_policy": weight_policy',"report nie publikuje weight_policy")
 
     if not any(v in front for v in ("const VERSION='v8.4A.1'", "const VERSION='v8.4A.2'", "const VERSION='v8.4B'")):
