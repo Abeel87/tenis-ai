@@ -76,9 +76,7 @@ function installPicker(root,m){
   function autoPick(){
     const sorted=[...models].filter(x=>x.coverage>0).sort((a,b)=>{
       const pa=mm853m3Priority(a.name),pb=mm853m3Priority(b.name);
-      const ba=a.coverage+(pa<3?3:pa<6?1:0);
-      const bb=b.coverage+(pb<3?3:pb<6?1:0);
-      return bb-ba || pa-pb || a.name.localeCompare(b.name);
+      return b.coverage-a.coverage || pa-pb || a.name.localeCompare(b.name);
     });
     selected=sorted.slice(0,MM853M3_MAX).map(x=>x.name);
     mm853m3Save(selected);
@@ -93,8 +91,8 @@ function installPicker(root,m){
       <small>Wybierz maks. ${MM853M3_MAX}. Liczba przy modelu = ile rynków ma dane.</small>
     </div>
     <div class="mm853m3-actions">
-      <button type="button" data-mm853m3-auto>AUTO 5</button>
-      <label><input type="checkbox" data-mm853m3-empty> Pokaż rynki bez danych</label>
+      <button type="button" data-mm853m3-auto>AUTO 5 · NAJWIĘCEJ DANYCH</button>
+      <label><input type="checkbox" data-mm853m3-empty> Pokaż rynki bez danych / niepełne</label>
     </div>
     <div class="mm853m3-chips"></div>
     <div class="mm853m3-note" data-mm853m3-note></div>`;
@@ -138,10 +136,13 @@ function installPicker(root,m){
     });
 
     let visible=0;
+    const selectedList=[...selectedCols];
     bodyRows.forEach(tr=>{
-      const any=[...selectedCols].some(col=>mm853m3HasData(tr.children[col]));
-      const hide=!showEmpty&&!any;
+      const filled=selectedList.reduce((z,col)=>z+(mm853m3HasData(tr.children[col])?1:0),0);
+      const complete=selectedList.length>0 && filled===selectedList.length;
+      const hide=showEmpty ? false : !complete;
       tr.style.display=hide?'none':'';
+      tr.dataset.mm853m3Coverage=`${filled}/${selectedList.length}`;
       if(!hide)visible++;
     });
 
@@ -163,7 +164,7 @@ function installPicker(root,m){
     if(total)total.textContent=`${visible}/${bodyRows.length} widocznych`;
 
     note.textContent=selected.length
-      ? `Pokazujesz: ${selected.join(' · ')}`
+      ? `Pokazujesz: ${selected.join(' · ')} · bez checkboxa tylko pełne ${selected.length}/${selected.length}`
       : 'Wybierz przynajmniej 1 model z danymi.';
     drawChips();
   }
