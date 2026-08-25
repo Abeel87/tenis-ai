@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-25T22:47:10.248008+00:00",
+  "generated_at": "2026-08-25T23:38:43.111847+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -10,14 +10,14 @@
     "catboost": {
       "name": "CatBoost AutoLearn",
       "status": "active",
-      "retrained": false
+      "retrained": true
     },
     "tabpfn": {
       "name": "TabPFN-2 Challenger",
       "status": "ok",
       "reason": null,
       "model_version": "V2",
-      "trained_at": "2026-08-24T19:46:02.261655+00:00"
+      "trained_at": "2026-08-25T23:38:43.111847+00:00"
     },
     "ensemble": {
       "name": "Ensemble Generator",
@@ -36,16 +36,20 @@
     "retrain_new_rows": 40
   },
   "weights": {
-    "current": 0.378,
-    "catboost": 0.4,
-    "tabpfn": 0.222
+    "current": 0.566,
+    "catboost": 0.234,
+    "tabpfn": 0.2
   },
   "weight_policy": {
-    "status": "preserved",
+    "status": "strong",
     "allowed": true,
-    "mode": "cached_challenger_weight",
-    "effective_tabpfn_weight": 0.222,
-    "reason": "TabPFN nie był dziś przeliczany; zachowano ostatnią zatwierdzoną wagę.",
+    "evidence": "tracking",
+    "n": 170,
+    "floor": 0.15,
+    "cap": 0.35,
+    "raw_tabpfn_weight": 0.0,
+    "effective_tabpfn_weight": 0.15,
+    "mode": "fresh_calibration",
     "stability": {
       "guard_active": true,
       "applied": false,
@@ -85,28 +89,28 @@
         }
       },
       "initial_weights": {
-        "current": 0.378,
-        "catboost": 0.4,
-        "tabpfn": 0.222
+        "current": 0.595,
+        "catboost": 0.255,
+        "tabpfn": 0.15
       },
       "governed_weights": {
-        "current": 0.378,
-        "catboost": 0.4,
-        "tabpfn": 0.222
+        "current": 0.5663,
+        "catboost": 0.2338,
+        "tabpfn": 0.2
       }
     }
   },
   "dynamic_weights": {
     "version": "v8.4D",
     "status": "ACTIVE",
-    "active_signals": 1063,
-    "total_signals": 1225,
-    "active_share": 0.8678,
-    "max_shift": 0.0651,
+    "active_signals": 277,
+    "total_signals": 277,
+    "active_share": 1.0,
+    "max_shift": 0.0575,
     "dimensions_used": {
-      "market": 645,
-      "surface": 1063,
-      "tour": 911
+      "market": 176,
+      "surface": 277,
+      "tour": 135
     },
     "source": "previous_model_telemetry_v84c_snapshot",
     "policy": "bounded_segment_shrinkage_no_model_reenable"
@@ -118,7 +122,7 @@
       4,
       6
     ],
-    "current_signals": 183,
+    "current_signals": 36,
     "history_learning_signals": 603,
     "policy": "exact_top_state_hidden_learning_bounded_reservation_pbp_only"
   },
@@ -165,26 +169,26 @@
     },
     "catboost": {
       "n": 141,
-      "brier": 0.19591,
-      "log_loss": 0.58176,
-      "selected_n": 113,
-      "accuracy": 75.2,
+      "brier": 0.19662,
+      "log_loss": 0.58253,
+      "selected_n": 116,
+      "accuracy": 73.3,
       "threshold": 65.0
     },
     "tabpfn": {
-      "n": 121,
-      "brier": 0.20357,
-      "log_loss": 0.59647,
-      "selected_n": 67,
-      "accuracy": 76.1,
+      "n": 141,
+      "brier": 0.20513,
+      "log_loss": 0.62548,
+      "selected_n": 125,
+      "accuracy": 74.4,
       "threshold": 65.0
     },
     "ensemble": {
       "n": 141,
-      "brier": 0.19091,
-      "log_loss": 0.57041,
-      "selected_n": 125,
-      "accuracy": 76.0,
+      "brier": 0.19037,
+      "log_loss": 0.56934,
+      "selected_n": 128,
+      "accuracy": 75.0,
       "threshold": 65.0
     },
     "validation_matches": 30,
@@ -293,7 +297,7 @@
         "min_average": 62
       }
     },
-    "captured_matches_this_run": 60
+    "captured_matches_this_run": 12
   },
   "notes": [
     "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
