@@ -5,7 +5,6 @@
 (() => {
   'use strict';
   const VERSION='v8.4E2';
-  const CUTOVER_V852='2026-08-25T09:55:27Z';
   const PRIMARY=['current','catboost','tabpfn','ensemble','generator'];
   const SECONDARY=['adaptive','early','serve','form','surface','consensus','dynamic'];
   const LABELS={adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Ensemble selector proxy'};
@@ -37,6 +36,18 @@
     </svg>`;
   }
 
+  function qlLines(tel,id){
+    const ql=tel?.trends_v84e2?.quality_lock_v852?.[id]||tel?.trends_v84e2?.quality_lock_v852?.models?.[id];
+    if(!ql)return '';
+    const bef=ql.before_v852||{};
+    const sin=ql.since_v852||{};
+    const befStr=`Przed v8.5.2: n=${Number(bef.selected_n||0)} · Accuracy ${pct(bef.accuracy)} · Brier ${num(bef.brier)==null?'—':Number(bef.brier).toFixed(3)}`;
+    const sinStr=Number(sin.selected_n||0)<8
+      ?`Od v8.5.2: n=${Number(sin.selected_n||0)} · zbieramy próbę`
+      :`Od v8.5.2: n=${Number(sin.selected_n||0)} · Accuracy ${pct(sin.accuracy)} · Brier ${num(sin.brier)==null?'—':Number(sin.brier).toFixed(3)}`;
+    return `<div class="mt84e2-ql-lines" style="margin-top:6px;padding-top:4px;border-top:1px dashed rgba(255,255,255,.1);font-size:0.62rem;line-height:1.35;opacity:0.82;"><div>${esc(befStr)}</div><div>${esc(sinStr)}</div></div>`;
+  }
+
   function modelCard(tel,id){
     const t=tel?.trends_v84e2?.models?.[id]||{};
     const [arrow,label]=statusMeta(t.status);
@@ -48,6 +59,7 @@
         <span><small>Zmiana accuracy</small><b>${signed(t.accuracy_delta_pp)}</b></span>
         <span><small>Zmiana Brier</small><b class="${bd!=null&&bd<0?'good':bd>0?'bad':''}">${bd==null?'—':`${bd>0?'+':''}${bd.toFixed(3)}`}</b></span>
       </div>
+      ${PRIMARY.includes(id)?qlLines(tel,id):''}
       <footer><span>n=${n}</span><span>${w?`porównanie ${w}+${w}`:'czekamy na ≥16'}</span><span>${esc(t.sample_strength||'collecting')}</span></footer>
     </article>`;
   }
@@ -68,30 +80,6 @@
     </article>`;
   }
 
-  function v852Comparison(){
-    const rows=(typeof historyRows!=='undefined'&&Array.isArray(historyRows))?historyRows:[];
-    let preCount=0,postCount=0,preHits=0,preSettled=0,postHits=0,postSettled=0;
-    for(const m of rows){
-      const cap=m?.autolearn_captured_at||m?.captured_at||'';
-      const isPost=cap>=CUTOVER_V852;
-      if(isPost)postCount++;else preCount++;
-      const sigs=m?.autolearn_signals_v84||m?.signals||[];
-      for(const s of sigs){
-        if(s?.result==='hit'){if(isPost){postHits++;postSettled++}else{preHits++;preSettled++}}
-        else if(s?.result==='miss'){if(isPost)postSettled++;else preSettled++}
-      }
-    }
-    const preAcc=preSettled>0?(preHits/preSettled*100):null;
-    const postAcc=postSettled>0?(postHits/postSettled*100):null;
-    return `<div class="mt84e2-state" style="margin-top:10px;padding-top:10px;">
-      <div class="mt84e2-subhead"><div><b>⚖️ Porównanie Jakości: Przed v8.5.2 / Od v8.5.2</b><small>Cutover 2026-08-25T09:55:27Z (autolearn_captured_at)</small></div><span>READ-ONLY</span></div>
-      <div class="mt84e2-state-kpis">
-        <span><small>Przed v8.5.2 (n=${preSettled}/${preCount} meczów)</small><b>${pct(preAcc)}</b></span>
-        <span><small>Od v8.5.2 (n=${postSettled}/${postCount} meczów)</small><b>${pct(postAcc)}</b></span>
-      </div>
-    </div>`;
-  }
-
   function html(tel){
     if(!tel||tel?.trends_v84e2?.version!==VERSION){
       return `<section id="mt84e2" class="mt84e2"><header class="mt84e2-head"><div><b>📈 Model Trend Monitor v8.4E2</b><small>Kierunek jakości modeli</small></div><span>OCZEKUJE</span></header><p class="mt84e2-note">Wykresy pojawią się po pierwszym raporcie telemetryki v8.4E2.</p></section>`;
@@ -106,7 +94,6 @@
         <div class="mt84e2-subhead"><div><b>🎯 Po2 / Po4 / Po6 — postęp nowego E1</b><small>Prawdziwe rozliczenie wyłącznie z PBP</small></div><span>${Number(gs.total_settled||0)} rozliczonych</span></div>
         <div class="mt84e2-state-grid">${[2,4,6].map(cp=>gameStateCard(gs,cp)).join('')}</div>
       </div>
-      ${v852Comparison()}
       <p class="mt84e2-note"><b>Monitoring, nie autopilot.</b> Trend nie zmienia sam wag produkcyjnych. „OSTROŻNIE” oznacza pogorszenie ostatniej serii względem poprzedniej przy kontroli Brier.</p>
     </section>`;
   }

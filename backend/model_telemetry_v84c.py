@@ -144,6 +144,7 @@ def _row(entry: dict, signal: dict, model: str, score=None, generator_selected=F
     return {
         "match_key": str(entry.get("match_key") or entry.get("match_id") or ""),
         "scheduled_time": entry.get("scheduled_time"),
+        "autolearn_captured_at": entry.get("autolearn_captured_at"),
         "tour": str(entry.get("tour") or "N/D").upper(),
         "surface": str(entry.get("surface") or "N/D").upper(),
         "market": str(signal.get("market") or "other").lower(),
@@ -338,6 +339,58 @@ def trend_summary(rows: list[dict], model=None) -> dict:
     }
 
 
+QUALITY_LOCK_V852_CUTOVER = datetime(2026, 8, 25, 9, 55, 27, tzinfo=timezone.utc)
+QUALITY_LOCK_MODELS = ("current", "catboost", "tabpfn", "ensemble", "generator")
+
+
+def build_quality_lock_v852(rows: list[dict]) -> dict:
+    grouped = defaultdict(list)
+    for r in rows or []:
+        grouped[str(r.get("model") or "")].append(r)
+
+    out = {
+        "cutover": "2026-08-25T09:55:27Z",
+    }
+    for model in QUALITY_LOCK_MODELS:
+        m_rows = grouped.get(model, [])
+        if model == "generator":
+            sel_rows = list(m_rows)
+        else:
+            sel_rows = [r for r in m_rows if _num(r.get("score"), 0.0) >= SELECT_THRESHOLD]
+
+        before = []
+        since = []
+        unknown_n = 0
+
+        for r in sel_rows:
+            cap = r.get("autolearn_captured_at")
+            d = _dt(cap) if cap else None
+            if d is None:
+                unknown_n += 1
+            elif d < QUALITY_LOCK_V852_CUTOVER:
+                before.append(r)
+            else:
+                since.append(r)
+
+        def _sec(sub_rows):
+            n = len(sub_rows)
+            if n == 0:
+                return {"selected_n": 0, "accuracy": None, "brier": None}
+            hits = sum(r["target"] for r in sub_rows)
+            return {
+                "selected_n": n,
+                "accuracy": round(hits * 100.0 / n, 1),
+                "brier": round(_brier(sub_rows), 5),
+            }
+
+        out[model] = {
+            "before_v852": _sec(before),
+            "since_v852": _sec(since),
+            "unknown_capture_time_n": unknown_n,
+        }
+    return out
+
+
 def model_trends(rows: list[dict]) -> dict:
     grouped = defaultdict(list)
     for row in rows or []:
@@ -351,6 +404,7 @@ def model_trends(rows: list[dict]) -> dict:
             model: trend_summary(grouped.get(model, []), model=model)
             for model in MODEL_ORDER
         },
+        "quality_lock_v852": build_quality_lock_v852(rows),
     }
 
 
