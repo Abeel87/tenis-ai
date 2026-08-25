@@ -1,6 +1,6 @@
 {
   "version": "v8.4B",
-  "generated_at": "2026-08-25T09:52:42.378470+00:00",
+  "generated_at": "2026-08-25T09:58:00.504468+00:00",
   "status": "ACTIVE",
   "models": {
     "current": {
@@ -36,9 +36,9 @@
     "retrain_new_rows": 40
   },
   "weights": {
-    "current": 0.34,
-    "catboost": 0.51,
-    "tabpfn": 0.15
+    "current": 0.378,
+    "catboost": 0.4,
+    "tabpfn": 0.222
   },
   "weight_policy": {
     "status": "preserved",
@@ -53,6 +53,47 @@
       "full_weight_min_matches": 40,
       "single_model_cap": 0.8,
       "current_floor": 0.1
+    },
+    "tracking_governor": {
+      "active": true,
+      "status": "active",
+      "catboost_capped": true,
+      "tabpfn_boosted": true,
+      "current_floored": true,
+      "rules_applied": [
+        "catboost_capped_at_0.40",
+        "tabpfn_boosted_to_min_0.20",
+        "current_floored_at_0.25"
+      ],
+      "sample_sizes": {
+        "catboost_selected_n": 329,
+        "current_selected_n": 302,
+        "tabpfn_selected_n": 166
+      },
+      "metrics_evaluated": {
+        "catboost": {
+          "accuracy": 68.4,
+          "brier": 0.22501
+        },
+        "current": {
+          "accuracy": 69.9,
+          "brier": 0.21734
+        },
+        "tabpfn": {
+          "accuracy": 74.1,
+          "brier": 0.1904
+        }
+      },
+      "initial_weights": {
+        "current": 0.34,
+        "catboost": 0.51,
+        "tabpfn": 0.15
+      },
+      "governed_weights": {
+        "current": 0.3778,
+        "catboost": 0.4,
+        "tabpfn": 0.2222
+      }
     }
   },
   "dynamic_weights": {
@@ -61,7 +102,7 @@
     "active_signals": 1833,
     "total_signals": 1979,
     "active_share": 0.9262,
-    "max_shift": 0.0689,
+    "max_shift": 0.0703,
     "dimensions_used": {
       "market": 1097,
       "surface": 1833,
@@ -140,8 +181,8 @@
     },
     "ensemble": {
       "n": 138,
-      "brier": 0.19086,
-      "log_loss": 0.57077,
+      "brier": 0.18997,
+      "log_loss": 0.56881,
       "selected_n": 118,
       "accuracy": 76.3,
       "threshold": 65.0
@@ -226,33 +267,33 @@
   },
   "generator": {
     "selection_threshold": 65.0,
-    "policy": "quality_first_soft_fill_v84a1",
+    "policy": "quality_lock_no_forced_fill_v852",
     "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
     "dynamic_weight_guard": "bounded_segment_shrinkage_v84d",
     "market_policy": "existing_signals_and_existing_lines_only",
     "profile_thresholds": {
       "stable": {
-        "strong": 65,
-        "floor": 58,
-        "min_average": 64
+        "strong": 78,
+        "floor": 74,
+        "min_average": 74
       },
       "balanced": {
-        "strong": 64,
-        "floor": 57,
-        "min_average": 63
+        "strong": 76,
+        "floor": 72,
+        "min_average": 72
       },
       "strong": {
-        "strong": 70,
-        "floor": 63,
-        "min_average": 68
+        "strong": 84,
+        "floor": 80,
+        "min_average": 80
       },
       "experimental": {
-        "strong": 60,
-        "floor": 54,
-        "min_average": 60
+        "strong": 68,
+        "floor": 62,
+        "min_average": 62
       }
     },
-    "captured_matches_this_run": 101
+    "captured_matches_this_run": 96
   },
   "notes": [
     "Current Engine /100 jest siłą sygnału; kandydat Platt jest fitowany na TRAIN i dopuszczany wyłącznie przez osobny gate na CAL; VAL pozostaje finalnym holdoutem.",
