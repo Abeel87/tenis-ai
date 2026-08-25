@@ -111,7 +111,7 @@
   }
   function telCard(label,x,icon){
     return `<article class="pi85-tel-card"><header><span>${icon}</span><b>${esc(label)}</b></header>${spark(x?.series,label.toLowerCase().replace(/\W+/g,'-'))}
-      <div><span><small>Accuracy ≥65</small><b>${pct(x?.accuracy)}</b></span><span><small>Brier</small><b>${num(x?.brier)==null?'—':Number(x.brier).toFixed(3)}</b></span><span><small>n</small><b>${Number(x?.selected_n||0)}</b></span></div></article>`;
+      <div><span><small>Trafność ≥65</small><b>${pct(x?.accuracy)}</b></span><span><small>Brier</small><b>${num(x?.brier)==null?'—':Number(x.brier).toFixed(3)}</b></span><span><small>n</small><b>${Number(x?.selected_n||0)}</b></span></div></article>`;
   }
   async function injectStats(){
     const app=document.querySelector('#app');if(!app||document.querySelector('#pi85-stats'))return;

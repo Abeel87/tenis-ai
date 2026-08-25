@@ -41,10 +41,10 @@
     if(!ql)return '';
     const bef=ql.before_v852||{};
     const sin=ql.since_v852||{};
-    const befStr=`Przed v8.5.2: n=${Number(bef.selected_n||0)} · Accuracy ${pct(bef.accuracy)} · Brier ${num(bef.brier)==null?'—':Number(bef.brier).toFixed(3)}`;
+    const befStr=`Przed v8.5.2: n=${Number(bef.selected_n||0)} · Trafność ${pct(bef.accuracy)} · Brier ${num(bef.brier)==null?'—':Number(bef.brier).toFixed(3)}`;
     const sinStr=Number(sin.selected_n||0)<8
       ?`Od v8.5.2: n=${Number(sin.selected_n||0)} · zbieramy próbę`
-      :`Od v8.5.2: n=${Number(sin.selected_n||0)} · Accuracy ${pct(sin.accuracy)} · Brier ${num(sin.brier)==null?'—':Number(sin.brier).toFixed(3)}`;
+      :`Od v8.5.2: n=${Number(sin.selected_n||0)} · Trafność ${pct(sin.accuracy)} · Brier ${num(sin.brier)==null?'—':Number(sin.brier).toFixed(3)}`;
     return `<div class="mt84e2-ql-lines" style="margin-top:6px;padding-top:4px;border-top:1px dashed rgba(255,255,255,.1);font-size:0.62rem;line-height:1.35;opacity:0.82;"><div>${esc(befStr)}</div><div>${esc(sinStr)}</div></div>`;
   }
 
@@ -56,7 +56,7 @@
       <header><div><span>${ICONS[id]||'📊'}</span><b>${esc(LABELS[id]||id)}</b></div><em>${arrow} ${esc(label)}</em></header>
       ${spark(t.series,t.status)}
       <div class="mt84e2-metrics">
-        <span><small>Zmiana accuracy</small><b>${signed(t.accuracy_delta_pp)}</b></span>
+        <span><small>Zmiana trafności</small><b>${signed(t.accuracy_delta_pp)}</b></span>
         <span><small>Zmiana Brier</small><b class="${bd!=null&&bd<0?'good':bd>0?'bad':''}">${bd==null?'—':`${bd>0?'+':''}${bd.toFixed(3)}`}</b></span>
       </div>
       ${PRIMARY.includes(id)?qlLines(tel,id):''}
@@ -107,7 +107,11 @@
     const grid=host.querySelector('.al84-grid');
     if(grid)grid.insertAdjacentHTML('afterend',html(tel));else host.insertAdjacentHTML('afterbegin',html(tel));
   }
-  function schedule(){[260,720,1400].forEach(ms=>setTimeout(inject,ms))}
+  let trendTimer=null;
+  function schedule(ms=320){
+    clearTimeout(trendTimer);
+    trendTimer=setTimeout(inject,ms);
+  }
   if(typeof renderStats==='function'){
     const base=renderStats;
     renderStats=function(){const v=base.apply(this,arguments);schedule();return v};

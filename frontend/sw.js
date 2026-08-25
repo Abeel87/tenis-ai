@@ -2,6 +2,7 @@
 // Protected compatibility marker: old v8.0.1 tests and clients still identify this family.
 const LEGACY_CACHE_CONTRACT = 'tenis-ai-v801-player-profile';
 const CACHE = 'tenis-ai-v84b-logic-stability';
+const RUNTIME_CACHE_POLICY = 'v853-large-json-bypass';
 
 const CORE = [
   './','index.html','manifest.webmanifest','favicon.png','icon-192.png','icon-512.png',
@@ -68,6 +69,14 @@ self.addEventListener('fetch', event => {
   }
 
   const isDataJson = url.pathname.includes('/data/') && url.pathname.endsWith('.json');
+  const skipLargeDataCache = isDataJson && (
+    url.pathname.endsWith('/data/results.json') ||
+    url.pathname.endsWith('/data/history.json')
+  );
+  if(skipLargeDataCache){
+    event.respondWith(fetch(request));
+    return;
+  }
   const cacheKey = isDataJson ? canonicalDataRequest(url) : request;
   event.respondWith(networkFirst(request, cacheKey));
 });

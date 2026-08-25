@@ -18,18 +18,52 @@
   const displayTime=x=>{const d=dt(x);return d?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'—'};
   const playerInitials=name=>String(name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase();
 
-  function getPlayers(){
-    const byKey=new Map();
-    const add=p=>{const key=norm(p);if(key&&!byKey.has(key))byKey.set(key,String(p))};
-    safeAll().forEach(m=>{add(m.p1);add(m.p2)});
-    safeHistory().forEach(m=>{add(m.p1);add(m.p2)});
-    return [...byKey.values()];
+  let playerIndexSig='',playerIndex=[];
+
+  function buildPlayerIndex(){
+    const currentRows=safeAll(),history=safeHistory();
+    const first=currentRows[0]||{},last=currentRows[currentRows.length-1]||{};
+    const hFirst=history[0]||{},hLast=history[history.length-1]||{};
+    const sig=[
+      currentRows.length,history.length,
+      first.id??first.match_id??first.scheduled_time??'',
+      last.id??last.match_id??last.scheduled_time??'',
+      hFirst.match_id??hFirst.id??hFirst.scheduled_time??'',
+      hLast.match_id??hLast.id??hLast.scheduled_time??''
+    ].join(':');
+    if(sig===playerIndexSig)return playerIndex;
+
+    const map=new Map();
+    const ensure=name=>{
+      const key=norm(name);
+      if(!key)return null;
+      if(!map.has(key))map.set(key,{name:String(name),key,current:0,tracked:0});
+      return map.get(key);
+    };
+
+    for(const m of currentRows){
+      for(const name of [m.p1,m.p2]){
+        const row=ensure(name);
+        if(row&&currentish(m))row.current+=1;
+      }
+    }
+    for(const m of history){
+      for(const name of [m.p1,m.p2]){
+        const row=ensure(name);
+        if(row)row.tracked+=1;
+      }
+    }
+
+    playerIndex=[...map.values()];
+    playerIndexSig=sig;
+    return playerIndex;
   }
 
+  function getPlayers(){return buildPlayerIndex().map(x=>x.name)}
+
   function playerCounts(name){
-    const current=safeAll().filter(m=>(same(m.p1,name)||same(m.p2,name))&&currentish(m)).length;
-    const tracked=safeHistory().filter(m=>same(m.p1,name)||same(m.p2,name)).length;
-    return {current,tracked};
+    const row=buildPlayerIndex().find(x=>x.key===norm(name));
+    return {current:row?.current||0,tracked:row?.tracked||0};
   }
 
   function currentish(m){
@@ -39,19 +73,19 @@
   function showSuggestions(query){
     const q=norm(query);
     if(!q){suggestions.hidden=true;suggestions.innerHTML='';return}
-    const rows=getPlayers().map(name=>({name,key:norm(name),counts:playerCounts(name)}))
+    const rows=buildPlayerIndex()
       .filter(x=>x.key.includes(q))
-      .sort((a,b)=>Number(b.key.startsWith(q))-Number(a.key.startsWith(q))||b.counts.current-a.counts.current||b.counts.tracked-a.counts.tracked||a.name.localeCompare(b.name,'pl'))
+      .sort((a,b)=>Number(b.key.startsWith(q))-Number(a.key.startsWith(q))||b.current-a.current||b.tracked-a.tracked||a.name.localeCompare(b.name,'pl'))
       .slice(0,8);
-    suggestions.innerHTML=rows.length?rows.map(x=>`<button type="button" class="player-suggestion" data-player="${esc(x.name)}"><b>${esc(x.name)}</b><small>${x.counts.current?`${x.counts.current} aktualny`:`${x.counts.tracked} w historii`}</small></button>`).join(''):'<div class="player-suggestion-empty">Brak zawodnika w aktualnych danych lub historii Tenis AI.</div>';
+    suggestions.innerHTML=rows.length?rows.map(x=>`<button type="button" class="player-suggestion" data-player="${esc(x.name)}"><b>${esc(x.name)}</b><small>${x.current?`${x.current} aktualny`:`${x.tracked} w historii`}</small></button>`).join(''):'<div class="player-suggestion-empty">Brak zawodnika w aktualnych danych lub historii Tenis AI.</div>';
     suggestions.hidden=false;
     suggestions.querySelectorAll('[data-player]').forEach(b=>b.onclick=()=>selectPlayer(b.dataset.player));
   }
 
   function findPlayer(query){
     const q=norm(query);if(!q)return '';
-    const players=getPlayers();
-    return players.find(x=>norm(x)===q)||players.find(x=>norm(x).startsWith(q))||players.find(x=>norm(x).includes(q))||'';
+    const players=buildPlayerIndex();
+    return players.find(x=>x.key===q)?.name||players.find(x=>x.key.startsWith(q))?.name||players.find(x=>x.key.includes(q))?.name||'';
   }
 
   function selectPlayer(name){
@@ -215,7 +249,8 @@
     });
   }
 
-  input.addEventListener('input',()=>{clearBtn.hidden=!input.value;showSuggestions(input.value)});
+  let searchTimer=null;
+  input.addEventListener('input',()=>{clearBtn.hidden=!input.value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>showSuggestions(input.value),120)});
   input.addEventListener('focus',()=>{if(input.value)showSuggestions(input.value)});
   input.addEventListener('keydown',e=>{
     if(e.key==='Enter'){

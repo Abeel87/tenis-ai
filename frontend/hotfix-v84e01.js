@@ -6,16 +6,13 @@
 (function(root){
   'use strict';
 
-  const VERSION='v8.4E0.1';
-  const HISTORY_REFRESH_MIN_MS=15000;
+  const VERSION='v8.5.3-runtime';
+  const HISTORY_REFRESH_MIN_MS=60000;
 
   function lifecycleStatus(match){
-    return String(
-      match?.event_status ??
-      match?.feed_status ??
-      match?.status ??
-      ''
-    ).trim().toLowerCase();
+    const candidates=[match?.event_status,match?.feed_status,match?.status];
+    const value=candidates.find(v=>String(v??'').trim().length>0);
+    return String(value??'').trim().toLowerCase();
   }
 
   function isUnavailableFixture(match){
@@ -55,6 +52,10 @@
   let historyRefreshPromise=null;
   let lastHistoryRefreshAt=0;
 
+  function historyAlreadyLoaded(){
+    try{return Array.isArray(historyRows)}catch{return false}
+  }
+
   async function freshJson(path){
     const sep=path.includes('?')?'&':'?';
     const response=await fetch(`${path}${sep}ts=${Date.now()}&hf=84e01`,{cache:'no-store'});
@@ -64,6 +65,10 @@
 
   async function refreshHistoryOnly(force=false){
     const now=Date.now();
+    if(!force && lastHistoryRefreshAt===0 && historyAlreadyLoaded()){
+      lastHistoryRefreshAt=now;
+      return true;
+    }
     if(!force && now-lastHistoryRefreshAt<HISTORY_REFRESH_MIN_MS)return true;
     if(historyRefreshPromise)return historyRefreshPromise;
 
@@ -103,7 +108,7 @@
   function bindHistoryRefresh(){
     document.addEventListener('click',event=>{
       const button=event.target?.closest?.('.main-tabs button[data-view="history"]');
-      if(button)refreshHistoryOnly(true);
+      if(button)refreshHistoryOnly(false);
     });
 
     document.addEventListener('visibilitychange',()=>{

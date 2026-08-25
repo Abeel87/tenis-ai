@@ -492,5 +492,5 @@
   window.addEventListener('tenis-ai-auth-change', () => setTimeout(sync, 70));
   setTimeout(sync, 350);
   setTimeout(sync, 1200);
-  setInterval(refreshPublicStats, 15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshPublicStats()});
 })();
