@@ -213,11 +213,11 @@
   }
   function generatorProfilePolicy(profile='balanced'){
     return ({
-      stable:{strong:65,floor:58,minAverage:64,mlWeight:.72,mlFloor:56,legacyRescue:75},
-      balanced:{strong:64,floor:57,minAverage:63,mlWeight:.76,mlFloor:55,legacyRescue:74},
-      strong:{strong:70,floor:63,minAverage:68,mlWeight:.82,mlFloor:60,legacyRescue:80},
-      experimental:{strong:60,floor:54,minAverage:60,mlWeight:.68,mlFloor:52,legacyRescue:70}
-    })[profile]||{strong:64,floor:57,minAverage:63,mlWeight:.76,mlFloor:55,legacyRescue:74};
+      stable:{strong:78,floor:74,minAverage:74,mlWeight:.72,mlFloor:56,legacyRescue:75},
+      balanced:{strong:76,floor:72,minAverage:72,mlWeight:.76,mlFloor:55,legacyRescue:74},
+      strong:{strong:84,floor:80,minAverage:80,mlWeight:.82,mlFloor:60,legacyRescue:80},
+      experimental:{strong:68,floor:62,minAverage:62,mlWeight:.68,mlFloor:52,legacyRescue:70}
+    })[profile]||{strong:76,floor:72,minAverage:72,mlWeight:.76,mlFloor:55,legacyRescue:74};
   }
   function autoLearnSourceLabel(ml){
     if(!ml)return activeModelName();
@@ -546,7 +546,7 @@
     const mc=Number($('.sc82-choice[data-sc-choice="matches"] .active',panel)?.dataset.scN||4);
     const spm=Number($('.sc82-choice[data-sc-choice="signals"] .active',panel)?.dataset.scN||2);
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
-    const min={stable:74,balanced:70,strong:80,experimental:62}[profile]||70;
+    const min={stable:74,balanced:72,strong:80,experimental:62}[profile]||72;
 
     // v8.2A.4 Distinct Markets:
     // jedna rodzina rynku = maksymalnie jeden sygnał, niezależnie od linii.
@@ -674,7 +674,7 @@
       return {m,picked,ms};
     })
       .map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)
-      .sort((a,b)=>b.ms-a.ms);
+      .sort((a,b)=>(b.avgScore??b.ms)-(a.avgScore??a.ms));
 
     if(!candidates.length){
       toast(`AI nie znalazło dziś spotkań spełniających próg jakości dla ${spm} różnych sygnałów.`);

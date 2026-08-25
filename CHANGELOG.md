@@ -1,5 +1,13 @@
 # Changelog
 
+## v8.5.2 — Quality Lock
+
+- twarde progi generatora: Balanced hard floor = 72, Stable hard floor = 74, Strong hard floor = 80, Experimental hard floor = 62;
+- brak forced fill: polityka `quality_lock_no_forced_fill_v852` nie obniża progów ani nie dopchuje słabszych sygnałów — przy braku wystarczająco dobrych pozycji generator zwraca mniej spotkań;
+- Tracking Governor: konserwatywny mechanizm korygujący wagi na podstawie historycznie rozliczonego tracking data (`previous_tracking`) przy próbce `selected_n >= 100`;
+- pozostawienie Dynamic Weights v8.4D oraz istniejących mechanizmów bez zmian;
+- przemianowanie telemetrii z `Generator AI` na `Ensemble selector proxy`, informującej czytelnie w UI, że jest to proxy selektora Ensemble, a nie pojedyncze modyfikacje użytkownika w Generatorze AI UI.
+
 ## v8.0 — Clean Core / Post-Match Center
 
 - jedna kanoniczna Historia ładowana przez `clean-core-v80.js`;
