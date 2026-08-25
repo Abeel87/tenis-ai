@@ -7,7 +7,7 @@
   const VERSION='v8.4E2';
   const PRIMARY=['current','catboost','tabpfn','ensemble','generator'];
   const SECONDARY=['adaptive','early','serve','form','surface','consensus','dynamic'];
-  const LABELS={adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Generator AI'};
+  const LABELS={adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Ensemble selector proxy'};
   const ICONS={adaptive:'🧠',early:'🎯',serve:'🎾',form:'🔥',surface:'🏟️',consensus:'⚡',current:'🧠',catboost:'🐱',tabpfn:'🧬',ensemble:'🔗',dynamic:'🧭',generator:'🚀'};
   const STATUS={rising:['↗','ROŚNIE'],stable:['→','STABILNY'],watch:['◐','OBSERWUJ'],falling:['↘','OSTROŻNIE'],collecting:['…','ZA MAŁA PRÓBA']};
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -36,6 +36,18 @@
     </svg>`;
   }
 
+  function qlLines(tel,id){
+    const ql=tel?.trends_v84e2?.quality_lock_v852?.[id]||tel?.trends_v84e2?.quality_lock_v852?.models?.[id];
+    if(!ql)return '';
+    const bef=ql.before_v852||{};
+    const sin=ql.since_v852||{};
+    const befStr=`Przed v8.5.2: n=${Number(bef.selected_n||0)} · Accuracy ${pct(bef.accuracy)} · Brier ${num(bef.brier)==null?'—':Number(bef.brier).toFixed(3)}`;
+    const sinStr=Number(sin.selected_n||0)<8
+      ?`Od v8.5.2: n=${Number(sin.selected_n||0)} · zbieramy próbę`
+      :`Od v8.5.2: n=${Number(sin.selected_n||0)} · Accuracy ${pct(sin.accuracy)} · Brier ${num(sin.brier)==null?'—':Number(sin.brier).toFixed(3)}`;
+    return `<div class="mt84e2-ql-lines" style="margin-top:6px;padding-top:4px;border-top:1px dashed rgba(255,255,255,.1);font-size:0.62rem;line-height:1.35;opacity:0.82;"><div>${esc(befStr)}</div><div>${esc(sinStr)}</div></div>`;
+  }
+
   function modelCard(tel,id){
     const t=tel?.trends_v84e2?.models?.[id]||{};
     const [arrow,label]=statusMeta(t.status);
@@ -47,6 +59,7 @@
         <span><small>Zmiana accuracy</small><b>${signed(t.accuracy_delta_pp)}</b></span>
         <span><small>Zmiana Brier</small><b class="${bd!=null&&bd<0?'good':bd>0?'bad':''}">${bd==null?'—':`${bd>0?'+':''}${bd.toFixed(3)}`}</b></span>
       </div>
+      ${PRIMARY.includes(id)?qlLines(tel,id):''}
       <footer><span>n=${n}</span><span>${w?`porównanie ${w}+${w}`:'czekamy na ≥16'}</span><span>${esc(t.sample_strength||'collecting')}</span></footer>
     </article>`;
   }
