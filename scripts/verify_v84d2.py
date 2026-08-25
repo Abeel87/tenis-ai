@@ -20,7 +20,11 @@ def main():
     css=read("frontend/dynamic-weights-v84d1.css")
     wf=read(".github/workflows/update-and-pages.yml")
 
-    req(js,"const VERSION='v8.4D.2'","audit UI nie jest v8.4D.2")
+    if not any(x in js for x in (
+        "const VERSION='v8.4D.2'",
+        "const VERSION='v8.4D.3'",
+    )):
+        ERR.append("audit UI nie jest kompatybilnym v8.4D.2/v8.4D.3")
     req(js,"TENIS_AI_SCENARIOS","audit nie korzysta z aktualnego draftu Scenariuszy AI")
     req(js,"currentScenarioRows","brak separacji aktualnego scenariusza od puli")
     req(js,"Aktualny scenariusz","brak licznika aktualnego scenariusza")
