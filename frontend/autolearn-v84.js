@@ -104,7 +104,7 @@
     const top=(telemetry.top_segments_30d||[]).slice(0,6).map(x=>`<span><b>${esc(x.label)}</b> · ${esc(x.dimension)}=${esc(x.value)} · n=${Number(x.selected_n||0)} · ${pct(x.accuracy)}</span>`).join('');
     return `<section class="al84-telemetry">
       <div class="al84-telemetry-head"><div><b>📡 TELEMETRIA v8.4C</b><small>Modele bazowe + ML + Ensemble selector proxy</small></div><span>${esc(telemetry.status||'COLLECTING')}</span></div>
-      <div class="al84-table-wrap"><table class="al84-table"><thead><tr><th>Model</th><th>7 dni</th><th>HIT–MISS 30d</th><th>Accuracy 30d</th><th>Brier</th><th>ROI</th></tr></thead><tbody>${telemetryRows(telemetry)}</tbody></table></div>
+      <div class="al84-table-wrap"><table class="al84-table"><thead><tr><th>Model</th><th>7 dni</th><th>HIT–MISS 30d</th><th>Trafność 30d</th><th>Brier</th><th>ROI</th></tr></thead><tbody>${telemetryRows(telemetry)}</tbody></table></div>
       <div class="al84-agreement-grid">${agreementBlock(telemetry,'Zgodność modeli bazowych','specialists')}${agreementBlock(telemetry,'Zgodność Current / CatBoost / TabPFN','ml')}</div>
       <div class="al84-top-segments"><b>Najlepsze segmenty 30d</b><div>${top||'<span>Za mała próbka — zbieramy dane.</span>'}</div></div>
       <p class="al84-note">Linia „Ensemble selector proxy” pokazuje automatyczne zamrożone pozycje z selektora Ensemble (proxy), a nie indywidualne modyfikacje użytkownika w Generatorze AI UI. ROI pokazujemy tylko z rzeczywiście zapisanych kursów; brak kursu = N/D.</p>
@@ -115,12 +115,12 @@
     const models=report?.models||{},w=report?.weights||{},tr=report?.training||{},gen=report?.generator||{};
     const tab=models.tabpfn||{};
     return `<section id="al84-performance" class="al84-performance">
-      <div class="al84-head"><div><span>🤖 AUTOLEARN v8.4B</span><h3>Porównanie modeli AI</h3><p>Te same rozliczone sygnały, osobno mierzona jakość i finalny selector generatora.</p></div><b>${esc(report?.status||'COLLECTING')}</b></div>
+      <div class="al84-head"><div><span>🤖 AUTOLEARN v8.4B</span><h3>Porównanie modeli AI</h3><p>Te same rozliczone sygnały, osobno mierzona jakość i proxy selektora Ensemble. Generator UI ma osobny Quality Lock.</p></div><b>${esc(report?.status||'COLLECTING')}</b></div>
       <div class="al84-grid">
         ${card(report,'current','Current Engine · kalibrowany','🧠',models.current?.status||'active')}
         ${card(report,'catboost','CatBoost','🐱',models.catboost?.status||'collecting')}
         ${card(report,'tabpfn','TabPFN-2','🧬',tab.status||'unavailable')}
-        ${card(report,'generator','Ensemble Generator','⚡',models.ensemble?.status||'fallback')}
+        ${card(report,'generator','Selektor Ensemble (proxy)','⚡',models.ensemble?.status||'fallback')}
       </div>
       <div class="al84-weights"><b>Wagi produkcyjne</b><span>Engine ${Math.round(Number(w.current||0)*100)}%</span><span>CatBoost ${Math.round(Number(w.catboost||0)*100)}%</span><span>TabPFN ${Math.round(Number(w.tabpfn||0)*100)}%</span></div>
       <div class="al84-policy"><b>Kalibracja Engine</b><span>${esc(report?.current_calibration?.gate_status||report?.current_calibration?.status||'N/D')}</span><small>${report?.current_calibration?.status==='active'?`Platt · TRAIN n=${Number(report?.current_calibration?.fit_rows||0)} · gate CAL n=${Number(report?.current_calibration?.gate_rows||0)} · ΔBrier ${num(report?.current_calibration?.gate_brier_delta)==null?'—':Number(report.current_calibration.gate_brier_delta).toFixed(4)}`:`Identity · ${esc(report?.current_calibration?.reason||'gate odrzucił kalibrator lub próbka za mała')}`}</small></div>
@@ -133,11 +133,22 @@
   }
   async function injectPerformance(){
     const host=document.querySelector('#pc77');if(!host)return;
-    const [report,telemetry]=await Promise.all([loadReport(true),loadTelemetry(true)]);if(!document.querySelector('#pc77'))return;
+    const [report,telemetry]=await Promise.all([loadReport(false),loadTelemetry(false)]);if(!document.querySelector('#pc77'))return;
     document.querySelector('#al84-performance')?.remove();
     host.insertAdjacentHTML('afterbegin',html(report,telemetry));
   }
-  function scheduleInject(){[0,120,450,1000].forEach(ms=>setTimeout(injectPerformance,ms))}
+  let injectTimer=null;
+  function scheduleInject(ms=80){
+    clearTimeout(injectTimer);
+    injectTimer=setTimeout(injectPerformance,ms);
+  }
+  document.addEventListener('click',e=>{
+    if(e.target?.closest?.('#refresh')){
+      reportPromise=null;
+      telemetryPromise=null;
+      scheduleInject(1400);
+    }
+  },true);
 
   if(typeof renderStats==='function'){
     const base=renderStats;

@@ -109,14 +109,9 @@
   }
 
   function decorateOverlay(){
-    const o=$('#p751-match-overlay');
-    if(!o||o.hidden||$('#eh771-match-compare',o))return;
-    const m=currentOverlayMatch();if(!m)return;
-    const matchup=$('.p751-matchup',o);
-    const acc=$('.p751-acc',o);
-    const host=matchup||acc;
-    if(!host)return;
-    host.insertAdjacentHTML(matchup?'afterend':'beforebegin',compareHtml(m));
+    // v8.5.3M2: Match Matrix owns the match-level comparison.
+    // Keep Early Hold profile helpers, but no second POROWNANIE MECZU block.
+    $('#eh771-match-compare')?.remove();
   }
 
   function decoratePlayerProfile(){

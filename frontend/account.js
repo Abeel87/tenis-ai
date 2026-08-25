@@ -168,8 +168,25 @@
   async function loadProfile(user){if(!user){currentProfile=null;return}const {data,error}=await client.from('profiles').select('id,username,avatar_url,bio,last_seen_at,created_at').eq('id',user.id).maybeSingle();if(error){console.warn('Tenis AI profile:',error.message);currentProfile=null;return}currentProfile=data||null}
   async function touchPresence(){if(!client||!currentUser)return;try{await client.from('profiles').update({last_seen_at:new Date().toISOString()}).eq('id',currentUser.id)}catch{}}
   function startHeartbeat(){clearInterval(heartbeat);if(!currentUser)return;touchPresence();heartbeat=setInterval(()=>{touchPresence();refreshCommunityStats()},60000)}
-  async function refreshCommunityStats(){if(!configured||!client){usersEl.textContent='—';onlineEl.textContent='—';couponsEl.textContent='—';return}try{const threshold=new Date(Date.now()-2*60*1000).toISOString(),today=new Date();today.setHours(0,0,0,0);const [u,o,c]=await Promise.allSettled([client.from('profiles').select('id',{count:'exact',head:true}),client.from('profiles').select('id',{count:'exact',head:true}).gte('last_seen_at',threshold),client.from('coupons').select('id',{count:'exact',head:true}).gte('created_at',today.toISOString()).eq('is_public',true)]);const users=u.status==='fulfilled'&&!u.value.error?u.value.count:null,online=o.status==='fulfilled'&&!o.value.error?o.value.count:null,coupons=c.status==='fulfilled'&&!c.value.error?c.value.count:null;usersEl.textContent=users??'—';onlineEl.textContent=online??'—';couponsEl.textContent=coupons??'—';setChip('LIVE','online')}catch{setChip('BŁĄD POŁĄCZENIA','setup')}}
+  async function refreshCommunityStats(){
+    if(!configured||!client){
+      usersEl.textContent='—';onlineEl.textContent='—';couponsEl.textContent='—';
+      return;
+    }
+    try{
+      const {data,error}=await client.rpc('community_public_stats');
+      if(error)throw error;
+      const d=data||{};
+      usersEl.textContent=d.registered??'—';
+      onlineEl.textContent=d.online??'—';
+      couponsEl.textContent=d.coupons_today??'—';
+      setChip('LIVE','online');
+    }catch(err){
+      console.warn('Community stats:',err?.message||err);
+      setChip('BŁĄD POŁĄCZENIA','setup');
+    }
+  }
   async function applySession(session){currentUser=session?.user||null;await loadProfile(currentUser);updateAccountButton();startHeartbeat();await refreshCommunityStats();notify('tenis-ai-auth-change',{user:currentUser,profile:currentProfile});if(!overlay.hidden)renderModal()}
-  async function init(){updateAccountButton();if(!configured){refreshCommunityStats();return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(refreshCommunityStats,60000)}
+  async function init(){updateAccountButton();if(!configured){refreshCommunityStats();return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(()=>{if(!currentUser)refreshCommunityStats()},60000)}
   init();
 })();

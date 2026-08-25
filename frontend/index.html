@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="pl">
 <head>
+  <!-- Compatibility contract: Tenis AI v8.0 / v8.0.1 Clean Core remains the protected base. -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#020812">
   <meta name="color-scheme" content="dark">
-  <title>Tenis AI v8.0.1</title>
+  <title>Tenis AI v8.5.3</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -20,8 +21,7 @@
   <link rel="stylesheet" href="pbp-validation-v73.css">
   <link rel="stylesheet" href="performance-center-v77.css?v=78e12">
 <link rel="stylesheet" href="multi-model.css">
-  <link rel="stylesheet" href="model-guide.css">
-  <link rel="stylesheet" href="account.css">
+<link rel="stylesheet" href="account.css">
   <link rel="stylesheet" href="registration-ux-v752.css">
   <link rel="stylesheet" href="community.css">
   <link rel="stylesheet" href="community-fix.css">
@@ -47,6 +47,7 @@
   <link rel="stylesheet" href="match-time-v84e11.css?v=84e11">
   <link rel="stylesheet" href="model-trends-v84e2.css?v=84e2">
   <link rel="stylesheet" href="player-intelligence-v85.css?v=85a1">
+  <link rel="stylesheet" href="ui-organizer-v853.css?v=853">
 </head>
 <body>
   <header class="app-header neon-header">
@@ -54,7 +55,7 @@
       <img class="brand-symbol" src="brand-symbol.png" alt="">
       <div class="brand-copy">
         <img class="brand-wordmark" src="brand-wordmark.png" alt="Tenis AI">
-        <p>Tenis AI v8.0.1 · Adaptive Learning</p>
+        <p>Tenis AI v8.5.3 · AutoLearn + Player Intelligence</p>
       </div>
     </div>
     <div class="header-actions">
@@ -112,22 +113,7 @@
   </div>
 
   <div id="match-controls">
-    <section id="model-switcher" class="model-switcher" aria-label="Wybór modelu">
-      <div class="model-switcher-head">
-        <div><b>🧠 Wybierz model</b><small id="model-description">Ładowanie modeli…</small></div>
-        <span class="model-lab-badge">ADAPTIVE · SHADOW</span>
-      </div>
-      <div class="model-buttons" role="group" aria-label="Modele analizy">
-        <button type="button" data-model="consensus">⚡ Consensus</button>
-        <button type="button" data-model="adaptive">🧠 Adaptive</button>
-        <button type="button" data-model="early">🎯 Early Hold</button>
-        <button type="button" data-model="serve">🎾 Serve/Return</button>
-        <button type="button" data-model="form">🔥 Form</button>
-        <button type="button" data-model="surface">🏟️ Surface</button>
-      </div>
-    </section>
-
-    <nav id="tour-nav" class="neon-tour-nav">
+<nav id="tour-nav" class="neon-tour-nav">
       <button class="active" data-filter="all">Wszystkie <small class="count">0</small></button>
       <button data-filter="atp">ATP <small class="count">0</small></button>
       <button data-filter="wta">WTA <small class="count">0</small></button>
@@ -144,7 +130,7 @@
 
   <footer>
     <div class="footer-brand">Tenis AI · stworzone przez <b>Abeel87 × ChatGPT</b></div>
-    <div>v8.0.1 Player Profile Fix · Adaptive Learning działa w SHADOW. Modele nie gwarantują wygranej ani zysku.</div>
+    <div>v8.5.3 Runtime + UI Cleanup · Player Intelligence działa w SHADOW. Modele nie gwarantują wygranej ani zysku.</div>
   </footer>
 
   <div id="account-overlay" class="account-overlay" hidden>
@@ -167,24 +153,25 @@
     </section>
   </div>
 
-  <script src="app-meta.js?v=801"></script>
+  <script src="app-meta.js?v=801&rt=853"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3"></script>
   <script src="supabase-config.js"></script>
+  <script src="runtime-fetch-v853.js?v=853"></script>
   <script src="app.js?v=84b1"></script>
   <script src="runtime-health-v84e0.js?v=84e0"></script>
-  <script src="hotfix-v84e01.js?v=84e01"></script>
-  <script src="player-search.js?v=801"></script>
+  <script src="hotfix-v84e01.js?v=84e01&rt=853"></script>
+  <script src="player-search.js?v=801&rt=853"></script>
   <script src="player-trends-v71.js"></script>
   <script src="player-analytics-v76.js?v=801"></script>
   <script src="multi-model.js"></script>
-  <script src="model-guide.js"></script>
-  <script src="account.js"></script>
+  <script src="model-guide.js?v=853m6"></script>
+  <script src="account.js?v=853"></script>
   <script src="registration-fix-v741.js"></script>
   <script src="registration-ux-v752.js"></script>
   <script src="community.js"></script>
   <script src="community-fix.js"></script>
   <script src="avatar-fix.js"></script>
-  <script src="community-hub.js"></script>
+  <script src="community-hub.js?v=853"></script>
   <script src="community-count-fix.js"></script>
   <script src="community-admin-v74.js"></script>
   <script src="admin-delete-v754.js"></script>
@@ -198,20 +185,21 @@
   <script src="ui-v751.js?v=801"></script>
   <script src="restore-v762.js?v=801"></script>
   <script src="performance-center-v77.js?v=78e12"></script>
-  <script src="early-hold-paths-v771.js"></script>
+  <script src="early-hold-paths-v771.js?v=853m2"></script>
   <script src="integrity-v78a.js"></script>
   <script src="shadow-lab-v78e6.js?v=78e11"></script>
   <script src="adaptive-learning-v79.js?v=801" data-v79-adaptive="js"></script>
   <script src="clean-core-v80.js?v=801"></script>
-  <script src="autolearn-v84.js?v=84a1&hf=84b1"></script>
+  <script src="autolearn-v84.js?v=84a1&hf=84b1&rt=853"></script>
   <script src="signal-mapping-v84d4.js?v=84d4"></script>
-  <script src="dynamic-weights-v84d1.js?v=84e0"></script>
+  <script src="dynamic-weights-v84d1.js?v=84e0&rt=853"></script>
   <script src="scenario-studio-v82a.js?v=82a6&hf=84a1"></script>
   <script src="scenario-dynamic-v84d3.js?v=84d4"></script>
   <script src="scenario-settlement-v83c.js?v=83d1"></script>
   <script src="match-time-v84e11.js?v=84e11"></script>
-  <script src="model-trends-v84e2.js?v=84e2&hf=852a1"></script>
-  <script src="player-intelligence-v85.js?v=85a1"></script>
-  <script src="player-intelligence-v851b-ui.js?v=851b"></script>
+  <script src="model-trends-v84e2.js?v=84e2&hf=852a1&rt=853"></script>
+  <script src="player-intelligence-v85.js?v=85a1&rt=853"></script>
+  <script src="player-intelligence-v851b-ui.js?v=851b&rt=853"></script>
+  <script src="ui-organizer-v853.js?v=853"></script>
 </body>
 </html>

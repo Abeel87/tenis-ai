@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
 
-  const VERSION='v8.4D.2';
+  const VERSION='v8.4D.3';
   const ROOT_ID='dynamic-weights-audit-v84d1';
   const DATA_URL='data/results.json';
 
@@ -192,8 +192,21 @@
     return true;
   }
 
+  function memoryResults(){
+    try{
+      return typeof all!=='undefined'&&Array.isArray(all)?all:null;
+    }catch{
+      return null;
+    }
+  }
+
   async function load(){
     try{
+      const memory=memoryResults();
+      if(memory){
+        render(memory);
+        return;
+      }
       const res=await fetch(`${DATA_URL}?v=${Date.now()}`,{cache:'no-store'});
       if(!res.ok)throw new Error(`HTTP ${res.status}`);
       const data=await res.json();

@@ -1,5 +1,21 @@
 # Changelog
 
+## v8.5.3 — Runtime + UI Cleanup
+
+- globalny dedupe fetch dla statycznych JSON-ów `/data/*.json`; warstwy UI nie pobierają ponownie tych samych danych w krótkim oknie;
+- końcowy compactor usuwa zbędne wcięcia z `results.json` i `history.json`, zmniejszając pierwszy transfer bez zmiany schematu danych;
+- Dynamic Weights korzysta najpierw z już załadowanego `all`, więc audyt wag nie pobiera ponownie pełnego `results.json`;
+- Historia nie wymusza nowego ~9.5 MB pobrania przy każdym kliknięciu; poprawiony fallback statusu meczu dla pustego `event_status`;
+- AutoLearn ma jeden debounced render zamiast czterech force-fetchy i jednoznaczne nazewnictwo `Selektor Ensemble (proxy)`;
+- wyszukiwarka zawodników używa indeksu i debounce zamiast wielokrotnego skanowania pełnej historii przy każdym znaku;
+- statystyki społeczności korzystają z `community_public_stats`; usunięty polling Community Hub co 15 sekund;
+- Service Worker nie zapisuje wielkich `results.json` i `history.json` do Cache Storage;
+- ekran Sygnały/Statystyki ma tryb `Przejrzysty` i `PRO`: produkcja oraz Player Intelligence są na wierzchu, telemetria/Dynamic/pełne trendy są segregowane jako diagnostyka;
+- Player Intelligence ma jeden kanoniczny widok: wykres + Trafność + Brier + próbka; dokładne metryki pozostają w PRO;
+- wersja UI/app-meta ujednolicona do v8.5.3 bez zmiany matematyki predykcji;
+- PR health uruchamia pełny `pytest` oraz guard v8.5.3.
+
+
 ## v8.5.2 — Quality Lock
 
 - twarde progi generatora: Balanced hard floor = 72, Stable hard floor = 74, Strong hard floor = 80, Experimental hard floor = 62;

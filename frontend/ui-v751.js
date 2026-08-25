@@ -236,7 +236,6 @@
       <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">⭐ 80+</button>
       <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">🧬 PBP OK</button>
       <button type="button" data-shadow-open>🧪 Odrzucone</button>
-      <button class="model" data-p751-models>🧠 Model</button>
     </div>`;
   }
 
@@ -272,7 +271,6 @@
       };
     }
 
-    document.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
     document.querySelectorAll('[data-p751-open]').forEach(b=>{
       const open=()=>openMatch(decodeURIComponent(b.dataset.p751Open));
 
@@ -536,11 +534,10 @@
       <header class="p751-detail-header">
         <button data-p751-close aria-label="Wróć">‹</button>
         <div><b>Szczegóły meczu</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(surf(m))} · ${esc(dt(m))} · ${esc(tm(m))}</small></div>
-        <button data-p751-models aria-label="Modele">🧠</button>
       </header>
       <section class="p751-matchup">
         <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b><span>VS</span><b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p2)}</b>
-        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>AKTYWNY ${esc(activeModelName())}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
+        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
       </section>
       ${verdict(m)}
       <div class="p751-acc-list">${coreMarkets(m)}${calibration78d(m)}${jointBuilder78b(m)}${lazySections78e23(m)}</div>
@@ -564,25 +561,11 @@
     o.scrollTop=0;
     requestAnimationFrame(()=>window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.());
     o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
-    o.querySelector('[data-p751-models]')?.addEventListener('click',openModels);
   }
   function closeMatch(){
     const o=ensureOverlay();o.hidden=true;o.innerHTML='';delete o.dataset.matchKey;document.body.classList.remove('p751-modal-open');
   }
 
-  function openModels(){
-    let o=document.querySelector('#p751-model-overlay');
-    if(!o){o=document.createElement('div');o.id='p751-model-overlay';o.className='p751-model-overlay';document.body.appendChild(o)}
-    const defs=[['consensus','⚡ Consensus'],['adaptive','🧠 Adaptive'],['early','🎯 Early Hold'],['serve','🎾 Serve/Return'],['form','🔥 Form'],['surface','🏟️ Surface']];
-    o.innerHTML=`<section><header><div><b>🧠 Wybierz model</b><small>Modele dalej pracują tak samo — tutaj tylko czystszy wybór.</small></div><button data-p751-model-close>✕</button></header><div>${defs.map(([id,label])=>`<button data-p751-model="${id}">${label}</button>`).join('')}</div></section>`;
-    o.classList.add('show');
-    o.querySelector('[data-p751-model-close]').onclick=()=>o.classList.remove('show');
-    o.querySelectorAll('[data-p751-model]').forEach(b=>b.onclick=()=>{
-      document.querySelector(`#model-switcher [data-model="${b.dataset.p751Model}"]`)?.click();
-      o.classList.remove('show');
-      setTimeout(()=>{if(route==='matches')renderMatches()},30);
-    });
-  }
 
   function signalPage(){
     route='signals';navActive('signals');
