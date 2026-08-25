@@ -23,3 +23,5 @@ def test_report_exports_e2_sections():
 def test_frontend_is_additive_and_no_new_polling():
     js=(ROOT/"frontend/model-trends-v84e2.js").read_text(encoding="utf-8"); idx=(ROOT/"frontend/index.html").read_text(encoding="utf-8")
     assert 'fetch(' not in js; assert 'new MutationObserver(' not in js; assert 'setInterval(' not in js; assert 'model-trends-v84e2.js?v=84e2' in idx; assert 'autolearn-v84.js?v=84a1&hf=84b1' in idx; assert 'scenario-studio-v82a.js?v=82a6&hf=84a1' in idx
+    assert 'Ensemble selector proxy' in js
+    assert '2026-08-25T09:55:27Z' in js
