@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from backend.autolearn_v84 import (
+    _apply_tracking_governor,
     _candidate_key,
     _optimize_weights,
     _prob_from_score,
@@ -54,3 +55,74 @@ def test_weight_search_is_data_driven_and_normalized():
     w=_optimize_weights(rows,{"current":current,"catboost":cat})
     assert abs(sum(w.values())-1.0)<1e-9
     assert w["catboost"]>w["current"]
+
+
+def test_tracking_governor_limits_weaker_catboost():
+    tracking = {
+        "catboost": {"selected_n": 120, "accuracy": 65.0, "brier": 0.220},
+        "current": {"selected_n": 150, "accuracy": 67.5, "brier": 0.200},
+    }
+    initial_weights = {"catboost": 0.80, "current": 0.20}
+    w, policy = _apply_tracking_governor(initial_weights, tracking)
+    assert policy["active"] is True
+    assert policy["catboost_capped"] is True
+    assert w["catboost"] <= 0.40
+    assert w["current"] >= 0.25
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+
+
+def test_tracking_governor_can_raise_stronger_tabpfn():
+    tracking = {
+        "catboost": {"selected_n": 120, "accuracy": 65.0, "brier": 0.210},
+        "current": {"selected_n": 150, "accuracy": 67.0, "brier": 0.200},
+        "tabpfn": {"selected_n": 110, "accuracy": 70.0, "brier": 0.180},
+    }
+    initial_weights = {"catboost": 0.60, "current": 0.30, "tabpfn": 0.10}
+    w, policy = _apply_tracking_governor(initial_weights, tracking, tabpfn_cap=0.25)
+    assert policy["active"] is True
+    assert policy["tabpfn_boosted"] is True
+    assert w["tabpfn"] >= 0.20
+    assert w["tabpfn"] <= 0.25
+    assert w["current"] >= 0.25
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+
+
+def test_tracking_governor_inactive_below_sample_size_100():
+    tracking = {
+        "catboost": {"selected_n": 80, "accuracy": 60.0, "brier": 0.250},
+        "current": {"selected_n": 80, "accuracy": 68.0, "brier": 0.200},
+        "tabpfn": {"selected_n": 80, "accuracy": 72.0, "brier": 0.170},
+    }
+    initial_weights = {"catboost": 0.70, "current": 0.20, "tabpfn": 0.10}
+    w, policy = _apply_tracking_governor(initial_weights, tracking)
+    assert policy["active"] is False
+    assert abs(w["catboost"] - 0.70) < 1e-9
+    assert abs(w["current"] - 0.20) < 1e-9
+    assert abs(w["tabpfn"] - 0.10) < 1e-9
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+
+
+def test_tracking_governor_inactive_when_current_selected_n_below_100_even_if_others_above_100():
+    tracking = {
+        "catboost": {"selected_n": 150, "accuracy": 60.0, "brier": 0.250},
+        "current": {"selected_n": 80, "accuracy": 68.0, "brier": 0.200},
+        "tabpfn": {"selected_n": 120, "accuracy": 72.0, "brier": 0.170},
+    }
+    initial_weights = {"catboost": 0.70, "current": 0.20, "tabpfn": 0.10}
+    w, policy = _apply_tracking_governor(initial_weights, tracking)
+    assert policy["active"] is False
+    assert abs(w["catboost"] - 0.70) < 1e-9
+    assert abs(w["current"] - 0.20) < 1e-9
+    assert abs(w["tabpfn"] - 0.10) < 1e-9
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+
+
+def test_tracking_governor_weights_sum_to_one():
+    test_cases = [
+        ({"catboost": 0.90, "current": 0.10}, {"catboost": {"selected_n": 150, "accuracy": 60.0, "brier": 0.250}, "current": {"selected_n": 150, "accuracy": 68.0, "brier": 0.190}}),
+        ({"catboost": 0.50, "current": 0.40, "tabpfn": 0.10}, {"catboost": {"selected_n": 110, "accuracy": 65.0, "brier": 0.220}, "current": {"selected_n": 120, "accuracy": 67.0, "brier": 0.200}, "tabpfn": {"selected_n": 110, "accuracy": 71.0, "brier": 0.180}}),
+        ({"catboost": 0.33, "current": 0.33, "tabpfn": 0.34}, {"catboost": {"selected_n": 50, "accuracy": 50.0, "brier": 0.300}, "current": {"selected_n": 50, "accuracy": 60.0, "brier": 0.200}}),
+    ]
+    for weights, tracking in test_cases:
+        w, _ = _apply_tracking_governor(weights, tracking)
+        assert abs(sum(w.values()) - 1.0) < 1e-9

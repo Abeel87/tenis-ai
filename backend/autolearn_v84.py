@@ -815,6 +815,144 @@ def _bounded_tabpfn_weights(raw_weights: dict[str, float], previous_validation: 
     return out, gate
 
 
+def _apply_tracking_governor(weights: dict[str, float], previous_tracking: dict,
+                            tabpfn_cap: float = 0.35) -> tuple[dict[str, float], dict]:
+    weights = _normalize_weights(weights)
+    if not previous_tracking or not isinstance(previous_tracking, dict):
+        return weights, {
+            "active": False,
+            "status": "no_tracking_data",
+            "catboost_capped": False,
+            "tabpfn_boosted": False,
+            "current_floored": False,
+            "rules_applied": [],
+            "governed_weights": {k: round(v, 4) for k, v in weights.items()},
+        }
+
+    cat_tr = previous_tracking.get("catboost") or {}
+    cur_tr = previous_tracking.get("current") or {}
+    tab_tr = previous_tracking.get("tabpfn") or {}
+
+    cat_n = int(cat_tr.get("selected_n") or 0)
+    cur_n = int(cur_tr.get("selected_n") or 0)
+    tab_n = int(tab_tr.get("selected_n") or 0)
+
+    cat_acc = _num(cat_tr.get("accuracy"))
+    cur_acc = _num(cur_tr.get("accuracy"))
+    tab_acc = _num(tab_tr.get("accuracy"))
+
+    cat_brier = _num(cat_tr.get("brier"))
+    cur_brier = _num(cur_tr.get("brier"))
+    tab_brier = _num(tab_tr.get("brier"))
+
+    catboost_capped = False
+    tabpfn_boosted = False
+    rules_applied = []
+
+    if (cat_n >= 100 and cur_n >= 100 and cat_acc is not None and cur_acc is not None
+            and cat_brier is not None and cur_brier is not None):
+        if (cur_acc - cat_acc >= 1.0) and (cat_brier > cur_brier):
+            catboost_capped = True
+            rules_applied.append("catboost_capped_at_0.40")
+
+    if ("tabpfn" in weights and tab_n >= 100 and cur_n >= 100 and tab_acc is not None and cur_acc is not None
+            and tab_brier is not None and cur_brier is not None):
+        if (tab_acc > cur_acc) and (tab_brier < cur_brier):
+            tabpfn_boosted = True
+            rules_applied.append("tabpfn_boosted_to_min_0.20")
+
+    governor_active = catboost_capped or tabpfn_boosted
+
+    if not governor_active:
+        return weights, {
+            "active": False,
+            "status": "inactive",
+            "catboost_capped": False,
+            "tabpfn_boosted": False,
+            "current_floored": False,
+            "rules_applied": [],
+            "sample_sizes": {
+                "catboost_selected_n": cat_n,
+                "current_selected_n": cur_n,
+                "tabpfn_selected_n": tab_n,
+            },
+            "governed_weights": {k: round(v, 4) for k, v in weights.items()},
+        }
+
+    lower_bounds = {m: 0.0 for m in weights}
+    upper_bounds = {m: 1.0 for m in weights}
+
+    if "tabpfn" in weights:
+        upper_bounds["tabpfn"] = max(0.0, float(tabpfn_cap))
+
+    if catboost_capped and "catboost" in weights:
+        upper_bounds["catboost"] = 0.40
+
+    current_floored = False
+    if governor_active and "current" in weights:
+        lower_bounds["current"] = 0.25
+        current_floored = True
+        rules_applied.append("current_floored_at_0.25")
+
+    if tabpfn_boosted and "tabpfn" in weights:
+        effective_tab_floor = min(0.20, upper_bounds.get("tabpfn", 0.35))
+        lower_bounds["tabpfn"] = max(lower_bounds.get("tabpfn", 0.0), effective_tab_floor)
+
+    w = {}
+    for m, val in weights.items():
+        lb = lower_bounds.get(m, 0.0)
+        ub = upper_bounds.get(m, 1.0)
+        w[m] = max(lb, min(ub, float(val)))
+
+    for _ in range(30):
+        tot = sum(w.values())
+        diff = 1.0 - tot
+        if abs(diff) < 1e-9:
+            break
+        if diff > 0:
+            free = [m for m in w if w[m] < upper_bounds[m] - 1e-9]
+            if not free:
+                break
+            free_weights = sum(w[m] for m in free)
+            shares = {m: (w[m] / free_weights) if free_weights > 0 else (1.0 / len(free)) for m in free}
+            for m in free:
+                w[m] = min(upper_bounds[m], w[m] + diff * shares[m])
+        else:
+            free = [m for m in w if w[m] > lower_bounds[m] + 1e-9]
+            if not free:
+                break
+            headrooms = {m: w[m] - lower_bounds[m] for m in free}
+            tot_headroom = sum(headrooms.values())
+            shares = {m: (headrooms[m] / tot_headroom) if tot_headroom > 0 else (1.0 / len(free)) for m in free}
+            for m in free:
+                w[m] = max(lower_bounds[m], w[m] - (-diff) * shares[m])
+
+    w = _normalize_weights(w)
+
+    policy_details = {
+        "active": True,
+        "status": "active",
+        "catboost_capped": catboost_capped,
+        "tabpfn_boosted": tabpfn_boosted,
+        "current_floored": current_floored,
+        "rules_applied": rules_applied,
+        "sample_sizes": {
+            "catboost_selected_n": cat_n,
+            "current_selected_n": cur_n,
+            "tabpfn_selected_n": tab_n,
+        },
+        "metrics_evaluated": {
+            "catboost": {"accuracy": cat_acc, "brier": cat_brier},
+            "current": {"accuracy": cur_acc, "brier": cur_brier},
+            "tabpfn": {"accuracy": tab_acc, "brier": tab_brier},
+        },
+        "initial_weights": {k: round(v, 4) for k, v in weights.items()},
+        "governed_weights": {k: round(v, 4) for k, v in w.items()},
+    }
+
+    return w, policy_details
+
+
 def _choose_weights(rows, probs_by_model: dict[str, list[float]], previous_weights: dict,
                     previous_validation: dict, previous_tracking: dict,
                     tab_refreshed: bool, tab_cached_available: bool = False) -> tuple[dict[str, float], dict]:
@@ -826,7 +964,11 @@ def _choose_weights(rows, probs_by_model: dict[str, list[float]], previous_weigh
 
     def finish(weights, policy, names):
         stable, stability = _stabilize_ensemble_weights(weights, names, rows)
-        return stable, {**policy, "stability": stability}
+        tab_cap = policy.get("cap", 0.35) if isinstance(policy, dict) else 0.35
+        governed_weights, tracking_governor = _apply_tracking_governor(
+            stable, previous_tracking, tabpfn_cap=tab_cap
+        )
+        return governed_weights, {**policy, "stability": stability, "tracking_governor": tracking_governor}
 
     if tab_refreshed and "tabpfn" in available:
         raw = _optimize_weights(rows, available)
@@ -1434,15 +1576,15 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "tracking_all_versions": tracking_all_versions,
         "generator": {
             "selection_threshold": GENERATOR_SELECT_THRESHOLD * 100,
-            "policy": "quality_first_soft_fill_v84a1",
+            "policy": "quality_lock_no_forced_fill_v852",
             "logic_guard": "majority_consensus_calibration_gate_weight_cap_v84b",
             "dynamic_weight_guard": "bounded_segment_shrinkage_v84d",
             "market_policy": "existing_signals_and_existing_lines_only",
             "profile_thresholds": {
-                "stable": {"strong": 65, "floor": 58, "min_average": 64},
-                "balanced": {"strong": 64, "floor": 57, "min_average": 63},
-                "strong": {"strong": 70, "floor": 63, "min_average": 68},
-                "experimental": {"strong": 60, "floor": 54, "min_average": 60},
+                "stable": {"strong": 78, "floor": 74, "min_average": 74},
+                "balanced": {"strong": 76, "floor": 72, "min_average": 72},
+                "strong": {"strong": 84, "floor": 80, "min_average": 80},
+                "experimental": {"strong": 68, "floor": 62, "min_average": 62},
             },
             "captured_matches_this_run": captured,
         },

@@ -80,7 +80,7 @@
       const d7=scopeModel(telemetry,'7d',id),d30=scopeModel(telemetry,'30d',id);
       const label=d30.label||d7.label||telemetry?.models?.[id]||id;
       return `<tr>
-        <td><b>${esc(label)}</b><small>${id==='generator'?'finalny wybór':'próg ≥65'}</small></td>
+        <td><b>${esc(label)}</b><small>${id==='generator'?'proxy selektora Ensemble (nie mecze z UI)':'próg ≥65'}</small></td>
         <td>${Number(d7.selected_n||0)}<small>${pct(d7.accuracy)}</small></td>
         <td>${Number(d30.hits||0)}–${Number(d30.misses||0)}</td>
         <td><b>${pct(d30.accuracy)}</b><small>n=${Number(d30.selected_n||0)}</small></td>
@@ -103,11 +103,11 @@
     }
     const top=(telemetry.top_segments_30d||[]).slice(0,6).map(x=>`<span><b>${esc(x.label)}</b> · ${esc(x.dimension)}=${esc(x.value)} · n=${Number(x.selected_n||0)} · ${pct(x.accuracy)}</span>`).join('');
     return `<section class="al84-telemetry">
-      <div class="al84-telemetry-head"><div><b>📡 TELEMETRIA v8.4C</b><small>Modele bazowe + ML + finalny Generator AI</small></div><span>${esc(telemetry.status||'COLLECTING')}</span></div>
+      <div class="al84-telemetry-head"><div><b>📡 TELEMETRIA v8.4C</b><small>Modele bazowe + ML + Ensemble selector proxy</small></div><span>${esc(telemetry.status||'COLLECTING')}</span></div>
       <div class="al84-table-wrap"><table class="al84-table"><thead><tr><th>Model</th><th>7 dni</th><th>HIT–MISS 30d</th><th>Accuracy 30d</th><th>Brier</th><th>ROI</th></tr></thead><tbody>${telemetryRows(telemetry)}</tbody></table></div>
       <div class="al84-agreement-grid">${agreementBlock(telemetry,'Zgodność modeli bazowych','specialists')}${agreementBlock(telemetry,'Zgodność Current / CatBoost / TabPFN','ml')}</div>
       <div class="al84-top-segments"><b>Najlepsze segmenty 30d</b><div>${top||'<span>Za mała próbka — zbieramy dane.</span>'}</div></div>
-      <p class="al84-note">ROI pokazujemy tylko z rzeczywiście zapisanych kursów; brak kursu = N/D. Segmenty są na razie telemetryką i nie zmieniają automatycznie wag produkcyjnych.</p>
+      <p class="al84-note">Linia „Ensemble selector proxy” pokazuje automatyczne zamrożone pozycje z selektora Ensemble (proxy), a nie indywidualne modyfikacje użytkownika w Generatorze AI UI. ROI pokazujemy tylko z rzeczywiście zapisanych kursów; brak kursu = N/D.</p>
     </section>`;
   }
 
