@@ -38,7 +38,7 @@ MODEL_LABELS = {
     "tabpfn": "TabPFN-2",
     "ensemble": "Ensemble",
     "dynamic": "Dynamic Ensemble v8.4D",
-    "generator": "Generator AI",
+    "generator": "Ensemble selector proxy",
 }
 MODEL_ORDER = list(MODEL_LABELS)
 

@@ -73,6 +73,14 @@ def test_generator_has_profile_soft_fill_without_forced_junk():
     assert "minAverage" in s
     assert "generatorTotalMarketable" in s
     assert "Nie dokładam słabszych na siłę" in s
+    assert "floor:72" in s
+    assert "floor:74" in s
+    assert "floor:80" in s
+    assert "floor:62" in s
+    assert "floor:57" not in s
+    assert "floor:58" not in s
+    assert "floor:63" not in s
+    assert "b.avgScore" in s
 
 
 def test_generated_signal_exposes_model_votes_readably():

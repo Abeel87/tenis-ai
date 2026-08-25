@@ -27,7 +27,8 @@ def main():
         ERRORS.append("backend AutoLearn nie jest kompatybilny z v8.4A.1+")
     req(auto,"def _choose_weights","brak zachowania wagi challengera między retrainingami")
     req(auto,"def _bounded_tabpfn_weights","brak bounded weight policy TabPFN")
-    req(auto,'"quality_first_soft_fill_v84a1"',"report nie opisuje nowej polityki generatora")
+    changelog=read("CHANGELOG.md")
+    req(changelog,'quality_lock_no_forced_fill_v852',"CHANGELOG nie opisuje nowej polityki quality_lock_no_forced_fill_v852")
     req(auto,'"weight_policy": weight_policy',"report nie publikuje weight_policy")
 
     if not any(v in front for v in ("const VERSION='v8.4A.1'", "const VERSION='v8.4A.2'", "const VERSION='v8.4B'")):
@@ -42,6 +43,12 @@ def main():
         "generator nadal odrzuca mecze przed próbą bezpiecznego uzupełnienia")
     req(scenario,"raw_ensemble_score","scenariusz nie zapisuje raw Ensemble")
     req(scenario,"base_source_model","scenariusz nie zachowuje bazowego modelu")
+    req(scenario,"floor:72","brak hard floor 72 dla balanced")
+    req(scenario,"floor:74","brak hard floor 74 dla stable")
+    req(scenario,"floor:80","brak hard floor 80 dla strong")
+    req(scenario,"floor:62","brak hard floor 62 dla experimental")
+    if any(old_floor in scenario for old_floor in ("floor:57", "floor:58", "floor:63")):
+        ERRORS.append("wykryto stare progi floor 57/58/63 w scenario-studio-v82a.js")
 
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a2", "autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS v8.4A.1+")
