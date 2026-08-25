@@ -138,7 +138,8 @@ def strength_set1(s):
 
 
 def strength_form(s):
-    fatigue = clamp(_num(s.get("fatigue_load"), 0), 0, 6) / 6
+    # model.py stores fatigue_load as a compact 0..0.18 load ratio.
+    fatigue = clamp(_num(s.get("fatigue_load"), 0), 0, 0.18) / 0.18
     inactivity = clamp((_num(s.get("days_since_last"), 0) - 35) / 140, 0, 1)
     return (.40 * pc(s.get("won")) + .30 * pc(s.get("first_set_won"))
             + .16 * pc(s.get("second_set_won")) + .08 * pc(s.get("third_set_won"))
@@ -222,6 +223,10 @@ def total_signals(m, mode):
     s1, s2, out = m.get("p1_stats") or {}, m.get("p2_stats") or {}, []
     hb = hold_balance(m)
     for line in (m.get("over_under") or {}).keys():
+        # 10.5 and 11.5 describe the same practical first-set threshold.
+        # Keep the bookmaker-supported line so training never sees duplicates.
+        if str(line) == "11.5":
+            continue
         over = expected_over(s1, s2, line)
         if mode == "serve":
             over = .62*over + .38*clamp((hb["avg"] - 58)/30, 0, 1)
@@ -488,6 +493,11 @@ def run(now=None):
     if not isinstance(history, list): history = []
     if not isinstance(meta, dict): meta = {}
 
+    # Persist the exact canonical specialist/Consensus snapshot used by learning.
+    # The UI reads this field instead of recalculating an older browser variant.
+    for match in results:
+        match["specialist_signals_v79b_current"] = specialist_signals(match)
+    _write(RESULTS_PATH, results)
     history, matches, signals = capture(history, results, now=now)
     history = sorted(history, key=lambda e: e.get("scheduled_time") or "", reverse=True)[:2500]
     _write(HISTORY_PATH, history)

@@ -29,19 +29,27 @@
     const url = urlOf(input);
     if (!url || url.origin !== location.origin) return null;
     if (!url.pathname.includes('/data/') || !url.pathname.endsWith('.json')) return null;
-    return url.pathname;
+    return `${url.pathname}${url.search}`;
   }
 
   function ttlFor(key) {
-    if (key.endsWith('/data/results.json')) return 60000;
-    if (key.endsWith('/data/history.json')) return 60000;
-    if (key.endsWith('/data/history_stats.json')) return 30000;
+    const path = String(key).split('?')[0];
+    if (path.endsWith('/data/results.json')) return 60000;
+    if (path.endsWith('/data/history.json')) return 60000;
+    if (path.endsWith('/data/history_stats.json')) return 30000;
     return 15000;
   }
 
   async function cachedFetch(input, init) {
     const key = dataKey(input, init);
     if (!key) return nativeFetch(input, init);
+
+    const mode = String(init?.cache || (input instanceof Request ? input.cache : '') || '').toLowerCase();
+    if (mode === 'no-store' || mode === 'reload' || mode === 'no-cache') {
+      invalidate(key.split('?')[0]);
+      stats.network += 1;
+      return nativeFetch(input, init);
+    }
 
     const now = Date.now();
     const hit = cache.get(key);

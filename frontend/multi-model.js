@@ -35,7 +35,7 @@
     const c=[];
     const bin=(market,prefix,obj)=>{const e=bestEntry(obj);if(e)c.push(mk(`${market}|${keySafe(e[0])}`,`${prefix}: ${e[0]}`,e[1],market,e[0]))};
     bin('match_win','Mecz',m.match_win);bin('set1_win','1. set',m.first_set_win);bin('set2_win','2. set',m.second_set_win);bin('set3_win','3. set*',m.third_set_win);bin('total_sets','Sety',m.total_sets);
-    if(m.over_under)Object.entries(m.over_under).forEach(([line,v])=>{if(!v)return;const over=Number(v.over),under=Number(v.under);const pick=over>=under?'over':'under';c.push(mk(`set1_total|${line}|${pick}`,`1S ${pick==='over'?'O':'U'}${line}`,pick==='over'?over:under,'set1_total',pick))});
+    if(m.over_under)Object.entries(m.over_under).forEach(([line,v])=>{if(!v||String(line)==='11.5')return;const over=Number(v.over),under=Number(v.under);const pick=over>=under?'over':'under';c.push(mk(`set1_total|${line}|${pick}`,`1S ${pick==='over'?'O':'U'}${line}`,pick==='over'?over:under,'set1_total',pick))});
     if(m.match_over_under)Object.entries(m.match_over_under).forEach(([line,v])=>{if(!v)return;const over=Number(v.over),under=Number(v.under);const pick=over>=under?'over':'under';c.push(mk(`match_total|${line}|${pick}`,`M ${pick==='over'?'O':'U'}${line}`,pick==='over'?over:under,'match_total',pick))});
     if(m.game_states) ['2','4','6'].forEach(n=>{const e=bestEntry(m.game_states[n]);if(e)c.push(mk(`state|${n}|${e[0]}`,`Po ${n}: ${e[0]}`,e[1],`state${n}`,e[0]))});
     return c;
@@ -44,7 +44,7 @@
   function strengthServe(s){return .34*pc(s.hold_rate)+.22*pc(s.break_rate)+.18*pc(s.serve_points_won)+.16*pc(s.return_points_won)+.10*pc(s.won)}
   function strengthSet1(s){return .30*pc(s.first_set_won)+.25*pc(s.hold_rate)+.18*pc(s.break_rate)+.14*pc(s.serve_points_won)+.13*pc(s.return_points_won)}
   function strengthForm(s){
-    const fatigue=clamp(Number(s.fatigue_load||0),0,6)/6;
+    const fatigue=clamp(Number(s.fatigue_load||0),0,.18)/.18;
     const inactivity=clamp((Number(s.days_since_last||0)-35)/140,0,1);
     return .40*pc(s.won)+.30*pc(s.first_set_won)+.16*pc(s.second_set_won)+.08*pc(s.third_set_won)+.06*(1-fatigue)-.05*inactivity;
   }
