@@ -91,8 +91,6 @@ jobs:
           HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '3'
           HISTORY_BACKFILL_MAX_CACHE_MB: '900'
         run: python backend/history_backfill_v83.py
-      - name: Adaptive Learning v7.9B
-        run: python backend/adaptive_learning_v79.py
       - name: Optional TabPFN V2 runtime v8.4A
         env:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
@@ -109,6 +107,8 @@ jobs:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
           TABPFN_NO_BROWSER: '1'
         run: python backend/autolearn_v84.py
+      - name: Adaptive Learning v7.9B controlled PROD
+        run: python backend/adaptive_learning_v79.py
       - name: Accuracy Shadow Lab v8.6
         env:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
@@ -129,6 +129,10 @@ jobs:
         run: python scripts/verify_v852_quality_lock.py
       - name: Runtime & UI Guard v8.5.3
         run: python scripts/verify_v853_runtime_ui.py
+      - name: Match Decision Center Guard v8.7
+        run: |
+          python scripts/verify_v87_decision_center.py
+          node tests/decision_center_smoke.mjs
       - name: Accuracy Shadow Guard v8.6
         run: python scripts/verify_v86_accuracy_shadow.py
       - name: AutoLearn Calibration Guard v8.4A.2

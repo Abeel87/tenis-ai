@@ -121,7 +121,7 @@
     const html=`<section id="pi85-stats" class="pi85-stats"><header class="pi85-head"><div><b>🧬 Player Intelligence v8.5</b><small>Player vs Ensemble vs Ensemble+Player</small></div><em>SHADOW</em></header>
       <div class="pi85-tel-grid">${telCard('Player',m.player,'🧬')}${telCard('Ensemble',m.ensemble,'🔗')}${telCard('Ensemble + Player',m.ensemble_player_shadow,'⚡')}</div>
       <div class="pi85-surface-stats">${Object.entries(pi.by_surface||{}).map(([s,v])=>`<span><b>${esc(s.toUpperCase())}</b> ${pct(v?.ensemble_player_shadow?.accuracy)} · n=${Number(v?.ensemble_player_shadow?.selected_n||0)}</span>`).join('')}</div>
-      <p class="pi85-note">Monitoring, nie autopilot: Player nie zmienia wag produkcyjnych. Generator może dostać wyłącznie mały, ograniczony bonus/karę jakościową.</p></section>`;
+      <p class="pi85-note">SHADOW, nie autopilot: Player nie zmienia wag, wyniku Ensemble, Generatora ani final_score.</p></section>`;
     app.insertAdjacentHTML('afterbegin',html);
   }
 

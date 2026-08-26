@@ -1,8 +1,8 @@
 # Tenis AI
 
-Aktualna wersja aplikacji: **v8.0 Clean Core**.
+Aktualny kierunek aplikacji: **v8.7 Decision Center + Adaptive PROD**.
 
-Tenis AI analizuje mecze tenisowe, śledzi rynki meczowe i setowe, zapisuje rozliczone prognozy oraz prowadzi kontrolowaną pętlę Adaptive Learning w trybie SHADOW.
+Tenis AI analizuje mecze tenisowe, śledzi rynki meczowe i setowe, zapisuje rozliczone prognozy oraz prowadzi kontrolowaną pętlę Adaptive Learning w trybie ograniczonego PROD.
 
 ## Główne elementy
 
@@ -11,7 +11,8 @@ Tenis AI analizuje mecze tenisowe, śledzi rynki meczowe i setowe, zapisuje rozl
 - `backend/calibration_guard_v78d.py` — kalibracja bieżącej wersji.
 - `backend/shadow_lab_v78e6.py` — odrzucone sygnały / Shadow Lab.
 - `backend/specialist_learning_v79b.py` — learning-only dla Early, Serve/Return, Form, Surface i Consensus.
-- `backend/adaptive_learning_v79.py` — Bayesian Online Meta-Learner i analiza błędów po meczu.
+- `backend/adaptive_learning_v79.py` — Bayesian Online Meta-Learner i ograniczona korekta po surowym Ensemble.
+- `frontend/model-guide.js` — Centrum Decyzji Meczu: Top / Wszystkie / PRO, filtry, wyszukiwarka i szczegóły modeli.
 - `frontend/clean-core-v80.js` — kanoniczna Historia v8.0 i Post-Match Center.
 - `frontend/ui-v751.js` — aktywny Match Center / bridge starszego UI; będzie dalej konsolidowany w kolejnych wydaniach v8.x.
 
@@ -29,6 +30,8 @@ python scripts/project_health.py
 
 ## Ważne
 
-Adaptive Learning działa w trybie **SHADOW**: uczy się i pokazuje korekty, ale nie może automatycznie zmieniać produkcyjnych typów bez odpowiedniej próbki i walidacji.
+Adaptive Learning działa jako **kontrolowany PROD**: `COLLECTING` nie zmienia wyniku, `EARLY` może skorygować go maksymalnie o ±4 pp, a `STRONG` maksymalnie o ±8 pp. Oryginalny Ensemble pozostaje zapisany jako RAW, obok wyniku po Adaptive.
+
+Player Intelligence oraz Accuracy Lab v8.6 pozostają w trybie **SHADOW** i nie zmieniają produkcyjnego wyniku.
 
 Modele nie gwarantują wygranej ani zysku.

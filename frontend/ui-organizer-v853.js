@@ -184,7 +184,7 @@
     ensureHealthToggle();
     const pi=document.querySelector('#pi85-stats');
     const al=document.querySelector('#al84-performance');
-    if(pi) ensureSectionLabel(pi,'Player Intelligence','Profil zawodników i wpływ Player na Ensemble');
+    if(pi) ensureSectionLabel(pi,'Player Intelligence','Profil zawodników · SHADOW bez wpływu na wynik');
     if(al) ensureSectionLabel(al,'Modele produkcyjne','Current · CatBoost · TabPFN · Ensemble');
   }
 

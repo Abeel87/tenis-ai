@@ -229,13 +229,13 @@
     return parts.length?`Ensemble ${parts.join('/')}`:'Ensemble';
   }
 
-  // PLAYER_INTELLIGENCE_V85_ASSIST — bounded support only; production Ensemble weights stay untouched.
+  // PLAYER_INTELLIGENCE_V85_SHADOW_ONLY — telemetry/display only; never changes a score.
   function playerAssist(m,s){
     try{return window.TENIS_AI_PLAYER_V85?.supportFor?.(m,s)||null}catch{return null}
   }
   function playerBadge(m,s){
-    const p=playerAssist(m,s),v=num(p?.support_score);
-    return v==null?'':` · 🧬 ${v>=0?'+':''}${Math.round(v)}`;
+    const p=playerAssist(m,s);
+    return p?' · 🧬 SHADOW':'';
   }
 
   function composerSignalScore(m,s,profile='balanced'){
@@ -266,13 +266,8 @@
     if(hi-lo>=18)score-=2.0;
     if(profile==='stable'&&['start','games'].includes(categoryOf(s)))score+=1;
     if(ensemble<p.mlFloor&&legacy<p.legacyRescue)score=Math.min(score,p.floor-.5);
-    // v8.5: small bounded Generator assist. This does NOT alter Ensemble model weights.
-    const pi=playerAssist(m,s);
-    const ps=num(pi?.support_score),pq=String(pi?.quality||'N/D').toUpperCase();
-    if(ps!=null&&pq!=='N/D'){
-      const cap=pq==='HIGH'?2:pq==='MEDIUM'?1:.5;
-      score+=Math.max(-cap,Math.min(cap,ps*.20));
-    }
+    // Player Intelligence remains strictly SHADOW. Its payload is available for
+    // diagnostics and badges, but it cannot alter the Generator or Ensemble score.
     return clamp(score);
   }
   function generatorFamily(s){

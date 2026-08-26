@@ -55,6 +55,11 @@ jobs:
       - name: Runtime & UI Guard v8.5.3
         run: python scripts/verify_v853_runtime_ui.py
 
+      - name: Match Decision Center Guard v8.7
+        run: |
+          python scripts/verify_v87_decision_center.py
+          node tests/decision_center_smoke.mjs
+
       - name: Project health
         run: python scripts/project_health.py
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## v8.7 — Match Decision Center + Adaptive PROD
+
+- szeroka macierz została zastąpiona przez Centrum Decyzji Meczu z trybami Top / Wszystkie / PRO;
+- dodano filtry Wynik / Gemy / Po 2/4/6 / Specjalne, wyszukiwarkę i rozwijane szczegóły modeli;
+- Adaptive Learning działa jako ograniczona korekta po Ensemble: COLLECTING 0 pp, EARLY ±4 pp, STRONG ±8 pp;
+- zachowano pełny audyt RAW Ensemble → wynik po Adaptive bez zmiany Current/CatBoost/TabPFN/Ensemble;
+- Player Intelligence oraz Accuracy Lab v8.6 pozostają SHADOW;
+- poprawiono responsywność panelu Adaptive, w tym długie wartości i listę podpiętych modeli;
+- workflow uruchamia Adaptive dopiero po AutoLearn Ensemble;
+- dodano testy i guardy kontraktu PROD oraz nowego widoku.
+
 ## v8.6 — Accuracy Shadow Lab
 
 - dodano bezpieczny tryb Shadow/A-B bez automatycznego wpływu na produkcyjne typy;

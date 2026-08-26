@@ -2,7 +2,7 @@
 
 ## 1. Produkcja danych
 
-Workflow `update-and-pages.yml` aktualizuje dane, wykonuje modele, PBP, Integrity Guard, historię, specialist learning, Shadow Lab, settlement i Adaptive Learning. Ta kolejność jest częścią kontraktu systemu.
+Workflow `update-and-pages.yml` aktualizuje dane, wykonuje modele, PBP, Integrity Guard, historię, specialist learning, Shadow Lab i settlement. Następnie wylicza AutoLearn Ensemble, a dopiero po nim nakłada Adaptive Learning jako ograniczoną warstwę końcową. Ta kolejność jest częścią kontraktu systemu.
 
 ## 2. Modele
 
@@ -10,13 +10,14 @@ Workflow `update-and-pages.yml` aktualizuje dane, wykonuje modele, PBP, Integrit
 - Early Hold PBP — początek 1. seta z game-by-game, gdy dane są dostępne.
 - Consensus, Early, Serve/Return, Form, Surface — dodatkowe modele śledzone learning-only.
 - Calibration Guard — mierzy rzeczywistą skuteczność i nie pozwala mylić score z probability.
-- Adaptive Learning — meta-warstwa Bayesowska ucząca się z rozliczonych błędów.
+- Adaptive Learning — meta-warstwa Bayesowska ucząca się z rozliczonych błędów; zachowuje surowe Current/CatBoost/TabPFN/Ensemble i dopisuje osobny `final_score`.
+- Player Intelligence i Accuracy Lab v8.6 — warstwy SHADOW bez wpływu na produkcyjny wynik.
 
 ## 3. Frontend
 
 ### Kanoniczne widoki v8
 
-- Match Center: obecny `ui-v751.js` + aktywne moduły analityczne.
+- Match Center: obecny `ui-v751.js` + Centrum Decyzji Meczu w `model-guide.js`.
 - History / Post-Match Center: wyłącznie `clean-core-v80.js`.
 - Status Adaptive: `adaptive-learning-v79.js`, wizualnie kompresowany przez Clean Core.
 
@@ -32,6 +33,8 @@ Pliki z historycznymi numerami wersji mogą pozostać tylko wtedy, gdy są nadal
 - `learning_signals_v79b` — modele specjalistyczne learning-only;
 - `adaptive_review_v79` — przyczyna błędu, korekta score i lekcja modelu;
 - `result` — wynik końcowy i sety.
+
+Adaptive PROD stosuje limity per komórka dowodowa: `COLLECTING = 0 pp`, `EARLY = ±4 pp`, `STRONG = ±8 pp`. Pole `ensemble` jest kontraktem RAW i nie jest nadpisywane.
 
 Nie dopasowujemy już analizy pomeczowej do kart po indeksach DOM.
 

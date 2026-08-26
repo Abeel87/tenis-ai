@@ -863,8 +863,8 @@ def _telemetry(history: list[dict]) -> dict:
         "models": models,
         "by_surface": by_surface,
         "production_influence": False,
-        "generator_assist": "bounded_ui_composer_support",
-        "note": "Player Intelligence używa wyłącznie danych dostępnych przed meczem i istniejącego cache; nie wykonuje własnych requestów API.",
+        "generator_assist": "disabled_shadow_only",
+        "note": "Player Intelligence pozostaje SHADOW: nie zmienia Ensemble, Generatora ani final_score i nie wykonuje własnych requestów API.",
     }
 
 

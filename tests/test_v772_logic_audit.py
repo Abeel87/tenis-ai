@@ -9,11 +9,11 @@ def test_frontend_bridge_and_ui():
     mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
-    assert 'Siła sygnału' in ui
+    assert 'SiĹ‚a sygnaĹ‚u' in ui
     assert 'zielonych' in ui
-    assert 'Ocena sygnału' in ui
+    assert 'Ocena sygnaĹ‚u' in ui
     assert 'data-sp-market="p772-' in ui
-    assert 'tracker rozlicza też liczbę tie-breaków' in ui
+    assert 'tracker rozlicza teĹĽ liczbÄ™ tie-breakĂłw' in ui
 
 def test_player_analytics_formula_parity():
     ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
@@ -59,5 +59,6 @@ def test_history_source_and_pwa():
     assert "const CACHE = 'tenis-ai-" in sw
     assert "appVersion: 'v8.0.1'" in meta
     assert "modelVersion: 'v7.8D'" in meta
-    assert "modelName: 'Calibration Guard + Adaptive Learning'" in meta
+    assert "modelName: 'AutoLearn Ensemble + Adaptive Learning'" in meta
+    assert "productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD'" in meta
     assert 'app-meta.js?v=' in idx

@@ -15,7 +15,7 @@ REPORT_PATH = OUT / "adaptive_learning_v79.json"
 META_PATH = OUT / "meta.json"
 
 VERSION = "v7.9B-bayesian-meta"
-MODE = "shadow"
+MODE = "PROD"
 CURRENT_MODEL_VERSION = "v7.8D-calibration-guard"
 OFFICIAL_WEIGHT = 1.0
 SHADOW_WEIGHT = 0.60
@@ -26,6 +26,11 @@ STRONG_CELL_SAMPLE = 20.0
 PROMOTION_SAMPLE = 300
 PRIOR_STRENGTH = 12.0
 MAX_LOGIT_SHIFT = 0.80
+PRODUCTION_CAP_PP = {
+    "COLLECTING": 0.0,
+    "EARLY": 4.0,
+    "STRONG": 8.0,
+}
 
 
 def _read(path: Path, fallback):
@@ -172,6 +177,14 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
                 )
                 if row:
                     rows.append(row)
+            # Ensemble is frozen before the match by AutoLearn and settled through
+            # the same result pipeline. Learn its residual independently so the
+            # production correction remains a post-adjustment and never changes
+            # Current/CatBoost/TabPFN weights or their raw scores.
+            for signal in entry.get("autolearn_signals_v84") or []:
+                row = _training_row(entry, signal, OFFICIAL_WEIGHT, "ensemble_v84")
+                if row:
+                    rows.append(row)
 
     for entry in pbp_history or []:
         if not isinstance(entry, dict) or entry.get("status") != "settled":
@@ -296,11 +309,15 @@ def adjust_score(score: float, source_model: str, signal: dict, cells: dict, tou
         shift = 0.0
     shift = _clamp(shift, -MAX_LOGIT_SHIFT, MAX_LOGIT_SHIFT)
 
-    learned = _sigmoid(_logit(raw_score / 100.0) + shift) * 100.0
+    proposed = _sigmoid(_logit(raw_score / 100.0) + shift) * 100.0
     best = max(candidates, key=lambda x: x[1]) if candidates else None
     best_cell = best[3] if best else None
     n = best_cell.get("effective_n") if best_cell else 0
     hist_acc = best_cell.get("accuracy") if best_cell else None
+    evidence = best_cell.get("evidence") if best_cell else "COLLECTING"
+    cap_pp = PRODUCTION_CAP_PP.get(evidence, 0.0)
+    applied_delta = _clamp(proposed - raw_score, -cap_pp, cap_pp)
+    learned = _clamp(raw_score + applied_delta, 1.0, 99.0)
 
     if not candidates:
         action = "collect"
@@ -317,13 +334,17 @@ def adjust_score(score: float, source_model: str, signal: dict, cells: dict, tou
 
     return {
         "raw_score": round(raw_score, 1),
+        "uncapped_score": round(proposed, 1),
         "learned_score": round(learned, 1),
+        "final_score": round(learned, 1),
         "delta": round(learned - raw_score, 1),
+        "cap_pp": cap_pp,
+        "applied": evidence != "COLLECTING" and abs(learned - raw_score) >= 0.05,
         "action": action,
         "lesson": lesson,
         "similar_n": n,
         "historical_accuracy": hist_acc,
-        "evidence": best_cell.get("evidence") if best_cell else "COLLECTING",
+        "evidence": evidence,
         "components": [
             {
                 "level": level,
@@ -334,6 +355,75 @@ def adjust_score(score: float, source_model: str, signal: dict, cells: dict, tou
             for _, _, level, cell in sorted(candidates, key=lambda x: x[1], reverse=True)[:3]
         ],
     }
+
+
+def _decorate_ensemble_signal(signal: dict, cells: dict, tour="", surface="") -> dict:
+    """Add bounded Adaptive PROD output without mutating any model score."""
+    item = dict(signal)
+    raw = _num(item.get("ensemble"))
+    if raw is None:
+        # Frozen AutoLearn history stores the Ensemble value in score and keeps
+        # the individual RAW model values under model_scores.
+        raw = _num(item.get("score"))
+    if raw is None:
+        return item
+    review = adjust_score(raw, "ensemble_v84", item, cells, tour, surface)
+    # Preserve the exact published Ensemble number as the official RAW value.
+    # adjust_score uses its own safe 1..99 math clamp, but must not rewrite RAW.
+    raw_score = raw
+    final_score = review["final_score"]
+    item.update({
+        **review,
+        "ensemble_raw": raw_score,
+        "raw_score": raw_score,
+        "final_score": final_score,
+        "adaptive_delta_pp": review["delta"],
+        "adaptive_prod_v79": {
+            "version": VERSION,
+            "mode": MODE,
+            "status": review["evidence"],
+            "evidence": review["evidence"],
+            "applied": review["applied"],
+            "cap_pp": review["cap_pp"],
+            "raw_score": raw_score,
+            "final_score": final_score,
+            "delta_pp": review["delta"],
+            "similar_n": review["similar_n"],
+            "historical_accuracy": review["historical_accuracy"],
+            "action": review["action"],
+            "lesson": review["lesson"],
+        },
+    })
+    return item
+
+
+def decorate_frozen_history(history: list[dict], cells: dict) -> list[dict]:
+    """Freeze Adaptive PROD beside RAW Ensemble for newly captured predictions."""
+    out = []
+    for entry in history or []:
+        if not isinstance(entry, dict):
+            continue
+        e = dict(entry)
+        frozen = []
+        for signal in e.get("autolearn_signals_v84") or []:
+            if not isinstance(signal, dict):
+                continue
+            # Never recompute a prediction after it has been frozen. This keeps
+            # later learning data from leaking into an earlier official score.
+            if signal.get("adaptive_prod_v79"):
+                frozen.append(signal)
+            elif signal.get("result") == "pending":
+                frozen.append(_decorate_ensemble_signal(
+                    signal, cells, e.get("tour"), e.get("surface")
+                ))
+            else:
+                # Legacy settled rows predate PROD and must not be backfilled
+                # using future evidence.
+                frozen.append(signal)
+        if "autolearn_signals_v84" in e:
+            e["autolearn_signals_v84"] = frozen
+        out.append(e)
+    return out
 
 
 def _core_signals(match: dict) -> list[dict]:
@@ -418,21 +508,53 @@ def decorate_results(results: list[dict], cells: dict) -> list[dict]:
         if not isinstance(match, dict):
             continue
         m = dict(match)
+        auto = m.get("autolearn_v84")
         learned = []
-        for signal in _core_signals(m):
-            review = adjust_score(
-                signal["score"], signal.get("source_model") or "adaptive", signal, cells,
-                m.get("tour"), m.get("surface"),
+        if isinstance(auto, dict) and isinstance(auto.get("signals"), list):
+            decorated_signals = [
+                _decorate_ensemble_signal(signal, cells, m.get("tour"), m.get("surface"))
+                for signal in auto.get("signals") or []
+                if isinstance(signal, dict)
+            ]
+            decorated_signals.sort(
+                key=lambda x: (-float(x.get("final_score") or x.get("ensemble") or 0), x.get("key") or "")
             )
-            learned.append({**signal, **review})
-        learned.sort(key=lambda x: (-float(x.get("learned_score") or 0), x.get("label") or ""))
+            auto_out = dict(auto)
+            auto_out["signals"] = decorated_signals
+            auto_out["by_key"] = {
+                signal["key"]: signal for signal in decorated_signals if signal.get("key")
+            }
+            m["autolearn_v84"] = auto_out
+            learned = decorated_signals
+
+        # Current Engine is a safe fallback when AutoLearn has not produced an
+        # Ensemble signal. Once Ensemble exists, it is the sole production base.
+        if not learned:
+            for signal in _core_signals(m):
+                review = adjust_score(
+                    signal["score"], signal.get("source_model") or "adaptive", signal, cells,
+                    m.get("tour"), m.get("surface"),
+                )
+                learned.append({**signal, **review})
+            learned.sort(key=lambda x: (-float(x.get("final_score") or 0), x.get("label") or ""))
+
         trained = [x for x in learned if x.get("evidence") != "COLLECTING"]
+        applied = [x for x in learned if x.get("applied")]
         m["adaptive_learning_v79"] = {
             "version": VERSION,
             "mode": MODE,
-            "status": "LEARNING" if trained else "COLLECTING",
+            "status": "ACTIVE" if trained else "COLLECTING",
             "signals": learned[:18],
-            "note": "Korekta ucząca działa w trybie SHADOW i nie nadpisuje oficjalnego score v7.8D.",
+            "applied_signals": len(applied),
+            "policy": {
+                "COLLECTING": {"cap_pp": PRODUCTION_CAP_PP["COLLECTING"], "influence": False},
+                "EARLY": {"cap_pp": PRODUCTION_CAP_PP["EARLY"], "influence": True},
+                "STRONG": {"cap_pp": PRODUCTION_CAP_PP["STRONG"], "influence": True},
+            },
+            "note": (
+                "Kontrolowany PROD: final_score jest ograniczoną korektą po Ensemble; "
+                "current/catboost/tabpfn/ensemble oraz ensemble_raw pozostają bez zmian."
+            ),
         }
         out.append(m)
     return out
@@ -544,6 +666,7 @@ def decorate_history(history: list[dict], pbp_history: list[dict], cells: dict) 
             list(e.get("signals") or [])
             + list(e.get("shadow_signals") or [])
             + list(e.get("learning_signals_v79b") or [])
+            + list(e.get("autolearn_signals_v84") or [])
         )
         for signal in all_review_signals:
             if signal.get("result") not in ("hit", "miss"):
@@ -579,8 +702,8 @@ def decorate_history(history: list[dict], pbp_history: list[dict], cells: dict) 
                 "misses": misses,
                 "lessons": lessons[:8],
                 "summary": (
-                    "Model zapisuje błędy jako dane uczące. Zmiany score pozostają w Shadow, "
-                    "dopóki próbka i walidacja nie będą wystarczająco mocne."
+                    "Model zapisuje błędy jako dane uczące. W PROD wpływ zależy od próbki: "
+                    "COLLECTING 0 pp, EARLY maks. 4 pp, STRONG maks. 8 pp."
                 ),
             }
         out.append(e)
@@ -608,11 +731,19 @@ def _repeated_errors(cells: dict) -> list[dict]:
 
 
 def build_report(rows: list[dict], cells: dict) -> dict:
-    official_rows = [r for r in rows if r["weight"] == OFFICIAL_WEIGHT and r["source_model"] != "early_hold_pbp"]
+    base_official_rows = [
+        r for r in rows
+        if r["weight"] == OFFICIAL_WEIGHT
+        and r["source_model"] not in ("early_hold_pbp", "ensemble_v84")
+    ]
+    ensemble_rows = [r for r in rows if r["source_model"] == "ensemble_v84"]
     source_counts = defaultdict(float)
     for row in rows:
         source_counts[row["source_model"]] += row["weight"]
-    official_n = sum(r["weight"] for r in official_rows)
+    base_official_n = sum(r["weight"] for r in base_official_rows)
+    ensemble_n = sum(r["weight"] for r in ensemble_rows)
+    production_n = ensemble_n if ensemble_n else base_official_n
+    production_source = "ensemble_v84" if ensemble_n else "adaptive_base_fallback"
     repeated = _repeated_errors(cells)
     return {
         "version": VERSION,
@@ -627,30 +758,40 @@ def build_report(rows: list[dict], cells: dict) -> dict:
             "shadow_weight": SHADOW_WEIGHT,
             "pbp_weight": PBP_WEIGHT,
             "specialist_weight": SPECIALIST_WEIGHT,
+            "production_source": production_source,
+            "production_caps_pp": PRODUCTION_CAP_PP,
         },
         "training": {
             "rows": len(rows),
             "effective_rows": round(sum(r["weight"] for r in rows), 1),
-            "official_effective_rows": round(official_n, 1),
+            # Keep the historical base-official counter stable; Ensemble is a
+            # separate production tracking stream and must not double-count it.
+            "official_effective_rows": round(base_official_n, 1),
+            "ensemble_effective_rows": round(ensemble_n, 1),
+            "production_effective_rows": round(production_n, 1),
             "by_source": {k: round(v, 1) for k, v in sorted(source_counts.items())},
         },
         "repeated_errors": repeated,
         "promotion_gate": {
-            # v7.9B stays SHADOW by design. Reaching the sample target only makes
-            # the learner eligible for a separate walk-forward validation.
-            "ready": False,
-            "sample_ready": official_n >= PROMOTION_SAMPLE,
-            "manual_validation_required": True,
+            # Production activation is per cell, not an unrestricted global
+            # override: insufficient evidence always has exactly zero influence.
+            "ready": production_n >= MIN_CELL_SAMPLE,
+            "sample_ready": production_n >= PROMOTION_SAMPLE,
+            "manual_validation_required": False,
             "required_official_settled": PROMOTION_SAMPLE,
-            "current_official_effective": round(official_n, 1),
+            "current_official_effective": round(base_official_n, 1),
+            "current_ensemble_effective": round(ensemble_n, 1),
+            "production_source": production_source,
             "blocking_error_patterns": len(repeated),
-            "policy": "shadow_first_manual_validation_before_any_production_override",
+            "policy": "per_cell_evidence_bounded_post_ensemble_adjustment",
         },
         "notes": [
             "Uczenie koryguje pewność istniejących modeli; nie zastępuje ich logiki tenisowej.",
             "Każdy source_model/rynek uczy się osobno z hierarchicznym shrinkage.",
             "Serve/Return, Form, Surface, Early i Consensus są śledzone jako learning-only i nie mieszają się z oficjalną skutecznością.",
-            "Pojedyncza wtopa nie może samodzielnie zmienić modelu produkcyjnego.",
+            "Player Intelligence i Accuracy Lab pozostają SHADOW i nie uczestniczą w korekcie PROD.",
+            "COLLECTING nie ma wpływu; EARLY ma limit 4 pp; STRONG ma limit 8 pp.",
+            "Current/CatBoost/TabPFN/Ensemble są zachowane jako RAW; korekta działa wyłącznie po Ensemble.",
         ],
     }
 
@@ -675,6 +816,7 @@ def run() -> dict:
     report["cells"] = cells
 
     history = decorate_history(history, pbp_history, cells)
+    history = decorate_frozen_history(history, cells)
     results = decorate_results(results, cells)
 
     _write(HISTORY_PATH, history)
