@@ -3,17 +3,24 @@ import importlib.util, sys
 ROOT=Path(__file__).resolve().parents[1]
 
 def load(name,path):
-    spec=importlib.util.spec_from_file_location(name,path);mod=importlib.util.module_from_spec(spec);sys.modules[name]=mod;spec.loader.exec_module(mod);return mod
+    backend_dir=str(Path(path).resolve().parent)
+    if backend_dir not in sys.path:
+        sys.path.insert(0,backend_dir)
+    spec=importlib.util.spec_from_file_location(name,path)
+    mod=importlib.util.module_from_spec(spec)
+    sys.modules[name]=mod
+    spec.loader.exec_module(mod)
+    return mod
 
 def test_frontend_bridge_and_ui():
     mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
-    assert 'Si?a sygna?u' in ui
+    assert 'Si\u0142a sygna\u0142u' in ui
     assert 'zielonych' in ui
-    assert 'Ocena sygna?u' in ui
+    assert 'Ocena sygna\u0142u' in ui
     assert 'data-sp-market="p772-' in ui
-    assert 'tracker rozlicza te? liczb? tie-break?w' in ui
+    assert 'tracker rozlicza te\u017c liczb\u0119 tie-break\u00f3w' in ui
 
 def test_player_analytics_formula_parity():
     ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
