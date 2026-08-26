@@ -1,5 +1,19 @@
 # Changelog
 
+## v8.6 — Accuracy Shadow Lab
+
+- dodano bezpieczny tryb Shadow/A-B bez automatycznego wpływu na produkcyjne typy;
+- dodano ulepszony wariant TabPFN do testów A/B z większą próbką i natywną obsługą cech kategorycznych;
+- dodano Direct Tennis ML oparty o surowe statystyki tenisowe zamiast wyłącznie score innych modeli;
+- dodano overall Elo i surface Elo jako cechy modelu;
+- dodano interakcje serwis zawodnika vs return przeciwnika;
+- dodano market-specific thresholds zamiast jednego globalnego progu dla wszystkich rynków;
+- dodano Champion Router wybierający najlepszy model per rynek / tour / nawierzchnia;
+- zachowano chronologiczny TRAIN/CAL/VAL i ochronę przed przeciekiem danych z przyszłości;
+- raport v8.6 trafia do `frontend/data/accuracy_lab_v86.json`;
+- produkcja pozostaje bez zmian, dopóki Shadow nie potwierdzi przewagi nowego wariantu;
+- dodano guard `verify_v86_accuracy_shadow.py`.
+
 ## v8.5.3 — Runtime + UI Cleanup
 
 - globalny dedupe fetch dla statycznych JSON-ów `/data/*.json`; warstwy UI nie pobierają ponownie tych samych danych w krótkim oknie;

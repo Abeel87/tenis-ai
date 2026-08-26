@@ -109,6 +109,12 @@ jobs:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
           TABPFN_NO_BROWSER: '1'
         run: python backend/autolearn_v84.py
+      - name: Accuracy Shadow Lab v8.6
+        env:
+          TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
+          TABPFN_NO_BROWSER: '1'
+          V86_EXTENDED: '0'
+        run: timeout 300s python backend/accuracy_lab_v86.py || echo "Accuracy Lab skipped/timeout; production remains unchanged"
       - name: Model Telemetry v8.4C
         run: python backend/model_telemetry_v84c.py
       - name: Player Intelligence v8.5 POST
@@ -123,6 +129,8 @@ jobs:
         run: python scripts/verify_v852_quality_lock.py
       - name: Runtime & UI Guard v8.5.3
         run: python scripts/verify_v853_runtime_ui.py
+      - name: Accuracy Shadow Guard v8.6
+        run: python scripts/verify_v86_accuracy_shadow.py
       - name: AutoLearn Calibration Guard v8.4A.2
         run: python scripts/verify_v84a2.py
       - name: Logic & Stability Guard v8.4B
