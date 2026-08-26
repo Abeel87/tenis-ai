@@ -9,11 +9,11 @@ def test_frontend_bridge_and_ui():
     mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
-    assert 'SiĹ‚a sygnaĹ‚u' in ui
+    assert 'Si?a sygna?u' in ui
     assert 'zielonych' in ui
-    assert 'Ocena sygnaĹ‚u' in ui
+    assert 'Ocena sygna?u' in ui
     assert 'data-sp-market="p772-' in ui
-    assert 'tracker rozlicza teĹĽ liczbÄ™ tie-breakĂłw' in ui
+    assert 'tracker rozlicza te? liczb? tie-break?w' in ui
 
 def test_player_analytics_formula_parity():
     ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
