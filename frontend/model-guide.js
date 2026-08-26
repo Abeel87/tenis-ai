@@ -76,6 +76,42 @@ function buildRows(m){
   });
 
   objectMarket('result','match_win','Kto wygra mecz',m.match_win);
+
+  // v8.8 MATCH WINNER FALLBACK
+  if(!out.some(x=>x.market==='match_win')){
+    const pools=[
+      m?.autolearn_v84?.signals,
+      m?.adaptive_learning_v79?.signals
+    ];
+
+    pools.flatMap(x=>Array.isArray(x)?x:[]).forEach(s=>{
+      if(alias(s?.market)!=='match_win')return;
+
+      const prod=s?.adaptive_prod_v79||{};
+      const pick=String(s?.pick||'').trim();
+
+      const value=number(
+        s?.final_score ??
+        s?.adaptive_prod_score ??
+        prod?.final_score ??
+        s?.ensemble ??
+        s?.current ??
+        s?.raw_score ??
+        s?.score ??
+        s?.v
+      );
+
+      if(pick&&value!=null){
+        add({
+          category:'result',
+          market:'match_win',
+          label:'Kto wygra mecz',
+          pick,
+          base:value
+        });
+      }
+    });
+  }
   objectMarket('result','set1_win','Kto wygra 1. set',m.first_set_win);
   objectMarket('result','set2_win','Kto wygra 2. set',m.second_set_win);
   objectMarket('result','set3_win','Kto wygra 3. set',m.third_set_win);
@@ -287,7 +323,16 @@ function topRows(rows,m,sets){
     const existing=best.get(key);
     if(!existing||score>existing.score)best.set(key,{row,score});
   });
-  return [...best.values()].sort((a,b)=>b.score-a.score||a.row.order-b.row.order).slice(0,TOP_LIMIT).map(x=>x.row);
+  const sorted=[...best.values()]
+    .sort((a,b)=>b.score-a.score||a.row.order-b.row.order);
+
+  // v8.8 - winner meczu ma pierwszenstwo w TOP.
+  const winner=sorted.find(x=>x.row.market==='match_win');
+  const ordered=winner
+    ? [winner,...sorted.filter(x=>x!==winner)]
+    : sorted;
+
+  return ordered.slice(0,TOP_LIMIT).map(x=>x.row);
 }
 function searchable(row,m,sets){
   const models=MODEL_DEFS.filter(def=>modelValue(row,def[0],sets,m)).map(def=>def[1]).join(' ');

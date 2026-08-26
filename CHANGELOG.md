@@ -1,5 +1,17 @@
 # Changelog
 
+## v8.8 - Generator + Performance Intelligence
+
+- Decision Center odtwarza rynek `Kto wygra mecz` z AutoLearn/Adaptive, gdy stare `match_win` jest puste.
+- `Kto wygra mecz` ma pierwszenstwo w widoku TOP.
+- Generator AI bierze Adaptive PROD jako glowna baze rankingu.
+- RAW Ensemble pozostaje dostepny jako warstwa audytowa.
+- Generator dostal wizualnie spojne karty z ekranem meczow.
+- Statystyki dostaly Centrum Analityczne: confidence vs realna skutecznosc, rynki, segmenty i ranking modeli.
+- Adaptive PROD pokazuje najwieksze powtarzalne bledy i roznice RAW -> realny wynik.
+- Player Intelligence i Accuracy Lab pozostaja SHADOW.
+
+
 ## v8.7 — Match Decision Center + Adaptive PROD
 
 - szeroka macierz została zastąpiona przez Centrum Decyzji Meczu z trybami Top / Wszystkie / PRO;
