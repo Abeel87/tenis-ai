@@ -300,6 +300,26 @@
     return idx>=0&&Math.abs(idx-center)<=1;
   }
   function repairGeneratorCandidate(x,spm,profile){
+    if(
+      x?.pair_type &&
+      Array.isArray(x?.picked) &&
+      x.picked.length===spm &&
+      Number(x?.selectionScore)>0
+    ){
+      const cfg=selectorPolicy(profile);
+      const floor=Number(x?.pair_floor_used??cfg.softPairFloor??cfg.pairFloor??60);
+      if(Number(x.selectionScore)>=floor){
+        return {
+          ...x,
+          avg:Number(x.selectionScore),
+          avgScore:Number(x.selectionScore),
+          score:Number(x.selectionScore),
+          composer_score:Number(x.selectionScore),
+          pair_preserved:true
+        };
+      }
+    }
+
     const m=x?.m||x?.match||x?.fixture||x?.row||findMatchByKey(x?.match_key);
     if(!m)return x;
     const policy=generatorProfilePolicy(profile);
@@ -528,10 +548,10 @@
       <label><span>Ile spotkań?</span><div class="sc82-choice" data-sc-choice="matches">${[1,2,3,4,5,6,7,8].map(n=>`<button class="${n===7?'active':''}" data-sc-n="${n}">${n}</button>`).join('')}</div></label>
       <label><span>Sygnałów na spotkanie?</span><div class="sc82-choice" data-sc-choice="signals">${[1,2,3,4].map(n=>`<button class="${n===2?'active':''}" data-sc-n="${n}">${n}</button>`).join('')}</div></label>
       <label><span>Styl scenariusza</span><div class="sc82-profiles">
-        <button class="active" data-sc-profile="balanced">⚖️ Zbalansowany</button>
-        <button data-sc-profile="stable">🛡️ Stabilny</button>
-        <button data-sc-profile="strong">🔥 Mocne sygnały</button>
-        <button data-sc-profile="experimental">🧪 Eksperymentalny</button>
+        <button class="active" data-sc-profile="balanced">🎯 Bet Builder CORE</button>
+        <button data-sc-profile="stable">🛡️ Stabilny CORE</button>
+        <button data-sc-profile="strong">🔥 Najmocniejsze pary</button>
+        <button data-sc-profile="experimental">🧪 Model Test / SHADOW</button>
       </div></label>
       <button class="sc82-primary" data-sc-generate>🧩 GENERUJ SCENARIUSZ</button>
       <p class="sc82-small"><b>Pair Selector:</b> najpierw wybiera 2 pasujace do siebie zdarzenia w meczu, dopiero potem porownuje spotkania. CORE preferuje spojny Bet Builder; Model Test sprawdza alternatywne modele i SHADOW.</p>
@@ -540,6 +560,7 @@
 
   // ==========================================================
   // v8.8.1 BET BUILDER PAIR SELECTOR
+  // v8.8.2 GENERATOR RELATIVE RANKING
   // Najpierw dobra PARA zdarzen -> potem ranking meczu.
   // ==========================================================
 
@@ -574,6 +595,8 @@
     return ({
       stable:{
         pairFloor:80,
+        softPairFloor:64,
+        signalFloor:58,
         setTarget:8.5,
         matchTarget:21.0,
         shadow:false
@@ -581,6 +604,8 @@
 
       balanced:{
         pairFloor:76,
+        softPairFloor:60,
+        signalFloor:54,
         setTarget:8.5,
         matchTarget:21.0,
         shadow:false
@@ -588,6 +613,8 @@
 
       strong:{
         pairFloor:84,
+        softPairFloor:68,
+        signalFloor:60,
         setTarget:8.5,
         matchTarget:21.0,
         shadow:false
@@ -595,12 +622,16 @@
 
       experimental:{
         pairFloor:69,
+        softPairFloor:55,
+        signalFloor:50,
         setTarget:9.5,
         matchTarget:21.0,
         shadow:true
       }
     })[profile]||{
       pairFloor:76,
+      softPairFloor:60,
+      signalFloor:54,
       setTarget:8.5,
       matchTarget:21.0,
       shadow:false
@@ -609,12 +640,19 @@
 
   function selectorModelEvidence(m,s,profile){
     const ml=autoLearnSnapshot(m,s);
+
+    let performancePrior=null;
+    try{
+      performancePrior=window.TENIS_AI_PERFORMANCE_V882?.priorFor?.(m,s)||null;
+    }catch{}
+
     if(!ml)return {
-      bonus:0,
+      bonus:Number(performancePrior?.adjustment||0),
       spread:null,
       strongVotes:0,
       severe:false,
-      shadow:false
+      shadow:false,
+      performancePrior
     };
 
     const current=num(ml.current);
@@ -697,12 +735,17 @@
       else if(hist<50)bonus-=1.5;
     }
 
+    if(performancePrior?.n>=10){
+      bonus+=Number(performancePrior.adjustment||0);
+    }
+
     return {
       bonus,
       spread,
       strongVotes,
       severe:spread!=null&&spread>=25,
-      shadow:profile==='experimental'
+      shadow:profile==='experimental',
+      performancePrior
     };
   }
 
@@ -935,14 +978,17 @@
       score,
       type:kind.type,
       reason:kind.reason,
-      reject:score<policy.pairFloor,
+      reject:false,
       evidenceA:ea,
       evidenceB:eb
     };
   }
 
-  function selectorBestPair(m,sig,profile,marketFamily){
+  function selectorBestPair(m,sig,profile,marketFamily,runFloor=null){
     const policy=selectorPolicy(profile);
+    const floor=Number.isFinite(Number(runFloor))
+      ?Number(runFloor)
+      :Number(policy.softPairFloor||policy.pairFloor||60);
 
     let best=null;
 
@@ -954,7 +1000,7 @@
 
         const result=selectorPairScore(m,a,b,profile);
 
-        if(result.reject)continue;
+        if(result.reject||result.score<floor)continue;
 
         if(!best||result.score>best.score){
           best={
@@ -965,8 +1011,8 @@
       }
     }
 
-    return best&&best.score>=policy.pairFloor
-      ?best
+    return best&&best.score>=floor
+      ?{...best,floor_used:floor}
       :null;
   }
 
@@ -993,7 +1039,18 @@
     const mc=Number($('.sc82-choice[data-sc-choice="matches"] .active',panel)?.dataset.scN||7);
     const spm=Number($('.sc82-choice[data-sc-choice="signals"] .active',panel)?.dataset.scN||2);
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
-    const min={stable:74,balanced:72,strong:80,experimental:62}[profile]||72;
+    const selectorCfg=selectorPolicy(profile);
+
+    // 7/8 spotkan = ranking wzgledny. Nie wymagamy 7 par z identycznym,
+    // bardzo wysokim progiem, ale nadal odrzucamy konflikty i slabe pary.
+    const min=Math.max(
+      50,
+      Number(selectorCfg.signalFloor||54) - (mc>=7?2:mc>=5?1:0)
+    );
+    const runPairFloor=Math.max(
+      50,
+      Number(selectorCfg.softPairFloor||60) - (mc>=7?4:mc>=5?2:0)
+    );
 
     // v8.2A.4 Distinct Markets:
     // jedna rodzina rynku = maksymalnie jeden sygnał, niezależnie od linii.
@@ -1119,7 +1176,7 @@
       // jezeli user chce >=2 zdarzenia, najpierw szukamy najlepszej
       // spojnej pary Bet Builder dla calego spotkania.
       const bestPair=spm>=2
-        ?selectorBestPair(m,sig,profile,marketFamily)
+        ?selectorBestPair(m,sig,profile,marketFamily,runPairFloor)
         :null;
 
       if(bestPair){
@@ -1182,7 +1239,8 @@
         ms,
         selectionScore,
         pair_type:bestPair?.type||null,
-        pair_reason:bestPair?.reason||null
+        pair_reason:bestPair?.reason||null,
+        pair_floor_used:bestPair?.floor_used??runPairFloor
       };
     })
       .map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)
