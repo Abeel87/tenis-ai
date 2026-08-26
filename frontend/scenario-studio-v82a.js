@@ -525,7 +525,7 @@
   function generatorHtml(){
     return `${topBack('Generator AI')}
     <div class="sc82-builder">
-      <label><span>Ile spotkań?</span><div class="sc82-choice" data-sc-choice="matches">${[1,2,3,4,5,6,7,8].map(n=>`<button class="${n===4?'active':''}" data-sc-n="${n}">${n}</button>`).join('')}</div></label>
+      <label><span>Ile spotkań?</span><div class="sc82-choice" data-sc-choice="matches">${[1,2,3,4,5,6,7,8].map(n=>`<button class="${n===7?'active':''}" data-sc-n="${n}">${n}</button>`).join('')}</div></label>
       <label><span>Sygnałów na spotkanie?</span><div class="sc82-choice" data-sc-choice="signals">${[1,2,3,4].map(n=>`<button class="${n===2?'active':''}" data-sc-n="${n}">${n}</button>`).join('')}</div></label>
       <label><span>Styl scenariusza</span><div class="sc82-profiles">
         <button class="active" data-sc-profile="balanced">⚖️ Zbalansowany</button>
@@ -534,11 +534,463 @@
         <button data-sc-profile="experimental">🧪 Eksperymentalny</button>
       </div></label>
       <button class="sc82-primary" data-sc-generate>🧩 GENERUJ SCENARIUSZ</button>
-      <p class="sc82-small">Generator bierze dzisiejsze sygnały z aktywnego silnika modeli, premiuje mocniejsze dane/PBP i ogranicza powtarzanie podobnych pozycji.</p>
+      <p class="sc82-small"><b>Pair Selector:</b> najpierw wybiera 2 pasujace do siebie zdarzenia w meczu, dopiero potem porownuje spotkania. CORE preferuje spojny Bet Builder; Model Test sprawdza alternatywne modele i SHADOW.</p>
     </div>`;
   }
+
+  // ==========================================================
+  // v8.8.1 BET BUILDER PAIR SELECTOR
+  // Najpierw dobra PARA zdarzen -> potem ranking meczu.
+  // ==========================================================
+
+  function selectorNorm(v){
+    return String(v??'')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/\s+/g,' ')
+      .trim();
+  }
+
+  function selectorSide(m,s){
+    const p=selectorNorm(s?.pick);
+
+    if(
+      p==='p1' ||
+      p==='player1' ||
+      p===selectorNorm(m?.p1)
+    )return 'p1';
+
+    if(
+      p==='p2' ||
+      p==='player2' ||
+      p===selectorNorm(m?.p2)
+    )return 'p2';
+
+    return null;
+  }
+
+  function selectorPolicy(profile='balanced'){
+    return ({
+      stable:{
+        pairFloor:80,
+        setTarget:8.5,
+        matchTarget:21.0,
+        shadow:false
+      },
+
+      balanced:{
+        pairFloor:76,
+        setTarget:8.5,
+        matchTarget:21.0,
+        shadow:false
+      },
+
+      strong:{
+        pairFloor:84,
+        setTarget:8.5,
+        matchTarget:21.0,
+        shadow:false
+      },
+
+      experimental:{
+        pairFloor:69,
+        setTarget:9.5,
+        matchTarget:21.0,
+        shadow:true
+      }
+    })[profile]||{
+      pairFloor:76,
+      setTarget:8.5,
+      matchTarget:21.0,
+      shadow:false
+    };
+  }
+
+  function selectorModelEvidence(m,s,profile){
+    const ml=autoLearnSnapshot(m,s);
+    if(!ml)return {
+      bonus:0,
+      spread:null,
+      strongVotes:0,
+      severe:false,
+      shadow:false
+    };
+
+    const current=num(ml.current);
+    const cat=num(ml.catboost);
+    const tab=num(ml.tabpfn);
+    const ensemble=num(
+      ml.adaptive_prod_score ??
+      ml.final_score ??
+      ml.ensemble
+    );
+
+    const votes=[current,cat,tab].filter(x=>x!=null);
+    const hi=votes.length?Math.max(...votes):null;
+    const lo=votes.length?Math.min(...votes):null;
+    const spread=hi!=null&&lo!=null?hi-lo:null;
+
+    const strongVotes=votes.filter(x=>x>=65).length;
+
+    let bonus=0;
+
+    // Produkcyjny CORE: zgoda Current / Cat / TabPFN.
+    if(profile!=='experimental'){
+      if(strongVotes===3)bonus+=3.2;
+      else if(strongVotes===2)bonus+=2.2;
+      else if(strongVotes===1)bonus+=0.4;
+
+      if(votes.length>=3&&spread<=8)bonus+=1.5;
+      else if(votes.length>=3&&spread<=12)bonus+=0.7;
+
+      if(spread!=null&&spread>=18)bonus-=2.5;
+      if(spread!=null&&spread>=25)bonus-=3.5;
+
+      if(ensemble!=null&&ensemble>=80)bonus+=1.8;
+      else if(ensemble!=null&&ensemble>=72)bonus+=0.8;
+    }
+
+    // MODEL TEST:
+    // alternatywna selekcja oparta mocniej o CatBoost + TabPFN.
+    // Player Intelligence jest uzywany TYLKO tutaj jako SHADOW evidence.
+    if(profile==='experimental'){
+      if(cat!=null&&tab!=null){
+        if(cat>=65&&tab>=65)bonus+=3.5;
+        else if(cat>=60&&tab>=60)bonus+=2.0;
+
+        if(Math.abs(cat-tab)<=8)bonus+=1.5;
+        else if(Math.abs(cat-tab)>=18)bonus-=1.5;
+      }
+
+      const pi=playerAssist(m,s);
+      const shadow=num(
+        pi?.shadow_score ??
+        pi?.support_score ??
+        pi?.probability
+      );
+
+      if(shadow!=null){
+        if(shadow>=75)bonus+=2.2;
+        else if(shadow>=65)bonus+=1.2;
+        else if(shadow<50)bonus-=1.2;
+      }
+
+      if(m?.market_lab_v741)bonus+=0.4;
+    }
+
+    const prod=ml?.adaptive_prod_v79||{};
+
+    const hist=num(
+      prod?.historical_accuracy ??
+      ml?.historical_accuracy
+    );
+
+    const similar=num(
+      prod?.similar_n ??
+      ml?.similar_n
+    );
+
+    if(hist!=null&&similar!=null&&similar>=10){
+      if(hist>=70)bonus+=1.5;
+      else if(hist>=62)bonus+=0.7;
+      else if(hist<50)bonus-=1.5;
+    }
+
+    return {
+      bonus,
+      spread,
+      strongVotes,
+      severe:spread!=null&&spread>=25,
+      shadow:profile==='experimental'
+    };
+  }
+
+  function selectorPreferredTotalRows(m,rows,profile,min){
+    const policy=selectorPolicy(profile);
+    const out=[];
+
+    for(const family of ['set1_total','match_total']){
+      const target=family==='set1_total'
+        ?policy.setTarget
+        :policy.matchTarget;
+
+      // TYLKO istniejace linie.
+      // Nie tworzymy 20.5 / 21.5 / 8.5 z powietrza.
+      const candidates=rows
+        .filter(x=>String(x?.market||'').toLowerCase()===family)
+        .filter(x=>String(x?.pick||'').toLowerCase()==='over')
+        .filter(x=>totalLine(x)!=null)
+        .filter(x=>x.cs>=min)
+        .filter(x=>Math.abs(totalLine(x)-target)<=2.01)
+        .sort((a,b)=>{
+          const da=Math.abs(totalLine(a)-target);
+          const db=Math.abs(totalLine(b)-target);
+
+          return da-db||b.cs-a.cs;
+        });
+
+      if(candidates.length){
+        out.push({
+          ...candidates[0],
+          selector_preferred_line:true,
+          selector_target_line:target
+        });
+      }
+    }
+
+    return out;
+  }
+
+  function selectorPairKind(m,a,b,profile){
+    const am=String(a?.market||'').toLowerCase();
+    const bm=String(b?.market||'').toLowerCase();
+
+    const ac=categoryOf(a);
+    const bc=categoryOf(b);
+
+    const pair=(x,y)=>
+      (am===x&&bm===y)||(am===y&&bm===x);
+
+    const get=(market)=>
+      am===market?a:
+      bm===market?b:
+      null;
+
+    // Najczestszy schemat z naszego kuponu:
+    // zwyciezca 1 seta + OVER gemow 1 seta.
+    if(pair('set1_win','set1_total')){
+      const total=get('set1_total');
+
+      if(String(total?.pick||'').toLowerCase()==='over'){
+        return {
+          type:'SET1_WIN_OVER',
+          bonus:profile==='experimental'?5.0:8.0,
+          reason:'1S winner + 1S over'
+        };
+      }
+
+      return {
+        type:'SET1_WIN_TOTAL',
+        bonus:2.0,
+        reason:'1S winner + 1S total'
+      };
+    }
+
+    // Early Hold / Joint:
+    // kierunek 1 seta + prowadzenie / checkpoint.
+    if(
+      (am==='set1_win'&&bc==='start') ||
+      (bm==='set1_win'&&ac==='start')
+    ){
+      return {
+        type:'EARLY_HOLD_JOINT',
+        bonus:m?.joint_builder_v78b?.status==='READY'?11.0:7.0,
+        reason:'1S winner + early checkpoint'
+      };
+    }
+
+    // Zwyciezca meczu + zwyciezca 1 seta.
+    if(pair('match_win','set1_win')){
+      const mw=get('match_win');
+      const sw=get('set1_win');
+
+      const s1=selectorSide(m,mw);
+      const s2=selectorSide(m,sw);
+
+      if(s1&&s2&&s1!==s2){
+        return {
+          type:'WINNER_CONFLICT',
+          bonus:-20,
+          reason:'sprzeczni zwyciezcy'
+        };
+      }
+
+      return {
+        type:'MATCH_AND_SET_WIN',
+        bonus:6.0,
+        reason:'match winner + 1S winner'
+      };
+    }
+
+    // Schemat z drugiego rodzaju kuponu:
+    // OVER 1 seta + OVER calego meczu.
+    if(pair('set1_total','match_total')){
+      const st=get('set1_total');
+      const mt=get('match_total');
+
+      if(
+        String(st?.pick||'').toLowerCase()==='over' &&
+        String(mt?.pick||'').toLowerCase()==='over'
+      ){
+        return {
+          type:'DOUBLE_TOTAL_OVER',
+          bonus:profile==='experimental'?7.0:4.5,
+          reason:'1S over + match over'
+        };
+      }
+    }
+
+    if(pair('match_win','match_total')){
+      return {
+        type:'MATCH_DIRECTION_TOTAL',
+        bonus:2.5,
+        reason:'match direction + total'
+      };
+    }
+
+    if(ac!==bc){
+      return {
+        type:'DIVERSE_PAIR',
+        bonus:1.0,
+        reason:'rozne kategorie'
+      };
+    }
+
+    return {
+      type:'NEUTRAL_PAIR',
+      bonus:0,
+      reason:'neutralna para'
+    };
+  }
+
+  function selectorLineBonus(s,profile){
+    if(String(s?.pick||'').toLowerCase()!=='over')return 0;
+
+    const family=String(s?.market||'').toLowerCase();
+    if(family!=='set1_total'&&family!=='match_total')return 0;
+
+    const line=totalLine(s);
+    if(line==null)return 0;
+
+    const policy=selectorPolicy(profile);
+
+    const target=family==='set1_total'
+      ?policy.setTarget
+      :policy.matchTarget;
+
+    const d=Math.abs(line-target);
+
+    if(d<=.01)return 2.0;
+    if(d<=1.01)return 1.0;
+
+    return 0;
+  }
+
+  function selectorPairScore(m,a,b,profile){
+    const policy=selectorPolicy(profile);
+
+    const ea=selectorModelEvidence(m,a,profile);
+    const eb=selectorModelEvidence(m,b,profile);
+    const kind=selectorPairKind(m,a,b,profile);
+
+    if(kind.type==='WINNER_CONFLICT'){
+      return {
+        score:0,
+        type:kind.type,
+        reason:kind.reason,
+        reject:true
+      };
+    }
+
+    const base=(Number(a.cs||0)+Number(b.cs||0))/2;
+
+    let bonus=
+      (ea.bonus+eb.bonus)/2 +
+      kind.bonus +
+      selectorLineBonus(a,profile) +
+      selectorLineBonus(b,profile);
+
+    // Jakosc danych.
+    if(m?.early_hold_v7?.ready){
+      if(
+        kind.type==='SET1_WIN_OVER' ||
+        kind.type==='EARLY_HOLD_JOINT'
+      )bonus+=1.8;
+      else bonus+=0.5;
+    }
+
+    if(
+      m?.joint_builder_v78b?.status==='READY' &&
+      kind.type==='EARLY_HOLD_JOINT'
+    )bonus+=2.5;
+
+    const quality=String(m?.quality||'').toLowerCase();
+    if(
+      quality.includes('high') ||
+      quality.includes('good') ||
+      quality.includes('moc')
+    )bonus+=1.0;
+
+    // Przy duzym konflikcie modeli nie bierzemy spotkania tylko dlatego,
+    // ze jeden model pokazal bardzo wysoki procent.
+    if(profile!=='experimental'){
+      if(ea.severe)bonus-=4;
+      if(eb.severe)bonus-=4;
+    }
+
+    const score=clamp(base+bonus);
+
+    return {
+      score,
+      type:kind.type,
+      reason:kind.reason,
+      reject:score<policy.pairFloor,
+      evidenceA:ea,
+      evidenceB:eb
+    };
+  }
+
+  function selectorBestPair(m,sig,profile,marketFamily){
+    const policy=selectorPolicy(profile);
+
+    let best=null;
+
+    for(let i=0;i<sig.length;i++){
+      for(let j=i+1;j<sig.length;j++){
+        const a=sig[i],b=sig[j];
+
+        if(marketFamily(a)===marketFamily(b))continue;
+
+        const result=selectorPairScore(m,a,b,profile);
+
+        if(result.reject)continue;
+
+        if(!best||result.score>best.score){
+          best={
+            ...result,
+            signals:[a,b]
+          };
+        }
+      }
+    }
+
+    return best&&best.score>=policy.pairFloor
+      ?best
+      :null;
+  }
+
+  function selectorMatchScore(m,picked,profile,bestPair){
+    if(!picked.length)return 0;
+
+    const avg=picked.reduce(
+      (sum,x)=>sum+Number(x.cs||composerSignalScore(m,x,profile)||0),
+      0
+    )/picked.length;
+
+    if(picked.length===2&&bestPair){
+      return clamp(bestPair.score);
+    }
+
+    if(bestPair){
+      return clamp(bestPair.score*.72+avg*.28);
+    }
+
+    return clamp(avg);
+  }
+
   function generateFromUi(){
-    const mc=Number($('.sc82-choice[data-sc-choice="matches"] .active',panel)?.dataset.scN||4);
+    const mc=Number($('.sc82-choice[data-sc-choice="matches"] .active',panel)?.dataset.scN||7);
     const spm=Number($('.sc82-choice[data-sc-choice="signals"] .active',panel)?.dataset.scN||2);
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
     const min={stable:74,balanced:72,strong:80,experimental:62}[profile]||72;
@@ -624,7 +1076,30 @@
         }
       }
 
-      return [...normal,...guarded].sort((a,b)=>b.cs-a.cs);
+      const preferred=selectorPreferredTotalRows(
+        m,
+        rows,
+        profile,
+        min
+      );
+
+      const merged=new Map();
+
+      [...normal,...guarded,...preferred].forEach(x=>{
+        const key=String(x?.key||[
+          x?.market,
+          totalLine(x),
+          x?.pick
+        ].join('|'));
+
+        const old=merged.get(key);
+
+        if(!old||Number(x.cs||0)>Number(old.cs||0)){
+          merged.set(key,x);
+        }
+      });
+
+      return [...merged.values()].sort((a,b)=>b.cs-a.cs);
     };
 
     const candidates=todaysMatches().map(m=>{
@@ -640,7 +1115,39 @@
       const families=new Set();
       const categories=new Set();
 
-      // Przebieg 1: maksymalna różnorodność kategorii.
+      // PAIR-FIRST:
+      // jezeli user chce >=2 zdarzenia, najpierw szukamy najlepszej
+      // spojnej pary Bet Builder dla calego spotkania.
+      const bestPair=spm>=2
+        ?selectorBestPair(m,sig,profile,marketFamily)
+        :null;
+
+      if(bestPair){
+        for(const x of bestPair.signals){
+          if(picked.length>=spm)break;
+
+          const fam=marketFamily(x);
+          if(families.has(fam))continue;
+
+          const decorated={
+            ...x,
+            selector_pair:bestPair.type,
+            selector_match_score:Number(bestPair.score.toFixed(2)),
+            selector_reason:bestPair.reason,
+            selector_mode:profile==='experimental'
+              ?'MODEL_TEST_SHADOW'
+              :'CORE_PAIR'
+          };
+
+          picked.push(decorated);
+          families.add(fam);
+          categories.add(categoryOf(x));
+        }
+      }
+
+      // Przebieg 1: maksymalna roznorodnosc kategorii.
+      // Dziala jako fill dla 3/4 zdarzen albo fallback,
+      // gdy para nie wypelnila calego zestawu.
       for(const x of sig){
         if(picked.length>=spm)break;
         const fam=marketFamily(x);
@@ -651,9 +1158,8 @@
         categories.add(cat);
       }
 
-      // Przebieg 2: jeśli nadal brakuje, wolno powtórzyć kategorię,
-      // ale NIGDY rodzinę rynku. Czyli np. 1S total + match total może być,
-      // ale M O18.5 + M O19.5 nigdy.
+      // Przebieg 2: jeśli nadal brakuje, wolno powtorzyc kategorie,
+      // ale NIGDY rodzine rynku.
       for(const x of sig){
         if(picked.length>=spm)break;
         const fam=marketFamily(x);
@@ -666,10 +1172,24 @@
         ? picked.reduce((a,b)=>a+b.cs,0)/picked.length
         : 0;
 
-      return {m,picked,ms};
+      const selectionScore=picked.length===spm
+        ?selectorMatchScore(m,picked,profile,bestPair)
+        :0;
+
+      return {
+        m,
+        picked,
+        ms,
+        selectionScore,
+        pair_type:bestPair?.type||null,
+        pair_reason:bestPair?.reason||null
+      };
     })
       .map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)
-      .sort((a,b)=>(b.avgScore??b.ms)-(a.avgScore??a.ms));
+      .sort((a,b)=>
+        (b.selectionScore??b.avgScore??b.ms)-
+        (a.selectionScore??a.avgScore??a.ms)
+      );
 
     if(!candidates.length){
       toast(`AI nie znalazło dziś spotkań spełniających próg jakości dla ${spm} różnych sygnałów.`);
@@ -709,7 +1229,14 @@
       match_key:mk,match_id:m?.id??m?.match_id??null,p1:m?.p1||'',p2:m?.p2||'',scheduled_time:m?.scheduled_time||null,
       tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:finalScore,source_model:ml?autoLearnSourceLabel(ml):(modelApi()?.active||'adaptive'),
-      base_source_model:(modelApi()?.active||'adaptive'),ai_final_score:finalScore,raw_ensemble_score:ml?Number(ml.ensemble):null,
+      base_source_model:(modelApi()?.active||'adaptive'),
+      ai_final_score:finalScore,
+      raw_ensemble_score:ml?num(ml.raw_ensemble??ml.raw_ensemble_score??ml.ensemble):null,
+      adaptive_prod_score:ml?num(ml.adaptive_prod_score??ml.final_score??ml.ensemble):null,
+      selector_mode:s.selector_mode??(profile==='experimental'?'MODEL_TEST_SHADOW':'CORE_PAIR'),
+      selector_pair:s.selector_pair??null,
+      selector_match_score:s.selector_match_score??null,
+      selector_reason:s.selector_reason??null,
       autolearn_v84:ml?{current:ml.current??null,catboost:ml.catboost??null,tabpfn:ml.tabpfn??null,ensemble:ml.ensemble??null,weights:ml.weights||null}:null,
       player_intelligence_v85:pi?{probability:pi.probability??null,shadow_score:pi.shadow_score??null,support_score:pi.support_score??null,quality:pi.quality??null}:null,
       source,quality:m?.quality||null,pbp_ready:!!m?.early_hold_v7?.ready,joint_ready:m?.joint_builder_v78b?.status==='READY',added_at:nowIso()
