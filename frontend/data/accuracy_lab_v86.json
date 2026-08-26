@@ -1,0 +1,239 @@
+{
+  "version": "v8.6-shadow",
+  "generated_at": "2026-08-26T08:04:08.924737+00:00",
+  "status": "ACTIVE",
+  "production_mode": "shadow_only",
+  "production_changed": false,
+  "training": {
+    "rows": 1237,
+    "matches": 260,
+    "train": 858,
+    "cal": 184,
+    "val": 195
+  },
+  "current": {
+    "calibration": {
+      "n": 184,
+      "coverage": 1.0,
+      "brier": 0.2052,
+      "log_loss": 0.59987,
+      "selected_n": 169,
+      "selected_coverage": 0.9185,
+      "accuracy": 71.6,
+      "threshold": 65.0
+    },
+    "validation": {
+      "n": 195,
+      "coverage": 1.0,
+      "brier": 0.1843,
+      "log_loss": 0.55364,
+      "selected_n": 172,
+      "selected_coverage": 0.8821,
+      "accuracy": 75.6,
+      "threshold": 65.0
+    }
+  },
+  "market_thresholds_shadow": {
+    "set1_total": {
+      "cal_n": 120,
+      "val_n": 117,
+      "chosen_threshold": 66.0,
+      "cal_selected_n": 112,
+      "cal_wilson95_lower": 65.3,
+      "baseline_65_val": {
+        "n": 117,
+        "coverage": 1.0,
+        "brier": 0.19448,
+        "log_loss": 0.57703,
+        "selected_n": 117,
+        "selected_coverage": 1.0,
+        "accuracy": 73.5,
+        "threshold": 65.0
+      },
+      "candidate_val": {
+        "n": 117,
+        "coverage": 1.0,
+        "brier": 0.19448,
+        "log_loss": 0.57703,
+        "selected_n": 117,
+        "selected_coverage": 1.0,
+        "accuracy": 73.5,
+        "threshold": 66.0
+      },
+      "accuracy_delta_pp": 0.0,
+      "shadow_recommendation": false
+    },
+    "match_total": {
+      "cal_n": 40,
+      "val_n": 46,
+      "chosen_threshold": 55.0,
+      "cal_selected_n": 40,
+      "cal_wilson95_lower": 59.8,
+      "baseline_65_val": {
+        "n": 46,
+        "coverage": 1.0,
+        "brier": 0.16657,
+        "log_loss": 0.51291,
+        "selected_n": 46,
+        "selected_coverage": 1.0,
+        "accuracy": 78.3,
+        "threshold": 65.0
+      },
+      "candidate_val": {
+        "n": 46,
+        "coverage": 1.0,
+        "brier": 0.16657,
+        "log_loss": 0.51291,
+        "selected_n": 46,
+        "selected_coverage": 1.0,
+        "accuracy": 78.3,
+        "threshold": 55.0
+      },
+      "accuracy_delta_pp": 0.0,
+      "shadow_recommendation": false
+    }
+  },
+  "direct_tennis_catboost": {
+    "status": "ok",
+    "features": 36,
+    "numeric_features": 29,
+    "categorical_features": 7,
+    "best_iteration": 49,
+    "anti_leak_cutoff": "strictly_before_fixture_calendar_day",
+    "elo": "overall_plus_surface_standard_elo_shadow_feature",
+    "serve_return_interactions": true,
+    "calibration": {
+      "n": 184,
+      "coverage": 1.0,
+      "brier": 0.20214,
+      "log_loss": 0.59273,
+      "selected_n": 132,
+      "selected_coverage": 0.7174,
+      "accuracy": 75.0,
+      "threshold": 65.0
+    },
+    "validation": {
+      "n": 195,
+      "coverage": 1.0,
+      "brier": 0.19807,
+      "log_loss": 0.58394,
+      "selected_n": 144,
+      "selected_coverage": 0.7385,
+      "accuracy": 75.7,
+      "threshold": 65.0
+    }
+  },
+  "tabpfn_native_ab": {
+    "status": "unavailable",
+    "reason": "tabpfn_not_installed_this_run",
+    "variants": {}
+  },
+  "router_shadow": {
+    "global_cal_champion": "direct_catboost",
+    "segment_levels": [
+      {
+        "fields": [
+          "market",
+          "tour",
+          "surface"
+        ],
+        "segments": {
+          "set1_total|ATP|HARD": {
+            "model": "current",
+            "cal_n": 42,
+            "brier": 0.23682,
+            "log_loss": 0.67048
+          },
+          "set1_total|CHALLENGER|CLAY": {
+            "model": "direct_catboost",
+            "cal_n": 28,
+            "brier": 0.13414,
+            "log_loss": 0.43956
+          },
+          "set1_total|CHALLENGER|HARD": {
+            "model": "direct_catboost",
+            "cal_n": 26,
+            "brier": 0.13907,
+            "log_loss": 0.45482
+          }
+        }
+      },
+      {
+        "fields": [
+          "market",
+          "tour"
+        ],
+        "segments": {
+          "set1_total|ATP": {
+            "model": "current",
+            "cal_n": 42,
+            "brier": 0.23682,
+            "log_loss": 0.67048
+          },
+          "set1_total|CHALLENGER": {
+            "model": "direct_catboost",
+            "cal_n": 54,
+            "brier": 0.13652,
+            "log_loss": 0.4469
+          }
+        }
+      },
+      {
+        "fields": [
+          "market"
+        ],
+        "segments": {
+          "set1_total": {
+            "model": "direct_catboost",
+            "cal_n": 120,
+            "brier": 0.19442,
+            "log_loss": 0.57592
+          },
+          "match_total": {
+            "model": "current",
+            "cal_n": 40,
+            "brier": 0.18752,
+            "log_loss": 0.56093
+          }
+        }
+      }
+    ],
+    "validation": {
+      "n": 195,
+      "coverage": 1.0,
+      "brier": 0.19483,
+      "log_loss": 0.5758,
+      "selected_n": 162,
+      "selected_coverage": 0.8308,
+      "accuracy": 74.7,
+      "threshold": 65.0
+    },
+    "validation_model_usage": {
+      "current": 108,
+      "direct_catboost": 87
+    },
+    "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
+  },
+  "latest_production_tabpfn_snapshot": {
+    "n": 141,
+    "brier": 0.20513,
+    "log_loss": 0.62548,
+    "selected_n": 125,
+    "accuracy": 74.4,
+    "threshold": 65.0
+  },
+  "notes": [
+    "Shadow-only: no production signal, weight or threshold is modified.",
+    "Market thresholds are selected on CAL and evaluated only on untouched VAL.",
+    "Direct Tennis ML uses raw player profiles, surface Elo and opponent serve/return interaction features.",
+    "Historical direct features use only matches strictly before the fixture calendar day to avoid same-day target leakage."
+  ],
+  "models_available_for_router": [
+    "current",
+    "direct_catboost"
+  ],
+  "promotion_gate": {
+    "status": "shadow_only",
+    "rule": "no automatic production promotion; require repeated VAL/tracking win in Brier/log-loss and non-worse accuracy"
+  }
+}
