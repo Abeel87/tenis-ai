@@ -1,18 +1,27 @@
-/* Tenis AI v8.8.6 — honest model ranking presentation */
+/* Tenis AI v8.8.12 — honest model ranking + visible stats trend */
 (()=>{
 'use strict';
 
-const VERSION='v8.8.6';
+const VERSION='v8.8.12';
+const WATCH_MAX_MS=2500;
 let statsObserver=null;
+let observerTimer=null;
 let observedHost=null;
 
 function text(node){return String(node?.textContent||'').trim()}
+
+function stopStatsObserver(){
+  statsObserver?.disconnect();
+  statsObserver=null;
+  if(observerTimer){clearTimeout(observerTimer);observerTimer=null}
+}
 
 function patchModelRanking(){
   const pane=document.querySelector('[data-pc882-pane="models"]');
   const card=pane?.querySelector('.pc882-card');
   const list=card?.querySelector('.pc882-models');
-  if(!card||!list||card.dataset.v886Ranking==='1')return false;
+  if(!card||!list)return false;
+  if(card.dataset.v886Ranking==='1')return true;
 
   const head=card.querySelector('header');
   const title=head?.querySelector('b');
@@ -46,33 +55,66 @@ function patchModelRanking(){
   });
 
   card.dataset.v886Ranking='1';
+  stopStatsObserver();
   return true;
 }
 
-function bindStatsObserver(){
+function promoteMainTrend(){
   const host=document.querySelector('#pc77');
-  if(!host||host===observedHost)return;
-  statsObserver?.disconnect();
-  observedHost=host;
-  statsObserver=new MutationObserver(()=>patchModelRanking());
-  statsObserver.observe(host,{childList:true,subtree:true});
+  const summary=host?.querySelector('.pc12-summary');
+  const proBody=host?.querySelector('.pc12-pro .pc12-pro-body');
+  if(!host||!summary||!proBody)return false;
+
+  const trendCard=[...proBody.children].find(section=>
+    section.matches?.('section.pc77-card')&&/Trend skuteczności/i.test(text(section.querySelector('.pc77-card-head b')))
+  );
+  if(!trendCard)return false;
+
+  trendCard.dataset.v8812MainTrend='1';
+  trendCard.classList.add('pc12-main-trend');
+  summary.insertAdjacentElement('afterend',trendCard);
+  return true;
+}
+
+function watchForAsyncRanking(){
+  const host=document.querySelector('#pc77');
+  if(!host)return false;
+  if(patchModelRanking())return true;
+
+  if(observedHost!==host||!statsObserver){
+    stopStatsObserver();
+    observedHost=host;
+    statsObserver=new MutationObserver(()=>{
+      promoteMainTrend();
+      patchModelRanking();
+    });
+    statsObserver.observe(host,{childList:true,subtree:true});
+    observerTimer=setTimeout(stopStatsObserver,WATCH_MAX_MS);
+  }
+  return false;
 }
 
 function patch(){
-  bindStatsObserver();
+  promoteMainTrend();
   patchModelRanking();
+  watchForAsyncRanking();
 }
 
 function boot(){
   patch();
   document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(patch));
   document.addEventListener('click',event=>{
-    if(event.target?.closest?.('[data-view="stats"],[data-pc882-period],[data-pc882-tab]'))queueMicrotask(patch);
+    if(event.target?.closest?.('[data-view="stats"],[data-pc77-period],[data-pc77],[data-pc882-period],[data-pc882-tab]'))queueMicrotask(patch);
   },true);
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
 
-window.TENIS_AI_STATS_RANKING_V886=Object.freeze({version:VERSION,patch:patchModelRanking});
+window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
+  version:VERSION,
+  patch:patchModelRanking,
+  promoteTrend:promoteMainTrend,
+  stopObserver:stopStatsObserver
+});
 })();
