@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from backend.history_sampling import unique_signals
 
-ROOT = Path(__file__).resolve().parents[1]
 HISTORY = ROOT / "frontend" / "data" / "history.json"
 STANDARD_SET_SCORES = {
     (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 7), (6, 7)
