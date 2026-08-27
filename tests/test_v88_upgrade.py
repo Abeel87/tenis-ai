@@ -54,7 +54,7 @@ def test_v88_preserves_protected_runtime_contract():
     # UI release while the generator policy can advance independently.
     assert "appVersion: 'v8.0.1'" in meta
     assert "displayVersion: 'v8.8.7'" in meta
-    assert "generatorPolicyVersion: 'v8.8.8-market-quality-lock'" in meta
+    assert "generatorPolicyVersion: 'v8.8.9-result-market-quality-lock'" in meta
     assert "currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock'" in meta
 
     # Compatibility bridge delegates visible branding to central metadata.
