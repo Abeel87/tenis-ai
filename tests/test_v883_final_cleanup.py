@@ -8,10 +8,19 @@ def t(path):
 
 def test_v883_assets_and_brand_are_wired():
     h=t("frontend/index.html")
-    assert "Tenis AI v8.8.5" in h
+    assert "Tenis AI v8.8.6" in h
     assert "v883-final.css?v=883" in h
     assert "v883-final.js?v=883" in h
     assert h.index("v882-cleanup.js?v=882") < h.index("v883-final.js?v=883")
+
+def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
+    h=t("frontend/index.html")
+    js=t("frontend/stats-ranking-v886.js")
+    assert "stats-ranking-v886.js?v=886" in h
+    assert h.index("v883-final.js?v=883") < h.index("stats-ranking-v886.js?v=886")
+    assert "Porównanie modeli i komponentów" in js
+    assert "nie bierze udziału w rankingu" in js
+    assert "selector\\s+proxy" in js
 
 def test_v883_pair_reasoning_is_visible():
     js=t("frontend/v883-final.js")
