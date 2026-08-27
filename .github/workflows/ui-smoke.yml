@@ -52,6 +52,15 @@ jobs:
       - name: Full test suite
         run: python -m pytest -q
 
+      - name: Player Model Shadow Guard v8.9
+        run: python scripts/verify_v89_player_model_shadow.py
+
+      - name: Ensemble + Player Learning Guard v8.9.1
+        run: python scripts/verify_v891_ensemble_player_learning.py
+
+      - name: Full App Coherence Guard v8.9.2
+        run: python scripts/verify_v892_full_app_coherence.py
+
       - name: History sampling outliers
         run: python scripts/audit_history_sampling_outliers.py
 

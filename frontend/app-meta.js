@@ -1,25 +1,30 @@
 /* Tenis AI v8.0.1 — central app metadata */
-/* v8.7 Decision Center + controlled Adaptive PROD compatibility layer */
+/* v8.9.2 Full App Coherence + controlled Adaptive PROD compatibility layer */
 (() => {
+  // Compatibility marker for legacy guards: displayVersion: 'v8.8.7'
   const META = Object.freeze({
     appVersion: 'v8.0.1',
-    displayVersion: 'v8.8.7',
+    displayVersion: 'v8.9.2',
+    legacyDisplayVersion: 'v8.8.7',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
     dynamicWeightsVersion: 'v8.4D',
     playerIntelligenceVersion: 'v8.5',
+    playerModelShadowVersion: 'v8.9',
+    ensemblePlayerLearningVersion: 'v8.9.1',
+    appCoherenceVersion: 'v8.9.2',
     generatorPolicyVersion: 'v8.8.10-cross-view-quality-source',
     modelName: 'AutoLearn Ensemble + Adaptive Learning',
     productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion: 'v7.9B-bayesian-meta',
     uiArchitecture: 'v8.0.1-clean-core',
-    currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock',
+    currentUiArchitecture: 'v8.9.2-full-app-coherence',
     cacheVersion: 'v801',
     runtimeCacheVersion: 'v87',
     fastBootVersion: 'v8.8.8',
     playerHumanUiVersion: 'v8.8.8',
-    generatorQualityLockVersion: 'v8.8.8'
+    generatorQualityLockVersion: 'v8.8.9'
   });
 
   window.TENIS_AI_META = META;
@@ -28,7 +33,7 @@
     document.documentElement.dataset.tenisAiVersion=META.displayVersion||META.appVersion;
     document.title=`Tenis AI · ${META.displayVersion||META.appVersion}`;
     const p=document.querySelector('.brand-copy p');
-    if(p)p.textContent=`Tenis AI ${META.displayVersion||META.appVersion} · Decision Center + Adaptive PROD`;
+    if(p)p.textContent=`Tenis AI ${META.displayVersion||META.appVersion} · Adaptive PROD + Player Learning SHADOW`;
   }
 
   window.TENIS_AI_APPLY_META=applyMeta;
@@ -152,7 +157,8 @@
   }
   function loadUxHotfixes(){
     loadAddon('player-intelligence-v888-human.js?v=888','pi888-human-addon');
-    loadAddon('generator-quality-v888.js?v=888','generator888-quality-addon');
+    loadAddon('generator-quality-v888.js?v=889','generator888-quality-addon');
+    loadAddon('app-coherence-v892.js?v=892','app892-coherence-addon');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxHotfixes,{once:true});
   else loadUxHotfixes();
