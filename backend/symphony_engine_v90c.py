@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-"""Tenis AI v9.0C.4 — full-market runner for Tennis Symphony.
+"""Tenis AI v9.0D.1 — full-market runner for Tennis Symphony.
 
-Keeps the v9.0B exact state engine isolated, adds the v9.0C market catalogue,
-serve-comparison evidence and automatic 2..6 leg-count intelligence.
+Keeps the v9.0B exact state engine isolated, adds the v9.0C/C.4 market
+catalogue, serve-comparison evidence, AUTO 2..6 leg-count intelligence and a
+small guarded historical prior once enough settled Symphony data exists.
 """
 
 import json
@@ -12,25 +13,29 @@ try:
     from . import symphony_engine_v90 as core
     from .symphony_evidence_v90c import VERSION as BASE_EVIDENCE_VERSION
     from .symphony_c4 import (
-        VERSION,
+        VERSION as C4_VERSION,
         augment_match_c4,
         comparison_compatible,
         coverage_first_metrics,
         leg_count_intelligence,
     )
+    from .symphony_leg_learning_v90d import apply_historical_leg_learning
 except ImportError:
     import symphony_engine_v90 as core
     from symphony_evidence_v90c import VERSION as BASE_EVIDENCE_VERSION
     from symphony_c4 import (
-        VERSION,
+        VERSION as C4_VERSION,
         augment_match_c4,
         comparison_compatible,
         coverage_first_metrics,
         leg_count_intelligence,
     )
+    from symphony_leg_learning_v90d import apply_historical_leg_learning
 
-EVIDENCE_VERSION = VERSION
+VERSION = "v9.0D.1"
+EVIDENCE_VERSION = C4_VERSION
 MODE = "ANALYSIS_ONLY"
+HISTORY_STATS_PATH = core.OUT / "symphony_stats_v90d.json"
 
 
 def _decorate_leg(leg: dict, evidence_meta: dict):
@@ -64,7 +69,7 @@ def _decorate_scenario(scenario: dict, evidence_meta: dict):
     return out
 
 
-def _decorate_match(row: dict, evidence_meta: dict):
+def _decorate_match(row: dict, evidence_meta: dict, historical_stats: dict | None = None):
     out = dict(row)
     out["market_adapter"] = {
         "version": evidence_meta.get("version"),
@@ -84,6 +89,7 @@ def _decorate_match(row: dict, evidence_meta: dict):
             for k, v in out["compositions"].items()
         }
     intelligence = leg_count_intelligence(out)
+    intelligence = apply_historical_leg_learning(intelligence, historical_stats)
     out["leg_count_intelligence"] = intelligence
     out["recommended_leg_count"] = intelligence.get("recommended")
     return out
@@ -247,10 +253,13 @@ def _one_pass_compositions(match: dict, candidates: list, outcomes: list[dict]):
 def build_report(legs: int = 4) -> dict:
     results = core._read(core.RESULTS, [])
     shadow = core._read(core.SHADOW, {})
+    historical_stats = core._read(HISTORY_STATS_PATH, {})
     if not isinstance(results, list):
         results = []
     if not isinstance(shadow, dict):
         shadow = {}
+    if not isinstance(historical_stats, dict):
+        historical_stats = {}
 
     shadow_idx = core._shadow_index(shadow)
     matches = []
@@ -281,7 +290,7 @@ def build_report(legs: int = 4) -> dict:
                 legs=legs,
             )
             if row:
-                matches.append(_decorate_match(row, evidence))
+                matches.append(_decorate_match(row, evidence, historical_stats))
     finally:
         core.POOL_LIMIT = old_pool
         core.BEAM_WIDTH = old_beam
@@ -294,6 +303,10 @@ def build_report(legs: int = 4) -> dict:
         -float(x.get("symphony_score") or 0.0),
         str(x.get("scheduled_time") or ""),
     ))
+    history_active = any(
+        bool(((m.get("leg_count_intelligence") or {}).get("historical_learning_active")))
+        for m in matches
+    )
 
     return {
         "version": VERSION,
@@ -320,7 +333,9 @@ def build_report(legs: int = 4) -> dict:
             "coverage_first_ranking": True,
             "serve_comparisons_are_evidence_only": True,
             "auto_leg_count_2_to_6": True,
-            "historical_leg_count_learning_active": False,
+            "historical_leg_count_learning_guarded": True,
+            "historical_leg_count_learning_active": history_active,
+            "history_never_modifies_prod_models": True,
         },
     }
 
@@ -335,6 +350,7 @@ def run(legs: int = 4) -> dict:
         "markets": sum(int((m.get("market_adapter") or {}).get("catalog_size") or 0) for m in report.get("matches") or []),
         "matches": report.get("matches_count", 0),
         "production_influence": False,
+        "historical_leg_learning_active": report.get("contract", {}).get("historical_leg_count_learning_active", False),
     }
 
 
