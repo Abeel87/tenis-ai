@@ -1,6 +1,6 @@
 from backend.symphony_evidence_v90c import augment_match, build_market_catalog
 from backend.symphony_engine_v90 import Candidate, _build_outcomes, _joint, _predicate
-from backend.symphony_engine_v90c import build_report
+from backend.symphony_engine_v90c import _extended_predicate, build_report
 
 
 def _match():
@@ -77,6 +77,8 @@ def test_catalog_contains_all_major_market_families():
     assert "match_total" in markets
     assert "match_winner" in markets
     assert "set1_winner" in markets
+    assert "set2_winner" in markets
+    assert "set3_winner" in markets
     assert "set1_exact_score" in markets
     assert "exact_match_score" in markets
     assert "total_sets" in markets
@@ -103,6 +105,27 @@ def test_tiebreak_market_is_derived_from_exact_set_distribution():
     assert abs(yes["symphony_raw_probability"] + no["symphony_raw_probability"] - 100.0) < 1e-9
 
 
+def test_bo3_set2_and_set3_are_exactly_resolvable_from_outcomes():
+    match = _match()
+    outcomes = _build_outcomes(match)
+    pred = _extended_predicate(_predicate)
+
+    s2a = _candidate("set2|A", "set2_winner", "A")
+    s2b = _candidate("set2|B", "set2_winner", "B")
+    p2a, n2a = _joint(outcomes, [pred(match, s2a)])
+    p2b, n2b = _joint(outcomes, [pred(match, s2b)])
+    assert n2a == n2b == 1
+    assert abs((p2a + p2b) - 1.0) < 1e-9
+
+    s3a = _candidate("set3|A", "set3_winner", "A")
+    s3b = _candidate("set3|B", "set3_winner", "B")
+    p3a, n3a = _joint(outcomes, [pred(match, s3a)])
+    p3b, n3b = _joint(outcomes, [pred(match, s3b)])
+    assert n3a == n3b == 1
+    three_set_mass = sum(o["prob"] for o in outcomes if o["set_count"] == 3)
+    assert abs((p3a + p3b) - three_set_mass) < 1e-9
+
+
 def test_augment_is_read_only_and_adds_missing_markets():
     source = _match()
     augmented, meta = augment_match(source)
@@ -125,5 +148,6 @@ def test_v90c_report_contract(monkeypatch):
     assert report["production_influence"] is False
     assert report["shadow_auto_promotion"] is False
     assert report["contract"]["relative_strength_is_not_probability"] is True
+    assert report["contract"]["bo3_set2_set3_exact_joint"] is True
     assert report["matches_count"] == 1
     assert report["matches"][0]["market_adapter"]["catalog_size"] > 0
