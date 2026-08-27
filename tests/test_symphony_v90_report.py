@@ -7,4 +7,5 @@ def test_report_contract_is_analysis_only(monkeypatch):
     assert report['production_influence'] is False
     assert report['shadow_auto_promotion'] is False
     assert report['contract']['does_not_modify_final_score'] is True
-    assert report['contract']['shadow_weight_cap'] == 0.25
+    assert report['contract']['shadow_weight_cap'] == 0.20
+    assert report['contract']['joint_probability_only_when_path_coverage_is_1'] is True
