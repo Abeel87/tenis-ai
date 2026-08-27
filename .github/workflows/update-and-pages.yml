@@ -135,10 +135,12 @@ jobs:
           python scripts/verify_v895_shadow_experiment_trends.py
       - name: Shadow Signal Center v8.9.4
         run: python backend/shadow_signal_center_v894.py
-      - name: Tennis Symphony v9.0C
+      - name: Tennis Symphony v9.0D.1
         run: python backend/symphony_engine_v90c.py
-      - name: Tennis Symphony Guard v9.0C
-        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py
+      - name: Tennis Symphony Settlement + Learning v9.0D
+        run: python backend/symphony_tracker_v90d.py
+      - name: Tennis Symphony Guard v9.0D
+        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py
       - name: Shadow Signal Center Guard v8.9.4
         run: python scripts/verify_v894_shadow_signal_center.py
       - name: Surface Elo Guard v8.9.3
