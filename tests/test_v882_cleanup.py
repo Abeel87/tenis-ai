@@ -24,6 +24,15 @@ def test_v882_stats_tabs_and_charts():
     for token in ["Przegląd","Wykresy","pc882-trend-monitor","Rynki","Modele","Adaptive","trend(","calibration(","heatmap(","segments("]:
         assert token in s
 
+def test_v882_runtime_refresh_is_targeted():
+    s=t("frontend/v882-cleanup.js")
+    assert "RUNTIME_FIX='v8.8.13'" in s
+    assert "tenis-ai:stats-dashboard-ready" in s
+    assert "relevantPolishClick" in s
+    assert "[250,700,1500,2600]" not in s
+    assert "document.addEventListener('click',()=>setTimeout(polish,60),true)" not in s
+    assert "setTimeout(()=>{\n    wrapStats();\n    polish();" in s
+
 def test_v882_adaptive_compact():
     css=t("frontend/v882-cleanup.css")
     assert "#v79-health:not(.expanded)" in css
