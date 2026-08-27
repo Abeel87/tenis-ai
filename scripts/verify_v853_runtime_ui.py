@@ -29,14 +29,39 @@ def verify_visible_version_contract():
     if f"Tenis AI {version}" not in html:
         errors.append(f"frontend/index.html: wersja widoczna nie zgadza się z displayVersion {version}")
 
+def verify_checkpoint_lock_order():
+    html = read("frontend/index.html")
+    required = [
+        "v883-final.js?v=883",
+        "stats-ranking-v886.js?v=886",
+        "checkpoint-quality-v887.js?v=887",
+    ]
+    if not all(token in html for token in required):
+        errors.append("frontend/index.html: niepełne warstwy v8.8.3/v8.8.6/v8.8.7")
+        return
+    if not (html.index(required[0]) < html.index(required[1]) < html.index(required[2])):
+        errors.append("frontend/index.html: Checkpoint Quality Lock v8.8.7 nie jest ostatnią warstwą selekcji")
+
 need("frontend/index.html", "runtime-fetch-v853.js", "runtime data dedupe v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.js", "UI organizer v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.css", "UI organizer CSS v8.5.3")
 verify_visible_version_contract()
+verify_checkpoint_lock_order()
 need("frontend/app-meta.js", "appVersion: \'v8.0.1\'", "chroniony kontrakt bazowy v8.0.1")
+need("frontend/app-meta.js", "generatorPolicyVersion: 'v8.8.7-checkpoint-quality-lock'", "politykę Checkpoint Quality Lock v8.8.7")
 need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin AutoLearn")
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
 need("frontend/index.html", "model-trends-v84e2.js?v=84e2&hf=852a1", "chroniony pin Trend Monitor")
+need("frontend/index.html", "checkpoint-quality-v887.js?v=887", "Checkpoint Quality Lock v8.8.7")
+need("frontend/checkpoint-quality-v887.js", "MIN_SETTLED=30", "minimalną próbkę n=30")
+need("frontend/checkpoint-quality-v887.js", "MIN_ACCURACY=65", "minimalną trafność 65%")
+need("frontend/checkpoint-quality-v887.js", "MIN_WILSON=45", "minimalny dolny Wilson 45%")
+need("frontend/checkpoint-quality-v887.js", "MIN_RECENT_WHEN_FALLING=60", "ochronę spadającego trendu")
+need("frontend/checkpoint-quality-v887.js", "early_hold_v7?.ready!==true", "wymóg PBP per mecz")
+need("frontend/checkpoint-quality-v887.js", "game_state_progress_v84e2", "tracker dokładnych checkpointów")
+need("frontend/checkpoint-quality-v887.js", "Model Test/SHADOW i wybór ręczny pozostają dostępne", "granicę CORE vs ręczny/SHADOW")
+forbid("frontend/checkpoint-quality-v887.js", "new MutationObserver(", "globalny MutationObserver w Checkpoint Quality Lock")
+forbid("frontend/checkpoint-quality-v887.js", "setInterval(", "interwał w Checkpoint Quality Lock")
 need("frontend/hotfix-v84e01.js", "refreshHistoryOnly(false)", "history refresh bez wymuszonego pobrania przy każdym kliknięciu")
 need("frontend/hotfix-v84e01.js", "candidates.find", "fallback do pierwszego niepustego statusu")
 need("frontend/dynamic-weights-v84d1.js", "memoryResults", "reuse results z pamięci")
