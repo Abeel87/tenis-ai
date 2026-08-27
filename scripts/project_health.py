@@ -112,8 +112,10 @@ if workflows.exists():
     for wf in [*workflows.glob('*.yml'),*workflows.glob('*.yaml')]:
         txt=read(wf);low=txt.lower()
         if 'git push' not in low:continue
-        if 'git fetch origin' not in low or 'git rebase origin/main' not in low:
-            warnings.append(f'{wf}: workflow pushuje bez fetch/rebase safeguard.')
+        has_fetch='git fetch origin' in low
+        has_rebase=bool(re.search(r'git\s+rebase\s+origin/[a-z0-9._/-]+',low))
+        if not (has_fetch and has_rebase):
+            warnings.append(f'{wf}: workflow pushuje bez fetch/rebase safeguard dla gałęzi docelowej.')
         if 'concurrency:' not in low:
             warnings.append(f'{wf}: workflow pushujący nie ma concurrency guard.')
 
