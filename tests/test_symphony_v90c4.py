@@ -169,7 +169,7 @@ def test_leg_count_intelligence_can_choose_four_instead_of_always_two():
     assert next(x for x in result["options"] if x["legs"] == 5)["eligible"] is False
 
 
-def test_c4_report_exposes_auto_leg_contract(monkeypatch):
+def test_c4_features_remain_present_in_v90d_report(monkeypatch):
     match = _serve_match()
 
     def fake_read(path, fallback):
@@ -179,11 +179,12 @@ def test_c4_report_exposes_auto_leg_contract(monkeypatch):
 
     monkeypatch.setattr("backend.symphony_engine_v90._read", fake_read)
     report = build_report(legs=4)
-    assert report["version"] == "v9.0C.4"
+    assert report["version"] == "v9.0D.1"
     assert report["production_influence"] is False
     assert report["contract"]["coverage_first_ranking"] is True
     assert report["contract"]["serve_comparisons_are_evidence_only"] is True
     assert report["contract"]["auto_leg_count_2_to_6"] is True
+    assert report["contract"]["historical_leg_count_learning_guarded"] is True
     assert report["contract"]["historical_leg_count_learning_active"] is False
     assert report["matches_count"] == 1
     row = report["matches"][0]
