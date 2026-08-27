@@ -19,12 +19,14 @@ def test_early_hold_keeps_normal_runtime_outside_profile():
     assert "if(profileActive())return" in s
     assert "TENIS_AI_EARLY_HOLD_PATHS_V81" in s
 
-def test_serve_props_only_skips_profile_mutations():
+def test_serve_props_uses_targeted_refresh_without_body_observer():
     s = read("frontend/serve-props-v72.js")
-    assert "obs.observe(document.body,{childList:true,subtree:true})" in s
-    assert "if(window.TENIS_AI_PLAYER_PROFILE_ACTIVE)return" in s
+    assert "new MutationObserver(" not in s
+    assert "obs.observe(document.body" not in s
+    assert "scheduleRefresh(document)" in s
+    assert "requestAnimationFrame" in s
     assert "TENIS_AI_SERVE_PROPS_V81" in s
-    assert "po.observe(profile,{childList:true,subtree:true})" not in s
+    assert "mountProfile" in s
 
 def test_player_trends_has_explicit_mount_without_subtree_observer():
     s = read("frontend/player-trends-v71.js")
