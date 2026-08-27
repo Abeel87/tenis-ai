@@ -6,7 +6,11 @@
 'use strict';
 
 const VERSION='v8.8.15';
+const RUNTIME_FIX='v8.8.17';
 const WRAP_KEY='__projectUiQualityV8815';
+const STARTUP_SUPPRESS_MS=1250;
+const bootClock=performance.now();
+let userRenderPermit=0;
 
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
@@ -230,10 +234,21 @@ function patchAll(){
   patchProjectDetail();
 }
 
+function startupRenderShouldBeSuppressed(){
+  if(performance.now()-bootClock>=STARTUP_SUPPRESS_MS)return false;
+  if(userRenderPermit>0)return false;
+  return !!document.querySelector('#app .p751-match-card, #app .p751-empty, #app .p751-groups');
+}
+
 function wrapRenderMatches(){
   const current=window.renderMatches;
   if(typeof current!=='function'||current[WRAP_KEY])return false;
   const wrapped=function(...args){
+    if(startupRenderShouldBeSuppressed()){
+      queueMicrotask(patchProjectHome);
+      return undefined;
+    }
+    if(userRenderPermit>0)userRenderPermit-=1;
     const result=current.apply(this,args);
     queueMicrotask(patchProjectHome);
     return result;
@@ -256,13 +271,18 @@ function wrapProjectOpen(){
   return true;
 }
 
+function isUserRenderControl(event){
+  return !!event.target?.closest?.('[data-p751-focus],[data-filter],[data-view="matches"],[data-p751-nav="matches"]');
+}
+
 function boot(){
   wrapRenderMatches();
   wrapProjectOpen();
   patchAll();
 
   document.addEventListener('click',event=>{
-    if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-p751-nav="signals"],[data-view="matches"]')){
+    if(isUserRenderControl(event))userRenderPermit=1;
+    if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-p751-nav="signals"],[data-view="matches"],[data-filter]')){
       requestAnimationFrame(patchAll);
     }
   },true);
@@ -275,6 +295,7 @@ else boot();
 
 window.TENIS_AI_PROJECT_UI_QUALITY_V8815=Object.freeze({
   version:VERSION,
+  runtimeFix:RUNTIME_FIX,
   finalSignals,
   patchAll,
   patchHome:patchProjectHome,
