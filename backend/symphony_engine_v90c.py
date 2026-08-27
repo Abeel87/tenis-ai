@@ -15,7 +15,7 @@ except ImportError:
     import symphony_engine_v90 as core
     from symphony_evidence_v90c import VERSION as EVIDENCE_VERSION, augment_match
 
-VERSION = "v9.0C"
+VERSION = "v9.0C.1"
 MODE = "ANALYSIS_ONLY"
 
 
@@ -66,6 +66,37 @@ def _decorate_match(row: dict, evidence_meta: dict):
     return out
 
 
+def _extended_predicate(base_predicate):
+    """Extend v9.0B path maths where its existing outcome state is sufficient.
+
+    BO3 final score + first-set winner uniquely determine set 2, and set 3 is
+    always won by the eventual match winner. BO5 is intentionally left N/D
+    until the state engine retains the full set sequence.
+    """
+    def predicate(match: dict, candidate):
+        existing = base_predicate(match, candidate)
+        if existing is not None:
+            return existing
+        if core._best_of(match) != 3:
+            return None
+        side = core._side_for_pick(match, candidate.pick)
+        if side is None:
+            return None
+        if candidate.market == "set2_winner":
+            return lambda o: (
+                o.get("set_count") in {2, 3}
+                and (
+                    o.get("winner")
+                    if o.get("set_count") == 2
+                    else 3 - int(o.get("set1_winner"))
+                ) == side
+            )
+        if candidate.market == "set3_winner":
+            return lambda o: o.get("set_count") == 3 and o.get("winner") == side
+        return None
+    return predicate
+
+
 def build_report(legs: int = 4) -> dict:
     results = core._read(core.RESULTS, [])
     shadow = core._read(core.SHADOW, {})
@@ -82,8 +113,10 @@ def build_report(legs: int = 4) -> dict:
     # beam-search architecture.
     old_pool = core.POOL_LIMIT
     old_beam = core.BEAM_WIDTH
+    old_predicate = core._predicate
     core.POOL_LIMIT = max(old_pool, 56)
     core.BEAM_WIDTH = max(old_beam, 160)
+    core._predicate = _extended_predicate(old_predicate)
     try:
         for match in results:
             if not isinstance(match, dict):
@@ -100,6 +133,7 @@ def build_report(legs: int = 4) -> dict:
     finally:
         core.POOL_LIMIT = old_pool
         core.BEAM_WIDTH = old_beam
+        core._predicate = old_predicate
 
     matches.sort(key=lambda x: (
         -float(x.get("symphony_score") or 0.0),
@@ -123,6 +157,8 @@ def build_report(legs: int = 4) -> dict:
             "joint_probability_only_when_path_coverage_is_1": True,
             "relative_strength_is_not_probability": True,
             "raw_market_probability_is_preserved": True,
+            "bo3_set2_set3_exact_joint": True,
+            "bo5_set_sequence_exact_joint": False,
         },
     }
 
