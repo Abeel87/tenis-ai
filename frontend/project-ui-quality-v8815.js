@@ -6,7 +6,7 @@
 'use strict';
 
 const VERSION='v8.8.15';
-const RUNTIME_FIX='v8.8.17';
+const RUNTIME_FIX='v8.8.18';
 const WRAP_KEY='__projectUiQualityV8815';
 const STARTUP_SUPPRESS_MS=1250;
 const bootClock=performance.now();
@@ -218,6 +218,53 @@ function patchDiagnosticCoreRows(){
   return true;
 }
 
+function patchServePropsHonesty(){
+  const overlay=document.querySelector('#p751-match-overlay');
+  if(!overlay||overlay.hidden)return false;
+  const details=[...overlay.querySelectorAll('details.p751-acc')].find(d=>/Asy i podwójne błędy/i.test(String(d.querySelector('summary b')?.textContent||'')));
+  if(!details)return false;
+
+  const summaryTag=details.querySelector('summary em');
+  if(summaryTag)summaryTag.textContent='LAB · N/D';
+  const summarySmall=details.querySelector('summary small');
+  if(summarySmall)summarySmall.textContent='model count · niekalibrowany';
+
+  const note=details.querySelector('.p751-acc-body > .p751-note');
+  if(note)note.textContent='Wpisz linię buka. OVER/UNDER to wynik niekalibrowanego modelu count; kurs modelowy nie jest potwierdzonym fair oddsem i nie wchodzi do CORE.';
+
+  details.querySelectorAll('.sp72-market').forEach(card=>{
+    card.classList.remove('strong','lean');
+    const head=card.querySelector('.sp72-market-head span');
+    if(head&& !/LAB/i.test(head.textContent||''))head.textContent=`LAB · ${head.textContent}`;
+  });
+  details.dataset.v8818ServeLab='1';
+  return true;
+}
+
+function patchExactScoreHonesty(){
+  const overlay=document.querySelector('#p751-match-overlay');
+  if(!overlay||overlay.hidden)return false;
+  let changed=false;
+  overlay.querySelectorAll('.p751-model-grid article').forEach(article=>{
+    const title=article.querySelector('h4');
+    if(!title||!/Dokładny wynik/i.test(String(title.textContent||'')))return;
+    if(!title.dataset.v8818ExactLab){
+      title.dataset.v8818ExactLab='1';
+      title.textContent='Dokładny wynik · MODEL LAB · N/D';
+    }
+    article.querySelectorAll('.hot,.strong,.lean').forEach(x=>x.classList.remove('hot','strong','lean'));
+    let note=article.querySelector('[data-v8818-exact-note]');
+    if(!note){
+      note=document.createElement('small');
+      note.dataset.v8818ExactNote='1';
+      note.textContent='Brak osobnej telemetrii FINAL — diagnostyka, nie CORE.';
+      article.append(note);
+    }
+    changed=true;
+  });
+  return changed;
+}
+
 function patchProjectHome(){
   patchTopStrip();
   patchMatchCards();
@@ -226,6 +273,8 @@ function patchProjectHome(){
 function patchProjectDetail(){
   patchVerdict();
   patchDiagnosticCoreRows();
+  patchServePropsHonesty();
+  patchExactScoreHonesty();
 }
 
 function patchAll(){
