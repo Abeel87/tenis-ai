@@ -1,6 +1,6 @@
 /* Tenis AI v8.9.2 — Full App Coherence
    Read-only UI bridge for the newest SHADOW learning layers.
-   It also keeps the visible release label consistent with central metadata.
+   v8.9.3 adds Surface Elo experiment visibility without production influence.
    Never changes model scores, Generator selection, Adaptive PROD or final_score.
 */
 (() => {
@@ -56,6 +56,34 @@
     </article>`;
   }
 
+  function eloCard(kind,report){
+    if(!report||typeof report!=='object')return '';
+    const cfg={
+      catboost:{title:'CatBoost + Player + Surface Elo',icon:'🐱🧬🎾',base:'catboost_player',elo:'catboost_player_elo',gate:'catboost_player_elo',detail:'Elo ogólne i na bieżącej nawierzchni wchodzą jako dodatkowe cechy modelu.'},
+      ensemble:{title:'Ensemble + Player + Surface Elo',icon:'🧠🧬🎾',base:'ensemble_player',elo:'ensemble_player_elo',gate:'ensemble_player_elo',detail:'Elo jest dokładane do uczącego połączenia Ensemble + Player tylko tam, gdzie ma sens.'},
+      tabpfn:{title:'TabPFN + Surface Elo',icon:'🧬🎾',base:'tabpfn',elo:'tabpfn_elo',gate:'tabpfn_elo',detail:'Sprawdzamy, czy niezależny sygnał Elo poprawia challenger TabPFN.'},
+    }[kind];
+    if(!cfg)return '';
+    const base=report?.holdout?.[cfg.base]||{};
+    const metric=report?.holdout?.[cfg.elo]||{};
+    const gate=report?.gates?.[cfg.gate]||{};
+    const alpha=kind==='ensemble'?num(report?.learned?.ensemble_elo_alpha):(kind==='tabpfn'?num(report?.learned?.tabpfn_elo_alpha):null);
+    const covered=Number(report?.elo?.rows_with_both_surface_history||0);
+    const total=Number(report?.training?.rows_total||0);
+    const accDelta=(num(metric?.accuracy)!=null&&num(base?.accuracy)!=null)?num(metric.accuracy)-num(base.accuracy):null;
+    const brierDelta=(num(metric?.brier)!=null&&num(base?.brier)!=null)?num(base.brier)-num(metric.brier):null;
+    const deltaText=accDelta==null?'—':`${accDelta>=0?'+':''}${accDelta.toFixed(1)} pp`;
+    const brierText=brierDelta==null?'—':`${brierDelta>=0?'+':''}${brierDelta.toFixed(5)}`;
+    return `<article class="coh892-card coh892-elo-card">
+      <header><div><span>${cfg.icon}</span><div><b>${esc(cfg.title)}</b><small>v8.9.3 · SHADOW</small></div></div><em class="${gateClass(gate.status)}">${esc(String(gate.status||'collecting').toUpperCase())}</em></header>
+      ${metricBlock('Z Surface Elo',metric)}
+      <div class="coh892-compare"><span>Baza <b>${pct(base?.accuracy)}</b></span><span>Zmiana <b>${esc(deltaText)}</b></span><span>Δ Brier <b>${esc(brierText)}</b></span></div>
+      <p>${esc(cfg.detail)}</p>
+      ${alpha!=null?`<div class="coh892-alpha"><span>Nauczony maks. udział Elo</span><b>${Math.round(alpha*100)}%</b></div>`:''}
+      <footer><span>Elo nawierzchni: ${covered}/${total}</span><span>Mecze historyczne Elo: ${Number(report?.elo?.events||0)}</span><strong>🚫 bez wpływu na PROD</strong></footer>
+    </article>`;
+  }
+
   function ensureStyle(){
     if(document.getElementById('coh892-style'))return;
     const style=document.createElement('style');
@@ -66,6 +94,7 @@
       .coh892-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.coh892-card{border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:10px;background:rgba(255,255,255,.025)}
       .coh892-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.coh892-card header>div{display:flex;gap:7px;align-items:flex-start}.coh892-card header b{display:block;font-size:.75rem}.coh892-card header small{display:block;color:#8ca4af;font-size:.61rem;margin-top:2px}.coh892-card header em{font-style:normal;font-size:.58rem;padding:4px 6px;border-radius:999px}.coh892-card header em.good{color:#baff76;background:rgba(153,255,83,.08);border:1px solid rgba(153,255,83,.18)}.coh892-card header em.watch{color:#ffd28f;background:rgba(255,184,76,.08);border:1px solid rgba(255,184,76,.18)}.coh892-card header em.collecting{color:#a9bec8;background:rgba(169,190,200,.07);border:1px solid rgba(169,190,200,.16)}
       .coh892-metric{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:10px 0 7px}.coh892-metric small{color:#8ca4af;font-size:.6rem}.coh892-metric b{font-size:1.05rem;grid-row:1/3;grid-column:2;text-align:right}.coh892-metric span{font-size:.59rem;color:#9fb2bb}.coh892-card p{font-size:.64rem;line-height:1.45;color:#a9bbc3;margin:6px 0}.coh892-alpha{display:flex;justify-content:space-between;font-size:.62rem;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08)}.coh892-card footer{display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:8px;font-size:.57rem;color:#899fa9}.coh892-card footer strong{color:#ffca87;font-weight:600}
+      .coh892-elo-card{border-color:rgba(180,255,115,.13)}.coh892-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:7px 0}.coh892-compare span{display:grid;gap:2px;padding:6px;border-radius:9px;background:rgba(255,255,255,.025);font-size:.56rem;color:#8fa5af}.coh892-compare b{font-size:.65rem;color:#dbeaf0}
       @media(max-width:720px){.coh892-grid{grid-template-columns:1fr}.coh892-head{align-items:center}}
     `;
     document.head.appendChild(style);
@@ -87,13 +116,15 @@
     if(!document.querySelector('#pc77'))return false;
     const player=telemetry?.player_model_shadow_v89||null;
     const learning=telemetry?.ensemble_player_learning_v891||null;
-    if(!player&&!learning)return false;
+    const elo=telemetry?.surface_elo_integration_v893||null;
+    if(!player&&!learning&&!elo)return false;
     ensureStyle();
     document.querySelector('#coh892-shadow')?.remove();
     const section=document.createElement('section');
     section.id='coh892-shadow';
     section.className='coh892-shadow';
-    section.innerHTML=`<div class="coh892-head"><div><b>🧪 EKSPERYMENTY PLAYER · SHADOW</b><small>Tu widać nowe warstwy uczące. Nie mieszamy ich z rankingiem modeli produkcyjnych.</small></div><span>0% wpływu na PROD</span></div><div class="coh892-grid">${experimentCard('player',player)}${experimentCard('learning',learning)}</div>`;
+    const eloCards=elo?`${eloCard('catboost',elo)}${eloCard('ensemble',elo)}${eloCard('tabpfn',elo)}`:'';
+    section.innerHTML=`<div class="coh892-head"><div><b>🧪 EKSPERYMENTY PLAYER + SURFACE ELO · SHADOW</b><small>Nowe warstwy uczące są porównywane na holdoucie. Nie mieszamy ich z rankingiem modeli produkcyjnych.</small></div><span>0% wpływu na PROD</span></div><div class="coh892-grid">${experimentCard('player',player)}${experimentCard('learning',learning)}${eloCards}</div>`;
     const anchor=document.querySelector('#al84-performance');
     if(anchor?.parentNode===host)anchor.insertAdjacentElement('afterend',section);
     else host.insertAdjacentElement('afterbegin',section);
@@ -121,6 +152,7 @@
 
   window.TENIS_AI_COHERENCE_V892=Object.freeze({
     version:VERSION,
+    surfaceEloVersion:'v8.9.3',
     productionInfluence:false,
     patchReleaseLabel,
     renderShadowExperiments
