@@ -60,7 +60,8 @@ def refresh(directory):
         write('autolearn_v84.json', auto)
     meta = read('meta.json', {})
     meta['settlement_reports_updated_at'] = datetime.now(timezone.utc).isoformat()
-    meta['settlement_reports_policy'] = 'v8.8.9-single-snapshot-player-telemetry'
+    meta['settlement_reports_policy'] = 'v8.8.4-single-snapshot'
+    meta['settlement_reports_player_telemetry_fix'] = 'v8.8.9'
     write('meta.json', meta)
     return {'reconciled_signals': changes, 'history_entries': len(history)}
 
