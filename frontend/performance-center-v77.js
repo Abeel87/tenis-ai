@@ -12,6 +12,7 @@
   const pct77=x=>x==null||!Number.isFinite(Number(x))?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const num77=x=>Number.isFinite(Number(x))?Number(x):0;
   const fmtInt=x=>Math.round(num77(x)).toLocaleString('pl-PL');
+  const STANDARD_SET_SCORES=new Set(['0:6','1:6','2:6','3:6','4:6','5:7','6:7']);
 
   function readState(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{return {}}}
   function saveState(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
@@ -27,12 +28,48 @@
     return extrasPromise;
   }
 
+  // Mirror backend/history_sampling.py::unique_signals for read-only reporting.
+  // Archived snapshots stay untouched; only the Performance Center view is canonicalized.
+  function reportSignals(m){
+    const final=m?.result||{};
+    const sets=Array.isArray(final?.sets)?final.sets:[];
+    const first=Array.isArray(sets[0])?sets[0]:null;
+    const firstPair=first&&first.length>=2
+      ? [Number(first[0]),Number(first[1])].sort((a,b)=>a-b)
+      : null;
+    const standard=!!(
+      final?.status==='completed' &&
+      firstPair && firstPair.every(Number.isFinite) &&
+      STANDARD_SET_SCORES.has(`${firstPair[0]}:${firstPair[1]}`)
+    );
+    const rows=[...(m?.signals||[])].sort((a,b)=>String(a?.line??'').localeCompare(String(b?.line??'')));
+    const out=[],seen=new Set();
+
+    for(const raw of rows){
+      if(!raw?.market||raw?.pick==null){out.push(raw);continue}
+      let line=raw?.line;
+      if(line!=null&&line!==''&&Number.isFinite(Number(line)))line=Number(line);
+      const originalLine=line;
+      if(standard&&raw.market==='set1_total'&&(line===10.5||line===11.5))line=10.5;
+      const key=JSON.stringify([
+        raw.market,raw.pick,line,raw?.checkpoint??null,
+        raw?.source_model??null,raw?.tracker_version??null
+      ]);
+      if(seen.has(key))continue;
+      seen.add(key);
+      if(originalLine!==line){
+        out.push({...raw,line,label:String(raw?.label||'').replace('11.5','10.5')});
+      }else out.push(raw);
+    }
+    return out;
+  }
+
   function flatten(rows=history()){
     const out=[];
     for(const m of rows){
       const d=new Date(m.scheduled_time||m.captured_at||m.first_captured_at||0);
       if(!Number.isFinite(d.getTime()))continue;
-      for(const s of (m.signals||[])){
+      for(const s of reportSignals(m)){
         if(s.result!=='hit'&&s.result!=='miss')continue;
         out.push({
           time:d,
