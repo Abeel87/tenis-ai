@@ -301,6 +301,7 @@
   }
   function repairGeneratorCandidate(x,spm,profile){
     if(
+      spm===2 &&
       x?.pair_type &&
       Array.isArray(x?.picked) &&
       x.picked.length===spm &&
@@ -457,8 +458,7 @@
     const client=currentUserClient();
     if(client){
       try{
-        const {data:{user}}=await client.auth.getUser();
-        if(user?.id){
+        const {data:{user}}=await client.auth.getUser();if(user?.id){
           const {error}=await client.from('ai_scenarios').insert({...payload,user_id:user.id});
           if(!error){saveLocal({...payload,id:`remote-${Date.now()}`,remote:true});clearDraft();currentTab='saved';render();toast('Scenariusz zapisany na profilu.');return}
           console.warn('Scenario Supabase insert:',error);
@@ -1302,7 +1302,7 @@
   }
   function categoryTabs(){
     const tabs=[['all','Wszystko'],['start','Start seta'],['games','Gemy'],['winner','Kierunek'],['serve','Serwis'],['top','AI Top']];
-    return `<div class="sc82-cats">${tabs.map(([k,l])=>`<button class="${manualCategory===k?'active':''}" data-sc-cat="${k}">${l}</button>`).join('')}</div>`;
+    return `<div class="sc82-cats">${tabs.map(([k,l])=>`<button class="${k===manualCategory?'active':''}" data-sc-cat="${k}">${l}</button>`).join('')}</div>`;
   }
   function manualHtml(){
     let rows=todaysMatches();
