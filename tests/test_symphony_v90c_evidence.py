@@ -1,6 +1,6 @@
 from backend.symphony_evidence_v90c import augment_match, build_market_catalog
 from backend.symphony_engine_v90 import Candidate, _build_outcomes, _joint, _predicate
-from backend.symphony_engine_v90c import _extended_predicate, build_report
+from backend.symphony_engine_v90c import _dedupe_augmented, _extended_predicate, build_report
 
 
 def _match():
@@ -135,6 +135,29 @@ def test_augment_is_read_only_and_adds_missing_markets():
     assert "set1_exact_score" in meta["families"]
 
 
+def test_semantic_alias_dedupe_prefers_existing_prod_rows():
+    source = _match()
+    source["autolearn_v84"]["signals"] = [
+        {"key": "match_win|A", "market": "match_win", "pick": "A", "ensemble": 81},
+        {"key": "state2|1:1", "market": "state2", "pick": "1:1", "ensemble": 79},
+    ]
+    augmented, meta = augment_match(source)
+    before = len(augmented["autolearn_v84"]["signals"])
+    augmented, meta = _dedupe_augmented(augmented, meta)
+    rows = augmented["autolearn_v84"]["signals"]
+    after = len(rows)
+
+    match_a = [x for x in rows if x.get("pick") == "A" and x.get("market") in {"match_win", "match_winner"}]
+    state_11 = [x for x in rows if x.get("pick") == "1:1" and (x.get("checkpoint") == 2 or "state2" in str(x.get("key")))]
+
+    assert len(match_a) == 1
+    assert match_a[0]["market"] == "match_win"
+    assert len(state_11) == 1
+    assert state_11[0]["market"] == "state2"
+    assert after < before
+    assert meta["alias_duplicates_removed"] >= 2
+
+
 def test_v90c_report_contract(monkeypatch):
     match = _match()
 
@@ -148,6 +171,7 @@ def test_v90c_report_contract(monkeypatch):
     assert report["production_influence"] is False
     assert report["shadow_auto_promotion"] is False
     assert report["contract"]["relative_strength_is_not_probability"] is True
+    assert report["contract"]["semantic_alias_dedupe"] is True
     assert report["contract"]["bo3_set2_set3_exact_joint"] is True
     assert report["matches_count"] == 1
     assert report["matches"][0]["market_adapter"]["catalog_size"] > 0
