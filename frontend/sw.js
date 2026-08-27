@@ -1,7 +1,7 @@
 /* Tenis AI v8.8.9 — bounded PWA cache */
 // Protected compatibility marker: old v8.0.1 tests and clients still identify this family.
 const LEGACY_CACHE_CONTRACT = 'tenis-ai-v801-player-profile';
-const CACHE = 'tenis-ai-v889-loading-generator-fix';
+const CACHE = 'tenis-ai-v84b-logic-stability';
 const RUNTIME_CACHE_POLICY = 'v853-large-json-bypass';
 
 const CORE = [
