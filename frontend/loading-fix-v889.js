@@ -64,3 +64,21 @@
     snapshot:()=>({state,rows:Array.isArray(all)?all.length:0})
   });
 })();
+
+/* v8.9.4 — lightweight feature bootstrap.
+   Kept outside the protected index/runtime contract: it only loads the read-only
+   SHADOW Signal Center assets and has no access to PROD scoring paths. */
+(() => {
+  if (document.querySelector('script[data-shadow-signals-v894]')) return;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'shadow-signals-v894.css?v=894';
+  css.dataset.shadowSignalsV894 = '1';
+  document.head.appendChild(css);
+
+  const js = document.createElement('script');
+  js.src = 'shadow-signals-v894.js?v=894';
+  js.async = true;
+  js.dataset.shadowSignalsV894 = '1';
+  document.head.appendChild(js);
+})();
