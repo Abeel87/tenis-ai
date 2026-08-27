@@ -1,12 +1,16 @@
 /* Tenis AI v8.8 · compatibility bridge.
    v8.8.2+ owns the performance dashboard; this file keeps only the
    Adaptive PROD bridge and generator header. Old v8.8 stats rendering is
-   intentionally disabled to avoid duplicate dashboards/fetches. */
+   intentionally disabled to avoid duplicate dashboards/fetches.
+   v8.8.21 runtime cleanup: explicit scenario/stats events replace polling.
+*/
 (()=>{
 'use strict';
 const V88_COMPAT_BRAND = 'Tenis AI · v8.8';
 
 const VERSION='v8.8-compat';
+const RUNTIME_FIX='v8.8.21';
+const WRAP_KEY='__v88ScenarioOpen';
 const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
 const marketAlias=x=>({
@@ -140,26 +144,46 @@ function applyV88Brand(){
   window.TENIS_AI_APPLY_META?.();
 }
 
+function wrapScenarioOpen(){
+  const api=window.TENIS_AI_SCENARIOS;
+  if(!api||api[WRAP_KEY]||typeof api.open!=='function')return false;
+  const open=api.open;
+  api.open=(...args)=>{
+    const result=open.apply(api,args);
+    queueMicrotask(decorateGenerator);
+    return result;
+  };
+  Object.defineProperty(api,WRAP_KEY,{value:true});
+  return true;
+}
+
 function boot(){
   applyV88Brand();
   wrapAutoLearn();
+  wrapScenarioOpen();
   decorateGenerator();
-  [250,800,1600].forEach(ms=>setTimeout(()=>{
-    wrapAutoLearn();
-    decorateGenerator();
-    injectStats();
-  },ms));
+  injectStats();
 }
 
-document.addEventListener('click',()=>setTimeout(decorateGenerator,30),true);
+document.addEventListener('click',event=>{
+  if(!event.target?.closest?.('#scenario-v82a-panel,[data-p751-nav="scenarios"]'))return;
+  requestAnimationFrame(()=>{
+    wrapScenarioOpen();
+    decorateGenerator();
+  });
+},true);
+document.addEventListener('tenis-ai:stats-ready',injectStats);
+document.addEventListener('tenis-ai:stats-dashboard-ready',injectStats);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
 
 window.TENIS_AI_V88={
   version:VERSION,
+  runtimeFix:RUNTIME_FIX,
   wrapAutoLearn,
   injectStats,
   decorateGenerator,
+  wrapScenarioOpen,
   wrapStats,
   LEGACY_STATS_SOURCES
 };
