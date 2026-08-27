@@ -108,7 +108,41 @@ function historyForGroup(group){
   return priors.length?{min:Math.min(...priors.map(x=>x.accuracy)),max:Math.max(...priors.map(x=>x.accuracy)),n:Math.min(...priors.map(x=>x.n)),covered:priors.length,total:group.items.length}:null;
 }
 
+function clarifyScenarioScores(){
+  document.querySelectorAll('.sc82-draft-entry .sc82-draft-row small').forEach(el=>{
+    const t=String(el.textContent||'');
+    const next=t
+      .replace(/\bRanking\s+(\d+(?:\.\d+)?\/100)/g,'Composer $1')
+      .replace(/\bFINAL\s+(\d+(?:\.\d+)?\/100)/g,'Model FINAL $1');
+    if(next!==t)el.textContent=next;
+  });
+
+  const score=document.querySelector('.sc82-score');
+  if(score){
+    const label=score.querySelector(':scope > span');
+    if(label)label.textContent='Ocena scenariusza · Composer';
+
+    let note=document.querySelector('.sc883-score-note');
+    if(!note){
+      note=document.createElement('div');
+      note.className='sc883-score-note';
+      note.innerHTML='<b>Jak czytać te liczby?</b><span><strong>Model FINAL</strong> = wynik produkcyjnego modelu Adaptive. <strong>Composer</strong> = ocena używana do rankingu po jakości danych, zgodności modeli i profilu. <strong>Ocena scenariusza</strong> = średnia ocen Composer pomniejszona o kary za powtarzalność. To nie są gwarantowane prawdopodobieństwa.</span>';
+      score.insertAdjacentElement('afterend',note);
+    }
+  }
+
+  document.querySelectorAll('.sc82-saved-score').forEach(row=>{
+    const b=row.querySelector('b');
+    if(!b||row.querySelector('.sc883-saved-label'))return;
+    const label=document.createElement('small');
+    label.className='sc883-saved-label';
+    label.textContent='COMPOSER';
+    b.insertAdjacentElement('beforebegin',label);
+  });
+}
+
 function decorateGeneratorCards(){
+  clarifyScenarioScores();
   const cards=[...document.querySelectorAll('.sc82-draft-list article')];
   if(!cards.length)return;
   const groups=draftGroups();
@@ -131,7 +165,7 @@ function decorateGeneratorCards(){
     const meta=document.createElement('div');
     meta.className='sc883-pairbar';
     meta.innerHTML=`
-      <span><small>PAIR SCORE</small><b>${pairScore==null?'N/D':Math.round(pairScore)+'/100'}</b></span>
+      <span><small>PAIR SELECTOR · RANKING</small><b>${pairScore==null?'N/D':Math.round(pairScore)+'/100'}</b></span>
       <span class="wide"><small>DLACZEGO TEN MECZ</small><b>${esc(PAIR_LABELS[pairType]||REASON_LABELS[pairReason]||pairReason||'najlepsza spójna para')}</b></span>
       <span><small>HISTORIA ZDARZEŃ · NIE PARY</small><b>${hist?`${Math.round(hist.min)}–${Math.round(hist.max)}% · min n=${hist.n} · ${hist.covered}/${hist.total} zdarzeń`:'brak mocnej próbki'}</b></span>
       <em class="${shadow?'shadow':'prod'}">${shadow?'MODEL TEST · SHADOW':'CORE · PROD'}</em>
@@ -209,6 +243,7 @@ function compactAdaptive(){
 function polish(){
   brand();
   compactAdaptive();
+  clarifyScenarioScores();
   decorateGeneratorCards();
   cleanupStats();
 }
@@ -234,6 +269,7 @@ function boot(){
   brand();
   compactAdaptive();
   wrapScenarioOpen();
+  clarifyScenarioScores();
   decorateGeneratorCards();
   cleanupStats();
 }
@@ -244,6 +280,7 @@ document.addEventListener('click',event=>{
   if(!scenarioClick(event))return;
   requestAnimationFrame(()=>{
     wrapScenarioOpen();
+    clarifyScenarioScores();
     decorateGeneratorCards();
   });
 },true);
@@ -260,6 +297,7 @@ window.TENIS_AI_V883=Object.freeze({
   runtimeFix:RUNTIME_FIX,
   polish,
   cleanupStats,
+  clarifyScenarioScores,
   decorateGeneratorCards,
   wrapScenarioOpen
 });
