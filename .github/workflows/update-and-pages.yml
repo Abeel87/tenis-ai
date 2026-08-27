@@ -123,6 +123,10 @@ jobs:
         run: |
           python backend/refresh_settlement_reports.py
           python scripts/verify_audit_consistency.py
+      - name: Player Model + Intelligence SHADOW v8.9
+        run: python backend/player_model_shadow_v89.py
+      - name: Player Model Shadow Guard v8.9
+        run: python scripts/verify_v89_player_model_shadow.py
       - name: Player Intelligence Guard v8.5
         run: python scripts/verify_v85.py
       - name: AutoLearn Integration Guard v8.4A

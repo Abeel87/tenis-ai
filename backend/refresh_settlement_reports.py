@@ -13,6 +13,7 @@ from autolearn_v84 import VERSION as TRACKER_VERSION, tracking_stats
 from calibration_guard_v78d import build_calibration_report, add_calibration_to_matches
 from history_tracker import MODEL_VERSION, history_stats
 from model_telemetry_v84c import build_report
+from player_intelligence_v85 import _telemetry as build_player_intelligence_telemetry
 from shadow_lab_v78e6 import build_shadow_stats
 from signal_settlement import reconcile_settled, SIGNAL_LAYERS
 
@@ -39,7 +40,17 @@ def refresh(directory):
     calibration = build_calibration_report(history, MODEL_VERSION)
     write('calibration_v78d.json', calibration)
     write('results.json', add_calibration_to_matches(read('results.json', []), calibration))
-    write('model_telemetry_v84c.json', build_report(history))
+
+    previous_telemetry = read('model_telemetry_v84c.json', {})
+    telemetry = build_report(history)
+    # v8.8.9 fix: reconciliation used to overwrite Player Intelligence telemetry
+    # generated a few steps earlier. Rebuild it from the same final history snapshot.
+    telemetry['player_intelligence_v85'] = build_player_intelligence_telemetry(history)
+    # Preserve the latest v8.9 shadow-model report if refresh is run standalone.
+    if isinstance(previous_telemetry, dict) and previous_telemetry.get('player_model_shadow_v89'):
+        telemetry['player_model_shadow_v89'] = previous_telemetry['player_model_shadow_v89']
+    write('model_telemetry_v84c.json', telemetry)
+
     write('shadow_stats.json', build_shadow_stats(history))
     auto = read('autolearn_v84.json', {})
     if auto:
@@ -49,7 +60,7 @@ def refresh(directory):
         write('autolearn_v84.json', auto)
     meta = read('meta.json', {})
     meta['settlement_reports_updated_at'] = datetime.now(timezone.utc).isoformat()
-    meta['settlement_reports_policy'] = 'v8.8.4-single-snapshot'
+    meta['settlement_reports_policy'] = 'v8.8.9-single-snapshot-player-telemetry'
     write('meta.json', meta)
     return {'reconciled_signals': changes, 'history_entries': len(history)}
 
