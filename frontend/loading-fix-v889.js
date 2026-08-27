@@ -31,7 +31,8 @@
 
   async function primeMatches(){
     try {
-      const r = await fetch(`data/results.json?ts=${Date.now()}`, {cache:'no-store'});
+      // Shared runtime already owns freshness/deduplication for data JSON.
+      const r = await fetch('data/results.json', {cache:'no-store'});
       if (!r.ok) throw new Error(`results ${r.status}`);
       const rows = await r.json();
       if (!Array.isArray(rows)) throw new Error('results payload is not an array');
