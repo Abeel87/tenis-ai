@@ -237,14 +237,13 @@
     timer=setTimeout(load,ms);
   }
 
-  document.addEventListener('DOMContentLoaded',()=>schedule(250));
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>schedule(250),{once:true});
+  else schedule(50);
 
-  const observer=new MutationObserver(()=>{
-    if(document.querySelector('.al84-performance')&&!document.getElementById(ROOT_ID)){
-      schedule(100);
-    }
-  });
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  // v8.4E3: event-driven mount. AutoLearn is injected after the stats owner renders;
+  // schedule slightly later than that injection instead of watching every DOM mutation.
+  document.addEventListener('tenis-ai:stats-ready',()=>schedule(180));
+  document.addEventListener('tenis-ai:stats-dashboard-ready',()=>schedule(180));
 
   document.addEventListener('click',(e)=>{
     if(e.target?.closest?.('#refresh'))schedule(1800);
