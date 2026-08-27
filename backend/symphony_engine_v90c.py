@@ -7,6 +7,7 @@ market catalogue built from data that Tenis AI already stores in results.json.
 """
 
 import json
+import re
 
 try:
     from . import symphony_engine_v90 as core
@@ -15,7 +16,7 @@ except ImportError:
     import symphony_engine_v90 as core
     from symphony_evidence_v90c import VERSION as EVIDENCE_VERSION, augment_match
 
-VERSION = "v9.0C.2"
+VERSION = "v9.0C.3"
 MODE = "ANALYSIS_ONLY"
 
 
@@ -54,6 +55,7 @@ def _decorate_match(row: dict, evidence_meta: dict):
         "catalog_size": evidence_meta.get("catalog_size", 0),
         "composer_added": evidence_meta.get("composer_added", 0),
         "existing_signals": evidence_meta.get("existing_signals", 0),
+        "alias_duplicates_removed": evidence_meta.get("alias_duplicates_removed", 0),
         "families": evidence_meta.get("families") or {},
     }
     out["selection"] = [_decorate_leg(x, evidence_meta) for x in out.get("selection") or []]
@@ -64,6 +66,76 @@ def _decorate_match(row: dict, evidence_meta: dict):
             for k, v in out["compositions"].items()
         }
     return out
+
+
+def _semantic_market(signal: dict) -> str:
+    market = core._canonical_market(signal.get("market"))
+    key = core._ascii(core._signal_key(signal))
+    checkpoint = core._checkpoint(signal)
+    if checkpoint in core.CHECKPOINTS and (
+        market == "game_state"
+        or market.startswith("state")
+        or key.startswith("state")
+        or key.startswith("game_state")
+        or key.startswith("gamestate")
+    ):
+        return "game_state"
+    return market
+
+
+def _semantic_pick(signal: dict, market: str) -> str:
+    pick = str(signal.get("pick") or "").strip()
+    if market == "game_state" and not core._score_pair(pick):
+        parts = core._signal_key(signal).split("|")
+        for part in reversed(parts):
+            if core._score_pair(part):
+                pick = part
+                break
+    return core._compact(pick)
+
+
+def _semantic_signature(signal: dict):
+    market = _semantic_market(signal)
+    checkpoint = core._checkpoint(signal) if market == "game_state" else None
+    line = core._line(signal)
+    # A line is semantic only for line-based markets. Winner/state aliases can
+    # contain numbers in their raw key that are not betting lines.
+    if market not in {
+        "set1_total", "match_total", "total_sets",
+        "player_aces", "player_double_faults",
+    }:
+        line = None
+    return (
+        market,
+        _semantic_pick(signal, market),
+        round(float(line), 6) if line is not None else None,
+        int(checkpoint) if checkpoint is not None else None,
+    )
+
+
+def _dedupe_augmented(match: dict, evidence_meta: dict):
+    """Remove semantic aliases while preserving the original PROD signal first."""
+    auto = dict(match.get("autolearn_v84") or {})
+    rows = [x for x in (auto.get("signals") or []) if isinstance(x, dict)]
+    seen = set()
+    kept = []
+    removed = 0
+    for row in rows:
+        sig = _semantic_signature(row)
+        if sig in seen:
+            removed += 1
+            continue
+        seen.add(sig)
+        kept.append(row)
+    auto["signals"] = kept
+    match["autolearn_v84"] = auto
+    evidence_meta["alias_duplicates_removed"] = removed
+    if removed:
+        evidence_meta["composer_added"] = max(
+            0,
+            int(evidence_meta.get("composer_added") or 0) - removed,
+        )
+    return match, evidence_meta
 
 
 def _extended_predicate(base_predicate):
@@ -191,6 +263,7 @@ def build_report(legs: int = 4) -> dict:
             if not isinstance(match, dict):
                 continue
             augmented, evidence = augment_match(match)
+            augmented, evidence = _dedupe_augmented(augmented, evidence)
             mk = core._match_key(match)
             row = core.build_match_symphony(
                 augmented,
@@ -227,6 +300,7 @@ def build_report(legs: int = 4) -> dict:
             "joint_probability_only_when_path_coverage_is_1": True,
             "relative_strength_is_not_probability": True,
             "raw_market_probability_is_preserved": True,
+            "semantic_alias_dedupe": True,
             "bo3_set2_set3_exact_joint": True,
             "bo5_set_sequence_exact_joint": False,
             "one_pass_bounded_beam": True,
