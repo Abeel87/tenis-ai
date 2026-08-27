@@ -14,7 +14,7 @@ def test_performance_center_uses_unique_report_sampling():
     # Standard completed first sets treat 10.5/11.5 as the same event in both layers.
     assert "line===10.5||line===11.5" in js
     assert ".replace('11.5','10.5')" in js
-    assert "line in (10.5, 11.5)" in backend
+    assert "line not in (10.5, 11.5)" in backend
     assert '.replace("11.5", "10.5")' in backend
 
     # Identity dimensions must stay aligned with backend unique_signals().
