@@ -1,9 +1,11 @@
 /* Tenis AI v8.5.3 — Signals / Stats organizer
    UI-only. No model math, no API calls, no MutationObserver, no interval.
+   v8.8.19 runtime cleanup: one debounced pass driven by explicit stats events.
 */
 (() => {
   'use strict';
   const VERSION = 'v8.5.3';
+  const RUNTIME_FIX = 'v8.8.19';
   const KEY = 'tenis-ai-v853-stats-mode';
   let timer = null;
 
@@ -77,64 +79,6 @@
     return bar;
   }
 
-  function organize() {
-    const app = document.querySelector('#app');
-    const pc = document.querySelector('#pc77');
-    if (!app || !pc) return;
-
-    const bar = ensureToolbar(app);
-    setMode(document.documentElement.dataset.tenisStatsMode || savedMode());
-    proxyLabels(app);
-
-    document.querySelector('#pi85-stats')?.classList.add('v853-primary-block');
-    document.querySelector('#al84-performance')?.classList.add('v853-primary-block');
-    document.querySelector('#dynamic-weights-audit-v84d1')?.classList.add('v853-technical-block');
-    document.querySelector('#mt84e2')?.classList.add('v853-technical-block');
-    document.querySelector('.al84-telemetry')?.classList.add('v853-technical-block');
-    document.querySelectorAll('.al84-policy,.al84-foot').forEach(el => el.classList.add('v853-technical-inline'));
-
-    const trend = bar.querySelector('#v853-trend-summary');
-    if (trend) trend.innerHTML = trendSummary();
-    visualPolish();
-  }
-
-  function schedule(delay = 80) {
-    clearTimeout(timer);
-    timer = setTimeout(organize, delay);
-  }
-
-  document.documentElement.dataset.tenisStatsMode = savedMode();
-
-  try {
-    if (typeof renderStats === 'function' && !renderStats.__v853Organized) {
-      const base = renderStats;
-      const wrapped = function () {
-        const value = base.apply(this, arguments);
-        schedule(50);
-        setTimeout(organize, 300);
-        setTimeout(organize, 900);
-        return value;
-      };
-      wrapped.__v853Organized = true;
-      renderStats = wrapped;
-    }
-  } catch {}
-
-  document.addEventListener('click', event => {
-    if (event.target?.closest?.('[data-view="stats"]')) {
-      schedule(80);
-      setTimeout(organize, 500);
-      setTimeout(organize, 1400);
-    }
-  });
-
-  if (document.querySelector('#pc77')) {
-    schedule(0);
-    setTimeout(organize, 500);
-    setTimeout(organize, 1400);
-  }
-
-  /* v8.5.3b visual hierarchy */
   function ensureSectionLabel(target, title, subtitle){
     if(!target || target.previousElementSibling?.classList?.contains('v853b-section-label')) return;
     const row=document.createElement('div');
@@ -147,8 +91,6 @@
     const health=document.querySelector('#v79-health, .v79-health');
     if(!health) return;
 
-    // Remove the extra v8.5.3b collapse state. Clean Core already owns
-    // this component's real state through the `expanded` class.
     health.classList.remove('v853b-collapsed');
 
     let button=health.querySelector('.v853b-health-toggle');
@@ -188,17 +130,9 @@
     if(al) ensureSectionLabel(al,'Modele produkcyjne','Current · CatBoost · TabPFN · Ensemble');
   }
 
-  visualPolish();
-  setTimeout(visualPolish,500);
-  setTimeout(visualPolish,1400);
-
-
-
-  /* v8.5.3c readability controls */
   function ensureReadabilityControls(){
-    const brand=document.querySelector('.brand-copy p');
-    if(brand) brand.textContent='Tenis AI v8.5.3 · AutoLearn + Player Intelligence';
-
+    // App/version branding belongs to app-meta. This legacy organizer must not
+    // overwrite a newer release label after the page has already rendered.
     const pi=document.querySelector('#pi85-stats');
     if(pi && pi.dataset.v853cReady!=='1'){
       pi.dataset.v853cReady='1';
@@ -231,9 +165,65 @@
     }
   }
 
-  ensureReadabilityControls();
-  setTimeout(ensureReadabilityControls,400);
-  setTimeout(ensureReadabilityControls,1200);
+  function organize() {
+    const app = document.querySelector('#app');
+    const pc = document.querySelector('#pc77');
+    if (!app || !pc) return;
 
-  window.TENIS_AI_UI_ORGANIZER_V853 = Object.freeze({ version: VERSION, organize, setMode });
+    const bar = ensureToolbar(app);
+    setMode(document.documentElement.dataset.tenisStatsMode || savedMode());
+    proxyLabels(app);
+
+    document.querySelector('#pi85-stats')?.classList.add('v853-primary-block');
+    document.querySelector('#al84-performance')?.classList.add('v853-primary-block');
+    document.querySelector('#dynamic-weights-audit-v84d1')?.classList.add('v853-technical-block');
+    document.querySelector('#mt84e2')?.classList.add('v853-technical-block');
+    document.querySelector('.al84-telemetry')?.classList.add('v853-technical-block');
+    document.querySelectorAll('.al84-policy,.al84-foot').forEach(el => el.classList.add('v853-technical-inline'));
+
+    const trend = bar.querySelector('#v853-trend-summary');
+    if (trend) trend.innerHTML = trendSummary();
+    visualPolish();
+    ensureReadabilityControls();
+  }
+
+  function schedule(delay = 60) {
+    clearTimeout(timer);
+    timer = setTimeout(organize, delay);
+  }
+
+  document.documentElement.dataset.tenisStatsMode = savedMode();
+
+  try {
+    if (typeof renderStats === 'function' && !renderStats.__v853Organized) {
+      const base = renderStats;
+      const wrapped = function () {
+        const value = base.apply(this, arguments);
+        schedule(50);
+        return value;
+      };
+      wrapped.__v853Organized = true;
+      renderStats = wrapped;
+    }
+  } catch {}
+
+  document.addEventListener('tenis-ai:stats-ready', () => schedule(0));
+  document.addEventListener('tenis-ai:stats-dashboard-ready', () => schedule(0));
+  document.addEventListener('click', event => {
+    if (event.target?.closest?.('[data-view="stats"],[data-pc77-period],[data-pc77],[data-pc882-period],[data-pc882-tab]')) schedule(40);
+  });
+
+  if (document.querySelector('#pc77')) schedule(0);
+  else {
+    visualPolish();
+    ensureReadabilityControls();
+  }
+
+  window.TENIS_AI_UI_ORGANIZER_V853 = Object.freeze({
+    version: VERSION,
+    runtimeFix: RUNTIME_FIX,
+    organize,
+    setMode,
+    schedule
+  });
 })();
