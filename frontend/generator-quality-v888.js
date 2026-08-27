@@ -96,7 +96,7 @@
 
   function currentProblems(){
     const d = draft();
-    if (!d || d.profile === 'experimental') return [];
+    if (!d || d.mode !== 'generator' || d.profile === 'experimental') return [];
     const bad = [];
     for (const [,items] of groupDraft(d)) {
       const c = checkGroup(items, d.profile || 'balanced');
@@ -118,7 +118,8 @@
     setTimeout(reviewGenerated, 0);
   });
 
-  // Saving is guarded in capture phase so a weak pair cannot slip through after manual line edits.
+  // Saving is guarded in capture phase so a weak generated pair cannot slip through after line edits.
+  // Manual scenarios remain completely under the user's control.
   document.addEventListener('click', e => {
     if (!e.target.closest?.('[data-sc-save]')) return;
     const bad = currentProblems();
