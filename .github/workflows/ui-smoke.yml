@@ -52,6 +52,9 @@ jobs:
       - name: Full test suite
         run: python -m pytest -q
 
+      - name: History sampling outliers
+        run: python scripts/audit_history_sampling_outliers.py
+
       - name: Runtime & UI Guard v8.5.3
         run: python scripts/verify_v853_runtime_ui.py
 
