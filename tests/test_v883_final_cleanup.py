@@ -64,14 +64,16 @@ def test_v883_pair_reasoning_is_visible():
     for token in ["PAIR SCORE","DLACZEGO TEN MECZ","HISTORIA","selector_match_score","selector_pair","selector_reason"]:
         assert token in js
 
-def test_v883_has_single_stats_owner():
+def test_v883_has_single_stats_owner_and_hides_legacy_ui_before_cleanup():
     old=t("frontend/v88-upgrade.js")
     final=t("frontend/v883-final.js")
     css=t("frontend/v883-final.css")
     assert "function wrapStats(){\n  return false;" in old
     assert "v882-cleanup.js" in old
     assert "pc88-dashboard" in final
-    assert "#pc88-dashboard{display:none!important}" in css
+    assert "#pc88-dashboard," in css
+    assert "#model-switcher," in css
+    assert "[data-p751-models]{display:none!important}" in css
 
 def test_v883_pwa_name_is_clean():
     m=json.loads(t("frontend/manifest.webmanifest"))
