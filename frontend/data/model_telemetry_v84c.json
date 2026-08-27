@@ -1,6 +1,6 @@
 {
   "version": "v8.4C",
-  "generated_at": "2026-08-27T15:19:06.403483+00:00",
+  "generated_at": "2026-08-27T17:08:55.903623+00:00",
   "status": "ACTIVE",
   "selection_threshold": 65.0,
   "models": {
@@ -20,19 +20,19 @@
   },
   "scopes": {
     "7d": {
-      "rows": 11707,
+      "rows": 11690,
       "by_model": {
         "adaptive": {
           "label": "Adaptive",
-          "n": 1039,
-          "selected_n": 1039,
-          "hits": 769,
-          "misses": 270,
-          "accuracy": 74.0,
-          "all_accuracy": 74.0,
+          "n": 1022,
+          "selected_n": 1022,
+          "hits": 757,
+          "misses": 265,
+          "accuracy": 74.1,
+          "all_accuracy": 74.1,
           "avg_score": 79.0,
-          "brier": 0.19287,
-          "log_loss": 0.57435,
+          "brier": 0.19264,
+          "log_loss": 0.57388,
           "odds_n": 0,
           "roi": null,
           "roi_status": "N/D — brak zapisanych kursów",
@@ -6253,16 +6253,16 @@
   "game_state_progress_v84e2": {
     "version": "v8.4E2",
     "policy": "exact_checkpoint_pbp_only_monitoring",
-    "total_tracked": 795,
+    "total_tracked": 798,
     "total_settled": 105,
     "checkpoints": {
       "2": {
-        "tracked": 265,
+        "tracked": 266,
         "settled": 35,
         "hits": 22,
         "misses": 13,
         "void": 8,
-        "waiting_pbp": 222,
+        "waiting_pbp": 223,
         "accuracy": 62.9,
         "trend": {
           "version": "v8.4E2",
@@ -6449,12 +6449,12 @@
         }
       },
       "4": {
-        "tracked": 265,
+        "tracked": 266,
         "settled": 35,
         "hits": 12,
         "misses": 23,
         "void": 8,
-        "waiting_pbp": 222,
+        "waiting_pbp": 223,
         "accuracy": 34.3,
         "trend": {
           "version": "v8.4E2",
@@ -6641,12 +6641,12 @@
         }
       },
       "6": {
-        "tracked": 265,
+        "tracked": 266,
         "settled": 35,
         "hits": 8,
         "misses": 27,
         "void": 8,
-        "waiting_pbp": 222,
+        "waiting_pbp": 223,
         "accuracy": 22.9,
         "trend": {
           "version": "v8.4E2",
@@ -7223,7 +7223,7 @@
   },
   "player_model_shadow_v89": {
     "version": "v8.9",
-    "generated_at": "2026-08-27T15:19:07.605086+00:00",
+    "generated_at": "2026-08-27T17:08:57.105964+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -7348,15 +7348,15 @@
       "accuracy_delta_pp": -2.1,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 330,
-    "frozen_feature_snapshots_added": 0,
+    "current_scored_signals": 301,
+    "frozen_feature_snapshots_added": 5,
     "historical_feature_snapshots_added": 0,
     "historical_backfill_matches_skipped": 0,
     "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
   },
   "ensemble_player_learning_v891": {
     "version": "v8.9.1",
-    "generated_at": "2026-08-27T15:19:11.358426+00:00",
+    "generated_at": "2026-08-27T17:09:00.805770+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -8139,7 +8139,115 @@
       "accuracy_delta_pp": -0.4,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 330,
+    "current_scored_signals": 301,
     "note": "Ensemble + Player Learning uczy udziału Player Intelligence z historii, rynku, nawierzchni i jakości profilu. Działa wyłącznie w SHADOW i nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score."
+  },
+  "surface_elo_integration_v893": {
+    "version": "v8.9.3",
+    "generated_at": "2026-08-27T17:09:02.535792+00:00",
+    "mode": "SHADOW",
+    "status": "ACTIVE_SHADOW",
+    "production_influence": false,
+    "auto_promotion": false,
+    "elo": {
+      "method": "general_plus_surface_elo_with_sample_shrinkage_and_inactivity_decay",
+      "same_day_policy": "exclude_entire_match_day_to_prevent_leakage",
+      "rating_base": 1500.0,
+      "scale": 400.0,
+      "surface_shrink_n": 12.0,
+      "decay_half_life_days": 720.0,
+      "events": 20394,
+      "players": 1672,
+      "player_surface_timelines": 3012,
+      "rows_with_both_surface_history": 0
+    },
+    "training": {
+      "rows_total": 540,
+      "matches_total": 152,
+      "train_rows": 448,
+      "train_matches": 121,
+      "holdout_rows": 92,
+      "holdout_matches": 31,
+      "chronological_match_split": "80/20",
+      "leakage_policy": "elo_strictly_before_match_day_and_fit_train_only_for_holdout"
+    },
+    "learned": {
+      "ensemble_elo_alpha": 0.35,
+      "tabpfn_elo_alpha": 0.0
+    },
+    "holdout": {
+      "catboost_player": {
+        "n": 92,
+        "selected_n": 54,
+        "accuracy": 74.1,
+        "brier": 0.2168,
+        "log_loss": 0.6246,
+        "avg_probability": 65.2
+      },
+      "catboost_player_elo": {
+        "n": 92,
+        "selected_n": 52,
+        "accuracy": 75.0,
+        "brier": 0.22068,
+        "log_loss": 0.63602,
+        "avg_probability": 64.5
+      },
+      "ensemble_player": {
+        "n": 92,
+        "selected_n": 51,
+        "accuracy": 76.5,
+        "brier": 0.19598,
+        "log_loss": 0.57985,
+        "avg_probability": 63.2
+      },
+      "ensemble_player_elo": {
+        "n": 92,
+        "selected_n": 51,
+        "accuracy": 76.5,
+        "brier": 0.19652,
+        "log_loss": 0.58103,
+        "avg_probability": 63.1
+      },
+      "tabpfn": {
+        "n": 6,
+        "selected_n": 6,
+        "accuracy": 66.7,
+        "brier": 0.19922,
+        "log_loss": 0.57967,
+        "avg_probability": 72.4
+      },
+      "tabpfn_elo": {
+        "n": 6,
+        "selected_n": 6,
+        "accuracy": 66.7,
+        "brier": 0.19922,
+        "log_loss": 0.57967,
+        "avg_probability": 72.4
+      }
+    },
+    "gates": {
+      "catboost_player_elo": {
+        "status": "watch",
+        "production_influence": false,
+        "auto_promotion": false,
+        "brier_gain": -0.00388,
+        "log_loss_gain": -0.01142,
+        "accuracy_delta_pp": 0.9
+      },
+      "ensemble_player_elo": {
+        "status": "watch",
+        "production_influence": false,
+        "auto_promotion": false,
+        "brier_gain": -0.00054,
+        "log_loss_gain": -0.00118,
+        "accuracy_delta_pp": 0.0
+      },
+      "tabpfn_elo": {
+        "status": "collecting",
+        "production_influence": false,
+        "auto_promotion": false
+      }
+    },
+    "note": "Elo zasila wyłącznie eksperymenty SHADOW: CatBoost+Player+Elo, Ensemble+Player Learning+Elo i TabPFN+Elo. 0% wpływu na PROD/Generator/final_score."
   }
 }
