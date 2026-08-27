@@ -16,7 +16,7 @@
   const CP_MIN_ACCURACY=65;
   const CP_MIN_WILSON=45;
   const CP_MIN_RECENT_WHEN_FALLING=60;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const signed=x=>num(x)==null?'—':`${Number(x)>0?'+':''}${Number(x).toFixed(1)} pp`;
@@ -120,7 +120,7 @@
         <div class="mt84e2-subhead"><div><b>🎯 Po2 / Po4 / Po6 — postęp E1</b><small>CORE wymaga PBP + ≥65%, n≥30, Wilson ≥45%; przy trendzie spadkowym recent ≥60%</small></div><span>${Number(gs.total_settled||0)} rozliczonych</span></div>
         <div class="mt84e2-state-grid">${[2,4,6].map(cp=>gameStateCard(gs,cp)).join('')}</div>
       </div>
-      <p class="mt84e2-note"><b>Monitoring, nie autopilot.</b> Trend nie zmienia sam wag produkcyjnych. „OSTROŻNIE” oznacza pogorszenie ostatniej serii względem poprzedniej przy kontroli Brier. Status CORE checkpointu jest informacyjny i używa tych samych progów co Quality Lock.</p>
+      <p class="mt84e2-note"><b>Monitoring, nie autopilot.</b> Trend nie zmienia sam wag produkcyjnych. „OSTROŻNIE” oznacza pogorszenie ostatniej serii względem poprzedniej przy kontroli Brier. Pokazywany status CORE checkpointu jest informacyjny i używa tych samych progów co Quality Lock.</p>
     </section>`;
   }
 
