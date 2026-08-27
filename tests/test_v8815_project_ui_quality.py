@@ -44,3 +44,14 @@ def test_project_ui_bridge_has_no_polling_or_mutation_observer():
     assert "new MutationObserver(" not in js
     assert "setInterval(" not in js
     assert "requestAnimationFrame(patchAll)" in js
+
+
+def test_project_ui_suppresses_only_automatic_startup_rerenders():
+    js = read("frontend/project-ui-quality-v8815.js")
+    assert "RUNTIME_FIX='v8.8.17'" in js
+    assert "STARTUP_SUPPRESS_MS=1250" in js
+    assert "startupRenderShouldBeSuppressed" in js
+    assert "userRenderPermit" in js
+    assert "isUserRenderControl" in js
+    assert "if(userRenderPermit>0)return false" in js
+    assert "if(startupRenderShouldBeSuppressed())" in js
