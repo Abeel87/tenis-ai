@@ -9,6 +9,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean, pstdev
 
+try:
+    from .player_intelligence_v85 import (
+        _load_long_df as _load_pi_long_df,
+        build_profile as _build_pi_profile,
+        _matchup_summary as _pi_matchup_summary,
+        _surface as _pi_surface,
+    )
+except ImportError:
+    from player_intelligence_v85 import (
+        _load_long_df as _load_pi_long_df,
+        build_profile as _build_pi_profile,
+        _matchup_summary as _pi_matchup_summary,
+        _surface as _pi_surface,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
 CACHE = ROOT / "data" / "cache" / "player_model_shadow_v89"
@@ -303,6 +318,100 @@ def freeze_feature_snapshots(history: list[dict], results: list[dict]) -> tuple[
         e["player_intelligence_signals_v85"] = enriched
         out.append(e)
     return out, changed
+
+
+def backfill_historical_feature_snapshots(history: list[dict]) -> tuple[list[dict], int, int]:
+    """Rebuild missing PI feature vectors using only information available before each match.
+
+    build_profile() applies an as-of cutoff (< match date), so this is a leakage-safe
+    historical reconstruction from the existing local player DB/cache. Once written
+    into history the snapshot is reused on every later run.
+    """
+    needs = []
+    for entry in history or []:
+        rows = entry.get("player_intelligence_signals_v85") or []
+        if any(
+            isinstance(p, dict)
+            and p.get("result") in ("hit", "miss")
+            and not p.get("ml_features_v89")
+            for p in rows
+        ):
+            needs.append(entry)
+    if not needs:
+        return history, 0, 0
+
+    df = _load_pi_long_df()
+    if df is None or getattr(df, "empty", True):
+        return history, 0, len(needs)
+
+    rebuilt = skipped = 0
+    profile_cache = {}
+    out = []
+    for e0 in history or []:
+        e = dict(e0)
+        rows = e.get("player_intelligence_signals_v85") or []
+        missing = [
+            p for p in rows
+            if isinstance(p, dict)
+            and p.get("result") in ("hit", "miss")
+            and not p.get("ml_features_v89")
+        ]
+        if not missing:
+            out.append(e)
+            continue
+
+        scheduled = e.get("scheduled_time")
+        p1_name, p2_name = str(e.get("p1") or ""), str(e.get("p2") or "")
+        surface = _pi_surface(e.get("surface"))
+        if not scheduled or not p1_name or not p2_name:
+            skipped += 1
+            out.append(e)
+            continue
+
+        sides = {}
+        try:
+            for side, name in (("p1", p1_name), ("p2", p2_name)):
+                ck = (_norm(name), surface, str(scheduled)[:10])
+                profile = profile_cache.get(ck)
+                if profile is None:
+                    early = (((e.get("early_hold_v7") or {}).get(side) or {}).get("ehs"))
+                    profile = _build_pi_profile(df, name, surface, scheduled, early)
+                    profile_cache[ck] = profile
+                sides[side] = profile
+            matchup = _pi_matchup_summary(sides["p1"], sides["p2"], e.get("best_of"))
+            reconstructed_match = {
+                "p1": p1_name,
+                "p2": p2_name,
+                "surface": surface,
+                "best_of": e.get("best_of"),
+                "player_intelligence_v85": {
+                    "version": "v8.5",
+                    "mode": "HISTORICAL_RECONSTRUCTION",
+                    "profiles": sides,
+                    "matchup": matchup,
+                },
+            }
+            enriched = []
+            for p0 in rows:
+                p = dict(p0)
+                if p.get("result") in ("hit", "miss") and not p.get("ml_features_v89"):
+                    signal = {
+                        "key": p.get("key"),
+                        "market": p.get("market"),
+                        "pick": p.get("pick"),
+                        "line": p.get("line"),
+                        "checkpoint": p.get("checkpoint"),
+                    }
+                    p["ml_features_v89"] = feature_snapshot(reconstructed_match, signal)
+                    p["ml_features_version"] = VERSION
+                    p["ml_features_origin"] = "historical_asof_rebuild"
+                    rebuilt += 1
+                enriched.append(p)
+            e["player_intelligence_signals_v85"] = enriched
+        except Exception:
+            skipped += 1
+        out.append(e)
+    return out, rebuilt, skipped
 
 
 def build_training_rows(history: list[dict]) -> list[dict]:
@@ -603,6 +712,7 @@ def run(now=None) -> dict:
         meta = {}
 
     history, frozen_features = freeze_feature_snapshots(history, results)
+    history, historical_features, historical_backfill_skipped = backfill_historical_feature_snapshots(history)
     rows = build_training_rows(history)
     train, holdout = split_by_match(rows)
     train_matches = len({r["match_key"] for r in train})
@@ -679,6 +789,8 @@ def run(now=None) -> dict:
         "gate": gate,
         "current_scored_signals": current_scored,
         "frozen_feature_snapshots_added": frozen_features,
+        "historical_feature_snapshots_added": historical_features,
+        "historical_backfill_matches_skipped": historical_backfill_skipped,
         "note": (
             "CatBoost + Player Intelligence działa wyłącznie w SHADOW. "
             "Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. "
@@ -709,6 +821,8 @@ def run(now=None) -> dict:
         "holdout_rows": len(holdout),
         "current_scored": current_scored,
         "frozen_features": frozen_features,
+        "historical_features": historical_features,
+        "historical_backfill_skipped": historical_backfill_skipped,
         "gate": gate.get("status"),
     }
 
