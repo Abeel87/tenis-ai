@@ -22,7 +22,7 @@ def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
     assert "nie bierze udziału w rankingu" in js
     assert "selector\\s+proxy" in js
 
-def test_v887_v888_market_quality_layer_is_scoped_to_core():
+def test_v887_v889_market_quality_layer_is_scoped_to_core():
     h=t("frontend/index.html")
     js=t("frontend/checkpoint-quality-v887.js")
     assert "checkpoint-quality-v887.js?v=887" in h
@@ -32,12 +32,14 @@ def test_v887_v888_market_quality_layer_is_scoped_to_core():
         "CP_MIN_SETTLED=30",
         "CP_MIN_ACCURACY=65",
         "CP_MIN_WILSON=45",
-        "WIN_MIN_SETTLED=30",
-        "WIN_MIN_ACCURACY=65",
-        "WIN_MIN_WILSON=45",
+        "RESULT_MIN_SETTLED=30",
+        "RESULT_MIN_ACCURACY=65",
+        "RESULT_MIN_WILSON=45",
+        "RESULT_MARKETS=new Set([...WINNER_MARKETS,'total_sets'])",
         "early_hold_v7?.ready!==true",
         "segments_30d?.market",
         "window.TENIS_AI_WINNER_QUALITY_V888",
+        "window.TENIS_AI_RESULT_QUALITY_V889",
         "return state.coreEventDepth>0?filteredSignals(rows,match):rows",
         "activeScenarioProfile()!=='experimental'",
         "Manual i Model Test/SHADOW zachowują pełne rynki",
@@ -45,6 +47,8 @@ def test_v887_v888_market_quality_layer_is_scoped_to_core():
         assert token in js
 
     assert "match_winner','set1_winner','set2_winner','set3_winner" in js
+    assert "'set1_total'" not in js.split("RESULT_MARKETS=new Set",1)[1].split(";",1)[0]
+    assert "'match_total'" not in js.split("RESULT_MARKETS=new Set",1)[1].split(";",1)[0]
     assert "new MutationObserver(" not in js
     assert "setInterval(" not in js
 
