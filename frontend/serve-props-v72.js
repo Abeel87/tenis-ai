@@ -2,7 +2,7 @@
 (() => {
   if(typeof renderMatchDetail!=='function') return;
   const baseRender=renderMatchDetail;
-  const escS=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const escS=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
   function poissonOver(mean,line){
@@ -13,7 +13,7 @@
     for(let k=1;k<threshold;k++){term*=mean/k;cdf+=term}
     return clamp(1-cdf,0,1);
   }
-  function fair(p){return p>0.001?(1/p).toFixed(2):'—'}
+  function modelPrice(p){return p>0.001?(1/p).toFixed(2):'—'}
   function lineValue(x){return Number.isFinite(Number(x))?Number(x):0.5}
 
   function market(kind,mkt,side,id){
@@ -24,7 +24,7 @@
     const key=`${id}-${side}-${kind}`;
     return `<div class="sp72-market" data-sp-market="${key}" data-sp-mean="${mean}">
       <div class="sp72-market-head"><b>${title}</b><span>MODEL ŚR. ${mean.toFixed(1)}</span></div>
-      <div class="sp72-market-meta"><span>${mkt.sample||0} meczów</span><span>cały mecz · BO3</span></div>
+      <div class="sp72-market-meta"><span>${mkt.sample||0} meczów</span><span>cały mecz · BO3 · LAB</span></div>
       <div class="sp72-line-tool">
         <label>Linia buka <input type="number" inputmode="decimal" min="0.5" max="${kind==='aces'?'20.5':'12.5'}" step="0.5" value="${def.toFixed(1)}" data-sp-line></label>
         <div class="sp72-probs" data-sp-output></div>
@@ -55,10 +55,10 @@
   function box(m){
     const s=m.serve_props_v72;if(!s)return '';
     return `<section class="sp72-box">
-      <div class="sp72-head"><div><b>⚡ Serve Props v7.2 · asy + podwójne błędy</b><small>forma serwisowa + nawierzchnia + przeciwnik + przewidywana długość meczu</small></div><span>${s.ready?'MODEL':'N/D'}</span></div>
-      <div class="sp72-info">Wpisz dokładnie linię, którą widzisz u bukmachera. Dostaniesz modelowe OVER/UNDER i „uczciwy kurs” wynikający z modelu.</div>
+      <div class="sp72-head"><div><b>⚡ Serve Props v7.2 · asy + podwójne błędy</b><small>forma serwisowa + nawierzchnia + przeciwnik + przewidywana długość meczu</small></div><span>${s.ready?'LAB':'N/D'}</span></div>
+      <div class="sp72-info">Wpisz dokładnie linię, którą widzisz u bukmachera. Dostaniesz modelowe OVER/UNDER i kurs modelowy. Ten moduł nie ma jeszcze własnej kalibracji ani rozliczanego backtestu, więc procentów nie należy traktować jako potwierdzonej skuteczności.</div>
       <div class="sp72-grid">${player(m,'p1')}${player(m,'p2')}</div>
-      <div class="sp72-foot">„Uczciwy kurs” = 1 / modelowe prawdopodobieństwo. Sama niższa linia nie oznacza jeszcze value — kurs buka musi być lepszy od kursu modelowego. Model count jest estymacją BO3 i nie jest jeszcze kalibrowanym rynkiem bukmacherskim.</div>
+      <div class="sp72-foot">Kurs modelowy = 1 / surowe prawdopodobieństwo modelu Poissona. To nie jest jeszcze „uczciwy kurs” bukmacherski ani sygnał CORE. Serve Props pozostaje modułem LAB do czasu zebrania własnej historii i kalibracji.</div>
     </section>`;
   }
 
@@ -86,9 +86,7 @@
     const p=poissonOver(mean,line);
     if(p==null)return;
     const over=100*p,under=100*(1-p);
-    const oc=over>=67?'strong':over>=58?'lean':'';
-    const uc=under>=67?'strong':under>=58?'lean':'';
-    out.innerHTML=`<div class="${oc}"><span>OVER ${line.toFixed(1)}</span><b>${over.toFixed(0)}%</b><small>fair ${fair(p)}</small></div><div class="${uc}"><span>UNDER ${line.toFixed(1)}</span><b>${under.toFixed(0)}%</b><small>fair ${fair(1-p)}</small></div>`;
+    out.innerHTML=`<div><span>OVER ${line.toFixed(1)}</span><b>${over.toFixed(0)}%</b><small>kurs modelowy ${modelPrice(p)} · niekalibrowany</small></div><div><span>UNDER ${line.toFixed(1)}</span><b>${under.toFixed(0)}%</b><small>kurs modelowy ${modelPrice(1-p)} · niekalibrowany</small></div>`;
   }
   function refreshAll(root=document){root.querySelectorAll('[data-sp-market]').forEach(refreshMarket)}
   document.addEventListener('input',e=>{if(e.target.matches?.('[data-sp-line]'))refreshMarket(e.target.closest('[data-sp-market]'))});
