@@ -1,5 +1,9 @@
-/* Tenis AI v7.6.2 — UI restore + player click hotfix */
+/* Tenis AI v7.6.2 — UI restore + player click hotfix
+   v8.8.24 runtime cleanup: explicit render/stats hooks replace app observer.
+*/
 (() => {
+  const RUNTIME_FIX='v8.8.24';
+  const WRAP_KEY='__v762RestoreWrapped';
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
@@ -46,22 +50,24 @@
     openPlayer(el.textContent);
   },true);
 
+  function ensureStatsBack(){
+    const app=$('#app');
+    if(!app||$('#v762-stats-back',app))return;
+    const statsReady=$('#pc77',app)||$('#pc882-dashboard',app);
+    if(!statsReady)return;
+    const head=document.createElement('div');
+    head.id='v762-stats-back';
+    head.className='v762-stats-head';
+    head.innerHTML='<button type="button">‹ Mecze</button><div><b>📊 Statystyki / skuteczność modelu</b><small>zielone sygnały + walidacja PBP</small></div>';
+    app.prepend(head);
+    $('button',head).onclick=backMatches;
+  }
+
   function openStats(){
     const b=$('.main-tabs [data-view="stats"]');
     if(!b)return;
     b.click();
-    setTimeout(()=>{
-      $$('#p751-bottom-nav button').forEach(x=>x.classList.remove('active'));
-      const app=$('#app');
-      if(app&&!$('#v762-stats-back',app)){
-        const head=document.createElement('div');
-        head.id='v762-stats-back';
-        head.className='v762-stats-head';
-        head.innerHTML='<button type="button">‹ Mecze</button><div><b>📊 Statystyki / skuteczność modelu</b><small>zielone sygnały + walidacja PBP</small></div>';
-        app.prepend(head);
-        $('button',head).onclick=backMatches;
-      }
-    },40);
+    $$('#p751-bottom-nav button').forEach(x=>x.classList.remove('active'));
   }
 
   function backMatches(){
@@ -118,25 +124,29 @@
     }finally{busy=false}
   }
 
-  const app=$('#app');
-  if(app){
-    let queued=false;
-
-    const obs=new MutationObserver(()=>{
-      if(queued)return;
-      queued=true;
-
-      requestAnimationFrame(()=>{
-        queued=false;
-        refresh();
-      });
-    });
-
-    obs.observe(app,{
-      childList:true,
-      subtree:false
-    });
+  function wrapRenderMatches(){
+    const current=window.renderMatches;
+    if(typeof current!=='function'||current[WRAP_KEY])return false;
+    const wrapped=function(...args){
+      const result=current.apply(this,args);
+      refresh();
+      return result;
+    };
+    Object.defineProperty(wrapped,WRAP_KEY,{value:true});
+    window.renderMatches=wrapped;
+    return true;
   }
 
-  setTimeout(refresh,100);
+  wrapRenderMatches();
+  requestAnimationFrame(refresh);
+  document.addEventListener('tenis-ai:stats-ready',()=>requestAnimationFrame(ensureStatsBack));
+  document.addEventListener('tenis-ai:stats-dashboard-ready',()=>requestAnimationFrame(ensureStatsBack));
+
+  window.TENIS_AI_RESTORE_V762=Object.freeze({
+    runtimeFix:RUNTIME_FIX,
+    refresh,
+    decorateHome,
+    ensureStatsBack,
+    wrapRenderMatches
+  });
 })();
