@@ -3,7 +3,7 @@
 (() => {
   const META = Object.freeze({
     appVersion: 'v8.0.1',
-    displayVersion: 'v8.8.4',
+    displayVersion: 'v8.8.5',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
@@ -14,7 +14,7 @@
     productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion: 'v7.9B-bayesian-meta',
     uiArchitecture: 'v8.0.1-clean-core',
-    currentUiArchitecture: 'v8.8.4-audit-consistency',
+    currentUiArchitecture: 'v8.8.5-stable-views',
     cacheVersion: 'v801',
     runtimeCacheVersion: 'v87'
   });

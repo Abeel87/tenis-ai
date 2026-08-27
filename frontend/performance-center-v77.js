@@ -235,7 +235,7 @@
     const weakMarkets=[...markets].filter(x=>x.n>=10).sort((a,b)=>a.accuracy-b.accuracy||b.n-a.n).slice(0,3);
     const appVer=window.TENIS_AI_META?.displayVersion||window.TENIS_AI_META?.appVersion||'v7.8E12';
 
-    app.innerHTML=`<section id="pc77" class="pc77-wrap pc12-wrap">
+    app.innerHTML=`<section id="pc77" class="pc77-wrap pc12-wrap ${window.TENIS_AI_V882?'pc885-loading':''}">
       <div class="pc77-head pc12-head">
         <div>
           <span>📊 SKUTECZNOŚĆ MODELU</span>
@@ -245,6 +245,7 @@
         <b>${esc77(appVer)}</b>
       </div>
 
+      ${window.TENIS_AI_V882?'<p class="pc885-loading-note" role="status">Ładowanie statystyk i wykresów…</p>':''}
       ${controls(all)}
       ${simpleOverall(cur,delta)}
 
@@ -301,6 +302,7 @@
       <p class="pc77-final-note"><b>Pamiętaj:</b> skuteczność historyczna nie gwarantuje kolejnego wyniku. Najpierw patrz na wielkość próbki, potem na procent.</p>
     </section>`;
     bind();
+    window.TENIS_AI_UI_ORGANIZER_V853?.organize?.();
     document.dispatchEvent(new CustomEvent('tenis-ai:stats-ready'));
   }
 

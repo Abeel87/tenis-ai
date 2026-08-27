@@ -5,13 +5,13 @@
 (() => {
   'use strict';
   const VERSION='v8.4E2';
-  const PRIMARY=['current','catboost','tabpfn','ensemble','generator'];
+  const PRIMARY=['adaptive_prod','current','catboost','tabpfn','ensemble','generator'];
   const SECONDARY=['adaptive','early','serve','form','surface','consensus','dynamic'];
-  const LABELS={adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Ensemble selector proxy'};
+  const LABELS={adaptive_prod:'FINAL Adaptive PROD',adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Ensemble selector proxy'};
   const ICONS={adaptive:'🧠',early:'🎯',serve:'🎾',form:'🔥',surface:'🏟️',consensus:'⚡',current:'🧠',catboost:'🐱',tabpfn:'🧬',ensemble:'🔗',dynamic:'🧭',generator:'🚀'};
   const STATUS={rising:['↗','ROŚNIE'],stable:['→','STABILNY'],watch:['◐','OBSERWUJ'],falling:['↘','OSTROŻNIE'],collecting:['…','ZA MAŁA PRÓBA']};
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const num=x=>Number.isFinite(Number(x))?Number(x):null;
+  const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const signed=x=>num(x)==null?'—':`${Number(x)>0?'+':''}${Number(x).toFixed(1)} pp`;
   const statusMeta=s=>STATUS[s]||STATUS.collecting;
@@ -80,12 +80,12 @@
     </article>`;
   }
 
-  function html(tel){
+  function html(tel,rootId='mt84e2'){
     if(!tel||tel?.trends_v84e2?.version!==VERSION){
-      return `<section id="mt84e2" class="mt84e2"><header class="mt84e2-head"><div><b>📈 Model Trend Monitor v8.4E2</b><small>Kierunek jakości modeli</small></div><span>OCZEKUJE</span></header><p class="mt84e2-note">Wykresy pojawią się po pierwszym raporcie telemetryki v8.4E2.</p></section>`;
+      return `<section id="${esc(rootId)}" class="mt84e2"><header class="mt84e2-head"><div><b>📈 Model Trend Monitor v8.4E2</b><small>Kierunek jakości modeli</small></div><span>OCZEKUJE</span></header><p class="mt84e2-note">Wykresy pojawią się po pierwszym raporcie telemetryki v8.4E2.</p></section>`;
     }
     const gs=tel.game_state_progress_v84e2||{};
-    return `<section id="mt84e2" class="mt84e2">
+    return `<section id="${esc(rootId)}" class="mt84e2">
       <header class="mt84e2-head"><div><b>📈 Model Trend Monitor v8.4E2</b><small>Czy model rośnie, stoi czy się pogarsza</small></div><span>MONITORING</span></header>
       <div class="mt84e2-legend"><span class="rising">↗ rośnie</span><span class="stable">→ stabilny</span><span class="watch">◐ obserwuj</span><span class="falling">↘ ostrożnie</span></div>
       <div class="mt84e2-grid">${PRIMARY.map(id=>modelCard(tel,id)).join('')}</div>

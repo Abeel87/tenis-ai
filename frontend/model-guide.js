@@ -377,21 +377,9 @@ function tidy(m){
     list.before(center);
     installDecisionCenter(center,m,built.rows);
   }
-  [0,80,300].forEach(ms=>setTimeout(()=>{
-    screen.querySelector('.v79-live-panel')?.remove();
-    const player=screen.querySelector('[data-pi851-detail]'),center=screen.querySelector('.dc87');
-    if(player&&center&&player.previousElementSibling!==center)center.after(player);
-  },ms));
 }
-function afterOpen(event){
-  const target=event.target?.closest?.('[data-p751-open]');
-  if(!target||event.target?.closest?.('.v762-player-link'))return;
-  if(event.type==='keydown'&&event.key!=='Enter'&&event.key!==' ')return;
-  const match=currentMatch(target.getAttribute('data-p751-open'));
-  if(match)setTimeout(()=>tidy(match),0);
-}
-document.addEventListener('click',afterOpen);
-document.addEventListener('keydown',afterOpen);
+// openMatch owns synchronous composition; document click timers must not rebuild it.
+
 function clean(){
   document.querySelector('#model-switcher')?.remove();
   document.querySelectorAll('[data-p751-models]').forEach(x=>x.remove());

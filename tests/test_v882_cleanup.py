@@ -21,7 +21,7 @@ def test_v882_stats_feed_selection_only():
 
 def test_v882_stats_tabs_and_charts():
     s=t("frontend/v882-cleanup.js")
-    for token in ["Przegląd","Rynki","Modele","Adaptive","trend(","calibration(","heatmap(","segments("]:
+    for token in ["Przegląd","Wykresy","pc882-trend-monitor","Rynki","Modele","Adaptive","trend(","calibration(","heatmap(","segments("]:
         assert token in s
 
 def test_v882_adaptive_compact():

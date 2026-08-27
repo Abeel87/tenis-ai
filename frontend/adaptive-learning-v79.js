@@ -238,7 +238,7 @@
 
   function injectProjectDetail(){
     const screen=document.querySelector('.p751-detail-screen');
-    if(!screen||screen.querySelector('.v79-live-panel'))return;
+    if(!screen||screen.querySelector('.dc87')||screen.querySelector('.v79-live-panel'))return;
     const m=currentProjectMatch(); if(!m)return;
     const html=livePanel(m); if(!html)return;
     const matchup=screen.querySelector('.p751-matchup');
