@@ -47,3 +47,16 @@ def test_pick_side_reverses_elo_probability_and_edge():
     p2=_elo_features(snap,"p2")
     assert round(p1["elo_probability_for_pick"] + p2["elo_probability_for_pick"],8) == 1.0
     assert p1["elo_edge_for_pick"] == -p2["elo_edge_for_pick"]
+
+
+def test_display_name_is_normalized_to_database_player_key():
+    rows=pd.DataFrame([
+        {"date":"2026-01-01","surface":"hard","player_key":"iga swiatek","opponent_key":"aryna sabalenka","won":1},
+        {"date":"2026-01-01","surface":"hard","player_key":"aryna sabalenka","opponent_key":"iga swiatek","won":0},
+    ])
+    idx=EloIndex(rows)
+    snap=idx.match("Iga Świątek","Aryna Sabalenka","HARD","2026-01-15T10:00:00Z")
+    assert snap["p1"]["general_n"] == 1
+    assert snap["p1"]["surface_n"] == 1
+    assert snap["p2"]["general_n"] == 1
+    assert snap["p1_probability"] > 0.5
