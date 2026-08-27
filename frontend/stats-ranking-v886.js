@@ -7,6 +7,23 @@ const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 
 function text(node){return String(node?.textContent||'').trim()}
 
+function loadSymphonyStats(){
+  if(!document.querySelector('link[data-symphony-stats-v90d]')){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='symphony-stats-v90d.css?v=90d';
+    link.dataset.symphonyStatsV90d='1';
+    document.head.append(link);
+  }
+  if(!document.querySelector('script[data-symphony-stats-v90d]')&&!window.TENIS_AI_SYMPHONY_STATS_V90D){
+    const script=document.createElement('script');
+    script.src='symphony-stats-v90d.js?v=90d';
+    script.defer=true;
+    script.dataset.symphonyStatsV90d='1';
+    document.head.append(script);
+  }
+}
+
 function patchModelRanking(){
   const pane=document.querySelector('[data-pc882-pane="models"]');
   const card=pane?.querySelector('.pc882-card');
@@ -72,6 +89,7 @@ function patch(){
 }
 
 function boot(){
+  loadSymphonyStats();
   patch();
 
   // Performance Center creates the basic page first.
@@ -93,6 +111,7 @@ window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
   version:VERSION,
   dashboardReadyEvent:DASHBOARD_READY_EVENT,
   patch:patchModelRanking,
-  promoteTrend:promoteMainTrend
+  promoteTrend:promoteMainTrend,
+  loadSymphonyStats
 });
 })();
