@@ -1,15 +1,30 @@
-/* Tenis AI v8.8.7 — checkpoint quality lock
-   Presentation/selection guard only. It never changes model probabilities,
-   Adaptive PROD math, dynamic weights or stored telemetry.
+/* Tenis AI v8.8.8 — CORE market quality layer
+   v8.8.7 checkpoint lock + v8.8.8 winner-market lock.
+   Selection/presentation only: model probabilities, Adaptive PROD math,
+   Dynamic Weights and stored telemetry are never modified.
 */
 (()=>{
 'use strict';
 
-const VERSION='v8.8.7';
-const MIN_SETTLED=30;
-const MIN_ACCURACY=65;
-const MIN_WILSON=45;
-const MIN_RECENT_WHEN_FALLING=60;
+const CHECKPOINT_VERSION='v8.8.7';
+const WINNER_VERSION='v8.8.8';
+
+const CP_MIN_SETTLED=30;
+const CP_MIN_ACCURACY=65;
+const CP_MIN_WILSON=45;
+const CP_MIN_RECENT_WHEN_FALLING=60;
+
+const WIN_MIN_SETTLED=30;
+const WIN_MIN_ACCURACY=65;
+const WIN_MIN_WILSON=45;
+
+const WINNER_MARKETS=new Set(['match_winner','set1_winner','set2_winner','set3_winner']);
+const MARKET_ALIASES={
+  match_win:'match_winner',match_winner:'match_winner',
+  set1_win:'set1_winner',set1_winner:'set1_winner',
+  set2_win:'set2_winner',set2_winner:'set2_winner',
+  set3_win:'set3_winner',set3_winner:'set3_winner'
+};
 
 const state={
   telemetry:null,
@@ -18,11 +33,21 @@ const state={
   api:null,
   rawAllSignals:null,
   rawSignals:null,
-  bypass:0,
-  eventBypass:0
+  coreEventDepth:0
 };
 
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
+
+function wilsonLower(hits,n){
+  hits=num(hits);n=num(n);
+  if(hits==null||n==null||n<=0)return null;
+  const p=Math.max(0,Math.min(1,hits/n));
+  const z=1.96,z2=z*z;
+  const den=1+z2/n;
+  const center=p+z2/(2*n);
+  const adj=z*Math.sqrt((p*(1-p)+z2/(4*n))/n);
+  return Math.max(0,(center-adj)/den)*100;
+}
 
 function checkpointOf(signal){
   const market=String(signal?.market||'').toLowerCase();
@@ -39,15 +64,14 @@ function checkpointOf(signal){
   return km?km[1]:null;
 }
 
-function wilsonLower(hits,n){
-  hits=num(hits);n=num(n);
-  if(hits==null||n==null||n<=0)return null;
-  const p=Math.max(0,Math.min(1,hits/n));
-  const z=1.96,z2=z*z;
-  const den=1+z2/n;
-  const center=p+z2/(2*n);
-  const adj=z*Math.sqrt((p*(1-p)+z2/(4*n))/n);
-  return Math.max(0,(center-adj)/den)*100;
+function canonicalMarket(signalOrMarket){
+  if(typeof signalOrMarket==='string')return MARKET_ALIASES[String(signalOrMarket).toLowerCase()]||String(signalOrMarket).toLowerCase();
+  const signal=signalOrMarket||{};
+  const direct=MARKET_ALIASES[String(signal.market||'').toLowerCase()];
+  if(direct)return direct;
+  const key=String(signal.key||signal.signal_key||'').toLowerCase();
+  const first=key.split('|')[0];
+  return MARKET_ALIASES[first]||String(signal.market||first||'').toLowerCase();
 }
 
 function checkpointRow(cp){
@@ -57,36 +81,52 @@ function checkpointRow(cp){
 function checkpointEligible(cp,match){
   cp=String(cp||'');
   if(!['2','4','6'].includes(cp))return true;
-
-  // Exact checkpoint states need real PBP support for this particular match.
   if(match?.early_hold_v7?.ready!==true)return false;
 
-  // Fail closed until the tracker is available. No guessing from a high live score.
   const row=checkpointRow(cp);
   if(!row)return false;
 
   const n=num(row.settled)??0;
   const accuracy=num(row.accuracy);
   const lower=wilsonLower(row.hits,n);
-  if(n<MIN_SETTLED||accuracy==null||accuracy<MIN_ACCURACY||lower==null||lower<MIN_WILSON)return false;
+  if(n<CP_MIN_SETTLED||accuracy==null||accuracy<CP_MIN_ACCURACY||lower==null||lower<CP_MIN_WILSON)return false;
 
   const trend=row.trend||{};
   const recent=num(trend.recent_accuracy);
-  if(String(trend.status||'').toLowerCase()==='falling'&&recent!=null&&recent<MIN_RECENT_WHEN_FALLING)return false;
-
+  if(String(trend.status||'').toLowerCase()==='falling'&&recent!=null&&recent<CP_MIN_RECENT_WHEN_FALLING)return false;
   return true;
+}
+
+function winnerRow(market){
+  const canonical=canonicalMarket(market);
+  return state.telemetry?.segments_30d?.market?.[canonical]?.adaptive_prod||null;
+}
+
+function winnerEligible(market){
+  const canonical=canonicalMarket(market);
+  if(!WINNER_MARKETS.has(canonical))return true;
+
+  // Fail closed until FINAL Adaptive PROD has a real, settled selected sample.
+  const row=winnerRow(canonical);
+  if(!row)return false;
+
+  const n=num(row.selected_n)??0;
+  const hits=num(row.hits)??0;
+  const accuracy=num(row.accuracy);
+  const lower=wilsonLower(hits,n);
+  return n>=WIN_MIN_SETTLED&&accuracy!=null&&accuracy>=WIN_MIN_ACCURACY&&lower!=null&&lower>=WIN_MIN_WILSON;
 }
 
 function signalEligible(signal,match){
   const cp=checkpointOf(signal);
-  return cp?checkpointEligible(cp,match):true;
+  if(cp&&!checkpointEligible(cp,match))return false;
+  const market=canonicalMarket(signal);
+  if(WINNER_MARKETS.has(market)&&!winnerEligible(market))return false;
+  return true;
 }
-
-function bypassActive(){return state.bypass>0||state.eventBypass>0}
 
 function filteredSignals(raw,match){
   const rows=Array.isArray(raw)?raw:[];
-  if(bypassActive())return rows;
   return rows.filter(signal=>signalEligible(signal,match));
 }
 
@@ -101,12 +141,11 @@ function installModelGate(){
   const rawAll=state.rawAllSignals;
   api.allSignals=function(match){
     const rows=rawAll.call(api,match);
-    return filteredSignals(rows,match);
+    // Full diagnostics/manual/SHADOW stay untouched. Only one synchronous
+    // CORE "Generate" event activates the allSignals filter.
+    return state.coreEventDepth>0?filteredSignals(rows,match):rows;
   };
 
-  // Keep the public selected-signal API consistent with the same CORE lock.
-  // Ask the raw API for a wider pool first so a blocked checkpoint can be
-  // replaced by the next legitimate market instead of merely shrinking Top.
   if(state.rawSignals){
     const rawSelected=state.rawSignals;
     api.signals=function(match,limit=20){
@@ -116,66 +155,53 @@ function installModelGate(){
     };
   }
 
-  api.rawAllSignalsV887=(match)=>rawAll.call(api,match);
+  if(typeof api.rawAllSignalsV887!=='function')api.rawAllSignalsV887=(match)=>rawAll.call(api,match);
   return true;
-}
-
-function withBypass(fn){
-  state.bypass+=1;
-  try{return fn()}finally{state.bypass=Math.max(0,state.bypass-1)}
-}
-
-function beginEventBypass(){
-  state.eventBypass+=1;
-  queueMicrotask(()=>{state.eventBypass=Math.max(0,state.eventBypass-1)});
-}
-
-function wrapScenarioApi(){
-  const api=window.TENIS_AI_SCENARIOS;
-  if(!api||api.__checkpointQualityV887)return;
-
-  const open=api.open;
-  const manual=api.openManualForMatch;
-  if(typeof open==='function')api.open=(tab,...args)=>String(tab||'').toLowerCase()==='manual'?withBypass(()=>open.call(api,tab,...args)):open.call(api,tab,...args);
-  if(typeof manual==='function')api.openManualForMatch=(...args)=>withBypass(()=>manual.apply(api,args));
-
-  Object.defineProperty(api,'__checkpointQualityV887',{value:true,configurable:false});
-}
-
-function wrapProjectOpen(){
-  const api=window.TENIS_AI_PROJECT_UI;
-  if(!api||api.__checkpointQualityV887||typeof api.openMatch!=='function')return;
-  const open=api.openMatch;
-  api.openMatch=(...args)=>{
-    const result=open.apply(api,args);
-    queueMicrotask(patchDecisionCenters);
-    return result;
-  };
-  Object.defineProperty(api,'__checkpointQualityV887',{value:true,configurable:false});
 }
 
 function activeScenarioProfile(){
   return String(document.querySelector('#scenario-v82a-panel .sc82-profiles .active[data-sc-profile]')?.dataset.scProfile||'balanced').toLowerCase();
 }
 
-function scenarioNeedsRaw(event){
-  const target=event.target;
-  const panel=target?.closest?.('#scenario-v82a-panel');
-  if(!panel)return false;
-
-  if(target.closest('[data-sc-generate]'))return activeScenarioProfile()==='experimental';
-  if(target.closest('[data-sc-go="manual"]'))return true;
-  return !!panel.querySelector('.sc82-manual-head');
+function isCoreGenerateEvent(event){
+  const button=event.target?.closest?.('#scenario-v82a-panel [data-sc-generate]');
+  return !!button&&activeScenarioProfile()!=='experimental';
 }
 
-function statusText(){
-  const bits=['2','4','6'].map(cp=>{
+function beginCoreEvent(){
+  state.coreEventDepth+=1;
+  queueMicrotask(()=>{state.coreEventDepth=Math.max(0,state.coreEventDepth-1)});
+}
+
+function wrapProjectOpen(){
+  const api=window.TENIS_AI_PROJECT_UI;
+  if(!api||api.__marketQualityV888||typeof api.openMatch!=='function')return;
+  const open=api.openMatch;
+  api.openMatch=(...args)=>{
+    const result=open.apply(api,args);
+    queueMicrotask(patchDecisionCenters);
+    return result;
+  };
+  Object.defineProperty(api,'__marketQualityV888',{value:true,configurable:false});
+}
+
+function checkpointStatusText(){
+  return ['2','4','6'].map(cp=>{
     const row=checkpointRow(cp);
     if(!row)return `${cp}g N/D`;
     const acc=num(row.accuracy),n=num(row.settled)||0;
     return `${cp}g ${acc==null?'N/D':acc.toFixed(1)+'%'} (n=${n})`;
-  });
-  return bits.join(' · ');
+  }).join(' · ');
+}
+
+function winnerStatusText(){
+  const short={match_winner:'Mecz',set1_winner:'1S',set2_winner:'2S',set3_winner:'3S'};
+  return [...WINNER_MARKETS].map(market=>{
+    const row=winnerRow(market);
+    if(!row)return `${short[market]} N/D`;
+    const acc=num(row.accuracy),n=num(row.selected_n)||0;
+    return `${short[market]} ${acc==null?'N/D':acc.toFixed(1)+'%'} (n=${n})`;
+  }).join(' · ');
 }
 
 function patchScenarioNote(){
@@ -188,9 +214,9 @@ function patchScenarioNote(){
     note.dataset.v887CheckpointNote='1';
     builder.appendChild(note);
   }
-  note.innerHTML='<b>🔒 Checkpoint Quality Lock v8.8.7:</b> CORE bierze dokładny stan po 2/4/6 gemach tylko przy PBP meczu + trackerze ≥65% (n≥30, Wilson ≥45%). Model Test/SHADOW i wybór ręczny pozostają dostępne. <span data-v887-status></span>';
-  const span=note.querySelector('[data-v887-status]');
-  if(span)span.textContent=state.telemetryLoaded?`Aktualnie: ${statusText()}.`:'Telemetria: ładowanie…';
+  note.innerHTML='<b>🔒 CORE Market Quality Lock:</b> checkpoint 2/4/6g wymaga PBP + ≥65% (n≥30, Wilson ≥45%); zwycięzca meczu/setu wymaga FINAL Adaptive PROD ≥65% (n≥30, Wilson ≥45%). Manual i Model Test/SHADOW zachowują pełne rynki. <span data-v888-status></span>';
+  const span=note.querySelector('[data-v888-status]');
+  if(span)span.textContent=state.telemetryLoaded?`Checkpointy: ${checkpointStatusText()}. Winner: ${winnerStatusText()}.`:'Telemetria: ładowanie…';
 }
 
 function currentDecisionMatch(root){
@@ -214,20 +240,17 @@ function patchDecisionCenter(root){
   [...grid.querySelectorAll('.dc87-card')].forEach(card=>{
     const market=String(card.dataset.dcMarket||'').toLowerCase();
     const cp=market.match(/^state([246])$/)?.[1];
-    if(cp&&!checkpointEligible(cp,match)){
-      card.remove();
-      removed+=1;
-    }
+    const blockedCheckpoint=cp&&!checkpointEligible(cp,match);
+    const blockedWinner=WINNER_MARKETS.has(canonicalMarket(market))&&!winnerEligible(market);
+    if(blockedCheckpoint||blockedWinner){card.remove();removed+=1}
   });
 
   const visible=grid.querySelectorAll('.dc87-card').length;
   const count=root.querySelector('[data-dc-count]');
-  if(count&&removed){
-    count.innerHTML=count.innerHTML.replace(/Widoczne\s*<b>\d+<\/b>/i,`Widoczne <b>${visible}</b>`);
-  }
+  if(count&&removed)count.innerHTML=count.innerHTML.replace(/Widoczne\s*<b>\d+<\/b>/i,`Widoczne <b>${visible}</b>`);
 
   if(!visible&&!grid.querySelector('.dc87-empty')){
-    grid.innerHTML='<div class="dc87-empty"><b>Brak rynków spełniających Quality Lock</b>Checkpointy pozostają w „Wszystkie” i „PRO”; Top nie promuje ich bez potwierdzonej historii.</div>';
+    grid.innerHTML='<div class="dc87-empty"><b>Brak rynków spełniających CORE Quality Lock</b>Pełne dane pozostają w „Wszystkie” i „PRO”; Top pokazuje tylko rynki z potwierdzoną historią.</div>';
   }
 
   let note=oldNote;
@@ -239,13 +262,11 @@ function patchDecisionCenter(root){
   }
   if(note){
     const pbp=match?.early_hold_v7?.ready===true?'PBP OK':'PBP N/D';
-    note.textContent=`🔒 Top Quality Lock: dokładne checkpointy 2/4/6g wymagają PBP + ≥65% przy n≥30. ${pbp}. ${state.telemetryLoaded?statusText():'Telemetria: ładowanie…'}`;
+    note.textContent=`🔒 CORE Quality Lock: checkpointy wymagają PBP + n≥30; winner markets wymagają FINAL ≥65% przy n≥30. ${pbp}. ${state.telemetryLoaded?winnerStatusText():'Telemetria: ładowanie…'}`;
   }
 }
 
-function patchDecisionCenters(){
-  document.querySelectorAll('.dc87').forEach(patchDecisionCenter);
-}
+function patchDecisionCenters(){document.querySelectorAll('.dc87').forEach(patchDecisionCenter)}
 
 function loadTelemetry(){
   if(state.loading)return state.loading;
@@ -253,16 +274,12 @@ function loadTelemetry(){
     .then(response=>response.ok?response.json():null)
     .then(data=>{state.telemetry=data||null;state.telemetryLoaded=!!data;return data})
     .catch(()=>{state.telemetry=null;state.telemetryLoaded=false;return null})
-    .finally(()=>{
-      patchScenarioNote();
-      patchDecisionCenters();
-    });
+    .finally(()=>{patchScenarioNote();patchDecisionCenters()});
   return state.loading;
 }
 
 function patchAll(){
   installModelGate();
-  wrapScenarioApi();
   wrapProjectOpen();
   patchScenarioNote();
   patchDecisionCenters();
@@ -273,12 +290,10 @@ function boot(){
   loadTelemetry();
 
   document.addEventListener('click',event=>{
-    if(scenarioNeedsRaw(event))beginEventBypass();
+    if(isCoreGenerateEvent(event))beginCoreEvent();
     queueMicrotask(patchAll);
   },true);
 
-  // ui-v751 performs two controlled startup renders; patch after each without
-  // introducing a body-wide MutationObserver.
   setTimeout(patchAll,300);
   setTimeout(patchAll,1150);
 }
@@ -287,12 +302,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else boot();
 
 window.TENIS_AI_CHECKPOINT_QUALITY_V887=Object.freeze({
-  version:VERSION,
-  thresholds:Object.freeze({minSettled:MIN_SETTLED,minAccuracy:MIN_ACCURACY,minWilson:MIN_WILSON,minRecentWhenFalling:MIN_RECENT_WHEN_FALLING}),
+  version:CHECKPOINT_VERSION,
+  thresholds:Object.freeze({minSettled:CP_MIN_SETTLED,minAccuracy:CP_MIN_ACCURACY,minWilson:CP_MIN_WILSON,minRecentWhenFalling:CP_MIN_RECENT_WHEN_FALLING}),
   checkpointOf,
   checkpointEligible,
   signalEligible,
   wilsonLower,
+  telemetry:()=>state.telemetry
+});
+
+window.TENIS_AI_WINNER_QUALITY_V888=Object.freeze({
+  version:WINNER_VERSION,
+  markets:Object.freeze([...WINNER_MARKETS]),
+  thresholds:Object.freeze({minSettled:WIN_MIN_SETTLED,minAccuracy:WIN_MIN_ACCURACY,minWilson:WIN_MIN_WILSON}),
+  canonicalMarket,
+  row:winnerRow,
+  eligible:winnerEligible,
+  signalEligible,
   telemetry:()=>state.telemetry
 });
 })();
