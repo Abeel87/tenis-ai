@@ -3,6 +3,8 @@
 'use strict';
 
 const VERSION='v8.8.6';
+let statsObserver=null;
+let observedHost=null;
 
 function text(node){return String(node?.textContent||'').trim()}
 
@@ -47,16 +49,26 @@ function patchModelRanking(){
   return true;
 }
 
+function bindStatsObserver(){
+  const host=document.querySelector('#pc77');
+  if(!host||host===observedHost)return;
+  statsObserver?.disconnect();
+  observedHost=host;
+  statsObserver=new MutationObserver(()=>patchModelRanking());
+  statsObserver.observe(host,{childList:true,subtree:true});
+}
+
 function patch(){
+  bindStatsObserver();
   patchModelRanking();
 }
 
 function boot(){
   patch();
-  const observer=new MutationObserver(()=>patch());
-  observer.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(patch));
-  document.addEventListener('click',()=>queueMicrotask(patch),true);
+  document.addEventListener('click',event=>{
+    if(event.target?.closest?.('[data-view="stats"],[data-pc882-period],[data-pc882-tab]'))queueMicrotask(patch);
+  },true);
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
