@@ -46,6 +46,11 @@ def main():
     boot = BOOT.read_text(encoding="utf-8")
     assert "shadow-experiment-charts-v895.js?v=895" in boot
     assert "productionInfluence:false" in ui
+    workflow = (ROOT / '.github/workflows/update-and-pages.yml').read_text(encoding='utf-8')
+    build = 'python backend/shadow_experiment_trends_v895.py'
+    assert build in workflow, 'trend history must be rebuilt by the scheduled pipeline'
+    assert workflow.index('python backend/surface_elo_integration_v893.py') < workflow.index(build)
+    assert workflow.index(build) < workflow.index('git add frontend/data')
     print("v8.9.5 SHADOW experiment trend charts: PASS")
 
 

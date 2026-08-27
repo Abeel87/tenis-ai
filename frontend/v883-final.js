@@ -216,7 +216,7 @@ function cleanupStats(){
   const head=host.querySelector('.pc77-head');
 
   [...host.children].forEach(node=>{
-    if(node===head||node===dash||node===legacy)return;
+    if(node===head||node===dash||node===legacy||node.id==='coh892-shadow')return;
     body.append(node);
   });
 }

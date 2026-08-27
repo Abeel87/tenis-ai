@@ -96,7 +96,7 @@ function chartHtml(id){
     ${(accBase!=null||accNow!=null)?`<div class="sh895-comparebars">${bar('Baza',accBase,true)}${bar('Teraz',accNow,false)}</div>`:''}
     <div class="sh895-plots">
       <div class="sh895-plot"><header><b>Trafność</b><small>${accDelta==null?'trend holdoutu':`${accDelta>=0?'+':''}${accDelta.toFixed(1)} pp vs baza`}</small></header>${svgLine(acc)}</div>
-      <div class="sh895-plot"><header><b>Brier</b><small>${brGain==null?'niżej = lepiej':`${brGain>=0?'+':''}${brGain.toFixed(5)} poprawy`}</small></header>${svgLine(br,'brier')}</div>
+      <div class="sh895-plot"><header><b>Brier</b><small>${brGain==null?'niżej = lepiej':brGain===0?'bez zmiany':`${Math.abs(brGain).toFixed(5)} ${brGain>0?'poprawy':'pogorszenia'}`}</small></header>${svgLine(br,'brier')}</div>
     </div>
     <div class="sh895-foot"><span>Ostatnie maks. 20 przebiegów</span><b>SHADOW · 0% PROD</b></div>
   </section>`;
@@ -109,18 +109,23 @@ function decorate(){
   ensureStyle();
   cards.forEach(card=>{
     const id=modelId(card);if(!id)return;
-    card.querySelector('.sh895-chartbox')?.remove();
+    const html=chartHtml(id);
+    const existing=card.querySelector('.sh895-chartbox');
+    if(existing&&card.__shadowChartHtml===html)return;
+    existing?.remove();
     const host=card.querySelector('.coh892-compare')||card.querySelector('.coh892-metric');
     if(!host)return;
-    host.insertAdjacentHTML('afterend',chartHtml(id));
+    host.insertAdjacentHTML('afterend',html);
+    card.__shadowChartHtml=html;
   });
   return true;
 }
 
 async function refresh(){await load(true);decorate()}
-function schedule(){[100,320,800,1500].forEach(ms=>setTimeout(decorate,ms))}
-async function boot(){await load(false);schedule()}
+async function schedule(){await load(false);decorate()}
+async function boot(){await schedule()}
 
+document.addEventListener('tenis-ai:shadow-experiments-ready',schedule);
 document.addEventListener('tenis-ai:stats-ready',schedule);
 document.addEventListener('tenis-ai:stats-dashboard-ready',schedule);
 document.addEventListener('click',e=>{

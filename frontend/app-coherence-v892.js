@@ -9,7 +9,7 @@
 
   const VERSION='v8.9.2';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const num=x=>Number.isFinite(Number(x))?Number(x):null;
+  const num=x=>x==null||String(x).trim()===''||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const brier=x=>num(x)==null?'—':Number(x).toFixed(5);
 
@@ -113,21 +113,32 @@
     const host=document.querySelector('#pc77');
     if(!host)return false;
     const telemetry=await loadTelemetry();
-    if(!document.querySelector('#pc77'))return false;
+    // Navigation may replace #pc77 while telemetry is loading.
+    if(document.querySelector('#pc77')!==host)return false;
     const player=telemetry?.player_model_shadow_v89||null;
     const learning=telemetry?.ensemble_player_learning_v891||null;
     const elo=telemetry?.surface_elo_integration_v893||null;
     if(!player&&!learning&&!elo)return false;
     ensureStyle();
-    document.querySelector('#coh892-shadow')?.remove();
-    const section=document.createElement('section');
+    const existing=host.querySelector('#coh892-shadow');
+    const section=existing||document.createElement('section');
     section.id='coh892-shadow';
     section.className='coh892-shadow';
     const eloCards=elo?`${eloCard('catboost',elo)}${eloCard('ensemble',elo)}${eloCard('tabpfn',elo)}`:'';
-    section.innerHTML=`<div class="coh892-head"><div><b>🧪 EKSPERYMENTY PLAYER + SURFACE ELO · SHADOW</b><small>Nowe warstwy uczące są porównywane na holdoucie. Nie mieszamy ich z rankingiem modeli produkcyjnych.</small></div><span>0% wpływu na PROD</span></div><div class="coh892-grid">${experimentCard('player',player)}${experimentCard('learning',learning)}${eloCards}</div>`;
-    const anchor=document.querySelector('#al84-performance');
-    if(anchor?.parentNode===host)anchor.insertAdjacentElement('afterend',section);
-    else host.insertAdjacentElement('afterbegin',section);
+    const html=`<div class="coh892-head"><div><b>🧪 EKSPERYMENTY PLAYER + SURFACE ELO · SHADOW</b><small>Nowe warstwy uczące są porównywane na holdoucie. Nie mieszamy ich z rankingiem modeli produkcyjnych.</small></div><span>0% wpływu na PROD</span></div><div class="coh892-grid">${experimentCard('player',player)}${experimentCard('learning',learning)}${eloCards}</div>`;
+    // Preserve chart DOM and avoid layout jumps on unchanged telemetry.
+    if(section.__coherenceHtml!==html){
+      section.innerHTML=html;
+      section.__coherenceHtml=html;
+    }
+    // Production summary comes first; experiments remain directly accessible below.
+    const anchor=host.querySelector('#pc882-dashboard');
+    if(anchor?.parentNode===host){
+      if(anchor.nextElementSibling!==section)anchor.insertAdjacentElement('afterend',section);
+    }else if(!existing){
+      host.append(section);
+    }
+    document.dispatchEvent(new CustomEvent('tenis-ai:shadow-experiments-ready'));
     return true;
   }
 
