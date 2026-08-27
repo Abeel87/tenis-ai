@@ -9,12 +9,13 @@ Symfonia nie jest generatorem typów. Najpierw składa najbardziej prawdopodobne
 - PROD pozostaje źródłem prawdy;
 - SHADOW jest dowodem pomocniczym i ma ograniczony wpływ na ranking scenariusza;
 - joint probability jest pokazywane wyłącznie wtedy, gdy wszystkie nogi scenariusza są policzone na tym samym exact state tree;
+- surowe prawdopodobieństwo rynku jest przechowywane oddzielnie od pomocniczej siły rankingowej;
 - cała warstwa jest odwracalna i może zostać wyłączona bez naruszenia obecnego runtime.
 
 ## Pipeline
-1. Evidence Adapter — zbiera istniejące sygnały PROD i odpowiadające im wyniki SHADOW.
+1. Evidence Adapter — zbiera istniejące sygnały PROD, pełny katalog z `results.json` i odpowiadające im wyniki SHADOW.
 2. Exact State/Path Engine — rozwija logiczne stany po 2/4/6 gemach, wynik seta i pełny wynik meczu.
-3. Scenario Composer — beam-search wybiera spójne zestawy zdarzeń zamiast niezależnych najwyższych score.
+3. Scenario Composer — bounded beam-search wybiera spójne zestawy zdarzeń zamiast niezależnych najwyższych score.
 4. Consistency Guard — blokuje kombinacje logicznie niemożliwe.
 5. Fragile Leg Detector — wskazuje najsłabszy element multi i pokazuje, jak zmienia się joint po jego usunięciu.
 6. Scenario Families — grupuje przebiegi m.in. `SERVE_WAR`, `BREAK_REBREAK`, `TIEBREAK_MAGNET`, `FAST_CONTROL`, `LONG_SET`, `ONE_SIDED`.
@@ -30,13 +31,13 @@ Symfonia uwzględnia osobno:
 - Ensemble + Player + Surface Elo;
 - TabPFN + Surface Elo.
 
-SHADOW ma obecnie maksymalnie 20% udziału w pomocniczym evidence score Symfonii. Nie staje się przez to PROD i nie zmienia `final_score`.
+SHADOW ma maksymalnie 20% udziału w pomocniczym evidence score Symfonii. Nie staje się przez to PROD i nie zmienia `final_score`.
 
 ## Stan implementacji
 Branch: `feature/tennis-symphony-v90`
-Draft PR: `#9`
+PR: `#9`
 
-### v9.0A — fundament — GOTOWY NA BRANCHU
+### v9.0A — fundament — GOTOWE
 - Evidence Adapter PROD/SHADOW;
 - ranking zgodności i konfliktu modeli;
 - Consistency Guard;
@@ -45,23 +46,45 @@ Draft PR: `#9`
 - osobne UI Symfonii;
 - stary Generator AI przechwytywany i zastępowany wejściem do Symfonii, bez kasowania starego kodu przed testami regresji.
 
-### v9.0B — exact state paths — IMPLEMENTOWANY
+### v9.0B — exact state paths — GOTOWE
 - exact game-path distribution po 2/4/6;
 - wszystkie naturalne stany 2:0/1:1/0:2, 4:0/3:1/2:2/...;
 - wyniki pierwszego seta 6:0..7:6;
 - propagacja BO3/BO5 do wyniku meczu i łącznej liczby gemów;
-- obsługa exact joint dla: game state, winner 1. seta, winner meczu, total 1. seta, total meczu, liczba setów, exact score meczu, exact score 1. seta, tie-break 1. seta;
+- exact joint dla: game state, winner 1. seta, winner meczu, total 1. seta, total meczu, liczba setów, exact score meczu, exact score 1. seta, tie-break 1. seta;
 - kompozycje po 2/3/4/5/6 zdarzeń;
 - główna Symfonia + trzy kontrscenariusze;
-- wyświetlanie top dokładnych ścieżek typu `1:1 → 2:2 → 3:3 → set 7:6 → mecz 2:1`.
+- top dokładne ścieżki typu `1:1 → 2:2 → 3:3 → set 7:6 → mecz 2:1`.
 
-### v9.0C — rozszerzenie rynku — NASTĘPNE
-- handicap gemowy/setowy;
-- dokładne mapowanie wszystkich aliasów rynków z API;
-- asy / podwójne błędy / propsy serwisowe przez osobną warstwę probabilistyczną;
-- dodatkowe zależności set-to-set i fatigue/momentum, jeśli dane historyczne potwierdzą wartość.
+### v9.0C.3 — pełniejszy katalog i wydajność — GOTOWE NA BRANCHU
+- pełny Market Evidence Adapter korzystający z danych, które Tenis AI już zapisuje;
+- stany po 2/4/6;
+- winner meczu oraz 1./2./3. seta;
+- pełne istniejące drabinki O/U 1. seta i całego meczu;
+- exact score 1. seta i całego meczu;
+- liczba setów zamieniona na linie O/U;
+- tie-break 1. seta wyprowadzony z rozkładu exact score;
+- Serve Props: asy i podwójne błędy jako evidence-only, dopóki nie dostaną wspólnego joint modelu z przebiegiem meczu;
+- dokładne BO3 joint dla winnera 2. i 3. seta tam, gdzie obecny stan końcowy jednoznacznie to rozstrzyga;
+- semantyczne usuwanie duplikatów aliasów (`match_win`/`match_winner`, `state2`/`game_state` itd.);
+- bounded one-pass beam: jeden przebieg dla głębokości 2–6 zamiast ponownego liczenia od zera dla każdej liczby nóg;
+- UI pokazuje źródło rynku, surową wartość, coverage joint, konflikt modeli i kruchą nogę.
 
-### v9.0D — uczenie całych scenariuszy — NASTĘPNE
+### Testy v9.0C
+- dedykowany CI Symfonii: zielony;
+- pełny Project Health całej aplikacji: zielony;
+- po pierwszej wersji pełniejszego katalogu 13 testów trwało 207.29 s;
+- po optymalizacji one-pass beam ten sam zestaw 13 testów trwał 44.85 s;
+- po zmianach alias-dedupe wymagany jest ponowny zielony przebieg przed merge.
+
+### Następne — v9.0C.x
+- handicap gemowy i setowy;
+- pełna mapa nazw/aliasów wszystkich rynków występujących u operatora/API;
+- exact BO5 z zachowaniem pełnej sekwencji setów, nie tylko stanu końcowego;
+- wspólny probabilistyczny model asów/DF z długością i przebiegiem meczu, aby serve props mogły wejść do prawdziwego joint probability;
+- ewentualne fatigue/momentum tylko po walidacji na historii.
+
+### v9.0D — uczenie całych scenariuszy
 - settlement całej ścieżki;
 - calibration scenariuszy;
 - trafność rodzin scenariuszy;
@@ -69,4 +92,4 @@ Draft PR: `#9`
 - ważenie warstw dopiero po odpowiedniej próbie i gate'ach.
 
 ## Runtime
-`update-and-pages.yml` uruchamia Symfonię dopiero po `Shadow Signal Center v8.9.4`, więc ma dostęp zarówno do aktualnego PROD, jak i nowych modeli SHADOW. Raport jest następnie publikowany razem z pozostałymi danymi frontendu.
+`update-and-pages.yml` uruchamia Symfonię po `Shadow Signal Center v8.9.4`, więc dostaje aktualny PROD i nowe modele SHADOW. Raport `symphony_v90.json` jest potem publikowany razem z pozostałymi danymi frontendu.
