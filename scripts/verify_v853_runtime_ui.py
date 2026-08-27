@@ -37,31 +37,45 @@ def verify_checkpoint_lock_order():
         "checkpoint-quality-v887.js?v=887",
     ]
     if not all(token in html for token in required):
-        errors.append("frontend/index.html: niepełne warstwy v8.8.3/v8.8.6/v8.8.7")
+        errors.append("frontend/index.html: niepełne warstwy v8.8.3/v8.8.6/v8.8.7+")
         return
     if not (html.index(required[0]) < html.index(required[1]) < html.index(required[2])):
-        errors.append("frontend/index.html: Checkpoint Quality Lock v8.8.7 nie jest ostatnią warstwą selekcji")
+        errors.append("frontend/index.html: CORE Market Quality Lock nie jest ostatnią warstwą selekcji")
 
 need("frontend/index.html", "runtime-fetch-v853.js", "runtime data dedupe v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.js", "UI organizer v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.css", "UI organizer CSS v8.5.3")
 verify_visible_version_contract()
 verify_checkpoint_lock_order()
-need("frontend/app-meta.js", "appVersion: \'v8.0.1\'", "chroniony kontrakt bazowy v8.0.1")
-need("frontend/app-meta.js", "generatorPolicyVersion: 'v8.8.7-checkpoint-quality-lock'", "politykę Checkpoint Quality Lock v8.8.7")
+need("frontend/app-meta.js", "appVersion: 'v8.0.1'", "chroniony kontrakt bazowy v8.0.1")
+need("frontend/app-meta.js", "generatorPolicyVersion: 'v8.8.8-market-quality-lock'", "politykę CORE Market Quality Lock v8.8.8")
 need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin AutoLearn")
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
 need("frontend/index.html", "model-trends-v84e2.js?v=84e2&hf=852a1", "chroniony pin Trend Monitor")
-need("frontend/index.html", "checkpoint-quality-v887.js?v=887", "Checkpoint Quality Lock v8.8.7")
-need("frontend/checkpoint-quality-v887.js", "MIN_SETTLED=30", "minimalną próbkę n=30")
-need("frontend/checkpoint-quality-v887.js", "MIN_ACCURACY=65", "minimalną trafność 65%")
-need("frontend/checkpoint-quality-v887.js", "MIN_WILSON=45", "minimalny dolny Wilson 45%")
-need("frontend/checkpoint-quality-v887.js", "MIN_RECENT_WHEN_FALLING=60", "ochronę spadającego trendu")
+need("frontend/index.html", "checkpoint-quality-v887.js?v=887", "CORE Market Quality Layer")
+
+need("frontend/checkpoint-quality-v887.js", "CP_MIN_SETTLED=30", "minimalną próbkę checkpoint n=30")
+need("frontend/checkpoint-quality-v887.js", "CP_MIN_ACCURACY=65", "minimalną trafność checkpoint 65%")
+need("frontend/checkpoint-quality-v887.js", "CP_MIN_WILSON=45", "minimalny dolny Wilson checkpoint 45%")
+need("frontend/checkpoint-quality-v887.js", "CP_MIN_RECENT_WHEN_FALLING=60", "ochronę spadającego trendu checkpoint")
 need("frontend/checkpoint-quality-v887.js", "early_hold_v7?.ready!==true", "wymóg PBP per mecz")
 need("frontend/checkpoint-quality-v887.js", "game_state_progress_v84e2", "tracker dokładnych checkpointów")
-need("frontend/checkpoint-quality-v887.js", "Model Test/SHADOW i wybór ręczny pozostają dostępne", "granicę CORE vs ręczny/SHADOW")
-forbid("frontend/checkpoint-quality-v887.js", "new MutationObserver(", "globalny MutationObserver w Checkpoint Quality Lock")
-forbid("frontend/checkpoint-quality-v887.js", "setInterval(", "interwał w Checkpoint Quality Lock")
+
+need("frontend/checkpoint-quality-v887.js", "WIN_MIN_SETTLED=30", "minimalną próbkę winner n=30")
+need("frontend/checkpoint-quality-v887.js", "WIN_MIN_ACCURACY=65", "minimalną trafność winner 65%")
+need("frontend/checkpoint-quality-v887.js", "WIN_MIN_WILSON=45", "minimalny dolny Wilson winner 45%")
+need("frontend/checkpoint-quality-v887.js", "match_winner','set1_winner','set2_winner','set3_winner", "chronione rynki winner")
+need("frontend/checkpoint-quality-v887.js", "segments_30d?.market", "telemetrię per rynek")
+need("frontend/checkpoint-quality-v887.js", "adaptive_prod||null", "FINAL Adaptive PROD jako kryterium winner")
+need("frontend/checkpoint-quality-v887.js", "window.TENIS_AI_WINNER_QUALITY_V888", "publiczny helper Winner Quality v8.8.8")
+
+# allSignals must stay raw outside one synchronous CORE generator event.
+need("frontend/checkpoint-quality-v887.js", "return state.coreEventDepth>0?filteredSignals(rows,match):rows", "ograniczenie filtra allSignals wyłącznie do CORE Generate")
+need("frontend/checkpoint-quality-v887.js", "activeScenarioProfile()!=='experimental'", "bypass Model Test / SHADOW")
+need("frontend/checkpoint-quality-v887.js", "Manual i Model Test/SHADOW zachowują pełne rynki", "granicę CORE vs manual/SHADOW")
+forbid("frontend/checkpoint-quality-v887.js", "new MutationObserver(", "globalny MutationObserver w Market Quality Lock")
+forbid("frontend/checkpoint-quality-v887.js", "setInterval(", "interwał w Market Quality Lock")
+
 need("frontend/hotfix-v84e01.js", "refreshHistoryOnly(false)", "history refresh bez wymuszonego pobrania przy każdym kliknięciu")
 need("frontend/hotfix-v84e01.js", "candidates.find", "fallback do pierwszego niepustego statusu")
 need("frontend/dynamic-weights-v84d1.js", "memoryResults", "reuse results z pamięci")
@@ -81,16 +95,16 @@ need("frontend/ui-organizer-v853.js", "No model math", "deklarację UI-only")
 forbid("frontend/ui-organizer-v853.js", "fetch(", "requesty sieciowe w organizerze UI")
 forbid("frontend/ui-organizer-v853.js", "new MutationObserver(", "MutationObserver w organizerze UI")
 forbid("frontend/ui-organizer-v853.js", "setInterval(", "interwał w organizerze UI")
-need(".github/workflows/update-and-pages.yml", "verify_v853_runtime_ui.py", "guard v8.5.3 w produkcyjnym workflow")
+need(".github/workflows/update-and-pages.yml", "verify_v853_runtime_ui.py", "guard v8.5.3+ w produkcyjnym workflow")
 need(".github/workflows/update-and-pages.yml", "compact_frontend_data_v853.py", "kompaktowanie dużych JSON-ów")
 need("scripts/compact_frontend_data_v853.py", "separators=(',', ':')", "kompaktowy zapis JSON")
 need(".github/workflows/ui-smoke.yml", "python -m pytest -q", "pełny pytest na PR")
-need(".github/workflows/ui-smoke.yml", "verify_v853_runtime_ui.py", "guard v8.5.3 na PR")
+need(".github/workflows/ui-smoke.yml", "verify_v853_runtime_ui.py", "guard v8.5.3+ na PR")
 
 if errors:
-    print("v8.5.3 Runtime/UI Guard: FAIL")
+    print("v8.5.3+ Runtime/UI Guard: FAIL")
     for err in errors:
         print(" -", err)
     raise SystemExit(1)
 
-print("v8.5.3 Runtime/UI Guard: PASS")
+print("v8.5.3+ Runtime/UI Guard: PASS")
