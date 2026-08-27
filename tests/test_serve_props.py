@@ -54,3 +54,12 @@ def test_profile_ready():
     assert p["ready_aces"] is True
     assert p["ready_df"] is True
     assert p["ace_matches"]>=5
+
+
+def test_serve_props_ui_has_no_body_wide_observer():
+    js=(ROOT/"frontend"/"serve-props-v72.js").read_text(encoding="utf-8")
+    assert "new MutationObserver(" not in js
+    assert "obs.observe(document.body" not in js
+    assert "scheduleRefresh(document)" in js
+    assert "requestAnimationFrame" in js
+    assert "data-sp-line" in js
