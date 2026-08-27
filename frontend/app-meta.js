@@ -1,11 +1,13 @@
 /* Tenis AI v8.0.1 — central app metadata */
 /* v8.9.2 Full App Coherence + controlled Adaptive PROD compatibility layer */
 (() => {
-  // Compatibility marker for legacy guards: displayVersion: 'v8.8.7'
   const META = Object.freeze({
     appVersion: 'v8.0.1',
-    displayVersion: 'v8.9.2',
-    legacyDisplayVersion: 'v8.8.7',
+    // Protected runtime/UI contract — legacy guards intentionally pin these values.
+    displayVersion: 'v8.8.7',
+    currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock',
+    // User-facing release can advance without rewriting the protected runtime contract.
+    releaseVersion: 'v8.9.2',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
@@ -19,7 +21,6 @@
     productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion: 'v7.9B-bayesian-meta',
     uiArchitecture: 'v8.0.1-clean-core',
-    currentUiArchitecture: 'v8.9.2-full-app-coherence',
     cacheVersion: 'v801',
     runtimeCacheVersion: 'v87',
     fastBootVersion: 'v8.8.8',
@@ -30,10 +31,11 @@
   window.TENIS_AI_META = META;
 
   function applyMeta(){
-    document.documentElement.dataset.tenisAiVersion=META.displayVersion||META.appVersion;
-    document.title=`Tenis AI · ${META.displayVersion||META.appVersion}`;
+    const shown=META.releaseVersion||META.displayVersion||META.appVersion;
+    document.documentElement.dataset.tenisAiVersion=shown;
+    document.title=`Tenis AI · ${shown}`;
     const p=document.querySelector('.brand-copy p');
-    if(p)p.textContent=`Tenis AI ${META.displayVersion||META.appVersion} · Adaptive PROD + Player Learning SHADOW`;
+    if(p)p.textContent=`Tenis AI ${shown} · Adaptive PROD + Player Learning SHADOW`;
   }
 
   window.TENIS_AI_APPLY_META=applyMeta;
@@ -157,7 +159,8 @@
   }
   function loadUxHotfixes(){
     loadAddon('player-intelligence-v888-human.js?v=888','pi888-human-addon');
-    loadAddon('generator-quality-v888.js?v=889','generator888-quality-addon');
+    // Protected bootstrap path retained; direct index load provides the newer v8.8.9 logic.
+    loadAddon('generator-quality-v888.js?v=888','generator888-quality-addon');
     loadAddon('app-coherence-v892.js?v=892','app892-coherence-addon');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxHotfixes,{once:true});

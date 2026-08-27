@@ -23,13 +23,16 @@ def main() -> None:
 
     checks = {
         "protected_core_version": "appVersion: 'v8.0.1'" in app_meta,
-        "release_version": "displayVersion: 'v8.9.2'" in app_meta,
-        "legacy_release_marker": "displayVersion: 'v8.8.7'" in app_meta and "Tenis AI v8.8.7" in index,
+        "protected_display_contract": "displayVersion: 'v8.8.7'" in app_meta,
+        "protected_ui_architecture": "currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock'" in app_meta,
+        "visible_release_version": "releaseVersion: 'v8.9.2'" in app_meta and "const VERSION='v8.9.2'" in coherence,
+        "legacy_release_marker": "Tenis AI v8.8.7" in index,
         "player_model_meta": "playerModelShadowVersion: 'v8.9'" in app_meta,
         "player_learning_meta": "ensemblePlayerLearningVersion: 'v8.9.1'" in app_meta,
         "quality_lock_meta": "generatorQualityLockVersion: 'v8.8.9'" in app_meta,
         "coherence_addon_loaded": "app-coherence-v892.js?v=892" in app_meta,
         "human_pi_addon_loaded": "player-intelligence-v888-human.js?v=888" in app_meta,
+        "legacy_generator_bootstrap_retained": "generator-quality-v888.js?v=888" in app_meta,
         "coherence_shadow_only": "productionInfluence:false" in coherence and "0% wpływu na PROD" in coherence,
         "coherence_player_model_visible": "player_model_shadow_v89" in coherence,
         "coherence_player_learning_visible": "ensemble_player_learning_v891" in coherence,
