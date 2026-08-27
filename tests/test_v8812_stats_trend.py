@@ -9,7 +9,7 @@ def read(path):
 
 def test_stats_trend_is_promoted_to_main_view():
     js = read("frontend/stats-ranking-v886.js")
-    assert "VERSION='v8.8.12'" in js
+    assert "VERSION='v8.8.14'" in js
     assert "promoteMainTrend" in js
     assert "pc12-summary" in js
     assert "pc12-pro .pc12-pro-body" in js
@@ -17,10 +17,11 @@ def test_stats_trend_is_promoted_to_main_view():
     assert "insertAdjacentElement('afterend',trendCard)" in js
 
 
-def test_stats_observer_is_bounded_and_disconnects():
+def test_stats_ranking_is_event_driven_without_observer():
     js = read("frontend/stats-ranking-v886.js")
-    assert "WATCH_MAX_MS=2500" in js
-    assert "stopStatsObserver" in js
-    assert "setTimeout(stopStatsObserver,WATCH_MAX_MS)" in js
-    assert "card.dataset.v886Ranking='1';\n  stopStatsObserver();" in js
+    assert "DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready'" in js
     assert "tenis-ai:stats-ready" in js
+    assert "document.addEventListener(DASHBOARD_READY_EVENT" in js
+    assert "new MutationObserver(" not in js
+    assert "WATCH_MAX_MS" not in js
+    assert "stopStatsObserver" not in js
