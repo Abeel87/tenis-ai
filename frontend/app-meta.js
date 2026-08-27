@@ -9,7 +9,7 @@
     productionModelVersion: 'v8.4B',
     dynamicWeightsVersion: 'v8.4D',
     playerIntelligenceVersion: 'v8.5',
-    generatorPolicyVersion: 'v8.8.9-result-market-quality-lock',
+    generatorPolicyVersion: 'v8.8.10-cross-view-quality-source',
     modelName: 'AutoLearn Ensemble + Adaptive Learning',
     productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion: 'v7.9B-bayesian-meta',
