@@ -1,0 +1,131 @@
+{
+  "version": "v8.9",
+  "generated_at": "2026-08-27T14:29:25.392823+00:00",
+  "mode": "SHADOW",
+  "status": "ACTIVE_SHADOW",
+  "production_influence": false,
+  "auto_promotion": false,
+  "training": {
+    "rows_total": 540,
+    "matches_total": 152,
+    "train_rows": 448,
+    "train_matches": 121,
+    "holdout_rows": 92,
+    "holdout_matches": 31,
+    "rows_with_granular_pi_features": 0,
+    "granular_feature_share": 0.0,
+    "chronological_match_split": "80/20"
+  },
+  "features": {
+    "numeric_n": 64,
+    "categorical_n": 6,
+    "player_indexes": [
+      "serve",
+      "return",
+      "form",
+      "mental",
+      "early",
+      "rank_strength",
+      "overall"
+    ],
+    "player_metrics": [
+      "hold_rate",
+      "break_rate",
+      "serve_points_won",
+      "return_points_won",
+      "first_set_won",
+      "won"
+    ],
+    "uses_current_catboost_tabpfn_ensemble": true,
+    "uses_player_probability": true,
+    "uses_granular_player_profiles": true,
+    "leakage_policy": "pre_match_frozen_features_only"
+  },
+  "holdout": {
+    "player_catboost_shadow": {
+      "n": 92,
+      "selected_n": 52,
+      "accuracy": 73.1,
+      "brier": 0.21489,
+      "log_loss": 0.62875,
+      "avg_probability": 64.7
+    },
+    "baselines": {
+      "catboost": {
+        "n": 92,
+        "selected_n": 61,
+        "accuracy": 75.4,
+        "brier": 0.19556,
+        "log_loss": 0.57844,
+        "avg_probability": 64.7
+      },
+      "ensemble": {
+        "n": 92,
+        "selected_n": 51,
+        "accuracy": 74.5,
+        "brier": 0.20098,
+        "log_loss": 0.59133,
+        "avg_probability": 62.6
+      },
+      "ensemble_player_formula": {
+        "n": 92,
+        "selected_n": 52,
+        "accuracy": 76.9,
+        "brier": 0.19762,
+        "log_loss": 0.5837,
+        "avg_probability": 63.2
+      },
+      "player_formula": {
+        "n": 92,
+        "selected_n": 63,
+        "accuracy": 76.2,
+        "brier": 0.18727,
+        "log_loss": 0.55696,
+        "avg_probability": 65.1
+      }
+    },
+    "segments": {
+      "surface": {
+        "HARD": {
+          "n": 86,
+          "selected_n": 46,
+          "accuracy": 73.9,
+          "brier": 0.21604,
+          "log_loss": 0.63249,
+          "avg_probability": 64.0
+        }
+      },
+      "market": {
+        "set1_total": {
+          "n": 67,
+          "selected_n": 46,
+          "accuracy": 71.7,
+          "brier": 0.2269,
+          "log_loss": 0.6572,
+          "avg_probability": 68.5
+        },
+        "game_state": {
+          "n": 15,
+          "selected_n": 4,
+          "accuracy": 75.0,
+          "brier": 0.20409,
+          "log_loss": 0.5982,
+          "avg_probability": 50.7
+        }
+      }
+    }
+  },
+  "gate": {
+    "status": "watch",
+    "production_influence": false,
+    "auto_promotion": false,
+    "comparison_baseline": "player_formula",
+    "brier_gain": -0.02762,
+    "log_loss_gain": -0.07179,
+    "accuracy_delta_pp": -3.1,
+    "reason": "shadow_only_manual_gate"
+  },
+  "current_scored_signals": 386,
+  "frozen_feature_snapshots_added": 199,
+  "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
+}
