@@ -1,4 +1,4 @@
-/* Tenis AI v8.8.3 ? final UI cleanup.
+/* Tenis AI v8.8.3 · final UI cleanup.
    No model math changes. This layer only unifies visible versioning,
    removes legacy stats clutter and exposes Pair Selector reasoning. */
 (()=>{
@@ -13,24 +13,24 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
 
 const PAIR_LABELS={
-  SET1_WIN_OVER:'1. set: zwyci?zca + OVER gem?w',
-  SET1_WIN_TOTAL:'1. set: zwyci?zca + suma gem?w',
+  SET1_WIN_OVER:'1. set: zwycięzca + OVER gemów',
+  SET1_WIN_TOTAL:'1. set: zwycięzca + suma gemów',
   EARLY_HOLD_JOINT:'1. set + wczesny checkpoint',
   MATCH_AND_SET_WIN:'Mecz + 1. set: ten sam kierunek',
   DOUBLE_TOTAL_OVER:'OVER 1. seta + OVER meczu',
-  MATCH_DIRECTION_TOTAL:'Kierunek meczu + suma gem?w',
-  DIVERSE_PAIR:'Dwa r??ne rynki',
+  MATCH_DIRECTION_TOTAL:'Kierunek meczu + suma gemów',
+  DIVERSE_PAIR:'Dwa różne rynki',
   NEUTRAL_PAIR:'Para neutralna'
 };
 
 const REASON_LABELS={
   '1S winner + 1S over':'kierunek 1. seta + over',
-  '1S winner + 1S total':'kierunek 1. seta + suma gem?w',
+  '1S winner + 1S total':'kierunek 1. seta + suma gemów',
   '1S winner + early checkpoint':'kierunek 1. seta + checkpoint',
-  'match winner + 1S winner':'zwyci?zca meczu + zwyci?zca 1. seta',
+  'match winner + 1S winner':'zwycięzca meczu + zwycięzca 1. seta',
   '1S over + match over':'over 1. seta + over meczu',
-  'match direction + total':'kierunek meczu + suma gem?w',
-  'rozne kategorie':'r??ne kategorie',
+  'match direction + total':'kierunek meczu + suma gemów',
+  'rozne kategorie':'różne kategorie',
   'neutralna para':'neutralna para'
 };
 
@@ -101,7 +101,7 @@ function historyForGroup(group){
     }catch{}
   });
 
-  return priors.sort((a,b)=>Number(b.n||0)-Number(a.n||0))[0]||null;
+  return priors.length?{min:Math.min(...priors.map(x=>x.accuracy)),max:Math.max(...priors.map(x=>x.accuracy)),n:Math.min(...priors.map(x=>x.n)),covered:priors.length,total:group.items.length}:null;
 }
 
 function decorateGeneratorCards(){
@@ -128,9 +128,9 @@ function decorateGeneratorCards(){
     meta.className='sc883-pairbar';
     meta.innerHTML=`
       <span><small>PAIR SCORE</small><b>${pairScore==null?'N/D':Math.round(pairScore)+'/100'}</b></span>
-      <span class="wide"><small>DLACZEGO TEN MECZ</small><b>${esc(PAIR_LABELS[pairType]||REASON_LABELS[pairReason]||pairReason||'najlepsza sp?jna para')}</b></span>
-      <span><small>HISTORIA</small><b>${hist?`${Math.round(Number(hist.accuracy))}% ? n=${Number(hist.n)}`:'brak mocnej pr?bki'}</b></span>
-      <em class="${shadow?'shadow':'prod'}">${shadow?'MODEL TEST ? SHADOW':'CORE ? PROD'}</em>
+      <span class="wide"><small>DLACZEGO TEN MECZ</small><b>${esc(PAIR_LABELS[pairType]||REASON_LABELS[pairReason]||pairReason||'najlepsza spójna para')}</b></span>
+      <span><small>HISTORIA ZDARZEŃ · NIE PARY</small><b>${hist?`${Math.round(hist.min)}–${Math.round(hist.max)}% · min n=${hist.n} · ${hist.covered}/${hist.total} zdarzeń`:'brak mocnej próbki'}</b></span>
+      <em class="${shadow?'shadow':'prod'}">${shadow?'MODEL TEST · SHADOW':'CORE · PROD'}</em>
     `;
 
     const head=card.firstElementChild;
@@ -141,11 +141,11 @@ function decorateGeneratorCards(){
   const gh=document.querySelector('.sc88-generator-head');
   if(gh){
     const tag=gh.querySelector('span');
-    if(tag)tag.textContent='GENERATOR AI v8.8.3';
+    if(tag)tag.textContent='GENERATOR AI '+(window.TENIS_AI_META?.displayVersion||VERSION);
     const title=gh.querySelector('b');
     if(title)title.textContent='Pair-first + Adaptive PROD';
     const small=gh.querySelector('small');
-    if(small)small.textContent='Najpierw najlepsza para rynk?w, potem ranking meczu. Historia wp?ywa tylko na selekcj?.';
+    if(small)small.textContent='Najpierw najlepsza para rynków, potem ranking meczu. Historia wpływa tylko na selekcję.';
   }
 }
 
@@ -157,19 +157,19 @@ function cleanupStats(){
   if(!host||!dash)return;
 
   const title=dash.querySelector('.pc882-head span');
-  if(title)title.textContent='CENTRUM SKUTECZNO?CI v8.8.3';
+  if(title)title.textContent='CENTRUM SKUTECZNOŚCI '+(window.TENIS_AI_META?.displayVersion||VERSION);
 
   let legacy=host.querySelector('#pc882-legacy');
   if(!legacy){
     legacy=document.createElement('details');
     legacy.id='pc882-legacy';
     legacy.className='pc882-legacy';
-    legacy.innerHTML='<summary><b>PRO / pe?na diagnostyka</b><span>starsze tabele, Player SH, telemetry i audyt</span></summary><div class="pc882-legacy-body"></div>';
+    legacy.innerHTML='<summary><b>PRO / pełna diagnostyka</b><span>starsze tabele, Player SH, telemetry i audyt</span></summary><div class="pc882-legacy-body"></div>';
     host.append(legacy);
   }else{
     const b=legacy.querySelector('summary b');
     const s=legacy.querySelector('summary span');
-    if(b)b.textContent='PRO / pe?na diagnostyka';
+    if(b)b.textContent='PRO / pełna diagnostyka';
     if(s)s.textContent='starsze tabele, Player SH, telemetry i audyt';
   }
 
@@ -184,16 +184,13 @@ function cleanupStats(){
 }
 
 function brand(){
-  document.documentElement.dataset.tenisAiFeatureVersion=VERSION;
-  document.title='Tenis AI ? v8.8.3';
-
-  const p=document.querySelector('.brand-copy p');
-  if(p)p.textContent='Tenis AI v8.8.3 ? Adaptive PROD + Pair Selector + Analytics';
+  window.TENIS_AI_APPLY_META?.();
+  document.documentElement.dataset.tenisAiFeatureVersion=window.TENIS_AI_META?.displayVersion||VERSION;
 
   const footer=document.querySelector('footer');
   if(footer){
     const lines=[...footer.children];
-    if(lines[1])lines[1].textContent='v8.8.3 ? Adaptive PROD + Pair Selector + Analytics ? Player Intelligence i Accuracy Lab pozostaj? SHADOW.';
+    if(lines[1])lines[1].textContent=(window.TENIS_AI_META?.displayVersion||VERSION)+' · Adaptive PROD + Pair Selector + Analytics · Player Intelligence i Accuracy Lab pozostają SHADOW.';
   }
 }
 

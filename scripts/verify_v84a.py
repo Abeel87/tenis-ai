@@ -22,7 +22,7 @@ def main():
     index=read("frontend/index.html")
     scenario=read("frontend/scenario-studio-v82a.js")
     workflow=read(".github/workflows/update-and-pages.yml")
-    settle=read("backend/live_history_settle.py")
+    settle=read("backend/live_history_settle.py") + read("backend/signal_settlement.py")
     auto=read("backend/autolearn_v84.py")
     tab=read("backend/tabpfn_challenger_v84.py")
     front=read("frontend/autolearn-v84.js")

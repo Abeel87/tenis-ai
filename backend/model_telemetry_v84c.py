@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+try:
+    from .history_sampling import unique_signals
+except ImportError:
+    from history_sampling import unique_signals
+
 import argparse
 import json
 import math
@@ -36,7 +41,8 @@ MODEL_LABELS = {
     "current": "Current Engine",
     "catboost": "CatBoost",
     "tabpfn": "TabPFN-2",
-    "ensemble": "Ensemble",
+    "ensemble": "RAW Ensemble",
+    "adaptive_prod": "FINAL Adaptive PROD",
     "dynamic": "Dynamic Ensemble v8.4D",
     "generator": "Ensemble selector proxy",
 }
@@ -175,21 +181,21 @@ def collect_rows(history: list[dict]) -> list[dict]:
         if not isinstance(entry, dict) or entry.get("status") not in ("settled", "void"):
             continue
 
-        for signal in entry.get("signals") or []:
+        for signal in unique_signals(entry, "signals"):
             if not isinstance(signal, dict):
                 continue
             src = str(signal.get("source_model") or "adaptive").lower()
             if src in ("legacy", "adaptive"):
                 add(_row(entry, signal, "adaptive"))
 
-        for signal in entry.get("learning_signals_v79b") or []:
+        for signal in unique_signals(entry, "learning_signals_v79b"):
             if not isinstance(signal, dict):
                 continue
             src = str(signal.get("source_model") or "").lower()
             if src in ("early", "serve", "form", "surface", "consensus", "adaptive"):
                 add(_row(entry, signal, src))
 
-        for signal in entry.get("autolearn_signals_v84") or []:
+        for signal in unique_signals(entry, "autolearn_signals_v84"):
             if not isinstance(signal, dict):
                 continue
             if str(signal.get("result") or "") not in ("hit", "miss"):
@@ -199,6 +205,10 @@ def collect_rows(history: list[dict]) -> list[dict]:
                 sc = _num(scores.get(model))
                 if sc is not None:
                     add(_row(entry, signal, model, score=sc))
+            prod = signal.get("adaptive_prod_v79") or {}
+            final = _num(prod.get("final_score"))
+            if final is not None:
+                add(_row(entry, signal, "adaptive_prod", score=final))
             dyn = signal.get("dynamic_weighting") or {}
             if dyn.get("active"):
                 sc = _num(scores.get("ensemble"))
@@ -420,7 +430,7 @@ def game_state_progress(history: list[dict]) -> dict:
         source = hidden
         if not source:
             source = [
-                s for s in (entry.get("autolearn_signals_v84") or [])
+                s for s in (unique_signals(entry, "autolearn_signals_v84"))
                 if isinstance(s, dict) and _checkpoint(s) in (2, 4, 6)
             ]
 
@@ -538,7 +548,7 @@ def agreement_stats(history: list[dict]) -> dict:
             continue
 
         by_candidate = defaultdict(dict)
-        for signal in entry.get("signals") or []:
+        for signal in unique_signals(entry, "signals"):
             if not isinstance(signal, dict) or str(signal.get("result") or "") not in ("hit", "miss"):
                 continue
             src = str(signal.get("source_model") or "adaptive").lower()
@@ -546,7 +556,7 @@ def agreement_stats(history: list[dict]) -> dict:
                 sc = _score(signal)
                 if sc is not None:
                     by_candidate[_key(signal)]["adaptive"] = (sc, signal)
-        for signal in entry.get("learning_signals_v79b") or []:
+        for signal in unique_signals(entry, "learning_signals_v79b"):
             if not isinstance(signal, dict) or str(signal.get("result") or "") not in ("hit", "miss"):
                 continue
             src = str(signal.get("source_model") or "").lower()
@@ -562,7 +572,7 @@ def agreement_stats(history: list[dict]) -> dict:
             bucket = _agreement_bucket([x[0] for x in sources.values()])
             specialist[bucket].append({"target": 1 if signal.get("result") == "hit" else 0})
 
-        for signal in entry.get("autolearn_signals_v84") or []:
+        for signal in unique_signals(entry, "autolearn_signals_v84"):
             if not isinstance(signal, dict) or str(signal.get("result") or "") not in ("hit", "miss"):
                 continue
             scores = signal.get("model_scores") or {}
@@ -638,8 +648,8 @@ def build_report(history: list[dict], now=None) -> dict:
         "game_state_progress_v84e2": game_state,
         "notes": [
             "Accuracy modeli bazowych jest liczona na rozliczonych, zamrożonych sygnałach; próg wyboru to 65/100.",
-            "Brier/log-loss dla modeli bazowych używa score/100 jako proxy confidence; pełna probabilistyczna kalibracja pozostaje domeną Current/CatBoost/TabPFN/Ensemble.",
-            "Generator ma własny licznik tylko dla sygnałów oznaczonych generator_selected.",
+            "Brier/log-loss używa score/100 jako proxy confidence. FINAL to ocena kandydata, nie znormalizowany rozkład przeciwstawnych zdarzeń.",
+            "Generator to proxy selektora dla generator_selected, nie trafność zapisanych par. Rzeczywiste pary są liczone w Moje scenariusze.",
             "ROI jest liczone wyłącznie tam, gdzie historia zawiera rzeczywisty kurs dziesiętny; brak kursu pozostaje N/D.",
             "Segmenty ATP/WTA/CH/ITF, nawierzchnia i rynek są raportowane osobno i nie zmieniają jeszcze wag produkcyjnych.",
         ],

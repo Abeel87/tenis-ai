@@ -13,14 +13,14 @@ def signal(result, score=82, line=8.5):
 
 
 def entry(version, results, tour="ATP"):
-    return {"model_version":version,"tour":tour,"signals":[signal(x) for x in results],"status":"settled","match_key":f"{version}-{len(results)}-{tour}"}
+    return [{"model_version":version,"tour":tour,"signals":[signal(x)],"status":"settled","match_key":f"{version}-{i}-{tour}"} for i,x in enumerate(results)]
 
 
 def test_current_version_is_not_mixed_with_legacy():
     assert MODEL_VERSION == "v7.8D-calibration-guard"
     rows = [
-        entry(MODEL_VERSION, ["hit"] * 8 + ["miss"] * 4),
-        entry("v7.8A-adaptive-hygiene", ["hit"] * 40 + ["miss"] * 10),
+        *entry(MODEL_VERSION, ["hit"] * 8 + ["miss"] * 4),
+        *entry("v7.8A-adaptive-hygiene", ["hit"] * 40 + ["miss"] * 10),
     ]
     stats = history_stats(rows)
     assert stats["overall"]["settled"] == 12
@@ -32,8 +32,8 @@ def test_current_version_is_not_mixed_with_legacy():
 
 def test_small_current_sample_is_nd_but_legacy_is_reference():
     rows = [
-        entry(MODEL_VERSION, ["hit"] * 4 + ["miss"] * 2),
-        entry("v7.8A-adaptive-hygiene", ["hit"] * 30 + ["miss"] * 10),
+        *entry(MODEL_VERSION, ["hit"] * 4 + ["miss"] * 2),
+        *entry("v7.8A-adaptive-hygiene", ["hit"] * 30 + ["miss"] * 10),
     ]
     report = build_calibration_report(rows, MODEL_VERSION)
     key = "set1_total|8.5|over"
@@ -48,7 +48,7 @@ def test_small_current_sample_is_nd_but_legacy_is_reference():
 
 
 def test_minimum_sample_becomes_usable():
-    rows = [entry(MODEL_VERSION, ["hit"] * 7 + ["miss"] * 3)]
+    rows = [*entry(MODEL_VERSION, ["hit"] * 7 + ["miss"] * 3)]
     report = build_calibration_report(rows, MODEL_VERSION)
     row = report["current"]["by_key"]["set1_total|8.5|over"]
     assert row["settled"] == 10
@@ -57,7 +57,7 @@ def test_minimum_sample_becomes_usable():
 
 
 def test_matches_receive_calibration_without_changing_model_score():
-    rows = [entry(MODEL_VERSION, ["hit"] * 7 + ["miss"] * 3)]
+    rows = [*entry(MODEL_VERSION, ["hit"] * 7 + ["miss"] * 3)]
     report = build_calibration_report(rows, MODEL_VERSION)
     match = {"p1":"A","p2":"B","over_under":{"8.5":{"over":82.0,"under":18.0}},"match_win":{"A":65.0,"B":35.0}}
     out = add_calibration_to_matches([match], report)[0]
@@ -66,3 +66,20 @@ def test_matches_receive_calibration_without_changing_model_score():
     assert cal["signals"][0]["score"] == 82.0
     assert cal["signals"][0]["current"]["display_accuracy"] == 70.0
     assert match["over_under"]["8.5"]["over"] == 82.0
+
+
+def test_equivalent_first_set_lines_are_not_two_independent_samples():
+    from copy import deepcopy
+    from history_sampling import unique_signals
+    match = {"match_key":"one", "model_version":MODEL_VERSION,
+             "result":{"status":"completed","sets":[[7,5],[6,4]]},
+             "signals":[signal('hit',line=11.5), signal('hit',line=10.5)]}
+    before = deepcopy(match)
+    assert len(list(unique_signals(match))) == 1
+    stats = history_stats([match])
+    assert stats['overall']['settled'] == 1
+    assert stats['raw_settled_signals'] == 2
+    assert build_calibration_report([match], MODEL_VERSION)['current']['overall']['settled'] == 1
+    assert match == before
+    match['result']['sets'][0] = [6,5]  # unfinished/nonstandard: no equivalence assumption
+    assert len(list(unique_signals(match))) == 2

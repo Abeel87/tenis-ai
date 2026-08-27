@@ -1,4 +1,4 @@
-/* Tenis AI v8.8 ? compatibility bridge.
+/* Tenis AI v8.8 · compatibility bridge.
    v8.8.2+ owns the performance dashboard; this file keeps only the
    Adaptive PROD bridge and generator header. Old v8.8 stats rendering is
    intentionally disabled to avoid duplicate dashboards/fetches. */
@@ -86,7 +86,8 @@ function wrapAutoLearn(){
         'COLLECTING'
       ),
       raw_ensemble:rawEnsemble,
-      ensemble:final,
+      ensemble:rawEnsemble,
+      final_score:final,
       status:String(raw?.status||'ACTIVE').toUpperCase()==='ACTIVE'
         ? 'ACTIVE'
         : (raw?.status||'ACTIVE')
@@ -106,7 +107,7 @@ function decorateGenerator(){
     <div class="sc88-generator-head">
       <div>
         <span>GENERATOR AI v8.8</span>
-        <b>Adaptive PROD jako g??wny wynik</b>
+        <b>Adaptive PROD jako główny wynik</b>
         <small>RAW Ensemble zostaje do audytu. Player Intelligence i Accuracy Lab nadal SHADOW.</small>
       </div>
       <em>PROD ACTIVE</em>
@@ -136,10 +137,7 @@ function wrapStats(){
 }
 
 function applyV88Brand(){
-  document.documentElement.dataset.tenisAiFeatureVersion='v8.8';
-  document.title='Tenis AI ? v8.8';
-  const copy=document.querySelector('.brand-copy p');
-  if(copy)copy.textContent='Tenis AI v8.8 ? Decision + Generator + Stats + Adaptive PROD';
+  window.TENIS_AI_APPLY_META?.();
 }
 
 function boot(){

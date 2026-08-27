@@ -23,8 +23,9 @@ def test_generator_uses_autolearn_and_does_not_force_requested_count():
 
 def test_live_settlement_reuses_existing_api_call_for_autolearn():
     s=read("backend/live_history_settle.py")
-    assert 'if "autolearn_signals_v84" in x:' in s
-    assert 'x["autolearn_signals_v84"] = _settle_signal_list' in s
+    assert 'settle_layers(x, final' in s
+    from signal_settlement import SIGNAL_LAYERS
+    assert 'autolearn_signals_v84' in SIGNAL_LAYERS
 
 
 def test_tabpfn_is_explicit_v2_and_fail_open():

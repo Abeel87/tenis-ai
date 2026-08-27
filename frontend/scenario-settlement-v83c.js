@@ -191,6 +191,33 @@
     };
   }
 
+  function summarizePairs(scenarios){
+    const counts={hits:0,misses:0,pending:0,voids:0};
+    const seen=new Set();
+    for(const scenario of scenarios||[]){
+      const groups=new Map();
+      for(const item of scenario.items||[]){
+        if(!item.match_key)continue;
+        if(!groups.has(item.match_key))groups.set(item.match_key,[]);
+        groups.get(item.match_key).push(item);
+      }
+      for(const [match,items] of groups){
+        if(items.length!==2)continue;
+        const keys=items.map(x=>[x.market,x.pick,signalLine(x),x.signal_key].join('|')).sort();
+        if(keys[0]===keys[1])continue;
+        const key=[match,...keys].join('::');
+        if(seen.has(key))continue;
+        seen.add(key);
+        if(items.some(x=>x.result==='void'))counts.voids++;
+        else if(items.some(x=>!['hit','miss'].includes(x.result)))counts.pending++;
+        else if(items.every(x=>x.result==='hit'))counts.hits++;
+        else counts.misses++;
+      }
+    }
+    const n=counts.hits+counts.misses;
+    return {...counts,n,accuracy:n?Math.round(1000*counts.hits/n)/10:null};
+  }
+
   function settleScenario(s,idx){
     const items=(Array.isArray(s?.items)?s.items:[]).map(i=>settleItem(i,findOutcome(i,idx)));
     const summary=summarize(items);
@@ -252,7 +279,7 @@
     return refreshing;
   }
 
-  window.TENIS_AI_SCENARIO_SETTLEMENT={version:VERSION,refresh,settleItem,summarize};
+  window.TENIS_AI_SCENARIO_SETTLEMENT={version:VERSION,refresh,settleItem,summarize,summarizePairs};
   const boot=()=>setTimeout(()=>refresh().catch(()=>{}),900);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh({force:true}).catch(()=>{})});

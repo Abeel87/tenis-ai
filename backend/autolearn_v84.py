@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+try:
+    from .history_sampling import unique_signals
+except ImportError:
+    from history_sampling import unique_signals
+
 import argparse
 import hashlib
 import json
@@ -226,18 +231,18 @@ def _match_key(entry: dict) -> str:
 
 def _source_score_map(entry: dict) -> dict[str, dict[str, dict]]:
     grouped: dict[str, dict[str, dict]] = defaultdict(dict)
-    for signal in entry.get("signals") or []:
+    for signal in unique_signals(entry, "signals"):
         if not isinstance(signal, dict):
             continue
         src = str(signal.get("source_model") or "adaptive")
         if src == "legacy": src = "adaptive"
         grouped[_candidate_key(signal)][src] = signal
-    for signal in entry.get("learning_signals_v79b") or []:
+    for signal in unique_signals(entry, "learning_signals_v79b"):
         if not isinstance(signal, dict):
             continue
         src = str(signal.get("source_model") or "specialist")
         grouped[_candidate_key(signal)][src] = signal
-    for signal in entry.get("game_state_learning_v84e1") or []:
+    for signal in unique_signals(entry, "game_state_learning_v84e1"):
         if not isinstance(signal, dict):
             continue
         grouped[_candidate_key(signal)].setdefault("adaptive", signal)
@@ -1358,7 +1363,7 @@ def tracking_stats(history, tracker_version=None):
     model_rows = defaultdict(list)
     generator_rows = []
     for e in history or []:
-        for s in e.get("autolearn_signals_v84") or []:
+        for s in unique_signals(e, "autolearn_signals_v84"):
             if tracker_version is not None and str(s.get("tracker_version") or "") != str(tracker_version):
                 continue
             if s.get("result") not in ("hit", "miss"):
@@ -1369,6 +1374,9 @@ def tracking_stats(history, tracker_version=None):
                 sc = _num(scores.get(name))
                 if sc is not None:
                     model_rows[name].append((y, _clamp(sc / 100.0, .01, .99)))
+            final = _num((s.get("adaptive_prod_v79") or {}).get("final_score"))
+            if final is not None:
+                model_rows["adaptive_prod"].append((y, _clamp(final / 100.0, .01, .99)))
             if s.get("generator_selected"):
                 sc = _num(scores.get("ensemble"))
                 if sc is not None: generator_rows.append((y, _clamp(sc / 100.0, .01, .99)))

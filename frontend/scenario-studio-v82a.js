@@ -253,7 +253,7 @@
     if(profile==='manual')return legacy;
     const ml=autoLearnSnapshot(m,s);
     if(!ml||String(ml.status||'ACTIVE').toUpperCase()!=='ACTIVE')return legacy;
-    const ensemble=num(ml.ensemble);
+    const ensemble=num(ml.adaptive_prod_score??ml.final_score??ml.ensemble);
     if(ensemble==null)return legacy;
     const p=generatorProfilePolicy(profile);
     const votes=[num(ml.current),num(ml.catboost),num(ml.tabpfn)].filter(x=>x!=null);
@@ -1288,9 +1288,9 @@
       tournament:m?.tournament||null,surface:m?.surface||null,signal_key:s.key,suggested_line:totalLine(s),selected_line:totalLine(s),market_anchor_line:s.market_anchor_line??marketAnchorLine(m,s.market),marketability_guard:!!s.marketability_guard,label:s.label,market:s.market,pick:s.pick,
       value:Number(s.value),composer_score:finalScore,source_model:ml?autoLearnSourceLabel(ml):(modelApi()?.active||'adaptive'),
       base_source_model:(modelApi()?.active||'adaptive'),
-      ai_final_score:finalScore,
+      ai_final_score:ml?num(ml.adaptive_prod_score??ml.final_score):null,
       raw_ensemble_score:ml?num(ml.raw_ensemble??ml.raw_ensemble_score??ml.ensemble):null,
-      adaptive_prod_score:ml?num(ml.adaptive_prod_score??ml.final_score??ml.ensemble):null,
+      adaptive_prod_score:ml?num(ml.adaptive_prod_score??ml.final_score):null,
       selector_mode:s.selector_mode??(profile==='experimental'?'MODEL_TEST_SHADOW':'CORE_PAIR'),
       selector_pair:s.selector_pair??null,
       selector_match_score:s.selector_match_score??null,
@@ -1342,7 +1342,7 @@
             <div class="sc82-draft-row">
               <span>
                 <b>${esc(s.label)}</b>
-                <small>${esc(s.source_model)} · ${Math.round(Number(s.composer_score||s.value))}/100${s.pbp_ready?' · PBP ✓':''}${adjusted?` · zmieniono z ${original}`:''}</small>
+                <small>${esc(s.source_model)} · Ranking ${Math.round(Number(s.composer_score||s.value))}/100${s.adaptive_prod_score!=null?` · FINAL ${Number(s.adaptive_prod_score).toFixed(1)}/100`:''}${s.pbp_ready?' · PBP ✓':''}${adjusted?` · zmieniono z ${original}`:''}</small>
                 ${line!=null&&alternatives.length>1?`<span class="sc82-line-tools"><button class="sc82-line-toggle" data-sc-line-open="${encodeURIComponent(rowKey)}">Linia ${line} · zmień</button></span>`:''}
               </span>
               <button data-sc-remove="${encodeURIComponent(s.match_key)}" data-sc-sig="${encodeURIComponent(s.signal_key)}">✕</button>
@@ -1360,7 +1360,9 @@
     const remote=await remoteSaved(),local=localSaved();
     const rows=[...remote,...local.filter(x=>!x.remote)].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
     if(currentTab!=='saved')return;
-    body.innerHTML=`${topBack('Moje scenariusze')}<div class="sc82-saved">${rows.length?rows.map(s=>{
+    const pairs=window.TENIS_AI_SCENARIO_SETTLEMENT?.summarizePairs?.(rows);
+    const pairSummary=pairs?`<div class="sc82-note"><b>Trafność zapisanych par: ${pairs.accuracy==null?'N/D':pairs.accuracy+'%'}</b><span>${pairs.hits} HIT · ${pairs.misses} MISS · n=${pairs.n} · ${pairs.pending} oczekujących · ${pairs.voids} VOID. Tylko dwa zdarzenia jednego meczu; HIT wymaga 2/2. Powtórzone pary liczymy raz. Dane z wczytanych zapisów, bez wersji roboczej.</span></div>`:'';
+    body.innerHTML=`${topBack('Moje scenariusze')}${pairSummary}<div class="sc82-saved">${rows.length?rows.map(s=>{
       const items=Array.isArray(s.items)?s.items:[],mc=s.match_count??new Set(items.map(x=>x.match_key)).size,sc=s.signal_count??items.length,sm=s?.metadata?.settlement_v83c||{};
       const statusLabel=s.status==='settled'?'ROZLICZONY':s.status==='partial'?'CZĘŚCIOWO':s.status==='archived'?'ARCHIWUM':'AKTYWNY';
       const settleSummary=Number.isFinite(Number(sm.resolved))?` · ✅ ${Number(sm.hits||0)} · ❌ ${Number(sm.misses||0)}${Number(sm.voids||0)?` · ⚪ ${Number(sm.voids||0)}`:''}`:'';

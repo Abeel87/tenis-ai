@@ -558,6 +558,7 @@
     const m=findMatch(k);if(!m)return;
     const o=ensureOverlay();o.dataset.matchKey=String(k);o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
     bindLazySections78e23(o,m);
+    window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(m);
     o.scrollTop=0;
     requestAnimationFrame(()=>window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.());
     o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);

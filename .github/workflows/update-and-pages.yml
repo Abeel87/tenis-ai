@@ -119,6 +119,10 @@ jobs:
         run: python backend/model_telemetry_v84c.py
       - name: Player Intelligence v8.5 POST
         run: python backend/player_intelligence_v85.py post
+      - name: Reconcile all settled layers and refresh final reports
+        run: |
+          python backend/refresh_settlement_reports.py
+          python scripts/verify_audit_consistency.py
       - name: Player Intelligence Guard v8.5
         run: python scripts/verify_v85.py
       - name: AutoLearn Integration Guard v8.4A
@@ -133,6 +137,7 @@ jobs:
         run: |
           python scripts/verify_v87_decision_center.py
           node tests/decision_center_smoke.mjs
+          node tests/audit_consistency_smoke.mjs
       - name: Accuracy Shadow Guard v8.6
         run: python scripts/verify_v86_accuracy_shadow.py
       - name: AutoLearn Calibration Guard v8.4A.2

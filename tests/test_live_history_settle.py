@@ -16,3 +16,46 @@ def test_live_not_final():
 
 def test_walkover_void():
     f=final_from_match({'event_status':'Walk Over','winner':1,'score':None},entry());assert f['status']=='void'
+
+
+def test_reconcile_all_layers_is_idempotent_and_keeps_frozen_forecasts():
+    from copy import deepcopy
+    from signal_settlement import SIGNAL_LAYERS, reconcile_settled
+    match = {'p1':'A','p2':'B','status':'settled','settled_at':'original',
+             'result':{'status':'completed','winner':'A','sets':[[6,2],[6,4]],'total_games':18}}
+    for layer in SIGNAL_LAYERS:
+        match[layer] = [
+            {'market':'match_total','pick':'over','line':17.5,'result':'pending',
+             'model_scores':{'ensemble':79}, 'adaptive_prod_v79':{'final_score':75},'captured_at':'frozen'},
+            {'market':'game_state','checkpoint':6,'pick':'3:3','result':'pending'},
+            {'market':'game_state','checkpoint':4,'pick':'2:2','result':'hit','settlement_source':'PBP'},
+        ]
+    original = deepcopy(match)
+    result = reconcile_settled([match])[0]
+    assert match == original
+    assert result['settled_at'] == 'original'
+    for layer in SIGNAL_LAYERS:
+        assert [s['result'] for s in result[layer]] == ['hit','unverifiable','hit']
+        assert result[layer][0]['model_scores'] == match[layer][0]['model_scores']
+        assert result[layer][0]['adaptive_prod_v79'] == match[layer][0]['adaptive_prod_v79']
+        assert result[layer][0]['captured_at'] == 'frozen'
+        assert result[layer][2] == match[layer][2]
+    assert reconcile_settled([result]) == [result]
+
+
+def test_historical_and_live_settlement_share_all_layers():
+    import pandas as pd
+    from unittest.mock import patch
+    from history_tracker import settle_history
+    from signal_settlement import SIGNAL_LAYERS
+    now = datetime(2026,8,27,12,tzinfo=timezone.utc)
+    match = {**entry(), 'scheduled_time':'2026-08-26T12:00:00Z'}
+    for layer in SIGNAL_LAYERS:
+        match[layer] = [{'market':'match_win','pick':'A','result':'pending'}]
+    final = {'status':'completed','winner':'A','sets':[[6,2],[6,4]],'total_games':18}
+    with patch('history_tracker.find_final_result', return_value=final):
+        historic = settle_history([match], pd.DataFrame(), now=now)[0]
+    live = settle_entry(match, final, now)
+    assert historic['status'] == live['status'] == 'settled'
+    for layer in SIGNAL_LAYERS:
+        assert historic[layer][0]['result'] == live[layer][0]['result'] == 'hit'

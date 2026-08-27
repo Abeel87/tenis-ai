@@ -45,24 +45,42 @@ function history(){
   try{return Array.isArray(historyRows)?historyRows:[]}catch{return[]}
 }
 
-function flatten(){
+function eventKey(match,signal){
+  const rawMarket=aliasMarket(signal.market);
+  const market=/^state[246]$/.test(rawMarket)?'game_state':rawMarket;
+  const parts=String(signal.key||signal.signal_key||'').split('|');
+  let line=num(signal.line??signal.selected_line??signal.suggested_line??(market.endsWith('_total')?parts[1]:null));
+  const sets=match?.result?.sets||[];
+  const pair=sets[0]?[...sets[0]].sort((a,b)=>a-b):[];
+  const standard=match?.result?.status==='completed'&&((pair[1]===6&&pair[0]<=4)||(pair[1]===7&&[5,6].includes(pair[0])));
+  if(standard&&market==='set1_total'&&line===11.5)line=10.5;
+  const cp=market==='game_state'?num(signal.checkpoint??rawMarket.match(/^state([246])$/)?.[1]??parts[1]):null;
+  let pick=norm(signal.pick);
+  if(['match_win','set1_win','set2_win','set3_win'].includes(market)){
+    pick=pick===norm(match.p1)?'p1':pick===norm(match.p2)?'p2':pick;
+  }
+  return [market,line??'',cp??'',pick].join('|');
+}
+function flatten(source='base'){
   const out=[];
   for(const m of history()){
     const time=new Date(m?.scheduled_time??m?.captured_at??m?.first_captured_at??0);
     if(!Number.isFinite(time.getTime()))continue;
-    for(const s of (m?.signals||[])){
+    const seen=new Set();
+    const signals=source==='final'?m.autolearn_signals_v84:m.signals;
+    for(const s of [...(signals||[])].sort((a,b)=>String(a.line??'').localeCompare(String(b.line??'')))){
       if(s?.result!=='hit'&&s?.result!=='miss')continue;
-      out.push({
-        time,
-        hit:s.result==='hit',
-        score:num(s.score),
-        label:String(s.label||s.market||'Inny'),
-        market:aliasMarket(s.market||'other'),
-        source:String(s.source_model||'legacy'),
-        tour:tour(m.tour),
-        surface:surf(m.surface),
-        version:String(m.model_version||'N/D')
-      });
+      const score=source==='final'?num(s.adaptive_prod_v79?.final_score):num(s.score);
+      if(score==null)continue;
+      const event=eventKey(m,s),model=source==='final'?'adaptive-prod':String(s.source_model||'legacy');
+      const key=event+'|'+model;
+      if(seen.has(key))continue;
+      seen.add(key);
+      out.push({time,settledTime:new Date(m.settled_at||m.scheduled_time),hit:s.result==='hit',score,event,
+        matchKey:String(m.match_key||m.match_id||[m.p1,m.p2,m.scheduled_time].join('|')),
+        label:String(s.label||s.market||'Inny'),market:aliasMarket(s.market||'other'),source:model,
+        tour:tour(m.tour),surface:surf(m.surface),
+        version:source==='final'?String(s.tracker_version||'N/D'):String(m.model_version||'N/D')});
     }
   }
   return out;
@@ -95,16 +113,16 @@ function wilsonLower(h,n){
 /* History -> Generator.
    Small capped ranking bonus only. FINAL probability is untouched. */
 function priorFor(match,signal){
-  const cut=Date.now()-30*86400000;
-  const rows=flatten().filter(x=>x.time.getTime()>=cut);
-  const market=aliasMarket(signal?.market);
-  const t=tour(match?.tour);
-  const sf=surf(match?.surface);
-
+  const end=Math.min(Date.now(),new Date(match?.scheduled_time||Date.now()).getTime());
+  const cut=end-30*86400000;
+  const event=eventKey(match,signal);
+  const wanted=String(match?.autolearn_v84?.version||window.TENIS_AI_META?.productionModelVersion||'');
+  const rows=flatten('final').filter(x=>x.time.getTime()>=cut&&x.settledTime.getTime()<end&&x.version===wanted&&x.event===event);
+  const t=tour(match?.tour),sf=surf(match?.surface);
   const options=[
-    {scope:'rynek+tour+nawierzchnia',min:10,rows:rows.filter(x=>x.market===market&&x.tour===t&&x.surface===sf)},
-    {scope:'rynek+nawierzchnia',min:12,rows:rows.filter(x=>x.market===market&&x.surface===sf)},
-    {scope:'rynek',min:20,rows:rows.filter(x=>x.market===market)}
+    {scope:'FINAL + zdarzenie + tour + nawierzchnia',min:10,rows:rows.filter(x=>x.tour===t&&x.surface===sf)},
+    {scope:'FINAL + zdarzenie + nawierzchnia',min:12,rows:rows.filter(x=>x.surface===sf)},
+    {scope:'FINAL + zdarzenie',min:20,rows}
   ];
   const chosen=options.find(x=>x.rows.length>=x.min);
   if(!chosen)return {n:0,accuracy:null,adjustment:0,scope:'brak probki'};
@@ -122,7 +140,7 @@ function priorFor(match,signal){
   };
 }
 
-window.TENIS_AI_PERFORMANCE_V882=Object.freeze({version:VERSION,priorFor});
+window.TENIS_AI_PERFORMANCE_V882=Object.freeze({version:VERSION,priorFor,eventKey,flatten});
 
 function period(){
   try{
@@ -210,10 +228,14 @@ function segments(rows){
   return `<div class="pc882-segments">${col('Działa najlepiej',best,'good')}${col('Do poprawy',weak,'bad')}</div>`;
 }
 
+const reportCache=new Map();
 async function j(path){
+  const cached=reportCache.get(path);
+  if(cached&&Date.now()-cached.time<60000)return cached.value;
   try{
     const r=await fetch(`${path}?v882=${Date.now()}`,{cache:'no-store'});
-    return r.ok?await r.json():{};
+    if(!r.ok)return {};
+    const value=await r.json();reportCache.set(path,{time:Date.now(),value});return value;
   }catch{return{}}
 }
 
@@ -227,7 +249,7 @@ function modelRows(tel){
     const aa=a.n>=10&&a.accuracy!=null?a.accuracy:-1;
     const bb=b.n>=10&&b.accuracy!=null?b.accuracy:-1;
     return bb-aa||b.n-a.n;
-  }).slice(0,12);
+  });
 }
 
 function activate(dash,tab){
@@ -256,17 +278,21 @@ function collapseOld(host,dash){
   host.append(d);
 }
 
+let statsGeneration=0;
 async function renderStats882(){
+  const generation=++statsGeneration;
   const host=document.querySelector('#pc77');
   if(!host)return;
 
   let rows=scoped(flatten());
   const wanted=String(window.TENIS_AI_META?.calibrationModelVersion||'');
   const same=rows.filter(x=>x.version===wanted);
-  if(same.length>=20)rows=same;
+  rows=same;
+  const finalRows=scoped(flatten('final')).filter(x=>x.version===String(window.TENIS_AI_META?.productionModelVersion||''));
+  const finalOverall=stat(finalRows.filter(x=>x.score>=65));
 
   const [adaptive,tel]=await Promise.all([j('data/adaptive_learning_v79.json'),j('data/model_telemetry_v84c.json')]);
-  if(!document.querySelector('#pc77'))return;
+  if(document.querySelector('#pc77')!==host||generation!==statsGeneration)return;
 
   document.querySelector('#pc88-dashboard')?.remove();
   document.querySelector('#pc882-dashboard')?.remove();
@@ -285,14 +311,15 @@ async function renderStats882(){
   dash.id='pc882-dashboard';
   dash.className='pc882-dashboard';
   dash.innerHTML=`
-    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI v8.8.2</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>Jedna warstwa zamiast powtarzających się bloków.</p></div>
+    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI ${esc(window.TENIS_AI_META?.displayVersion||VERSION)}</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>FINAL i model bazowy są liczone osobno. Wykresy poniżej dotyczą modelu bazowego.</p></div>
       <div class="pc882-period">${['7d','30d','all'].map(x=>`<button data-pc882-period="${x}" class="${period()===x?'active':''}">${x==='all'?'Wszystko':x}</button>`).join('')}</div>
     </header>
     <nav class="pc882-tabs">${[['overview','Przegląd'],['markets','Rynki'],['models','Modele'],['adaptive','Adaptive']].map(([k,l])=>`<button data-pc882-tab="${k}">${l}</button>`).join('')}</nav>
 
     <section data-pc882-pane="overview">
       <div class="pc882-kpis">
-        <article><span>Skuteczność</span><b>${pct(overall.accuracy)}</b><small>${overall.hits} HIT · ${overall.misses} MISS · n=${overall.n}</small></article>
+        <article><span>FINAL ≥65/100 · trafność</span><b>${pct(finalOverall.accuracy)}</b><small>${finalOverall.hits} HIT · ${finalOverall.misses} MISS · n=${finalOverall.n} · ${new Set(finalRows.filter(x=>x.score>=65).map(x=>x.matchKey)).size} meczów</small></article>
+        <article><span>Model bazowy · trafność</span><b>${pct(overall.accuracy)}</b><small>${overall.hits} HIT · ${overall.misses} MISS · n=${overall.n}</small></article>
         <article class="good"><span>Najlepszy rynek</span><b>${best?esc(best.name):'N/D'}</b><small>${best?pct(best.accuracy)+' · n='+best.n:'brak próbki'}</small></article>
         <article class="bad"><span>Najsłabszy rynek</span><b>${weak?esc(weak.name):'N/D'}</b><small>${weak?pct(weak.accuracy)+' · n='+weak.n:'brak próbki'}</small></article>
         <article><span>Błąd kalibracji</span><b>${mae==null?'N/D':mae.toFixed(1)+' pp'}</b><small>średni |realnie − confidence|</small></article>
@@ -326,11 +353,12 @@ async function renderStats882(){
       <article class="pc882-card"><header><b>Największe powtarzalne błędy</b><small>Adaptive wykorzystuje je do ograniczonej korekty</small></header>
       <div class="pc882-errors">${repeated.map(x=>`<div><span><b>${esc(String(x.key||'').split('|').slice(1).join(' · '))}</b><small>${esc(String(x.key||'').split('|')[0]||'model')} · n≈${Number(x.effective_n||0).toFixed(0)} · ${esc(x.evidence||'')}</small></span><em>RAW ${pct(x.raw_mean)} → ${pct(x.accuracy)}</em><strong class="${Number(x.gap_pp||0)<0?'bad':'good'}">${Number(x.gap_pp||0)>=0?'+':''}${Number(x.gap_pp||0).toFixed(1)} pp</strong></div>`).join('')||'<div class="pc882-empty">Brak powtarzalnych błędów.</div>'}</div></article>
     </section>
-    <p class="pc882-note">Statystyki wpływają na <b>ranking par Generatora</b> dopiero przy sensownej próbce. Nie zmieniają FINAL probability. Player Intelligence i Accuracy Lab zostają SHADOW.</p>`;
+    <p class="pc882-note">Statystyki wpływają na <b>ranking par Generatora</b> dopiero przy sensownej próbce. Nie zmieniają oceny FINAL. n liczy unikalne zdarzenia na model i mecz; równoważne linie 10.5/11.5 są scalone. Zdarzenia jednego meczu są skorelowane. Proxy selektora nie jest skutecznością zapisanych par. Modele mogą mieć różne próbki. Player Intelligence i Accuracy Lab zostają SHADOW.</p>`;
 
   const head=host.querySelector('.pc77-head');
   if(head)head.after(dash); else host.prepend(dash);
   collapseOld(host,dash);
+  window.TENIS_AI_V883?.cleanupStats?.();
 
   let saved='overview';
   try{saved=localStorage.getItem(TAB_KEY)||'overview'}catch{}
@@ -409,9 +437,7 @@ function decorateTop(){
 }
 
 function brand(){
-  document.title='Tenis AI · v8.8.2';
-  const p=document.querySelector('.brand-copy p');
-  if(p)p.textContent='Tenis AI v8.8.2 · Adaptive PROD + Pair Selector + Analytics';
+  window.TENIS_AI_APPLY_META?.();
 }
 
 function wrapStats(){
@@ -419,7 +445,7 @@ function wrapStats(){
   const base=renderStats;
   const wrapped=function(){
     const r=base.apply(this,arguments);
-    [250,700,1500].forEach(ms=>setTimeout(()=>renderStats882().catch(console.error),ms));
+    // Async page completion emits tenis-ai:stats-ready. No timer race.
     return r;
   };
   wrapped.__v882Wrapped=true;
@@ -439,10 +465,11 @@ function boot(){
   polish();
   [250,700,1500,2600].forEach(ms=>setTimeout(()=>{
     wrapStats(); polish();
-    if(document.querySelector('#pc77'))renderStats882().catch(console.error);
+    if(document.querySelector('#pc77')&&!document.querySelector('#pc882-dashboard'))renderStats882().catch(console.error);
   },ms));
 }
 
+document.addEventListener('tenis-ai:stats-ready',()=>renderStats882().catch(console.error));
 document.addEventListener('click',()=>setTimeout(polish,60),true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();

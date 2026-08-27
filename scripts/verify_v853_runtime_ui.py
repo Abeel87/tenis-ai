@@ -20,7 +20,7 @@ def forbid(rel, needle, label):
 need("frontend/index.html", "runtime-fetch-v853.js", "runtime data dedupe v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.js", "UI organizer v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.css", "UI organizer CSS v8.5.3")
-need("frontend/app-meta.js", "displayVersion: \'v8.7\'", "aktualną wersję wyświetlaną aplikacji")
+need("frontend/app-meta.js", "displayVersion: \'v8.8.4\'", "aktualną wersję wyświetlaną aplikacji")
 need("frontend/app-meta.js", "appVersion: \'v8.0.1\'", "chroniony kontrakt bazowy v8.0.1")
 need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin AutoLearn")
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
