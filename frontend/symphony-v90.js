@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'v9.0C';
+  const VERSION = 'v9.0C.4';
   const DATA_URL = './data/symphony_v90.json';
   let cache = null;
 
@@ -50,7 +50,8 @@
     const path = leg.path_probability == null ? '' : ` · PATH ${pct(leg.path_probability)}`;
     const raw = leg.raw_market_probability == null ? '' : ` · surowe ${pct(leg.raw_market_probability)}`;
     const source = leg.market_source ? ` · ${esc(leg.market_source)}` : '';
-    const kind = leg.score_kind === 'relative_family_strength' ? ' · siła w rodzinie' : '';
+    const family = leg.score_kind === 'relative_family_strength' ? ' · siła w rodzinie' : '';
+    const compare = leg.score_kind === 'serve_comparison_estimate' ? ' · estymata A/remis/B' : '';
     return `
       <div class="symphony-leg">
         <div class="symphony-leg__main">
@@ -59,7 +60,7 @@
         </div>
         <div class="symphony-leg__numbers">
           <b>${Number(leg.evidence_score || 0).toFixed(1)}</b>
-          <small>PROD ${Number(leg.prod_score || 0).toFixed(1)}${kind}${raw}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
+          <small>PROD ${Number(leg.prod_score || 0).toFixed(1)}${family}${compare}${raw}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
         </div>
       </div>`;
   }
@@ -74,14 +75,34 @@
       </div>`).join('')}</div>`;
   }
 
-  function compositionFor(match, legs, variant = 0) {
-    const root = match?.compositions?.[String(legs)];
-    if (!root) return null;
-    if (!variant) return root;
-    return root.alternatives?.[variant - 1] || root;
+  function recommendedLegs(match) {
+    const n = Number(match?.leg_count_intelligence?.recommended || match?.recommended_leg_count || 4);
+    return n >= 2 && n <= 6 ? n : 4;
   }
 
-  function matchCard(match, comp, legs) {
+  function compositionFor(match, legs, variant = 0) {
+    const resolvedLegs = legs === 'auto' ? recommendedLegs(match) : Number(legs || 4);
+    const root = match?.compositions?.[String(resolvedLegs)];
+    if (!root) return { comp: null, legs: resolvedLegs };
+    if (!variant) return { comp: root, legs: resolvedLegs };
+    return { comp: root.alternatives?.[variant - 1] || root, legs: resolvedLegs };
+  }
+
+  function legIntelligenceHtml(match, legs, autoMode) {
+    const intelligence = match?.leg_count_intelligence;
+    if (!intelligence) return '';
+    const rec = Number(intelligence.recommended || legs);
+    const option = (intelligence.options || []).find(x => Number(x.legs) === Number(legs));
+    const status = autoMode ? `✨ AUTO wybrało ${rec}` : `AUTO sugeruje ${rec}`;
+    return `<div class="symphony-story-strip">
+      <span><b>${esc(status)} zdarzenia</b></span>
+      ${option ? `<span>utility <b>${Number(option.auto_utility || 0).toFixed(1)}</b></span>` : ''}
+      ${option ? `<span>coverage <b>${Math.round(Number(option.path_coverage || 0) * 100)}%</b></span>` : ''}
+      <span>${esc(intelligence.reason || '')}</span>
+    </div>`;
+  }
+
+  function matchCard(match, comp, legs, autoMode = false) {
     if (!comp) return '';
     const score = Number(comp.symphony_score || 0);
     const frag = (comp.fragility || [])[0];
@@ -89,25 +110,28 @@
     const coverage = Math.round(Number(comp.path_coverage || 0) * 100);
     const catalog = Number(match?.market_adapter?.catalog_size || 0);
     const added = Number(match?.market_adapter?.composer_added || 0);
+    const comparisons = Number(match?.market_adapter?.serve_comparison_added || 0);
     return `
       <article class="symphony-card">
         <div class="symphony-card__head">
           <div>
             <div class="symphony-meta">${esc(match.tour || '')}${match.surface ? ` · ${esc(match.surface)}` : ''} · ${esc(timeLabel(match.scheduled_time))}</div>
             <h3>${esc(match.p1)} <span>vs</span> ${esc(match.p2)}</h3>
-            <p>${esc(storyLabel(comp.story_type))}</p>
+            <p>${esc(storyLabel(comp.story_type))} · ${legs} zdarzenia</p>
           </div>
           <div class="symphony-score ${scoreClass(score)}">
             <strong>${score.toFixed(1)}</strong><span>/100</span>
           </div>
         </div>
 
+        ${legIntelligenceHtml(match, legs, autoMode)}
+
         <div class="symphony-story-strip">
           <span>silnik <b>${esc(match.path_engine || 'EVIDENCE')}</b></span>
           <span>joint coverage <b>${coverage}%</b></span>
           <span>PROD/SHADOW <b>${Math.round(Number(comp.prod_shadow_agreement || 0) * 100)}%</b></span>
           <span>konflikt <b>${Math.round(Number(comp.model_conflict || 0) * 100)}%</b></span>
-          ${catalog ? `<span>katalog <b>${catalog}</b> · +${added}</span>` : ''}
+          ${catalog ? `<span>katalog <b>${catalog}</b> · +${added}${comparisons ? ` · compare +${comparisons}` : ''}</span>` : ''}
         </div>
 
         ${exactJoint != null
@@ -127,7 +151,10 @@
 
   function rankedMatches(data, legs, variant) {
     const rows = (data.matches || [])
-      .map(match => ({ match, comp: compositionFor(match, legs, variant) }))
+      .map(match => {
+        const picked = compositionFor(match, legs, variant);
+        return { match, comp: picked.comp, legs: picked.legs };
+      })
       .filter(x => x.comp);
     const today = rows.filter(x => localDate(x.match.scheduled_time) === todayKey());
     const source = today.length ? today : rows;
@@ -137,7 +164,8 @@
   function resultsHtml(data, matchCount, legs, variant) {
     const rows = rankedMatches(data, legs, variant).slice(0, matchCount);
     if (!rows.length) return '<div class="symphony-empty">Brak scenariuszy spełniających warunki.</div>';
-    return rows.map(x => matchCard(x.match, x.comp, legs)).join('');
+    const autoMode = legs === 'auto';
+    return rows.map(x => matchCard(x.match, x.comp, x.legs, autoMode)).join('');
   }
 
   function shell(data) {
@@ -153,7 +181,7 @@
           <div class="symphony-contract">
             <b>PROD = rdzeń</b>
             <span>SHADOW = dowód pomocniczy</span>
-            <small>bez zmiany Ensemble / final_score</small>
+            <small>AUTO analizuje 2–6 nóg osobno dla każdego meczu</small>
           </div>
         </div>
 
@@ -165,7 +193,8 @@
           </label>
           <label>Zdarzenia / mecz
             <select id="symphony-leg-count">
-              <option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option>
+              <option value="auto" selected>✨ AUTO · zalecane 2–6</option>
+              <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
             </select>
           </label>
           <label>Wariant
@@ -180,9 +209,9 @@
         </div>
 
         <div class="symphony-note">
-          v9.0C czyta pełny katalog, który Tenis AI już wylicza: stany 2/4/6, zwycięzców, drabinki gemów, exact score, liczbę setów, tie-break oraz serve props. Joint probability pokazuje tylko dla nóg policzonych na tym samym exact tree.
+          v9.0C.4 porównuje kompozycje 2–6 zdarzeń dla każdego meczu. AUTO wybiera liczbę nóg wg jakości, joint coverage i fragility. Rynki „najwięcej asów / DF / asów+DF” są na razie evidence-only A/remis/B i nie udają exact joint probability.
         </div>
-        <div id="symphony-results" class="symphony-grid">${resultsHtml(data, 4, 4, 0)}</div>
+        <div id="symphony-results" class="symphony-grid">${resultsHtml(data, 4, 'auto', 0)}</div>
       </section>`;
   }
 
@@ -199,13 +228,13 @@
     if (!panel || panel.hidden) return;
     const button = panel.querySelector('[data-sc-go="generator"]');
     if (!button) return;
-    button.innerHTML = '<b>🎼 Symfonia Tenisowa</b><span>1–6 meczów · 2–6 zdarzeń · pełny scenariusz meczu</span>';
+    button.innerHTML = '<b>🎼 Symfonia Tenisowa</b><span>1–6 meczów · AUTO 2–6 zdarzeń · pełny scenariusz meczu</span>';
   }
 
   async function openSymphony() {
     const body = scenarioBody();
     if (!body) return;
-    body.innerHTML = '<div class="sc82-loading">Stroję modele i ścieżki meczu…</div>';
+    body.innerHTML = '<div class="sc82-loading">Stroję modele, rynki i liczbę nóg…</div>';
     try {
       const data = await loadData();
       body.innerHTML = shell(data);
@@ -229,7 +258,7 @@
     if (!data) return;
     body.querySelector('#symphony-generate')?.addEventListener('click', () => {
       const matchCount = Number(body.querySelector('#symphony-match-count')?.value || 4);
-      const legs = Number(body.querySelector('#symphony-leg-count')?.value || 4);
+      const legs = String(body.querySelector('#symphony-leg-count')?.value || 'auto');
       const variant = Number(body.querySelector('#symphony-variant')?.value || 0);
       const target = body.querySelector('#symphony-results');
       if (target) target.innerHTML = resultsHtml(data, matchCount, legs, variant);

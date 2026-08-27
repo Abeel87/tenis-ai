@@ -1,22 +1,35 @@
 from __future__ import annotations
 
-"""Tenis AI v9.0C — full-market runner for Tennis Symphony.
+"""Tenis AI v9.0C.4 — full-market runner for Tennis Symphony.
 
-Keeps the v9.0B exact state engine isolated and feeds it a richer, canonical
-market catalogue built from data that Tenis AI already stores in results.json.
+Keeps the v9.0B exact state engine isolated, adds the v9.0C market catalogue,
+serve-comparison evidence and automatic 2..6 leg-count intelligence.
 """
 
 import json
-import re
 
 try:
     from . import symphony_engine_v90 as core
-    from .symphony_evidence_v90c import VERSION as EVIDENCE_VERSION, augment_match
+    from .symphony_evidence_v90c import VERSION as BASE_EVIDENCE_VERSION
+    from .symphony_c4 import (
+        VERSION,
+        augment_match_c4,
+        comparison_compatible,
+        coverage_first_metrics,
+        leg_count_intelligence,
+    )
 except ImportError:
     import symphony_engine_v90 as core
-    from symphony_evidence_v90c import VERSION as EVIDENCE_VERSION, augment_match
+    from symphony_evidence_v90c import VERSION as BASE_EVIDENCE_VERSION
+    from symphony_c4 import (
+        VERSION,
+        augment_match_c4,
+        comparison_compatible,
+        coverage_first_metrics,
+        leg_count_intelligence,
+    )
 
-VERSION = "v9.0C.3"
+EVIDENCE_VERSION = VERSION
 MODE = "ANALYSIS_ONLY"
 
 
@@ -29,11 +42,14 @@ def _decorate_leg(leg: dict, evidence_meta: dict):
     out = dict(leg)
     out["market_source"] = raw.get("symphony_source")
     out["raw_market_probability"] = raw.get("symphony_raw_probability")
-    out["score_kind"] = (
-        "relative_family_strength"
-        if str(raw.get("market")) in {"game_state", "set1_exact_score", "exact_match_score"}
-        else "existing_model_percentage"
-    )
+    if raw.get("symphony_approximation"):
+        out["approximation"] = raw.get("symphony_approximation")
+    if str(raw.get("market")) in {"game_state", "set1_exact_score", "exact_match_score"}:
+        out["score_kind"] = "relative_family_strength"
+    elif raw.get("symphony_approximation"):
+        out["score_kind"] = "serve_comparison_estimate"
+    else:
+        out["score_kind"] = "existing_model_percentage"
     return out
 
 
@@ -52,8 +68,10 @@ def _decorate_match(row: dict, evidence_meta: dict):
     out = dict(row)
     out["market_adapter"] = {
         "version": evidence_meta.get("version"),
+        "base_version": BASE_EVIDENCE_VERSION,
         "catalog_size": evidence_meta.get("catalog_size", 0),
         "composer_added": evidence_meta.get("composer_added", 0),
+        "serve_comparison_added": evidence_meta.get("serve_comparison_added", 0),
         "existing_signals": evidence_meta.get("existing_signals", 0),
         "alias_duplicates_removed": evidence_meta.get("alias_duplicates_removed", 0),
         "families": evidence_meta.get("families") or {},
@@ -65,6 +83,9 @@ def _decorate_match(row: dict, evidence_meta: dict):
             str(k): _decorate_scenario(v, evidence_meta)
             for k, v in out["compositions"].items()
         }
+    intelligence = leg_count_intelligence(out)
+    out["leg_count_intelligence"] = intelligence
+    out["recommended_leg_count"] = intelligence.get("recommended")
     return out
 
 
@@ -98,8 +119,6 @@ def _semantic_signature(signal: dict):
     market = _semantic_market(signal)
     checkpoint = core._checkpoint(signal) if market == "game_state" else None
     line = core._line(signal)
-    # A line is semantic only for line-based markets. Winner/state aliases can
-    # contain numbers in their raw key that are not betting lines.
     if market not in {
         "set1_total", "match_total", "total_sets",
         "player_aces", "player_double_faults",
@@ -139,12 +158,7 @@ def _dedupe_augmented(match: dict, evidence_meta: dict):
 
 
 def _extended_predicate(base_predicate):
-    """Extend v9.0B path maths where its existing outcome state is sufficient.
-
-    BO3 final score + first-set winner uniquely determine set 2, and set 3 is
-    always won by the eventual match winner. BO5 is intentionally left N/D
-    until the state engine retains the full set sequence.
-    """
+    """Extend exact path maths where the v9.0B outcome state is sufficient."""
     def predicate(match: dict, candidate):
         existing = base_predicate(match, candidate)
         if existing is not None:
@@ -170,13 +184,7 @@ def _extended_predicate(base_predicate):
 
 
 def _one_pass_compositions(match: dict, candidates: list, outcomes: list[dict]):
-    """Build 2..6-leg compositions in one bounded beam pass.
-
-    v9.0B restarted beam search from depth one for every requested size. With a
-    full market catalogue that repeats the expensive exact-joint evaluation many
-    times. This version grows one beam and snapshots the best composition at each
-    depth, preserving the same scoring/guard logic with much less repeated work.
-    """
+    """Build 2..6-leg compositions in one bounded beam pass."""
     pool = sorted(
         candidates,
         key=lambda c: (c.evidence_score, c.agreement, -c.conflict),
@@ -190,7 +198,7 @@ def _one_pass_compositions(match: dict, candidates: list, outcomes: list[dict]):
         combo = (candidate,)
         metrics = core._combo_metrics(match, combo, outcomes)
         beam.append(((idx,), combo, metrics))
-    beam.sort(key=lambda x: x[2]["score"], reverse=True)
+    beam.sort(key=lambda x: (x[2]["score"], x[2]["path_coverage"]), reverse=True)
     beam = beam[:core.BEAM_WIDTH]
 
     out = {}
@@ -251,18 +259,20 @@ def build_report(legs: int = 4) -> dict:
     old_beam = core.BEAM_WIDTH
     old_predicate = core._predicate
     old_compositions = core._compositions
+    old_metrics = core._combo_metrics
+    old_compatible = core._compatible
 
-    # The market adapter already prunes near-duplicate ladder lines by family.
-    # A 40-candidate / 96-path beam keeps diversity without exploding runtime.
-    core.POOL_LIMIT = 40
-    core.BEAM_WIDTH = 96
+    core.POOL_LIMIT = 44
+    core.BEAM_WIDTH = 104
     core._predicate = _extended_predicate(old_predicate)
     core._compositions = _one_pass_compositions
+    core._combo_metrics = coverage_first_metrics(old_metrics)
+    core._compatible = comparison_compatible(old_compatible)
     try:
         for match in results:
             if not isinstance(match, dict):
                 continue
-            augmented, evidence = augment_match(match)
+            augmented, evidence = augment_match_c4(match)
             augmented, evidence = _dedupe_augmented(augmented, evidence)
             mk = core._match_key(match)
             row = core.build_match_symphony(
@@ -277,6 +287,8 @@ def build_report(legs: int = 4) -> dict:
         core.BEAM_WIDTH = old_beam
         core._predicate = old_predicate
         core._compositions = old_compositions
+        core._combo_metrics = old_metrics
+        core._compatible = old_compatible
 
     matches.sort(key=lambda x: (
         -float(x.get("symphony_score") or 0.0),
@@ -287,6 +299,7 @@ def build_report(legs: int = 4) -> dict:
         "version": VERSION,
         "engine_version": core.VERSION,
         "evidence_adapter_version": EVIDENCE_VERSION,
+        "base_evidence_adapter_version": BASE_EVIDENCE_VERSION,
         "mode": MODE,
         "production_influence": False,
         "shadow_auto_promotion": False,
@@ -304,6 +317,10 @@ def build_report(legs: int = 4) -> dict:
             "bo3_set2_set3_exact_joint": True,
             "bo5_set_sequence_exact_joint": False,
             "one_pass_bounded_beam": True,
+            "coverage_first_ranking": True,
+            "serve_comparisons_are_evidence_only": True,
+            "auto_leg_count_2_to_6": True,
+            "historical_leg_count_learning_active": False,
         },
     }
 

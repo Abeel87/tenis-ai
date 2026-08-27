@@ -43,9 +43,10 @@ def test_mobile_controls_keep_requested_1_to_6_matches_and_2_to_6_legs():
     leg_select = re.search(r'id="symphony-leg-count"(.+?)</select>', js, re.S)
     assert match_select and leg_select
     for n in range(1, 7):
-        assert f"<option>{n}</option>" in match_select.group(1) or f"<option selected>{n}</option>" in match_select.group(1)
+        assert re.search(rf'<option(?:\s+value="{n}")?(?:\s+selected)?>{n}</option>', match_select.group(1))
+    assert 'value="auto"' in leg_select.group(1)
     for n in range(2, 7):
-        assert f"<option>{n}</option>" in leg_select.group(1) or f"<option selected>{n}</option>" in leg_select.group(1)
+        assert re.search(rf'<option(?:\s+value="{n}")?(?:\s+selected)?>{n}</option>', leg_select.group(1))
 
 
 def test_long_scenario_content_can_wrap_in_cards():
