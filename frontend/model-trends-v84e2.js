@@ -1,20 +1,46 @@
 /* Tenis AI v8.4E2 — Model Trend Monitor
    Read-only monitoring. Reuses existing telemetry promise: no extra fetch,
    no MutationObserver, no interval, and it never changes production weights.
+   v8.8.25 runtime/clarity: no delayed mount; checkpoint cards expose CORE lock status.
 */
 (() => {
   'use strict';
   const VERSION='v8.4E2';
+  const RUNTIME_FIX='v8.8.25';
   const PRIMARY=['adaptive_prod','current','catboost','tabpfn','ensemble','generator'];
   const SECONDARY=['adaptive','early','serve','form','surface','consensus','dynamic'];
   const LABELS={adaptive_prod:'FINAL Adaptive PROD',adaptive:'Adaptive',early:'Early Hold',serve:'Serve/Return',form:'Form',surface:'Surface',consensus:'Consensus',current:'Current Engine',catboost:'CatBoost',tabpfn:'TabPFN-2',ensemble:'Ensemble',dynamic:'Dynamic Ensemble',generator:'Ensemble selector proxy'};
   const ICONS={adaptive:'🧠',early:'🎯',serve:'🎾',form:'🔥',surface:'🏟️',consensus:'⚡',current:'🧠',catboost:'🐱',tabpfn:'🧬',ensemble:'🔗',dynamic:'🧭',generator:'🚀'};
   const STATUS={rising:['↗','ROŚNIE'],stable:['→','STABILNY'],watch:['◐','OBSERWUJ'],falling:['↘','OSTROŻNIE'],collecting:['…','ZA MAŁA PRÓBA']};
+  const CP_MIN_SETTLED=30;
+  const CP_MIN_ACCURACY=65;
+  const CP_MIN_WILSON=45;
+  const CP_MIN_RECENT_WHEN_FALLING=60;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const signed=x=>num(x)==null?'—':`${Number(x)>0?'+':''}${Number(x).toFixed(1)} pp`;
   const statusMeta=s=>STATUS[s]||STATUS.collecting;
+
+  function wilsonLower(hits,n){
+    hits=num(hits);n=num(n);
+    if(hits==null||n==null||n<=0)return null;
+    const p=Math.max(0,Math.min(1,hits/n));
+    const z=1.96,z2=z*z,den=1+z2/n;
+    const center=p+z2/(2*n);
+    const adj=z*Math.sqrt((p*(1-p)+z2/(4*n))/n);
+    return Math.max(0,(center-adj)/den)*100;
+  }
+
+  function checkpointCore(x={}){
+    const n=Number(x.settled||0),hits=Number(x.hits||0),accuracy=num(x.accuracy),lower=wilsonLower(hits,n);
+    const trend=x.trend||{},recent=num(trend.recent_accuracy),falling=String(trend.status||'').toLowerCase()==='falling';
+    if(n<CP_MIN_SETTLED)return {ok:false,reason:`n ${n}/${CP_MIN_SETTLED}`,lower};
+    if(accuracy==null||accuracy<CP_MIN_ACCURACY)return {ok:false,reason:`accuracy ${pct(accuracy)} < ${CP_MIN_ACCURACY}%`,lower};
+    if(lower==null||lower<CP_MIN_WILSON)return {ok:false,reason:`Wilson ${pct(lower)} < ${CP_MIN_WILSON}%`,lower};
+    if(falling&&recent!=null&&recent<CP_MIN_RECENT_WHEN_FALLING)return {ok:false,reason:`trend ${pct(recent)} < ${CP_MIN_RECENT_WHEN_FALLING}%`,lower};
+    return {ok:true,reason:`Wilson ${pct(lower)}`,lower};
+  }
 
   function spark(series,status){
     const rows=(Array.isArray(series)?series:[]).filter(x=>num(x?.accuracy)!=null);
@@ -65,7 +91,7 @@
   }
 
   function gameStateCard(data,cp){
-    const x=data?.checkpoints?.[String(cp)]||{},t=x.trend||{};
+    const x=data?.checkpoints?.[String(cp)]||{},t=x.trend||{},core=checkpointCore(x);
     const [arrow,label]=statusMeta(t.status);
     return `<article class="mt84e2-state-card status-${esc(t.status||'collecting')}">
       <header><b>Po ${cp} gemach</b><em>${arrow} ${esc(label)}</em></header>
@@ -76,7 +102,7 @@
         <span><small>HIT–MISS</small><b>${Number(x.hits||0)}–${Number(x.misses||0)}</b></span>
         <span><small>Accuracy</small><b>${pct(x.accuracy)}</b></span>
       </div>
-      <footer>${Number(x.waiting_pbp||0)} czeka na PBP</footer>
+      <footer><b>${core.ok?'✅ CORE GOTOWY':'🔒 CORE BLOKADA'}</b> · ${esc(core.reason)} · ${Number(x.waiting_pbp||0)} czeka na PBP</footer>
     </article>`;
   }
 
@@ -91,10 +117,10 @@
       <div class="mt84e2-grid">${PRIMARY.map(id=>modelCard(tel,id)).join('')}</div>
       <details class="mt84e2-details"><summary><b>Modele bazowe i Dynamic</b><span>pokaż trendy</span></summary><div class="mt84e2-grid secondary">${SECONDARY.map(id=>modelCard(tel,id)).join('')}</div></details>
       <div class="mt84e2-state">
-        <div class="mt84e2-subhead"><div><b>🎯 Po2 / Po4 / Po6 — postęp nowego E1</b><small>Prawdziwe rozliczenie wyłącznie z PBP</small></div><span>${Number(gs.total_settled||0)} rozliczonych</span></div>
+        <div class="mt84e2-subhead"><div><b>🎯 Po2 / Po4 / Po6 — postęp E1</b><small>CORE wymaga PBP + ≥65%, n≥30, Wilson ≥45%; przy trendzie spadkowym recent ≥60%</small></div><span>${Number(gs.total_settled||0)} rozliczonych</span></div>
         <div class="mt84e2-state-grid">${[2,4,6].map(cp=>gameStateCard(gs,cp)).join('')}</div>
       </div>
-      <p class="mt84e2-note"><b>Monitoring, nie autopilot.</b> Trend nie zmienia sam wag produkcyjnych. „OSTROŻNIE” oznacza pogorszenie ostatniej serii względem poprzedniej przy kontroli Brier.</p>
+      <p class="mt84e2-note"><b>Monitoring, nie autopilot.</b> Trend nie zmienia sam wag produkcyjnych. „OSTROŻNIE” oznacza pogorszenie ostatniej serii względem poprzedniej przy kontroli Brier. Status CORE checkpointu jest informacyjny i używa tych samych progów co Quality Lock.</p>
     </section>`;
   }
 
@@ -107,15 +133,21 @@
     const grid=host.querySelector('.al84-grid');
     if(grid)grid.insertAdjacentHTML('afterend',html(tel));else host.insertAdjacentHTML('afterbegin',html(tel));
   }
-  let trendTimer=null;
-  function schedule(ms=320){
-    clearTimeout(trendTimer);
-    trendTimer=setTimeout(inject,ms);
+
+  function mountLegacyMonitor(){
+    if(!document.querySelector('#pc882-dashboard'))return;
+    queueMicrotask(()=>inject().catch(()=>{}));
   }
-  if(typeof renderStats==='function'){
-    const base=renderStats;
-    renderStats=function(){const v=base.apply(this,arguments);schedule();return v};
-  }
-  if(document.querySelector('#pc77'))schedule();
-  window.TENIS_AI_MODEL_TRENDS_V84E2=Object.freeze({version:VERSION,inject,render:html});
+
+  document.addEventListener('tenis-ai:stats-dashboard-ready',mountLegacyMonitor);
+  if(document.querySelector('#pc882-dashboard'))mountLegacyMonitor();
+
+  window.TENIS_AI_MODEL_TRENDS_V84E2=Object.freeze({
+    version:VERSION,
+    runtimeFix:RUNTIME_FIX,
+    inject,
+    render:html,
+    checkpointCore,
+    wilsonLower
+  });
 })();
