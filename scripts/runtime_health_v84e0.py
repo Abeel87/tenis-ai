@@ -60,22 +60,29 @@ def audit(root: Path):
             warnings.append(f'{name} ma {mb:.1f} MB — payload trzeba dalej odchudzać.')
 
     direct_results=[]
+    service_worker_routes=[]
     global_observers=[]
     allowed_results={'app.js','dynamic-weights-v84d1.js','scenario-dynamic-v84d3.js','runtime-health-v84e0.js'}
     for path in frontend.glob('*.js'):
         txt=read(path)
         if 'data/results.json' in txt and 'fetch(' in txt:
-            direct_results.append(path.name)
-            if path.name not in allowed_results:
-                warnings.append(f'Nowy bezpośredni czytelnik results.json: {path.name}')
+            # A service worker is transport/cache policy, not an application data consumer.
+            # Track it separately so adding/removing a PWA route cannot masquerade as a new model reader.
+            if path.name=='sw.js' and 'self.addEventListener' in txt and "'fetch'" in txt:
+                service_worker_routes.append(path.name)
+            else:
+                direct_results.append(path.name)
+                if path.name not in allowed_results:
+                    warnings.append(f'Nowy bezpośredni czytelnik results.json: {path.name}')
         if re.search(r'observer\.observe\(document\.documentElement',txt):
             global_observers.append(path.name)
 
     metrics['direct_results_readers']=sorted(direct_results)
+    metrics['service_worker_data_routes']=sorted(service_worker_routes)
     metrics['global_document_observers']=sorted(global_observers)
 
     for path in frontend.glob('*.js'):
-        if path.name in {'app.js','runtime-health-v84e0.js'}:
+        if path.name in {'app.js','runtime-health-v84e0.js','sw.js'}:
             continue
         txt=read(path)
         if 'data/results.json' in txt and re.search(r'\bts\s*=',txt):
