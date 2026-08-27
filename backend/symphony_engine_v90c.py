@@ -15,7 +15,7 @@ except ImportError:
     import symphony_engine_v90 as core
     from symphony_evidence_v90c import VERSION as EVIDENCE_VERSION, augment_match
 
-VERSION = "v9.0C.1"
+VERSION = "v9.0C.2"
 MODE = "ANALYSIS_ONLY"
 
 
@@ -97,6 +97,73 @@ def _extended_predicate(base_predicate):
     return predicate
 
 
+def _one_pass_compositions(match: dict, candidates: list, outcomes: list[dict]):
+    """Build 2..6-leg compositions in one bounded beam pass.
+
+    v9.0B restarted beam search from depth one for every requested size. With a
+    full market catalogue that repeats the expensive exact-joint evaluation many
+    times. This version grows one beam and snapshots the best composition at each
+    depth, preserving the same scoring/guard logic with much less repeated work.
+    """
+    pool = sorted(
+        candidates,
+        key=lambda c: (c.evidence_score, c.agreement, -c.conflict),
+        reverse=True,
+    )[:core.POOL_LIMIT]
+    if len(pool) < 2:
+        return {}
+
+    beam = []
+    for idx, candidate in enumerate(pool):
+        combo = (candidate,)
+        metrics = core._combo_metrics(match, combo, outcomes)
+        beam.append(((idx,), combo, metrics))
+    beam.sort(key=lambda x: x[2]["score"], reverse=True)
+    beam = beam[:core.BEAM_WIDTH]
+
+    out = {}
+    for depth in range(2, 7):
+        expanded = []
+        for indexes, combo, _ in beam:
+            start = indexes[-1] + 1
+            for idx in range(start, len(pool)):
+                candidate = pool[idx]
+                if any(not core._compatible(candidate, old) for old in combo):
+                    continue
+                nxt = combo + (candidate,)
+                metrics = core._combo_metrics(match, nxt, outcomes)
+                if (
+                    metrics["supported_legs"] == len(nxt)
+                    and metrics["joint_supported_only"] is not None
+                    and metrics["joint_supported_only"] <= core.EPS
+                ):
+                    continue
+                expanded.append((indexes + (idx,), nxt, metrics))
+
+        expanded.sort(
+            key=lambda x: (
+                x[2]["score"],
+                x[2]["path_coverage"],
+                x[2]["avg_evidence"],
+            ),
+            reverse=True,
+        )
+        beam = expanded[:core.BEAM_WIDTH]
+        if not beam:
+            break
+
+        _, best_combo, best_metrics = beam[0]
+        out[str(depth)] = {
+            **core._scenario_payload(match, best_combo, best_metrics, outcomes),
+            "legs": depth,
+            "alternatives": [
+                core._scenario_payload(match, combo, metrics, outcomes)
+                for _, combo, metrics in beam[1:4]
+            ],
+        }
+    return out
+
+
 def build_report(legs: int = 4) -> dict:
     results = core._read(core.RESULTS, [])
     shadow = core._read(core.SHADOW, {})
@@ -108,15 +175,17 @@ def build_report(legs: int = 4) -> dict:
     shadow_idx = core._shadow_index(shadow)
     matches = []
 
-    # v9.0B deliberately used a small global pool. v9.0C has more market
-    # families, so widen the candidate window while keeping the same bounded
-    # beam-search architecture.
     old_pool = core.POOL_LIMIT
     old_beam = core.BEAM_WIDTH
     old_predicate = core._predicate
-    core.POOL_LIMIT = max(old_pool, 56)
-    core.BEAM_WIDTH = max(old_beam, 160)
+    old_compositions = core._compositions
+
+    # The market adapter already prunes near-duplicate ladder lines by family.
+    # A 40-candidate / 96-path beam keeps diversity without exploding runtime.
+    core.POOL_LIMIT = 40
+    core.BEAM_WIDTH = 96
     core._predicate = _extended_predicate(old_predicate)
+    core._compositions = _one_pass_compositions
     try:
         for match in results:
             if not isinstance(match, dict):
@@ -134,6 +203,7 @@ def build_report(legs: int = 4) -> dict:
         core.POOL_LIMIT = old_pool
         core.BEAM_WIDTH = old_beam
         core._predicate = old_predicate
+        core._compositions = old_compositions
 
     matches.sort(key=lambda x: (
         -float(x.get("symphony_score") or 0.0),
@@ -159,6 +229,7 @@ def build_report(legs: int = 4) -> dict:
             "raw_market_probability_is_preserved": True,
             "bo3_set2_set3_exact_joint": True,
             "bo5_set_sequence_exact_joint": False,
+            "one_pass_bounded_beam": True,
         },
     }
 
