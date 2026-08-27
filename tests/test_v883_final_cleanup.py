@@ -22,7 +22,7 @@ def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
     assert "nie bierze udziału w rankingu" in js
     assert "selector\\s+proxy" in js
 
-def test_v887_v889_market_quality_layer_is_scoped_to_core():
+def test_v887_v8810_market_quality_layer_is_scoped_to_core_and_cross_view():
     h=t("frontend/index.html")
     js=t("frontend/checkpoint-quality-v887.js")
     assert "checkpoint-quality-v887.js?v=887" in h
@@ -40,8 +40,15 @@ def test_v887_v889_market_quality_layer_is_scoped_to_core():
         "segments_30d?.market",
         "window.TENIS_AI_WINNER_QUALITY_V888",
         "window.TENIS_AI_RESULT_QUALITY_V889",
+        "window.TENIS_AI_CROSS_VIEW_QUALITY_V8810",
         "return state.coreEventDepth>0?filteredSignals(rows,match):rows",
         "activeScenarioProfile()!=='experimental'",
+        "finalSelectedSignals(match,limit=3)",
+        "window.bestSignalsData=(match,limit=3)=>finalSelectedSignals",
+        "window.bestSignals=match=>",
+        "window.compactSignals=match=>",
+        "FINAL Adaptive PROD · Quality Lock",
+        "Karty meczu, Top i Generator korzystają z jednego źródła FINAL",
         "Manual i Model Test/SHADOW zachowują pełne rynki",
     ]:
         assert token in js
