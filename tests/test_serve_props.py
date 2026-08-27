@@ -63,3 +63,15 @@ def test_serve_props_ui_has_no_body_wide_observer():
     assert "scheduleRefresh(document)" in js
     assert "requestAnimationFrame" in js
     assert "data-sp-line" in js
+
+
+def test_serve_props_ui_is_explicitly_uncalibrated_lab():
+    js=(ROOT/"frontend"/"serve-props-v72.js").read_text(encoding="utf-8")
+    assert "kurs modelowy" in js
+    assert "niekalibrowany" in js
+    assert "nie ma jeszcze własnej kalibracji ani rozliczanego backtestu" in js
+    assert "nie jest jeszcze „uczciwy kurs” bukmacherski ani sygnał CORE" in js
+    assert "const oc=" not in js
+    assert "const uc=" not in js
+    assert "?'strong'" not in js
+    assert "?'lean'" not in js
