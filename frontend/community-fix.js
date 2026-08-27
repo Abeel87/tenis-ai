@@ -1,5 +1,8 @@
-/* Tenis AI v6.5.1 — make profile editing and adding coupons obvious on mobile */
+/* Tenis AI v6.5.1 — make profile editing and adding coupons obvious on mobile
+   v8.8.22 runtime cleanup: profile UX is driven by account/auth events only.
+*/
 (() => {
+  const RUNTIME_FIX='v8.8.22';
   const $=s=>document.querySelector(s);
 
   function closeAccount(){
@@ -27,7 +30,7 @@
     },220);
   }
 
-  window.tenisAICommunityUX={openCouponComposer};
+  window.tenisAICommunityUX={runtimeFix:RUNTIME_FIX,openCouponComposer};
 
   function improveProfileEditor(){
     const editor=$('.profile-editor');
@@ -83,9 +86,4 @@
   });
 
   window.addEventListener('tenis-ai-auth-change',()=>setTimeout(improveProfileEditor,120));
-
-  const observer=new MutationObserver(()=>{
-    if($('.profile-editor')) improveProfileEditor();
-  });
-  observer.observe(document.body,{childList:true,subtree:true});
 })();
