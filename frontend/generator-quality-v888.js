@@ -86,7 +86,8 @@
     const removedMatches = reject.length ? new Set(reject.map(x=>String(x.match_key))).size : 0;
     const keptMatches = Math.max(0, groups.size - removedMatches);
     if (removedMatches) {
-      notice(`Odrzuciłem ${removedMatches} słab${removedMatches===1?'ą parę':'e par/y'}. Zostało ${keptMatches} mocniejszych spotkań. Nie dokładam słabszych tylko po to, żeby dobić do żądanej liczby.`);
+      const pairWord = removedMatches === 1 ? 'słabą parę' : (removedMatches < 5 ? 'słabe pary' : 'słabych par');
+      notice(`Odrzuciłem ${removedMatches} ${pairWord}. Zostało ${keptMatches} mocniejszych spotkań. Nie dokładam słabszych tylko po to, żeby dobić do żądanej liczby.`);
     } else if (groups.size) {
       notice(`Wszystkie ${groups.size} wygenerowane pary przeszły dodatkowy filtr jakości.`, 'ok');
     }
