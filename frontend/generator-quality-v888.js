@@ -1,6 +1,7 @@
-/* Tenis AI v8.8.8 — Generator Pair Quality Lock
+/* Tenis AI v8.8.9 — Generator Pair Quality Lock
    UI/runtime guard around the existing generator. Does not alter model scores.
-   It removes weak auto-generated pairs instead of filling the requested count at any cost.
+   Quality thresholds are aligned with the generator profile floors, so the
+   generator and the post-filter cannot contradict each other.
 */
 (() => {
   'use strict';
@@ -15,11 +16,13 @@
   function draft(){ try { return api()?.draft?.() || null; } catch { return null; } }
   function itemScore(x){ return num(x?.composer_score) ?? num(x?.adaptive_prod_score) ?? num(x?.value) ?? 0; }
   function profilePolicy(profile){
+    // Keep these floors consistent with generatorProfilePolicy() in scenario-studio-v82a.js.
+    // Quality Lock remains an extra structural/market-validation guard, not a second generator.
     return ({
-      balanced:{minItem:78,minAvg:80,matchTotalMin:84},
-      stable:{minItem:76,minAvg:79,matchTotalMin:84},
-      strong:{minItem:82,minAvg:84,matchTotalMin:86}
-    })[profile] || {minItem:78,minAvg:80,matchTotalMin:84};
+      balanced:{minItem:72,minAvg:72,matchTotalMin:80},
+      stable:{minItem:74,minAvg:74,matchTotalMin:80},
+      strong:{minItem:80,minAvg:80,matchTotalMin:84}
+    })[profile] || {minItem:72,minAvg:72,matchTotalMin:80};
   }
   function matchTotalValidationWeak(){
     const x = num(accuracyLab?.market_thresholds_shadow?.match_total?.baseline_65_val?.accuracy);
@@ -85,7 +88,9 @@
     for (const item of reject) if (removeItem(item)) removed++;
     const removedMatches = reject.length ? new Set(reject.map(x=>String(x.match_key))).size : 0;
     const keptMatches = Math.max(0, groups.size - removedMatches);
-    if (removedMatches) {
+    if (removedMatches && keptMatches === 0) {
+      notice(`Filtr odrzucił ${removedMatches} spotkań, bo żadne nie spełniło minimalnej jakości tego profilu. Nie pokazuję pustej „gotowej” paczki jako poprawnego wyniku.`);
+    } else if (removedMatches) {
       const pairWord = removedMatches === 1 ? 'słabą parę' : (removedMatches < 5 ? 'słabe pary' : 'słabych par');
       notice(`Odrzuciłem ${removedMatches} ${pairWord}. Zostało ${keptMatches} mocniejszych spotkań. Nie dokładam słabszych tylko po to, żeby dobić do żądanej liczby.`);
     } else if (groups.size) {
@@ -130,5 +135,5 @@
     notice(`Nie zapisuję scenariusza: ${bad[0]}. Usuń słabą parę albo wybierz mocniejsze zdarzenia.`);
   }, true);
 
-  window.TENIS_AI_GENERATOR_QUALITY_V888 = Object.freeze({version:'v8.8.8', reviewGenerated, currentProblems});
+  window.TENIS_AI_GENERATOR_QUALITY_V888 = Object.freeze({version:'v8.8.9', reviewGenerated, currentProblems});
 })();
