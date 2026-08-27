@@ -82,3 +82,13 @@
   js.dataset.shadowSignalsV894 = '1';
   document.head.appendChild(js);
 })();
+
+/* v8.9.5 — read-only charts for Player + Surface Elo SHADOW cards. */
+(() => {
+  if (document.querySelector('script[data-shadow-charts-v895]')) return;
+  const js = document.createElement('script');
+  js.src = 'shadow-experiment-charts-v895.js?v=895';
+  js.async = true;
+  js.dataset.shadowChartsV895 = '1';
+  document.head.appendChild(js);
+})();
