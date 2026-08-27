@@ -1,5 +1,8 @@
-/* Tenis AI v6.5.3 — persistent avatar without profile freeze */
+/* Tenis AI v6.5.3 — persistent avatar without profile freeze
+   v8.8.23 runtime cleanup: account/auth events replace body observer and retries.
+*/
 (() => {
+  const RUNTIME_FIX='v8.8.23';
   const $ = s => document.querySelector(s);
 
   function escAttr(s){
@@ -34,25 +37,15 @@
     setAvatar($('#account-modal-content .account-profile-avatar'), profile);
   }
 
-  window.addEventListener('tenis-ai-auth-change', () => {
-    setTimeout(applyAvatar, 40);
-    setTimeout(applyAvatar, 180);
-  });
+  function scheduleAvatar(){
+    requestAnimationFrame(applyAvatar);
+  }
 
+  window.addEventListener('tenis-ai-auth-change', scheduleAvatar);
   document.addEventListener('click', e => {
-    if(e.target.closest('#account-button')){
-      setTimeout(applyAvatar, 40);
-      setTimeout(applyAvatar, 140);
-    }
+    if(e.target.closest('#account-button')) scheduleAvatar();
   });
 
-  // Modal content is recreated by account.js. Observe it, but only write when
-  // the rendered avatar actually differs, so the observer cannot loop forever.
-  const observer = new MutationObserver(() => {
-    if($('#account-modal-content .account-profile-avatar')) applyAvatar();
-  });
-  observer.observe(document.body, {childList:true, subtree:true});
-
-  setTimeout(applyAvatar, 300);
-  setTimeout(applyAvatar, 1000);
+  scheduleAvatar();
+  window.TENIS_AI_AVATAR_FIX=Object.freeze({runtimeFix:RUNTIME_FIX,apply:applyAvatar});
 })();
