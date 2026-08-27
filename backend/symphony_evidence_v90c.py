@@ -1,0 +1,349 @@
+from __future__ import annotations
+
+"""Tenis AI v9.0C — market evidence adapter for Tennis Symphony.
+
+The application already calculates a wide market catalogue in results.json.
+This module converts that catalogue into one canonical signal stream for the
+Symphony composer. It is read-only: it never edits PROD/Adaptive/SHADOW scores.
+
+Important distinction:
+- binary markets keep their existing model percentage as the signal score;
+- mutually exclusive state/exact-score markets get a *relative family strength*
+  used only for candidate ranking, while the original percentage is preserved as
+  ``symphony_raw_probability`` and exact joint maths is still calculated by the
+  Symphony state engine.
+"""
+
+from collections import defaultdict
+from copy import deepcopy
+import math
+import re
+from typing import Any
+
+VERSION = "v9.0C-evidence"
+
+
+def _num(value, default=None):
+    try:
+        x = float(value)
+        return x if math.isfinite(x) else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _pct(value):
+    x = _num(value)
+    if x is None:
+        return None
+    if 0.0 <= x <= 1.0:
+        x *= 100.0
+    return max(0.0, min(100.0, x))
+
+
+def _line(value):
+    x = _num(value)
+    return float(x) if x is not None else None
+
+
+def _norm(value: Any) -> str:
+    return " ".join(str(value or "").strip().casefold().split())
+
+
+def _score_pair(value: Any):
+    m = re.search(r"(\d+)\s*[:\-]\s*(\d+)", str(value or ""))
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _state_strength(probability: float, family_max: float) -> float:
+    """Ranking strength for mutually-exclusive states, not a probability."""
+    if family_max <= 0:
+        return probability
+    ratio = max(0.0, min(1.0, probability / family_max))
+    # Keep the leading state visible to beam search without pretending that an
+    # exact state has an 80% literal probability. Raw probability is retained.
+    return max(45.0, min(86.0, 48.0 + 38.0 * ratio))
+
+
+def _signal(key: str, market: str, pick: Any, score: float, *, label: str,
+            line=None, checkpoint=None, raw_probability=None, source="results") -> dict:
+    row = {
+        "key": str(key),
+        "market": str(market),
+        "pick": str(pick),
+        "label": str(label),
+        "score": round(float(score), 3),
+        "symphony_market_adapter": VERSION,
+        "symphony_source": source,
+    }
+    if line is not None:
+        row["line"] = float(line)
+    if checkpoint is not None:
+        row["checkpoint"] = int(checkpoint)
+    if raw_probability is not None:
+        row["symphony_raw_probability"] = round(float(raw_probability), 4)
+    return row
+
+
+def _add_player_map(out: list[dict], obj: Any, market: str, prefix: str):
+    if not isinstance(obj, dict):
+        return
+    for player, value in obj.items():
+        p = _pct(value)
+        if p is None:
+            continue
+        out.append(_signal(
+            f"{market}|{player}", market, player, p,
+            label=f"{prefix} · {player}", raw_probability=p,
+        ))
+
+
+def _add_ou_ladder(out: list[dict], obj: Any, market: str, prefix: str):
+    if not isinstance(obj, dict):
+        return
+    for raw_line, sides in obj.items():
+        ln = _line(raw_line)
+        if ln is None or not isinstance(sides, dict):
+            continue
+        for side in ("over", "under"):
+            p = _pct(sides.get(side))
+            if p is None:
+                continue
+            short = "O" if side == "over" else "U"
+            out.append(_signal(
+                f"{market}|{ln:g}|{side}", market, side, p,
+                line=ln, label=f"{prefix} · {short}{ln:g}", raw_probability=p,
+            ))
+
+
+def _add_states(out: list[dict], game_states: Any):
+    if not isinstance(game_states, dict):
+        return
+    for cp in (2, 4, 6):
+        states = game_states.get(str(cp)) or game_states.get(cp)
+        if not isinstance(states, dict) or not states:
+            continue
+        parsed = [(str(score), _pct(value)) for score, value in states.items()]
+        parsed = [(score, p) for score, p in parsed if p is not None and _score_pair(score)]
+        if not parsed:
+            continue
+        mx = max(p for _, p in parsed)
+        for score, p in parsed:
+            out.append(_signal(
+                f"state|{cp}|{score}", "game_state", score,
+                _state_strength(p, mx), checkpoint=cp,
+                label=f"Po {cp} gemach · {score}", raw_probability=p,
+            ))
+
+
+def _add_exact(out: list[dict], obj: Any, market: str, prefix: str):
+    if not isinstance(obj, dict) or not obj:
+        return
+    parsed = [(str(score), _pct(value)) for score, value in obj.items()]
+    parsed = [(score, p) for score, p in parsed if p is not None and _score_pair(score)]
+    if not parsed:
+        return
+    mx = max(p for _, p in parsed)
+    for score, p in parsed:
+        out.append(_signal(
+            f"{market}|{score}", market, score, _state_strength(p, mx),
+            label=f"{prefix} · {score}", raw_probability=p,
+        ))
+
+
+def _add_set_count_ladder(out: list[dict], obj: Any):
+    if not isinstance(obj, dict) or not obj:
+        return
+    counts = {}
+    for key, value in obj.items():
+        m = re.search(r"(\d+)", str(key))
+        p = _pct(value)
+        if not m or p is None:
+            continue
+        counts[int(m.group(1))] = p
+    if len(counts) < 2:
+        return
+    lo, hi = min(counts), max(counts)
+    for n in range(lo, hi):
+        ln = n + 0.5
+        over = sum(p for count, p in counts.items() if count > ln)
+        under = sum(p for count, p in counts.items() if count < ln)
+        z = over + under
+        if z <= 0:
+            continue
+        over = 100.0 * over / z
+        under = 100.0 * under / z
+        out.append(_signal(
+            f"total_sets|{ln:g}|over", "total_sets", "over", over,
+            line=ln, label=f"Liczba setów · O{ln:g}", raw_probability=over,
+        ))
+        out.append(_signal(
+            f"total_sets|{ln:g}|under", "total_sets", "under", under,
+            line=ln, label=f"Liczba setów · U{ln:g}", raw_probability=under,
+        ))
+
+
+def _add_tiebreak_from_exact(out: list[dict], exact_first_set: Any):
+    if not isinstance(exact_first_set, dict):
+        return
+    yes = 0.0
+    total = 0.0
+    for score, value in exact_first_set.items():
+        pair = _score_pair(score)
+        p = _pct(value)
+        if pair is None or p is None:
+            continue
+        total += p
+        if set(pair) == {6, 7}:
+            yes += p
+    if total <= 0:
+        return
+    yes = 100.0 * yes / total
+    no = 100.0 - yes
+    out.append(_signal(
+        "set1_tiebreak|yes", "set1_tiebreak", "yes", yes,
+        label="Tie-break w 1. secie · TAK", raw_probability=yes,
+    ))
+    out.append(_signal(
+        "set1_tiebreak|no", "set1_tiebreak", "no", no,
+        label="Tie-break w 1. secie · NIE", raw_probability=no,
+    ))
+
+
+def _add_serve_props(out: list[dict], match: dict):
+    props = match.get("serve_props_v72") or {}
+    if not isinstance(props, dict) or not props.get("ready"):
+        return
+    for side in ("p1", "p2"):
+        player = str(match.get(side) or side)
+        block = props.get(side) or {}
+        for field, market, title in (
+            ("aces", "player_aces", "Asy"),
+            ("double_faults", "player_double_faults", "Podwójne błędy"),
+        ):
+            market_block = block.get(field) or {}
+            lines = market_block.get("lines") or {}
+            if not isinstance(lines, dict):
+                continue
+            for raw_line, probs in lines.items():
+                ln = _line(raw_line)
+                if ln is None or not isinstance(probs, dict):
+                    continue
+                for ou in ("over", "under"):
+                    p = _pct(probs.get(ou))
+                    if p is None:
+                        continue
+                    short = "O" if ou == "over" else "U"
+                    out.append(_signal(
+                        f"{market}|{side}|{ln:g}|{ou}", market, ou, p,
+                        line=ln,
+                        label=f"{title} · {player} · {short}{ln:g}",
+                        raw_probability=p,
+                        source="serve_props_v72",
+                    ))
+
+
+def build_market_catalog(match: dict) -> list[dict]:
+    """Return every market already calculated by Tenis AI that Symphony can see."""
+    out: list[dict] = []
+    _add_states(out, match.get("game_states"))
+    _add_player_map(out, match.get("match_win"), "match_winner", "Wygra mecz")
+    _add_player_map(out, match.get("first_set_win"), "set1_winner", "Wygra 1. set")
+    _add_player_map(out, match.get("second_set_win"), "set2_winner", "Wygra 2. set")
+    _add_player_map(out, match.get("third_set_win"), "set3_winner", "Wygra 3. set")
+    _add_ou_ladder(out, match.get("over_under"), "set1_total", "1. set · gemy")
+    _add_ou_ladder(out, match.get("match_over_under"), "match_total", "Mecz · gemy")
+    _add_exact(out, match.get("exact_first_set"), "set1_exact_score", "Dokładny wynik 1. seta")
+    _add_exact(out, match.get("exact_match_score"), "exact_match_score", "Dokładny wynik meczu")
+    _add_set_count_ladder(out, match.get("total_sets"))
+    _add_tiebreak_from_exact(out, match.get("exact_first_set"))
+    _add_serve_props(out, match)
+    return out
+
+
+def _family(signal: dict):
+    market = str(signal.get("market") or "other")
+    if market == "game_state":
+        return f"game_state:{int(_num(signal.get('checkpoint'), 0) or 0)}"
+    if market in {"player_aces", "player_double_faults"}:
+        parts = str(signal.get("key") or "").split("|")
+        side = parts[1] if len(parts) > 1 else "?"
+        return f"{market}:{side}"
+    return market
+
+
+def composer_catalog(catalog: list[dict]) -> list[dict]:
+    """Bound the combinatorial pool without losing scenario diversity.
+
+    The full catalogue is retained in report metadata. Composer input keeps the
+    most informative members of each family instead of twenty nearly-identical
+    easy over/under lines.
+    """
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for row in catalog:
+        groups[_family(row)].append(row)
+
+    out = []
+    for family, rows in groups.items():
+        market = str(rows[0].get("market") or "")
+        if market == "game_state":
+            rows.sort(key=lambda x: float(x.get("symphony_raw_probability") or 0), reverse=True)
+            out.extend(rows[:3])
+            continue
+        if market in {"set1_exact_score", "exact_match_score"}:
+            rows.sort(key=lambda x: float(x.get("symphony_raw_probability") or 0), reverse=True)
+            out.extend(rows[:4])
+            continue
+        if market in {"set1_total", "match_total", "total_sets", "player_aces", "player_double_faults"}:
+            # Prefer meaningful central lines: not coin-flip noise, not near-certain
+            # edge lines. Keep up to four candidates per family.
+            rows.sort(key=lambda x: (
+                abs(float(x.get("symphony_raw_probability") or 50) - 68.0),
+                -float(x.get("score") or 0),
+            ))
+            out.extend(rows[:4])
+            continue
+        out.extend(rows)
+    return out
+
+
+def _signature(signal: dict):
+    return (
+        _norm(signal.get("market")),
+        _norm(signal.get("pick")),
+        _line(signal.get("line")),
+        int(_num(signal.get("checkpoint"), 0) or 0),
+    )
+
+
+def augment_match(match: dict) -> tuple[dict, dict]:
+    """Clone a match and add missing market signals for Symphony only."""
+    cloned = deepcopy(match)
+    auto = dict(cloned.get("autolearn_v84") or {})
+    existing = [dict(x) for x in (auto.get("signals") or []) if isinstance(x, dict)]
+    seen = {_signature(x) for x in existing}
+
+    full = build_market_catalog(match)
+    compose = composer_catalog(full)
+    added = []
+    for row in compose:
+        sig = _signature(row)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        existing.append(row)
+        added.append(row)
+
+    auto["signals"] = existing
+    cloned["autolearn_v84"] = auto
+    meta_by_key = {str(x.get("key") or ""): x for x in full if x.get("key")}
+    stats = defaultdict(int)
+    for row in full:
+        stats[_family(row)] += 1
+    return cloned, {
+        "version": VERSION,
+        "catalog_size": len(full),
+        "composer_added": len(added),
+        "existing_signals": len(existing) - len(added),
+        "families": dict(sorted(stats.items())),
+        "by_key": meta_by_key,
+    }
