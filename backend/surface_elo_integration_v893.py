@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 try:
-    from .player_intelligence_v85 import _load_long_df
+    from .player_intelligence_v85 import _load_long_df, _key as _player_key
     from .player_model_shadow_v89 import (
         NUMERIC_FEATURES as PI_NUMERIC,
         CATEGORICAL_FEATURES as PI_CATEGORICAL,
@@ -25,7 +25,7 @@ try:
     )
     from .ensemble_player_learning_v891 import learn_policy, alpha_for_row, _blend as player_blend
 except ImportError:
-    from player_intelligence_v85 import _load_long_df
+    from player_intelligence_v85 import _load_long_df, _key as _player_key
     from player_model_shadow_v89 import (
         NUMERIC_FEATURES as PI_NUMERIC,
         CATEGORICAL_FEATURES as PI_CATEGORICAL,
@@ -182,11 +182,12 @@ class EloIndex:
         return timeline[i] if i >= 0 else None
 
     def player(self, name, surface, as_of):
+        player_key = _player_key(name)
         day, surf = self._day(as_of), _surface(surface)
-        if day is None or not name:
+        if day is None or not player_key:
             return {"general": BASE, "surface": BASE, "blended": BASE, "general_n": 0, "surface_n": 0}
-        gp = self._last(self.g.get(name, []), self.gdates.get(name, []), day)
-        sp = self._last(self.s.get((name, surf), []), self.sdates.get((name, surf), []), day)
+        gp = self._last(self.g.get(player_key, []), self.gdates.get(player_key, []), day)
+        sp = self._last(self.s.get((player_key, surf), []), self.sdates.get((player_key, surf), []), day)
         g = _decay(gp[1], gp[0], day) if gp else BASE
         s = _decay(sp[1], sp[0], day) if sp else BASE
         ng, ns = (gp[2] if gp else 0), (sp[2] if sp else 0)
