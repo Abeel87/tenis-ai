@@ -1,5 +1,6 @@
-/* Tenis AI v8.8.9 — CORE market quality layer
-   v8.8.7 checkpoint lock + v8.8.8 winner lock + v8.8.9 result-market lock.
+/* Tenis AI v8.8.10 — CORE market quality layer
+   v8.8.7 checkpoint lock + v8.8.8 winner lock + v8.8.9 result-market lock
+   + v8.8.10 cross-view recommendation source.
    Selection/presentation only: model probabilities, Adaptive PROD math,
    Dynamic Weights and stored telemetry are never modified.
 */
@@ -9,6 +10,7 @@
 const CHECKPOINT_VERSION='v8.8.7';
 const WINNER_VERSION='v8.8.8';
 const RESULT_VERSION='v8.8.9';
+const CROSS_VIEW_VERSION='v8.8.10';
 
 const CP_MIN_SETTLED=30;
 const CP_MIN_ACCURACY=65;
@@ -36,10 +38,14 @@ const state={
   api:null,
   rawAllSignals:null,
   rawSignals:null,
-  coreEventDepth:0
+  coreEventDepth:0,
+  legacyBridgeInstalled:false,
+  legacyRerenderDone:false
 };
 
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
+const qEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const qCls=x=>x==null?'':x>=80?'elite':x>=72?'good':x<55?'warn':'';
 
 function wilsonLower(hits,n){
   hits=num(hits);n=num(n);
@@ -168,6 +174,60 @@ function installModelGate(){
   return true;
 }
 
+function finalSelectedSignals(match,limit=3){
+  const api=window.TENIS_AI_MODEL_API;
+  if(!api||typeof api.signals!=='function')return [];
+  const wanted=Math.max(1,Number(limit)||3);
+  try{return (api.signals(match,Math.max(wanted,3))||[]).slice(0,wanted)}catch{return []}
+}
+
+function signalDisplayLabel(signal){
+  const votes=Number(signal?.votes);
+  const prefix=Number.isFinite(votes)&&votes>0?`${votes}/5 · `:'';
+  return `${prefix}${String(signal?.label||signal?.pick||signal?.key||'Sygnał')}`;
+}
+
+function legacyPill(signal){
+  const v=num(signal?.v);
+  if(v==null)return '';
+  return `<div class="market ${qCls(v)}"><span>${qEsc(signalDisplayLabel(signal))}</span><b>${Math.round(v)} / 100</b></div>`;
+}
+
+function installLegacyRecommendationBridge(){
+  if(state.legacyBridgeInstalled)return false;
+  if(!window.TENIS_AI_MODEL_API||typeof window.TENIS_AI_MODEL_API.signals!=='function')return false;
+
+  // app.js and multi-model.js used to keep their own raw "strongest" path.
+  // Replace only presentation helpers so cards use the same FINAL + Quality
+  // source as Decision Center and Generator. Model math remains untouched.
+  if(typeof window.bestSignalsData==='function'){
+    window.bestSignalsData=(match,limit=3)=>finalSelectedSignals(match,limit).map(x=>({label:signalDisplayLabel(x),v:x.v,market:x.market,pick:x.pick,key:x.key}));
+  }
+  if(typeof window.bestSignals==='function'){
+    window.bestSignals=match=>{
+      const top=finalSelectedSignals(match,3);
+      if(!top.length)return '';
+      return `<div class="signals"><div class="signals-title">FINAL Adaptive PROD · Quality Lock</div><div class="signals-grid">${top.map(legacyPill).join('')}</div></div>`;
+    };
+  }
+  if(typeof window.compactSignals==='function'){
+    window.compactSignals=match=>{
+      const top=finalSelectedSignals(match,2);
+      if(!top.length)return '';
+      return `<div class="compact-signals">${top.map(x=>`<span class="compact-signal ${qCls(x.v)}">${qEsc(signalDisplayLabel(x))} <b>${Math.round(Number(x.v))}</b></span>`).join('')}</div>`;
+    };
+  }
+
+  state.legacyBridgeInstalled=true;
+
+  // If cards were rendered unusually early, do exactly one controlled refresh.
+  if(!state.legacyRerenderDone&&document.querySelector('#app .match-card')&&typeof window.renderMatches==='function'){
+    state.legacyRerenderDone=true;
+    queueMicrotask(()=>{try{window.renderMatches()}catch{}});
+  }
+  return true;
+}
+
 function activeScenarioProfile(){
   return String(document.querySelector('#scenario-v82a-panel .sc82-profiles .active[data-sc-profile]')?.dataset.scProfile||'balanced').toLowerCase();
 }
@@ -184,14 +244,14 @@ function beginCoreEvent(){
 
 function wrapProjectOpen(){
   const api=window.TENIS_AI_PROJECT_UI;
-  if(!api||api.__marketQualityV889||typeof api.openMatch!=='function')return;
+  if(!api||api.__marketQualityV8810||typeof api.openMatch!=='function')return;
   const open=api.openMatch;
   api.openMatch=(...args)=>{
     const result=open.apply(api,args);
     queueMicrotask(patchDecisionCenters);
     return result;
   };
-  Object.defineProperty(api,'__marketQualityV889',{value:true,configurable:false});
+  Object.defineProperty(api,'__marketQualityV8810',{value:true,configurable:false});
 }
 
 function checkpointStatusText(){
@@ -227,7 +287,7 @@ function patchScenarioNote(){
     note.dataset.v887CheckpointNote='1';
     builder.appendChild(note);
   }
-  note.innerHTML='<b>🔒 CORE Market Quality Lock:</b> checkpoint 2/4/6g wymaga PBP + ≥65% (n≥30, Wilson ≥45%); zwycięzca meczu/setu i liczba setów wymagają FINAL Adaptive PROD ≥65% (n≥30, Wilson ≥45%). Manual i Model Test/SHADOW zachowują pełne rynki. <span data-v889-status></span>';
+  note.innerHTML='<b>🔒 CORE Market Quality Lock:</b> checkpoint 2/4/6g wymaga PBP + ≥65% (n≥30, Wilson ≥45%); zwycięzca meczu/setu i liczba setów wymagają FINAL Adaptive PROD ≥65% (n≥30, Wilson ≥45%). Karty meczu, Top i Generator korzystają z jednego źródła FINAL. Manual i Model Test/SHADOW zachowują pełne rynki. <span data-v889-status></span>';
   const span=note.querySelector('[data-v889-status]');
   if(span)span.textContent=state.telemetryLoaded?`Checkpointy: ${checkpointStatusText()}. Rynki wyniku: ${resultStatusText()}.`:'Telemetria: ładowanie…';
 }
@@ -294,6 +354,7 @@ function loadTelemetry(){
 
 function patchAll(){
   installModelGate();
+  installLegacyRecommendationBridge();
   wrapProjectOpen();
   patchScenarioNote();
   patchDecisionCenters();
@@ -345,5 +406,11 @@ window.TENIS_AI_RESULT_QUALITY_V889=Object.freeze({
   eligible:resultEligible,
   signalEligible,
   telemetry:()=>state.telemetry
+});
+
+window.TENIS_AI_CROSS_VIEW_QUALITY_V8810=Object.freeze({
+  version:CROSS_VIEW_VERSION,
+  selected:finalSelectedSignals,
+  bridge:installLegacyRecommendationBridge
 });
 })();
