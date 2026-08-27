@@ -18,7 +18,7 @@ def main():
     helper=read("backend/game_state_tracking_v84e1.py")
     auto=read("backend/autolearn_v84.py")
     hist=read("backend/history_tracker.py")
-    settle=read("backend/live_history_settle.py")
+    settle=read("backend/live_history_settle.py") + read("backend/signal_settlement.py")
     pbp=read("backend/pbp_tracker.py")
     wf=read(".github/workflows/update-and-pages.yml")
 

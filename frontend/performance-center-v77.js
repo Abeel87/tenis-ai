@@ -301,6 +301,7 @@
       <p class="pc77-final-note"><b>Pamiętaj:</b> skuteczność historyczna nie gwarantuje kolejnego wyniku. Najpierw patrz na wielkość próbki, potem na procent.</p>
     </section>`;
     bind();
+    document.dispatchEvent(new CustomEvent('tenis-ai:stats-ready'));
   }
 
   function bind(){
@@ -308,11 +309,13 @@
     document.querySelectorAll('[data-pc77]').forEach(el=>el.onchange=()=>{const k=el.dataset.pc77;state[k]=k==='minSample'?Number(el.value):el.value;saveState();renderPage(extras)});
   }
 
+  let renderRequest=0;
   function performanceRender(){
+    const request=++renderRequest;
     const app=document.querySelector('#app');
     if(!app)return;
     app.innerHTML='<div class="pc77-loading"><b>📊 Model Performance Center</b><span>Liczymy segmenty i walidację…</span></div>';
-    loadExtras().then(ex=>{try{renderPage(ex)}catch(err){console.error('Performance Center',err);legacyRenderStats()}}).catch(()=>legacyRenderStats());
+    return loadExtras().then(ex=>{if(request!==renderRequest||!app.querySelector('.pc77-loading'))return;try{renderPage(ex)}catch(err){console.error('Performance Center',err);legacyRenderStats()}}).catch(()=>legacyRenderStats());
   }
 
   renderStats=performanceRender;

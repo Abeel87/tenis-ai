@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+try:
+    from .history_sampling import unique_signals
+except ImportError:
+    from history_sampling import unique_signals
+
 from datetime import datetime, timezone
 from math import sqrt
 
@@ -75,7 +80,7 @@ def _settled(entries, predicate=None):
     for entry in entries or []:
         if predicate is not None and not predicate(entry):
             continue
-        for signal in entry.get("signals") or []:
+        for signal in unique_signals(entry):
             if signal.get("result") in ("hit", "miss"):
                 out.append((entry, signal))
     return out

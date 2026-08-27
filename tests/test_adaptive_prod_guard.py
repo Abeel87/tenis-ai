@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timezone
 
 from backend.adaptive_learning_v79 import (
     MODE,
@@ -154,6 +155,8 @@ def test_ensemble_tracking_is_separate_from_base_official_counter():
 def test_pending_history_freezes_raw_and_final_once_without_future_leakage():
     early_cells = build_cells([_row(0) for _ in range(6)])
     pending = [{
+        "status": "pending",
+        "scheduled_time": "2026-08-27T12:00:00Z",
         "tour": "ATP",
         "surface": "hard",
         "autolearn_signals_v84": [{
@@ -170,7 +173,7 @@ def test_pending_history_freezes_raw_and_final_once_without_future_leakage():
         }],
     }]
 
-    first = decorate_frozen_history(pending, early_cells)
+    first = decorate_frozen_history(pending, early_cells, now=datetime(2026,8,27,10,tzinfo=timezone.utc))
     frozen = first[0]["autolearn_signals_v84"][0]
     assert frozen["score"] == frozen["ensemble_raw"] == frozen["raw_score"] == 90.0
     assert frozen["final_score"] < 90.0
@@ -180,3 +183,15 @@ def test_pending_history_freezes_raw_and_final_once_without_future_leakage():
     strong_cells = build_cells([_row(1) for _ in range(20)])
     second = decorate_frozen_history(first, strong_cells)
     assert second[0]["autolearn_signals_v84"][0] == frozen
+
+
+def test_final_is_not_backfilled_after_start_or_settlement():
+    now = datetime(2026,8,27,12,tzinfo=timezone.utc)
+    for status, scheduled in (("settled", "2026-08-27T14:00:00Z"),
+                              ("pending", "2026-08-27T11:00:00Z"),
+                              ("pending", None)):
+        history = [{"status": status, "scheduled_time": scheduled,
+                    "autolearn_signals_v84": [{"market":"match_total", "pick":"over", "line":18.5,
+                                                "result":"pending", "score":75}]}]
+        before = deepcopy(history)
+        assert decorate_frozen_history(history, {}, now=now) == before

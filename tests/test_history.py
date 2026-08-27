@@ -55,6 +55,23 @@ def test_stale_match_filter():
     assert not is_current_match(m, now=now, grace_minutes=30)
 
 
+def test_base_refresh_preserves_other_frozen_model_layers():
+    from copy import deepcopy
+    now = datetime(2026,8,20,10,tzinfo=timezone.utc)
+    match = sample_match()
+    history = archive_predictions([], [match], now=now)
+    frozen = {'market':'set1_total','pick':'over','line':8.5,'result':'pending',
+              'model_scores':{'ensemble':80},'adaptive_prod_v79':{'final_score':76}}
+    history[0]['autolearn_signals_v84'] = [frozen]
+    history[0]['autolearn_captured_at'] = 'original'
+    original = deepcopy(history)
+    match['over_under']['8.5']['over'] = 90
+    updated = archive_predictions(history,[match],now=now)
+    assert updated[0]['autolearn_signals_v84'] == [frozen]
+    assert updated[0]['autolearn_captured_at'] == 'original'
+    assert history == original
+
+
 def test_parse_and_settle_normal_match():
     entry = {'p1': 'Player One', 'p2': 'Player Two'}
     row = pd.Series({'winner_name': 'Player One', 'loser_name': 'Player Two', 'score': '6-4 3-6 6-3'})

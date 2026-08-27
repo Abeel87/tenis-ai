@@ -47,3 +47,23 @@ def test_v84c_segments_and_agreement_are_separate_from_production_weights():
     assert report["segments_30d"]["surface"]["HARD"]["serve"]["selected_n"] == 1
     assert report["agreement"]["specialists"]["strong_consensus"]["n"] == 1
     assert report["agreement"]["ml"]["strong_consensus"]["n"] == 1
+
+
+def test_final_is_tracked_separately_without_synthesizing_legacy_final():
+    from copy import deepcopy
+    from backend.autolearn_v84 import tracking_stats
+    from backend.model_telemetry_v84c import collect_rows
+    history = demo_history()
+    legacy = deepcopy(history[0])
+    legacy['match_key'] = 'legacy'
+    history[0]['autolearn_signals_v84'][0]['adaptive_prod_v79'] = {'final_score':62}
+    history.append(legacy)
+    rows = collect_rows(history)
+    final = [r for r in rows if r['model']=='adaptive_prod']
+    assert len(final) == 1 and final[0]['score'] == 62
+    raw = [r for r in rows if r['model']=='ensemble']
+    assert len(raw) == 2 and all(r['score']==74 for r in raw)
+    track = tracking_stats(history)
+    assert track['adaptive_prod']['n'] == 1
+    assert track['adaptive_prod']['selected_n'] == 0
+    assert track['ensemble']['n'] == 2

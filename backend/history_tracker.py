@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+try:
+    from .history_sampling import unique_signals
+except ImportError:
+    from history_sampling import unique_signals
+
 import json
 import re
 import unicodedata
@@ -7,6 +12,11 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
+
+try:
+    from .signal_settlement import settle_signal, settle_layers, reconcile_settled
+except ImportError:
+    from signal_settlement import settle_signal, settle_layers, reconcile_settled
 
 try:
     from .game_state_tracking_v84e1 import learning_signals as game_state_learning_signals
@@ -145,6 +155,9 @@ def archive_predictions(entries: list[dict], matches: list[dict], now: datetime 
         signals = extract_green_signals(match)
         first_captured = (current or {}).get('first_captured_at') or now.isoformat()
         by_key[key] = {
+            # Other models freeze their own snapshot once. Refreshing the base
+            # forecast must not erase their scores or per-model capture times.
+            **(current or {}),
             'match_key': key,
             'match_id': match.get('id'),
             'scheduled_time': match.get('scheduled_time'),
@@ -306,55 +319,6 @@ def parse_final_row(row, entry: dict) -> dict | None:
     }
 
 
-def settle_signal(signal: dict, final: dict) -> str:
-    if final.get('status') != 'completed':
-        return 'void'
-
-    market = signal.get('market')
-    pick = str(signal.get('pick') or '')
-    sets = final.get('sets') or []
-
-    if market == 'game_state':
-        return 'unverifiable'
-    if market == 'match_winner':
-        return 'hit' if _key(pick) == _key(final.get('winner')) else 'miss'
-    if market in ('set1_winner', 'set2_winner', 'set3_winner'):
-        idx = {'set1_winner': 0, 'set2_winner': 1, 'set3_winner': 2}[market]
-        if len(sets) <= idx:
-            return 'void'
-        a, b = sets[idx]
-        actual = final.get('p1') if False else None
-        # final sets are p1:p2; use the signal entry's player names supplied below.
-        p1 = final.get('p1')
-        p2 = final.get('p2')
-        if not p1 or not p2:
-            return 'void'
-        actual = p1 if a > b else p2
-        return 'hit' if _key(pick) == _key(actual) else 'miss'
-    if market == 'total_sets':
-        wanted = 2 if pick.startswith('2') else (3 if pick.startswith('3') else None)
-        return 'hit' if wanted == final.get('number_of_sets') else 'miss' if wanted else 'void'
-    if market == 'exact_match':
-        return 'hit' if pick == final.get('match_score') else 'miss'
-    if market == 'set1_total':
-        if not sets:
-            return 'void'
-        total = sum(sets[0])
-        line = float(signal.get('line'))
-        ok = total > line if pick == 'over' else total < line
-        return 'hit' if ok else 'miss'
-    if market == 'match_total':
-        total = final.get('total_games')
-        if total is None:
-            return 'void'
-        line = float(signal.get('line'))
-        ok = total > line if pick == 'over' else total < line
-        return 'hit' if ok else 'miss'
-    if market == 'exact_set1':
-        return 'hit' if pick == final.get('first_set_score') else 'miss'
-    return 'unverifiable'
-
-
 def settle_history(entries: list[dict], hist: pd.DataFrame, now: datetime | None = None,
                    min_age_minutes: int = 75) -> list[dict]:
     now = now or datetime.now(timezone.utc)
@@ -377,14 +341,9 @@ def settle_history(entries: list[dict], hist: pd.DataFrame, now: datetime | None
         entry['result'] = final
         entry['settled_at'] = now.isoformat()
         entry['status'] = 'void' if final.get('status') == 'void' else 'settled'
-        signals = []
-        for signal in entry.get('signals') or []:
-            signal = dict(signal)
-            signal['result'] = settle_signal(signal, final)
-            signals.append(signal)
-        entry['signals'] = signals
+        entry = settle_layers(entry, final, 'historical match result')
         out.append(entry)
-    return out
+    return reconcile_settled(out)
 
 
 def _bucket(score: float) -> str:
@@ -404,7 +363,7 @@ def history_stats(entries: list[dict]) -> dict:
 
     for entry in entries:
         is_current = entry.get('model_version') == MODEL_VERSION
-        for signal in entry.get('signals') or []:
+        for signal in unique_signals(entry):
             if signal.get('result') not in ('hit', 'miss'):
                 continue
             pair = (entry, signal)
@@ -416,6 +375,7 @@ def history_stats(entries: list[dict]) -> dict:
         total = len(items)
         return {
             'settled': total,
+            'matches': len({e.get('match_key') or e.get('match_id') or (e.get('p1'), e.get('p2'), e.get('scheduled_time')) for e, _ in items}),
             'hits': hits,
             'misses': total - hits,
             'accuracy': round(hits * 100 / total, 1) if total else None,
@@ -442,6 +402,8 @@ def history_stats(entries: list[dict]) -> dict:
 
     return {
         'overall': summarize(current),
+        'sample_policy': 'unique events per model and match; standard set 10.5/11.5 merged; events within a match remain correlated',
+        'raw_settled_signals': sum(s.get('result') in ('hit', 'miss') for e in current_entries for s in e.get('signals') or []),
         'current_model_version': MODEL_VERSION,
         'legacy_overall': summarize(legacy),
         'all_versions_overall': summarize(all_settled),

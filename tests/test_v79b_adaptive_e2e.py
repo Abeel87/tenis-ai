@@ -100,7 +100,9 @@ def test_v79b_frontend_is_static_and_visible_before_domcontentloaded():
 def test_specialist_signals_are_settled_and_workflow_runs_before_adaptive():
     settle = (ROOT / "backend/live_history_settle.py").read_text(encoding="utf-8")
     flow = (ROOT / ".github/workflows/update-and-pages.yml").read_text(encoding="utf-8")
-    assert 'learning_signals_v79b' in settle
+    assert 'settle_layers(x, final' in settle
+    from signal_settlement import SIGNAL_LAYERS
+    assert 'learning_signals_v79b' in SIGNAL_LAYERS
     capture_pos = flow.index("Capture specialist learning v7.9B")
     settle_pos = flow.index("Settle history from Live Tennis API")
     adaptive_pos = flow.index("Adaptive Learning v7.9B")

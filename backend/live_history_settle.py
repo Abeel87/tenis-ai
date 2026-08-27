@@ -8,7 +8,8 @@ from pathlib import Path
 import requests
 
 from api_quota_v83b import quota_budget, record_calls
-from history_tracker import history_stats, settle_signal
+from history_tracker import history_stats
+from signal_settlement import settle_signal_live, settle_layers, reconcile_settled, SIGNAL_LAYERS
 from shadow_lab_v78e6 import SHADOW_STATS_PATH, build_shadow_stats
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -174,67 +175,6 @@ def final_from_match(match: dict, entry: dict):
     }
 
 
-def settle_signal_live(signal: dict, final: dict) -> str:
-    status = final.get("status")
-    if status == "completed":
-        return settle_signal(signal, final)
-    if status == "void":
-        return "void"
-    if status != "retired":
-        return "unverifiable"
-
-    market = signal.get("market")
-    pick = str(signal.get("pick") or "")
-    sets = final.get("sets") or []
-    complete = final.get("completed_sets") or []
-    p1, p2 = final.get("p1"), final.get("p2")
-
-    if market == "game_state":
-        return "unverifiable"
-    if market in ("match_winner", "total_sets", "exact_match", "match_total"):
-        return "void"
-
-    if market in ("set1_winner", "set2_winner", "set3_winner"):
-        idx = {"set1_winner": 0, "set2_winner": 1, "set3_winner": 2}[market]
-        if len(sets) <= idx or len(complete) <= idx or not complete[idx] or not p1 or not p2:
-            return "void"
-        a, b = sets[idx]
-        if a == b:
-            return "void"
-        actual = p1 if a > b else p2
-        from history_tracker import _key
-        return "hit" if _key(pick) == _key(actual) else "miss"
-
-    if market == "set1_total":
-        if not sets or not complete or not complete[0]:
-            return "void"
-        total = sum(sets[0])
-        try:
-            line = float(signal.get("line"))
-        except (TypeError, ValueError):
-            return "void"
-        ok = total > line if pick == "over" else total < line
-        return "hit" if ok else "miss"
-
-    if market == "exact_set1":
-        if not sets or not complete or not complete[0]:
-            return "void"
-        actual = f"{sets[0][0]}:{sets[0][1]}"
-        return "hit" if pick == actual else "miss"
-
-    return "unverifiable"
-
-
-def _settle_signal_list(rows, final):
-    out = []
-    for s in rows or []:
-        s = dict(s)
-        s["result"] = settle_signal_live(s, final)
-        s["settlement_source"] = "Live Tennis API"
-        out.append(s)
-    return out
-
-
 def settle_entry(entry: dict, final: dict, now: datetime):
     x = dict(entry)
     x["result"] = final
@@ -244,17 +184,7 @@ def settle_entry(entry: dict, final: dict, now: datetime):
     x["status"] = "void" if final.get("status") == "void" else "settled"
     x.pop("live_status", None)
     x.pop("live_status_updated_at", None)
-    x["signals"] = _settle_signal_list(x.get("signals"), final)
-    if "shadow_signals" in x:
-        x["shadow_signals"] = _settle_signal_list(x.get("shadow_signals"), final)
-    if "learning_signals_v79b" in x:
-        x["learning_signals_v79b"] = _settle_signal_list(x.get("learning_signals_v79b"), final)
-    if "autolearn_signals_v84" in x:
-        x["autolearn_signals_v84"] = _settle_signal_list(x.get("autolearn_signals_v84"), final)
-    if "game_state_learning_v84e1" in x:
-        x["game_state_learning_v84e1"] = _settle_signal_list(
-            x.get("game_state_learning_v84e1"), final
-        )
+    x = settle_layers(x, final, "Live Tennis API")
     return x
 
 
@@ -284,13 +214,14 @@ def main():
     if not isinstance(meta, dict):
         meta = {}
 
+    hist = reconcile_settled(hist)
     candidates = []
     for i, e in enumerate(hist):
         migration = _needs_retirement_migration(e)
         normal_pending = e.get("status") in ("pending", "upcoming")
         if not (normal_pending or migration) or e.get("match_id") is None:
             continue
-        if not migration and not (e.get("signals") or e.get("shadow_signals")):
+        if not migration and not any(e.get(layer) for layer in SIGNAL_LAYERS):
             continue
         scheduled = _dt(e.get("scheduled_time"))
         if scheduled is None or scheduled > now - timedelta(minutes=MIN_AGE_MINUTES):

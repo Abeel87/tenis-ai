@@ -17,7 +17,7 @@ def test_v882_stats_feed_selection_only():
     s=t("frontend/v882-cleanup.js")
     assert "TENIS_AI_PERFORMANCE_V882" in s
     assert "priorFor" in s
-    assert "Nie zmieniają FINAL probability" in s
+    assert "Nie zmieniają oceny FINAL" in s
 
 def test_v882_stats_tabs_and_charts():
     s=t("frontend/v882-cleanup.js")

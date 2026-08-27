@@ -77,41 +77,12 @@ function buildRows(m){
 
   objectMarket('result','match_win','Kto wygra mecz',m.match_win);
 
-  // v8.8 MATCH WINNER FALLBACK
-  if(!out.some(x=>x.market==='match_win')){
-    const pools=[
-      m?.autolearn_v84?.signals,
-      m?.adaptive_learning_v79?.signals
-    ];
-
-    pools.flatMap(x=>Array.isArray(x)?x:[]).forEach(s=>{
-      if(alias(s?.market)!=='match_win')return;
-
-      const prod=s?.adaptive_prod_v79||{};
-      const pick=String(s?.pick||'').trim();
-
-      const value=number(
-        s?.final_score ??
-        s?.adaptive_prod_score ??
-        prod?.final_score ??
-        s?.ensemble ??
-        s?.current ??
-        s?.raw_score ??
-        s?.score ??
-        s?.v
-      );
-
-      if(pick&&value!=null){
-        add({
-          category:'result',
-          market:'match_win',
-          label:'Kto wygra mecz',
-          pick,
-          base:value
-        });
-      }
-    });
-  }
+  // Missing base probabilities must not be fabricated from a candidate score.
+  (m?.autolearn_v84?.signals||[]).forEach(signal=>{
+    if(alias(signal.market)==='match_win'&&!out.some(row=>row.market==='match_win'&&norm(row.pick)===norm(signal.pick))){
+      add({category:'result',market:'match_win',label:'Kto wygra mecz',pick:signal.pick});
+    }
+  });
   objectMarket('result','set1_win','Kto wygra 1. set',m.first_set_win);
   objectMarket('result','set2_win','Kto wygra 2. set',m.second_set_win);
   objectMarket('result','set3_win','Kto wygra 3. set',m.third_set_win);
@@ -123,8 +94,9 @@ function buildRows(m){
   ['2','4','6'].forEach(games=>{
     const values=m.game_states?.[games];
     if(!values)return;
-    [['p1_lead',m.p1+' prowadzi'],['draw','Remis'],['p2_lead',m.p2+' prowadzi']].forEach(([pick,displayPick])=>{
-      add({category:'checkpoints',market:'state'+games,label:'Po '+games+' gemach',pick,displayPick,base:aggregateState(values,pick),state:true});
+    Object.entries(values).forEach(([pick,value])=>{
+      add({category:'checkpoints',market:'state'+games,label:'Po '+games+' gemach',
+        pick,displayPick:pick,checkpoint:Number(games),base:number(value),state:true});
     });
   });
 
@@ -197,8 +169,12 @@ function specialistSets(m){
   return out;
 }
 function signalMatches(row,signal){
+  if(row.state){
+    const cp=signal?.checkpoint??String(signal?.market||'').match(/^state([246])$/)?.[1]??String(signal?.key||'').split('|')[1];
+    return ['game_state','state'+row.checkpoint].includes(signal?.market)&&
+      Number(cp)===row.checkpoint&&norm(signal?.pick)===norm(row.pick);
+  }
   if(alias(signal?.market)!==alias(row.market))return false;
-  if(row.state)return stateOf(signal?.pick)===row.pick;
   if(row.market==='player_total_games')return false;
   if(row.line&&signalLine(signal)!==String(row.line))return false;
   return norm(signal?.pick)===norm(row.pick);
@@ -208,15 +184,15 @@ const autoSignal=(row,m)=>findSignal(row,m?.autolearn_v84?.signals);
 const learningSignal=(row,m)=>findSignal(row,m?.adaptive_learning_v79?.signals);
 
 function adaptiveInfo(row,m){
-  const auto=autoSignal(row,m),learning=learningSignal(row,m);
-  const prod=auto?.adaptive_prod_v79||learning?.adaptive_prod_v79||{};
+  const auto=autoSignal(row,m);
+  const prod=auto?.adaptive_prod_v79||{};
   const declaredMode=String(prod.mode||m?.adaptive_learning_v79?.mode||'PROD').toUpperCase();
-  const raw=number(auto?.ensemble_raw??auto?.raw_score??prod.raw_score??learning?.ensemble_raw??learning?.raw_score??auto?.ensemble);
-  const final=number(auto?.final_score??auto?.adaptive_prod_score??prod.final_score??learning?.final_score??learning?.adaptive_prod_score??raw);
+  const raw=number(auto?.ensemble_raw??auto?.raw_score??prod.raw_score??auto?.ensemble);
+  const final=number(auto?.final_score??auto?.adaptive_prod_score??prod.final_score);
   return {
     raw,
     final,
-    delta:number(auto?.adaptive_delta_pp??prod.delta_pp??learning?.adaptive_delta_pp??learning?.delta_pp),
+    delta:number(auto?.adaptive_delta_pp??prod.delta_pp),
     mode:'PROD',
     legacyMode:declaredMode!=='PROD',
     status:String(prod.status||m?.adaptive_learning_v79?.status||'COLLECTING').toUpperCase(),
@@ -240,11 +216,11 @@ function modelValue(row,id,sets,m){
     const found=findSignal(row,sets[id]),score=number(found?.score??found?.v);
     return score==null?null:[score,'/100',row.state?found.pick:''];
   }
-  if(['current','catboost','tabpfn'].includes(id))return number(auto?.[id])==null?null:[number(auto[id]),'%'];
-  if(id==='ensemble')return adaptive.raw==null?null:[adaptive.raw,'%',auto?.dynamic_weighting?.active?'DYN':'RAW'];
+  if(['current','catboost','tabpfn'].includes(id))return number(auto?.[id])==null?null:[number(auto[id]),'/100'];
+  if(id==='ensemble')return adaptive.raw==null?null:[adaptive.raw,'/100',auto?.dynamic_weighting?.active?'DYN':'RAW'];
   if(id==='adaptive-prod'){
-    if(adaptive.final!=null)return[adaptive.final,'%',adaptive.status];
-    return number(row.base)==null?null:[number(row.base),'%','BAZA'];
+    if(adaptive.final!=null)return[adaptive.final,'/100',adaptive.status];
+    return null;
   }
   if(id==='player')return number(auto?.player_intelligence_v85?.shadow_score)==null?null:[number(auto.player_intelligence_v85.shadow_score),'%'];
   if(id==='lab')return number(row.lab)==null?null:[number(row.lab),'%'];
@@ -252,12 +228,9 @@ function modelValue(row,id,sets,m){
   return null;
 }
 function finalScore(row,m,sets){
-  const adaptive=adaptiveInfo(row,m),auto=autoSignal(row,m);
-  const adaptiveBase=findSignal(row,sets.adaptive);
-  const consensus=findSignal(row,sets.consensus);
-  return adaptive.final??adaptive.raw??number(auto?.current)??number(row.base)??number(adaptiveBase?.v)??number(consensus?.score??consensus?.v)??number(row.joint);
+  return adaptiveInfo(row,m).final;
 }
-const scoreText=(value,unit='%')=>number(value)==null?'—':Number(value).toFixed(1).replace('.0','')+unit;
+const scoreText=(value,unit='/100')=>number(value)==null?'—':Number(value).toFixed(1).replace('.0','')+unit;
 const pickText=row=>String(row.displayPick||row.pick||'—').toUpperCase();
 
 function modelCell(row,definition,sets,m){
@@ -285,11 +258,11 @@ function flow(row,m,sets){
   if(info.raw!=null){
     const delta=info.delta==null?'bez przeliczeń w UI':(info.delta>0?'+':'')+info.delta.toFixed(1)+' pp';
     return '<div class="dc87-flow"><span>RAW Ensemble<b>'+scoreText(info.raw)+'</b></span><i>→</i>'+
-      '<span class="after">Po Adaptive<b>'+scoreText(info.final??info.raw)+'</b></span>'+
+      '<span class="after">Po Adaptive<b>'+scoreText(info.final)+'</b></span>'+
       '<em class="'+(info.delta>0?'up':info.delta<0?'down':'')+'">'+esc(delta)+'</em></div>';
   }
-  return '<div class="dc87-flow"><span>Aktualny wynik<b>'+scoreText(score)+'</b></span><i>→</i>'+
-    '<span class="after">Źródło<b>'+(number(row.base)!=null?'Adaptive baza':'model dostępny')+'</b></span><em>bez korekty</em></div>';
+  return '<div class="dc87-flow"><span>Model bazowy<b>'+scoreText(row.base,'%')+'</b></span><i>→</i>'+
+    '<span class="after">Źródło<b>'+(number(row.base)!=null?'Adaptive baza':'N/D')+'</b></span><em>brak FINAL dla tego zdarzenia</em></div>';
 }
 function proStrip(row,sets,m){
   const ids=['current','catboost','tabpfn','ensemble','adaptive-prod','player','lab','joint'];
@@ -326,13 +299,7 @@ function topRows(rows,m,sets){
   const sorted=[...best.values()]
     .sort((a,b)=>b.score-a.score||a.row.order-b.row.order);
 
-  // v8.8 - winner meczu ma pierwszenstwo w TOP.
-  const winner=sorted.find(x=>x.row.market==='match_win');
-  const ordered=winner
-    ? [winner,...sorted.filter(x=>x!==winner)]
-    : sorted;
-
-  return ordered.slice(0,TOP_LIMIT).map(x=>x.row);
+  return sorted.slice(0,TOP_LIMIT).map(x=>x.row);
 }
 function searchable(row,m,sets){
   const models=MODEL_DEFS.filter(def=>modelValue(row,def[0],sets,m)).map(def=>def[1]).join(' ');
@@ -345,7 +312,7 @@ function shell(m,rows){
   const status=String(m?.adaptive_learning_v79?.status||'COLLECTING').toUpperCase();
   return '<section class="dc87" aria-labelledby="dc87-title"><header class="dc87-head"><div>'+
     '<span class="dc87-kicker">Centrum Decyzji Meczu</span><h3 id="dc87-title">Najważniejsze rynki bez szerokiej tabeli</h3>'+
-    '<p>FINAL preferuje wynik po kontrolowanym Adaptive; pełny wkład modeli jest dostępny w każdej karcie.</p></div>'+
+    '<p>FINAL to ocena 0–100 po Adaptive, nie prawdopodobieństwo. Top porównuje wyłącznie FINAL. Brak oceny oznacza N/D; baza jest pokazana osobno.</p></div>'+
     '<div class="dc87-health"><span class="prod">Adaptive '+esc(mode)+' · '+esc(status)+(legacyMode?' · SYNC':'')+'</span>'+
     '<span class="shadow">Player SH · SHADOW</span><span class="shadow">Accuracy Lab v8.6 · SHADOW</span></div></header>'+
     '<div class="dc87-controls"><div class="dc87-modes" role="tablist" aria-label="Tryb Centrum Decyzji">'+
@@ -394,7 +361,7 @@ function currentMatch(raw){
 
 function tidy(m){
   const screen=document.querySelector('.p751-detail-screen');
-  if(!screen)return;
+  if(!screen||screen.querySelector('.dc87'))return;
   screen.querySelector('#eh771-match-compare')?.remove();
   screen.querySelectorAll('[data-p751-models]').forEach(x=>x.remove());
   screen.querySelector('.p751-verdict')?.remove();

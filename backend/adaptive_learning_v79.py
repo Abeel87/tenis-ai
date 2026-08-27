@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+try:
+    from .history_sampling import unique_signals
+except ImportError:
+    from history_sampling import unique_signals
+
 import json
 import math
 from collections import defaultdict
@@ -159,18 +164,18 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
         if not isinstance(entry, dict):
             continue
         if entry.get("model_version") == CURRENT_MODEL_VERSION:
-            for signal in entry.get("signals") or []:
+            for signal in unique_signals(entry, "signals"):
                 row = _training_row(entry, signal, OFFICIAL_WEIGHT)
                 if row:
                     rows.append(row)
-            for signal in entry.get("shadow_signals") or []:
+            for signal in unique_signals(entry, "shadow_signals"):
                 row = _training_row(entry, signal, SHADOW_WEIGHT)
                 if row:
                     rows.append(row)
             # v7.9B: client specialist models are captured pre-match by
             # specialist_learning_v79b.py and settled separately so they do not
             # contaminate the official production accuracy.
-            for signal in entry.get("learning_signals_v79b") or []:
+            for signal in unique_signals(entry, "learning_signals_v79b"):
                 row = _training_row(
                     entry, signal, SPECIALIST_WEIGHT,
                     str(signal.get("source_model") or "specialist"),
@@ -181,7 +186,7 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
             # the same result pipeline. Learn its residual independently so the
             # production correction remains a post-adjustment and never changes
             # Current/CatBoost/TabPFN weights or their raw scores.
-            for signal in entry.get("autolearn_signals_v84") or []:
+            for signal in unique_signals(entry, "autolearn_signals_v84"):
                 row = _training_row(entry, signal, OFFICIAL_WEIGHT, "ensemble_v84")
                 if row:
                     rows.append(row)
@@ -189,7 +194,7 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
     for entry in pbp_history or []:
         if not isinstance(entry, dict) or entry.get("status") != "settled":
             continue
-        for signal in entry.get("signals") or []:
+        for signal in unique_signals(entry, "signals"):
             # PBP tracker scores correctness of the predicted direction; confidence is
             # therefore the comparable "how sure was the model?" quantity.
             copy = dict(signal)
@@ -397,8 +402,17 @@ def _decorate_ensemble_signal(signal: dict, cells: dict, tour="", surface="") ->
     return item
 
 
-def decorate_frozen_history(history: list[dict], cells: dict) -> list[dict]:
-    """Freeze Adaptive PROD beside RAW Ensemble for newly captured predictions."""
+def _dt(value):
+    try:
+        value = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def decorate_frozen_history(history: list[dict], cells: dict, now=None) -> list[dict]:
+    """Freeze Adaptive PROD beside RAW Ensemble only before the scheduled start."""
+    now = now or datetime.now(timezone.utc)
     out = []
     for entry in history or []:
         if not isinstance(entry, dict):
@@ -412,7 +426,10 @@ def decorate_frozen_history(history: list[dict], cells: dict) -> list[dict]:
             # later learning data from leaking into an earlier official score.
             if signal.get("adaptive_prod_v79"):
                 frozen.append(signal)
-            elif signal.get("result") == "pending":
+            elif (signal.get("result") == "pending" and
+                  e.get("status") in ("pending", "upcoming") and
+                  _dt(e.get("scheduled_time")) is not None and
+                  _dt(e.get("scheduled_time")) > now):
                 frozen.append(_decorate_ensemble_signal(
                     signal, cells, e.get("tour"), e.get("surface")
                 ))

@@ -150,24 +150,27 @@
     return out.sort((a,b)=>b.votes-a.votes||b.strongVotes-a.strongVotes||b.v-a.v);
   }
 
-  function selectedSignals(m,limit=20){
-    const rows=activeModel==='consensus'?consensusSignals(m):modelSignals(activeModel,m).sort((a,b)=>b.v-a.v);
-    return rows.filter(x=>x.v>=68).slice(0,limit);
+  function productionSignals(m){
+    const aliases={match_winner:'match_win',set1_winner:'set1_win',set2_winner:'set2_win',set3_winner:'set3_win',exact_match:'exact_match_score'};
+    return (m?.autolearn_v84?.signals||[]).flatMap(signal=>{
+      const value=signal.final_score??signal.adaptive_prod_score??signal.adaptive_prod_v79?.final_score;
+      if(value==null||!Number.isFinite(Number(value)))return [];
+      const market=signal.market==='game_state'?'state'+signal.checkpoint:(aliases[signal.market]||signal.market);
+      if(market==='set1_total'&&Number(signal.line)===11.5)return [];
+      return [{...signal,market,v:Number(value),source_model:'adaptive-prod'}];
+    }).sort((a,b)=>b.v-a.v);
   }
-
-  function selectedName(){return `${META[activeModel]?.icon||''} ${META[activeModel]?.name||activeModel}`.trim()}
+  function selectedSignals(m,limit=20){return productionSignals(m).filter(x=>x.v>=68).slice(0,limit)}
+  function selectedName(){return 'FINAL Adaptive PROD'}
 
   window.TENIS_AI_MODEL_API={
-    version:'v7.7.2',
-    get active(){return activeModel},
+    version:'v8.8.4',
+    get active(){return 'adaptive-prod'},
     activeName:()=>selectedName(),
-    signals:(m,limit=20)=>selectedSignals(m,limit).map(x=>({...x})),
-    allSignals:(m)=>{
-      const rows=activeModel==='consensus'?consensusSignals(m):modelSignals(activeModel,m).sort((a,b)=>b.v-a.v);
-      return rows.map(x=>({...x}));
-    },
+    signals:(m,limit=20)=>selectedSignals(m,limit),
+    allSignals:productionSignals,
     signalsFor:(id,m)=>{
-      const rows=id==='consensus'?consensusSignals(m):modelSignals(id,m).sort((a,b)=>b.v-a.v);
+      const rows=id==='adaptive-prod'?productionSignals(m):id==='consensus'?consensusSignals(m):modelSignals(id,m).sort((a,b)=>b.v-a.v);
       return rows.map(x=>({...x}));
     }
   };
@@ -175,7 +178,7 @@
   bestSignalsData=(m,limit=3)=>selectedSignals(m,limit);
   bestSignals=(m)=>{
     const top=selectedSignals(m,3);if(!top.length)return '';
-    const title=activeModel==='consensus'?'⚡ Consensus — najmocniejsze wspólne sygnały':`🔥 ${META[activeModel].name} — najmocniejsze sygnały`;
+    const title='FINAL Adaptive PROD — najmocniejsze sygnały';
     return `<div class="signals"><div class="signals-title">${title}</div><div class="signals-grid">${top.map(x=>pill(x.votes?`${x.votes}/5 · ${x.label}`:x.label,x.v)).join('')}</div></div>`;
   };
   compactSignals=(m)=>{

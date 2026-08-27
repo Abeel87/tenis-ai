@@ -5,17 +5,18 @@ ROOT = Path(__file__).resolve().parents[1]
 def text(path):
     return (ROOT / path).read_text(encoding="utf-8")
 
-def test_v88_match_winner_is_restored_and_pinned():
+def test_match_winner_uses_same_final_ranking_as_other_markets():
     js=text("frontend/model-guide.js")
-    assert "v8.8 MATCH WINNER FALLBACK" in js
-    assert "const winner=sorted.find" in js
+    assert "Missing base probabilities must not be fabricated" in js
+    assert "const winner=sorted.find" not in js
     assert "Kto wygra mecz" in js
     assert "adaptive_learning_v79?.signals" in js
 
 def test_v88_generator_uses_adaptive_prod_wrapper():
     js=text("frontend/v88-upgrade.js")
     assert "adaptive_prod_score:final" in js
-    assert "ensemble:final" in js
+    assert "ensemble:rawEnsemble" in js
+    assert "final_score:final" in js
     assert "v88AdaptiveProd=true" in js
     assert "wrapAutoLearn" in js
 
@@ -49,9 +50,10 @@ def test_v88_preserves_protected_runtime_contract():
     assert "v88-upgrade.css?v=88" in html
     assert "v88-upgrade.js?v=88" in html
 
-    # Chroniony kontrakt runtime pozostaje v8.7.
-    assert "displayVersion: 'v8.7'" in meta
+    # Runtime compatibility remains fixed; visible version has a single owner.
+    assert "appVersion: 'v8.0.1'" in meta
+    assert "displayVersion: 'v8.8.4'" in meta
 
-    # Widoczna wersja funkcjonalna jest nakładana przez v8.8.
+    # Compatibility bridge delegates visible branding to central metadata.
     assert "function applyV88Brand()" in upgrade
-    assert "Tenis AI · v8.8" in upgrade
+    assert "window.TENIS_AI_APPLY_META?.()" in upgrade
