@@ -62,8 +62,20 @@
     </section>`;
   }
 
+  let refreshRaf=0;
+  function scheduleRefresh(root=document){
+    if(refreshRaf)cancelAnimationFrame(refreshRaf);
+    refreshRaf=requestAnimationFrame(()=>{
+      refreshRaf=0;
+      refreshAll(root);
+    });
+  }
+
   renderMatchDetail=function(m){
     const html=baseRender(m),panel=box(m);if(!panel)return html;
+    // The caller inserts returned HTML synchronously. Refresh only after that render,
+    // instead of observing every mutation in the whole application body.
+    setTimeout(()=>scheduleRefresh(document),0);
     return html.replace('<div class="match-detail">',`<div class="match-detail">${panel}`);
   };
 
@@ -81,13 +93,6 @@
   function refreshAll(root=document){root.querySelectorAll('[data-sp-market]').forEach(refreshMarket)}
   document.addEventListener('input',e=>{if(e.target.matches?.('[data-sp-line]'))refreshMarket(e.target.closest('[data-sp-market]'))});
   document.addEventListener('change',e=>{if(e.target.matches?.('[data-sp-line]'))refreshMarket(e.target.closest('[data-sp-market]'))});
-  const obs=new MutationObserver(()=>{
-    // v8.1: mutacje profilu nie mogą uruchamiać pełnego skanu dokumentu.
-    if(window.TENIS_AI_PLAYER_PROFILE_ACTIVE)return;
-    requestAnimationFrame(()=>refreshAll(document));
-  });
-  obs.observe(document.body,{childList:true,subtree:true});
-  setTimeout(()=>refreshAll(document),300);
 
   // Add ace / DF history to the full player profile too.
   const profile=document.querySelector('#player-profile-panel'),search=document.querySelector('#player-search-input');
@@ -126,6 +131,6 @@
     render();
   }
   function mountProfile(){injectProfile()}
-  window.TENIS_AI_SERVE_PROPS_V81={mountProfile,refreshAll};
+  window.TENIS_AI_SERVE_PROPS_V81={mountProfile,refreshAll,scheduleRefresh};
   if(profile&&!profile.hidden)setTimeout(injectProfile,80);
 })();
