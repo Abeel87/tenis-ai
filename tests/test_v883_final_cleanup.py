@@ -8,7 +8,7 @@ def t(path):
 
 def test_v883_assets_and_brand_are_wired():
     h=t("frontend/index.html")
-    assert "Tenis AI v8.8.6" in h
+    assert "Tenis AI v8.8.7" in h
     assert "v883-final.css?v=883" in h
     assert "v883-final.js?v=883" in h
     assert h.index("v882-cleanup.js?v=882") < h.index("v883-final.js?v=883")
@@ -21,6 +21,17 @@ def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
     assert "Porównanie modeli i komponentów" in js
     assert "nie bierze udziału w rankingu" in js
     assert "selector\\s+proxy" in js
+
+def test_v887_checkpoint_quality_lock_is_last_selection_layer():
+    h=t("frontend/index.html")
+    js=t("frontend/checkpoint-quality-v887.js")
+    assert "checkpoint-quality-v887.js?v=887" in h
+    assert h.index("stats-ranking-v886.js?v=886") < h.index("checkpoint-quality-v887.js?v=887")
+    assert "MIN_SETTLED=30" in js
+    assert "MIN_ACCURACY=65" in js
+    assert "MIN_WILSON=45" in js
+    assert "early_hold_v7?.ready!==true" in js
+    assert "Model Test/SHADOW i wybór ręczny pozostają dostępne" in js
 
 def test_v883_pair_reasoning_is_visible():
     js=t("frontend/v883-final.js")
