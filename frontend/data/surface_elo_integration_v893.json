@@ -1,6 +1,6 @@
 {
   "version": "v8.9.3",
-  "generated_at": "2026-08-27T17:09:02.535792+00:00",
+  "generated_at": "2026-08-27T17:15:06.875667+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
@@ -15,7 +15,7 @@
     "events": 20394,
     "players": 1672,
     "player_surface_timelines": 3012,
-    "rows_with_both_surface_history": 0
+    "rows_with_both_surface_history": 535
   },
   "training": {
     "rows_total": 540,
@@ -29,7 +29,7 @@
   },
   "learned": {
     "ensemble_elo_alpha": 0.35,
-    "tabpfn_elo_alpha": 0.0
+    "tabpfn_elo_alpha": 0.35
   },
   "holdout": {
     "catboost_player": {
@@ -42,11 +42,11 @@
     },
     "catboost_player_elo": {
       "n": 92,
-      "selected_n": 52,
-      "accuracy": 75.0,
-      "brier": 0.22068,
-      "log_loss": 0.63602,
-      "avg_probability": 64.5
+      "selected_n": 49,
+      "accuracy": 75.5,
+      "brier": 0.21364,
+      "log_loss": 0.62078,
+      "avg_probability": 64.9
     },
     "ensemble_player": {
       "n": 92,
@@ -60,9 +60,9 @@
       "n": 92,
       "selected_n": 51,
       "accuracy": 76.5,
-      "brier": 0.19652,
-      "log_loss": 0.58103,
-      "avg_probability": 63.1
+      "brier": 0.19562,
+      "log_loss": 0.57908,
+      "avg_probability": 63.2
     },
     "tabpfn": {
       "n": 6,
@@ -83,19 +83,19 @@
   },
   "gates": {
     "catboost_player_elo": {
-      "status": "watch",
+      "status": "strong_candidate",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": -0.00388,
-      "log_loss_gain": -0.01142,
-      "accuracy_delta_pp": 0.9
+      "brier_gain": 0.00316,
+      "log_loss_gain": 0.00382,
+      "accuracy_delta_pp": 1.4
     },
     "ensemble_player_elo": {
       "status": "watch",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": -0.00054,
-      "log_loss_gain": -0.00118,
+      "brier_gain": 0.00036,
+      "log_loss_gain": 0.00077,
       "accuracy_delta_pp": 0.0
     },
     "tabpfn_elo": {
