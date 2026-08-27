@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -17,10 +18,21 @@ def forbid(rel, needle, label):
     if needle in text:
         errors.append(f"{rel}: nadal zawiera {label}")
 
+def verify_visible_version_contract():
+    meta = read("frontend/app-meta.js")
+    html = read("frontend/index.html")
+    match = re.search(r"displayVersion:\s*'([^']+)'", meta)
+    if not match:
+        errors.append("frontend/app-meta.js: brak centralnego displayVersion")
+        return
+    version = match.group(1)
+    if f"Tenis AI {version}" not in html:
+        errors.append(f"frontend/index.html: wersja widoczna nie zgadza się z displayVersion {version}")
+
 need("frontend/index.html", "runtime-fetch-v853.js", "runtime data dedupe v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.js", "UI organizer v8.5.3")
 need("frontend/index.html", "ui-organizer-v853.css", "UI organizer CSS v8.5.3")
-need("frontend/app-meta.js", "displayVersion: \'v8.8.5\'", "aktualną wersję wyświetlaną aplikacji")
+verify_visible_version_contract()
 need("frontend/app-meta.js", "appVersion: \'v8.0.1\'", "chroniony kontrakt bazowy v8.0.1")
 need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin AutoLearn")
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
