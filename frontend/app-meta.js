@@ -45,6 +45,10 @@
 (() => {
   'use strict';
   if (window.TENIS_AI_FAST_BOOT_V888) return;
+  if (typeof window.fetch !== 'function') {
+    window.TENIS_AI_FAST_BOOT_V888 = Object.freeze({version:'v8.8.8',disabled:true});
+    return;
+  }
 
   const browserFetch = window.fetch.bind(window);
   const inflight = new Map();
