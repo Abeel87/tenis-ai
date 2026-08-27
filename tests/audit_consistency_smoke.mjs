@@ -17,10 +17,32 @@ const api=context.TENIS_AI_MODEL_API, center=context.TENIS_AI_DECISION_CENTER_V8
 assert.equal(api.active,'adaptive-prod','hidden saved Consensus must not change production ranking');
 const alias=m=>({match_winner:'match_win',set1_winner:'set1_win',set2_winner:'set2_win',set3_winner:'set3_win'})[m]||m;
 const matches=JSON.parse(fs.readFileSync('frontend/data/results.json','utf8'));
-let compared=0;
+assert.ok(Array.isArray(matches)&&matches.length>0,'results.json must contain current fixtures');
+
+const matchIds=new Set();
+let compared=0, matchesWithSignals=0;
 for(const match of matches){
+  const matchId=String(match.id??match.match_id??[match.p1,match.p2,match.scheduled_time].join('|'));
+  assert.ok(!matchIds.has(matchId),`duplicate match identity: ${matchId}`);
+  matchIds.add(matchId);
+
   const rows=center.buildRows(match);
-  for(const signal of api.allSignals(match)){
+  const signals=api.allSignals(match);
+  if(signals.length)matchesWithSignals++;
+  const signalKeys=new Set();
+
+  for(const signal of signals){
+    assert.ok(String(signal.key||signal.signal_key||'').trim(),`${matchId}: signal without key`);
+    assert.ok(String(signal.market||'').trim(),`${matchId}: signal without market`);
+    assert.ok(String(signal.pick??'').trim(),`${matchId}: signal without pick`);
+    assert.ok(Number.isFinite(Number(signal.v)),`${matchId}: non-finite FINAL for ${signal.key}`);
+    assert.ok(Number(signal.v)>=0&&Number(signal.v)<=100,`${matchId}: FINAL outside 0..100 for ${signal.key}`);
+    if(signal.line!=null&&signal.line!=='')assert.ok(Number.isFinite(Number(signal.line)),`${matchId}: invalid line for ${signal.key}`);
+
+    const signalKey=String(signal.key||signal.signal_key);
+    assert.ok(!signalKeys.has(signalKey),`${matchId}: duplicate production signal ${signalKey}`);
+    signalKeys.add(signalKey);
+
     const row=rows.find(r=>r.market===alias(signal.market)&&r.pick===signal.pick&&
       (r.line==null||Number(r.line)===Number(signal.line)));
     assert.ok(row,`${match.id}: missing ${signal.key}`);
@@ -29,6 +51,8 @@ for(const match of matches){
   }
 }
 assert.ok(compared>0);
+assert.ok(matchesWithSignals>0);
+console.log(`Current production signal hygiene: PASS (${matches.length} fixtures; ${matchesWithSignals} with signals; ${compared} unique FINAL candidates)`);
 
 // The compatibility bridge exposes final separately and never rewrites RAW.
 context.TENIS_AI_AUTOLEARN_V84={scoreFor:()=>({ensemble:80,current:78})};
