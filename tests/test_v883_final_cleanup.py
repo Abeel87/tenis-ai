@@ -22,16 +22,31 @@ def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
     assert "nie bierze udziału w rankingu" in js
     assert "selector\\s+proxy" in js
 
-def test_v887_checkpoint_quality_lock_is_last_selection_layer():
+def test_v887_v888_market_quality_layer_is_scoped_to_core():
     h=t("frontend/index.html")
     js=t("frontend/checkpoint-quality-v887.js")
     assert "checkpoint-quality-v887.js?v=887" in h
     assert h.index("stats-ranking-v886.js?v=886") < h.index("checkpoint-quality-v887.js?v=887")
-    assert "MIN_SETTLED=30" in js
-    assert "MIN_ACCURACY=65" in js
-    assert "MIN_WILSON=45" in js
-    assert "early_hold_v7?.ready!==true" in js
-    assert "Model Test/SHADOW i wybór ręczny pozostają dostępne" in js
+
+    for token in [
+        "CP_MIN_SETTLED=30",
+        "CP_MIN_ACCURACY=65",
+        "CP_MIN_WILSON=45",
+        "WIN_MIN_SETTLED=30",
+        "WIN_MIN_ACCURACY=65",
+        "WIN_MIN_WILSON=45",
+        "early_hold_v7?.ready!==true",
+        "segments_30d?.market",
+        "window.TENIS_AI_WINNER_QUALITY_V888",
+        "return state.coreEventDepth>0?filteredSignals(rows,match):rows",
+        "activeScenarioProfile()!=='experimental'",
+        "Manual i Model Test/SHADOW zachowują pełne rynki",
+    ]:
+        assert token in js
+
+    assert "match_winner','set1_winner','set2_winner','set3_winner" in js
+    assert "new MutationObserver(" not in js
+    assert "setInterval(" not in js
 
 def test_v883_pair_reasoning_is_visible():
     js=t("frontend/v883-final.js")
