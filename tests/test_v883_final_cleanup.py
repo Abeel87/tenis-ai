@@ -8,7 +8,7 @@ def t(path):
 
 def test_v883_assets_and_brand_are_wired():
     h=t("frontend/index.html")
-    assert "Tenis AI v8.8.4" in h
+    assert "Tenis AI v8.8.5" in h
     assert "v883-final.css?v=883" in h
     assert "v883-final.js?v=883" in h
     assert h.index("v882-cleanup.js?v=882") < h.index("v883-final.js?v=883")

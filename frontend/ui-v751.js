@@ -556,11 +556,14 @@
   function findMatch(k){return (Array.isArray(all)?all:[]).find(m=>key(m)===k)}
   function openMatch(k){
     const m=findMatch(k);if(!m)return;
-    const o=ensureOverlay();o.dataset.matchKey=String(k);o.innerHTML=detailHtml(m);o.hidden=false;document.body.classList.add('p751-modal-open');
+    const o=ensureOverlay();o.hidden=true;o.dataset.matchKey=String(k);o.innerHTML=detailHtml(m);
     bindLazySections78e23(o,m);
     window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(m);
+    // Complete the layout before exposing it; no late panels above the scroll anchor.
+    window.TENIS_AI_PLAYER_UI_V851?.injectDetail?.(m);
+    if(!o.querySelector('.dc87'))window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.();
+    o.hidden=false;document.body.classList.add('p751-modal-open');
     o.scrollTop=0;
-    requestAnimationFrame(()=>window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.());
     o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
   }
   function closeMatch(){

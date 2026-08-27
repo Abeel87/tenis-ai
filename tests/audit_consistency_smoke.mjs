@@ -65,3 +65,54 @@ const pairs=context.TENIS_AI_SCENARIO_SETTLEMENT.summarizePairs([
 assert.equal(pairs.n,2); assert.equal(pairs.accuracy,50);
 assert.equal(pairs.pending,1); assert.equal(pairs.voids,1);
 console.log(`Audit cross-view smoke: PASS (${compared} candidate scores; RAW preserved; exact priors; saved pairs)`);
+
+// The real openMatch function must assemble all panels while the overlay is hidden.
+const uiSource=fs.readFileSync('frontend/ui-v751.js','utf8');
+const openSource=uiSource.slice(uiSource.indexOf('  function openMatch(k){'),uiSource.indexOf('  function closeMatch(){'));
+const order=[];
+const overlay={hidden:false,dataset:{},scrollTop:700,querySelector:s=>s==='.dc87'?{}:null};
+const opening=vm.createContext({
+  findMatch:()=>({id:'next'}),ensureOverlay:()=>overlay,detailHtml:()=>'<section/>',
+  bindLazySections78e23:()=>{assert.equal(overlay.hidden,true);order.push('lazy')},
+  document:{body:{classList:{add(){order.push('visible')}}}},
+  requestAnimationFrame:()=>assert.fail('opening must not schedule late panels'),
+  window:{
+    TENIS_AI_DECISION_CENTER_V87:{tidy:()=>{assert.equal(overlay.hidden,true);order.push('center')}},
+    TENIS_AI_PLAYER_UI_V851:{injectDetail:()=>{assert.equal(overlay.hidden,true);order.push('player')}},
+    TENIS_AI_ADAPTIVE_V79:{injectProjectDetail:()=>assert.fail('legacy Adaptive must not compete with the center')}
+  }
+});
+vm.runInContext(openSource+'\nopenMatch("next");',opening);
+assert.deepEqual(order,['lazy','center','player','visible']);
+assert.equal(overlay.hidden,false);assert.equal(overlay.scrollTop,0);
+
+// Player details belong after the center from the outset, never above its scroll anchor.
+const piSource=fs.readFileSync('frontend/player-intelligence-v851b-ui.js','utf8');
+const piInject=piSource.slice(piSource.indexOf('  function injectDetail(m){'),piSource.indexOf('\n  function telemetry()'));
+const anchors=[];
+const detailHost={querySelector:s=>s==='.dc87'?{insertAdjacentHTML:(where)=>anchors.push(where)}:null};
+vm.runInNewContext(piInject+'\ninjectDetail({id:"next"});',{
+  document:{querySelector:()=>detailHost},details:()=>'<section data-pi851-detail></section>'
+});
+assert.deepEqual(anchors,['afterend']);
+
+// Any old caller of the Adaptive injector must remain harmless after the center mounts.
+const adaptiveSource=fs.readFileSync('frontend/adaptive-learning-v79.js','utf8');
+const adaptiveInject=adaptiveSource.slice(adaptiveSource.indexOf('  function injectProjectDetail(){'),adaptiveSource.indexOf('\n  function healthHtml('));
+vm.runInNewContext(adaptiveInject+'\ninjectProjectDetail();',{
+  document:{querySelector:()=>detailHost},
+  currentProjectMatch:()=>assert.fail('legacy injector must stop at the existing center')
+});
+
+// Charts use a separate root, outside hidden legacy/PRO disclosures; null is not 0%.
+run('model-trends-v84e2.js');
+const monitor=context.TENIS_AI_MODEL_TRENDS_V84E2;
+const telemetry=JSON.parse(fs.readFileSync('frontend/data/model_telemetry_v84c.json','utf8'));
+const charts=monitor.render(telemetry,'pc882-trend-monitor');
+assert.ok(charts.includes('id="pc882-trend-monitor"'));
+assert.ok(charts.includes('FINAL Adaptive PROD'));
+assert.ok(charts.includes('<polyline'));
+assert.ok(!charts.includes('id="mt84e2"'));
+const missing=monitor.render({trends_v84e2:{version:'v8.4E2',models:{adaptive_prod:{series:[{accuracy:null},{accuracy:null}]}}}},'test');
+assert.ok(!missing.includes('<polyline'),'missing series cannot invent a zero-accuracy trend');
+console.log('Stable match opening and directly accessible model charts: PASS');

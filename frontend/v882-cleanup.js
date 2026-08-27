@@ -177,7 +177,7 @@ function trend(rows){
   });
   const poly=pts.map(x=>`${x.x.toFixed(1)},${x.y.toFixed(1)}`).join(' ');
   const target=(H-p-(72-40)/60*(H-p*2)).toFixed(1);
-  return `<div class="pc882-trend"><svg viewBox="0 0 ${W} ${H}">
+  return `<div class="pc882-trend"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Dzienny trend skuteczności">
     <line class="target" x1="${p}" y1="${target}" x2="${W-p}" y2="${target}"/>
     <polyline points="${poly}"/>
     ${pts.map(x=>`<circle cx="${x.x.toFixed(1)}" cy="${x.y.toFixed(1)}" r="3"><title>${esc(x.d.name)} · ${pct(x.d.accuracy)} · n=${x.d.n}</title></circle>`).join('')}
@@ -253,7 +253,7 @@ function modelRows(tel){
 }
 
 function activate(dash,tab){
-  const valid=['overview','markets','models','adaptive'];
+  const valid=['overview','charts','markets','models','adaptive'];
   const next=valid.includes(tab)?tab:'overview';
   try{localStorage.setItem(TAB_KEY,next)}catch{}
   dash.querySelectorAll('[data-pc882-tab]').forEach(x=>x.classList.toggle('active',x.dataset.pc882Tab===next));
@@ -283,6 +283,7 @@ async function renderStats882(){
   const generation=++statsGeneration;
   const host=document.querySelector('#pc77');
   if(!host)return;
+  if(!host.querySelector('#pc882-dashboard'))host.classList.add('pc885-loading');
 
   let rows=scoped(flatten());
   const wanted=String(window.TENIS_AI_META?.calibrationModelVersion||'');
@@ -295,7 +296,7 @@ async function renderStats882(){
   if(document.querySelector('#pc77')!==host||generation!==statsGeneration)return;
 
   document.querySelector('#pc88-dashboard')?.remove();
-  document.querySelector('#pc882-dashboard')?.remove();
+  const previous=host.querySelector('#pc882-dashboard');
 
   const overall=stat(rows);
   const mk=group(rows,x=>x.label).filter(x=>x.n>=10&&x.accuracy!=null);
@@ -311,10 +312,10 @@ async function renderStats882(){
   dash.id='pc882-dashboard';
   dash.className='pc882-dashboard';
   dash.innerHTML=`
-    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI ${esc(window.TENIS_AI_META?.displayVersion||VERSION)}</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>FINAL i model bazowy są liczone osobno. Wykresy poniżej dotyczą modelu bazowego.</p></div>
+    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI ${esc(window.TENIS_AI_META?.displayVersion||VERSION)}</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>FINAL i model bazowy są liczone osobno. Trendy znajdziesz w zakładce Wykresy.</p></div>
       <div class="pc882-period">${['7d','30d','all'].map(x=>`<button data-pc882-period="${x}" class="${period()===x?'active':''}">${x==='all'?'Wszystko':x}</button>`).join('')}</div>
     </header>
-    <nav class="pc882-tabs">${[['overview','Przegląd'],['markets','Rynki'],['models','Modele'],['adaptive','Adaptive']].map(([k,l])=>`<button data-pc882-tab="${k}">${l}</button>`).join('')}</nav>
+    <nav class="pc882-tabs">${[['overview','Przegląd'],['charts','Wykresy'],['markets','Rynki'],['models','Modele'],['adaptive','Adaptive']].map(([k,l])=>`<button data-pc882-tab="${k}">${l}</button>`).join('')}</nav>
 
     <section data-pc882-pane="overview">
       <div class="pc882-kpis">
@@ -328,6 +329,15 @@ async function renderStats882(){
         <article class="pc882-card"><header><b>Trend skuteczności</b><small>dzień po dniu</small></header>${trend(rows)}</article>
         <article class="pc882-card"><header><b>Confidence vs rzeczywistość</b><small>pasek = HIT%, kreska = confidence</small></header>${calibration(rows)}</article>
       </div>
+    </section>
+
+    <section data-pc882-pane="charts" aria-label="Wykresy skuteczności">
+      <div class="pc882-grid">
+        <article class="pc882-card"><header><b>Model bazowy · trend dzienny</b><small>Wybrany okres · rozliczone zdarzenia</small></header>${trend(rows)}</article>
+        <article class="pc882-card"><header><b>FINAL ≥65/100 · trend dzienny</b><small>Wybrany okres · zamrożone oceny po Adaptive</small></header>${trend(finalRows.filter(x=>x.score>=65))}</article>
+      </div>
+      <p class="pc882-note">Poniżej trendy ostatnich rozliczeń poszczególnych modeli, niezależne od filtra okresu. Próbki modeli mogą się różnić. Brak wyników oznacza brak danych, nie 0%.</p>
+      ${window.TENIS_AI_MODEL_TRENDS_V84E2?.render?.(tel,'pc882-trend-monitor')||'<div class="pc882-empty">Brak raportu trendów modeli.</div>'}
     </section>
 
     <section data-pc882-pane="markets">
@@ -356,8 +366,10 @@ async function renderStats882(){
     <p class="pc882-note">Statystyki wpływają na <b>ranking par Generatora</b> dopiero przy sensownej próbce. Nie zmieniają oceny FINAL. n liczy unikalne zdarzenia na model i mecz; równoważne linie 10.5/11.5 są scalone. Zdarzenia jednego meczu są skorelowane. Proxy selektora nie jest skutecznością zapisanych par. Modele mogą mieć różne próbki. Player Intelligence i Accuracy Lab zostają SHADOW.</p>`;
 
   const head=host.querySelector('.pc77-head');
-  if(head)head.after(dash); else host.prepend(dash);
-  collapseOld(host,dash);
+  if(previous)previous.replaceWith(dash);
+  else {if(head)head.after(dash);else host.prepend(dash);collapseOld(host,dash);}
+  host.classList.remove('pc885-loading');
+  host.querySelector('.pc885-loading-note')?.remove();
   window.TENIS_AI_V883?.cleanupStats?.();
 
   let saved='overview';
