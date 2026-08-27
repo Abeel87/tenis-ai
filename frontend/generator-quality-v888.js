@@ -10,7 +10,7 @@
   const num = x => x == null || x === '' || !Number.isFinite(Number(x)) ? null : Number(x);
   let accuracyLab = null;
 
-  fetch('data/accuracy_lab_v86.json').then(r => r.ok ? r.json() : null).then(x => { accuracyLab = x; }).catch(()=>{});
+  const ready = fetch('data/accuracy_lab_v86.json').then(r => r.ok ? r.json() : null).then(x => { accuracyLab = x; }).catch(()=>{});
 
   function api(){ return window.TENIS_AI_SCENARIOS || null; }
   function draft(){ try { return api()?.draft?.() || null; } catch { return null; } }
@@ -37,16 +37,16 @@
     }
     return out;
   }
-  function checkGroup(items, profile){
+  function checkGroup(items, profile, expectedSignals=2){
     const p = profilePolicy(profile);
     const scores = items.map(itemScore);
     const min = scores.length ? Math.min(...scores) : 0;
     const avg = scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : 0;
     const matchTotal = items.filter(x => String(x.market || '').toLowerCase() === 'match_total');
     const weakTotal = matchTotalValidationWeak() && matchTotal.some(x => itemScore(x) < p.matchTotalMin);
-    const valid = items.length >= 2 && min >= p.minItem && avg >= p.minAvg && !weakTotal;
+    const valid = items.length === expectedSignals && min >= p.minItem && avg >= p.minAvg && !weakTotal;
     let reason = '';
-    if (items.length < 2) reason = 'para ma mniej niż 2 zdarzenia';
+    if (items.length !== expectedSignals) reason = `zestaw wymaga ${expectedSignals} zdarzeń`;
     else if (min < p.minItem) reason = `najsłabsze zdarzenie ma ${Math.round(min)}/100 (min. ${p.minItem})`;
     else if (avg < p.minAvg) reason = `średnia pary to ${Math.round(avg)}/100 (min. ${p.minAvg})`;
     else if (weakTotal) reason = 'rynek całego meczu ma zbyt słabą walidację dla tego wyniku';
@@ -81,7 +81,7 @@
     const reject = [];
     const reasons = [];
     for (const [,items] of groups) {
-      const c = checkGroup(items, d.profile || 'balanced');
+      const c = checkGroup(items, d.profile || 'balanced', d.signals_per_match || 2);
       if (!c.valid) { reject.push(...items); reasons.push(c.reason); }
     }
     let removed = 0;
@@ -104,7 +104,7 @@
     if (!d || d.mode !== 'generator' || d.profile === 'experimental') return [];
     const bad = [];
     for (const [,items] of groupDraft(d)) {
-      const c = checkGroup(items, d.profile || 'balanced');
+      const c = checkGroup(items, d.profile || 'balanced', d.signals_per_match || 2);
       if (!c.valid) bad.push(c.reason);
     }
     return bad;
@@ -116,12 +116,8 @@
   `;
   document.head.appendChild(style);
 
-  // Internal generator handler is registered earlier on document. This listener runs after it,
-  // then removes whole weak match-pairs from the newly rendered draft.
-  document.addEventListener('click', e => {
-    if (!e.target.closest?.('[data-sc-generate]')) return;
-    setTimeout(reviewGenerated, 0);
-  });
+  // The generator now calls the same check before ranking and publishing a draft.
+  // Do not delete rendered pairs after a success toast or race an async generation.
 
   // Saving is guarded in capture phase so a weak generated pair cannot slip through after line edits.
   // Manual scenarios remain completely under the user's control.
@@ -135,5 +131,5 @@
     notice(`Nie zapisuję scenariusza: ${bad[0]}. Usuń słabą parę albo wybierz mocniejsze zdarzenia.`);
   }, true);
 
-  window.TENIS_AI_GENERATOR_QUALITY_V888 = Object.freeze({version:'v8.8.9', reviewGenerated, currentProblems});
+  window.TENIS_AI_GENERATOR_QUALITY_V888 = Object.freeze({version:'v8.8.9', ready, checkGroup, reviewGenerated, currentProblems});
 })();

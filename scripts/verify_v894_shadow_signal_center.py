@@ -8,8 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from backend.shadow_experiment_trends_v895 import run as build_shadow_trends
-
 BACKEND = ROOT / "backend" / "shadow_signal_center_v894.py"
 UI = ROOT / "frontend" / "shadow-signals-v894.js"
 CSS = ROOT / "frontend" / "shadow-signals-v894.css"
@@ -64,11 +62,8 @@ def main():
     ck("Shadow Signal Center Guard v8.9.4" in wf, "data pipeline guard")
     ck("Shadow Signal Center Guard v8.9.4" in ui_wf, "UI health guard")
 
-    # v8.9.5: the existing SHADOW guard also persists one bounded holdout snapshot
-    # for the read-only charts. This keeps the pipeline small and guarantees the
-    # chart history is refreshed whenever the Signal Center is verified.
-    built = build_shadow_trends()
-    ck(built.get("status") == "ok", "v8.9.5 trend history build")
+    # Verification is read-only; the scheduled workflow owns history writes.
+    ck("python backend/shadow_experiment_trends_v895.py" in wf, "v8.9.5 trend history build step")
     trend_ui = TREND_UI.read_text(encoding="utf-8")
     ck("shadow-experiment-charts-v895.js?v=895" in boot, "v8.9.5 chart bootstrap")
     for token in ("Jak model idzie?", "Trafność", "Brier", "SHADOW · 0% PROD"):
@@ -98,7 +93,7 @@ def main():
         "version": report.get("version"),
         "matches": report.get("matches_count"),
         "model_signal_counts": report.get("model_signal_counts"),
-        "trend_points": built.get("points"),
+        "trend_points": {key: value.get("points_count") for key, value in trend_models.items()},
         "production_influence": False,
     }, ensure_ascii=False))
     return 0

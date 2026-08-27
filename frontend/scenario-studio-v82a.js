@@ -299,6 +299,14 @@
     lines.forEach((x,i)=>{const d=Math.abs(x-anchor);if(d<best){best=d;center=i}});
     return idx>=0&&Math.abs(idx-center)<=1;
   }
+  function generatorQuality(m,signals,profile,spm){
+    if(profile==='experimental')return true;
+    const guard=window.TENIS_AI_GENERATOR_QUALITY_V888;
+    if(!guard?.checkGroup)return false;
+    return guard.checkGroup(signals.map(s=>({
+      market:s.market,composer_score:composerSignalScore(m,s,profile)
+    })),profile,spm).valid;
+  }
   function repairGeneratorCandidate(x,spm,profile){
     if(
       spm===2 &&
@@ -309,7 +317,7 @@
     ){
       const cfg=selectorPolicy(profile);
       const floor=Number(x?.pair_floor_used??cfg.softPairFloor??cfg.pairFloor??60);
-      if(Number(x.selectionScore)>=floor){
+      if(Number(x.selectionScore)>=floor && generatorQuality(x.m,x.picked,profile,spm)){
         return {
           ...x,
           avg:Number(x.selectionScore),
@@ -334,6 +342,7 @@
     };
     const pool=scenarioSignals(m)
       .filter(generatorTotalMarketable.bind(null,m))
+      .filter(s=>generatorQuality(m,[s],profile,1))
       .map(s=>({s,score:score(s),pref:preference(s)}))
       .filter(x=>x.score>=policy.floor)
       .sort((a,b)=>(Number(b.score>=policy.strong)-Number(a.score>=policy.strong))||b.pref-a.pref||b.score-a.score);
@@ -342,6 +351,7 @@
     const push=s=>{
       if(!s||keys.has(String(s.key)))return false;
       if(!generatorTotalMarketable(m,s))return false;
+      if(!generatorQuality(m,[s],profile,1))return false;
       const sc=score(s);
       if(sc<policy.floor)return false;
       const fam=generatorFamily(s);
@@ -1036,7 +1046,12 @@
     return clamp(avg);
   }
 
-  function generateFromUi(){
+  async function generateFromUi(){
+    const generationPanel=panel;
+    const guard=window.TENIS_AI_GENERATOR_QUALITY_V888;
+    if(!guard?.checkGroup){toast('Filtr jakości jest niedostępny. Odśwież aplikację.');return}
+    await guard.ready;
+    if(panel!==generationPanel||panel?.hidden||currentTab!=='generator')return;
     const mc=Number($('.sc82-choice[data-sc-choice="matches"] .active',panel)?.dataset.scN||7);
     const spm=Number($('.sc82-choice[data-sc-choice="signals"] .active',panel)?.dataset.scN||2);
     const profile=$('.sc82-profiles .active',panel)?.dataset.scProfile||'balanced';
@@ -1245,6 +1260,7 @@
       };
     })
       .map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)
+      .filter(x=>generatorQuality(x.m,x.picked,profile,spm))
       .sort((a,b)=>
         (b.selectionScore??b.avgScore??b.ms)-
         (a.selectionScore??a.avgScore??a.ms)
@@ -1261,6 +1277,7 @@
     clearDraft();
     draft.mode='generator';
     draft.profile=profile;
+    draft.signals_per_match=spm;
 
     for(const x of ranked){
       for(const sig of x.picked)addSignalSilent(x.m,sig,'generator',profile);

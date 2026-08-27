@@ -46,9 +46,13 @@ def refresh(directory):
     # v8.8.9 fix: reconciliation used to overwrite Player Intelligence telemetry
     # generated a few steps earlier. Rebuild it from the same final history snapshot.
     telemetry['player_intelligence_v85'] = build_player_intelligence_telemetry(history)
-    # Preserve the latest v8.9 shadow-model report if refresh is run standalone.
-    if isinstance(previous_telemetry, dict) and previous_telemetry.get('player_model_shadow_v89'):
-        telemetry['player_model_shadow_v89'] = previous_telemetry['player_model_shadow_v89']
+    # These experiments are fitted separately, not by settlement reconciliation.
+    # Keep their original timestamps and holdout provenance on standalone refresh.
+    for key in ('player_model_shadow_v89', 'ensemble_player_learning_v891',
+                'surface_elo_integration_v893'):
+        report = previous_telemetry.get(key) if isinstance(previous_telemetry, dict) else None
+        if isinstance(report, dict) and report.get('production_influence') is False:
+            telemetry[key] = report
     write('model_telemetry_v84c.json', telemetry)
 
     write('shadow_stats.json', build_shadow_stats(history))

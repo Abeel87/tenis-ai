@@ -59,3 +59,19 @@ def test_historical_and_live_settlement_share_all_layers():
     assert historic['status'] == live['status'] == 'settled'
     for layer in SIGNAL_LAYERS:
         assert historic[layer][0]['result'] == live[layer][0]['result'] == 'hit'
+
+
+def test_standalone_report_refresh_preserves_shadow_experiments(tmp_path):
+    import json
+    from refresh_settlement_reports import refresh
+    keys = ('player_model_shadow_v89', 'ensemble_player_learning_v891', 'surface_elo_integration_v893')
+    experiments = {key: {'production_influence': False, 'generated_at': 'original',
+                         'holdout': {'n': 89, 'brier': .21}} for key in keys}
+    (tmp_path / 'model_telemetry_v84c.json').write_text(json.dumps(experiments))
+    (tmp_path / 'results.json').write_text('[]')
+    (tmp_path / 'history.json').write_text('[]')
+    refresh(tmp_path)
+    telemetry = json.loads((tmp_path / 'model_telemetry_v84c.json').read_text())
+    for key in keys:
+        assert telemetry[key] == experiments[key]
+    assert 'player_intelligence_v85' in telemetry

@@ -31,3 +31,9 @@ def test_retirement_entry_is_settled_not_whole_match_void():
     assert settled["result"]["status"]=="retired"
     assert settled["signals"][0]["result"]=="hit"
     assert settled["shadow_signals"][0]["result"]=="hit"
+
+def test_completed_set_line_push_and_invalid_pick_after_later_retirement():
+    final = {"status":"retired", "sets":[[6,4],[1,4]], "completed_sets":[True,False]}
+    for pick in ("over", "under"):
+        assert settle_signal_live({"market":"set1_total","pick":pick,"line":10},final)=="void"
+    assert settle_signal_live({"market":"set1_total","pick":"unknown","line":12.5},final)=="unverifiable"

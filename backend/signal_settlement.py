@@ -111,13 +111,9 @@ def settle_signal_live(signal: dict, final: dict) -> str:
     if market == "set1_total":
         if not sets or not complete or not complete[0]:
             return "void"
-        total = sum(sets[0])
-        try:
-            line = float(signal.get("line"))
-        except (TypeError, ValueError):
-            return "void"
-        ok = total > line if pick == "over" else total < line
-        return "hit" if ok else "miss"
+        # A finished first set has identical line/push semantics even if a
+        # player retires later. Unknown directions must not become UNDER.
+        return settle_signal(signal, {**final, "status": "completed"})
 
     if market == "exact_set1":
         if not sets or not complete or not complete[0]:

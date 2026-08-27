@@ -140,3 +140,102 @@ assert.ok(!charts.includes('id="mt84e2"'));
 const missing=monitor.render({trends_v84e2:{version:'v8.4E2',models:{adaptive_prod:{series:[{accuracy:null},{accuracy:null}]}}}},'test');
 assert.ok(!missing.includes('<polyline'),'missing series cannot invent a zero-accuracy trend');
 console.log('Stable match opening and directly accessible model charts: PASS');
+
+// Exercise the async experiment renderer: null metrics, unchanged DOM and navigation.
+const coherenceSource=fs.readFileSync('frontend/app-coherence-v892.js','utf8');
+let currentHost, currentSection=null, markupWrites=0, readyEvents=0;
+const makeHost=()=>({
+  querySelector(selector){return selector==='#coh892-shadow'?currentSection:null},
+  append(section){currentSection=section;section.parentNode=this}
+});
+currentHost=makeHost();
+let pendingTelemetry;
+const experimentContext=vm.createContext({
+  setTimeout:()=>0,clearTimeout(){},CustomEvent:class{constructor(type){this.type=type}},
+  document:{
+    documentElement:{dataset:{}},querySelector:s=>s==='#pc77'?currentHost:null,
+    querySelectorAll:()=>[],getElementById:()=>({}),addEventListener(){},
+    dispatchEvent:e=>{assert.equal(e.type,'tenis-ai:shadow-experiments-ready');readyEvents++},
+    createElement:()=>({set innerHTML(html){this.html=html;markupWrites++}})
+  }
+});
+experimentContext.window=experimentContext;
+experimentContext.TENIS_AI_AUTOLEARN_V84={loadTelemetry:()=>new Promise(resolve=>{pendingTelemetry=resolve})};
+vm.runInContext(coherenceSource,experimentContext);
+const renderExperiments=experimentContext.TENIS_AI_COHERENCE_V892.renderShadowExperiments;
+const emptyMetrics={player_model_shadow_v89:{production_influence:false,
+  holdout:{player_catboost_shadow:{accuracy:null,brier:null,n:0,selected_n:0}}}};
+let rendering=renderExperiments();pendingTelemetry(emptyMetrics);await rendering;
+assert.ok(currentSection.html.includes('<b>—</b>'));
+assert.ok(currentSection.html.includes('Brier —'));
+assert.ok(!currentSection.html.includes('<b>0%</b>'));
+const firstSection=currentSection;
+rendering=renderExperiments();pendingTelemetry(emptyMetrics);await rendering;
+assert.equal(currentSection,firstSection);assert.equal(markupWrites,1);
+assert.equal(readyEvents,2);
+rendering=renderExperiments();currentHost=makeHost();currentSection=null;
+pendingTelemetry(emptyMetrics);assert.equal(await rendering,false);
+assert.equal(markupWrites,1,'late telemetry must not mount into a replaced stats view');
+
+// Repeated chart decoration keeps the existing SVG and describes worsening Brier honestly.
+const chartSource=fs.readFileSync('frontend/shadow-experiment-charts-v895.js','utf8');
+const chartContext=vm.createContext({document:{readyState:'loading',addEventListener(){}},
+  setTimeout:()=>0,console});
+chartContext.window=chartContext;
+vm.runInContext(chartSource.replace('version:VERSION,decorate,refresh,productionInfluence:false',
+  'version:VERSION,decorate,refresh,productionInfluence:false,chartHtml,setReport:x=>{report=x}'),chartContext);
+const chartApi=chartContext.TENIS_AI_SHADOW_CHARTS_V895;
+chartApi.setReport({models:{test:{points_count:1,points:[{accuracy:null,base_accuracy:null,brier:.3,base_brier:.2}]}}});
+assert.ok(chartApi.chartHtml('test').includes('0.10000 pogorszenia'));
+assert.ok(!chartApi.chartHtml('test').includes('0.10000 poprawy'));
+console.log('SHADOW null metrics, stable async rendering and Brier labels: PASS');
+
+// The production generator and save guard share a pre-render check, including 1/3/4 events.
+const qualityContext=vm.createContext({
+  fetch:async()=>({ok:true,json:async()=>({market_thresholds_shadow:{match_total:{baseline_65_val:{accuracy:60}}}})}),
+  document:{createElement:()=>({}),head:{appendChild(){}},addEventListener(){}},
+  console,setTimeout:()=>0
+});
+qualityContext.window=qualityContext;
+vm.runInContext(fs.readFileSync('frontend/generator-quality-v888.js','utf8'),qualityContext);
+const quality=qualityContext.TENIS_AI_GENERATOR_QUALITY_V888;
+await quality.ready;
+assert.equal(quality.checkGroup([{market:'set1_total',composer_score:80}],'balanced',1).valid,true);
+assert.equal(quality.checkGroup([{composer_score:80},{composer_score:80},{composer_score:60}],'balanced',3).valid,false);
+assert.equal(quality.checkGroup([{market:'match_total',composer_score:77},{composer_score:80}],'balanced',2).valid,false);
+
+const scenarioSource=fs.readFileSync('frontend/scenario-studio-v82a.js','utf8');
+const qualityRepair=scenarioSource.slice(scenarioSource.indexOf('  function generatorQuality('),scenarioSource.indexOf('  function draftMatches('));
+const generateSource=scenarioSource.slice(scenarioSource.indexOf('  async function generateFromUi('),scenarioSource.indexOf('  function addSignalSilent('));
+let generatedPool=[],messages=[],draftRenders=0,clears=0;
+const generationContext=vm.createContext({
+  window:{TENIS_AI_GENERATOR_QUALITY_V888:quality},
+  panel:{hidden:false},currentTab:'generator',draft:{items:[]},
+  $:selector=>({dataset:selector.includes('matches')?{scN:'2'}:selector.includes('signals')?{scN:'2'}:{scProfile:'balanced'}}),
+  selectorPolicy:()=>({signalFloor:54,softPairFloor:60}),
+  generatorProfilePolicy:()=>({floor:72,strong:76,minAverage:72}),
+  todaysMatches:()=>[{id:'test'}],scenarioSignals:()=>generatedPool,
+  composerSignalScore:(_m,s)=>s.cs,categoryOf:s=>s.market,generatorFamily:s=>s.market,
+  generatorTotalMarketable:()=>true,isTotalSignal:()=>false,totalLine:()=>null,
+  marketAnchorLine:()=>null,selectorPreferredTotalRows:()=>[],
+  selectorBestPair:(_m,rows)=>({signals:rows,type:'test',score:90,reason:'test',floor_used:60}),
+  selectorMatchScore:()=>90,clamp:x=>x,
+  toast:msg=>messages.push(msg),persistDraft(){},
+  clearDraft:()=>{clears++;generationContext.draft={items:[]}},
+  addSignalSilent:(_m,s)=>generationContext.draft.items.push(s),
+  draftMatches:()=>generationContext.draft.items.length?[{id:'test'}]:[],
+  render:()=>{draftRenders++}
+});
+vm.runInContext(qualityRepair+generateSource,generationContext);
+generatedPool=[{key:'winner',market:'match_win',cs:60},{key:'set',market:'set1_win',cs:62}];
+await vm.runInContext('generateFromUi()',generationContext);
+assert.ok(messages[0].includes('nie znalazło'));
+assert.equal(clears,0,'failed generation must preserve an existing draft');
+assert.equal(draftRenders,0,'never publish a weak draft then delete it after success');
+generatedPool=[{key:'winner',market:'match_win',cs:80},{key:'set',market:'set1_win',cs:82}];
+await vm.runInContext('generateFromUi()',generationContext);
+assert.equal(generationContext.draft.items.length,2);
+assert.equal(generationContext.draft.signals_per_match,2);
+assert.equal(draftRenders,1);
+assert.ok(messages.at(-1).includes('1/2'));
+console.log('Generator pre-publication Quality Lock and requested event counts: PASS');
