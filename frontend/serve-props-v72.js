@@ -2,7 +2,7 @@
 (() => {
   if(typeof renderMatchDetail!=='function') return;
   const baseRender=renderMatchDetail;
-  const escS=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const escS=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
   function poissonOver(mean,line){
