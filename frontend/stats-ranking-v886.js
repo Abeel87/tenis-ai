@@ -1,20 +1,11 @@
-/* Tenis AI v8.8.12 — honest model ranking + visible stats trend */
+/* Tenis AI v8.8.14 — honest model ranking + visible stats trend */
 (()=>{
 'use strict';
 
-const VERSION='v8.8.12';
-const WATCH_MAX_MS=2500;
-let statsObserver=null;
-let observerTimer=null;
-let observedHost=null;
+const VERSION='v8.8.14';
+const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 
 function text(node){return String(node?.textContent||'').trim()}
-
-function stopStatsObserver(){
-  statsObserver?.disconnect();
-  statsObserver=null;
-  if(observerTimer){clearTimeout(observerTimer);observerTimer=null}
-}
 
 function patchModelRanking(){
   const pane=document.querySelector('[data-pc882-pane="models"]');
@@ -55,7 +46,6 @@ function patchModelRanking(){
   });
 
   card.dataset.v886Ranking='1';
-  stopStatsObserver();
   return true;
 }
 
@@ -76,35 +66,23 @@ function promoteMainTrend(){
   return true;
 }
 
-function watchForAsyncRanking(){
-  const host=document.querySelector('#pc77');
-  if(!host)return false;
-  if(patchModelRanking())return true;
-
-  if(observedHost!==host||!statsObserver){
-    stopStatsObserver();
-    observedHost=host;
-    statsObserver=new MutationObserver(()=>{
-      promoteMainTrend();
-      patchModelRanking();
-    });
-    statsObserver.observe(host,{childList:true,subtree:true});
-    observerTimer=setTimeout(stopStatsObserver,WATCH_MAX_MS);
-  }
-  return false;
-}
-
 function patch(){
   promoteMainTrend();
   patchModelRanking();
-  watchForAsyncRanking();
 }
 
 function boot(){
   patch();
-  document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(patch));
+
+  // Performance Center creates the basic page first.
+  document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(promoteMainTrend));
+
+  // v8.8.13 emits this only after the async model dashboard is actually in DOM.
+  // No subtree MutationObserver is needed anymore.
+  document.addEventListener(DASHBOARD_READY_EVENT,()=>queueMicrotask(patch));
+
   document.addEventListener('click',event=>{
-    if(event.target?.closest?.('[data-view="stats"],[data-pc77-period],[data-pc77],[data-pc882-period],[data-pc882-tab]'))queueMicrotask(patch);
+    if(event.target?.closest?.('[data-view="stats"],[data-pc77-period],[data-pc77]'))queueMicrotask(promoteMainTrend);
   },true);
 }
 
@@ -113,8 +91,8 @@ else boot();
 
 window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
   version:VERSION,
+  dashboardReadyEvent:DASHBOARD_READY_EVENT,
   patch:patchModelRanking,
-  promoteTrend:promoteMainTrend,
-  stopObserver:stopStatsObserver
+  promoteTrend:promoteMainTrend
 });
 })();
