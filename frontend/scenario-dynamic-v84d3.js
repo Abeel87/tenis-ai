@@ -10,6 +10,7 @@
   const ENTRY='.sc82-draft-entry';
   const AUDIT_CLASS='sc84d3-audit';
   const SUMMARY_ID='sc84d3-summary';
+  const OPEN_WRAP_KEY='__sc84d3EventDriven';
 
   let resultsPromise=null;
   let lookupCache=null;
@@ -242,27 +243,38 @@
     refreshTimer=setTimeout(()=>render(),ms);
   }
 
-  document.addEventListener('DOMContentLoaded',()=>schedule(300),{once:true});
+  function wrapScenarioOpen(){
+    const api=window.TENIS_AI_SCENARIOS;
+    if(!api||api[OPEN_WRAP_KEY])return false;
 
-  const observer=new MutationObserver((mutations)=>{
-    if(!document.querySelector(PANEL))return;
-    const relevant=mutations.some(m=>
-      [...m.addedNodes].some(n=>
-        n?.nodeType===1 && (
-          n.matches?.(ENTRY) ||
-          n.querySelector?.(ENTRY) ||
-          n.matches?.('.sc82-score') ||
-          n.querySelector?.('.sc82-score')
-        )
-      )
-    );
-    if(relevant)schedule(60);
-  });
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+    for(const name of ['open','openManualForMatch']){
+      const base=api[name];
+      if(typeof base!=='function')continue;
+      api[name]=function(){
+        const out=base.apply(api,arguments);
+        schedule(40);
+        return out;
+      };
+    }
+    Object.defineProperty(api,OPEN_WRAP_KEY,{value:true});
+    return true;
+  }
 
+  wrapScenarioOpen();
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      wrapScenarioOpen();
+      schedule(300);
+    },{once:true});
+  }else{
+    schedule(40);
+  }
+
+  // v8.4E3: explicit scenario actions replace a document-wide MutationObserver.
   document.addEventListener('click',(e)=>{
+    wrapScenarioOpen();
     if(e.target?.closest?.(
-      '[data-sc-generate],[data-sc-add],[data-sc-remove],[data-sc-clear],[data-sc-line-pick],[data-sc-go="draft"]'
+      '[data-p751-nav="scenarios"],#scenario-v82a-dock,[data-sc-go],[data-sc-generate],[data-sc-add],[data-sc-remove],[data-sc-clear],[data-sc-line-pick]'
     )){
       schedule(120);
     }
