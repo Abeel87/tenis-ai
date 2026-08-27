@@ -16,7 +16,7 @@
   const CP_MIN_ACCURACY=65;
   const CP_MIN_WILSON=45;
   const CP_MIN_RECENT_WHEN_FALLING=60;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
   const pct=x=>num(x)==null?'—':`${Number(x).toFixed(1).replace('.0','')}%`;
   const signed=x=>num(x)==null?'—':`${Number(x)>0?'+':''}${Number(x).toFixed(1)} pp`;
