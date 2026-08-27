@@ -1,6 +1,6 @@
-/* Tenis AI v8.8.10 — CORE market quality layer
+/* Tenis AI v8.8.11 — CORE market quality layer
    v8.8.7 checkpoint lock + v8.8.8 winner lock + v8.8.9 result-market lock
-   + v8.8.10 cross-view recommendation source.
+   + v8.8.10 cross-view recommendation source + v8.8.11 exact-score LAB labels.
    Selection/presentation only: model probabilities, Adaptive PROD math,
    Dynamic Weights and stored telemetry are never modified.
 */
@@ -11,6 +11,7 @@ const CHECKPOINT_VERSION='v8.8.7';
 const WINNER_VERSION='v8.8.8';
 const RESULT_VERSION='v8.8.9';
 const CROSS_VIEW_VERSION='v8.8.10';
+const EXACT_LAB_VERSION='v8.8.11';
 
 const CP_MIN_SETTLED=30;
 const CP_MIN_ACCURACY=65;
@@ -40,7 +41,8 @@ const state={
   rawSignals:null,
   coreEventDepth:0,
   legacyBridgeInstalled:false,
-  legacyRerenderDone:false
+  legacyRerenderDone:false,
+  exactLabInstalled:false
 };
 
 const num=x=>Number.isFinite(Number(x))?Number(x):null;
@@ -228,6 +230,40 @@ function installLegacyRecommendationBridge(){
   return true;
 }
 
+function exactLabPill(label,value){
+  const v=num(value);
+  if(v==null)return '';
+  return `<div class="market"><span>${qEsc(label)}</span><b>${Math.round(v)} / 100</b><em>LAB · niezwalidowane</em></div>`;
+}
+
+function exactLabBox(title,body,format=''){
+  if(!body)return '';
+  const suffix=format?` · ${qEsc(format)}`:'';
+  return `<details class="marketbox exact-lab"><summary><span class="summary-title">${qEsc(title)}</span><span class="tag">MODEL LAB${suffix} · N/D</span><span class="chev">⌄</span></summary><div class="marketbody">${body}<p class="modelnote">Rynek informacyjny: brak osobnej telemetrii FINAL i potwierdzonej trafności. Nie wchodzi do CORE.</p></div></details>`;
+}
+
+function installExactScoreLabLabels(){
+  if(state.exactLabInstalled)return false;
+  if(typeof window.exactSet!=='function'||typeof window.exactMatch!=='function')return false;
+
+  window.exactSet=match=>{
+    if(!match?.exact_first_set)return '';
+    const entries=Object.entries(match.exact_first_set).filter(([,v])=>num(v)!=null&&num(v)>=1).slice(0,14);
+    if(!entries.length)return '';
+    return exactLabBox('🎯 Dokładny wynik 1. seta',`<div class="pillgrid exact">${entries.map(([score,value])=>exactLabPill(score,value)).join('')}</div>`);
+  };
+
+  window.exactMatch=match=>{
+    if(!match?.exact_match_score)return '';
+    const entries=Object.entries(match.exact_match_score).filter(([,v])=>num(v)!=null);
+    if(!entries.length)return '';
+    return exactLabBox('🎯 Dokładny wynik meczu',`<div class="pillgrid exact four">${entries.map(([score,value])=>exactLabPill(score,value)).join('')}</div>`,'BO3');
+  };
+
+  state.exactLabInstalled=true;
+  return true;
+}
+
 function activeScenarioProfile(){
   return String(document.querySelector('#scenario-v82a-panel .sc82-profiles .active[data-sc-profile]')?.dataset.scProfile||'balanced').toLowerCase();
 }
@@ -244,14 +280,14 @@ function beginCoreEvent(){
 
 function wrapProjectOpen(){
   const api=window.TENIS_AI_PROJECT_UI;
-  if(!api||api.__marketQualityV8810||typeof api.openMatch!=='function')return;
+  if(!api||api.__marketQualityV8811||typeof api.openMatch!=='function')return;
   const open=api.openMatch;
   api.openMatch=(...args)=>{
     const result=open.apply(api,args);
     queueMicrotask(patchDecisionCenters);
     return result;
   };
-  Object.defineProperty(api,'__marketQualityV8810',{value:true,configurable:false});
+  Object.defineProperty(api,'__marketQualityV8811',{value:true,configurable:false});
 }
 
 function checkpointStatusText(){
@@ -287,7 +323,7 @@ function patchScenarioNote(){
     note.dataset.v887CheckpointNote='1';
     builder.appendChild(note);
   }
-  note.innerHTML='<b>🔒 CORE Market Quality Lock:</b> checkpoint 2/4/6g wymaga PBP + ≥65% (n≥30, Wilson ≥45%); zwycięzca meczu/setu i liczba setów wymagają FINAL Adaptive PROD ≥65% (n≥30, Wilson ≥45%). Karty meczu, Top i Generator korzystają z jednego źródła FINAL. Manual i Model Test/SHADOW zachowują pełne rynki. <span data-v889-status></span>';
+  note.innerHTML='<b>🔒 CORE Market Quality Lock:</b> checkpoint 2/4/6g wymaga PBP + ≥65% (n≥30, Wilson ≥45%); zwycięzca meczu/setu i liczba setów wymagają FINAL Adaptive PROD ≥65% (n≥30, Wilson ≥45%). Karty meczu, Top i Generator korzystają z jednego źródła FINAL. Exact score pozostaje MODEL LAB / N/D. Manual i Model Test/SHADOW zachowują pełne rynki. <span data-v889-status></span>';
   const span=note.querySelector('[data-v889-status]');
   if(span)span.textContent=state.telemetryLoaded?`Checkpointy: ${checkpointStatusText()}. Rynki wyniku: ${resultStatusText()}.`:'Telemetria: ładowanie…';
 }
@@ -355,6 +391,7 @@ function loadTelemetry(){
 function patchAll(){
   installModelGate();
   installLegacyRecommendationBridge();
+  installExactScoreLabLabels();
   wrapProjectOpen();
   patchScenarioNote();
   patchDecisionCenters();
@@ -412,5 +449,10 @@ window.TENIS_AI_CROSS_VIEW_QUALITY_V8810=Object.freeze({
   version:CROSS_VIEW_VERSION,
   selected:finalSelectedSignals,
   bridge:installLegacyRecommendationBridge
+});
+
+window.TENIS_AI_EXACT_SCORE_LAB_V8811=Object.freeze({
+  version:EXACT_LAB_VERSION,
+  install:installExactScoreLabLabels
 });
 })();
