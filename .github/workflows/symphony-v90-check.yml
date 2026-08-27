@@ -1,0 +1,38 @@
+name: Tennis Symphony v9.0 checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/symphony_engine_v90.py'
+      - 'frontend/symphony-v90.js'
+      - 'frontend/symphony-v90.css'
+      - 'frontend/index.html'
+      - 'tests/test_symphony_v90*.py'
+      - '.github/workflows/symphony-v90-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  symphony:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Python syntax
+        run: python -m py_compile backend/symphony_engine_v90.py
+      - name: Symphony tests
+        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py
+      - name: Frontend syntax
+        run: node --check frontend/symphony-v90.js
+      - name: Runtime wiring
+        run: |
+          grep -q 'symphony-v90.css' frontend/index.html
+          grep -q 'symphony-v90.js' frontend/index.html
+          grep -q 'Tennis Symphony v9.0B' .github/workflows/update-and-pages.yml
