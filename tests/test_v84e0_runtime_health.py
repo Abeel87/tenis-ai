@@ -7,6 +7,8 @@ def test_v84e0_runtime_health_contract():
     assert not failures, failures
     assert 'results.json' in metrics
     assert isinstance(metrics.get('direct_results_readers'), list)
+    assert 'sw.js' not in metrics.get('direct_results_readers', [])
+    assert 'sw.js' in metrics.get('service_worker_data_routes', [])
 
 def test_v84e0_runtime_is_loaded_before_heavy_consumers():
     index = Path('frontend/index.html').read_text(encoding='utf-8')
