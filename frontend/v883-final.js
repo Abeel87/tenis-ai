@@ -1,11 +1,15 @@
 /* Tenis AI v8.8.3 · final UI cleanup.
    No model math changes. This layer only unifies visible versioning,
-   removes legacy stats clutter and exposes Pair Selector reasoning. */
+   removes legacy stats clutter and exposes Pair Selector reasoning.
+   v8.8.20 runtime cleanup: explicit events replace delayed global polish loops.
+*/
 (()=>{
 'use strict';
 
 const VERSION='v8.8.3';
+const RUNTIME_FIX='v8.8.20';
 const DRAFT_KEY='tenis-ai-v82a-scenario-draft';
+const WRAP_KEY='__v883EventDriven';
 const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -209,20 +213,54 @@ function polish(){
   cleanupStats();
 }
 
-function boot(){
-  polish();
-  [120,350,800,1500,2600].forEach(ms=>setTimeout(polish,ms));
+function wrapScenarioOpen(){
+  const api=window.TENIS_AI_SCENARIOS;
+  if(!api||api[WRAP_KEY]||typeof api.open!=='function')return false;
+  const open=api.open;
+  api.open=(...args)=>{
+    const result=open.apply(api,args);
+    queueMicrotask(decorateGeneratorCards);
+    return result;
+  };
+  Object.defineProperty(api,WRAP_KEY,{value:true});
+  return true;
 }
 
-document.addEventListener('click',()=>setTimeout(polish,70),true);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(polish,50)});
+function scenarioClick(event){
+  return !!event.target?.closest?.('#scenario-v82a-panel,[data-p751-nav="scenarios"]');
+}
+
+function boot(){
+  brand();
+  compactAdaptive();
+  wrapScenarioOpen();
+  decorateGeneratorCards();
+  cleanupStats();
+}
+
+document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(cleanupStats));
+document.addEventListener('tenis-ai:stats-dashboard-ready',()=>queueMicrotask(cleanupStats));
+document.addEventListener('click',event=>{
+  if(!scenarioClick(event))return;
+  requestAnimationFrame(()=>{
+    wrapScenarioOpen();
+    decorateGeneratorCards();
+  });
+},true);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)return;
+  brand();
+  compactAdaptive();
+});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
 
 window.TENIS_AI_V883=Object.freeze({
   version:VERSION,
+  runtimeFix:RUNTIME_FIX,
   polish,
   cleanupStats,
-  decorateGeneratorCards
+  decorateGeneratorCards,
+  wrapScenarioOpen
 });
 })();
