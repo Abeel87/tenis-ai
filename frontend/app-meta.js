@@ -3,18 +3,18 @@
 (() => {
   const META = Object.freeze({
     appVersion: 'v8.0.1',
-    displayVersion: 'v8.8.6',
+    displayVersion: 'v8.8.7',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
     dynamicWeightsVersion: 'v8.4D',
     playerIntelligenceVersion: 'v8.5',
-    generatorPolicyVersion: 'v8.5.2-quality-lock',
+    generatorPolicyVersion: 'v8.8.7-checkpoint-quality-lock',
     modelName: 'AutoLearn Ensemble + Adaptive Learning',
     productionModelName: 'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion: 'v7.9B-bayesian-meta',
     uiArchitecture: 'v8.0.1-clean-core',
-    currentUiArchitecture: 'v8.8.6-honest-stats-ranking',
+    currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock',
     cacheVersion: 'v801',
     runtimeCacheVersion: 'v87'
   });
