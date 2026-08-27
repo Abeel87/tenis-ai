@@ -48,7 +48,7 @@ need("frontend/index.html", "ui-organizer-v853.css", "UI organizer CSS v8.5.3")
 verify_visible_version_contract()
 verify_checkpoint_lock_order()
 need("frontend/app-meta.js", "appVersion: 'v8.0.1'", "chroniony kontrakt bazowy v8.0.1")
-need("frontend/app-meta.js", "generatorPolicyVersion: 'v8.8.9-result-market-quality-lock'", "politykę CORE Result Market Lock v8.8.9")
+need("frontend/app-meta.js", "generatorPolicyVersion: 'v8.8.10-cross-view-quality-source'", "politykę jednego źródła FINAL v8.8.10")
 need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin AutoLearn")
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
 need("frontend/index.html", "model-trends-v84e2.js?v=84e2&hf=852a1", "chroniony pin Trend Monitor")
@@ -79,8 +79,23 @@ forbid("frontend/checkpoint-quality-v887.js", "RESULT_MARKETS=new Set([...WINNER
 need("frontend/checkpoint-quality-v887.js", "return state.coreEventDepth>0?filteredSignals(rows,match):rows", "ograniczenie filtra allSignals wyłącznie do CORE Generate")
 need("frontend/checkpoint-quality-v887.js", "activeScenarioProfile()!=='experimental'", "bypass Model Test / SHADOW")
 need("frontend/checkpoint-quality-v887.js", "Manual i Model Test/SHADOW zachowują pełne rynki", "granicę CORE vs manual/SHADOW")
+
+# Legacy match cards must use the same selected FINAL source as Top/Generator.
+need("frontend/checkpoint-quality-v887.js", "function finalSelectedSignals(match,limit=3)", "wspólne źródło FINAL dla widoków")
+need("frontend/checkpoint-quality-v887.js", "api.signals(match,Math.max(wanted,3))", "wykorzystanie publicznego API FINAL")
+need("frontend/checkpoint-quality-v887.js", "window.bestSignalsData=(match,limit=3)=>finalSelectedSignals", "mostek bestSignalsData")
+need("frontend/checkpoint-quality-v887.js", "window.bestSignals=match=>", "mostek dużych Najmocniejszych sygnałów")
+need("frontend/checkpoint-quality-v887.js", "window.compactSignals=match=>", "mostek kompaktowych sygnałów")
+need("frontend/checkpoint-quality-v887.js", "window.TENIS_AI_CROSS_VIEW_QUALITY_V8810", "publiczny helper cross-view v8.8.10")
+need("frontend/checkpoint-quality-v887.js", "Karty meczu, Top i Generator korzystają z jednego źródła FINAL", "komunikat jednego źródła FINAL")
 forbid("frontend/checkpoint-quality-v887.js", "new MutationObserver(", "globalny MutationObserver w Market Quality Lock")
 forbid("frontend/checkpoint-quality-v887.js", "setInterval(", "interwał w Market Quality Lock")
+
+# Serve Props is presentation/lab only and must not scan the whole app DOM.
+forbid("frontend/serve-props-v72.js", "new MutationObserver(", "globalny MutationObserver Serve Props")
+forbid("frontend/serve-props-v72.js", "obs.observe(document.body", "body-wide observer Serve Props")
+need("frontend/serve-props-v72.js", "scheduleRefresh(document)", "celowane odświeżenie Serve Props")
+need("frontend/serve-props-v72.js", "requestAnimationFrame", "zgrupowane odświeżenie Serve Props")
 
 need("frontend/hotfix-v84e01.js", "refreshHistoryOnly(false)", "history refresh bez wymuszonego pobrania przy każdym kliknięciu")
 need("frontend/hotfix-v84e01.js", "candidates.find", "fallback do pierwszego niepustego statusu")
