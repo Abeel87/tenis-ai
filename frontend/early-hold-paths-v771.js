@@ -1,4 +1,4 @@
-/* Tenis AI v7.7.1 — Hold Paths + clear player/match scope */
+/* Tenis AI v8.8.16 — Hold Paths + event-driven player/match scope */
 (() => {
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -109,8 +109,7 @@
   }
 
   function decorateOverlay(){
-    // v8.5.3M2: Match Matrix owns the match-level comparison.
-    // Keep Early Hold profile helpers, but no second POROWNANIE MECZU block.
+    // Match Matrix owns the match-level comparison. Keep profile helpers only.
     $('#eh771-match-compare')?.remove();
   }
 
@@ -158,17 +157,45 @@
   }
 
   function profileActive(){return !!window.TENIS_AI_PLAYER_PROFILE_ACTIVE}
+
   function refresh(){
-    // v8.1: podczas otwartego profilu nie skanujemy całej strony co 900 ms.
-    // Poza profilem zachowanie Early Hold pozostaje bez zmian.
     if(profileActive())return;
     decorateOverlay();
-    decoratePlayerProfile();
   }
+
   function mountProfile(){decoratePlayerProfile()}
-  const obs=new MutationObserver(()=>requestAnimationFrame(refresh));
-  obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
-  setInterval(refresh,900);
-  setTimeout(refresh,120);
-  window.TENIS_AI_EARLY_HOLD_PATHS_V81={mountProfile,refresh};
+
+  function wrapProjectOpen(){
+    const project=window.TENIS_AI_PROJECT_UI;
+    if(!project||project.__earlyHoldPathsV8816||typeof project.openMatch!=='function')return false;
+    const open=project.openMatch;
+    project.openMatch=(...args)=>{
+      const result=open.apply(project,args);
+      queueMicrotask(decorateOverlay);
+      return result;
+    };
+    Object.defineProperty(project,'__earlyHoldPathsV8816',{value:true});
+    return true;
+  }
+
+  function boot(){
+    wrapProjectOpen();
+    requestAnimationFrame(refresh);
+
+    // Normal match cards call an internal openMatch; the document click fires
+    // after the target handler, so one RAF is enough to clean the duplicate.
+    document.addEventListener('click',event=>{
+      if(event.target?.closest?.('[data-p751-open]'))requestAnimationFrame(decorateOverlay);
+    },true);
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+
+  window.TENIS_AI_EARLY_HOLD_PATHS_V81={
+    version:'v8.8.16',
+    mountProfile,
+    refresh,
+    decorateOverlay
+  };
 })();
