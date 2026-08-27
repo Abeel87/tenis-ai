@@ -61,8 +61,26 @@ def test_v887_v8810_market_quality_layer_is_scoped_to_core_and_cross_view():
 
 def test_v883_pair_reasoning_is_visible():
     js=t("frontend/v883-final.js")
-    for token in ["PAIR SCORE","DLACZEGO TEN MECZ","HISTORIA","selector_match_score","selector_pair","selector_reason"]:
+    for token in ["PAIR SELECTOR · RANKING","DLACZEGO TEN MECZ","HISTORIA","selector_match_score","selector_pair","selector_reason"]:
         assert token in js
+
+def test_v883_scenario_scores_are_semantically_clear():
+    js=t("frontend/v883-final.js")
+    css=t("frontend/v883-final.css")
+    for token in [
+        "function clarifyScenarioScores()",
+        "Composer $1",
+        "Model FINAL $1",
+        "Ocena scenariusza · Composer",
+        "Model FINAL</strong> = wynik produkcyjnego modelu Adaptive",
+        "To nie są gwarantowane prawdopodobieństwa",
+        "sc883-saved-label",
+    ]:
+        assert token in js
+    assert ".sc883-score-note" in css
+    assert ".sc883-saved-label" in css
+    assert "new MutationObserver(" not in js
+    assert "setInterval(" not in js
 
 def test_v883_has_single_stats_owner_and_hides_legacy_ui_before_cleanup():
     old=t("frontend/v88-upgrade.js")
