@@ -52,8 +52,9 @@ def test_v88_preserves_protected_runtime_contract():
 
     # Runtime compatibility remains fixed; visible version has a single owner.
     assert "appVersion: 'v8.0.1'" in meta
-    assert "displayVersion: 'v8.8.6'" in meta
-    assert "currentUiArchitecture: 'v8.8.6-honest-stats-ranking'" in meta
+    assert "displayVersion: 'v8.8.7'" in meta
+    assert "generatorPolicyVersion: 'v8.8.7-checkpoint-quality-lock'" in meta
+    assert "currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock'" in meta
 
     # Compatibility bridge delegates visible branding to central metadata.
     assert "function applyV88Brand()" in upgrade
