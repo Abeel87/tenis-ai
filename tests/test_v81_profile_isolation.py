@@ -12,12 +12,17 @@ def test_v81_profile_mode_is_isolated():
     assert "TENIS_AI_EARLY_HOLD_PATHS_V81?.mountProfile" in p
     assert "TENIS_AI_PLAYER_ANALYTICS_V801?.mount" in p
 
-def test_early_hold_keeps_normal_runtime_outside_profile():
+def test_early_hold_paths_is_event_driven_outside_profile():
     s = read("frontend/early-hold-paths-v771.js")
-    assert "setInterval(refresh,900)" in s
+    assert "version:'v8.8.16'" in s
     assert "decorateOverlay()" in s
     assert "if(profileActive())return" in s
     assert "TENIS_AI_EARLY_HOLD_PATHS_V81" in s
+    assert "wrapProjectOpen" in s
+    assert "[data-p751-open]" in s
+    assert "setInterval(" not in s
+    assert "new MutationObserver(" not in s
+    assert "obs.observe(document.body" not in s
 
 def test_serve_props_uses_targeted_refresh_without_body_observer():
     s = read("frontend/serve-props-v72.js")
