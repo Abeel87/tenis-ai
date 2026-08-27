@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'v9.0B';
+  const VERSION = 'v9.0C';
   const DATA_URL = './data/symphony_v90.json';
   let cache = null;
 
@@ -48,15 +48,18 @@
   function legHtml(leg) {
     const shadowCount = Object.keys(leg.shadow_scores || {}).length;
     const path = leg.path_probability == null ? '' : ` · PATH ${pct(leg.path_probability)}`;
+    const raw = leg.raw_market_probability == null ? '' : ` · surowe ${pct(leg.raw_market_probability)}`;
+    const source = leg.market_source ? ` · ${esc(leg.market_source)}` : '';
+    const kind = leg.score_kind === 'relative_family_strength' ? ' · siła w rodzinie' : '';
     return `
       <div class="symphony-leg">
         <div class="symphony-leg__main">
           <strong>${esc(leg.label || leg.key)}</strong>
-          <span>${esc(leg.market)}</span>
+          <span>${esc(leg.market)}${source}</span>
         </div>
         <div class="symphony-leg__numbers">
           <b>${Number(leg.evidence_score || 0).toFixed(1)}</b>
-          <small>PROD ${Number(leg.prod_score || 0).toFixed(1)}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
+          <small>PROD ${Number(leg.prod_score || 0).toFixed(1)}${kind}${raw}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
         </div>
       </div>`;
   }
@@ -84,6 +87,8 @@
     const frag = (comp.fragility || [])[0];
     const exactJoint = comp.joint_probability;
     const coverage = Math.round(Number(comp.path_coverage || 0) * 100);
+    const catalog = Number(match?.market_adapter?.catalog_size || 0);
+    const added = Number(match?.market_adapter?.composer_added || 0);
     return `
       <article class="symphony-card">
         <div class="symphony-card__head">
@@ -102,6 +107,7 @@
           <span>joint coverage <b>${coverage}%</b></span>
           <span>PROD/SHADOW <b>${Math.round(Number(comp.prod_shadow_agreement || 0) * 100)}%</b></span>
           <span>konflikt <b>${Math.round(Number(comp.model_conflict || 0) * 100)}%</b></span>
+          ${catalog ? `<span>katalog <b>${catalog}</b> · +${added}</span>` : ''}
         </div>
 
         ${exactJoint != null
@@ -174,7 +180,7 @@
         </div>
 
         <div class="symphony-note">
-          Exact State Engine liczy po 2 / 4 / 6 gemach, wynik 1. seta, wynik meczu, liczbę setów i gemy z jednego wspólnego drzewa. Jeśli któregoś rynku jeszcze nie umie policzyć dokładnie, nie udaje joint probability.
+          v9.0C czyta pełny katalog, który Tenis AI już wylicza: stany 2/4/6, zwycięzców, drabinki gemów, exact score, liczbę setów, tie-break oraz serve props. Joint probability pokazuje tylko dla nóg policzonych na tym samym exact tree.
         </div>
         <div id="symphony-results" class="symphony-grid">${resultsHtml(data, 4, 4, 0)}</div>
       </section>`;
