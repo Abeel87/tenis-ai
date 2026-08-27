@@ -3,6 +3,7 @@
 'use strict';
 
 const VERSION='v8.8.2';
+const RUNTIME_FIX='v8.8.13';
 const PERIOD_KEY='tenis-ai-v882-period';
 const TAB_KEY='tenis-ai-v882-tab';
 
@@ -381,6 +382,8 @@ async function renderStats882(){
     try{localStorage.setItem(PERIOD_KEY,btn.dataset.pc882Period)}catch{}
     renderStats882().catch(console.error);
   }));
+
+  document.dispatchEvent(new CustomEvent('tenis-ai:stats-dashboard-ready',{detail:{version:RUNTIME_FIX}}));
 }
 
 function compactAdaptive(){
@@ -472,19 +475,33 @@ function polish(){
   decorateTop();
 }
 
+function relevantPolishClick(event){
+  return !!event.target?.closest?.('[data-view="stats"],[data-pc882-period],[data-pc882-tab],[data-sc-profile],[data-sc-generate],.p751-top button,.v853b-health-toggle');
+}
+
 function boot(){
   wrapStats();
   polish();
-  [250,700,1500,2600].forEach(ms=>setTimeout(()=>{
-    wrapStats(); polish();
+
+  // One bounded stabilization for data-loaded widgets. Previous builds ran
+  // four delayed full polish passes (250/700/1500/2600 ms), causing visible shifts.
+  setTimeout(()=>{
+    wrapStats();
+    polish();
     if(document.querySelector('#pc77')&&!document.querySelector('#pc882-dashboard'))renderStats882().catch(console.error);
-  },ms));
+  },700);
 }
 
-document.addEventListener('tenis-ai:stats-ready',()=>renderStats882().catch(console.error));
-document.addEventListener('click',()=>setTimeout(polish,60),true);
+document.addEventListener('tenis-ai:stats-ready',()=>{
+  polish();
+  renderStats882().catch(console.error);
+});
+document.addEventListener('click',event=>{
+  if(!relevantPolishClick(event))return;
+  queueMicrotask(polish);
+},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
 else boot();
 
-window.TENIS_AI_V882=Object.freeze({version:VERSION,priorFor,renderStats:renderStats882,polish});
+window.TENIS_AI_V882=Object.freeze({version:VERSION,runtimeFix:RUNTIME_FIX,priorFor,renderStats:renderStats882,polish});
 })();
