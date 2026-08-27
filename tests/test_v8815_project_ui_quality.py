@@ -48,10 +48,26 @@ def test_project_ui_bridge_has_no_polling_or_mutation_observer():
 
 def test_project_ui_suppresses_only_automatic_startup_rerenders():
     js = read("frontend/project-ui-quality-v8815.js")
-    assert "RUNTIME_FIX='v8.8.17'" in js
+    assert "RUNTIME_FIX='v8.8.18'" in js
     assert "STARTUP_SUPPRESS_MS=1250" in js
     assert "startupRenderShouldBeSuppressed" in js
     assert "userRenderPermit" in js
     assert "isUserRenderControl" in js
     assert "if(userRenderPermit>0)return false" in js
     assert "if(startupRenderShouldBeSuppressed())" in js
+
+
+def test_project_ui_serve_props_is_explicitly_uncalibrated_lab():
+    js = read("frontend/project-ui-quality-v8815.js")
+    assert "patchServePropsHonesty" in js
+    assert "LAB · N/D" in js
+    assert "model count · niekalibrowany" in js
+    assert "kurs modelowy nie jest potwierdzonym fair oddsem" in js
+    assert "nie wchodzi do CORE" in js
+
+
+def test_project_ui_exact_score_is_lab_without_final_telemetry():
+    js = read("frontend/project-ui-quality-v8815.js")
+    assert "patchExactScoreHonesty" in js
+    assert "Dokładny wynik · MODEL LAB · N/D" in js
+    assert "Brak osobnej telemetrii FINAL — diagnostyka, nie CORE." in js
