@@ -1,8 +1,8 @@
-/* Tenis AI v8.8.14 — honest model ranking + visible stats trend */
+/* Tenis AI v8.8.15 — honest model ranking + PLAYABLE stats */
 (()=>{
 'use strict';
 
-const VERSION='v8.8.14';
+const VERSION='v8.8.15';
 const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 
 function text(node){return String(node?.textContent||'').trim()}
@@ -24,6 +24,23 @@ function loadSymphonyStats(){
   }
 }
 
+function loadSuperbetPlayableStats(){
+  if(!document.querySelector('link[data-superbet-playable-v912]')){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='superbet-playable-v912.css?v=912';
+    link.dataset.superbetPlayableV912='1';
+    document.head.append(link);
+  }
+  if(!document.querySelector('script[data-superbet-playable-v912]')&&!window.TENIS_AI_SUPERBET_PLAYABLE_V912){
+    const script=document.createElement('script');
+    script.src='superbet-playable-v912.js?v=912';
+    script.defer=true;
+    script.dataset.superbetPlayableV912='1';
+    document.head.append(script);
+  }
+}
+
 function patchModelRanking(){
   const pane=document.querySelector('[data-pc882-pane="models"]');
   const card=pane?.querySelector('.pc882-card');
@@ -35,7 +52,7 @@ function patchModelRanking(){
   const title=head?.querySelector('b');
   const sub=head?.querySelector('small');
   if(title)title.textContent='Porównanie modeli i komponentów';
-  if(sub)sub.textContent='kolejność wg trafności; Brier i n są pokazane jako kontekst';
+  if(sub)sub.textContent='RAW / diagnostyka historyczna; realnie grywalną próbkę pokazuje panel Superbet PLAYABLE';
 
   const rows=[...list.children].filter(row=>row.matches?.('div')&&!row.classList.contains('pc882-empty'));
   const proxy=rows.find(row=>/selector\s+proxy/i.test(text(row.querySelector('b'))));
@@ -90,13 +107,10 @@ function patch(){
 
 function boot(){
   loadSymphonyStats();
+  loadSuperbetPlayableStats();
   patch();
 
-  // Performance Center creates the basic page first.
   document.addEventListener('tenis-ai:stats-ready',()=>queueMicrotask(promoteMainTrend));
-
-  // v8.8.13 emits this only after the async model dashboard is actually in DOM.
-  // No subtree MutationObserver is needed anymore.
   document.addEventListener(DASHBOARD_READY_EVENT,()=>queueMicrotask(patch));
 
   document.addEventListener('click',event=>{
@@ -112,6 +126,7 @@ window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
   dashboardReadyEvent:DASHBOARD_READY_EVENT,
   patch:patchModelRanking,
   promoteTrend:promoteMainTrend,
-  loadSymphonyStats
+  loadSymphonyStats,
+  loadSuperbetPlayableStats
 });
 })();

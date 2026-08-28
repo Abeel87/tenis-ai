@@ -3,13 +3,23 @@ from __future__ import annotations
 import re
 import unicodedata
 
-SIGNAL_LAYERS = ("signals", "shadow_signals", "learning_signals_v79b",
-                 "autolearn_signals_v84", "game_state_learning_v84e1")
+SIGNAL_LAYERS = (
+    "signals", "shadow_signals", "learning_signals_v79b",
+    "autolearn_signals_v84", "game_state_learning_v84e1",
+    "playable_signals_v912", "playable_shadow_lab_v912",
+    "playable_autolearn_signals_v912", "playable_shadow_models_v912",
+)
 
 def market_name(value):
-    return {"match_win": "match_winner", "set1_win": "set1_winner",
-            "set2_win": "set2_winner", "set3_win": "set3_winner",
-            "exact_match_score": "exact_match"}.get(value, value)
+    return {
+        "match_win": "match_winner",
+        "set1_win": "set1_winner",
+        "set2_win": "set2_winner",
+        "set3_win": "set3_winner",
+        "exact_match_score": "exact_match",
+        "set1_exact_score": "exact_set1",
+        "exact_first_set": "exact_set1",
+    }.get(value, value)
 
 def _key(value):
     value = unicodedata.normalize('NFKD', str(value or '')).encode('ascii', 'ignore').decode().casefold()
@@ -41,10 +51,25 @@ def settle_signal(signal: dict, final: dict) -> str:
         actual = p1 if a > b else p2
         return 'hit' if _key(pick) == _key(actual) else 'miss'
     if market == 'total_sets':
+        # Legacy layer stored exact count picks ("2 sets" / "3 sets"). v9.1.2
+        # additionally freezes real Superbet O/U lines, so settle both forms.
+        direction = pick.strip().casefold()
+        if direction in ('over', 'under'):
+            try:
+                line = float(signal.get('line'))
+            except (TypeError, ValueError):
+                return 'unverifiable'
+            total = final.get('number_of_sets')
+            if total is None:
+                return 'void'
+            if total == line:
+                return 'void'
+            ok = total > line if direction == 'over' else total < line
+            return 'hit' if ok else 'miss'
         wanted = 2 if pick.startswith('2') else (3 if pick.startswith('3') else None)
         return 'hit' if wanted == final.get('number_of_sets') else 'miss' if wanted else 'void'
     if market == 'exact_match':
-        return 'hit' if pick == final.get('match_score') else 'miss'
+        return 'hit' if pick.replace('-', ':') == str(final.get('match_score') or '').replace('-', ':') else 'miss'
     if market == 'set1_total':
         if not sets:
             return 'void'
@@ -74,7 +99,7 @@ def settle_signal(signal: dict, final: dict) -> str:
         ok = total > line if pick == 'over' else total < line
         return 'hit' if ok else 'miss'
     if market == 'exact_set1':
-        return 'hit' if pick == final.get('first_set_score') else 'miss'
+        return 'hit' if pick.replace('-', ':') == str(final.get('first_set_score') or '').replace('-', ':') else 'miss'
     return 'unverifiable'
 
 
@@ -119,7 +144,7 @@ def settle_signal_live(signal: dict, final: dict) -> str:
         if not sets or not complete or not complete[0]:
             return "void"
         actual = f"{sets[0][0]}:{sets[0][1]}"
-        return "hit" if pick == actual else "miss"
+        return "hit" if pick.replace('-', ':') == actual else "miss"
 
     return "unverifiable"
 

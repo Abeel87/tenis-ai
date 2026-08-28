@@ -9,7 +9,7 @@ def read(path):
 
 def test_stats_trend_is_promoted_to_main_view():
     js = read("frontend/stats-ranking-v886.js")
-    assert "VERSION='v8.8.14'" in js
+    assert "VERSION='v8.8.15'" in js
     assert "promoteMainTrend" in js
     assert "pc12-summary" in js
     assert "pc12-pro .pc12-pro-body" in js
