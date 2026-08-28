@@ -24,8 +24,15 @@ def test_long_data_build_has_its_own_concurrency_lane():
     workflow = read(".github/workflows/update-and-pages.yml")
     assert "group: tennis-data-build" in workflow
     assert "group: pages\n" not in workflow
-    assert "superbet_market_context_v913.py prepare" in workflow
-    assert "superbet_market_context_v913.py finalize" in workflow
+
+    # The concrete Superbet adapter version is intentionally allowed to move
+    # forward. What this regression protects is that the long build still has
+    # both PREPARE and FINALIZE wired to the same adapter version.
+    prepare = re.findall(r"superbet_market_context_(v\d+)\.py prepare", workflow)
+    finalize = re.findall(r"superbet_market_context_(v\d+)\.py finalize", workflow)
+    assert prepare, "Missing Superbet PREPARE step"
+    assert finalize, "Missing Superbet FINALIZE step"
+    assert prepare[-1] == finalize[-1]
 
 
 def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
