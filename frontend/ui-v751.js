@@ -45,12 +45,7 @@
   const signalText=v=>num(v)==null?'—':(signalIsProbability()?`${Math.round(Number(v))}%`:`${Math.round(Number(v))}/100`);
 
   function status(m){
-    const raw=String(m?.event_status||m?.feed_status||m?.status||'').toLowerCase();
-    if(raw.includes('live')||raw.includes('progress')||raw.includes('started')) return {txt:'LIVE',cls:'live'};
-    if(raw.includes('interrupt')) return {txt:'PRZERWANY',cls:'interrupted'};
-    if(raw.includes('suspend')) return {txt:'ZAWIESZONY',cls:'suspended'};
-    if(raw.includes('postpon')) return {txt:'PRZEŁOŻONY',cls:'postponed'};
-    return {txt:'PRZED MECZEM',cls:'upcoming'};
+    return window.TENIS_AI_MATCH_TIME?.cardStatus(m)||{txt:'STATUS N/D',cls:'unknown'};
   }
 
   function addBest(arr,label,obj,kind='model'){
@@ -77,7 +72,10 @@
   function currentRows(){
     let rows=(typeof filteredReady==='function'?filteredReady():Array.isArray(all)?all:[]).filter(Boolean);
     if(typeof filter!=='undefined'&&filter!=='all'&&typeof tourKey==='function')rows=rows.filter(m=>tourKey(m)===filter);
-    if(focus==='strong')rows=rows.filter(m=>strength(m)>=80);
+    if(focus==='strong')rows=rows.filter(m=>{
+      const signal=window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,1)?.[0];
+      return num(signal?.v??signal?.final_score??signal?.score??signal?.current)>=80;
+    });
     if(focus==='pbp')rows=rows.filter(m=>m.early_hold_v7?.ready);
     if(focus==='live')rows=rows.filter(m=>status(m).cls==='live');
     rows.sort((a,b)=>new Date(a.scheduled_time||0)-new Date(b.scheduled_time||0));
@@ -184,12 +182,13 @@
     const s=top(m,1)[0],v=strength(m),st=status(m);
     return `<article class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}" role="button" tabindex="0">
       <div class="p751-match-meta">
-        <span class="p751-status ${st.cls}">${esc(st.txt)}</span>
+        ${window.TENIS_AI_MATCH_TIME?.badgeHtml(m)||`<span class="p751-status ${st.cls}">${esc(st.txt)}</span>`}
         <b>${esc(tour(m))}</b>
         <span>${esc(m.tournament||'Turniej')}</span>
         <span>• ${esc(surf(m))}</span>
         <time>${esc(tm(m))}</time>
       </div>
+      ${window.TENIS_AI_MATCH_TIME?.html(m,'compact')||''}
       <div class="p751-card-center">
         <div class="p751-names">
           <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b>
@@ -235,7 +234,6 @@
       <button class="${focus==='live'?'active':''}" data-p751-focus="live">● LIVE</button>
       <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">⭐ 80+</button>
       <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">🧬 PBP OK</button>
-      <button type="button" data-shadow-open>🧪 Odrzucone</button>
     </div>`;
   }
 
@@ -259,17 +257,6 @@
 
   function bindHome(){
     document.querySelectorAll('[data-p751-focus]').forEach(b=>b.onclick=()=>{focus=b.dataset.p751Focus;renderMatches()});
-
-    const shadow=document.querySelector('[data-shadow-open]');
-    if(shadow){
-      shadow.onclick=async e=>{
-        e.preventDefault();
-        e.stopPropagation();
-        await window.TENIS_AI_SHADOW_LAB?.open?.();
-        route='shadow';
-        navActive('shadow');
-      };
-    }
 
     document.querySelectorAll('[data-p751-open]').forEach(b=>{
       const open=()=>openMatch(decodeURIComponent(b.dataset.p751Open));
@@ -630,7 +617,7 @@
 
   function simplifyShell(){
     document.documentElement.classList.add('p751-project-ui');
-    const meta80=window.TENIS_AI_META, brand80=document.querySelector('.brand-copy p'); if(brand80) brand80.textContent=meta80?`Tenis AI ${meta80.appVersion} · Adaptive Learning`:'Tenis AI';
+    window.TENIS_AI_APPLY_META?.();
     ensureBottomNav();
   }
 

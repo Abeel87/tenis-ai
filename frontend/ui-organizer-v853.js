@@ -63,7 +63,7 @@
       bar.className = 'v853-stats-toolbar';
       bar.innerHTML = `
         <div class="v853-toolbar-copy">
-          <b>🧭 Widok sygnałów</b>
+          <b>🧭 Widok statystyk</b>
           <small>Najważniejsze na wierzchu, diagnostyka dopiero w PRO.</small>
         </div>
         <div class="v853-mode-switch" role="group" aria-label="Poziom szczegółowości">

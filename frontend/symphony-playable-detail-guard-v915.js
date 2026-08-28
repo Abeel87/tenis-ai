@@ -7,6 +7,7 @@
   const VERSION = 'v9.1.5';
   const DATA_URL = './data/symphony_v90.json';
   let reportCache = null;
+  let cachedAt = 0;
   let reportPromise = null;
   let timer = null;
 
@@ -19,11 +20,11 @@
   const lineText = (v) => finite(v) ? Number(v).toFixed(1).replace('.0', '') : '';
 
   function loadReport() {
-    if (reportCache) return Promise.resolve(reportCache);
+    if (reportCache && Date.now()-cachedAt < 60000) return Promise.resolve(reportCache);
     if (reportPromise) return reportPromise;
     reportPromise = fetch(`${DATA_URL}?playable=915`, { cache: 'no-cache' })
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      .then(data => (reportCache = data))
+      .then(data => {cachedAt=Date.now();return reportCache=data;})
       .catch(() => null)
       .finally(() => { reportPromise = null; });
     return reportPromise;
@@ -51,9 +52,11 @@
     return map.get(raw) || map.get(`id:${raw}`) || null;
   }
 
-  function playableComposition(row) {
+  function playableComposition(row,match) {
     if (!row || typeof row !== 'object') return { state: 'missing' };
     const gate = row.operator_reprojection || {};
+    const api=window.TENIS_AI_PLAYABLE_UI_V917;
+    if(api?.active?.(match)!==true)return {state:'unverified',gate};
     if (gate.active !== true || gate.verified_operator_match !== true) {
       return { state: 'unverified', gate };
     }
@@ -63,7 +66,7 @@
     const comps = row.compositions || {};
     for (const n of [6, 5, 4, 3, 2]) {
       const comp = comps[String(n)];
-      if (comp && Array.isArray(comp.selection) && comp.selection.length) {
+      if (api.compositionPlayable(match,comp)) {
         return { state: 'playable', n, comp, gate };
       }
     }
@@ -138,7 +141,6 @@
     const panel = overlay?.querySelector('[data-symphony-match-detail]');
     const raw = String(overlay?.dataset?.matchKey || '');
     if (!overlay || !panel || !raw) return false;
-    if (panel.dataset.symphonyPlayableGuard === VERSION) return true;
 
     const report = await loadReport();
     const current = document.querySelector('#p751-match-overlay:not([hidden])');
@@ -147,9 +149,13 @@
     if (!currentPanel) return false;
 
     const row = findRow(report, raw);
-    const chosen = playableComposition(row);
+    const match=window.TENIS_AI_PLAYABLE_UI_V917?.findMatch?.(raw);
+    const chosen = playableComposition(row,match);
+    const renderKey=JSON.stringify([raw,chosen.state,chosen.n,chosen.comp]);
+    if(currentPanel.__playableRenderKey===renderKey)return chosen.state==='playable';
     if (chosen.state === 'playable') renderPlayable(currentPanel, chosen);
     else renderBlocked(currentPanel, chosen.state);
+    currentPanel.__playableRenderKey=renderKey;
     return chosen.state === 'playable';
   }
 

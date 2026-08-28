@@ -36,10 +36,39 @@
     if(/abandoned/.test(s))return 'abandoned';
     if(/walk\s*over|walkover/.test(s))return 'walkover';
     if(/retired|retirement/.test(s))return 'retired';
-    if(/\blive\b|in[\s_-]?progress|playing/.test(s))return 'live';
-    if(/settled|completed|complete|finished|ended|\bhit\b|\bmiss\b/.test(s))return 'finished';
+    if(/\b(settled|completed|complete|finished|ended|hit|miss)\b/.test(s))return 'finished';
     if(/\bvoid\b/.test(s))return 'void';
+    if(/suspend/.test(s))return 'suspended';
+    if(/interrupt/.test(s))return 'interrupted';
+    // Terminal states take precedence over an old LIVE field. "Not started"
+    // is a scheduled status, not evidence that play has begun.
+    const active=s.replace(/not[\s_-]*started/g,'');
+    if(/\blive\b|in[\s_-]?progress|playing|\bstarted\b/.test(active))return 'live';
     return 'scheduled';
+  }
+
+  function isCurrent(m,nowValue=Date.now(),graceMinutes=30){
+    if(!m||!['scheduled','live','suspended','interrupted'].includes(statusKind(m)))return false;
+    const scheduled=parseTime(m.scheduled_time);
+    // Keep fixtures with missing time visible as N/D; never invent a start.
+    return !scheduled||scheduled.getTime()>=Number(nowValue)-graceMinutes*60000;
+  }
+
+  function cardStatus(m,nowValue=Date.now()){
+    const kind=statusKind(m);
+    const labels={live:'LIVE',suspended:'ZAWIESZONY',interrupted:'PRZERWANY',
+      cancelled:'ANULOWANY',postponed:'PRZEŁOŻONY',abandoned:'PRZERWANY',
+      walkover:'WALKOVER',retired:'RETIRED',finished:'ZAKOŃCZONY',void:'ZAKOŃCZONY · VOID'};
+    if(labels[kind])return {txt:labels[kind],cls:kind};
+    const scheduled=parseTime(m?.scheduled_time);
+    if(!scheduled)return {txt:'CZAS N/D',cls:'unknown'};
+    if(scheduled.getTime()<=Number(nowValue))return {txt:'OCZEKUJE NA STATUS',cls:'waiting'};
+    return {txt:'PRZED MECZEM',cls:'upcoming'};
+  }
+
+  function badgeHtml(m){
+    const s=cardStatus(m);
+    return `<span class="p751-status ${esc(s.cls)}" data-tai-match-status="1" data-scheduled-time="${esc(m?.scheduled_time||'')}" data-match-status="${esc(rawStatus(m))}">${esc(s.txt)}</span>`;
   }
 
   function parseTime(value){
@@ -105,6 +134,8 @@
     else if(kind==='abandoned')stateText='⚪ PRZERWANY';
     else if(kind==='walkover')stateText='⚪ WALKOVER';
     else if(kind==='retired')stateText='⚪ RETIRED';
+    else if(kind==='suspended')stateText='🟠 ZAWIESZONY';
+    else if(kind==='interrupted')stateText='🟠 PRZERWANY';
     else if(kind==='live')stateText='🔴 TRWA';
     else if(kind==='finished')stateText='✅ ZAKOŃCZONY';
     else if(kind==='void')stateText='⚪ ZAKOŃCZONY · VOID';
@@ -123,7 +154,7 @@
       text=stateText;
     }else if(mode==='history' && ['finished','void','retired','walkover','abandoned','cancelled'].includes(kind)){
       text=`🕒 Start: ${historical} · ${stateText}`;
-    }else if(['cancelled','postponed','abandoned','walkover','retired'].includes(kind)){
+    }else if(['cancelled','postponed','abandoned','walkover','retired','suspended','interrupted'].includes(kind)){
       text=scheduled ? `${stateText} · planowano ${scheduledLong}` : stateText;
     }else if(kind==='live'){
       text=scheduled ? `${stateText} · planowano ${scheduledLong}` : stateText;
@@ -158,13 +189,20 @@
 
   function refreshMarker(el,now=Date.now()){
     const x=compute(markerModel(el),now,el.dataset.timeMode||'full');
-    el.className=`tai-match-time tai-time-${x.kind}`;
-    el.textContent=x.text;
+    const cls=`tai-match-time tai-time-${x.kind}`;
+    if(el.className!==cls)el.className=cls;
+    if(el.textContent!==x.text)el.textContent=x.text;
   }
 
   function refreshAllMarkersOnly(){
     if(typeof document==='undefined')return;
     document.querySelectorAll('[data-tai-match-time="1"]').forEach(el=>refreshMarker(el));
+    document.querySelectorAll('[data-tai-match-status="1"]').forEach(el=>{
+      const s=cardStatus(markerModel(el));
+      const cls=`p751-status ${s.cls}`;
+      if(el.className!==cls)el.className=cls;
+      if(el.textContent!==s.txt)el.textContent=s.txt;
+    });
   }
 
   function currentHistoryRows(){
@@ -296,8 +334,16 @@
   }
 
   function refreshAll(){
+    if(typeof document==='undefined'||document.hidden)return;
     decorateScenario();
     refreshAllMarkersOnly();
+    root.TENIS_AI_MATCH_VISIBILITY_V916?.refreshClock?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchOpenDecision?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchSymphonyMinis?.();
+    root.TENIS_AI_SYMPHONY_PLAYABLE_DETAIL_GUARD_V915?.guardOpenMatch?.();
+    root.TENIS_AI_SYMPHONY_V90?.refreshVisible?.();
+    root.TENIS_AI_SHADOW_SIGNAL_CENTER_V894?.refreshVisible?.();
   }
 
   let timer=null;
@@ -307,6 +353,8 @@
     scheduleDecorate();
     document.addEventListener('click',scheduleDecorate,true);
     document.addEventListener('tenis-ai-scenario-settlement',scheduleDecorate);
+    document.addEventListener('visibilitychange',refreshAll);
+    root.addEventListener?.('pageshow',refreshAll);
     if(!timer)timer=setInterval(refreshAll,TICK_MS);
   }
 
@@ -317,6 +365,9 @@
     refreshAll,
     mount,
     statusKind,
+    isCurrent,
+    cardStatus,
+    badgeHtml,
     rawStatus,
     futureDistance,
     pastDistance

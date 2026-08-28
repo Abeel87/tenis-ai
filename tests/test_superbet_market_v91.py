@@ -184,3 +184,22 @@ def test_symphony_guard_is_non_destructive_without_verified_feed():
     guarded, meta = apply_superbet_market_guard(augmented, {}, {"superbet_market_v91": {"status": "NOT_FOUND", "operator_verified": False}})
     assert guarded == augmented
     assert meta["operator_market_feed_active"] is False
+
+
+def test_prepare_expiry_metadata_and_future_timestamp_fail_closed(monkeypatch):
+    from backend import superbet_market_context_v91 as market
+    from datetime import timedelta
+
+    monkeypatch.setattr(market, 'REFRESH_HOURS', 1)
+    start = datetime(2026, 8, 28, 11, tzinfo=timezone.utc)
+    matches = [{'p1': 'Alpha', 'p2': 'Beta', 'scheduled_time': '2026-08-28T15:00:00Z'}]
+    availability = {'generated_at': start.isoformat(), 'fixtures': [{
+        'fixture_id': 'test', 'p1': 'Alpha', 'p2': 'Beta',
+        'start_time': matches[0]['scheduled_time'], 'canonical_selections': []
+    }]}
+    for minutes, expected in [(-1, False), (0, True), (108, True), (109, False)]:
+        prepared, _ = market.prepare_results(matches, availability, start + timedelta(minutes=minutes))
+        ctx = prepared[0]['superbet_market_v91']
+        assert ctx['operator_verified'] is expected
+        assert ctx['source_max_age_hours'] == 1.8
+    assert 'superbet_market_v91' not in matches[0]
