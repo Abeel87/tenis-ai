@@ -146,3 +146,67 @@ def test_sanitize_maps_catalogue_one_two_to_real_player_names_even_with_opaque_i
         ("match_winner", "Alpha"),
         ("match_winner", "Beta"),
     }
+
+
+def test_handicap_catalogue_line_is_p1_perspective_and_p2_gets_opposite_sign():
+    meta = {
+        "12175": {
+            "marketName": "Game Handicap",
+            "marketType": "handicap",
+            "handicap": -3.5,
+            "outcomes": {
+                "12175": {"outcomeName": "1"},
+                "12176": {"outcomeName": "2"},
+            },
+        },
+        "12378": {
+            "marketName": "Game Handicap First Set",
+            "marketType": "handicap",
+            "handicap": 1.5,
+            "outcomes": {
+                "12378": {"outcomeName": "1"},
+                "12379": {"outcomeName": "2"},
+            },
+        },
+        "12471": {
+            "marketName": "Game Handicap Second Set",
+            "marketType": "handicap",
+            "handicap": -2.5,
+            "outcomes": {
+                "12471": {"outcomeName": "1"},
+                "12472": {"outcomeName": "2"},
+            },
+        },
+    }
+
+    markets = {}
+    for market_id, market_meta in meta.items():
+        outcome_ids = list(market_meta["outcomes"])
+        markets[market_id] = {
+            "marketActive": True,
+            "outcomes": {
+                outcome_ids[0]: {"players": {"0": {"active": True, "bookmakerOutcomeId": f"opaque-{market_id}-1", "mainLine": True}}},
+                outcome_ids[1]: {"players": {"0": {"active": True, "bookmakerOutcomeId": f"opaque-{market_id}-2", "mainLine": True}}},
+            },
+        }
+
+    row = {
+        "fixtureId": "f-handicap",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-08-28T18:00:00Z",
+        "bookmakerOdds": {"superbet.pl": {"markets": markets}},
+    }
+
+    out = _sanitize_fixture(row, meta)
+    assert out is not None
+    got = {
+        (selection["market"], selection["pick"]): selection["line"]
+        for selection in out["canonical_selections"]
+    }
+    assert got[("match_game_handicap", "Alpha")] == -3.5
+    assert got[("match_game_handicap", "Beta")] == 3.5
+    assert got[("set1_game_handicap", "Alpha")] == 1.5
+    assert got[("set1_game_handicap", "Beta")] == -1.5
+    assert got[("set2_game_handicap", "Alpha")] == -2.5
+    assert got[("set2_game_handicap", "Beta")] == 2.5
