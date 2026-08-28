@@ -24,6 +24,8 @@ def test_bo5_runtime_uses_compact_builder_while_bo3_keeps_deep_paths(monkeypatch
     monkeypatch.setattr(deep, "_build_deep_outcomes", fake_deep)
     monkeypatch.setattr(compact, "build_bo5_compact_outcomes", fake_compact)
     monkeypatch.setattr(deep, "run", fake_run)
+    monkeypatch.setattr(runtime.core, "_read", lambda path, fallback: {})
+    monkeypatch.setattr(runtime.core, "_write", lambda path, value: None)
     result = runtime.run()
 
     assert seen == [("compact", 5), ("deep", 3)]
