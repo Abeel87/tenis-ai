@@ -18,9 +18,6 @@ except ImportError:
 
 VERSION = "v9.0C.4"
 COMPARISON_MARKETS = {"most_aces", "most_double_faults", "most_aces_plus_df"}
-# Operator/Bet Builder rule: total ladders may contain at most one OVER and one
-# UNDER from the same family. Example: O18.5 + U24.5 is allowed, while
-# U23.5 + U24.5 or O18.5 + O19.5 is not. Serve-prop families stay independent.
 ONE_PER_SIDE_LINE_MARKETS = {"match_total", "set1_total", "total_sets"}
 
 
@@ -33,17 +30,15 @@ def _num(value, default=None):
 
 
 def _line_side(value) -> str | None:
-    x = str(value or "").strip().casefold()
-    compact = x.replace(" ", "")
-    if compact in {"over", "o", "powyzej", "powyżej", "wiecej", "więcej"} or compact.startswith("over"):
+    x = str(value or "").strip().casefold().replace(" ", "")
+    if x in {"over", "o", "powyzej", "powyżej", "wiecej", "więcej"} or x.startswith("over"):
         return "over"
-    if compact in {"under", "u", "ponizej", "poniżej", "mniej"} or compact.startswith("under"):
+    if x in {"under", "u", "ponizej", "poniżej", "mniej"} or x.startswith("under"):
         return "under"
     return None
 
 
 def _poisson_pmf(mean: float) -> list[float]:
-    """Finite Poisson PMF with enough tail coverage for tennis serve props."""
     mean = max(0.0, float(mean))
     if mean == 0.0:
         return [1.0]
@@ -56,23 +51,16 @@ def _poisson_pmf(mean: float) -> list[float]:
 
 
 def three_way_poisson(mean_a: float, mean_b: float) -> dict[str, float]:
-    """P(A>B), P(A=B), P(B>A) for independent Poisson counts.
-
-    This is explicitly an evidence approximation for serve-comparison markets;
-    it is not promoted to exact match-path joint probability.
-    """
     pa = _poisson_pmf(mean_a)
     pb = _poisson_pmf(mean_b)
     n = max(len(pa), len(pb))
     pa += [0.0] * (n - len(pa))
     pb += [0.0] * (n - len(pb))
-
     cdf_b = []
     running = 0.0
     for v in pb:
         running += v
         cdf_b.append(running)
-
     a_win = sum(pa[k] * (cdf_b[k - 1] if k > 0 else 0.0) for k in range(n))
     draw = sum(pa[k] * pb[k] for k in range(n))
     b_win = max(0.0, 1.0 - a_win - draw)
@@ -109,14 +97,11 @@ def serve_comparison_signals(match: dict) -> list[dict]:
     props = match.get("serve_props_v72") or {}
     if not isinstance(props, dict) or not props.get("ready"):
         return []
-
     p1 = str(match.get("p1") or "P1")
     p2 = str(match.get("p2") or "P2")
     ace1, ace2 = _market_mean(props, "p1", "aces"), _market_mean(props, "p2", "aces")
     df1, df2 = _market_mean(props, "p1", "double_faults"), _market_mean(props, "p2", "double_faults")
-
     rows: list[dict] = []
-
     def add_family(market: str, title: str, mean1, mean2):
         if mean1 is None or mean2 is None:
             return
@@ -126,7 +111,6 @@ def serve_comparison_signals(match: dict) -> list[dict]:
             _comparison_signal(market, "draw", f"{title} · remis", probs["draw"]),
             _comparison_signal(market, p2, f"{title} · {p2}", probs["p2"]),
         ])
-
     add_family("most_aces", "Najwięcej asów", ace1, ace2)
     add_family("most_double_faults", "Najwięcej podwójnych błędów", df1, df2)
     if None not in (ace1, ace2, df1, df2):
@@ -135,16 +119,11 @@ def serve_comparison_signals(match: dict) -> list[dict]:
 
 
 def augment_match_c4(match: dict) -> tuple[dict, dict]:
-    """Extend v9.0C evidence with serve-comparison families."""
     cloned, meta = augment_match_v90c(match)
     cloned = deepcopy(cloned)
     auto = dict(cloned.get("autolearn_v84") or {})
     existing = [dict(x) for x in (auto.get("signals") or []) if isinstance(x, dict)]
-    signatures = {
-        (str(x.get("market") or ""), str(x.get("pick") or "").casefold())
-        for x in existing
-    }
-
+    signatures = {(str(x.get("market") or ""), str(x.get("pick") or "").casefold()) for x in existing}
     added = []
     for row in serve_comparison_signals(match):
         sig = (str(row.get("market") or ""), str(row.get("pick") or "").casefold())
@@ -153,10 +132,8 @@ def augment_match_c4(match: dict) -> tuple[dict, dict]:
         signatures.add(sig)
         existing.append(row)
         added.append(row)
-
     auto["signals"] = existing
     cloned["autolearn_v84"] = auto
-
     meta = dict(meta)
     meta["version"] = VERSION
     meta["catalog_size"] = int(meta.get("catalog_size") or 0) + len(added)
@@ -173,14 +150,12 @@ def augment_match_c4(match: dict) -> tuple[dict, dict]:
 
 
 def coverage_first_metrics(base_metrics: Callable):
-    """Wrap the v9.0B scorer so unsupported evidence cannot dominate exact paths."""
     def metrics(match, combo, outcomes):
         out = dict(base_metrics(match, combo, outcomes))
         coverage = float(out.get("path_coverage") or 0.0)
         supported = int(out.get("supported_legs") or 0)
         joint = out.get("joint_supported_only")
         score = float(out.get("score") or 0.0)
-
         adjustment = -28.0 * (1.0 - coverage)
         if coverage >= 0.999:
             adjustment += 5.0
@@ -195,13 +170,6 @@ def coverage_first_metrics(base_metrics: Callable):
 
 
 def comparison_compatible(base_compatible: Callable):
-    """Apply operator compatibility on top of v9.0B logical compatibility.
-
-    Comparative serve markets are mutually exclusive P1/draw/P2 families.
-    Total ladders may contain one OVER and one UNDER from the same family,
-    but never two OVERs or two UNDERs. The base v9.0B guard still rejects
-    opposite sides on the exact same line because that pair is contradictory.
-    """
     def compatible(a, b):
         if not base_compatible(a, b):
             return False
@@ -219,7 +187,6 @@ def comparison_compatible(base_compatible: Callable):
 
 
 def leg_count_intelligence(match_row: dict) -> dict:
-    """Rank 2..6 leg compositions without blindly defaulting to two legs."""
     comps = match_row.get("compositions") or {}
     options = []
     for legs in range(2, 7):
@@ -231,17 +198,9 @@ def leg_count_intelligence(match_row: dict) -> dict:
         joint = _num(comp.get("joint_probability"))
         frag_rows = comp.get("fragility") or []
         fragility = _num((frag_rows[0] or {}).get("fragility"), 0.0) if frag_rows else 0.0
-        options.append({
-            "legs": legs,
-            "symphony_score": round(score, 2),
-            "path_coverage": round(coverage, 3),
-            "joint_probability": joint,
-            "fragility": round(float(fragility or 0.0), 2),
-        })
-
+        options.append({"legs": legs, "symphony_score": round(score, 2), "path_coverage": round(coverage, 3), "joint_probability": joint, "fragility": round(float(fragility or 0.0), 2)})
     if not options:
         return {"recommended": None, "mode": "NO_DATA", "options": []}
-
     best_score = max(x["symphony_score"] for x in options)
     eligible = []
     for row in options:
@@ -259,27 +218,11 @@ def leg_count_intelligence(match_row: dict) -> dict:
         row["eligible"] = bool(score >= 70.0 and coverage >= 0.5 and score_drop <= 14.0)
         if row["eligible"]:
             eligible.append(row)
-
     pool = eligible or options
     recommended = max(pool, key=lambda x: (x.get("auto_utility", -999.0), x["legs"]))
     rec_legs = int(recommended["legs"])
     next_row = next((x for x in options if x["legs"] == rec_legs + 1), None)
-    reason = (
-        f"{rec_legs} zdarzenia: score {recommended['symphony_score']:.1f}, "
-        f"coverage {recommended['path_coverage'] * 100:.0f}%"
-    )
+    reason = f"{rec_legs} zdarzenia: score {recommended['symphony_score']:.1f}, coverage {recommended['path_coverage'] * 100:.0f}%"
     if next_row:
-        reason += (
-            f"; {next_row['legs']}. noga zmienia score o "
-            f"{next_row['symphony_score'] - recommended['symphony_score']:+.1f} "
-            f"i coverage o {(next_row['path_coverage'] - recommended['path_coverage']) * 100:+.0f} pp"
-        )
-
-    return {
-        "version": VERSION,
-        "recommended": rec_legs,
-        "mode": "CURRENT_MATCH_MATH",
-        "historical_learning_active": False,
-        "reason": reason,
-        "options": options,
-    }
+        reason += f"; {next_row['legs']}. noga zmienia score o {next_row['symphony_score'] - recommended['symphony_score']:+.1f} i coverage o {(next_row['path_coverage'] - recommended['path_coverage']) * 100:+.0f} pp"
+    return {"version": VERSION, "recommended": rec_legs, "mode": "CURRENT_MATCH_MATH", "historical_learning_active": False, "reason": reason, "options": options}
