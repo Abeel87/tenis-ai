@@ -4,6 +4,7 @@ from backend.superbet_market_context_v913 import (
     MAX_TOURNAMENT_IDS_PER_REQUEST,
     MONTHLY_REQUEST_CAP,
     REFRESH_HOURS,
+    _sanitize_fixture,
     _tournament_ids,
     batched_request,
 )
@@ -37,7 +38,6 @@ def test_odds_by_tournaments_is_split_into_max_five_ids(monkeypatch):
         tournamentIds=",".join(str(x) for x in range(1, 13)),
         bookmakers="superbet.pl",
     )
-
     assert [batch for _path, batch in calls] == [
         "1,2,3,4,5",
         "6,7,8,9,10",
@@ -63,3 +63,86 @@ def test_small_tournament_request_stays_single_call():
     )
     assert calls == ["1,2,3,4,5"]
     assert result == {"fixtureId": "one"}
+
+
+def test_sanitize_uses_market_catalogue_handicap_when_superbet_outcome_id_is_opaque():
+    meta = {
+        "13000": {
+            "marketName": "Total Games Over Under",
+            "marketType": "total-games",
+            "handicap": 22.5,
+            "outcomes": {
+                "13000": {"outcomeName": "Over"},
+                "13001": {"outcomeName": "Under"},
+            },
+        }
+    }
+    row = {
+        "fixtureId": "f-total",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-08-28T18:00:00Z",
+        "bookmakerOdds": {
+            "superbet.pl": {
+                "bookmakerIsActive": True,
+                "suspended": False,
+                "markets": {
+                    "13000": {
+                        "bookmakerMarketId": "opaque-market-id",
+                        "marketActive": True,
+                        "outcomes": {
+                            "13000": {"players": {"0": {"active": True, "bookmakerOutcomeId": "opaque-over", "mainLine": True}}},
+                            "13001": {"players": {"0": {"active": True, "bookmakerOutcomeId": "opaque-under", "mainLine": True}}},
+                        },
+                    }
+                },
+            }
+        },
+    }
+
+    out = _sanitize_fixture(row, meta)
+    assert out is not None
+    selections = out["canonical_selections"]
+    assert {(x["pick"], x["line"]) for x in selections} == {("over", 22.5), ("under", 22.5)}
+    assert {x["operator_line_source"] for x in selections} == {"oddspapi_market_handicap"}
+
+
+def test_sanitize_maps_catalogue_one_two_to_real_player_names_even_with_opaque_ids():
+    meta = {
+        "121": {
+            "marketName": "Winner",
+            "marketType": "twoway",
+            "handicap": 0.0,
+            "outcomes": {
+                "121": {"outcomeName": "1"},
+                "122": {"outcomeName": "2"},
+            },
+        }
+    }
+    row = {
+        "fixtureId": "f-winner",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-08-28T18:00:00Z",
+        "bookmakerOdds": {
+            "superbet.pl": {
+                "markets": {
+                    "121": {
+                        "marketActive": True,
+                        "outcomes": {
+                            "121": {"players": {"0": {"active": True, "bookmakerOutcomeId": "sb-928381", "mainLine": True}}},
+                            "122": {"players": {"0": {"active": True, "bookmakerOutcomeId": "sb-928382", "mainLine": True}}},
+                        },
+                    }
+                }
+            }
+        },
+    }
+
+    out = _sanitize_fixture(row, meta)
+    assert out is not None
+    selections = out["canonical_selections"]
+    assert {(x["market"], x["pick"]) for x in selections} == {
+        ("match_winner", "Alpha"),
+        ("match_winner", "Beta"),
+    }
