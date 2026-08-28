@@ -39,3 +39,23 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
     assert "actions/deploy-pages@v4" in workflow
     assert "backend/|scripts/|data/|frontend/data/|requirements" in workflow
     assert "FULL workflow owns this deploy" in workflow
+
+
+def test_retry_selects_only_its_own_pages_artifact():
+    import yaml
+
+    workflow = yaml.load(read('.github/workflows/deploy-pages-fast.yml'), Loader=yaml.BaseLoader)
+    steps = workflow['jobs']['deploy']['steps']
+    upload = next(s for s in steps if s.get('uses') == 'actions/upload-pages-artifact@v4')
+    deploy = next(s for s in steps if s.get('uses') == 'actions/deploy-pages@v4')
+
+    def resolve(value, attempt):
+        return value.replace('${{ github.run_id }}', '12345').replace('${{ github.run_attempt }}', str(attempt))
+
+    artifacts = []
+    for attempt in (1, 2):
+        artifact = resolve(upload['with']['name'], attempt)
+        artifacts.append(artifact)
+        assert artifacts.count(resolve(deploy['with']['artifact_name'], attempt)) == 1
+    assert len(set(artifacts)) == 2  # the original retry failed on duplicate github-pages names
+    assert '.github/workflows/deploy-pages-fast.yml' in workflow['on']['push']['paths']
