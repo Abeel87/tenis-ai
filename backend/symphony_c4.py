@@ -18,6 +18,10 @@ except ImportError:
 
 VERSION = "v9.0C.4"
 COMPARISON_MARKETS = {"most_aces", "most_double_faults", "most_aces_plus_df"}
+# Operator/Bet Builder rule: a ladder is one market family. Different O/U lines
+# from the same ladder cannot coexist in one builder selection. Serve-prop
+# families stay independent and are intentionally not included here.
+SINGLE_SELECTION_LINE_MARKETS = {"match_total", "set1_total", "total_sets"}
 
 
 def _num(value, default=None):
@@ -184,11 +188,18 @@ def coverage_first_metrics(base_metrics: Callable):
 
 
 def comparison_compatible(base_compatible: Callable):
-    """Comparison markets are mutually exclusive P1/draw/P2 families."""
+    """Apply operator compatibility on top of v9.0B logical compatibility.
+
+    Comparative serve markets are mutually exclusive P1/draw/P2 families.
+    Game/set/sets-total ladders are single-selection markets in the Bet Builder:
+    one chosen O/U line from a family per match, never several nearby lines.
+    """
     def compatible(a, b):
         if not base_compatible(a, b):
             return False
         if a.market == b.market and a.market in COMPARISON_MARKETS:
+            return False
+        if a.market == b.market and a.market in SINGLE_SELECTION_LINE_MARKETS:
             return False
         return True
     return compatible
