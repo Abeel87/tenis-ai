@@ -1,0 +1,35 @@
+name: OddsPapi Superbet market smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/test_oddspapi_superbet_markets.py'
+      - '.github/workflows/oddspapi-superbet-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  superbet-market-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Python syntax
+        run: python -m py_compile scripts/test_oddspapi_superbet_markets.py
+      - name: Query OddsPapi Superbet tennis offer without keeping prices
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: python scripts/test_oddspapi_superbet_markets.py
+      - name: Upload sanitized market catalog
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oddspapi-superbet-market-catalog
+          path: oddspapi_superbet_market_catalog.json
+          if-no-files-found: ignore
+          retention-days: 3
