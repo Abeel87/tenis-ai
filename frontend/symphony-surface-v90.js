@@ -18,6 +18,7 @@
   const finite = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
   const score = (v) => finite(v) ? `${Number(v).toFixed(1).replace('.0', '')}/100` : 'N/D';
   const pct = (v) => finite(v) ? `${Number(v).toFixed(1).replace('.0', '')}%` : 'N/D';
+  const lineText = (v) => finite(v) ? Number(v).toFixed(1).replace('.0', '') : '';
 
   function ensureCss() {
     if (document.querySelector('link[data-symphony-surface-v90]')) return;
@@ -147,7 +148,7 @@
   function legMeta(leg) {
     const bits = [];
     if (leg?.market) bits.push(String(leg.market).replaceAll('_', ' '));
-    if (finite(leg?.line)) bits.push(`linia ${Number(leg.line):g}`);
+    if (finite(leg?.line)) bits.push(`linia ${lineText(leg.line)}`);
     if (finite(leg?.path_probability)) bits.push(`ścieżka ${pct(leg.path_probability)}`);
     else if (finite(leg?.prod_score)) bits.push(`PROD ${score(leg.prod_score)}`);
     return bits.join(' · ');
