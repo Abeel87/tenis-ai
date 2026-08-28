@@ -12,6 +12,8 @@ on:
       - 'backend/symphony_operator_guard_v91.py'
       - 'backend/superbet_market_context_v91.py'
       - 'backend/superbet_market_context_v913.py'
+      - 'backend/superbet_market_context_v924.py'
+      - 'backend/superbet_line_coverage_v924.py'
       - 'backend/superbet_playable_v912.py'
       - 'backend/market_lab_v741.py'
       - 'backend/signal_settlement.py'
@@ -31,6 +33,8 @@ on:
       - 'tests/test_symphony_operator_line_guard.py'
       - 'tests/test_superbet_market_v91.py'
       - 'tests/test_superbet_market_v913.py'
+      - 'tests/test_superbet_market_v924.py'
+      - 'tests/test_superbet_line_coverage_v924.py'
       - 'tests/test_superbet_playable_v912.py'
       - '.github/workflows/symphony-v90-check.yml'
       - '.github/workflows/update-and-pages.yml'
@@ -59,11 +63,13 @@ jobs:
           python -m py_compile backend/symphony_engine_v90c.py
           python -m py_compile backend/superbet_market_context_v91.py
           python -m py_compile backend/superbet_market_context_v913.py
+          python -m py_compile backend/superbet_market_context_v924.py
+          python -m py_compile backend/superbet_line_coverage_v924.py
           python -m py_compile backend/superbet_playable_v912.py
           python -m py_compile backend/symphony_operator_guard_v91.py
           python -m py_compile backend/symphony_engine_v91.py
       - name: Symphony + Superbet market tests
-        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_operator_line_guard.py tests/test_superbet_market_v91.py tests/test_superbet_market_v913.py tests/test_superbet_playable_v912.py
+        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_operator_line_guard.py tests/test_superbet_market_v91.py tests/test_superbet_market_v913.py tests/test_superbet_market_v924.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_playable_v912.py
       - name: Frontend syntax
         run: |
           node --check frontend/symphony-v90.js
@@ -76,9 +82,10 @@ jobs:
           grep -q 'symphony-v90.css' frontend/index.html
           grep -q 'symphony-v90.js' frontend/index.html
           grep -q 'symphony-surface-v90.js' frontend/index.html
-          grep -q 'Superbet Market Availability v9.1.3' .github/workflows/update-and-pages.yml
-          grep -q 'superbet_market_context_v913.py prepare' .github/workflows/update-and-pages.yml
-          grep -q 'superbet_market_context_v913.py finalize' .github/workflows/update-and-pages.yml
+          grep -q 'Superbet Market Availability v9.2.4' .github/workflows/update-and-pages.yml
+          grep -q 'superbet_market_context_v924.py prepare' .github/workflows/update-and-pages.yml
+          grep -q 'superbet_market_context_v924.py finalize' .github/workflows/update-and-pages.yml
+          grep -q 'superbet_line_coverage_v924.py' .github/workflows/update-and-pages.yml
           grep -q 'superbet_playable_v912.py inject' .github/workflows/update-and-pages.yml
           grep -q 'superbet_playable_v912.py project' .github/workflows/update-and-pages.yml
           grep -q 'symphony_engine_v91.py' .github/workflows/update-and-pages.yml
