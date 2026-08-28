@@ -79,6 +79,22 @@ def test_most_aces_uses_existing_serve_props_and_exposes_draw_probability():
     assert "approximation" in result["probability_semantics"]
 
 
+def test_most_aces_probability_is_visible_but_stays_shadow_not_playable():
+    match = _match()
+    selection = {"market": "most_aces", "pick": "Player One", "operator_available": True}
+    match["superbet_market_v91"] = {"canonical_selections": [selection], "model_signals": []}
+    out = cov.enrich_match(match)
+    ctx = out["superbet_market_v91"]
+    assert ctx["model_signals"] == []
+    assert len(ctx["coverage_shadow_signals"]) == 1
+    row = ctx["coverage_shadow_signals"][0]
+    assert row["symphony_actionable"] is False
+    assert row["coverage_status"] == "SHADOW_DERIVED_NOT_PLAYABLE"
+    assert ctx["model_coverage"] == 0.0
+    assert ctx["display_model_coverage"] == 1.0
+    assert ctx["operator_only_count"] == 0
+
+
 def test_adapter_appends_missing_signals_but_never_overwrites_an_existing_one():
     match = _match()
     s1 = {"market": "match_game_handicap", "pick": "Player One", "line": -2.5, "operator_available": True}
@@ -98,6 +114,7 @@ def test_adapter_appends_missing_signals_but_never_overwrites_an_existing_one():
     assert original["score"] == 77.0
     added = next(row for row in rows if row["key"] == cov._selection_key(s2))
     assert added["coverage_adapter_version"] == "v9.2.2"
+    assert added["symphony_actionable"] is True
     assert ctx["coverage_adapter_added"] == 1
     assert ctx["operator_only_count"] == 0
     assert ctx["coverage_adapter_external_requests"] == 0
@@ -111,6 +128,7 @@ def test_missing_evidence_stays_operator_only_instead_of_getting_a_fake_probabil
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     assert ctx["model_signals"] == []
+    assert ctx["coverage_shadow_signals"] == []
     assert ctx["operator_only_count"] == 1
     assert ctx["coverage_by_market"]["set1_game_handicap"]["coverage"] == 0.0
 
