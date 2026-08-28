@@ -26,21 +26,29 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function host(){return document.querySelector('#pc77')}
 function cardHtml(){
   const cur=data?.current||{};
+  const verified=Number(cur.verified_superbet_matches||0);
   const coverage=finite(cur.verified_match_coverage)?Number(cur.verified_match_coverage)*100:null;
+  const feedActive=verified>0;
   const models=Object.entries(data?.models||{});
   const modelRows=models.map(([id,row])=>{
     const n=Number(row?.settled||0);
     const status=n?`${pct(row?.accuracy)} · n=${n}`:'zbieramy próbkę';
     return `<div class="sp912-model"><span>${esc(LABELS[id]||id)}</span><b>${esc(status)}</b></div>`;
   }).join('');
-  return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1">
-    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>statystyki tylko dla realnie dostępnych rynków i linii · bez kursów</small></div><strong>${pct(coverage)}</strong></div>
+  const subtitle=feedActive
+    ? 'statystyki tylko dla realnie dostępnych rynków i linii · bez kursów'
+    : 'feed Superbet niezweryfikowany — PLAYABLE jest chwilowo wstrzymane';
+  const note=feedActive
+    ? 'Normalny widok i SHADOW używają zweryfikowanej oferty Superbet. Surowe drabinki modeli zostają wyłącznie diagnostyką; stare wyniki bez zamrożonej oferty operatora nie są dopisywane do PLAYABLE.'
+    : '⚠ Brak zweryfikowanej oferty Superbet w ostatnim przebiegu. Linie widoczne w RAW/diagnostyce nie są w tej chwili potwierdzone jako grywalne u operatora i nie są liczone do statystyk PLAYABLE.';
+  return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
+    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?pct(coverage):'FEED N/D'}</strong></div>
     <div class="sp912-grid">
-      <div><span>Mecze zweryfikowane</span><b>${Number(cur.verified_superbet_matches||0)} / ${Number(cur.model_ready_matches||0)}</b></div>
+      <div><span>Mecze zweryfikowane</span><b>${verified} / ${Number(cur.model_ready_matches||0)}</b></div>
       <div><span>Zielone sygnały grywalne</span><b>${Number(cur.playable_green_signals||0)}</b></div>
       <div><span>Ukryte linie RAW</span><b>${Number(cur.suppressed_raw_display_estimate||0)}</b></div>
     </div>
-    <p class="sp912-note">Normalny widok i SHADOW używają oferty Superbet. Surowe drabinki modeli zostają wyłącznie diagnostyką; stare wyniki bez zamrożonej oferty operatora nie są dopisywane do PLAYABLE.</p>
+    <p class="sp912-note">${esc(note)}</p>
     <details class="sp912-details"><summary>Skuteczność modeli PLAYABLE</summary><div class="sp912-models">${modelRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
   </section>`;
 }
