@@ -18,10 +18,10 @@ except ImportError:
 
 VERSION = "v9.0C.4"
 COMPARISON_MARKETS = {"most_aces", "most_double_faults", "most_aces_plus_df"}
-# Operator/Bet Builder rule: a ladder is one market family. Different O/U lines
-# from the same ladder cannot coexist in one builder selection. Serve-prop
-# families stay independent and are intentionally not included here.
-SINGLE_SELECTION_LINE_MARKETS = {"match_total", "set1_total", "total_sets"}
+# Operator/Bet Builder rule: total ladders may contain at most one OVER and one
+# UNDER from the same family. Example: O18.5 + U24.5 is allowed, while
+# U23.5 + U24.5 or O18.5 + O19.5 is not. Serve-prop families stay independent.
+ONE_PER_SIDE_LINE_MARKETS = {"match_total", "set1_total", "total_sets"}
 
 
 def _num(value, default=None):
@@ -30,6 +30,16 @@ def _num(value, default=None):
         return x if math.isfinite(x) else default
     except (TypeError, ValueError):
         return default
+
+
+def _line_side(value) -> str | None:
+    x = str(value or "").strip().casefold()
+    compact = x.replace(" ", "")
+    if compact in {"over", "o", "powyzej", "powyżej", "wiecej", "więcej"} or compact.startswith("over"):
+        return "over"
+    if compact in {"under", "u", "ponizej", "poniżej", "mniej"} or compact.startswith("under"):
+        return "under"
+    return None
 
 
 def _poisson_pmf(mean: float) -> list[float]:
@@ -191,16 +201,22 @@ def comparison_compatible(base_compatible: Callable):
     """Apply operator compatibility on top of v9.0B logical compatibility.
 
     Comparative serve markets are mutually exclusive P1/draw/P2 families.
-    Game/set/sets-total ladders are single-selection markets in the Bet Builder:
-    one chosen O/U line from a family per match, never several nearby lines.
+    Total ladders may contain one OVER and one UNDER from the same family,
+    but never two OVERs or two UNDERs. The base v9.0B guard still rejects
+    opposite sides on the exact same line because that pair is contradictory.
     """
     def compatible(a, b):
         if not base_compatible(a, b):
             return False
         if a.market == b.market and a.market in COMPARISON_MARKETS:
             return False
-        if a.market == b.market and a.market in SINGLE_SELECTION_LINE_MARKETS:
-            return False
+        if a.market == b.market and a.market in ONE_PER_SIDE_LINE_MARKETS:
+            side_a = _line_side(a.pick)
+            side_b = _line_side(b.pick)
+            if side_a is None or side_b is None:
+                return False
+            if side_a == side_b:
+                return False
         return True
     return compatible
 
