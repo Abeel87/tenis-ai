@@ -123,7 +123,7 @@
         <div><span>Rozliczone mecze</span><b>${nfmt(data?.settled_matches)}</b><small>${nfmt(data?.pending_matches)} oczekuje</small></div>
         <div><span>AUTO · pełna Symfonia</span><b>${pct(auto.full_hit_rate)}</b><small>n=${nfmt(auto.full_settled)}</small></div>
         <div><span>AUTO · nogi</span><b>${pct(auto.leg_accuracy)}</b><small>${nfmt(auto.leg_hits)}/${nfmt(auto.resolved_legs)}</small></div>
-        <div><span>${model ? 'Wpływ na PLAYABLE' : 'Próg nauki'}</span><b>${model ? '0' : '20 + 50'}</b><small>${model ? 'obserwacja בלבד' : 'pełne Symfonie + nogi'}</small></div>
+        <div><span>${model ? 'Wpływ na PLAYABLE' : 'Próg nauki'}</span><b>${model ? '0' : '20 + 50'}</b><small>${model ? 'tylko obserwacja' : 'pełne Symfonie + nogi'}</small></div>
       </div>
 
       <section class="symstats-section">
