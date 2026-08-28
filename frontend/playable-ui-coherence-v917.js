@@ -1,12 +1,13 @@
-/* Tenis AI v9.1.7 — one Superbet PLAYABLE gate for actionable UI.
-   Match visibility and RAW analytics stay independent. This layer only prevents
-   unverified/stale RAW selections from being presented as Top/FINAL/Symphony bets. */
+/* Tenis AI v9.2.2 — one Superbet PLAYABLE gate for actionable UI.
+   MODEL/RAW analytics own the normal Top pick, signal strength, Top strip and
+   model-signal page. This layer adds Superbet information beside them and only
+   gates surfaces that are explicitly actionable as Superbet PLAYABLE. */
 (()=>{
 'use strict';
 if(window.TENIS_AI_PLAYABLE_UI_V917)return;
 
-const VERSION='v9.1.7';
-const WRAP='__tenisAiPlayableUiV917';
+const VERSION='v9.2.2';
+const WRAP='__tenisAiPlayableUiV922';
 const LINE_MARKETS=new Set([
   'match_total','set1_total','set2_total','set3_total','total_sets',
   'match_game_handicap','set1_game_handicap','set2_game_handicap',
@@ -43,7 +44,6 @@ function context(match){
 }
 function freshContext(x,now=Date.now()){
   const generated=Date.parse(x?.source_generated_at||'');
-  // v9.1.3 refreshes hourly; older snapshots do not carry the expiry policy.
   const maxHours=x?.source_max_age_hours??1.8;
   const age=Number(now)-generated;
   return finite(maxHours)&&Number(maxHours)>0&&Number.isFinite(age)&&age>=0&&age<=Number(maxHours)*3600000;
@@ -125,27 +125,24 @@ function isPlayable(match,row){
   return availability(match).has(signature(row));
 }
 function valueOf(row){return num(row?.v??row?.final_score??row?.adaptive_prod_score??row?.score??row?.current)}
-function playableSignals(match,limit=100){
-  if(!active(match))return[];
+function modelSignals(match,limit=100){
   const api=window.TENIS_AI_MODEL_API;
   let rows=[];
   try{
     if(typeof api?.signals==='function')rows=api.signals(match,Math.max(100,Number(limit)||100))||[];
     else if(typeof api?.allSignals==='function')rows=api.allSignals(match)||[];
   }catch{return[]}
-  return rows.filter(row=>isPlayable(match,row)&&valueOf(row)!=null)
+  return rows.filter(row=>valueOf(row)!=null)
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0))
     .slice(0,Math.max(1,Number(limit)||100));
 }
-function scoreText(v){return finite(v)?`${Math.round(Number(v))}/100`:'N/D'}
-function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
-function setBars(root,v){
-  const n=num(v);
-  root?.querySelectorAll?.('.p751-bars i').forEach((bar,index)=>{
-    const on=n!=null&&n>=(index+1)*18;
-    if(bar.classList.contains('on')!==on)bar.classList.toggle('on',on);
-  });
+function playableSignals(match,limit=100){
+  if(!active(match))return[];
+  return modelSignals(match,Math.max(100,Number(limit)||100))
+    .filter(row=>isPlayable(match,row))
+    .slice(0,Math.max(1,Number(limit)||100));
 }
+function scoreText(v){return finite(v)?`${Math.round(Number(v))}/100`:'N/D'}
 function decode(value){try{return decodeURIComponent(String(value||''))}catch{return String(value||'')}}
 function findMatch(raw){
   const key=decode(raw).replace(/^id:/,'');
@@ -161,8 +158,14 @@ function compositionPlayable(match,comp){
   return active(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
 }
 
+function playableCardHtml(match,signals,top){
+  const value=valueOf(top);
+  const green=signals.filter(s=>(valueOf(s)||0)>=72).length;
+  const name=top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):(active(match)?'Brak pojedynczego typu':'Brak Superbet PLAYABLE');
+  return `<span>🎯 SUPERBET PLAYABLE</span><b>${esc(name)}</b><strong>${scoreText(value)}</strong><em>${top?`${green} zielonych PLAYABLE · linia zweryfikowana ✓`:'N/D · brak PLAYABLE · MODEL / RAW bez zmian'}</em>`;
+}
 function patchMatchTotalPreview(card,match,signals,top){
-  let preview=card.querySelector('.p753-match-total-preview');
+  let preview=card.querySelector('[data-v917-match-total-preview]');
   const candidate=signals.find(s=>canonicalMarket(s?.market)==='match_total')||null;
   if(!candidate||sameSelection(candidate,top)){
     preview?.remove();
@@ -172,9 +175,11 @@ function patchMatchTotalPreview(card,match,signals,top){
   if(line==null){preview?.remove();return}
   if(!preview){
     preview=document.createElement('div');
-    preview.className='p753-match-total-preview';
+    preview.className='p753-match-total-preview v917-playable-total';
+    preview.dataset.v917MatchTotalPreview='1';
+    const own=card.querySelector('[data-v917-playable-card]');
     const foot=card.querySelector('footer');
-    if(foot)foot.before(preview);else card.append(preview);
+    if(own)own.after(preview);else if(foot)foot.before(preview);else card.append(preview);
   }
   const pick=rowPick(candidate,'match_total');
   const side=pick==='over'?'OVER':pick==='under'?'UNDER':String(candidate.pick||'').toUpperCase();
@@ -186,17 +191,16 @@ function patchCard(card){
   if(!match)return;
   const signals=playableSignals(match,60);
   const top=signals[0]||null;
-  const value=valueOf(top);
-  const pick=card.querySelector('.p751-top-pick');
-  setText(pick?.querySelector('span'),'◎ Top typ · SUPERBET');
-  setText(pick?.querySelector('b'),top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):(active(match)?'Brak pojedynczego typu':'Brak Superbet PLAYABLE'));
-  setText(pick?.querySelector('em'),scoreText(value));
-  const strength=card.querySelector('.p751-strength');
-  setText(strength?.querySelector('span'),'Siła sygnału PLAYABLE');
-  setText(strength?.querySelector('b'),scoreText(value));
-  const green=signals.filter(s=>(valueOf(s)||0)>=72).length;
-  setText(strength?.querySelector('small'),top?`${green} zielonych PLAYABLE`:'N/D · brak PLAYABLE');
-  setBars(card,value);
+  let box=card.querySelector('[data-v917-playable-card]');
+  if(!box){
+    box=document.createElement('div');
+    box.className='p753-match-total-preview v917-playable-card';
+    box.dataset.v917PlayableCard='1';
+    const foot=card.querySelector('footer');
+    if(foot)foot.before(box);else card.append(box);
+  }
+  const html=playableCardHtml(match,signals,top);
+  if(box.innerHTML!==html)box.innerHTML=html;
   patchMatchTotalPreview(card,match,signals,top);
   card.dataset.playableUiV917=active(match)?'verified':'nd';
 }
@@ -211,7 +215,7 @@ function patchTopStrip(){
     const signal=match?playableSignals(match,1)[0]:null;
     return match&&signal&&valueOf(signal)>=72?{match,signal,raw}:null;
   }).filter(Boolean).sort((a,b)=>valueOf(b.signal)-valueOf(a.signal)).slice(0,3);
-  const old=document.querySelector('#app .p751-top');
+  const old=document.querySelector('#app [data-playable-top-v917="1"]');
   if(!picks.length){old?.remove();return}
   const hash=picks.map(x=>`${x.raw}:${signature(x.signal)}:${valueOf(x.signal)}`).join('|');
   if(old?.dataset?.v917Hash===hash)return;
@@ -221,25 +225,19 @@ function patchTopStrip(){
   fresh.dataset.v917Hash=hash;
   if(old)old.replaceWith(fresh);
   else{
+    const rawTop=document.querySelector('#app .p751-top:not([data-playable-top-v917])');
     const focus=document.querySelector('#app .p751-focus');
-    if(focus)focus.insertAdjacentElement('afterend',fresh);
+    if(rawTop)rawTop.insertAdjacentElement('afterend',fresh);
+    else if(focus)focus.insertAdjacentElement('afterend',fresh);
     else document.querySelector('#app')?.prepend(fresh);
   }
 }
 function patchSignalPage(){
   const page=document.querySelector('#app .p751-signals-page');
   if(!page)return;
-  for(const button of [...page.querySelectorAll('button[data-p751-open]')]){
-    const match=matchFor(button);
-    const label=norm(button.querySelector('span')?.textContent||button.querySelector('b')?.textContent||'');
-    const signal=match?playableSignals(match,100).find(s=>norm(s.label||s.pick||s.key)===label):null;
-    if(!signal){button.remove();continue}
-    setText(button.querySelector('strong'),scoreText(valueOf(signal)));
-  }
-  if(!page.querySelector('button[data-p751-open]')){
-    const body=page.querySelector('header')?.nextElementSibling;
-    if(body&&!body.querySelector('[data-v917-empty]'))body.innerHTML='<div class="p751-empty" data-v917-empty="1"><b>Brak sygnałów Superbet PLAYABLE.</b><span>RAW pozostaje w analizie, ale nie jest tutaj prezentowany jako typ do zagrania.</span></div>';
-  }
+  // This screen belongs to MODEL/RAW. Never remove rows or replace model scores
+  // based on operator availability. Superbet PLAYABLE stays a separate layer.
+  page.dataset.playableUiV917='raw-preserved';
 }
 function patchHome(){
   document.querySelectorAll('#app .p751-match-card[data-p751-open]').forEach(patchCard);
@@ -250,23 +248,25 @@ function patchHome(){
 function patchDecisionHeader(root,match,rows){
   if(!root)return;
   root.dataset.playableUiV917=active(match)?'verified':'nd';
-  setText(root.querySelector('.dc87-kicker'),'Centrum Decyzji Meczu · SUPERBET PLAYABLE');
-  setText(root.querySelector('#dc87-title'),'Realne rynki i linie Superbet');
+  const kicker=root.querySelector('.dc87-kicker');
+  if(kicker)kicker.textContent='Centrum Decyzji Meczu · SUPERBET PLAYABLE';
+  const title=root.querySelector('#dc87-title');
+  if(title)title.textContent='Realne rynki i linie Superbet';
   const p=root.querySelector('.dc87-head p');
-  setText(p,active(match)
+  if(p)p.textContent=active(match)
     ?'Pokazujemy wyłącznie rynki i dokładne linie zweryfikowane w Superbet. FINAL to wynik modelu dla tej selekcji, nie gwarancja ani kurs.'
-    :'Brak świeżo zweryfikowanej oferty Superbet dla tego meczu. RAW może istnieć w analizie, ale Centrum Decyzji nie pokazuje go jako typu.');
+    :'Brak świeżo zweryfikowanej oferty Superbet dla tego meczu. MODEL / RAW może istnieć w analizie, ale Centrum Decyzji nie pokazuje go jako typu.';
   const health=root.querySelector('.dc87-health');
   if(health){
     let badge=health.querySelector('[data-v917-book]');
     if(!badge){badge=document.createElement('span');badge.dataset.v917Book='1';health.prepend(badge)}
     badge.className=active(match)?'prod':'shadow';
-    setText(badge,active(match)?'Superbet ✓ PLAYABLE':'Superbet N/D');
+    badge.textContent=active(match)?'Superbet ✓ PLAYABLE':'Superbet N/D';
   }
   const empty=root.querySelector('.dc87-empty');
   if(empty&&rows.length===0)empty.innerHTML=active(match)
     ?'<b>Brak PLAYABLE z wynikiem modelowym</b>Dla aktualnej oferty Superbet nie ma tu jeszcze pasującej selekcji z danymi.'
-    :'<b>Brak świeżego Superbet PLAYABLE</b>Mecz i RAW analiza zostają dostępne, ale nie pokazujemy niezweryfikowanych linii jako FINAL.';
+    :'<b>Brak świeżego Superbet PLAYABLE</b>Mecz i MODEL / RAW analiza zostają dostępne, ale nie pokazujemy niezweryfikowanych linii jako FINAL.';
 }
 function wrapDecisionCenter(){
   const api=window.TENIS_AI_DECISION_CENTER_V87;
@@ -305,7 +305,7 @@ function patchOpenDecision(){
 let compactPromise=null;
 function loadCompact(){
   if(compactPromise)return compactPromise;
-  compactPromise=fetch('./data/symphony_match_cards_v90.json?playable=917',{cache:'no-cache'})
+  compactPromise=fetch('./data/symphony_match_cards_v90.json?playable=922',{cache:'no-cache'})
     .then(r=>r.ok?r.json():null).catch(()=>null);
   return compactPromise;
 }
@@ -337,12 +337,15 @@ async function patchSymphonyMinis(){
     const comp=row?.composition;
     const legs=Array.isArray(comp?.selection)?comp.selection:[];
     const ok=!!match&&active(match)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
+    // v9.2.1 renders an independent RAW Symphony beside this actionable mini.
+    // Therefore this mini may remain the explicitly PLAYABLE Symphony surface.
     if(!ok){mini.remove();continue}
-    setText(mini.querySelector('.symmatch-mini__head span'),'🎼 SYMFONIA · SUPERBET');
+    const span=mini.querySelector('.symmatch-mini__head span');
+    if(span)span.textContent='🎼 SYMFONIA · SUPERBET';
     const b=mini.querySelector('.symmatch-mini__head b');
-    if(b&&!/^PLAYABLE ·/.test(b.textContent||''))setText(b,`PLAYABLE · ${b.textContent}`);
+    if(b&&!/^PLAYABLE ·/.test(b.textContent||''))b.textContent=`PLAYABLE · ${b.textContent}`;
     const small=mini.querySelector('small');
-    if(small&&!/Superbet ✓/.test(small.textContent||''))setText(small,`${small.textContent} · Superbet ✓`);
+    if(small&&!/Superbet ✓/.test(small.textContent||''))small.textContent=`${small.textContent} · Superbet ✓`;
     mini.dataset.playableUiV917='verified';
   }
 }
@@ -351,7 +354,13 @@ function wrapRenderMatches(){
   const current=window.renderMatches;
   if(typeof current!=='function'||current[WRAP])return false;
   const wrapped=function(...args){
-    const result=current.apply(this,args);
+    // ui-v751's legacy ⭐ 80+ filter used the exported PLAYABLE API. During the
+    // synchronous RAW render only, expose raw model rows so operator availability
+    // cannot hide a strong model match. Restore the strict API immediately after.
+    const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
+    if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
+    let result;
+    try{result=current.apply(this,args)}finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}
     queueMicrotask(()=>{patchHome();patchSymphonyMinis()});
     return result;
   };
