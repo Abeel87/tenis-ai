@@ -71,12 +71,24 @@ function refreshVisibleUi(){
   }catch{}
 }
 
+function loadSuperbetModelCoverageV922(){
+  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]'))return;
+  const script=document.createElement('script');
+  script.src='superbet-model-coverage-v922.js?v=922&contract=operator-model-coverage';
+  script.async=false;
+  script.dataset.superbetModelCoverageV922='1';
+  document.head.appendChild(script);
+}
+
 function loadRawPlayableV921(){
-  if(window.TENIS_AI_RAW_PLAYABLE_V921||document.querySelector('script[data-raw-playable-v921]'))return;
+  if(window.TENIS_AI_RAW_PLAYABLE_V921){loadSuperbetModelCoverageV922();return}
+  const existing=document.querySelector('script[data-raw-playable-v921]');
+  if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
   const script=document.createElement('script');
   script.src='raw-playable-separation-v921.js?v=921&contract=raw-playable';
   script.async=false;
   script.dataset.rawPlayableV921='1';
+  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
   document.head.appendChild(script);
 }
 
@@ -104,7 +116,7 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 // its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// PLAYABLE loads first so it can guard only explicitly actionable Superbet UI.
-// MODEL/RAW stays intact and v9.2.1 adds the independent analysis layer beside it.
+// PLAYABLE loads first, MODEL/RAW second, then the v9.2.2 read-only coverage
+// bridge annotates only real Superbet rows with our existing model probability.
 setTimeout(loadPlayableUiV917,0);
 })();
