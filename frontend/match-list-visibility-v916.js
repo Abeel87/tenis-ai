@@ -5,7 +5,7 @@
 (()=>{
 'use strict';
 
-const VERSION='v9.1.8';
+const VERSION='v9.2.1';
 const previousFilteredReady=typeof filteredReady==='function'?filteredReady:null;
 
 function visibleMatches(now=Date.now()){
@@ -72,12 +72,24 @@ function refreshVisibleUi(){
   }catch{}
 }
 
+function loadRawPlayableV921(){
+  if(window.TENIS_AI_RAW_PLAYABLE_V921||document.querySelector('script[data-raw-playable-v921]'))return;
+  const script=document.createElement('script');
+  script.src='raw-playable-separation-v921.js?v=921&contract=raw-playable';
+  script.async=false;
+  script.dataset.rawPlayableV921='1';
+  document.head.appendChild(script);
+}
+
 function loadPlayableUiV917(){
-  if(window.TENIS_AI_PLAYABLE_UI_V917||document.querySelector('script[data-playable-ui-v917]'))return;
+  if(window.TENIS_AI_PLAYABLE_UI_V917){loadRawPlayableV921();return}
+  const existing=document.querySelector('script[data-playable-ui-v917]');
+  if(existing){existing.addEventListener('load',loadRawPlayableV921,{once:true});return}
   const script=document.createElement('script');
   script.src='playable-ui-coherence-v917.js?v=917&audit=919';
   script.async=false;
   script.dataset.playableUiV917='1';
+  script.addEventListener('load',loadRawPlayableV921,{once:true});
   document.head.appendChild(script);
 }
 
@@ -93,8 +105,7 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 // its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// v9.1.7 is intentionally loaded on the next task. match-list-visibility-v916
-// sits before Symphony scripts in index.html; waiting one task guarantees that
-// the PLAYABLE coherence layer wraps the final UI APIs instead of racing them.
+// PLAYABLE loads first so it can continue to guard actionable betting surfaces.
+// v9.2.1 then adds the independent MODEL/RAW layer beside it instead of replacing it.
 setTimeout(loadPlayableUiV917,0);
 })();
