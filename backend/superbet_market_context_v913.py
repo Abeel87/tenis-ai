@@ -3,11 +3,15 @@ from __future__ import annotations
 """Tenis AI v9.1.3 — bounded OddsPapi tournament batching.
 
 OddsPapi accepts at most five tournament IDs in one `odds-by-tournaments`
-request.  v9.1 collected every matched tournament and sent them in one call,
+request. v9.1 collected every matched tournament and sent them in one call,
 which made the production Superbet feed fail with HTTP 400 on busy slates.
 
 This adapter keeps the v9.1 schema and logic intact, but transparently splits
-that one request into bounded batches.  Prices remain discarded by v9.1.
+that one request into bounded batches. Prices remain discarded by v9.1.
+
+The paid Normal plan gives enough quota to refresh the operator catalogue
+hourly. We keep a local 4,000 request/month ceiling so the app still has
+headroom below the account's 5,000 request/month allowance.
 """
 
 import json
@@ -23,6 +27,8 @@ except ImportError:
 VERSION = "v9.1.3"
 MAX_TOURNAMENT_IDS_PER_REQUEST = 5
 BATCH_DELAY_SECONDS = 1.05
+REFRESH_HOURS = 1
+MONTHLY_REQUEST_CAP = 4000
 
 
 def _tournament_ids(value) -> list[str]:
@@ -78,24 +84,38 @@ def _stamp_runtime_adapter() -> None:
     availability = dict(availability)
     availability["runtime_adapter_version"] = VERSION
     availability["tournament_batch_limit"] = MAX_TOURNAMENT_IDS_PER_REQUEST
+    availability["refresh_hours"] = REFRESH_HOURS
+    quota = availability.get("quota_guard")
+    if isinstance(quota, dict):
+        quota = dict(quota)
+        quota["monthly_cap"] = MONTHLY_REQUEST_CAP
+        availability["quota_guard"] = quota
     base._write(base.AVAILABILITY, availability)
 
 
 def prepare() -> dict:
     original_request = base._request
+    original_refresh_hours = base.REFRESH_HOURS
+    original_monthly_cap = base.MONTHLY_REQUEST_CAP
 
     def request(path: str, api_key: str, quota: dict, **params):
         return batched_request(original_request, path, api_key, quota, **params)
 
     base._request = request
+    base.REFRESH_HOURS = REFRESH_HOURS
+    base.MONTHLY_REQUEST_CAP = MONTHLY_REQUEST_CAP
     try:
         result = dict(base.prepare())
     finally:
         base._request = original_request
+        base.REFRESH_HOURS = original_refresh_hours
+        base.MONTHLY_REQUEST_CAP = original_monthly_cap
 
     _stamp_runtime_adapter()
     result["runtime_adapter_version"] = VERSION
     result["tournament_batch_limit"] = MAX_TOURNAMENT_IDS_PER_REQUEST
+    result["refresh_hours"] = REFRESH_HOURS
+    result["monthly_request_cap"] = MONTHLY_REQUEST_CAP
     return result
 
 
