@@ -16,6 +16,7 @@ from model_telemetry_v84c import build_report
 from player_intelligence_v85 import _telemetry as build_player_intelligence_telemetry
 from shadow_lab_v78e6 import build_shadow_stats
 from signal_settlement import reconcile_settled, SIGNAL_LAYERS
+from superbet_candidate_settlement_v925 import build_candidate_stats
 
 
 def refresh(directory):
@@ -56,6 +57,8 @@ def refresh(directory):
     write('model_telemetry_v84c.json', telemetry)
 
     write('shadow_stats.json', build_shadow_stats(history))
+    candidate_stats = build_candidate_stats(history)
+    write('superbet_candidate_stats_v925.json', candidate_stats)
     auto = read('autolearn_v84.json', {})
     if auto:
         auto['tracking'] = tracking_stats(history, tracker_version=TRACKER_VERSION)
@@ -66,8 +69,19 @@ def refresh(directory):
     meta['settlement_reports_updated_at'] = datetime.now(timezone.utc).isoformat()
     meta['settlement_reports_policy'] = 'v8.8.4-single-snapshot'
     meta['settlement_reports_player_telemetry_fix'] = 'v8.8.9'
+    meta['superbet_candidate_settlement_v925'] = {
+        'mode': candidate_stats.get('mode'),
+        'review_ready_markets': candidate_stats.get('review_ready_markets') or [],
+        'playable_accuracy_unchanged': True,
+        'production_influence': False,
+    }
     write('meta.json', meta)
-    return {'reconciled_signals': changes, 'history_entries': len(history)}
+    return {
+        'reconciled_signals': changes,
+        'history_entries': len(history),
+        'superbet_candidate_settled': (candidate_stats.get('overall') or {}).get('settled', 0),
+        'superbet_candidate_review_ready_markets': candidate_stats.get('review_ready_markets') or [],
+    }
 
 
 if __name__ == '__main__':

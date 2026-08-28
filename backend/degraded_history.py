@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from history_tracker import archive_predictions, history_stats, load_history, save_history
+from superbet_candidate_settlement_v925 import capture_candidates
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -42,6 +43,10 @@ def capture_history(
 
     entries = load_history(history_path)
     entries = archive_predictions(entries, results, now=now)
+    # v9.2.5: freeze newly mapped Superbet DISPLAY/SHADOW candidates before the
+    # live-result settlement step. They stay non-PLAYABLE and cannot affect the
+    # existing production accuracy counters.
+    entries, candidate_capture = capture_candidates(entries, results, now=now)
     entries = sorted(
         entries,
         key=lambda entry: entry.get("scheduled_time") or "",
@@ -71,6 +76,7 @@ def capture_history(
             "history_pending": pending,
             "history_capture_at": now.isoformat(),
             "history_capture_mode": "last-analysis" if degraded else "current-analysis",
+            "superbet_candidate_settlement_v925": candidate_capture,
         }
     )
     _write_json(meta_path, meta)
@@ -80,6 +86,7 @@ def capture_history(
         "history_pending": pending,
         "capture_mode": meta["history_capture_mode"],
         "source_results": len(results),
+        "superbet_candidate_capture": candidate_capture,
     }
 
 
