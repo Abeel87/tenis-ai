@@ -13,14 +13,14 @@ from urllib.request import Request, urlopen
 BASE = "https://api.oddspapi.io/v4"
 SPORT_ID = 12
 OUT = Path("oddspapi_player_props_paid_smoke.json")
-MAX_FIXTURES = 5
+MAX_FIXTURES = 12
 
 
 def get_json(path: str, api_key: str, **params):
     query = {"apiKey": api_key, **{k: v for k, v in params.items() if v is not None}}
     req = Request(
         f"{BASE}/{path}?{urlencode(query)}",
-        headers={"User-Agent": "tenis-ai-player-props-paid-smoke/1.0", "Accept": "application/json"},
+        headers={"User-Agent": "tenis-ai-player-props-paid-smoke/1.1", "Accept": "application/json"},
     )
     try:
         with urlopen(req, timeout=25) as response:
@@ -138,6 +138,22 @@ def prop_markets(payload: dict, slug: str, idx: dict[str, dict]) -> list[dict]:
     return out
 
 
+def fixture_priority(row: dict):
+    text = " ".join(
+        str(row.get(k) or "")
+        for k in ("tournamentName", "categoryName", "tournamentSlug", "categorySlug")
+    ).casefold()
+    if "us open" in text or "grand slam" in text:
+        tier = 0
+    elif "atp" in text or "wta" in text:
+        tier = 1
+    elif "challenger" in text:
+        tier = 2
+    else:
+        tier = 3
+    return tier, str(row.get("startTime") or "")
+
+
 def main() -> int:
     key = os.getenv("ODDSPAPI_API_KEY", "").strip()
     if not key:
@@ -159,10 +175,10 @@ def main() -> int:
         language="en",
     )
     fixtures = [x for x in fixtures if isinstance(x, dict) and x.get("hasOdds")] if isinstance(fixtures, list) else []
-    fixtures.sort(key=lambda x: str(x.get("startTime") or ""))
+    fixtures.sort(key=fixture_priority)
 
     report = {
-        "version": "player-props-paid-smoke-v1",
+        "version": "player-props-paid-smoke-v1.1",
         "generated_at": now.isoformat(),
         "superbet_access": find_superbet_access(account if isinstance(account, dict) else {}),
         "bookmaker": slug,
