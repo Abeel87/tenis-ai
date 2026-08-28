@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/test_oddspapi_player_props_paid.py'
+      - 'scripts/test_oddspapi_player_prop_catalog_paid.py'
       - '.github/workflows/oddspapi-player-props-paid-smoke.yml'
   workflow_dispatch:
 
@@ -20,16 +21,16 @@ jobs:
         with:
           python-version: '3.12'
       - name: Python syntax
-        run: python -m py_compile scripts/test_oddspapi_player_props_paid.py
-      - name: Check paid Superbet PL Player Props
+        run: python -m py_compile scripts/test_oddspapi_player_prop_catalog_paid.py
+      - name: Inspect paid tennis Player Props catalogue
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
-        run: python scripts/test_oddspapi_player_props_paid.py
+        run: python scripts/test_oddspapi_player_prop_catalog_paid.py
       - name: Upload sanitized report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oddspapi-player-props-paid-smoke
-          path: oddspapi_player_props_paid_smoke.json
+          path: oddspapi_player_prop_catalog_paid.json
           if-no-files-found: ignore
           retention-days: 3
