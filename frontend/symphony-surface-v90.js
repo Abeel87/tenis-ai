@@ -3,7 +3,7 @@
   'use strict';
 
   const VERSION = 'v9.0D.2';
-  const DATA_URL = './data/symphony_v90.json';
+  const DATA_URL = './data/symphony_match_cards_v90.json';
   let reportPromise = null;
   let reportCache = null;
   let decorateTimer = null;
@@ -75,13 +75,13 @@
   }
 
   function composition(row) {
+    const comp = row?.composition;
+    if (!comp || !Array.isArray(comp.selection) || !comp.selection.length) return null;
     const recommended = Number(row?.recommended_leg_count);
-    const candidates = [recommended, 2, 3, 4, 5, 6].filter((x, i, a) => Number.isInteger(x) && a.indexOf(x) === i);
-    for (const n of candidates) {
-      const comp = row?.compositions?.[String(n)];
-      if (comp && Array.isArray(comp.selection) && comp.selection.length) return { n, comp };
-    }
-    return null;
+    const n = Number.isInteger(recommended) && recommended >= 2 && recommended <= 6
+      ? recommended
+      : comp.selection.length;
+    return { n, comp };
   }
 
   function miniHtml(row) {
