@@ -45,12 +45,7 @@
   const signalText=v=>num(v)==null?'—':(signalIsProbability()?`${Math.round(Number(v))}%`:`${Math.round(Number(v))}/100`);
 
   function status(m){
-    const raw=String(m?.event_status||m?.feed_status||m?.status||'').toLowerCase();
-    if(raw.includes('live')||raw.includes('progress')||raw.includes('started')) return {txt:'LIVE',cls:'live'};
-    if(raw.includes('interrupt')) return {txt:'PRZERWANY',cls:'interrupted'};
-    if(raw.includes('suspend')) return {txt:'ZAWIESZONY',cls:'suspended'};
-    if(raw.includes('postpon')) return {txt:'PRZEŁOŻONY',cls:'postponed'};
-    return {txt:'PRZED MECZEM',cls:'upcoming'};
+    return window.TENIS_AI_MATCH_TIME?.cardStatus(m)||{txt:'STATUS N/D',cls:'unknown'};
   }
 
   function addBest(arr,label,obj,kind='model'){
@@ -184,12 +179,13 @@
     const s=top(m,1)[0],v=strength(m),st=status(m);
     return `<article class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}" role="button" tabindex="0">
       <div class="p751-match-meta">
-        <span class="p751-status ${st.cls}">${esc(st.txt)}</span>
+        ${window.TENIS_AI_MATCH_TIME?.badgeHtml(m)||`<span class="p751-status ${st.cls}">${esc(st.txt)}</span>`}
         <b>${esc(tour(m))}</b>
         <span>${esc(m.tournament||'Turniej')}</span>
         <span>• ${esc(surf(m))}</span>
         <time>${esc(tm(m))}</time>
       </div>
+      ${window.TENIS_AI_MATCH_TIME?.html(m,'compact')||''}
       <div class="p751-card-center">
         <div class="p751-names">
           <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b>
