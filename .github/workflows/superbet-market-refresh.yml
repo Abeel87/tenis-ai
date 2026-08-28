@@ -1,0 +1,149 @@
+name: Superbet hourly market refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '5 * * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/superbet_market_context_v913.py'
+      - 'backend/market_lab_v741.py'
+      - 'backend/superbet_playable_v912.py'
+      - 'backend/player_intelligence_v85.py'
+      - 'backend/player_model_shadow_v89.py'
+      - 'backend/ensemble_player_learning_v891.py'
+      - 'backend/surface_elo_integration_v893.py'
+      - 'backend/shadow_signal_center_v894.py'
+      - 'backend/symphony_operator_reproject_v914.py'
+      - 'scripts/compact_frontend_data_v853.py'
+      - 'tests/test_superbet_market_v913.py'
+      - 'tests/test_symphony_operator_reproject_v914.py'
+      - '.github/workflows/superbet-market-refresh.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+# Production refresh must not rewrite results.json while FULL is using it.
+# Pull-request smoke runs use their own queue so an obsolete PR attempt cannot
+# hold the next lightweight test behind a long-running experiment.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('superbet-refresh-pr-{0}', github.event.pull_request.number) || 'tennis-data-build' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout newest main / PR merge
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install bounded runtime dependencies
+        run: pip install -r requirements.txt
+
+      - name: Syntax guard
+        run: |
+          python -m py_compile backend/superbet_market_context_v913.py
+          python -m py_compile backend/market_lab_v741.py
+          python -m py_compile backend/superbet_playable_v912.py
+          python -m py_compile backend/player_intelligence_v85.py
+          python -m py_compile backend/player_model_shadow_v89.py
+          python -m py_compile backend/ensemble_player_learning_v891.py
+          python -m py_compile backend/surface_elo_integration_v893.py
+          python -m py_compile backend/shadow_signal_center_v894.py
+          python -m py_compile backend/symphony_operator_reproject_v914.py
+
+      - name: Refresh real Superbet catalogue
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: python backend/superbet_market_context_v913.py prepare
+
+      - name: Re-evaluate current models on real operator lines
+        run: |
+          python backend/market_lab_v741.py
+          python backend/superbet_market_context_v913.py finalize
+          python backend/superbet_playable_v912.py inject
+          python backend/player_intelligence_v85.py post
+
+      - name: Refresh current SHADOW scores on playable lines
+        run: |
+          python backend/player_model_shadow_v89.py
+          python backend/ensemble_player_learning_v891.py
+          python backend/surface_elo_integration_v893.py
+          python backend/shadow_signal_center_v894.py
+
+      - name: Reproject Symphony gate and frontend PLAYABLE view
+        run: |
+          python backend/superbet_playable_v912.py project
+          python backend/symphony_operator_reproject_v914.py
+          python scripts/compact_frontend_data_v853.py
+
+      - name: Runtime sanity guard
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = Path('frontend/data')
+          availability = json.loads((data/'superbet_market_availability_v91.json').read_text(encoding='utf-8'))
+          results = json.loads((data/'results.json').read_text(encoding='utf-8'))
+          symphony = json.loads((data/'symphony_v90.json').read_text(encoding='utf-8'))
+          assert isinstance(results, list) and results, 'results.json empty after market refresh'
+          assert availability.get('contains_prices') is False
+          assert availability.get('prices_used') is False
+          assert availability.get('refresh_hours') == 1
+          quota = availability.get('quota_guard') or {}
+          assert int(quota.get('monthly_cap') or 0) == 4000
+          assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          assert symphony.get('operator_reprojection_version') == 'v9.1.4'
+          repro = symphony.get('operator_reprojection') or {}
+          assert repro.get('full_scenario_search_rerun') is False
+          verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          print(
+              f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
+              f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
+              f'symphony_operator_matches={repro.get("operator_context_matches")}'
+          )
+          PY
+
+      - name: Commit refreshed market context
+        if: github.event_name != 'pull_request'
+        id: commit
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No market-context JSON changes to publish."
+            exit 0
+          fi
+          git commit -m "data: refresh Superbet market context"
+          for attempt in 1 2 3; do
+            git fetch origin
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git rebase --abort || true
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to publish Superbet market refresh after 3 attempts"
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Dispatch serialized FAST Pages deploy
+        if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages-fast.yml --ref main
