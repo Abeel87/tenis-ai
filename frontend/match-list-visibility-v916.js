@@ -5,7 +5,7 @@
 (()=>{
 'use strict';
 
-const VERSION='v9.2.1';
+const VERSION='v9.2.2';
 const previousFilteredReady=typeof filteredReady==='function'?filteredReady:null;
 
 function visibleMatches(now=Date.now()){
@@ -49,15 +49,14 @@ function refreshClock(){
     const label=group.querySelector('summary small');
     if(label)label.textContent=label.textContent.replace(/^\d+\s+\S+/,`${cards.length} ${cards.length===1?'mecz':'meczów'}`);
   });
-  const top=document.querySelector('#app .p751-top');
-  if(top){
+  document.querySelectorAll('#app .p751-top').forEach(top=>{
     const n=top.querySelectorAll('[data-p751-open]').length;
     if(!n)top.remove();
     else{
       const label=top.querySelector('header span');
       if(label)label.textContent=label.textContent.replace(/^\d+/,String(n));
     }
-  }
+  });
   const groups=document.querySelector('#app .p751-groups');
   if(groups&&!groups.querySelector('.p751-group'))groups.innerHTML='<div class="p751-empty"><b>Brak aktualnych meczów dla tego filtra.</b><span>Minęła planowana godzina spotkań. Odśwież dane, aby sprawdzić nowy terminarz.</span></div>';
   if(typeof updateCounts==='function')updateCounts();
@@ -86,7 +85,7 @@ function loadPlayableUiV917(){
   const existing=document.querySelector('script[data-playable-ui-v917]');
   if(existing){existing.addEventListener('load',loadRawPlayableV921,{once:true});return}
   const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=917&audit=919';
+  script.src='playable-ui-coherence-v917.js?v=922&contract=raw-playable';
   script.async=false;
   script.dataset.playableUiV917='1';
   script.addEventListener('load',loadRawPlayableV921,{once:true});
@@ -105,7 +104,7 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 // its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// PLAYABLE loads first so it can continue to guard actionable betting surfaces.
-// v9.2.1 then adds the independent MODEL/RAW layer beside it instead of replacing it.
+// PLAYABLE loads first so it can guard only explicitly actionable Superbet UI.
+// MODEL/RAW stays intact and v9.2.1 adds the independent analysis layer beside it.
 setTimeout(loadPlayableUiV917,0);
 })();
