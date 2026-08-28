@@ -31,6 +31,15 @@ function refreshVisibleUi(){
   }catch{}
 }
 
+function loadPlayableUiV917(){
+  if(window.TENIS_AI_PLAYABLE_UI_V917||document.querySelector('script[data-playable-ui-v917]'))return;
+  const script=document.createElement('script');
+  script.src='playable-ui-coherence-v917.js?v=917';
+  script.async=false;
+  script.dataset.playableUiV917='1';
+  document.head.appendChild(script);
+}
+
 window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
   version:VERSION,
   visibleMatches,
@@ -41,4 +50,9 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 // If app.js has already finished loading data, refresh immediately. Otherwise
 // its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
+
+// v9.1.7 is intentionally loaded on the next task. match-list-visibility-v916
+// sits before Symphony scripts in index.html; waiting one task guarantees that
+// the PLAYABLE coherence layer wraps the final UI APIs instead of racing them.
+setTimeout(loadPlayableUiV917,0);
 })();
