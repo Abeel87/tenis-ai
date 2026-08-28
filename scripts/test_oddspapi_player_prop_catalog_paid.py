@@ -16,7 +16,7 @@ def get_json(path: str, api_key: str, **params):
     query = {"apiKey": api_key, **params}
     req = Request(
         f"{BASE}/{path}?{urlencode(query)}",
-        headers={"User-Agent": "tenis-ai-player-prop-catalog/1.0", "Accept": "application/json"},
+        headers={"User-Agent": "tenis-ai-player-prop-catalog/1.1", "Accept": "application/json"},
     )
     try:
         with urlopen(req, timeout=25) as response:
@@ -53,7 +53,7 @@ def main() -> int:
         raise SystemExit("ODDSPAPI_API_KEY is missing")
 
     account = get_json("account", key)
-    markets = get_json("markets", key, language="en")
+    markets = get_json("markets", key, sportId=SPORT_ID, language="en")
 
     tennis_props = []
     serve_related = []
@@ -79,7 +79,7 @@ def main() -> int:
     serve_related.sort(key=lambda x: (str(x.get("market_name") or ""), str(x.get("market_id") or "")))
 
     report = {
-        "version": "player-prop-catalog-paid-v1",
+        "version": "player-prop-catalog-paid-v1.1",
         "superbet_access": current_superbet(account if isinstance(account, dict) else {}),
         "tennis_player_prop_count": len(tennis_props),
         "serve_related_count": len(serve_related),
