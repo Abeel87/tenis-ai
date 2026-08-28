@@ -49,17 +49,24 @@ def test_stats_chart_is_mobile_responsive_and_pro_can_close():
 def test_late_surface_restores_stats_and_decorates_match_cards():
     js = read("frontend/symphony-surface-v90.js")
     css = read("frontend/symphony-surface-v90.css")
+    generator = read("scripts/compact_frontend_data_v853.py")
     # v883 may sweep new cards into PRO; the late surface moves Symphony back to #pc77.
     assert "card.parentElement !== root" in js
     assert "pc882-dash" in js
     assert "symphony-performance-v90d" in js
-    # Match cards use the already generated Symphony recommendation, not a new browser model.
+    # Match cards use a small feed containing only the already-computed AUTO Symphony.
+    assert "symphony_match_cards_v90.json" in js
     assert "recommended_leg_count" in js
-    assert "row?.compositions" in js
+    assert "row?.composition" in js
     assert "symphony_score" in js
     assert "/100" in js
     assert ".p751-match-card[data-p751-open]" in js
     assert "data-symphony-match-mini" in js
+    # The deploy builds the compact feed from the full server-side Symphony report.
+    assert "symphony_match_cards_v90.json" in generator
+    assert "build_symphony_match_cards" in generator
+    assert "recommended_leg_count" in generator
+    assert "_card_leg" in generator
     # Keep the card compact and mobile safe.
     assert ".symmatch-mini" in css
     assert "@media(max-width:520px)" in css
