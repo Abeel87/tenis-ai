@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,6 +33,20 @@ def compact(path: Path) -> dict:
         'saved_bytes': before - after,
         'saved_pct': round((before - after) * 100 / before, 1) if before else 0.0,
     }
+
+
+def track_deep_symphony_stats() -> dict:
+    """Track v9.3 MODEL/RAW after the current deep report has been generated.
+
+    This is intentionally placed in the final data-publication stage: the deep
+    report and canonical settlement feed already exist, while the tracker remains
+    observation-only and cannot affect the model build that just finished.
+    """
+    backend = ROOT / 'backend'
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+    from symphony_model_tracker_v93 import run
+    return run()
 
 
 def _card_leg(leg: dict) -> dict:
@@ -107,11 +122,13 @@ def build_symphony_match_cards() -> dict:
 
 
 def main() -> None:
+    symphony_model_stats = track_deep_symphony_stats()
     symphony_cards = build_symphony_match_cards()
     report = [compact(path) for path in TARGETS]
     print(json.dumps({
         'version': 'v8.5.3',
         'targets': report,
+        'symphony_model_stats': symphony_model_stats,
         'symphony_match_cards': symphony_cards,
     }, ensure_ascii=False, indent=2))
 
