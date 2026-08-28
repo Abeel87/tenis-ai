@@ -179,7 +179,7 @@ function decorateGeneratorCards(){
   const gh=document.querySelector('.sc88-generator-head');
   if(gh){
     const tag=gh.querySelector('span');
-    if(tag)tag.textContent='GENERATOR AI '+(window.TENIS_AI_META?.displayVersion||VERSION);
+    if(tag)tag.textContent='GENERATOR AI '+(window.TENIS_AI_META?.releaseVersion||window.TENIS_AI_META?.displayVersion||VERSION);
     const title=gh.querySelector('b');
     if(title)title.textContent='Pair-first + Adaptive PROD';
     const small=gh.querySelector('small');
@@ -225,11 +225,7 @@ function brand(){
   window.TENIS_AI_APPLY_META?.();
   document.documentElement.dataset.tenisAiFeatureVersion=window.TENIS_AI_META?.displayVersion||VERSION;
 
-  const footer=document.querySelector('footer');
-  if(footer){
-    const lines=[...footer.children];
-    if(lines[1])lines[1].textContent=(window.TENIS_AI_META?.displayVersion||VERSION)+' · Adaptive PROD + Pair Selector + Analytics · Player Intelligence i Accuracy Lab pozostają SHADOW.';
-  }
+  // Visible release labels belong to app-meta; feature versions stay internal.
 }
 
 function compactAdaptive(){

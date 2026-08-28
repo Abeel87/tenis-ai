@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,20 +43,31 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
 
 
 def test_retry_selects_only_its_own_pages_artifact():
-    import yaml
+    workflow = read('.github/workflows/deploy-pages-fast.yml')
 
-    workflow = yaml.load(read('.github/workflows/deploy-pages-fast.yml'), Loader=yaml.BaseLoader)
-    steps = workflow['jobs']['deploy']['steps']
-    upload = next(s for s in steps if s.get('uses') == 'actions/upload-pages-artifact@v4')
-    deploy = next(s for s in steps if s.get('uses') == 'actions/deploy-pages@v4')
+    def action_input(action, key):
+        # Inspect this workflow's block-style steps, not arbitrary YAML. Scope the
+        # input to its action so an unrelated name cannot satisfy the regression.
+        steps = re.split(r'(?m)^      - ', workflow)[1:]
+        matching = [step for step in steps
+                    if re.search(rf'(?m)^        uses: {re.escape(action)}$', step)]
+        assert len(matching) == 1, f'Expected one {action} step'
+        value = re.search(rf'(?m)^        with:\n(?:          [^\n]*\n)*?'
+                          rf'          {re.escape(key)}: ([^\n]+)', matching[0])
+        assert value, f'Missing {key} input for {action}'
+        return value.group(1).strip().strip('\"\'')
+
+    upload_name = action_input('actions/upload-pages-artifact@v4', 'name')
+    deploy_name = action_input('actions/deploy-pages@v4', 'artifact_name')
 
     def resolve(value, attempt):
         return value.replace('${{ github.run_id }}', '12345').replace('${{ github.run_attempt }}', str(attempt))
 
     artifacts = []
     for attempt in (1, 2):
-        artifact = resolve(upload['with']['name'], attempt)
+        artifact = resolve(upload_name, attempt)
         artifacts.append(artifact)
-        assert artifacts.count(resolve(deploy['with']['artifact_name'], attempt)) == 1
+        assert artifacts.count(resolve(deploy_name, attempt)) == 1
     assert len(set(artifacts)) == 2  # the original retry failed on duplicate github-pages names
-    assert '.github/workflows/deploy-pages-fast.yml' in workflow['on']['push']['paths']
+    push_block = workflow.split('  push:', 1)[1].split('\npermissions:', 1)[0]
+    assert "      - '.github/workflows/deploy-pages-fast.yml'" in push_block

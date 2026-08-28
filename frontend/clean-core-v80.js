@@ -242,8 +242,7 @@
     head.appendChild(b);
   }
   function fixHeader(){
-    const p=document.querySelector('.brand-copy p');
-    if(p&&p.textContent!==`Tenis AI ${VERSION} · Adaptive Learning`)p.textContent=`Tenis AI ${VERSION} · Adaptive Learning`;
+    window.TENIS_AI_APPLY_META?.();
   }
   function tidy(){fixHeader();compactHealth();compactModels()}
 

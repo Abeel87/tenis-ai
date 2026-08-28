@@ -36,6 +36,8 @@
     document.title=`Tenis AI · ${shown}`;
     const p=document.querySelector('.brand-copy p');
     if(p)p.textContent=`Tenis AI ${shown} · Adaptive PROD + Player Learning SHADOW`;
+    const foot=document.querySelector('body > footer > div:nth-child(2)');
+    if(foot)foot.textContent=`${shown} · Player Intelligence i Player Learning działają w SHADOW. Modele nie gwarantują wygranej ani zysku.`;
   }
 
   window.TENIS_AI_APPLY_META=applyMeta;
