@@ -18,6 +18,7 @@ on:
       - 'frontend/symphony-surface-v90.css'
       - 'frontend/stats-ranking-v886.js'
       - 'frontend/index.html'
+      - 'scripts/compact_frontend_data_v853.py'
       - 'tests/test_symphony_v90*.py'
       - '.github/workflows/symphony-v90-check.yml'
       - '.github/workflows/update-and-pages.yml'
@@ -44,6 +45,7 @@ jobs:
           python -m py_compile backend/symphony_leg_learning_v90d.py
           python -m py_compile backend/symphony_tracker_v90d.py
           python -m py_compile backend/symphony_engine_v90c.py
+          python -m py_compile scripts/compact_frontend_data_v853.py
       - name: Symphony tests
         run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py
       - name: Frontend syntax
@@ -57,6 +59,8 @@ jobs:
           grep -q 'symphony-v90.css' frontend/index.html
           grep -q 'symphony-v90.js' frontend/index.html
           grep -q 'symphony-surface-v90.js' frontend/index.html
+          grep -q 'symphony_match_cards_v90.json' frontend/symphony-surface-v90.js
+          grep -q 'symphony_match_cards_v90.json' scripts/compact_frontend_data_v853.py
           grep -q 'Tennis Symphony v9.0' .github/workflows/update-and-pages.yml
           grep -q 'symphony_engine_v90c.py' .github/workflows/update-and-pages.yml
           grep -q 'symphony_tracker_v90d.py' .github/workflows/update-and-pages.yml
