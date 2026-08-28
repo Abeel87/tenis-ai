@@ -13,6 +13,51 @@ const context = vm.createContext({
 context.window=context;
 const run = file=>vm.runInContext(fs.readFileSync('frontend/'+file,'utf8'),context);
 run('app-meta.js'); run('multi-model.js'); run('model-guide.js');
+
+// Branding must survive the real Clean Core startup, load callback and late tidy.
+// Internal compatibility/model versions are deliberately not release labels.
+{
+  const header={textContent:''}, footer={textContent:''}, events=[], timers=[];
+  const branding=vm.createContext({
+    console, renderHistory(){}, localStorage:{getItem:()=>null},
+    setTimeout:fn=>{timers.push(fn);return 0},
+    addEventListener:(event,fn)=>events.push([event,fn]),
+    document:{readyState:'loading',documentElement:{dataset:{}},
+      addEventListener:(event,fn)=>events.push([event,fn]),
+      querySelector:selector=>selector==='.brand-copy p'?header:
+        selector==='body > footer > div:nth-child(2)'?footer:null}
+  });
+  branding.window=branding;
+  for(const file of ['app-meta.js','clean-core-v80.js']){
+    vm.runInContext(fs.readFileSync('frontend/'+file,'utf8'),branding);
+  }
+  const release=branding.TENIS_AI_META.releaseVersion;
+  const checkBrand=()=>{
+    assert.equal(branding.document.title,`Tenis AI · ${release}`);
+    assert.equal(branding.document.documentElement.dataset.tenisAiVersion,release);
+    assert.ok(header.textContent.startsWith(`Tenis AI ${release} ·`));
+    assert.ok(footer.textContent.startsWith(`${release} ·`));
+  };
+  checkBrand();
+  for(const [,fn] of events)fn();
+  for(const fn of timers)fn();
+  branding.TENIS_AI_CLEAN_CORE.tidy();
+  checkBrand();
+  const finalSource=fs.readFileSync('frontend/v883-final.js','utf8');
+  const brandSource=finalSource.slice(finalSource.indexOf('function brand(){'),finalSource.indexOf('\nfunction compactAdaptive(){'));
+  vm.runInContext(brandSource+'\nbrand();',branding);
+  checkBrand();
+  assert.equal(branding.TENIS_AI_CLEAN_CORE.version,'v8.0.1');
+  const html=fs.readFileSync('frontend/index.html','utf8').replace(/<!--[\s\S]*?-->/g,'');
+  assert.ok(html.includes(`<title>Tenis AI · ${release}</title>`));
+  assert.ok(html.includes(`<p>${header.textContent}</p>`));
+  assert.ok(html.includes(`<div>${footer.textContent}</div>`));
+  assert.ok(!/Tenis AI v8\./.test(html));
+  const stats=fs.readFileSync('frontend/performance-center-v77.js','utf8');
+  const appVersion=stats.match(/const appVer=([^;]+);/)[1];
+  assert.equal(vm.runInContext(appVersion,branding),release);
+  console.log('Release branding: PASS (static shell, startup, load, late tidy, footer and stats)');
+}
 const api=context.TENIS_AI_MODEL_API, center=context.TENIS_AI_DECISION_CENTER_V87;
 assert.equal(api.active,'adaptive-prod','hidden saved Consensus must not change production ranking');
 const alias=m=>({match_winner:'match_win',set1_winner:'set1_win',set2_winner:'set2_win',set3_winner:'set3_win'})[m]||m;

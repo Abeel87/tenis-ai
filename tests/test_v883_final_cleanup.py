@@ -100,4 +100,7 @@ def test_v883_pwa_name_is_clean():
 
 def test_v883_shadow_boundary_copy_remains():
     js=t("frontend/v883-final.js")
-    assert "Player Intelligence i Accuracy Lab pozostają SHADOW" in js
+    assert "window.TENIS_AI_APPLY_META?.()" in js
+    meta=t("frontend/app-meta.js")
+    assert "Player Intelligence i Player Learning działają w SHADOW" in meta
+    assert "Modele nie gwarantują wygranej ani zysku" in meta
