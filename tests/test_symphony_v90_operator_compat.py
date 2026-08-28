@@ -51,11 +51,14 @@ def test_set_total_ladders_use_one_per_side_rule_too():
     assert compatible(set1_over_8, sets_over) is True
 
 
-def test_serve_markets_can_still_be_combined():
+def test_verified_serve_markets_can_still_be_combined():
+    # Compatibility itself remains valid once a real bookmaker line has been
+    # verified. The evidence adapter now blocks model-made serve thresholds
+    # before they ever reach this stage.
     compatible = comparison_compatible(core._compatible)
     most_aces = candidate("most_aces|A", "most_aces", "A")
-    player_aces = candidate("player_aces|p1|0.5|over", "player_aces", "over", 0.5)
-    player_df = candidate("player_double_faults|p1|1.5|over", "player_double_faults", "over", 1.5)
+    player_aces = candidate("player_aces|p1|4.5|over", "player_aces", "over", 4.5)
+    player_df = candidate("player_double_faults|p1|3.5|over", "player_double_faults", "over", 3.5)
 
     assert compatible(most_aces, player_aces) is True
     assert compatible(player_aces, player_df) is True
@@ -67,8 +70,8 @@ def test_composer_never_emits_more_than_one_match_total_per_side(monkeypatch):
         candidate("match_total|24.5|under", "match_total", "under", 24.5, 93),
         candidate("match_total|18.5|over", "match_total", "over", 18.5, 92),
         candidate("match_total|19.5|over", "match_total", "over", 19.5, 91),
-        candidate("player_aces|p1|0.5|over", "player_aces", "over", 0.5, 88),
-        candidate("player_double_faults|p1|1.5|over", "player_double_faults", "over", 1.5, 87),
+        candidate("player_aces|p1|4.5|over", "player_aces", "over", 4.5, 88),
+        candidate("player_double_faults|p1|3.5|over", "player_double_faults", "over", 3.5, 87),
         candidate("most_aces|A", "most_aces", "A", None, 86),
         candidate("match_winner|A", "match_winner", "A", None, 85),
     ]
