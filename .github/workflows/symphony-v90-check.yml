@@ -1,4 +1,4 @@
-name: Tennis Symphony v9.0 checks
+name: Tennis Symphony v9.x checks
 
 on:
   pull_request:
@@ -6,8 +6,12 @@ on:
     paths:
       - 'backend/symphony_engine_v90.py'
       - 'backend/symphony_engine_v90c.py'
+      - 'backend/symphony_engine_v91.py'
       - 'backend/symphony_evidence_v90c.py'
       - 'backend/symphony_c4.py'
+      - 'backend/symphony_operator_guard_v91.py'
+      - 'backend/superbet_market_context_v91.py'
+      - 'backend/market_lab_v741.py'
       - 'backend/symphony_tracker_v90d.py'
       - 'backend/symphony_leg_learning_v90d.py'
       - 'frontend/symphony-v90.js'
@@ -20,6 +24,7 @@ on:
       - 'frontend/index.html'
       - 'tests/test_symphony_v90*.py'
       - 'tests/test_symphony_operator_line_guard.py'
+      - 'tests/test_superbet_market_v91.py'
       - '.github/workflows/symphony-v90-check.yml'
       - '.github/workflows/update-and-pages.yml'
   workflow_dispatch:
@@ -45,8 +50,11 @@ jobs:
           python -m py_compile backend/symphony_leg_learning_v90d.py
           python -m py_compile backend/symphony_tracker_v90d.py
           python -m py_compile backend/symphony_engine_v90c.py
-      - name: Symphony tests
-        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_operator_line_guard.py
+          python -m py_compile backend/superbet_market_context_v91.py
+          python -m py_compile backend/symphony_operator_guard_v91.py
+          python -m py_compile backend/symphony_engine_v91.py
+      - name: Symphony + Superbet market tests
+        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_operator_line_guard.py tests/test_superbet_market_v91.py
       - name: Frontend syntax
         run: |
           node --check frontend/symphony-v90.js
@@ -58,7 +66,9 @@ jobs:
           grep -q 'symphony-v90.css' frontend/index.html
           grep -q 'symphony-v90.js' frontend/index.html
           grep -q 'symphony-surface-v90.js' frontend/index.html
-          grep -q 'Tennis Symphony v9.0' .github/workflows/update-and-pages.yml
-          grep -q 'symphony_engine_v90c.py' .github/workflows/update-and-pages.yml
+          grep -q 'Superbet Market Availability v9.1' .github/workflows/update-and-pages.yml
+          grep -q 'superbet_market_context_v91.py prepare' .github/workflows/update-and-pages.yml
+          grep -q 'superbet_market_context_v91.py finalize' .github/workflows/update-and-pages.yml
+          grep -q 'symphony_engine_v91.py' .github/workflows/update-and-pages.yml
           grep -q 'symphony_tracker_v90d.py' .github/workflows/update-and-pages.yml
           grep -q 'symphony-stats-v90d.js' frontend/stats-ranking-v886.js
