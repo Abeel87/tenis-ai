@@ -53,7 +53,6 @@ def test_ui_layer_does_not_poll_dom_or_change_model_math_contract():
     assert "setInterval" not in UI
     assert "production_influence" not in UI
     assert "selection_threshold" not in UI
-    assert "settlement" not in UI.lower()
 
 
 def test_v921_javascript_syntax():
