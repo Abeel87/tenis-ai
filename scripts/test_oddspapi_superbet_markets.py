@@ -13,14 +13,14 @@ from urllib.request import Request, urlopen
 
 BASE_URL = "https://api.oddspapi.io/v4"
 SPORT_ID_TENNIS = 12
-MAX_FIXTURE_REQUESTS = 8
+MAX_FIXTURE_REQUESTS = 12
 OUT = Path("oddspapi_superbet_market_catalog.json")
 
 
 def _get_json(path: str, api_key: str, **params):
     query = {"apiKey": api_key, **{k: v for k, v in params.items() if v is not None}}
     url = f"{BASE_URL}/{path}?{urlencode(query)}"
-    req = Request(url, headers={"User-Agent": "tenis-ai-oddspapi-smoke/1.0", "Accept": "application/json"})
+    req = Request(url, headers={"User-Agent": "tenis-ai-oddspapi-smoke/1.1", "Accept": "application/json"})
     try:
         with urlopen(req, timeout=25) as response:
             return json.loads(response.read().decode("utf-8"))
@@ -70,15 +70,27 @@ def _market_index(markets) -> dict[str, dict]:
     return out
 
 
+def _num(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _line_from_outcome(bookmaker_outcome_id) -> float | None:
     text = str(bookmaker_outcome_id or "")
     nums = re.findall(r"(?<!\d)(\d+(?:\.\d+)?)(?!\d)", text)
-    if not nums:
-        return None
-    # Handicap/total lines are usually the decimal number embedded in bookmakerOutcomeId.
     decimals = [float(x) for x in nums if "." in x]
-    if decimals:
-        return decimals[0]
+    return decimals[0] if decimals else None
+
+
+def _market_line(meta: dict) -> float | None:
+    line = _num(meta.get("handicap"))
+    market_type = str(meta.get("marketType") or "").casefold()
+    if line is None:
+        return None
+    if abs(line) > 1e-9 or "total" in market_type or "spread" in market_type or "handicap" in market_type:
+        return line
     return None
 
 
@@ -103,6 +115,7 @@ def _sanitize_fixture(odds_payload: dict, bookmaker_slug: str, market_meta: dict
             continue
         meta = market_meta.get(str(market_id), {})
         market_active = bool(market_data.get("marketActive", True))
+        line = _market_line(meta)
         selections = []
         for outcome_id, outcome_data in (market_data.get("outcomes") or {}).items():
             if not isinstance(outcome_data, dict):
@@ -112,13 +125,14 @@ def _sanitize_fixture(odds_payload: dict, bookmaker_slug: str, market_meta: dict
                 if not isinstance(player_data, dict) or not player_data.get("active", True):
                     continue
                 bookmaker_outcome_id = player_data.get("bookmakerOutcomeId")
+                selection_line = line if line is not None else _line_from_outcome(bookmaker_outcome_id)
                 selections.append(
                     {
                         "outcome_id": str(outcome_id),
                         "outcome_name": outcome_meta.get("outcomeName"),
                         "player_name": player_data.get("playerName"),
                         "bookmaker_outcome_id": bookmaker_outcome_id,
-                        "line": _line_from_outcome(bookmaker_outcome_id),
+                        "line": selection_line,
                         "main_line": bool(player_data.get("mainLine", False)),
                         "active": True,
                     }
@@ -131,8 +145,8 @@ def _sanitize_fixture(odds_payload: dict, bookmaker_slug: str, market_meta: dict
                 "market_name": meta.get("marketName") or meta.get("marketNameShort") or f"market {market_id}",
                 "market_type": meta.get("marketType"),
                 "period": meta.get("period"),
-                "player_prop": meta.get("playerProp"),
-                "handicap_market": meta.get("handicap"),
+                "player_prop": bool(meta.get("playerProp", False)),
+                "line": line,
                 "active": market_active,
                 "selections": selections,
             }
@@ -140,29 +154,53 @@ def _sanitize_fixture(odds_payload: dict, bookmaker_slug: str, market_meta: dict
 
     if not sanitized_markets:
         return None
-    sanitized_markets.sort(key=lambda x: (str(x.get("market_name") or ""), str(x.get("market_id") or "")))
+    sanitized_markets.sort(key=lambda x: (not x.get("player_prop"), str(x.get("market_name") or ""), str(x.get("market_id") or "")))
+    player_prop_count = sum(1 for x in sanitized_markets if x.get("player_prop"))
     return {
         "fixture_id": odds_payload.get("fixtureId"),
         "start_time": odds_payload.get("startTime"),
         "status": odds_payload.get("statusName"),
         "tournament": odds_payload.get("tournamentName"),
+        "category": odds_payload.get("categoryName"),
         "p1": odds_payload.get("participant1Name"),
         "p2": odds_payload.get("participant2Name"),
         "bookmaker": bookmaker_slug,
         "bookmaker_active": bool(book.get("bookmakerIsActive", True)),
         "suspended": bool(book.get("suspended", False)),
+        "market_count": len(sanitized_markets),
+        "player_prop_market_count": player_prop_count,
         "markets": sanitized_markets,
     }
+
+
+def _parse_start(value):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _fixture_priority(row: dict):
+    text = " ".join(
+        str(row.get(k) or "")
+        for k in ("tournamentName", "categoryName", "tournamentSlug", "categorySlug")
+    ).casefold()
+    premium = 0 if any(x in text for x in ("us open", "grand slam", "atp", "wta")) else 1
+    return premium, str(row.get("startTime") or "")
 
 
 def _print_summary(report: dict) -> None:
     print("\n=== SUPERBET TENNIS MARKET CATALOG — NO ODDS ===")
     print(f"Bookmaker slug: {report.get('bookmaker_slug')}")
-    print(f"Fixtures returned by OddsPapi: {report.get('fixtures_seen', 0)}")
+    print(f"Upcoming fixtures returned by OddsPapi: {report.get('fixtures_seen', 0)}")
     print(f"Fixtures checked for Superbet: {report.get('fixtures_checked', 0)}")
     print(f"Fixtures with Superbet markets: {len(report.get('fixtures') or [])}")
+    print(f"Fixtures with player props: {report.get('fixtures_with_player_props', 0)}")
     for fixture in report.get("fixtures") or []:
-        print(f"\n{fixture.get('p1')} vs {fixture.get('p2')} | {fixture.get('tournament')} | {fixture.get('start_time')}")
+        print(
+            f"\n{fixture.get('p1')} vs {fixture.get('p2')} | {fixture.get('tournament')} | {fixture.get('start_time')}"
+            f" | markets={fixture.get('market_count')} | props={fixture.get('player_prop_market_count')}"
+        )
         for market in fixture.get("markets") or []:
             lines = sorted({s.get("line") for s in market.get("selections") or [] if s.get("line") is not None})
             players = sorted({str(s.get("player_name")) for s in market.get("selections") or [] if s.get("player_name")})
@@ -170,7 +208,7 @@ def _print_summary(report: dict) -> None:
             player_text = ", ".join(players[:4]) if players else "—"
             print(
                 f"  [{market.get('market_id')}] {market.get('market_name')}"
-                f" | prop={market.get('player_prop')} | lines={line_text} | players={player_text}"
+                f" | prop={market.get('player_prop')} | line={line_text} | players={player_text}"
             )
     print(f"\nSanitized report: {OUT}")
     print("Prices/odds are intentionally discarded and never written to the report.")
@@ -198,10 +236,12 @@ def main() -> int:
     fixtures = _get_json("fixtures", api_key, sportId=SPORT_ID_TENNIS, **{"from": date_from, "to": date_to}, language="en")
     fixtures = fixtures if isinstance(fixtures, list) else []
     fixtures = [x for x in fixtures if isinstance(x, dict) and x.get("hasOdds")]
-    fixtures.sort(key=lambda x: str(x.get("startTime") or ""))
+    # Ignore already-started fixtures: upcoming premium events are much more useful for checking Bet Builder/player-prop coverage.
+    fixtures = [x for x in fixtures if (_parse_start(x.get("startTime")) or now) >= now - timedelta(minutes=5)]
+    fixtures.sort(key=_fixture_priority)
 
     report = {
-        "version": "oddspapi-superbet-smoke-v1",
+        "version": "oddspapi-superbet-smoke-v1.1",
         "generated_at": now.isoformat(),
         "sport_id": SPORT_ID_TENNIS,
         "bookmaker_slug": bookmaker_slug,
@@ -209,6 +249,7 @@ def main() -> int:
         "date_to": date_to,
         "fixtures_seen": len(fixtures),
         "fixtures_checked": 0,
+        "fixtures_with_player_props": 0,
         "fixtures": [],
         "contains_prices": False,
     }
@@ -230,16 +271,20 @@ def main() -> int:
         sanitized = _sanitize_fixture(payload if isinstance(payload, dict) else {}, bookmaker_slug, market_meta)
         if sanitized:
             report["fixtures"].append(sanitized)
+            if sanitized.get("player_prop_market_count"):
+                report["fixtures_with_player_props"] += 1
         time.sleep(0.55)
-        # Two real Superbet fixtures are enough to validate market/line coverage without burning the free quota.
-        if len(report["fixtures"]) >= 2:
+        # Stop as soon as we have a useful prop-bearing fixture plus a second comparison fixture.
+        if report["fixtures_with_player_props"] >= 1 and len(report["fixtures"]) >= 2:
             break
 
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     _print_summary(report)
 
     if not report["fixtures"]:
-        print("\nNo Superbet tennis markets found in sampled fixtures. This is a valid diagnostic result, not a crash.")
+        print("\nNo Superbet tennis markets found in sampled upcoming fixtures. This is a valid diagnostic result, not a crash.")
+    elif not report["fixtures_with_player_props"]:
+        print("\nSuperbet markets were found, but no player-prop markets appeared in the sampled upcoming fixtures.")
     return 0
 
 
