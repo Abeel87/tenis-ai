@@ -19,6 +19,8 @@ def test_real_superbet_rows_show_model_probability_or_explicit_uncovered_state()
     assert "push_probability" in ADDON
     assert "canonical_selections" in ADDON
     assert "model_signals" in ADDON
+    assert "coverage_shadow_signals" in ADDON
+    assert "SHADOW · " in ADDON
 
 
 def test_ui_bridge_never_mutates_model_raw_ownership_fields():
