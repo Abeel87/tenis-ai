@@ -8,14 +8,16 @@ const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 function text(node){return String(node?.textContent||'').trim()}
 
 function loadSymphonyStats(){
-  if(!document.querySelector('link[data-symphony-stats-v90d]')){
+  const hasCss=document.querySelector('link[data-symphony-stats-v90d],link[href*="symphony-stats-v90d.css"]');
+  if(!hasCss){
     const link=document.createElement('link');
     link.rel='stylesheet';
     link.href='symphony-stats-v90d.css?v=90d';
     link.dataset.symphonyStatsV90d='1';
     document.head.append(link);
   }
-  if(!document.querySelector('script[data-symphony-stats-v90d]')&&!window.TENIS_AI_SYMPHONY_STATS_V90D){
+  const hasScript=document.querySelector('script[data-symphony-stats-v90d],script[src*="symphony-stats-v90d.js"]');
+  if(!hasScript&&!window.TENIS_AI_SYMPHONY_STATS_V90D){
     const script=document.createElement('script');
     script.src='symphony-stats-v90d.js?v=90d';
     script.defer=true;
