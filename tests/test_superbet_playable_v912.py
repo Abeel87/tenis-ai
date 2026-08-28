@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from backend.signal_settlement import SIGNAL_LAYERS, settle_signal
 from backend.superbet_playable_v912 import (
     inject_match,
@@ -7,6 +9,9 @@ from backend.superbet_playable_v912 import (
     project_match_for_display,
     signal_signature,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _selection(market, pick, line=None, checkpoint=None, score=75.0):
@@ -120,3 +125,11 @@ def test_playable_history_layers_are_settled_and_total_sets_ou_is_supported():
     signal = {"market": "total_sets", "pick": "over", "line": 2.5}
     final = {"status": "completed", "number_of_sets": 3, "sets": [[6, 4], [4, 6], [6, 3]]}
     assert settle_signal(signal, final) == "hit"
+
+
+def test_playable_stats_ui_is_explicit_when_operator_feed_is_unverified():
+    js = (ROOT / "frontend/superbet-playable-v912.js").read_text(encoding="utf-8")
+    assert "FEED N/D" in js
+    assert "Brak zweryfikowanej oferty Superbet" in js
+    assert "feedActive=verified>0" in js
+    assert "nie są w tej chwili potwierdzone jako grywalne" in js
