@@ -7,7 +7,7 @@
     displayVersion: 'v8.8.7',
     currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock',
     // User-facing release can advance without rewriting the protected runtime contract.
-    releaseVersion: 'v8.9.2',
+    releaseVersion: 'v9.1.9',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
@@ -161,7 +161,7 @@
     loadAddon('player-intelligence-v888-human.js?v=888','pi888-human-addon');
     // Protected bootstrap path retained; direct index load provides the newer v8.8.9 logic.
     loadAddon('generator-quality-v888.js?v=888','generator888-quality-addon');
-    loadAddon('app-coherence-v892.js?v=892','app892-coherence-addon');
+    loadAddon('app-coherence-v892.js?v=892&audit=919','app892-coherence-addon');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxHotfixes,{once:true});
   else loadUxHotfixes();

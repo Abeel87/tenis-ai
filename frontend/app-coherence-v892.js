@@ -14,12 +14,10 @@
   const brier=x=>num(x)==null?'—':Number(x).toFixed(5);
 
   function patchReleaseLabel(){
-    document.documentElement.dataset.tenisAiVersion=VERSION;
-    document.title=`Tenis AI · ${VERSION}`;
-    const brand=document.querySelector('.brand-copy p');
-    if(brand)brand.textContent=`Tenis AI ${VERSION} · Adaptive PROD + Player Learning SHADOW`;
+    window.TENIS_AI_APPLY_META?.();
+    const release=window.TENIS_AI_META?.releaseVersion||VERSION;
     const foot=[...document.querySelectorAll('footer > div')].find(x=>/^v\d/i.test(String(x.textContent||'').trim()));
-    if(foot)foot.textContent=`${VERSION} Full App Coherence · Quality Lock · Player Intelligence i Player Learning działają w SHADOW. Modele nie gwarantują wygranej ani zysku.`;
+    if(foot)foot.textContent=`${release} · Player Intelligence i Player Learning działają w SHADOW. Modele nie gwarantują wygranej ani zysku.`;
   }
 
   function metricBlock(label,m){

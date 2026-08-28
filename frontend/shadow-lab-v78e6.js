@@ -10,7 +10,7 @@
 
   const sc=x=>x==null||!Number.isFinite(Number(x))
     ? 'N/D'
-    : `${Math.round(Number(x))}/100`;
+    : `${Number(x).toFixed(1).replace('.0','')}/100`;
 
   const pc=x=>x==null||!Number.isFinite(Number(x))
     ? '—'
@@ -108,6 +108,7 @@
 
     return current
       .filter(Boolean)
+      .filter(x=>window.TENIS_AI_MATCH_TIME?.isCurrent?.(x)===true)
       .filter(x=>f==='all'||shadowTourKey(x)===f)
       .sort((a,b)=>{
         const as=validSignals(a).length?1:0;

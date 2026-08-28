@@ -120,6 +120,9 @@
     try{
       const ts=await loadTurnstile();
       if(!host.isConnected || form()!==f)return;
+      // Several init callbacks can await the same script. Only the first
+      // continuation may mount a widget in this host.
+      if(widgetHost!==host || widgetId!==null)return;
       widgetId=ts.render(host,{
         sitekey:TURNSTILE_SITE_KEY,
         theme:'dark',

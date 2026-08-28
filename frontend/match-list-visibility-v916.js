@@ -75,7 +75,7 @@ function refreshVisibleUi(){
 function loadPlayableUiV917(){
   if(window.TENIS_AI_PLAYABLE_UI_V917||document.querySelector('script[data-playable-ui-v917]'))return;
   const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=917';
+  script.src='playable-ui-coherence-v917.js?v=917&audit=919';
   script.async=false;
   script.dataset.playableUiV917='1';
   document.head.appendChild(script);

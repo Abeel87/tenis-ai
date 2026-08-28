@@ -4,6 +4,7 @@
   const VERSION = 'v9.0C.4';
   const DATA_URL = './data/symphony_v90.json';
   let cache = null;
+  let cachedAt = 0;
 
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -20,29 +21,22 @@
   }[value] || 'Scenariusz modelowy');
 
   const scoreClass = (n) => n >= 85 ? 'symphony-score--elite' : n >= 75 ? 'symphony-score--good' : 'symphony-score--watch';
-  const pct = (v) => Number.isFinite(Number(v)) ? `${Number(v).toFixed(1)}%` : 'N/D';
+  const finite = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
+  const pct = (v) => finite(v) ? `${Number(v).toFixed(1)}%` : 'N/D';
+  const scoreText = (v) => finite(v) ? `${Number(v).toFixed(1)}/100` : 'N/D';
 
   async function loadData(force = false) {
-    if (cache && !force) return cache;
+    if (cache && !force && Date.now()-cachedAt < 60000) return cache;
     const res = await fetch(`${DATA_URL}?v=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     cache = await res.json();
+    cachedAt = Date.now();
     return cache;
-  }
-
-  function localDate(value) {
-    const d = new Date(value || '');
-    if (!Number.isFinite(d.getTime())) return '';
-    return d.toLocaleDateString('en-CA');
-  }
-
-  function todayKey() {
-    return new Date().toLocaleDateString('en-CA');
   }
 
   function timeLabel(value) {
     const d = new Date(value || '');
-    return Number.isFinite(d.getTime()) ? d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '—';
+    return Number.isFinite(d.getTime()) ? d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'N/D';
   }
 
   function legHtml(leg) {
@@ -59,8 +53,8 @@
           <span>${esc(leg.market)}${source}</span>
         </div>
         <div class="symphony-leg__numbers">
-          <b>${Number(leg.evidence_score || 0).toFixed(1)}</b>
-          <small>PROD ${Number(leg.prod_score || 0).toFixed(1)}${family}${compare}${raw}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
+          <b>${scoreText(leg.evidence_score)}</b>
+          <small>PROD ${scoreText(leg.prod_score)}${family}${compare}${raw}${shadowCount ? ` · SHADOW ×${shadowCount}` : ''}${path}</small>
         </div>
       </div>`;
   }
@@ -112,7 +106,7 @@
     const added = Number(match?.market_adapter?.composer_added || 0);
     const comparisons = Number(match?.market_adapter?.serve_comparison_added || 0);
     return `
-      <article class="symphony-card">
+      <article class="symphony-card" data-symphony-match="${esc(match.match_key||match.id||'')}">
         <div class="symphony-card__head">
           <div>
             <div class="symphony-meta">${esc(match.tour || '')}${match.surface ? ` · ${esc(match.surface)}` : ''} · ${esc(timeLabel(match.scheduled_time))}</div>
@@ -155,15 +149,17 @@
         const picked = compositionFor(match, legs, variant);
         return { match, comp: picked.comp, legs: picked.legs };
       })
-      .filter(x => x.comp);
-    const today = rows.filter(x => localDate(x.match.scheduled_time) === todayKey());
-    const source = today.length ? today : rows;
-    return source.sort((a, b) => Number(b.comp.symphony_score || 0) - Number(a.comp.symphony_score || 0));
+      .filter(x => {
+        const api=window.TENIS_AI_PLAYABLE_UI_V917;
+        const current=api?.findMatch?.(String(x.match.match_key||x.match.id||''));
+        return api?.compositionPlayable?.(current,x.comp)===true;
+      });
+    return rows.sort((a, b) => Number(b.comp.symphony_score || 0) - Number(a.comp.symphony_score || 0));
   }
 
   function resultsHtml(data, matchCount, legs, variant) {
     const rows = rankedMatches(data, legs, variant).slice(0, matchCount);
-    if (!rows.length) return '<div class="symphony-empty">Brak scenariuszy spełniających warunki.</div>';
+    if (!rows.length) return '<div class="symphony-empty">Brak aktualnych kompozycji ze świeżo potwierdzoną ofertą Superbet. Zapisane analizy pozostają w historii.</div>';
     const autoMode = legs === 'auto';
     return rows.map(x => matchCard(x.match, x.comp, x.legs, autoMode)).join('');
   }
@@ -181,7 +177,7 @@
           <div class="symphony-contract">
             <b>PROD = rdzeń</b>
             <span>SHADOW = dowód pomocniczy</span>
-            <small>AUTO analizuje 2–6 nóg osobno dla każdego meczu</small>
+            <small>AUTO analizuje 2–6 zdarzeń osobno dla każdego meczu</small>
           </div>
         </div>
 
@@ -265,6 +261,20 @@
     });
   }
 
+  function refreshVisible(){
+    const body=scenarioBody();
+    const target=body?.querySelector('#symphony-results');
+    if(!target||!cache||scenarioPanel()?.hidden)return;
+    const legs=String(body.querySelector('#symphony-leg-count')?.value||'auto');
+    const variant=Number(body.querySelector('#symphony-variant')?.value||0);
+    const valid=new Set(rankedMatches(cache,legs,variant).map(x=>String(x.match.match_key||x.match.id||'')));
+    // Prune only: preserve expanded paths, focus and the user's selection.
+    target.querySelectorAll('[data-symphony-match]').forEach(card=>{
+      if(!valid.has(card.dataset.symphonyMatch))card.remove();
+    });
+    if(!valid.size&&!target.querySelector('.symphony-empty'))target.innerHTML=resultsHtml(cache,4,legs,variant);
+  }
+
   function interceptGeneratorClicks() {
     document.addEventListener('click', (event) => {
       const generator = event.target.closest?.('#scenario-v82a-panel [data-sc-go="generator"]');
@@ -306,6 +316,8 @@
     version: VERSION,
     open: openSymphony,
     reload: () => loadData(true),
+    refreshVisible,
+    rankedMatches,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap, { once: true });

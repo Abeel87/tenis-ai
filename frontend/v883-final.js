@@ -195,7 +195,7 @@ function cleanupStats(){
   if(!host||!dash)return;
 
   const title=dash.querySelector('.pc882-head span');
-  if(title)title.textContent='CENTRUM SKUTECZNOŚCI '+(window.TENIS_AI_META?.displayVersion||VERSION);
+  if(title)title.textContent='CENTRUM SKUTECZNOŚCI';
 
   let legacy=host.querySelector('#pc882-legacy');
   if(!legacy){

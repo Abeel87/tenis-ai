@@ -36,7 +36,7 @@ function loadSuperbetPlayableStats(){
   }
   if(!document.querySelector('script[data-superbet-playable-v912]')&&!window.TENIS_AI_SUPERBET_PLAYABLE_V912){
     const script=document.createElement('script');
-    script.src='superbet-playable-v912.js?v=912';
+    script.src='superbet-playable-v912.js?v=912&audit=919';
     script.defer=true;
     script.dataset.superbetPlayableV912='1';
     document.head.append(script);

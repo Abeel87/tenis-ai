@@ -1,5 +1,14 @@
 # Changelog
 
+## v9.1.9 — audyt spójności UI i ważności danych
+
+- Wspólny zegar ważności Superbet dla kart, Centrum Decyzji, Symfonii i SHADOW.
+- Rozdzielenie etykiet bazy/FINAL i raportu oferty od danych na żywo.
+- Jedna wersja wydania, czytelniejsze menu telefonu, bez powtórzonego skrótu Odrzucone.
+- Zabezpieczenie przed równoległym montowaniem CAPTCHA.
+- Przygotowana, niewdrożona migracja widoczności komentarzy/polubień.
+- Dane, historia, prognozy i wagi modeli pozostają bez zmian. Zakres i ograniczenia: [AUDIT_V919.md](AUDIT_V919.md).
+
 ## v8.8 - Generator + Performance Intelligence
 
 - Decision Center odtwarza rynek `Kto wygra mecz` z AutoLearn/Adaptive, gdy stare `match_win` jest puste.

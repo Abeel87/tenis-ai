@@ -41,9 +41,17 @@ function context(match){
   const x=match?.superbet_market_v91;
   return x&&typeof x==='object'?x:{};
 }
-function active(match){
+function freshContext(x,now=Date.now()){
+  const generated=Date.parse(x?.source_generated_at||'');
+  // v9.1.3 refreshes hourly; older snapshots do not carry the expiry policy.
+  const maxHours=x?.source_max_age_hours??1.8;
+  const age=Number(now)-generated;
+  return finite(maxHours)&&Number(maxHours)>0&&Number.isFinite(age)&&age>=0&&age<=Number(maxHours)*3600000;
+}
+function active(match,now=Date.now()){
   const x=context(match);
-  return x.operator_verified===true&&x.status==='VERIFIED'&&x.suspended!==true&&Array.isArray(x.canonical_selections);
+  return x.operator_verified===true&&x.status==='VERIFIED'&&x.suspended!==true&&Array.isArray(x.canonical_selections)
+    &&freshContext(x,now)&&window.TENIS_AI_MATCH_TIME?.isCurrent?.(match,now)===true;
 }
 function keyParts(row){return String(row?.key||row?.signal_key||'').split('|')}
 function rowLine(row,market=canonicalMarket(row?.market)){
@@ -140,7 +148,7 @@ function setBars(root,v){
 }
 function decode(value){try{return decodeURIComponent(String(value||''))}catch{return String(value||'')}}
 function findMatch(raw){
-  const key=decode(raw);
+  const key=decode(raw).replace(/^id:/,'');
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(key)||null}catch{return null}
 }
 function matchFor(el){
@@ -148,6 +156,10 @@ function matchFor(el){
   return findMatch(holder?.getAttribute?.('data-p751-open')||'');
 }
 function sameSelection(a,b){return !!a&&!!b&&signature(a)===signature(b)}
+function compositionPlayable(match,comp){
+  const legs=comp?.selection;
+  return active(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
+}
 
 function patchMatchTotalPreview(card,match,signals,top){
   let preview=card.querySelector('.p753-match-total-preview');
@@ -177,7 +189,7 @@ function patchCard(card){
   const value=valueOf(top);
   const pick=card.querySelector('.p751-top-pick');
   setText(pick?.querySelector('span'),'◎ Top typ · SUPERBET');
-  setText(pick?.querySelector('b'),top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):'Brak Superbet PLAYABLE');
+  setText(pick?.querySelector('b'),top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):(active(match)?'Brak pojedynczego typu':'Brak Superbet PLAYABLE'));
   setText(pick?.querySelector('em'),scoreText(value));
   const strength=card.querySelector('.p751-strength');
   setText(strength?.querySelector('span'),'Siła sygnału PLAYABLE');
@@ -262,7 +274,8 @@ function wrapDecisionCenter(){
   const base=api.tidy.bind(api);
   api.tidy=function(match){
     const screen=document.querySelector('.p751-detail-screen');
-    if(screen?.querySelector('.dc87[data-playable-ui-v917]'))return true;
+    const gateKey=JSON.stringify([active(match),context(match).source_generated_at,match?.scheduled_time,context(match).canonical_selections]);
+    if(screen?.querySelector('.dc87[data-playable-ui-v917]')?.dataset.playableGateKey===gateKey)return true;
     base(match);
     const old=screen?.querySelector('.dc87');
     if(!old)return false;
@@ -274,6 +287,7 @@ function wrapDecisionCenter(){
     old.replaceWith(fresh);
     api.install(fresh,match,rows);
     patchDecisionHeader(fresh,match,rows);
+    fresh.dataset.playableGateKey=gateKey;
     return true;
   };
   api[WRAP]=true;
@@ -381,6 +395,9 @@ function boot(){
 window.TENIS_AI_PLAYABLE_UI_V917=Object.freeze({
   version:VERSION,
   active,
+  freshContext,
+  findMatch,
+  compositionPlayable,
   canonicalMarket,
   signature,
   isPlayable,

@@ -338,6 +338,12 @@
     decorateScenario();
     refreshAllMarkersOnly();
     root.TENIS_AI_MATCH_VISIBILITY_V916?.refreshClock?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchOpenDecision?.();
+    root.TENIS_AI_PLAYABLE_UI_V917?.patchSymphonyMinis?.();
+    root.TENIS_AI_SYMPHONY_PLAYABLE_DETAIL_GUARD_V915?.guardOpenMatch?.();
+    root.TENIS_AI_SYMPHONY_V90?.refreshVisible?.();
+    root.TENIS_AI_SHADOW_SIGNAL_CENTER_V894?.refreshVisible?.();
   }
 
   let timer=null;

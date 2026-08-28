@@ -44,11 +44,8 @@ function timeLabel(value){
   return Number.isFinite(d.getTime())?d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'}):'—';
 }
 function matchStatus(m){
-  const raw=String(m?.event_status||'').toLowerCase();
-  if(raw.includes('live')||raw.includes('progress')||raw.includes('started'))return {text:'LIVE',cls:'live'};
-  if(raw.includes('postpon'))return {text:'PRZEŁOŻONY',cls:'warn'};
-  if(raw.includes('interrupt')||raw.includes('suspend'))return {text:'WSTRZYMANY',cls:'warn'};
-  return {text:'PRZED MECZEM',cls:'ready'};
+  const status=window.TENIS_AI_MATCH_TIME?.cardStatus?.(m);
+  return {text:status?.txt||'STATUS N/D',cls:status?.cls||'unknown'};
 }
 
 async function loadReport(force=false){
@@ -117,7 +114,13 @@ function tourMatches(rows){
 
 function visibleMatches(){
   const rows=Array.isArray(state.report?.matches)?state.report.matches:[];
-  return tourMatches(rows).filter(m=>scoreEntries(m,state.model).length>0);
+  const api=window.TENIS_AI_PLAYABLE_UI_V917;
+  return tourMatches(rows).map(row=>{
+    const current=api?.findMatch?.(String(row.match_key||row.id||''));
+    if(api?.active?.(current)!==true)return null;
+    return {...row,scheduled_time:current.scheduled_time,event_status:window.TENIS_AI_MATCH_TIME.rawStatus(current),
+      signals:(row.signals||[]).filter(signal=>api.isPlayable(current,signal))};
+  }).filter(m=>m&&scoreEntries(m,state.model).length>0);
 }
 
 function modelChip(m){
@@ -167,7 +170,7 @@ function matchCard(match){
   }else{
     body=entries.slice(0,8).map(e=>signalRow(e,map.get(e.model))).join('');
   }
-  return `<article class="sh894-match-card">
+  return `<article class="sh894-match-card" data-sh894-match="${esc(match.match_key||match.id||'')}">
     <header><span class="sh894-status ${st.cls}">${esc(st.text)}</span><b>${esc(tourLabel(match.tour))}</b><span>${esc(match.tournament||'Turniej')}</span><span>• ${esc(match.surface||'—')}</span><time>${esc(timeLabel(match.scheduled_time))}</time></header>
     <div class="sh894-matchup"><b>${esc(match.p1)}</b><span>VS</span><b>${esc(match.p2)}</b></div>
     <div class="sh894-best"><span>👻 Najmocniejszy SHADOW</span><b>${esc(top?.signal?.label||'—')}</b><strong>${top?pc(top.value):'—'}</strong><small>${top?esc(map.get(top.model)?.label||top.model):''}</small></div>
@@ -198,8 +201,8 @@ function render(){
   app.innerHTML=`<section class="sh894-page">
     <header class="sh894-head"><div><span>👻 SHADOW SIGNAL CENTER · ${esc(VERSION)}</span><h2>Sygnały modeli testowych</h2><p>Te wyniki nie zmieniają normalnych typów. Możesz testować każdy model osobno, gdy dalej zbiera dane.</p></div><div><em>0% PROD</em><button data-sh894-refresh>↻</button></div></header>
     ${controls()}
-    <div class="sh894-summary"><span>Mecze z sygnałem <b>${rows.length}</b></span><span>Historia Elo <b>${Number(state.report.elo_events||0).toLocaleString('pl-PL')}</b></span><span>Uczenie <b>${Number(state.report.training_rows||0)}</b></span></div>
-    ${rows.length?`<div class="sh894-groups">${groups(rows).map((g,i)=>`<details class="sh894-group" ${i<5?'open':''}><summary><div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b><small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'}</small></div><i>⌄</i></summary><div>${g.rows.map(matchCard).join('')}</div></details>`).join('')}</div>`:'<div class="sh894-empty"><b>Brak sygnałów dla tych filtrów.</b><span>Obniż próg albo wybierz inny model.</span></div>'}
+    <div class="sh894-summary"><span>Mecze z sygnałem <b data-sh894-count>${rows.length}</b></span><span>Historia Elo <b>${Number(state.report.elo_events||0).toLocaleString('pl-PL')}</b></span><span>Uczenie <b>${Number(state.report.training_rows||0)}</b></span></div>
+    ${rows.length?`<div class="sh894-groups">${groups(rows).map((g,i)=>`<details class="sh894-group" ${i<5?'open':''}><summary><div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b><small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'}</small></div><i>⌄</i></summary><div>${g.rows.map(matchCard).join('')}</div></details>`).join('')}</div>`:'<div class="sh894-empty"><b>Brak aktualnych sygnałów dla tych filtrów.</b><span>Sprawdź filtry i świeżość oferty Superbet. Historia modeli pozostaje dostępna.</span></div>'}
     <p class="sh894-note">SHADOW = eksperyment. Wyniki służą do porównywania modeli i ręcznych testów; nie są częścią Generatora ani final_score.</p>
   </section>`;
   bind();
@@ -231,6 +234,26 @@ function boot(){
   ensureNav();
 }
 
+function refreshVisible(){
+  if(!state.active||!state.report)return;
+  const valid=new Map(visibleMatches().map(m=>[String(m.match_key||m.id||''),m]));
+  document.querySelectorAll('[data-sh894-match]').forEach(card=>{
+    const match=valid.get(card.dataset.sh894Match);
+    if(!match){card.remove();return;}
+    const badge=card.querySelector('.sh894-status');
+    if(badge)badge.textContent=matchStatus(match).text;
+  });
+  document.querySelectorAll('.sh894-group').forEach(group=>{
+    const count=group.querySelectorAll('[data-sh894-match]').length;
+    if(!count){group.remove();return;}
+    const label=group.querySelector('summary small');
+    if(label)label.textContent=`${count} ${count===1?'mecz':'meczów'}`;
+  });
+  const count=document.querySelector('[data-sh894-count]');
+  if(count)count.textContent=String(valid.size);
+  if(!valid.size&&!document.querySelector('.sh894-empty'))render();
+}
+
 document.addEventListener('click',e=>{
   const b=e.target?.closest?.('#p751-bottom-nav [data-p751-nav]');
   if(!b)return;
@@ -240,5 +263,5 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)ensureNav(
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 setTimeout(ensureNav,350);
 
-window.TENIS_AI_SHADOW_SIGNAL_CENTER_V894=Object.freeze({version:VERSION,open,render,productionInfluence:false});
+window.TENIS_AI_SHADOW_SIGNAL_CENTER_V894=Object.freeze({version:VERSION,open,render,refreshVisible,productionInfluence:false});
 })();

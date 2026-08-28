@@ -25,7 +25,7 @@ def main() -> None:
         "protected_core_version": "appVersion: 'v8.0.1'" in app_meta,
         "protected_display_contract": "displayVersion: 'v8.8.7'" in app_meta,
         "protected_ui_architecture": "currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock'" in app_meta,
-        "visible_release_version": "releaseVersion: 'v8.9.2'" in app_meta and "const VERSION='v8.9.2'" in coherence,
+        "visible_release_version": "releaseVersion: 'v9.1.9'" in app_meta and "window.TENIS_AI_APPLY_META?.()" in coherence,
         "legacy_release_marker": "Tenis AI v8.8.7" in index,
         "player_model_meta": "playerModelShadowVersion: 'v8.9'" in app_meta,
         "player_learning_meta": "ensemblePlayerLearningVersion: 'v8.9.1'" in app_meta,

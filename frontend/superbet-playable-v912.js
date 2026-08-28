@@ -35,17 +35,17 @@ function cardHtml(){
     const status=n?`${pct(row?.accuracy)} · n=${n}`:'zbieramy próbkę';
     return `<div class="sp912-model"><span>${esc(LABELS[id]||id)}</span><b>${esc(status)}</b></div>`;
   }).join('');
-  const subtitle=feedActive
-    ? 'statystyki tylko dla realnie dostępnych rynków i linii · bez kursów'
-    : 'feed Superbet niezweryfikowany — PLAYABLE jest chwilowo wstrzymane';
+  const stamp=new Date(data?.generated_at||'');
+  const timestamp=Number.isFinite(stamp.getTime())?stamp.toLocaleString('pl-PL'):'N/D';
+  const subtitle=`Ostatni raport: ${timestamp} · nie jest to stan oferty na żywo`;
   const note=feedActive
-    ? 'Normalny widok i SHADOW używają zweryfikowanej oferty Superbet. Surowe drabinki modeli zostają wyłącznie diagnostyką; stare wyniki bez zamrożonej oferty operatora nie są dopisywane do PLAYABLE.'
-    : '⚠ Brak zweryfikowanej oferty Superbet w ostatnim przebiegu. Linie widoczne w RAW/diagnostyce nie są w tej chwili potwierdzone jako grywalne u operatora i nie są liczone do statystyk PLAYABLE.';
+    ? 'Liczby opisują ofertę w chwili wygenerowania raportu. Aktualna dostępność jest sprawdzana osobno przy meczu. Skuteczność obejmuje wyłącznie rozliczone sygnały z zamrożoną ofertą operatora; RAW nie jest do niej dopisywany.'
+    : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%.';
   return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
     <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?pct(coverage):'FEED N/D'}</strong></div>
     <div class="sp912-grid">
-      <div><span>Mecze zweryfikowane</span><b>${verified} / ${Number(cur.model_ready_matches||0)}</b></div>
-      <div><span>Zielone sygnały grywalne</span><b>${Number(cur.playable_green_signals||0)}</b></div>
+      <div><span>Mecze zweryfikowane w raporcie</span><b>${verified} / ${Number(cur.model_ready_matches||0)}</b></div>
+      <div><span>Zielone sygnały w raporcie</span><b>${Number(cur.playable_green_signals||0)}</b></div>
       <div><span>Ukryte linie RAW</span><b>${Number(cur.suppressed_raw_display_estimate||0)}</b></div>
     </div>
     <p class="sp912-note">${esc(note)}</p>

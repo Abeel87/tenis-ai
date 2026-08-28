@@ -1,8 +1,8 @@
 /* Tenis AI v8.9.4 — SHADOW Signal Center */
 .sh894-nav-ready .p751-bottom-nav{grid-template-columns:repeat(8,minmax(0,1fr))!important}
-.sh894-nav-ready .p751-bottom-nav button{min-width:0!important;padding:5px 1px!important}
-.sh894-nav-ready .p751-bottom-nav button>b{font-size:6px!important;white-space:nowrap}
-.sh894-nav-ready .p751-bottom-nav button>span{font-size:13px!important}
+.sh894-nav-ready .p751-bottom-nav button{min-width:0!important;min-height:44px!important;padding:5px 3px!important}
+.sh894-nav-ready .p751-bottom-nav button>b{font-size:10px!important;white-space:nowrap}
+.sh894-nav-ready .p751-bottom-nav button>span{font-size:18px!important}
 .sh894-view #match-controls,.sh894-view .player-search-shell{display:none!important}
 
 .sh894-page{display:grid;gap:9px;margin-top:5px}
@@ -25,7 +25,11 @@
 .sh894-note{margin:0;padding:7px;border:1px dashed rgba(177,136,255,.17);border-radius:9px;color:#6f8995;font-size:6px;line-height:1.45}.sh894-empty,.sh894-loading{display:grid;gap:5px;padding:22px;border:1px dashed rgba(177,136,255,.2);border-radius:12px;text-align:center;background:#05131d}.sh894-empty b,.sh894-loading b{font-size:10px}.sh894-empty span,.sh894-loading span{font-size:7px;color:#748f9b}.sh894-loading button{justify-self:center;margin-top:6px;padding:7px 10px;font-size:7px}.sh894-loading.error{border-color:rgba(255,177,91,.2)}
 
 @media(max-width:390px){
-  .sh894-nav-ready .p751-bottom-nav button>b{font-size:5.5px!important}
-  .sh894-nav-ready .p751-bottom-nav button>span{font-size:12px!important}
   .sh894-head{padding:10px}.sh894-head h2{font-size:14px}.sh894-summary{grid-template-columns:1fr}.sh894-matchup>b{font-size:11px}
+}
+
+/* Eight destinations need two rows on phones, not unreadable 5.5px labels. */
+@media(max-width:600px){
+  .sh894-nav-ready .p751-bottom-nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .sh894-nav-ready body{padding-bottom:calc(128px + env(safe-area-inset-bottom))!important}
 }

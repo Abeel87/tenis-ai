@@ -313,7 +313,7 @@ async function renderStats882(){
   dash.id='pc882-dashboard';
   dash.className='pc882-dashboard';
   dash.innerHTML=`
-    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI ${esc(window.TENIS_AI_META?.displayVersion||VERSION)}</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>FINAL i model bazowy są liczone osobno. Trendy znajdziesz w zakładce Wykresy.</p></div>
+    <header class="pc882-head"><div><span>CENTRUM SKUTECZNOŚCI</span><h3>Co działa, co nie i gdzie model się myli?</h3><p>FINAL i model bazowy są liczone osobno. Trendy znajdziesz w zakładce Wykresy.</p></div>
       <div class="pc882-period">${['7d','30d','all'].map(x=>`<button data-pc882-period="${x}" class="${period()===x?'active':''}">${x==='all'?'Wszystko':x}</button>`).join('')}</div>
     </header>
     <nav class="pc882-tabs">${[['overview','Przegląd'],['charts','Wykresy'],['markets','Rynki'],['models','Modele'],['adaptive','Adaptive']].map(([k,l])=>`<button data-pc882-tab="${k}">${l}</button>`).join('')}</nav>
@@ -322,13 +322,13 @@ async function renderStats882(){
       <div class="pc882-kpis">
         <article><span>FINAL ≥65/100 · trafność</span><b>${pct(finalOverall.accuracy)}</b><small>${finalOverall.hits} HIT · ${finalOverall.misses} MISS · n=${finalOverall.n} · ${new Set(finalRows.filter(x=>x.score>=65).map(x=>x.matchKey)).size} meczów</small></article>
         <article><span>Model bazowy · trafność</span><b>${pct(overall.accuracy)}</b><small>${overall.hits} HIT · ${overall.misses} MISS · n=${overall.n}</small></article>
-        <article class="good"><span>Najlepszy rynek</span><b>${best?esc(best.name):'N/D'}</b><small>${best?pct(best.accuracy)+' · n='+best.n:'brak próbki'}</small></article>
-        <article class="bad"><span>Najsłabszy rynek</span><b>${weak?esc(weak.name):'N/D'}</b><small>${weak?pct(weak.accuracy)+' · n='+weak.n:'brak próbki'}</small></article>
-        <article><span>Błąd kalibracji</span><b>${mae==null?'N/D':mae.toFixed(1)+' pp'}</b><small>średni |realnie − confidence|</small></article>
+        <article class="good"><span>Najlepszy rynek · baza</span><b>${best?esc(best.name):'N/D'}</b><small>${best?pct(best.accuracy)+' · n='+best.n:'brak próbki'}</small></article>
+        <article class="bad"><span>Najsłabszy rynek · baza</span><b>${weak?esc(weak.name):'N/D'}</b><small>${weak?pct(weak.accuracy)+' · n='+weak.n:'brak próbki'}</small></article>
+        <article><span>Błąd kalibracji · baza</span><b>${mae==null?'N/D':mae.toFixed(1)+' pp'}</b><small>średni |realnie − confidence|</small></article>
       </div>
       <div class="pc882-grid">
-        <article class="pc882-card"><header><b>Trend skuteczności</b><small>dzień po dniu</small></header>${trend(rows)}</article>
-        <article class="pc882-card"><header><b>Confidence vs rzeczywistość</b><small>pasek = HIT%, kreska = confidence</small></header>${calibration(rows)}</article>
+        <article class="pc882-card"><header><b>Trend skuteczności · model bazowy</b><small>dzień po dniu</small></header>${trend(rows)}</article>
+        <article class="pc882-card"><header><b>Ocena a trafność · model bazowy</b><small>pasek = trafność, kreska = ocena modelu</small></header>${calibration(rows)}</article>
       </div>
     </section>
 
@@ -343,10 +343,10 @@ async function renderStats882(){
 
     <section data-pc882-pane="markets">
       <div class="pc882-grid">
-        <article class="pc882-card"><header><b>Najczęściej grane rynki</b><small>minimum n=10</small></header>${marketBars(rows)}</article>
-        <article class="pc882-card"><header><b>Tour × nawierzchnia</b><small>heatmapa</small></header>${heatmap(rows)}</article>
+        <article class="pc882-card"><header><b>Najczęstsze sygnały · model bazowy</b><small>minimum n=10; nie są to zakłady użytkownika</small></header>${marketBars(rows)}</article>
+        <article class="pc882-card"><header><b>Tour × nawierzchnia</b><small>model bazowy</small></header>${heatmap(rows)}</article>
       </div>
-      <article class="pc882-card"><header><b>Co działa / co nie</b><small>uwzględniamy próbkę i dolny przedział 95%</small></header>${segments(rows)}</article>
+      <article class="pc882-card"><header><b>Co działa / co nie · model bazowy</b><small>uwzględniamy próbkę i dolny przedział 95%</small></header>${segments(rows)}</article>
     </section>
 
     <section data-pc882-pane="models">

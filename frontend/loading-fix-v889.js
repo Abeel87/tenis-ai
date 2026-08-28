@@ -72,12 +72,12 @@
   if (document.querySelector('script[data-shadow-signals-v894]')) return;
   const css = document.createElement('link');
   css.rel = 'stylesheet';
-  css.href = 'shadow-signals-v894.css?v=894';
+  css.href = 'shadow-signals-v894.css?v=894&audit=919';
   css.dataset.shadowSignalsV894 = '1';
   document.head.appendChild(css);
 
   const js = document.createElement('script');
-  js.src = 'shadow-signals-v894.js?v=894';
+  js.src = 'shadow-signals-v894.js?v=894&audit=919';
   js.async = true;
   js.dataset.shadowSignalsV894 = '1';
   document.head.appendChild(js);

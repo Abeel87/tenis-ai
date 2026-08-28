@@ -572,7 +572,7 @@ def prepare_results(results: list[dict], availability: dict, now=None):
     idx = _fixture_index(availability)
     generated = _parse_dt(availability.get("generated_at") if isinstance(availability, dict) else None)
     age_hours = (now - generated).total_seconds() / 3600 if generated else None
-    fresh = age_hours is not None and age_hours <= REFRESH_HOURS * 1.8
+    fresh = age_hours is not None and 0 <= age_hours <= REFRESH_HOURS * 1.8
     out, matched = [], 0
     for raw in results:
         if not isinstance(raw, dict):
@@ -589,6 +589,7 @@ def prepare_results(results: list[dict], availability: dict, now=None):
                 "fixture_id": fixture.get("fixture_id"),
                 "operator_start_time": fixture.get("start_time"),
                 "source_generated_at": availability.get("generated_at"),
+                "source_max_age_hours": REFRESH_HOURS * 1.8,
                 "source_age_hours": round(float(age_hours or 0.0), 2) if age_hours is not None else None,
                 "operator_verified": bool(fresh and not fixture.get("suspended")),
                 "suspended": bool(fixture.get("suspended")),
