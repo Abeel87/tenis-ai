@@ -17,6 +17,8 @@ def test_stats_loader_wires_symphony_assets_without_new_main_tab():
     # Direct wiring prevents a stale cached ranking helper from hiding the card.
     assert 'symphony-stats-v90d.css?v=90d2' in html
     assert 'symphony-stats-v90d.js?v=90d2' in html
+    # Late surface runs after v883/project UI cleanup and can restore the card.
+    assert 'symphony-surface-v90.js?v=90d2' in html
     # Symphony performance lives inside existing Statystyki, not as another main tab.
     assert html.count('data-view="stats"') >= 1
     assert 'data-view="symphony-stats"' not in html
@@ -42,3 +44,22 @@ def test_stats_chart_is_mobile_responsive_and_pro_can_close():
     assert ".symstats-kpis" in css
     assert ".pc12-pro:not([open])>.pc12-pro-body{display:none!important}" in css
     assert ".pc12-pro[open]>.pc12-pro-body{display:grid!important}" in css
+
+
+def test_late_surface_restores_stats_and_decorates_match_cards():
+    js = read("frontend/symphony-surface-v90.js")
+    css = read("frontend/symphony-surface-v90.css")
+    # v883 may sweep new cards into PRO; the late surface moves Symphony back to #pc77.
+    assert "card.parentElement !== root" in js
+    assert "pc882-dash" in js
+    assert "symphony-performance-v90d" in js
+    # Match cards use the already generated Symphony recommendation, not a new browser model.
+    assert "recommended_leg_count" in js
+    assert "row?.compositions" in js
+    assert "symphony_score" in js
+    assert "/100" in js
+    assert ".p751-match-card[data-p751-open]" in js
+    assert "data-symphony-match-mini" in js
+    # Keep the card compact and mobile safe.
+    assert ".symmatch-mini" in css
+    assert "@media(max-width:520px)" in css
