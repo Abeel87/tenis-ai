@@ -21,7 +21,7 @@ def test_v917_matches_exact_operator_selection_not_just_market_family():
 
 
 def test_v917_actionable_surfaces_share_one_gate():
-    assert "playableSignals(match,60)" in UI  # home card / Top
+    assert "playableSignals(match,60)" in UI  # dedicated home PLAYABLE block
     assert "api.buildRows(match).filter(row=>isPlayable(match,row))" in UI  # Decision Center
     assert "legs.every(leg=>isPlayable(match,leg))" in UI  # compact Symphony
     assert "Brak Superbet PLAYABLE" in UI
@@ -34,7 +34,7 @@ def test_v917_missing_score_is_nd_not_zero():
 
 
 def test_v917_loader_runs_after_existing_frontend_scripts():
-    assert "playable-ui-coherence-v917.js?v=917" in LOADER
+    assert "playable-ui-coherence-v917.js?v=922&contract=raw-playable" in LOADER
     assert "setTimeout(loadPlayableUiV917,0)" in LOADER
 
 
