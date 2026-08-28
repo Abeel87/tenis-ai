@@ -1,8 +1,9 @@
-/* Tenis AI v9.1.2 — Superbet PLAYABLE statistics */
+/* Tenis AI v9.2.3 — Superbet PLAYABLE statistics + real-line coverage */
 (()=>{
 'use strict';
-const VERSION='v9.1.2';
+const VERSION='v9.2.3-ui';
 const DATA='./data/superbet_playable_stats_v912.json';
+const META='./data/meta.json';
 const ID='superbet-playable-stats-v912';
 const LABELS={
   current_prod:'PROD / bieżący model',
@@ -20,14 +21,39 @@ const LABELS={
   shadow_tabpfn_elo:'TabPFN + Elo'
 };
 let data=null;
+let coverage=null;
 function finite(v){return v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))}
 function pct(v){return finite(v)?`${Number(v).toFixed(1)}%`:'N/D'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function host(){return document.querySelector('#pc77')}
+function coverageHtml(){
+  const c=coverage||{};
+  const available=Number(c.available_selections||0);
+  const playable=Number(c.playable_model_covered_selections||0);
+  const shadow=Number(c.shadow_model_covered_selections||0);
+  const displayed=Number(c.display_model_covered_selections||0);
+  const operatorOnly=Number(c.operator_only_selections||Math.max(0,available-displayed));
+  const playableCoverage=available?100*playable/available:null;
+  const displayCoverage=available?100*displayed/available:null;
+  if(!coverage){
+    return `<details class="sp912-details"><summary>Pokrycie realnych linii Superbet</summary><p class="sp912-note">Raport pokrycia v9.2.2 jest chwilowo N/D. Nie wpływa to na MODEL/RAW ani na historyczną skuteczność PLAYABLE.</p></details>`;
+  }
+  return `<details class="sp912-details" data-superbet-coverage-v923="1"><summary>Pokrycie realnych linii Superbet</summary>
+    <div class="sp912-grid">
+      <div><span>Realne selekcje operatora</span><b>${available}</b></div>
+      <div><span>Pokryte przez PLAYABLE model</span><b>${playable} · ${pct(playableCoverage)}</b></div>
+      <div><span>Dodatkowo pokryte SHADOW</span><b>${shadow}</b></div>
+      <div><span>Pokrycie do wyświetlenia</span><b>${displayed} · ${pct(displayCoverage)}</b></div>
+      <div><span>Tylko operator · bez modelu</span><b>${operatorOnly}</b></div>
+      <div><span>Nowe linie bez dodatkowych API</span><b>${Number(c.signals_added||0)} + ${Number(c.shadow_signals_added||0)} SHADOW</b></div>
+    </div>
+    <p class="sp912-note">To jest statystyka pokrycia realnej oferty, nie skuteczność typów. SHADOW służy tylko do diagnostyki/pokrycia i nie wchodzi do skuteczności PLAYABLE, dopóki nie ma właściwej próbki settlementu. MODEL/RAW pozostaje niezależny.</p>
+  </details>`;
+}
 function cardHtml(){
   const cur=data?.current||{};
   const verified=Number(cur.verified_superbet_matches||0);
-  const coverage=finite(cur.verified_match_coverage)?Number(cur.verified_match_coverage)*100:null;
+  const matchCoverage=finite(cur.verified_match_coverage)?Number(cur.verified_match_coverage)*100:null;
   const feedActive=verified>0;
   const models=Object.entries(data?.models||{});
   const modelRows=models.map(([id,row])=>{
@@ -42,13 +68,14 @@ function cardHtml(){
     ? 'Liczby opisują ofertę w chwili wygenerowania raportu. Aktualna dostępność jest sprawdzana osobno przy meczu. Skuteczność obejmuje wyłącznie rozliczone sygnały z zamrożoną ofertą operatora; RAW nie jest do niej dopisywany.'
     : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%.';
   return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
-    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?pct(coverage):'FEED N/D'}</strong></div>
+    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?pct(matchCoverage):'FEED N/D'}</strong></div>
     <div class="sp912-grid">
       <div><span>Mecze zweryfikowane w raporcie</span><b>${verified} / ${Number(cur.model_ready_matches||0)}</b></div>
       <div><span>Zielone sygnały w raporcie</span><b>${Number(cur.playable_green_signals||0)}</b></div>
       <div><span>Ukryte linie RAW</span><b>${Number(cur.suppressed_raw_display_estimate||0)}</b></div>
     </div>
     <p class="sp912-note">${esc(note)}</p>
+    ${coverageHtml()}
     <details class="sp912-details"><summary>Skuteczność modeli PLAYABLE</summary><div class="sp912-models">${modelRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
   </section>`;
 }
@@ -67,8 +94,14 @@ function render(){
 }
 function schedule(){[0,120,500,1200].forEach(ms=>setTimeout(render,ms))}
 async function load(){
-  try{const r=await fetch(`${DATA}?v=912`,{cache:'no-store'});if(!r.ok)throw new Error(String(r.status));data=await r.json();schedule();}
-  catch(_){data=null;}
+  const [statsResult,metaResult]=await Promise.allSettled([
+    fetch(`${DATA}?v=912`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),
+    fetch(`${META}?v=923`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(String(r.status));return r.json()})
+  ]);
+  data=statsResult.status==='fulfilled'?statsResult.value:null;
+  const meta=metaResult.status==='fulfilled'?metaResult.value:null;
+  coverage=meta&&typeof meta==='object'?(meta.superbet_line_coverage_v922||null):null;
+  if(data)schedule();
 }
 function boot(){load();document.addEventListener('tenis-ai:stats-ready',schedule);document.addEventListener('tenis-ai:stats-dashboard-ready',schedule);document.addEventListener('click',e=>{if(e.target?.closest?.('[data-view="stats"],[data-pc77]'))schedule()},true)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
