@@ -1,0 +1,35 @@
+name: OddsPapi paid Player Props smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/test_oddspapi_player_props_paid.py'
+      - '.github/workflows/oddspapi-player-props-paid-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  player-props-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Python syntax
+        run: python -m py_compile scripts/test_oddspapi_player_props_paid.py
+      - name: Check paid Superbet PL Player Props
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: python scripts/test_oddspapi_player_props_paid.py
+      - name: Upload sanitized report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oddspapi-player-props-paid-smoke
+          path: oddspapi_player_props_paid_smoke.json
+          if-no-files-found: ignore
+          retention-days: 3
