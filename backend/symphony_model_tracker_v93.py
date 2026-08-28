@@ -37,6 +37,11 @@ STATS_PATH = base.OUT / "symphony_model_stats_v93.json"
 SETTLEMENT_PATH = base.SETTLEMENT_PATH
 META_PATH = base.META_PATH
 
+# Capture the legacy evaluator before _settle_deep temporarily patches the
+# module-level function used by v9.0D. Calling base.evaluate_leg from inside the
+# wrapper after that patch would recurse into this wrapper forever.
+LEGACY_EVALUATE_LEG = base.evaluate_leg
+
 PBP_ONLY_MARKETS = {"set2_game_state"}
 FINAL_SCORE_FAMILIES = {
     "any_set_to_nil",
@@ -65,7 +70,7 @@ def _num(value, default=None):
 
 def evaluate_model_leg(leg: dict, actual: dict, p1: str, p2: str):
     """Extend v9.0D settlement without guessing unavailable path evidence."""
-    existing = base.evaluate_leg(leg, actual, p1, p2)
+    existing = LEGACY_EVALUATE_LEG(leg, actual, p1, p2)
     if existing is not None:
         return existing
 
