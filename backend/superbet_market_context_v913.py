@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Tenis AI v9.1.4 — bounded OddsPapi batching + canonical Superbet lines.
+"""Tenis AI v9.1.5 — bounded OddsPapi batching + canonical Superbet lines.
 
 OddsPapi accepts at most five tournament IDs in one `odds-by-tournaments`
 request. The adapter keeps those calls bounded and fixes the operator
@@ -8,6 +8,8 @@ normalization contract used by the Superbet PLAYABLE layer:
 
 * the canonical `/markets` catalogue is the primary source of a market line
   (`handicap`), because every total/handicap step has its own market ID;
+* OddsPapi handicap values are participant-1 lines, so outcome `2` receives
+  the opposite signed line for two-way game-handicap markets;
 * `bookmakerOutcomeId` is only a fallback when catalogue metadata has no line;
 * catalogue outcomes `1` / `2` / `X` are interpreted as participant 1 /
   participant 2 / draw instead of being emitted as literal picks.
@@ -26,7 +28,7 @@ try:
 except ImportError:
     import superbet_market_context_v91 as base
 
-VERSION = "v9.1.4"
+VERSION = "v9.1.5"
 MAX_TOURNAMENT_IDS_PER_REQUEST = 5
 BATCH_DELAY_SECONDS = 1.05
 REFRESH_HOURS = 1
@@ -44,15 +46,18 @@ LINE_MARKETS = {
     "set1_game_handicap",
     "set2_game_handicap",
 }
+HANDICAP_MARKETS = {
+    "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
+}
 WINNER_MARKETS = {
     "match_winner",
     "set1_winner",
     "set2_winner",
     "set3_winner",
     "most_aces",
-    "match_game_handicap",
-    "set1_game_handicap",
-    "set2_game_handicap",
+    *HANDICAP_MARKETS,
 }
 
 
@@ -134,12 +139,53 @@ def _selection_pick(market, outcome_name, bookmaker_outcome_id, p1, p2):
     return base._selection_pick(market, outcome_name, bookmaker_outcome_id, p1, p2)
 
 
-def _market_line(market: str, market_meta: dict, outcome_name, bookmaker_outcome_id):
-    """Return (line, source), preferring the canonical OddsPapi market ladder."""
+def _handicap_side(outcome_name, bookmaker_outcome_id, pick, p1, p2):
+    """Return participant side for an OddsPapi two-way handicap outcome."""
+    outcome = base._norm(outcome_name)
+    if outcome in {"1", "p1", "participant 1", "player 1", "home"}:
+        return "p1"
+    if outcome in {"2", "p2", "participant 2", "player 2", "away"}:
+        return "p2"
+
+    bookmaker = base._norm(bookmaker_outcome_id)
+    if bookmaker in {"1", "p1", "participant 1", "player 1", "home"}:
+        return "p1"
+    if bookmaker in {"2", "p2", "participant 2", "player 2", "away"}:
+        return "p2"
+
+    pick_norm = base._name_key(pick)
+    if pick_norm and pick_norm == base._name_key(p1):
+        return "p1"
+    if pick_norm and pick_norm == base._name_key(p2):
+        return "p2"
+    return None
+
+
+def _market_line(
+    market: str,
+    market_meta: dict,
+    outcome_name,
+    bookmaker_outcome_id,
+    *,
+    pick=None,
+    p1=None,
+    p2=None,
+):
+    """Return the selection line using canonical OddsPapi market semantics.
+
+    OddsPapi exposes one market ID per handicap step and documents `handicap`
+    from participant 1's perspective. Therefore the outcome `2` side of a
+    two-way handicap is the exact opposite signed line. Totals keep the same
+    numeric threshold for Over and Under.
+    """
     if market not in LINE_MARKETS:
         return None, None
     catalogue_line = base._line(market_meta.get("handicap"))
     if catalogue_line is not None:
+        if market in HANDICAP_MARKETS:
+            side = _handicap_side(outcome_name, bookmaker_outcome_id, pick, p1, p2)
+            if side == "p2":
+                catalogue_line = -catalogue_line
         return catalogue_line, "oddspapi_market_handicap"
     text_line = base._line_from_text(bookmaker_outcome_id, outcome_name)
     if text_line is not None:
@@ -148,7 +194,7 @@ def _market_line(market: str, market_meta: dict, outcome_name, bookmaker_outcome
 
 
 def _sanitize_fixture(row: dict, meta: dict):
-    """v9.1 sanitizer with canonical line + 1/2/X normalization fixed."""
+    """v9.1 sanitizer with canonical line + participant-side normalization."""
     bookmaker_odds = row.get("bookmakerOdds") or {}
     book = bookmaker_odds.get(base.BOOKMAKER)
     if not isinstance(book, dict):
@@ -192,7 +238,15 @@ def _sanitize_fixture(row: dict, meta: dict):
                     continue
                 boid = player_data.get("bookmakerOutcomeId")
                 pick = _selection_pick(canonical, outcome_name, boid, p1, p2)
-                line, line_source = _market_line(canonical, market_meta, outcome_name, boid)
+                line, line_source = _market_line(
+                    canonical,
+                    market_meta,
+                    outcome_name,
+                    boid,
+                    pick=pick,
+                    p1=p1,
+                    p2=p2,
+                )
 
                 if canonical in LINE_MARKETS and line is None:
                     continue

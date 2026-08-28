@@ -17,7 +17,9 @@ on:
       - 'backend/shadow_signal_center_v894.py'
       - 'backend/symphony_operator_reproject_v914.py'
       - 'scripts/compact_frontend_data_v853.py'
+      - 'scripts/verify_superbet_market_semantics.py'
       - 'tests/test_superbet_market_v913.py'
+      - 'tests/test_superbet_market_semantics.py'
       - 'tests/test_symphony_operator_reproject_v914.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
@@ -61,11 +63,15 @@ jobs:
           python -m py_compile backend/surface_elo_integration_v893.py
           python -m py_compile backend/shadow_signal_center_v894.py
           python -m py_compile backend/symphony_operator_reproject_v914.py
+          python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Refresh real Superbet catalogue
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
         run: python backend/superbet_market_context_v913.py prepare
+
+      - name: Verify real Superbet market semantics
+        run: python scripts/verify_superbet_market_semantics.py
 
       - name: Re-evaluate current models on real operator lines
         run: |
