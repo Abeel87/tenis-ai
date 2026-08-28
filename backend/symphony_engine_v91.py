@@ -213,6 +213,16 @@ def build_report(legs: int = 4) -> dict:
 def run(legs: int = 4) -> dict:
     report = build_report(legs=legs)
     base.core._write(base.core.REPORT, report)
+
+    # v9.3A is intentionally generated as a separate MODEL/RAW report. It
+    # consumes the same model snapshot but never changes the Superbet-gated
+    # Symphony report written above.
+    try:
+        from .symphony_scenario_lattice_v93 import run as run_deep_scenario
+    except ImportError:
+        from symphony_scenario_lattice_v93 import run as run_deep_scenario
+    deep = run_deep_scenario(legs=legs)
+
     source_rows = base.core._read(base.core.RESULTS, [])
     active = sum(
         1 for row in (source_rows if isinstance(source_rows, list) else [])
@@ -227,6 +237,7 @@ def run(legs: int = 4) -> dict:
         "performance_adapter_version": PERFORMANCE_VERSION,
         "matches": report.get("matches_count", 0),
         "operator_context_matches": active,
+        "deep_model_scenario": deep,
         "production_influence": False,
         "prices_used": False,
     }
