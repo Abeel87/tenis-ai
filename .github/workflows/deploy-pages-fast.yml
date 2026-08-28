@@ -1,0 +1,87 @@
+name: Fast frontend deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout newest main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Decide FAST vs FULL scope
+        id: scope
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Manual FAST deploy requested."
+            exit 0
+          fi
+
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            CHANGED="$(git show --pretty='' --name-only HEAD)"
+          else
+            CHANGED="$(git diff --name-only "$BEFORE" "$GITHUB_SHA")"
+          fi
+          printf '%s\n' "$CHANGED"
+
+          if printf '%s\n' "$CHANGED" | grep -Eq '^(backend/|scripts/|data/|frontend/data/|requirements\.txt$)'; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Data/model files changed too — FULL workflow owns this deploy."
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Frontend-only change — FAST Pages deploy enabled."
+          fi
+
+      - name: Setup Node
+        if: steps.scope.outputs.deploy == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Fast frontend checks
+        if: steps.scope.outputs.deploy == 'true'
+        shell: bash
+        run: |
+          set -e
+          while IFS= read -r -d '' f; do
+            node --check "$f"
+          done < <(find frontend -maxdepth 1 -name '*.js' -print0)
+          node tests/ui_static_smoke.mjs
+
+      - name: Configure Pages
+        if: steps.scope.outputs.deploy == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload frontend
+        if: steps.scope.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: frontend
+
+      - name: Deploy Pages
+        if: steps.scope.outputs.deploy == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
