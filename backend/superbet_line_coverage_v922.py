@@ -2,15 +2,20 @@ from __future__ import annotations
 
 """Tenis AI v9.2.2 — zero-request model coverage for real Superbet lines.
 
-This adapter runs *after* Superbet FINALIZE. It never calls an external API and
-never changes core model/training math. It only reuses distributions already
-present in results.json (or deterministically reconstructs Market Lab's existing
-BO3 distributions) to cover additional operator selections.
+Runs after Superbet FINALIZE. It never calls an external API and never changes
+core model/training math. It only reuses distributions already present in
+results.json (or deterministically reconstructs Market Lab's existing BO3
+probability distributions) to cover additional real operator selections.
 
-Covered here:
-- match / set 1 / set 2 game handicaps on any real operator line;
-- "most aces" from the already-built Serve Props means (independent Poisson
-  comparison, explicitly marked as an approximation).
+Actionable derived coverage:
+- match game handicap on any real operator line;
+- set 1 game handicap on any real operator line;
+- set 2 game handicap on any real operator line.
+
+Display-only SHADOW coverage:
+- "most aces" from existing Serve Props ace means using an independent Poisson
+  comparison. It is deliberately NOT injected into PLAYABLE until settlement /
+  backtest evidence exists for that target.
 
 Bookmaker prices are not inputs. Missing evidence stays uncovered instead of
 being fabricated.
@@ -29,12 +34,13 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "frontend" / "data" / "results.json"
 META = ROOT / "frontend" / "data" / "meta.json"
 VERSION = "v9.2.2"
-DERIVED_MARKETS = {
+ACTIONABLE_DERIVED_MARKETS = {
     "match_game_handicap",
     "set1_game_handicap",
     "set2_game_handicap",
-    "most_aces",
 }
+SHADOW_DERIVED_MARKETS = {"most_aces"}
+DERIVED_MARKETS = ACTIONABLE_DERIVED_MARKETS | SHADOW_DERIVED_MARKETS
 
 
 def _read(path: Path, fallback):
@@ -169,8 +175,8 @@ def _handicap_probability(dist: dict | None, match: dict, selection: dict):
 
 def _poisson_pmf(mean: float) -> list[float]:
     mean = max(0.0, float(mean))
-    # Serve Props caps ace means at 20. This bound leaves negligible tail mass,
-    # then normalization removes numerical truncation without inventing outcomes.
+    # Serve Props caps ace means at 20. This leaves negligible tail mass and the
+    # final normalization only removes floating-point truncation.
     max_k = max(24, int(math.ceil(mean + 12.0 * math.sqrt(mean + 1.0) + 20.0)))
     values = [math.exp(-mean)]
     for k in range(1, max_k + 1):
@@ -269,7 +275,7 @@ def _derived_for_selection(match: dict, selection: dict, bundle=None, ace_dist=N
     return None, None
 
 
-def _signal(match: dict, selection: dict, result: dict, source: str) -> dict:
+def _signal(selection: dict, result: dict, source: str, actionable: bool) -> dict:
     score = max(0.0, min(100.0, float(result["score"])))
     row = dict(selection)
     row.update(
@@ -280,13 +286,14 @@ def _signal(match: dict, selection: dict, result: dict, source: str) -> dict:
             "symphony_raw_probability": round(score, 4),
             "symphony_market_adapter": VERSION,
             "symphony_source": f"superbet_market_v91+{source}",
-            "symphony_actionable": True,
+            "symphony_actionable": bool(actionable),
             "operator": "superbet.pl",
             "operator_available": True,
             "operator_line_verified": True,
             "operator_line_source": "oddspapi_superbet_pl",
-            "exact_path_supported": selection.get("market") != "most_aces",
+            "exact_path_supported": bool(actionable),
             "coverage_adapter_version": VERSION,
+            "coverage_status": "MODEL_DERIVED" if actionable else "SHADOW_DERIVED_NOT_PLAYABLE",
         }
     )
     for key, value in result.items():
@@ -300,50 +307,85 @@ def enrich_match(raw: dict) -> dict:
     ctx = dict(match.get("superbet_market_v91") or {})
     selections = [x for x in (ctx.get("canonical_selections") or []) if isinstance(x, dict)]
     signals = [dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x, dict)]
-    existing = {_selection_key(x) for x in signals}
-    wanted = [s for s in selections if str(s.get("market") or "") in DERIVED_MARKETS and _selection_key(s) not in existing]
+    shadow = [dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x, dict)]
+    existing = {_selection_key(x) for x in signals} | {_selection_key(x) for x in shadow}
+    wanted = [
+        s for s in selections
+        if str(s.get("market") or "") in DERIVED_MARKETS and _selection_key(s) not in existing
+    ]
 
     bundle = None
     ace_dist = None
-    if any(str(s.get("market") or "").endswith("game_handicap") for s in wanted):
+    if any(str(s.get("market") or "") in ACTIONABLE_DERIVED_MARKETS for s in wanted):
         bundle = _distribution_bundle(match)
-    if any(str(s.get("market") or "") == "most_aces" for s in wanted):
+    if any(str(s.get("market") or "") in SHADOW_DERIVED_MARKETS for s in wanted):
         ace_dist = _most_aces_distribution(match)
 
-    added = 0
+    added = shadow_added = 0
     for selection in wanted:
         result, source = _derived_for_selection(match, selection, bundle, ace_dist)
         if not result or result.get("score") is None:
             continue
-        signals.append(_signal(match, selection, result, source))
+        market = str(selection.get("market") or "")
+        actionable = market in ACTIONABLE_DERIVED_MARKETS
+        row = _signal(selection, result, source, actionable)
+        if actionable:
+            signals.append(row)
+            added += 1
+        else:
+            shadow.append(row)
+            shadow_added += 1
         existing.add(_selection_key(selection))
-        added += 1
 
-    coverage = defaultdict(lambda: {"available": 0, "model": 0})
     signal_keys = {_selection_key(x) for x in signals}
+    shadow_keys = {_selection_key(x) for x in shadow}
+    display_keys = signal_keys | shadow_keys
+    selection_keys = {_selection_key(x) for x in selections}
+    playable_covered = len(selection_keys & signal_keys)
+    shadow_covered = len(selection_keys & shadow_keys)
+    display_covered = len(selection_keys & display_keys)
+
+    coverage = defaultdict(lambda: {"available": 0, "playable_model": 0, "shadow_model": 0})
     for selection in selections:
         market = str(selection.get("market") or "unknown")
+        skey = _selection_key(selection)
         coverage[market]["available"] += 1
-        if _selection_key(selection) in signal_keys:
-            coverage[market]["model"] += 1
+        if skey in signal_keys:
+            coverage[market]["playable_model"] += 1
+        elif skey in shadow_keys:
+            coverage[market]["shadow_model"] += 1
     coverage_by_market = {}
     for market, row in sorted(coverage.items()):
         available = int(row["available"])
-        model = int(row["model"])
+        playable = int(row["playable_model"])
+        shadow_n = int(row["shadow_model"])
+        model = playable + shadow_n
         coverage_by_market[market] = {
             "available": available,
             "model": model,
+            "playable_model": playable,
+            "shadow_model": shadow_n,
             "coverage": round(model / available, 4) if available else 0.0,
+            "playable_coverage": round(playable / available, 4) if available else 0.0,
         }
 
     ctx["model_signals"] = signals
+    ctx["coverage_shadow_signals"] = shadow
     ctx["model_signals_count"] = len(signals)
+    ctx["coverage_shadow_signals_count"] = len(shadow)
     ctx["available_selections_count"] = len(selections)
-    ctx["model_coverage"] = round(len(signal_keys) / len(selections), 4) if selections else 0.0
+    # Preserve the old meaning: model_coverage is strictly eligible for the
+    # current model-signal/PLAYABLE path. Display-only SHADOW has its own metric.
+    ctx["model_coverage"] = round(playable_covered / len(selections), 4) if selections else 0.0
+    ctx["display_model_coverage"] = round(display_covered / len(selections), 4) if selections else 0.0
+    ctx["playable_covered_count"] = playable_covered
+    ctx["shadow_covered_count"] = shadow_covered
+    ctx["display_covered_count"] = display_covered
     ctx["coverage_by_market"] = coverage_by_market
-    ctx["operator_only_count"] = max(0, len(selections) - len(signal_keys))
+    ctx["operator_only_count"] = max(0, len(selections) - display_covered)
     ctx["coverage_adapter_version"] = VERSION
     ctx["coverage_adapter_added"] = added
+    ctx["coverage_adapter_shadow_added"] = shadow_added
     ctx["coverage_adapter_external_requests"] = 0
     ctx["prices_used"] = False
     match["superbet_market_v91"] = ctx
@@ -352,7 +394,7 @@ def enrich_match(raw: dict) -> dict:
 
 def enrich_results(rows: list[dict]):
     out = []
-    added = available = covered = operator_only = matches = 0
+    added = shadow_added = available = playable = shadow = displayed = operator_only = matches = 0
     for raw in rows:
         if not isinstance(raw, dict):
             continue
@@ -362,17 +404,23 @@ def enrich_results(rows: list[dict]):
         if n:
             matches += 1
         available += n
-        covered += int(ctx.get("model_signals_count") or 0)
+        playable += int(ctx.get("playable_covered_count") or 0)
+        shadow += int(ctx.get("shadow_covered_count") or 0)
+        displayed += int(ctx.get("display_covered_count") or 0)
         operator_only += int(ctx.get("operator_only_count") or 0)
         added += int(ctx.get("coverage_adapter_added") or 0)
+        shadow_added += int(ctx.get("coverage_adapter_shadow_added") or 0)
         out.append(match)
     return out, {
         "version": VERSION,
         "matches_with_operator_selections": matches,
         "available_selections": available,
-        "model_covered_selections": covered,
+        "playable_model_covered_selections": playable,
+        "shadow_model_covered_selections": shadow,
+        "display_model_covered_selections": displayed,
         "operator_only_selections": operator_only,
         "signals_added": added,
+        "shadow_signals_added": shadow_added,
         "external_requests": 0,
         "prices_used": False,
     }
