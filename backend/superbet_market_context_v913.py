@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Tenis AI v9.1.5 — bounded OddsPapi batching + canonical Superbet lines.
+"""Tenis AI v9.1.6 — bounded OddsPapi batching + canonical Superbet lines.
 
 OddsPapi accepts at most five tournament IDs in one `odds-by-tournaments`
 request. The adapter keeps those calls bounded and fixes the operator
@@ -12,7 +12,9 @@ normalization contract used by the Superbet PLAYABLE layer:
   the opposite signed line for two-way game-handicap markets;
 * `bookmakerOutcomeId` is only a fallback when catalogue metadata has no line;
 * catalogue outcomes `1` / `2` / `X` are interpreted as participant 1 /
-  participant 2 / draw instead of being emitted as literal picks.
+  participant 2 / draw instead of being emitted as literal picks;
+* FINALIZE keeps the base model intact, then evaluates additional real operator
+  lines through the downstream v9.2.6 projection adapter.
 
 Prices remain discarded. None of this changes model mathematics, training,
 history, thresholds, SHADOW/PROD scores or settlement.
@@ -25,10 +27,12 @@ from collections.abc import Callable
 
 try:
     from . import superbet_market_context_v91 as base
+    from . import superbet_line_projection_v926 as projection
 except ImportError:
     import superbet_market_context_v91 as base
+    import superbet_line_projection_v926 as projection
 
-VERSION = "v9.1.5"
+VERSION = "v9.1.6"
 MAX_TOURNAMENT_IDS_PER_REQUEST = 5
 BATCH_DELAY_SECONDS = 1.05
 REFRESH_HOURS = 1
@@ -377,7 +381,14 @@ def prepare() -> dict:
 
 def finalize() -> dict:
     result = dict(base.finalize())
+    projection_report = projection.augment_results_file()
     result["runtime_adapter_version"] = VERSION
+    result["projection_adapter_version"] = projection.VERSION
+    result["projection_signals_added"] = projection_report["signals_added"]
+    result["model_signals"] = projection_report["model_signals"]
+    result["available_selections"] = projection_report["available_selections"]
+    result["model_coverage"] = projection_report["coverage"]
+    result["prices_used"] = False
     return result
 
 
