@@ -14,6 +14,9 @@ def test_stats_loader_wires_symphony_assets_without_new_main_tab():
     assert "symphony-stats-v90d.css" in ranking
     assert "symphony-stats-v90d.js" in ranking
     assert "loadSymphonyStats" in ranking
+    # Direct wiring prevents a stale cached ranking helper from hiding the card.
+    assert 'symphony-stats-v90d.css?v=90d2' in html
+    assert 'symphony-stats-v90d.js?v=90d2' in html
     # Symphony performance lives inside existing Statystyki, not as another main tab.
     assert html.count('data-view="stats"') >= 1
     assert 'data-view="symphony-stats"' not in html
@@ -27,11 +30,15 @@ def test_stats_chart_has_2_to_6_leg_rows_and_sample_gates():
     assert "pełna Symfonia" in js
     assert "pojedyncze nogi" in js
     assert "Brak danych = N/D" in js
+    # null must stay N/D, never turn into a fake 0.0% before first settlement.
+    assert "v !== null" in js
 
 
-def test_stats_chart_is_mobile_responsive():
+def test_stats_chart_is_mobile_responsive_and_pro_can_close():
     css = read("frontend/symphony-stats-v90d.css")
     assert "@media(max-width:900px)" in css
     assert "@media(max-width:600px)" in css
     assert ".symstats-chart__row" in css
     assert ".symstats-kpis" in css
+    assert ".pc12-pro:not([open])>.pc12-pro-body{display:none!important}" in css
+    assert ".pc12-pro[open]>.pc12-pro-body{display:grid!important}" in css

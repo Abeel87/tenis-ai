@@ -1,8 +1,8 @@
-/* Tenis AI v9.0D — Symphony Performance in Statystyki */
+/* Tenis AI v9.0D.2 — Symphony Performance in Statystyki */
 (() => {
   'use strict';
 
-  const VERSION = 'v9.0D';
+  const VERSION = 'v9.0D.2';
   const DATA_URL = './data/symphony_stats_v90d.json';
   let cache = null;
   let loading = null;
@@ -10,7 +10,7 @@
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
-  const finite = (v) => Number.isFinite(Number(v));
+  const finite = (v) => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
   const pct = (v) => finite(v) ? `${Number(v).toFixed(1)}%` : 'N/D';
   const nfmt = (v) => Number(v || 0).toLocaleString('pl-PL');
 
@@ -123,16 +123,21 @@
 
   async function render(force = false) {
     const data = await load(force);
-    if (data) insert(data);
+    if (!data) return false;
+    return insert(data);
+  }
+
+  function scheduleRender(force = false) {
+    [0, 120, 500, 1200].forEach(delay => setTimeout(() => render(force && delay === 0), delay));
   }
 
   function boot() {
-    document.addEventListener('tenis-ai:stats-ready', () => setTimeout(() => render(), 0));
-    document.addEventListener('tenis-ai:stats-dashboard-ready', () => setTimeout(() => render(), 0));
+    document.addEventListener('tenis-ai:stats-ready', () => scheduleRender());
+    document.addEventListener('tenis-ai:stats-dashboard-ready', () => scheduleRender());
     document.addEventListener('click', event => {
-      if (event.target?.closest?.('[data-view="stats"],[data-p751-nav="stats"]')) setTimeout(() => render(), 80);
+      if (event.target?.closest?.('[data-view="stats"],[data-p751-nav="stats"]')) scheduleRender();
     }, true);
-    setTimeout(() => render(), 800);
+    scheduleRender();
   }
 
   window.TENIS_AI_SYMPHONY_STATS_V90D = Object.freeze({ version: VERSION, render, reload: () => render(true) });
