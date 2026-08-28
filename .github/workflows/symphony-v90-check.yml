@@ -14,6 +14,8 @@ on:
       - 'frontend/symphony-v90.css'
       - 'frontend/symphony-stats-v90d.js'
       - 'frontend/symphony-stats-v90d.css'
+      - 'frontend/symphony-surface-v90.js'
+      - 'frontend/symphony-surface-v90.css'
       - 'frontend/stats-ranking-v886.js'
       - 'frontend/index.html'
       - 'tests/test_symphony_v90*.py'
@@ -48,11 +50,13 @@ jobs:
         run: |
           node --check frontend/symphony-v90.js
           node --check frontend/symphony-stats-v90d.js
+          node --check frontend/symphony-surface-v90.js
           node --check frontend/stats-ranking-v886.js
       - name: Runtime wiring
         run: |
           grep -q 'symphony-v90.css' frontend/index.html
           grep -q 'symphony-v90.js' frontend/index.html
+          grep -q 'symphony-surface-v90.js' frontend/index.html
           grep -q 'Tennis Symphony v9.0' .github/workflows/update-and-pages.yml
           grep -q 'symphony_engine_v90c.py' .github/workflows/update-and-pages.yml
           grep -q 'symphony_tracker_v90d.py' .github/workflows/update-and-pages.yml
