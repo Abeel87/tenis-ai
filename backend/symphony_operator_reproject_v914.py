@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-"""Tenis AI v9.1.4 — lightweight Symphony operator reprojection.
+"""Tenis AI v9.1.5 — lightweight Symphony operator reprojection.
 
 The expensive Symphony path/scenario search is intentionally NOT rerun here.
-A full build still owns that work.  Hourly Superbet refreshes only re-gate the
+A full build still owns that work. Hourly Superbet refreshes only re-gate the
 already computed Symphony compositions against the newest verified Superbet
 market catalogue and rebuild the compact match-card feed afterwards.
 
-That keeps the operator view fresh without turning an hourly market refresh
-into another 10-50 minute model/scenario rebuild.
+v9.1.5 also rewrites ``full_composition`` from the already filtered PLAYABLE
+compositions. This prevents the match-detail UI from accidentally preferring an
+older RAW six-leg composition containing a market/line that is not currently
+available at Superbet.
 """
 
 import json
@@ -35,7 +37,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "frontend" / "data"
 RESULTS = DATA / "results.json"
 REPORT = DATA / "symphony_v90.json"
-VERSION = "v9.1.4"
+VERSION = "v9.1.5"
 
 
 def _read(path: Path, fallback):
@@ -143,6 +145,19 @@ def _best_valid_for_leg_count(match: dict, raw: dict, n: int) -> tuple[dict | No
     return chosen, len(candidates)
 
 
+def _playable_full_composition(new_comps: dict[str, dict]) -> dict | None:
+    """Return the largest already-verified PLAYABLE composition for match detail."""
+    for n in (6, 5, 4, 3, 2):
+        comp = new_comps.get(str(n))
+        if isinstance(comp, dict) and comp.get("selection"):
+            out = deepcopy(comp)
+            out["legs"] = n
+            out["operator_reprojected"] = True
+            out["operator_projection_version"] = VERSION
+            return out
+    return None
+
+
 def reproject_match(report_match: dict, result_match: dict | None) -> tuple[dict, dict]:
     row = deepcopy(report_match)
     if not isinstance(result_match, dict) or not operator_context_active(result_match):
@@ -170,6 +185,9 @@ def reproject_match(report_match: dict, result_match: dict | None) -> tuple[dict
         new_comps[str(n)] = chosen
 
     row["compositions"] = new_comps
+    # Critical UI contract: match detail must never prefer stale RAW full_composition.
+    # Rebuild it only from already gated Superbet PLAYABLE compositions.
+    row["full_composition"] = _playable_full_composition(new_comps)
 
     try:
         old_recommended = int(row.get("recommended_leg_count"))
@@ -192,6 +210,7 @@ def reproject_match(report_match: dict, result_match: dict | None) -> tuple[dict
         "kept_leg_counts": sorted(int(x) for x in new_comps),
         "dropped_leg_counts": dropped_leg_counts,
         "full_scenario_search_rerun": False,
+        "full_composition_source": "playable_compositions_only",
     }
     return row, {
         "active": True,
