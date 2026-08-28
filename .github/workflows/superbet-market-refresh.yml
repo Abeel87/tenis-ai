@@ -15,9 +15,10 @@ on:
       - 'backend/ensemble_player_learning_v891.py'
       - 'backend/surface_elo_integration_v893.py'
       - 'backend/shadow_signal_center_v894.py'
-      - 'backend/symphony_engine_v91.py'
+      - 'backend/symphony_operator_reproject_v914.py'
       - 'scripts/compact_frontend_data_v853.py'
       - 'tests/test_superbet_market_v913.py'
+      - 'tests/test_symphony_operator_reproject_v914.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
 permissions:
@@ -58,7 +59,7 @@ jobs:
           python -m py_compile backend/ensemble_player_learning_v891.py
           python -m py_compile backend/surface_elo_integration_v893.py
           python -m py_compile backend/shadow_signal_center_v894.py
-          python -m py_compile backend/symphony_engine_v91.py
+          python -m py_compile backend/symphony_operator_reproject_v914.py
 
       - name: Refresh real Superbet catalogue
         env:
@@ -79,10 +80,10 @@ jobs:
           python backend/surface_elo_integration_v893.py
           python backend/shadow_signal_center_v894.py
 
-      - name: Refresh Symphony and frontend PLAYABLE projection
+      - name: Reproject Symphony gate and frontend PLAYABLE view
         run: |
-          python backend/symphony_engine_v91.py
           python backend/superbet_playable_v912.py project
+          python backend/symphony_operator_reproject_v914.py
           python scripts/compact_frontend_data_v853.py
 
       - name: Runtime sanity guard
@@ -94,6 +95,7 @@ jobs:
           data = Path('frontend/data')
           availability = json.loads((data/'superbet_market_availability_v91.json').read_text(encoding='utf-8'))
           results = json.loads((data/'results.json').read_text(encoding='utf-8'))
+          symphony = json.loads((data/'symphony_v90.json').read_text(encoding='utf-8'))
           assert isinstance(results, list) and results, 'results.json empty after market refresh'
           assert availability.get('contains_prices') is False
           assert availability.get('prices_used') is False
@@ -101,8 +103,15 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          assert symphony.get('operator_reprojection_version') == 'v9.1.4'
+          repro = symphony.get('operator_reprojection') or {}
+          assert repro.get('full_scenario_search_rerun') is False
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
-          print(f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")}')
+          print(
+              f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
+              f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
+              f'symphony_operator_matches={repro.get("operator_context_matches")}'
+          )
           PY
 
       - name: Commit refreshed market context
