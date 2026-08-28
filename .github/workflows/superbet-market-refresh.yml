@@ -104,7 +104,7 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
-          assert symphony.get('operator_reprojection_version') == 'v9.1.4'
+          assert symphony.get('operator_reprojection_version') == 'v9.1.5'
           repro = symphony.get('operator_reprojection') or {}
           assert repro.get('full_scenario_search_rerun') is False
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
