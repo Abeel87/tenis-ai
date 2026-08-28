@@ -181,9 +181,6 @@ def coverage_first_metrics(base_metrics: Callable):
         joint = out.get("joint_supported_only")
         score = float(out.get("score") or 0.0)
 
-        # Real-data v9.0C showed 0%-coverage serve props winning at ~90/100.
-        # Penalise missing common-path support while preserving evidence-only
-        # candidates as alternatives instead of pretending they are exact joint.
         adjustment = -28.0 * (1.0 - coverage)
         if coverage >= 0.999:
             adjustment += 5.0
