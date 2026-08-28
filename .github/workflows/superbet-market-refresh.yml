@@ -25,11 +25,12 @@ permissions:
   contents: write
   actions: write
 
-# Do not let a lightweight market refresh rewrite results.json while the FULL
-# model/data build is using it. UI-only Pages deploys remain independent.
+# Production refresh must not rewrite results.json while FULL is using it.
+# Pull-request smoke runs use their own queue so an obsolete PR attempt cannot
+# hold the next lightweight test behind a long-running experiment.
 concurrency:
-  group: tennis-data-build
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('superbet-refresh-pr-{0}', github.event.pull_request.number) || 'tennis-data-build' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   refresh:
