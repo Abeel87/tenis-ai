@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'backend/superbet_market_context_v913.py'
+      - 'backend/superbet_market_context_v923.py'
       - 'backend/superbet_line_coverage_v922.py'
       - 'backend/market_lab_v741.py'
       - 'backend/superbet_playable_v912.py'
@@ -22,6 +23,7 @@ on:
       - 'scripts/compact_frontend_data_v853.py'
       - 'scripts/verify_superbet_market_semantics.py'
       - 'tests/test_superbet_market_v913.py'
+      - 'tests/test_superbet_market_v923.py'
       - 'tests/test_superbet_market_semantics.py'
       - 'tests/test_superbet_line_coverage_v922.py'
       - 'tests/test_superbet_model_coverage_ui_v922.py'
@@ -60,6 +62,7 @@ jobs:
       - name: Syntax guard
         run: |
           python -m py_compile backend/superbet_market_context_v913.py
+          python -m py_compile backend/superbet_market_context_v923.py
           python -m py_compile backend/superbet_line_coverage_v922.py
           python -m py_compile backend/market_lab_v741.py
           python -m py_compile backend/superbet_playable_v912.py
@@ -71,13 +74,13 @@ jobs:
           python -m py_compile backend/symphony_operator_reproject_v914.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
-      - name: Zero-request line coverage guard
-        run: python -m pytest -q tests/test_superbet_line_coverage_v922.py tests/test_superbet_model_coverage_ui_v922.py
+      - name: Zero-request coverage and raw-family audit guards
+        run: python -m pytest -q tests/test_superbet_line_coverage_v922.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py
 
-      - name: Refresh real Superbet catalogue
+      - name: Refresh real Superbet catalogue + audit raw families
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
-        run: python backend/superbet_market_context_v913.py prepare
+        run: python backend/superbet_market_context_v923.py prepare
 
       - name: Verify real Superbet market semantics
         run: python scripts/verify_superbet_market_semantics.py
@@ -85,7 +88,7 @@ jobs:
       - name: Re-evaluate current models on real operator lines
         run: |
           python backend/market_lab_v741.py
-          python backend/superbet_market_context_v913.py finalize
+          python backend/superbet_market_context_v923.py finalize
           python backend/superbet_line_coverage_v922.py
           python backend/superbet_playable_v912.py inject
           python backend/player_intelligence_v85.py post
@@ -121,6 +124,10 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          raw_audit = availability.get('raw_family_audit_v923') or {}
+          assert raw_audit.get('version') == 'v9.2.3'
+          assert int(raw_audit.get('additional_external_requests', -1)) == 0
+          assert raw_audit.get('prices_used') is False
           coverage = meta.get('superbet_line_coverage_v922') or {}
           assert coverage.get('version') == 'v9.2.2'
           assert int(coverage.get('external_requests', -1)) == 0
@@ -132,7 +139,9 @@ jobs:
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
-              f'coverage={coverage.get("model_covered_selections")}/{coverage.get("available_selections")} '
+              f'coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} '
+              f'raw_families={raw_audit.get("unique_raw_market_families")} '
+              f'unmapped_families={raw_audit.get("unique_unrecognized_market_families")} '
               f'symphony_operator_matches={repro.get("operator_context_matches")}'
           )
           PY
