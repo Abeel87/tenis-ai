@@ -70,7 +70,7 @@ def test_no_projection_without_model_ready_data():
         m, {"market": "match_game_handicap", "pick": "Alpha", "line": -2.5}
     )
     assert value is None
-    assert source is not None
+    assert source is None
 
 
 def test_augment_match_only_adds_missing_supported_operator_lines():
