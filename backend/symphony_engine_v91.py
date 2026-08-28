@@ -216,11 +216,11 @@ def run(legs: int = 4) -> dict:
 
     # v9.3A is intentionally generated as a separate MODEL/RAW report. It
     # consumes the same model snapshot but never changes the Superbet-gated
-    # Symphony report written above.
+    # Symphony report written above. BO5 is bounded to evidence-only in v9.3A.
     try:
-        from .symphony_scenario_lattice_v93 import run as run_deep_scenario
+        from .symphony_scenario_runtime_v93 import run as run_deep_scenario
     except ImportError:
-        from symphony_scenario_lattice_v93 import run as run_deep_scenario
+        from symphony_scenario_runtime_v93 import run as run_deep_scenario
     deep = run_deep_scenario(legs=legs)
 
     source_rows = base.core._read(base.core.RESULTS, [])
