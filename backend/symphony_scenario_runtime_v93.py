@@ -96,6 +96,22 @@ def run(legs: int = 4) -> dict:
         deep._decorate_comp_v93 = original_decorate
         deep.build_match_model_scenario = original_build_match
 
+    report = core._read(deep.REPORT, {})
+    if isinstance(report, dict):
+        report["runtime_adapter_version"] = VERSION
+        contract = dict(report.get("contract") or {})
+        contract.update({
+            "bo5_compact_exact_set_score_state": True,
+            "bo5_compact_scope": compact.SCOPE,
+            "bo5_checkpoint_and_set3_specific_markets_evidence_only": True,
+            "bo5_evidence_only_markets": sorted(compact.BO5_EVIDENCE_ONLY_MARKETS),
+            "bo5_checkpoint_fabrication": False,
+            "external_requests": 0,
+            "bookmaker_prices_used": False,
+        })
+        report["contract"] = contract
+        core._write(deep.REPORT, report)
+
     result["runtime_guard_version"] = VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
