@@ -30,11 +30,11 @@ def test_match_detail_preserves_raw_lines_when_book_feed_is_missing():
     assert "window.TENIS_AI_PLAYABLE_UI_V917?.active?.(m)" in UI
 
 
-def test_model_symphony_is_rendered_as_analysis_independently_of_playable():
+def test_model_symphony_is_rendered_as_analysis_beside_playable():
     assert "symphony_match_cards_v90.json?raw=921" in UI
     assert "SYMFONIA MODELOWA · RAW" in UI
     assert "analiza niezależna od Superbet" in UI
-    assert "Symfonia Superbet PLAYABLE" not in UI  # existing guarded surface remains separate
+    assert "play?play.before(sym):panel.after(sym)" in UI  # insert RAW panel beside guarded PLAYABLE panel
 
 
 def test_basic_stats_iterate_every_tracked_model_and_keep_shadow_visible():
