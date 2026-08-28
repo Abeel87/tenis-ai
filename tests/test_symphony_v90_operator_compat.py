@@ -1,17 +1,18 @@
 from backend import symphony_engine_v90 as core
-from backend.symphony_c4 import comparison_compatible
+from backend import symphony_engine_v91 as operator_v91
+from backend.symphony_c4 import comparison_compatible, coverage_first_metrics
 from backend.symphony_engine_v90 import Candidate
-from backend.symphony_engine_v90c import _one_pass_compositions
+from backend.symphony_engine_v90c import _extended_predicate, _one_pass_compositions
 
 
-def candidate(key, market, pick, line=None, score=82):
+def candidate(key, market, pick, line=None, score=82, checkpoint=None):
     return Candidate(
         key=key,
         label=key,
         market=market,
         pick=pick,
         line=line,
-        checkpoint=None,
+        checkpoint=checkpoint,
         prod_score=score,
         shadow_scores={},
         path_probability=None,
@@ -93,3 +94,48 @@ def test_composer_never_emits_more_than_one_match_total_per_side(monkeypatch):
         check(comp)
         for alt in comp.get("alternatives") or []:
             check(alt)
+
+
+def test_operator_fast_masks_are_exactly_equivalent_to_legacy_beam_math(monkeypatch):
+    match = {
+        "p1": "A",
+        "p2": "B",
+        "best_of": 3,
+        "service_model": {"p1_hold": 0.76, "p2_hold": 0.72},
+        "first_set_win": {"A": 56.0, "B": 44.0},
+        "second_set_win": {"A": 55.0, "B": 45.0},
+        "third_set_win": {"A": 54.0, "B": 46.0},
+    }
+    outcomes = core._build_outcomes(match)
+    assert outcomes
+
+    candidates = [
+        candidate("state|2|1:1", "game_state", "1:1", score=94, checkpoint=2),
+        candidate("state|4|2:2", "game_state", "2:2", score=93, checkpoint=4),
+        candidate("state|6|3:3", "game_state", "3:3", score=92, checkpoint=6),
+        candidate("set1_total|8.5|over", "set1_total", "over", 8.5, 91),
+        candidate("set1_total|11.5|under", "set1_total", "under", 11.5, 90),
+        candidate("match_total|20.5|over", "match_total", "over", 20.5, 89),
+        candidate("match_total|31.5|under", "match_total", "under", 31.5, 88),
+        candidate("total_sets|2.5|over", "total_sets", "over", 2.5, 87),
+        candidate("match_winner|A", "match_winner", "A", score=86),
+        candidate("set1_winner|A", "set1_winner", "A", score=85),
+        candidate("set2_winner|A", "set2_winner", "A", score=84),
+        candidate("set3_winner|A", "set3_winner", "A", score=83),
+        candidate("set1_tiebreak|yes", "set1_tiebreak", "yes", score=82),
+        # Deliberately unsupported by the exact path engine. Coverage handling
+        # must remain identical too.
+        candidate("player_aces|p1|4.5|over", "player_aces", "over", 4.5, 81),
+    ]
+
+    original_predicate = core._predicate
+    original_compatible = core._compatible
+    original_metrics = core._combo_metrics
+    monkeypatch.setattr(core, "_predicate", _extended_predicate(original_predicate))
+    monkeypatch.setattr(core, "_compatible", comparison_compatible(original_compatible))
+    monkeypatch.setattr(core, "_combo_metrics", coverage_first_metrics(original_metrics))
+
+    legacy = _one_pass_compositions(match, candidates, outcomes)
+    optimized = operator_v91._fast_one_pass_compositions(match, candidates, outcomes)
+
+    assert optimized == legacy
