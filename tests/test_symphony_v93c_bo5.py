@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 import math
 from pathlib import Path
 
@@ -32,6 +33,11 @@ def _match():
     }
 
 
+@lru_cache(maxsize=1)
+def _outcomes():
+    return compact.build_bo5_compact_outcomes(_match())
+
+
 def _candidate(market, pick, line=None, checkpoint=None):
     return core.Candidate(
         key=f"{market}|{checkpoint or ''}|{line or ''}|{pick}",
@@ -50,7 +56,7 @@ def _candidate(market, pick, line=None, checkpoint=None):
 
 
 def test_compact_bo5_outcomes_normalize_without_path_explosion():
-    outcomes = compact.build_bo5_compact_outcomes(_match())
+    outcomes = _outcomes()
     assert outcomes
     assert math.isclose(sum(row["prob"] for row in outcomes), 1.0, abs_tol=1e-9)
     # 14 terminal set scores x compact later-set DP stays bounded around 50k,
@@ -64,7 +70,7 @@ def test_compact_bo5_outcomes_normalize_without_path_explosion():
 
 
 def test_compact_bo5_keeps_all_final_match_score_families():
-    outcomes = compact.build_bo5_compact_outcomes(_match())
+    outcomes = _outcomes()
     scores = {row["sets"] for row in outcomes}
     assert scores == {(3, 0), (3, 1), (3, 2), (0, 3), (1, 3), (2, 3)}
     by_score = {score: sum(row["prob"] for row in outcomes if row["sets"] == score) for score in scores}
@@ -93,7 +99,10 @@ def test_bo5_runtime_marks_checkpoint_and_set3_specific_markets_evidence_only(mo
         seen["count"] = len(outcomes)
         return {"status": "OK", "matches": 1}
 
+    monkeypatch.setattr(compact, "build_bo5_compact_outcomes", lambda match: _outcomes())
     monkeypatch.setattr(deep, "run", fake_run)
+    monkeypatch.setattr(runtime.core, "_read", lambda path, fallback: {})
+    monkeypatch.setattr(runtime.core, "_write", lambda path, value: None)
     result = runtime.run()
     assert seen["count"] <= 52000
     assert result["runtime_guard_version"] == "v9.3C-runtime-compact-bo5"
