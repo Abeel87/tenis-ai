@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'backend/superbet_market_context_v913.py'
+      - 'backend/superbet_line_coverage_v922.py'
       - 'backend/market_lab_v741.py'
       - 'backend/superbet_playable_v912.py'
       - 'backend/player_intelligence_v85.py'
@@ -16,10 +17,14 @@ on:
       - 'backend/surface_elo_integration_v893.py'
       - 'backend/shadow_signal_center_v894.py'
       - 'backend/symphony_operator_reproject_v914.py'
+      - 'frontend/superbet-model-coverage-v922.js'
+      - 'frontend/match-list-visibility-v916.js'
       - 'scripts/compact_frontend_data_v853.py'
       - 'scripts/verify_superbet_market_semantics.py'
       - 'tests/test_superbet_market_v913.py'
       - 'tests/test_superbet_market_semantics.py'
+      - 'tests/test_superbet_line_coverage_v922.py'
+      - 'tests/test_superbet_model_coverage_ui_v922.py'
       - 'tests/test_symphony_operator_reproject_v914.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
@@ -55,6 +60,7 @@ jobs:
       - name: Syntax guard
         run: |
           python -m py_compile backend/superbet_market_context_v913.py
+          python -m py_compile backend/superbet_line_coverage_v922.py
           python -m py_compile backend/market_lab_v741.py
           python -m py_compile backend/superbet_playable_v912.py
           python -m py_compile backend/player_intelligence_v85.py
@@ -64,6 +70,9 @@ jobs:
           python -m py_compile backend/shadow_signal_center_v894.py
           python -m py_compile backend/symphony_operator_reproject_v914.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
+
+      - name: Zero-request line coverage guard
+        run: python -m pytest -q tests/test_superbet_line_coverage_v922.py tests/test_superbet_model_coverage_ui_v922.py
 
       - name: Refresh real Superbet catalogue
         env:
@@ -77,6 +86,7 @@ jobs:
         run: |
           python backend/market_lab_v741.py
           python backend/superbet_market_context_v913.py finalize
+          python backend/superbet_line_coverage_v922.py
           python backend/superbet_playable_v912.py inject
           python backend/player_intelligence_v85.py post
 
@@ -102,6 +112,7 @@ jobs:
           data = Path('frontend/data')
           availability = json.loads((data/'superbet_market_availability_v91.json').read_text(encoding='utf-8'))
           results = json.loads((data/'results.json').read_text(encoding='utf-8'))
+          meta = json.loads((data/'meta.json').read_text(encoding='utf-8'))
           symphony = json.loads((data/'symphony_v90.json').read_text(encoding='utf-8'))
           assert isinstance(results, list) and results, 'results.json empty after market refresh'
           assert availability.get('contains_prices') is False
@@ -110,6 +121,10 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          coverage = meta.get('superbet_line_coverage_v922') or {}
+          assert coverage.get('version') == 'v9.2.2'
+          assert int(coverage.get('external_requests', -1)) == 0
+          assert coverage.get('prices_used') is False
           assert symphony.get('operator_reprojection_version') == 'v9.1.5'
           repro = symphony.get('operator_reprojection') or {}
           assert repro.get('full_scenario_search_rerun') is False
@@ -117,6 +132,7 @@ jobs:
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
+              f'coverage={coverage.get("model_covered_selections")}/{coverage.get("available_selections")} '
               f'symphony_operator_matches={repro.get("operator_context_matches")}'
           )
           PY
