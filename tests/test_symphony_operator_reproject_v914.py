@@ -49,6 +49,14 @@ def test_promotes_playable_alternative_without_rerunning_symphony():
     report_match = {
         "id": 1,
         "recommended_leg_count": 2,
+        "full_composition": {
+            "legs": 2,
+            "symphony_score": 95.0,
+            "selection": [
+                {"market": "set1_tiebreak", "pick": "no", "label": "TB NIE"},
+                {"market": "match_total", "pick": "over", "line": 18.5, "label": "RAW O18.5"},
+            ],
+        },
         "compositions": {
             "2": {
                 "legs": 2,
@@ -82,11 +90,26 @@ def test_promotes_playable_alternative_without_rerunning_symphony():
     assert comp["selection"][1]["operator_line_verified"] is True
     assert out["operator_reprojection"]["full_scenario_search_rerun"] is False
 
+    # Regression: match-detail UI used to prefer stale RAW full_composition.
+    full = out["full_composition"]
+    assert full is not None
+    assert [x.get("line") for x in full["selection"] if x.get("market") == "match_total"] == [20.5]
+    assert all(x.get("line") != 18.5 for x in full["selection"])
+    assert full["operator_reprojected"] is True
+    assert out["operator_reprojection"]["full_composition_source"] == "playable_compositions_only"
 
-def test_unavailable_player_prop_cannot_survive_playable_composition():
+
+def test_unavailable_player_prop_cannot_survive_playable_composition_or_full_detail():
     report_match = {
         "id": 1,
         "recommended_leg_count": 2,
+        "full_composition": {
+            "legs": 2,
+            "selection": [
+                {"market": "set1_tiebreak", "pick": "no"},
+                {"market": "player_aces", "pick": "over", "line": 4.5, "player": "Player A"},
+            ],
+        },
         "compositions": {
             "2": {
                 "legs": 2,
@@ -102,8 +125,43 @@ def test_unavailable_player_prop_cannot_survive_playable_composition():
     out, _ = reproject_match(report_match, _result_match())
 
     assert out["compositions"] == {}
+    assert out["full_composition"] is None
     assert out["recommended_leg_count"] is None
     assert out["operator_reprojection"]["status"] == "NO_PLAYABLE_COMPOSITION"
+
+
+def test_largest_playable_composition_becomes_full_detail():
+    result = _result_match()
+    report_match = {
+        "id": 1,
+        "recommended_leg_count": 2,
+        "full_composition": {"legs": 6, "selection": [{"market": "player_aces", "pick": "over", "line": 4.5}]},
+        "compositions": {
+            "2": {
+                "legs": 2,
+                "symphony_score": 90.0,
+                "selection": [
+                    {"market": "set1_tiebreak", "pick": "no"},
+                    {"market": "match_total", "pick": "over", "line": 20.5},
+                ],
+            },
+            "3": {
+                "legs": 3,
+                "symphony_score": 85.0,
+                "selection": [
+                    {"market": "set1_tiebreak", "pick": "no"},
+                    {"market": "match_total", "pick": "over", "line": 20.5},
+                    {"market": "set1_tiebreak", "pick": "no"},
+                ],
+            },
+        },
+    }
+
+    out, _ = reproject_match(report_match, result)
+
+    assert out["full_composition"]["legs"] == 3
+    assert len(out["full_composition"]["selection"]) == 3
+    assert all(x.get("market") != "player_aces" for x in out["full_composition"]["selection"])
 
 
 def test_no_verified_operator_match_keeps_analysis_report_untouched():
