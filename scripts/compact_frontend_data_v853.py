@@ -11,9 +11,13 @@ TARGETS = (
     DATA / 'results.json',
     DATA / 'history.json',
 )
-SYMPHONY_REPORT = DATA / 'symphony_v90.json'
+# Compatibility filename stays unchanged because the existing lightweight RAW UI
+# already consumes it. The source, however, must be the genuinely independent
+# MODEL/RAW deep report — never the Superbet-gated/operator-aware Symphony.
+SYMPHONY_REPORT = DATA / 'symphony_model_v93.json'
 SYMPHONY_MATCH_CARDS = DATA / 'symphony_match_cards_v90.json'
-SYMPHONY_CARD_VERSION = 'v9.0D.2'
+SYMPHONY_CARD_VERSION = 'v9.3D'
+SYMPHONY_CARD_LAYER = 'MODEL_RAW_DEEP'
 
 
 def compact(path: Path) -> dict:
@@ -50,20 +54,33 @@ def track_deep_symphony_stats() -> dict:
 
 
 def _card_leg(leg: dict) -> dict:
-    keep = ('key', 'label', 'market', 'pick', 'line', 'checkpoint')
+    keep = (
+        'key', 'label', 'market', 'pick', 'line', 'checkpoint',
+        'path_probability', 'raw_market_probability', 'scenario_layer',
+        'scenario_candidate_only', 'operator_playable',
+    )
     return {key: leg.get(key) for key in keep if leg.get(key) is not None}
 
 
-def build_symphony_match_cards() -> dict:
-    """Publish only the already-computed AUTO Symphony needed by match cards.
+def _card_path(path: dict) -> dict:
+    keep = ('path', 'set1', 'set2', 'set3', 'match_score', 'total_games', 'probability_mass')
+    return {key: path.get(key) for key in keep if path.get(key) is not None}
 
-    The full Symphony report is several MB because it carries 2..6 compositions,
-    alternatives and path diagnostics. Match list UI must not download all of that
-    just to show a three-line preview, so this feed keeps only one recommended
-    composition per match. No probability/model is recalculated here.
+
+def build_symphony_match_cards() -> dict:
+    """Publish the already-computed deep MODEL/RAW AUTO Symphony for match cards.
+
+    The full deep report can be several MB because it carries 2..6 compositions,
+    alternatives and exact-path diagnostics. Match list UI only needs the
+    recommended MODEL/RAW composition plus a few explanatory paths. No model
+    probability is recalculated here and no Superbet availability gate is read.
     """
     if not SYMPHONY_REPORT.exists():
-        return {'path': str(SYMPHONY_MATCH_CARDS.relative_to(ROOT)), 'status': 'source-missing'}
+        return {
+            'path': str(SYMPHONY_MATCH_CARDS.relative_to(ROOT)),
+            'status': 'source-missing',
+            'source': str(SYMPHONY_REPORT.relative_to(ROOT)),
+        }
 
     source = json.loads(SYMPHONY_REPORT.read_text(encoding='utf-8'))
     rows = []
@@ -80,8 +97,10 @@ def build_symphony_match_cards() -> dict:
         comps = match.get('compositions') or {}
         comp = comps.get(str(recommended))
         if not isinstance(comp, dict) or not comp.get('selection'):
-            comp = next((comps.get(str(n)) for n in (2, 3, 4, 5, 6)
-                         if isinstance(comps.get(str(n)), dict) and comps.get(str(n), {}).get('selection')), None)
+            comp = next((
+                comps.get(str(n)) for n in (2, 3, 4, 5, 6)
+                if isinstance(comps.get(str(n)), dict) and comps.get(str(n), {}).get('selection')
+            ), None)
             if not comp:
                 continue
             recommended = int(comp.get('legs') or len(comp.get('selection') or []))
@@ -92,19 +111,33 @@ def build_symphony_match_cards() -> dict:
             'p1': match.get('p1'),
             'p2': match.get('p2'),
             'scheduled_time': match.get('scheduled_time'),
+            'best_of': match.get('best_of'),
+            'path_engine': match.get('path_engine'),
             'recommended_leg_count': recommended,
             'composition': {
                 'story_type': comp.get('story_type'),
+                'scenario_narrative': comp.get('scenario_narrative'),
                 'symphony_score': comp.get('symphony_score'),
                 'joint_probability': comp.get('joint_probability'),
                 'path_coverage': comp.get('path_coverage'),
+                'exact_path_scope': comp.get('exact_path_scope'),
+                'analysis_only': True,
+                'operator_playable': False,
                 'selection': [_card_leg(x) for x in (comp.get('selection') or []) if isinstance(x, dict)],
+                'top_paths': [_card_path(x) for x in (comp.get('top_paths') or [])[:3] if isinstance(x, dict)],
             },
         })
 
     payload = {
         'version': SYMPHONY_CARD_VERSION,
         'source_version': source.get('version'),
+        'source_mode': source.get('mode'),
+        'source_report': SYMPHONY_REPORT.name,
+        'layer': SYMPHONY_CARD_LAYER,
+        'analysis_only': True,
+        'operator_playable': False,
+        'prices_used': False,
+        'external_requests': 0,
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'matches_count': len(rows),
         'matches': rows,
@@ -115,9 +148,13 @@ def build_symphony_match_cards() -> dict:
     return {
         'path': str(SYMPHONY_MATCH_CARDS.relative_to(ROOT)),
         'status': 'ok',
+        'source': str(SYMPHONY_REPORT.relative_to(ROOT)),
+        'layer': SYMPHONY_CARD_LAYER,
         'matches': len(rows),
         'bytes': SYMPHONY_MATCH_CARDS.stat().st_size,
         'source_bytes': SYMPHONY_REPORT.stat().st_size,
+        'operator_playable': False,
+        'external_requests': 0,
     }
 
 
