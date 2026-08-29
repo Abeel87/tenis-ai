@@ -80,6 +80,7 @@ def test_raw_cards_are_built_from_deep_model_report_and_force_non_playable(tmp_p
     target = tmp_path / "symphony_match_cards_v90.json"
     source.write_text(json.dumps(_deep_source()), encoding="utf-8")
 
+    module.ROOT = tmp_path
     module.SYMPHONY_REPORT = source
     module.SYMPHONY_MATCH_CARDS = target
     result = module.build_symphony_match_cards()
@@ -122,6 +123,7 @@ def test_operator_aware_source_is_rejected_without_overwriting_existing_raw_card
     }), encoding="utf-8")
     target.write_text('{"sentinel":"keep-last-good-raw"}', encoding="utf-8")
 
+    module.ROOT = tmp_path
     module.SYMPHONY_REPORT = source
     module.SYMPHONY_MATCH_CARDS = target
     result = module.build_symphony_match_cards()
