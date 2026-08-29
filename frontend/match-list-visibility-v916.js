@@ -89,20 +89,20 @@ function loadMarketSegregationV93G(){
   document.head.appendChild(script);
 }
 
-function rawPlayableReady(){
-  loadSuperbetModelCoverageV922();
-  loadMarketSegregationV93G();
-}
-
 function loadRawPlayableV921(){
-  if(window.TENIS_AI_RAW_PLAYABLE_V921){rawPlayableReady();return}
+  if(window.TENIS_AI_RAW_PLAYABLE_V921){loadSuperbetModelCoverageV922();loadMarketSegregationV93G();return}
   const existing=document.querySelector('script[data-raw-playable-v921]');
-  if(existing){existing.addEventListener('load',rawPlayableReady,{once:true});return}
+  if(existing){
+    existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
+    existing.addEventListener('load',loadMarketSegregationV93G,{once:true});
+    return;
+  }
   const script=document.createElement('script');
   script.src='raw-playable-separation-v921.js?v=921&contract=raw-playable';
   script.async=false;
   script.dataset.rawPlayableV921='1';
-  script.addEventListener('load',rawPlayableReady,{once:true});
+  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
+  script.addEventListener('load',loadMarketSegregationV93G,{once:true});
   document.head.appendChild(script);
 }
 
