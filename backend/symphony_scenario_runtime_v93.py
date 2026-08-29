@@ -6,18 +6,25 @@ BO3 keeps the v9.3A game-by-game exact lattice. BO5 now uses v9.3C compact exact
 set-score states: exact sets 1/2 + match-level totals/final score, while
 checkpoint and set-3-specific markets remain evidence-only. This avoids the
 set-path cartesian explosion without pretending unsupported fields are exact.
+
+v9.3F adds a shared predicate-mask cache around the unchanged exact-state maths:
+each candidate predicate is evaluated against a match lattice once, then reused
+for marginal scoring, beam masks and top-path extraction.
 """
 
 try:
     from . import symphony_engine_v90 as core
     from . import symphony_scenario_lattice_v93 as deep
     from . import symphony_bo5_compact_v93c as compact
+    from . import symphony_deep_mask_cache_v93f as mask_cache
 except ImportError:
     import symphony_engine_v90 as core
     import symphony_scenario_lattice_v93 as deep
     import symphony_bo5_compact_v93c as compact
+    import symphony_deep_mask_cache_v93f as mask_cache
 
 VERSION = "v9.3C-runtime-compact-bo5"
+PERFORMANCE_VERSION = mask_cache.VERSION
 
 
 def _scope_comp(comp):
@@ -87,9 +94,11 @@ def run(legs: int = 4) -> dict:
     deep._path_text_v93 = path_text
     deep._decorate_comp_v93 = decorate
     deep.build_match_model_scenario = build_match
+    shared_masks = mask_cache.install(deep)
     try:
         result = dict(deep.run(legs=legs))
     finally:
+        shared_masks.uninstall()
         deep._build_deep_outcomes = original_outcomes
         deep._deep_predicate = original_deep_predicate
         deep._path_text_v93 = original_path_text
@@ -99,6 +108,7 @@ def run(legs: int = 4) -> dict:
     report = core._read(deep.REPORT, {})
     if isinstance(report, dict):
         report["runtime_adapter_version"] = VERSION
+        report["performance_adapter_version"] = PERFORMANCE_VERSION
         contract = dict(report.get("contract") or {})
         contract.update({
             "bo5_compact_exact_set_score_state": True,
@@ -106,6 +116,8 @@ def run(legs: int = 4) -> dict:
             "bo5_checkpoint_and_set3_specific_markets_evidence_only": True,
             "bo5_evidence_only_markets": sorted(compact.BO5_EVIDENCE_ONLY_MARKETS),
             "bo5_checkpoint_fabrication": False,
+            "shared_predicate_masks_exact_equivalent": True,
+            "shared_predicate_masks_version": PERFORMANCE_VERSION,
             "external_requests": 0,
             "bookmaker_prices_used": False,
         })
@@ -113,6 +125,7 @@ def run(legs: int = 4) -> dict:
         core._write(deep.REPORT, report)
 
     result["runtime_guard_version"] = VERSION
+    result["performance_adapter_version"] = PERFORMANCE_VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
     result["bo5_evidence_only_markets"] = sorted(compact.BO5_EVIDENCE_ONLY_MARKETS)
