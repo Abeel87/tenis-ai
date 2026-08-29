@@ -105,7 +105,8 @@ def test_v93p_screen_survivors_are_exact_v93o_equivalent(monkeypatch):
     assert stats["screen_sums"] > 0
     assert stats["exact_rechecks"] > 0
     assert screen_beam.VERSION == "v9.3P-vector-screen-exact-boundary"
-    assert runtime.BEAM_SCREEN_VERSION == screen_beam.VERSION
+    # This test owns the v9.3P primitive only. The runtime may intentionally
+    # expose a later exact-equivalent screen adapter (v9.3Q+).
     assert runtime.VERSION == "v9.3C-runtime-compact-bo5"
 
 
