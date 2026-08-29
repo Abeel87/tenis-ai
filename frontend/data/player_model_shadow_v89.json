@@ -1,18 +1,18 @@
 {
   "version": "v8.9",
-  "generated_at": "2026-08-29T07:46:49.846339+00:00",
+  "generated_at": "2026-08-29T09:05:11.405966+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
   "auto_promotion": false,
   "training": {
-    "rows_total": 664,
-    "matches_total": 189,
-    "train_rows": 553,
-    "train_matches": 151,
-    "holdout_rows": 111,
-    "holdout_matches": 38,
-    "rows_with_granular_pi_features": 664,
+    "rows_total": 717,
+    "matches_total": 204,
+    "train_rows": 592,
+    "train_matches": 163,
+    "holdout_rows": 125,
+    "holdout_matches": 41,
+    "rows_with_granular_pi_features": 717,
     "granular_feature_share": 1.0,
     "chronological_match_split": "80/20"
   },
@@ -43,82 +43,82 @@
   },
   "holdout": {
     "player_catboost_shadow": {
-      "n": 111,
-      "selected_n": 58,
-      "accuracy": 69.0,
-      "brier": 0.22671,
-      "log_loss": 0.65169,
-      "avg_probability": 63.1
+      "n": 125,
+      "selected_n": 82,
+      "accuracy": 72.0,
+      "brier": 0.22436,
+      "log_loss": 0.65395,
+      "avg_probability": 67.9
     },
     "baselines": {
       "catboost": {
-        "n": 111,
-        "selected_n": 51,
-        "accuracy": 74.5,
-        "brier": 0.21249,
-        "log_loss": 0.61405,
-        "avg_probability": 59.0
+        "n": 125,
+        "selected_n": 61,
+        "accuracy": 72.1,
+        "brier": 0.21154,
+        "log_loss": 0.61281,
+        "avg_probability": 60.9
       },
       "ensemble": {
-        "n": 111,
-        "selected_n": 53,
-        "accuracy": 75.5,
-        "brier": 0.21448,
-        "log_loss": 0.6196,
-        "avg_probability": 59.0
+        "n": 125,
+        "selected_n": 69,
+        "accuracy": 75.4,
+        "brier": 0.21368,
+        "log_loss": 0.61849,
+        "avg_probability": 62.6
       },
       "ensemble_player_formula": {
-        "n": 111,
-        "selected_n": 58,
-        "accuracy": 77.6,
-        "brier": 0.21095,
-        "log_loss": 0.61143,
-        "avg_probability": 59.2
+        "n": 125,
+        "selected_n": 77,
+        "accuracy": 75.3,
+        "brier": 0.2117,
+        "log_loss": 0.61406,
+        "avg_probability": 62.8
       },
       "player_formula": {
-        "n": 111,
-        "selected_n": 61,
-        "accuracy": 73.8,
-        "brier": 0.20871,
-        "log_loss": 0.60309,
-        "avg_probability": 59.5
+        "n": 125,
+        "selected_n": 80,
+        "accuracy": 72.5,
+        "brier": 0.21143,
+        "log_loss": 0.61275,
+        "avg_probability": 63.2
       }
     },
     "segments": {
       "surface": {
-        "CLAY": {
-          "n": 32,
-          "selected_n": 22,
-          "accuracy": 59.1,
-          "brier": 0.26228,
-          "log_loss": 0.74,
-          "avg_probability": 68.3
-        },
         "HARD": {
-          "n": 79,
-          "selected_n": 36,
-          "accuracy": 75.0,
-          "brier": 0.21231,
-          "log_loss": 0.61592,
-          "avg_probability": 61.0
+          "n": 100,
+          "selected_n": 65,
+          "accuracy": 73.8,
+          "brier": 0.21298,
+          "log_loss": 0.62325,
+          "avg_probability": 66.6
+        },
+        "CLAY": {
+          "n": 25,
+          "selected_n": 17,
+          "accuracy": 64.7,
+          "brier": 0.26988,
+          "log_loss": 0.77676,
+          "avg_probability": 73.0
         }
       },
       "market": {
         "set1_total": {
-          "n": 66,
-          "selected_n": 51,
-          "accuracy": 70.6,
-          "brier": 0.20497,
-          "log_loss": 0.59877,
-          "avg_probability": 72.4
+          "n": 82,
+          "selected_n": 70,
+          "accuracy": 74.3,
+          "brier": 0.21076,
+          "log_loss": 0.62425,
+          "avg_probability": 75.0
         },
         "game_state": {
-          "n": 39,
+          "n": 30,
           "selected_n": 3,
           "accuracy": 100.0,
-          "brier": 0.22593,
-          "log_loss": 0.64132,
-          "avg_probability": 46.1
+          "brier": 0.20247,
+          "log_loss": 0.59101,
+          "avg_probability": 47.8
         }
       }
     }
@@ -128,14 +128,14 @@
     "production_influence": false,
     "auto_promotion": false,
     "comparison_baseline": "player_formula",
-    "brier_gain": -0.018,
-    "log_loss_gain": -0.0486,
-    "accuracy_delta_pp": -4.8,
+    "brier_gain": -0.01293,
+    "log_loss_gain": -0.0412,
+    "accuracy_delta_pp": -0.5,
     "reason": "shadow_only_manual_gate"
   },
-  "current_scored_signals": 1584,
+  "current_scored_signals": 602,
   "frozen_feature_snapshots_added": 0,
-  "historical_feature_snapshots_added": 0,
+  "historical_feature_snapshots_added": 3,
   "historical_backfill_matches_skipped": 0,
   "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
 }
