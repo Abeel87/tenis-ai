@@ -107,6 +107,80 @@ def test_v93n_top_paths_and_fragility_are_exact_equivalent_with_stable_ties():
         shared.uninstall()
 
 
+def test_v93n_compact_bo5_core_payload_does_not_require_checkpoints():
+    rows = [
+        {
+            "set1": (6, 4),
+            "set2": (7, 5),
+            "set3": None,
+            "sets": (3, 1),
+            "total_games": 39,
+            "p1_games": 22,
+            "p2_games": 17,
+            "set_count": 4,
+            "winner": 1,
+            "set1_winner": 1,
+            "set2_winner": 1,
+            "set3_winner": None,
+            "set1_tiebreak": False,
+            "set2_tiebreak": False,
+            "any_set_to_nil": False,
+            "_set_margin_p1": 3,
+            "_set_margin_p2": 1,
+            "bo5_compact_scope": "BO5_COMPACT_EXACT_SET1_SET2_MATCH",
+            "prob": 0.7,
+        },
+        {
+            "set1": (4, 6),
+            "set2": (6, 3),
+            "set3": None,
+            "sets": (1, 3),
+            "total_games": 41,
+            "p1_games": 19,
+            "p2_games": 22,
+            "set_count": 4,
+            "winner": 2,
+            "set1_winner": 2,
+            "set2_winner": 1,
+            "set3_winner": None,
+            "set1_tiebreak": False,
+            "set2_tiebreak": False,
+            "any_set_to_nil": False,
+            "_set_margin_p1": 1,
+            "_set_margin_p2": 3,
+            "bo5_compact_scope": "BO5_COMPACT_EXACT_SET1_SET2_MATCH",
+            "prob": 0.3,
+        },
+    ]
+    match = {"id": 9931, "p1": "Alpha", "p2": "Beta", "best_of": 5}
+    winner = _candidate()
+    combo = (winner,)
+
+    shared = mask_cache.install(deep)
+    base_predicate = core._predicate
+    rank = None
+    try:
+        core._predicate = deep._deep_predicate(base_predicate)
+        for candidate in combo:
+            core._marginal(rows, core._predicate(match, candidate))
+        rank = payload_cache.install(deep, shared)
+        payload = core._top_matching_paths(match, combo, rows, limit=2)
+        assert len(payload) == 1
+        assert payload[0]["cp2"] is None
+        assert payload[0]["cp4"] is None
+        assert payload[0]["cp6"] is None
+        assert payload[0]["set1"] == "6:4"
+        assert payload[0]["match_score"] == "3:1"
+        assert "1S 6:4" in payload[0]["path"]
+        assert "2S 7:5" in payload[0]["path"]
+    finally:
+        if rank is not None:
+            rank.uninstall()
+        core._predicate = base_predicate
+        shared.uninstall()
+
+
 def test_v93n_uses_only_payload_reuse_and_never_changes_shared_mask_math():
     assert payload_cache.VERSION == "v9.3N-payload-topn-mask-mass"
+    assert payload_cache.COMPACT_PAYLOAD_GUARD_VERSION == "v9.3S-compact-bo5-payload-guard"
     assert mask_cache.VERSION == "v9.3F-shared-predicate-masks"
