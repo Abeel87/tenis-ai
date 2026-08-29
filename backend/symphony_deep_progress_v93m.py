@@ -3,10 +3,14 @@ from __future__ import annotations
 """Zero-influence progress telemetry for deep MODEL/RAW Symphony.
 
 The deep process is intentionally killed by the parent watchdog when it exceeds
-its wall-clock budget.  Until now a timeout only said *that* it was slow, not
-*where* the child spent the time.  This adapter writes a tiny atomic JSON marker
+its wall-clock budget. Until now a timeout only said *that* it was slow, not
+*where* the child spent the time. This adapter writes a tiny atomic JSON marker
 at major stages of every MODEL/RAW match so a killed child leaves behind its last
 known stage.
+
+v9.3O additionally exposes a zero-influence beam progress hook. A performance
+adapter may report depth/cache counters through it; the hook only writes the same
+progress JSON and never changes beam inputs or outputs.
 
 It never changes candidates, outcomes, predicates, probability, score, ordering,
 POOL_LIMIT, BEAM_WIDTH, training, settlement, operator availability or requests.
@@ -35,6 +39,8 @@ class InstalledProgress:
         self.original_augment = None
         self.original_outcomes = None
         self.original_compositions = None
+        self._had_beam_progress_hook = False
+        self.original_beam_progress_hook = None
         source = core._read(core.RESULTS, [])
         source = source if isinstance(source, list) else []
         self.total_matches = sum(
@@ -68,6 +74,8 @@ class InstalledProgress:
         self.original_augment = self.deep._augment_model_raw
         self.original_outcomes = self.deep._build_deep_outcomes
         self.original_compositions = self.fast._fast_one_pass_compositions
+        self._had_beam_progress_hook = hasattr(self.fast, "_deep_beam_progress_hook")
+        self.original_beam_progress_hook = getattr(self.fast, "_deep_beam_progress_hook", None)
 
         original_build_match = self.original_build_match
         original_augment = self.original_augment
@@ -107,10 +115,14 @@ class InstalledProgress:
             self._write("BEAM_COMPOSITIONS_DONE", composition_depths=len(result or {}))
             return result
 
+        def beam_progress(stage: str, **extra: Any):
+            self._write(stage, **extra)
+
         self.deep.build_match_model_scenario = build_match
         self.deep._augment_model_raw = augment
         self.deep._build_deep_outcomes = outcomes
         self.fast._fast_one_pass_compositions = compositions
+        self.fast._deep_beam_progress_hook = beam_progress
         self._write("RUN_START")
         return self
 
@@ -128,10 +140,16 @@ class InstalledProgress:
         self.deep._augment_model_raw = self.original_augment
         self.deep._build_deep_outcomes = self.original_outcomes
         self.fast._fast_one_pass_compositions = self.original_compositions
+        if self._had_beam_progress_hook:
+            self.fast._deep_beam_progress_hook = self.original_beam_progress_hook
+        elif hasattr(self.fast, "_deep_beam_progress_hook"):
+            delattr(self.fast, "_deep_beam_progress_hook")
         self.original_build_match = None
         self.original_augment = None
         self.original_outcomes = None
         self.original_compositions = None
+        self.original_beam_progress_hook = None
+        self._had_beam_progress_hook = False
 
 
 def install(deep, fast, core) -> InstalledProgress:
