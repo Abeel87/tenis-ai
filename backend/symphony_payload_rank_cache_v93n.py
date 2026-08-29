@@ -3,15 +3,20 @@ from __future__ import annotations
 """Exact-equivalent payload ranking/mass cache for deep MODEL/RAW Symphony.
 
 v9.3M showed the first BO3 match entering BEAM_COMPOSITIONS with 306k+ exact
-states.  Beam maths itself already reuses predicate masks, but payload rendering
+states. Beam maths itself already reuses predicate masks, but payload rendering
 still materialized and fully sorted every matching state for each best/alternate
-scenario.  Fragility also re-summed the same reduced masks repeatedly.
+scenario. Fragility also re-summed the same reduced masks repeatedly.
 
 This adapter keeps the exact same candidate pool, masks, joint maths and output
 ordering while:
 - selecting only the requested top matching paths with a fixed-size heap instead
   of building/sorting the full matching-state list;
 - memoizing probability mass for payload combo masks only.
+
+v9.3S fixes payload rendering for compact BO5 rows, which intentionally do not
+contain game checkpoint fields. This changes presentation of the intermediate
+core payload only; candidate selection, masks, probabilities, beam ranking and
+the final deep MODEL/RAW decoration remain unchanged.
 
 No bookmaker prices, external requests, training or settlement inputs are used.
 """
@@ -26,6 +31,38 @@ except ImportError:
     import symphony_deep_mask_cache_v93f as mask_cache
 
 VERSION = "v9.3N-payload-topn-mask-mass"
+COMPACT_PAYLOAD_GUARD_VERSION = "v9.3S-compact-bo5-payload-guard"
+
+
+def _core_payload_row(deep, row: dict) -> dict:
+    if row.get("bo5_compact_scope") or not all(key in row for key in ("cp2", "cp4", "cp6")):
+        s1 = row.get("set1") or ("?", "?")
+        s2 = row.get("set2") or ("?", "?")
+        sets = row.get("sets") or ("?", "?")
+        path = (
+            f"1S {s1[0]}:{s1[1]} · 2S {s2[0]}:{s2[1]} "
+            f"→ mecz {sets[0]}:{sets[1]} · {row.get('total_games')} gemów"
+        )
+        return {
+            "path": path,
+            "cp2": None,
+            "cp4": None,
+            "cp6": None,
+            "set1": f"{s1[0]}:{s1[1]}",
+            "match_score": f"{sets[0]}:{sets[1]}",
+            "total_games": row.get("total_games"),
+            "probability_mass": round(float(row.get("prob") or 0.0) * 100.0, 3),
+        }
+    return {
+        "path": core._path_text(row),
+        "cp2": f"{row['cp2'][0]}:{row['cp2'][1]}",
+        "cp4": f"{row['cp4'][0]}:{row['cp4'][1]}",
+        "cp6": f"{row['cp6'][0]}:{row['cp6'][1]}",
+        "set1": f"{row['set1'][0]}:{row['set1'][1]}",
+        "match_score": f"{row['sets'][0]}:{row['sets'][1]}",
+        "total_games": row["total_games"],
+        "probability_mass": round(row["prob"] * 100.0, 3),
+    }
 
 
 class InstalledPayloadRankCache:
@@ -101,9 +138,6 @@ class InstalledPayloadRankCache:
         while work:
             bit = work & -work
             idx = bit.bit_length() - 1
-            # Legacy `rows.sort(key=prob, reverse=True)` is stable, so a lower
-            # original index wins exact-probability ties.  (prob, -idx) encodes
-            # the same ranking while the heap keeps only `limit` states.
             rank = (probabilities[idx], -idx)
             item = (rank, idx)
             if len(heap) < limit:
@@ -153,19 +187,7 @@ class InstalledPayloadRankCache:
             if not supported:
                 return []
             rows = self._top_rows(mask, outcomes, int(limit))
-            return [
-                {
-                    "path": core._path_text(row),
-                    "cp2": f"{row['cp2'][0]}:{row['cp2'][1]}",
-                    "cp4": f"{row['cp4'][0]}:{row['cp4'][1]}",
-                    "cp6": f"{row['cp6'][0]}:{row['cp6'][1]}",
-                    "set1": f"{row['set1'][0]}:{row['set1'][1]}",
-                    "match_score": f"{row['sets'][0]}:{row['sets'][1]}",
-                    "total_games": row["total_games"],
-                    "probability_mass": round(row["prob"] * 100.0, 3),
-                }
-                for row in rows
-            ]
+            return [_core_payload_row(deep, row) for row in rows]
 
         def fragility(match: dict, combo, outcomes: list[dict]):
             if len(combo) < 2 or not self._reset_if_needed(outcomes):
@@ -215,6 +237,7 @@ class InstalledPayloadRankCache:
                 adapter = dict(row.get("market_adapter") or {})
                 adapter.update({
                     "payload_rank_cache_version": VERSION,
+                    "payload_compact_bo5_guard_version": COMPACT_PAYLOAD_GUARD_VERSION,
                     "payload_topn_without_full_sort": True,
                     "payload_mask_mass_memoized": True,
                     "payload_topn_calls": int(self.topn_calls),
