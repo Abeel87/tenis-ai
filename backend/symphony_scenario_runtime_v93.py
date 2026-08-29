@@ -15,25 +15,34 @@ v9.3H adds a runtime coherence guard: player name order no longer breaks exact
 side resolution, first-set game handicaps use the already-existing exact set-1
 score state, and duplicate/opposing handicap legs from the same period cannot be
 composed into one story.
+
+v9.3L keeps the same beam and score maths but precomputes candidate-pair
+compatibility and pair affinity once per sorted pool instead of recalculating the
+same pair-only values for thousands of expanded combinations.
 """
 
 try:
     from . import symphony_engine_v90 as core
+    from . import symphony_engine_v91 as fast
     from . import symphony_scenario_lattice_v93 as deep
     from . import symphony_bo5_compact_v93c as compact
     from . import symphony_deep_mask_cache_v93f as mask_cache
     from . import symphony_coherence_guard_v93h as coherence
+    from . import symphony_pair_matrix_v93l as pair_cache
 except ImportError:
     import symphony_engine_v90 as core
+    import symphony_engine_v91 as fast
     import symphony_scenario_lattice_v93 as deep
     import symphony_bo5_compact_v93c as compact
     import symphony_deep_mask_cache_v93f as mask_cache
     import symphony_coherence_guard_v93h as coherence
+    import symphony_pair_matrix_v93l as pair_cache
 
 # Keep the historical runtime contract stable for BO5/runtime consumers.
-# v9.3H is exposed independently through COHERENCE_VERSION below.
+# Later adapters are exposed independently below.
 VERSION = "v9.3C-runtime-compact-bo5"
 PERFORMANCE_VERSION = mask_cache.VERSION
+PAIR_MATRIX_VERSION = pair_cache.VERSION
 COHERENCE_VERSION = coherence.VERSION
 
 
@@ -97,6 +106,11 @@ def run(legs: int = 4) -> dict:
             adapter["bo5_compact_scope"] = compact.SCOPE
             adapter["bo5_evidence_only_markets"] = sorted(compact.BO5_EVIDENCE_ONLY_MARKETS)
             adapter["coherence_guard_version"] = COHERENCE_VERSION
+            adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
+            row["market_adapter"] = adapter
+        elif row:
+            adapter = dict(row.get("market_adapter") or {})
+            adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
             row["market_adapter"] = adapter
         return row
 
@@ -107,9 +121,11 @@ def run(legs: int = 4) -> dict:
     deep.build_match_model_scenario = build_match
     coherence_guard = coherence.install(core)
     shared_masks = mask_cache.install(deep)
+    pair_matrix = pair_cache.install(fast)
     try:
         result = dict(deep.run(legs=legs))
     finally:
+        pair_matrix.uninstall()
         shared_masks.uninstall()
         coherence_guard.uninstall()
         deep._build_deep_outcomes = original_outcomes
@@ -122,6 +138,7 @@ def run(legs: int = 4) -> dict:
     if isinstance(report, dict):
         report["runtime_adapter_version"] = VERSION
         report["performance_adapter_version"] = PERFORMANCE_VERSION
+        report["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
         report["coherence_guard_version"] = COHERENCE_VERSION
         contract = dict(report.get("contract") or {})
         contract.update({
@@ -132,6 +149,9 @@ def run(legs: int = 4) -> dict:
             "bo5_checkpoint_fabrication": False,
             "shared_predicate_masks_exact_equivalent": True,
             "shared_predicate_masks_version": PERFORMANCE_VERSION,
+            "pair_compatibility_affinity_precomputed_exact_equivalent": True,
+            "pair_matrix_cache_version": PAIR_MATRIX_VERSION,
+            "candidate_pool_beam_width_and_sort_order_unchanged": True,
             "player_name_order_coherence_guard": True,
             "set1_game_handicap_exact_path_supported": True,
             "one_handicap_per_period_in_scenario": True,
@@ -144,6 +164,7 @@ def run(legs: int = 4) -> dict:
 
     result["runtime_guard_version"] = VERSION
     result["performance_adapter_version"] = PERFORMANCE_VERSION
+    result["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
     result["coherence_guard_version"] = COHERENCE_VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
