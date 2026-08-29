@@ -4,6 +4,13 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '5 * * * *'
+  # FULL can occupy the shared tennis-data-build queue for hours. When it
+  # finishes (success, failure or cancellation), immediately re-read newest
+  # main and refresh operator lines so Pages is not left with the early-build
+  # Superbet snapshot until the next hourly slot.
+  workflow_run:
+    workflows: ['Update tennis data and deploy Pages']
+    types: [completed]
   pull_request:
     branches: [main]
     paths:
