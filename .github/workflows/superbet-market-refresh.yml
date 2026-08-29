@@ -7,6 +7,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'backend/superbet_fixture_matching_v927.py'
       - 'backend/superbet_market_context_v913.py'
       - 'backend/superbet_market_context_v923.py'
       - 'backend/superbet_market_context_v924.py'
@@ -24,6 +25,7 @@ on:
       - 'frontend/match-list-visibility-v916.js'
       - 'scripts/compact_frontend_data_v853.py'
       - 'scripts/verify_superbet_market_semantics.py'
+      - 'tests/test_superbet_fixture_matching_v927.py'
       - 'tests/test_superbet_market_v913.py'
       - 'tests/test_superbet_market_v923.py'
       - 'tests/test_superbet_market_v924.py'
@@ -65,6 +67,7 @@ jobs:
 
       - name: Syntax guard
         run: |
+          python -m py_compile backend/superbet_fixture_matching_v927.py
           python -m py_compile backend/superbet_market_context_v913.py
           python -m py_compile backend/superbet_market_context_v923.py
           python -m py_compile backend/superbet_market_context_v924.py
@@ -80,8 +83,8 @@ jobs:
           python -m py_compile backend/symphony_operator_reproject_v914.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
-      - name: Zero-request coverage and raw-family audit guards
-        run: python -m pytest -q tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py
+      - name: Zero-request coverage, fixture matching and raw-family audit guards
+        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -130,6 +133,10 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          matching = availability.get('fixture_matching_v927') or {}
+          assert matching.get('version') == 'v9.2.7'
+          assert int(matching.get('additional_external_requests', -1)) == 0
+          assert matching.get('prices_used') is False
           raw_audit = availability.get('raw_family_audit_v924') or {}
           assert raw_audit.get('version') == 'v9.2.4'
           assert int(raw_audit.get('additional_external_requests', -1)) == 0
@@ -142,8 +149,12 @@ jobs:
           repro = symphony.get('operator_reprojection') or {}
           assert repro.get('full_scenario_search_rerun') is False
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          live_match = matching.get('live') or {}
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
+              f'fixture_candidates={availability.get("matched_fixture_candidates")} '
+              f'fixture_exact={live_match.get("exact")} fixture_relaxed={live_match.get("relaxed")} '
+              f'fixture_unmatched={live_match.get("unmatched")} fixture_time_rejected={live_match.get("time_rejected")} '
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
               f'coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} '
               f'display_coverage={coverage.get("display_model_covered_selections")}/{coverage.get("available_selections")} '
