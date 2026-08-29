@@ -30,6 +30,11 @@ best/alternate scenario and memoizes repeated payload mask probability sums.
 v9.3O keeps the beam result exact while carrying each parent's joint truth-mask
 forward and memoizing exact probability mass by the resulting mask. Repeated
 line-ladder combinations therefore stop re-summing the same 306k-state subsets.
+
+v9.3P vector-screens the large expanded set but exact-rechecks the complete beam
+boundary with the legacy ascending-index accumulator before any row can survive.
+It also reuses exact v9.3F candidate marginals instead of re-summing singleton
+masks. Candidate pool, beam width, score formula and final beam maths stay fixed.
 """
 
 try:
@@ -43,6 +48,7 @@ try:
     from . import symphony_deep_progress_v93m as progress_telemetry
     from . import symphony_payload_rank_cache_v93n as payload_rank_cache
     from . import symphony_beam_mask_mass_v93o as beam_mass_cache
+    from . import symphony_beam_screen_v93p as beam_screen_cache
 except ImportError:
     import symphony_engine_v90 as core
     import symphony_engine_v91 as fast
@@ -54,6 +60,7 @@ except ImportError:
     import symphony_deep_progress_v93m as progress_telemetry
     import symphony_payload_rank_cache_v93n as payload_rank_cache
     import symphony_beam_mask_mass_v93o as beam_mass_cache
+    import symphony_beam_screen_v93p as beam_screen_cache
 
 # Keep the historical runtime contract stable for BO5/runtime consumers.
 # Later adapters are exposed independently below.
@@ -63,6 +70,7 @@ PAIR_MATRIX_VERSION = pair_cache.VERSION
 PROGRESS_TELEMETRY_VERSION = progress_telemetry.VERSION
 PAYLOAD_RANK_CACHE_VERSION = payload_rank_cache.VERSION
 BEAM_MASK_MASS_VERSION = beam_mass_cache.VERSION
+BEAM_SCREEN_VERSION = beam_screen_cache.VERSION
 COHERENCE_VERSION = coherence.VERSION
 
 
@@ -130,6 +138,7 @@ def run(legs: int = 4) -> dict:
             adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
             adapter["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
             adapter["beam_mask_mass_cache_version"] = BEAM_MASK_MASS_VERSION
+            adapter["beam_screen_version"] = BEAM_SCREEN_VERSION
             row["market_adapter"] = adapter
         elif row:
             adapter = dict(row.get("market_adapter") or {})
@@ -137,6 +146,7 @@ def run(legs: int = 4) -> dict:
             adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
             adapter["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
             adapter["beam_mask_mass_cache_version"] = BEAM_MASK_MASS_VERSION
+            adapter["beam_screen_version"] = BEAM_SCREEN_VERSION
             row["market_adapter"] = adapter
         return row
 
@@ -150,6 +160,7 @@ def run(legs: int = 4) -> dict:
     payload_rank = payload_rank_cache.install(deep, shared_masks)
     pair_matrix = pair_cache.install(fast)
     beam_mass = beam_mass_cache.install(fast)
+    beam_screen = beam_screen_cache.install(fast, shared_masks)
     progress = progress_telemetry.install(deep, fast, core)
     try:
         result = dict(deep.run(legs=legs))
@@ -159,6 +170,7 @@ def run(legs: int = 4) -> dict:
         raise
     finally:
         progress.uninstall()
+        beam_screen.uninstall()
         beam_mass.uninstall()
         pair_matrix.uninstall()
         payload_rank.uninstall()
@@ -178,6 +190,7 @@ def run(legs: int = 4) -> dict:
         report["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
         report["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
         report["beam_mask_mass_cache_version"] = BEAM_MASK_MASS_VERSION
+        report["beam_screen_version"] = BEAM_SCREEN_VERSION
         report["coherence_guard_version"] = COHERENCE_VERSION
         contract = dict(report.get("contract") or {})
         contract.update({
@@ -199,6 +212,11 @@ def run(legs: int = 4) -> dict:
             "beam_parent_joint_mask_reused_exact_equivalent": True,
             "beam_joint_mask_mass_memoized_exact_equivalent": True,
             "beam_mask_mass_cache_version": BEAM_MASK_MASS_VERSION,
+            "beam_vector_screen_is_ranking_prefilter_only": True,
+            "beam_boundary_exact_rechecked_legacy_accumulator": True,
+            "beam_candidate_marginal_mass_reused_from_v93f": True,
+            "beam_screen_score_envelope": beam_screen_cache.SCORE_ENVELOPE,
+            "beam_screen_version": BEAM_SCREEN_VERSION,
             "player_name_order_coherence_guard": True,
             "set1_game_handicap_exact_path_supported": True,
             "one_handicap_per_period_in_scenario": True,
@@ -215,6 +233,7 @@ def run(legs: int = 4) -> dict:
     result["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
     result["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
     result["beam_mask_mass_cache_version"] = BEAM_MASK_MASS_VERSION
+    result["beam_screen_version"] = BEAM_SCREEN_VERSION
     result["coherence_guard_version"] = COHERENCE_VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
