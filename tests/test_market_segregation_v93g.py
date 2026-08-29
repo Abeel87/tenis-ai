@@ -38,8 +38,10 @@ def test_market_groups_cover_current_large_lists():
 
 def test_segregation_is_presentation_only_and_loaded_after_raw_layer():
     assert "market-segregation-v93g.js?v=93g&contract=raw-playable-ui-only" in LOADER
-    assert "rawPlayableReady" in LOADER
     assert "loadMarketSegregationV93G" in LOADER
+    assert "script.addEventListener('load',loadMarketSegregationV93G,{once:true})" in LOADER
+    # Preserve the existing RAW -> coverage contract; segregation is chained after coverage.
+    assert "if(window.TENIS_AI_RAW_PLAYABLE_V921){loadSuperbetModelCoverageV922();return}" in LOADER
     assert "fetch(" not in UI
     assert "setInterval(" not in UI
     assert "TENIS_AI_MARKET_SEGREGATION_V93G" in UI
