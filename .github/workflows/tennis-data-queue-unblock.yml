@@ -1,0 +1,23 @@
+name: Tennis data queue unblock
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tennis-data-queue-unblock.yml'
+
+# Emergency circuit breaker for a stale FULL build that holds the shared
+# tennis-data-build concurrency group. A run of this tiny workflow replaces
+# any stale pending run and cancels the current holder, then exits immediately.
+concurrency:
+  group: tennis-data-build
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Release shared tennis data queue
+        run: echo "tennis-data-build queue released; downstream workflow_run refresh may continue"
