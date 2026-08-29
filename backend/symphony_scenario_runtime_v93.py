@@ -23,6 +23,9 @@ same pair-only values for thousands of expanded combinations.
 v9.3M adds zero-influence progress markers around major deep stages. If the parent
 watchdog kills the child, the last atomic marker shows the exact match/stage where
 time was being spent without changing any scenario maths.
+
+v9.3N keeps payload output exact but avoids full matching-state sorts for every
+best/alternate scenario and memoizes repeated payload mask probability sums.
 """
 
 try:
@@ -34,6 +37,7 @@ try:
     from . import symphony_coherence_guard_v93h as coherence
     from . import symphony_pair_matrix_v93l as pair_cache
     from . import symphony_deep_progress_v93m as progress_telemetry
+    from . import symphony_payload_rank_cache_v93n as payload_rank_cache
 except ImportError:
     import symphony_engine_v90 as core
     import symphony_engine_v91 as fast
@@ -43,6 +47,7 @@ except ImportError:
     import symphony_coherence_guard_v93h as coherence
     import symphony_pair_matrix_v93l as pair_cache
     import symphony_deep_progress_v93m as progress_telemetry
+    import symphony_payload_rank_cache_v93n as payload_rank_cache
 
 # Keep the historical runtime contract stable for BO5/runtime consumers.
 # Later adapters are exposed independently below.
@@ -50,6 +55,7 @@ VERSION = "v9.3C-runtime-compact-bo5"
 PERFORMANCE_VERSION = mask_cache.VERSION
 PAIR_MATRIX_VERSION = pair_cache.VERSION
 PROGRESS_TELEMETRY_VERSION = progress_telemetry.VERSION
+PAYLOAD_RANK_CACHE_VERSION = payload_rank_cache.VERSION
 COHERENCE_VERSION = coherence.VERSION
 
 
@@ -115,11 +121,13 @@ def run(legs: int = 4) -> dict:
             adapter["coherence_guard_version"] = COHERENCE_VERSION
             adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
             adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
+            adapter["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
             row["market_adapter"] = adapter
         elif row:
             adapter = dict(row.get("market_adapter") or {})
             adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
             adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
+            adapter["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
             row["market_adapter"] = adapter
         return row
 
@@ -130,6 +138,7 @@ def run(legs: int = 4) -> dict:
     deep.build_match_model_scenario = build_match
     coherence_guard = coherence.install(core)
     shared_masks = mask_cache.install(deep)
+    payload_rank = payload_rank_cache.install(deep, shared_masks)
     pair_matrix = pair_cache.install(fast)
     progress = progress_telemetry.install(deep, fast, core)
     try:
@@ -141,6 +150,7 @@ def run(legs: int = 4) -> dict:
     finally:
         progress.uninstall()
         pair_matrix.uninstall()
+        payload_rank.uninstall()
         shared_masks.uninstall()
         coherence_guard.uninstall()
         deep._build_deep_outcomes = original_outcomes
@@ -155,6 +165,7 @@ def run(legs: int = 4) -> dict:
         report["performance_adapter_version"] = PERFORMANCE_VERSION
         report["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
         report["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
+        report["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
         report["coherence_guard_version"] = COHERENCE_VERSION
         contract = dict(report.get("contract") or {})
         contract.update({
@@ -170,6 +181,9 @@ def run(legs: int = 4) -> dict:
             "candidate_pool_beam_width_and_sort_order_unchanged": True,
             "deep_progress_telemetry_zero_influence": True,
             "progress_telemetry_version": PROGRESS_TELEMETRY_VERSION,
+            "payload_topn_without_full_sort_exact_equivalent": True,
+            "payload_mask_mass_memoized_exact_equivalent": True,
+            "payload_rank_cache_version": PAYLOAD_RANK_CACHE_VERSION,
             "player_name_order_coherence_guard": True,
             "set1_game_handicap_exact_path_supported": True,
             "one_handicap_per_period_in_scenario": True,
@@ -184,6 +198,7 @@ def run(legs: int = 4) -> dict:
     result["performance_adapter_version"] = PERFORMANCE_VERSION
     result["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
     result["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
+    result["payload_rank_cache_version"] = PAYLOAD_RANK_CACHE_VERSION
     result["coherence_guard_version"] = COHERENCE_VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
