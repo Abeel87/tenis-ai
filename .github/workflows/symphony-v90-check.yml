@@ -21,6 +21,7 @@ on:
       - 'backend/symphony_payload_rank_cache_v93n.py'
       - 'backend/symphony_beam_mask_mass_v93o.py'
       - 'backend/symphony_beam_screen_v93p.py'
+      - 'backend/symphony_beam_screen_v93q.py'
       - 'backend/symphony_model_tracker_v93.py'
       - 'backend/superbet_market_context_v91.py'
       - 'backend/superbet_market_context_v913.py'
@@ -94,10 +95,11 @@ jobs:
           python -m py_compile backend/symphony_payload_rank_cache_v93n.py
           python -m py_compile backend/symphony_beam_mask_mass_v93o.py
           python -m py_compile backend/symphony_beam_screen_v93p.py
+          python -m py_compile backend/symphony_beam_screen_v93q.py
           python -m py_compile backend/symphony_model_tracker_v93.py
           python -m py_compile scripts/compact_frontend_data_v853.py
       - name: Symphony + Superbet market tests
-        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_v93.py tests/test_symphony_v93_runtime.py tests/test_symphony_v93c_bo5.py tests/test_symphony_v93e_watchdog.py tests/test_symphony_v93f_mask_cache.py tests/test_symphony_v93h_coherence.py tests/test_symphony_v93i_raw_cards.py tests/test_symphony_v93n_payload_rank_cache.py tests/test_symphony_v93o_beam_mask_mass.py tests/test_symphony_v93p_beam_screen.py tests/test_symphony_model_stats_v93.py tests/test_symphony_operator_line_guard.py tests/test_superbet_market_v91.py tests/test_superbet_market_v913.py tests/test_superbet_market_v924.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_playable_v912.py
+        run: python -m pytest -q tests/test_symphony_v90.py tests/test_symphony_v90_report.py tests/test_symphony_v90c_evidence.py tests/test_symphony_v90c4.py tests/test_symphony_v90d.py tests/test_symphony_v90_mobile.py tests/test_symphony_v90d_ui.py tests/test_symphony_v90_operator_compat.py tests/test_symphony_v93.py tests/test_symphony_v93_runtime.py tests/test_symphony_v93c_bo5.py tests/test_symphony_v93e_watchdog.py tests/test_symphony_v93f_mask_cache.py tests/test_symphony_v93h_coherence.py tests/test_symphony_v93i_raw_cards.py tests/test_symphony_v93n_payload_rank_cache.py tests/test_symphony_v93o_beam_mask_mass.py tests/test_symphony_v93p_beam_screen.py tests/test_symphony_v93q_byte_lut_screen.py tests/test_symphony_model_stats_v93.py tests/test_symphony_operator_line_guard.py tests/test_superbet_market_v91.py tests/test_superbet_market_v913.py tests/test_superbet_market_v924.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_playable_v912.py
       - name: Frontend syntax
         run: |
           node --check frontend/symphony-v90.js
@@ -125,8 +127,9 @@ jobs:
           grep -q 'symphony_coherence_guard_v93h' backend/symphony_scenario_runtime_v93.py
           grep -q 'symphony_payload_rank_cache_v93n' backend/symphony_scenario_runtime_v93.py
           grep -q 'symphony_beam_mask_mass_v93o' backend/symphony_scenario_runtime_v93.py
-          grep -q 'symphony_beam_screen_v93p' backend/symphony_scenario_runtime_v93.py
+          grep -q 'symphony_beam_screen_v93q' backend/symphony_scenario_runtime_v93.py
           grep -q 'beam_boundary_exact_rechecked_legacy_accumulator' backend/symphony_scenario_runtime_v93.py
+          grep -q 'beam_screen_byte_lut_reduction_only' backend/symphony_scenario_runtime_v93.py
           grep -q 'one_handicap_per_period_in_scenario' backend/symphony_scenario_runtime_v93.py
           grep -q 'shared_predicate_masks_exact_equivalent' backend/symphony_scenario_runtime_v93.py
           grep -q "SYMPHONY_REPORT = DATA / 'symphony_model_v93.json'" scripts/compact_frontend_data_v853.py

@@ -35,6 +35,10 @@ v9.3P vector-screens the large expanded set but exact-rechecks the complete beam
 boundary with the legacy ascending-index accumulator before any row can survive.
 It also reuses exact v9.3F candidate marginals instead of re-summing singleton
 masks. Candidate pool, beam width, score formula and final beam maths stay fixed.
+
+v9.3Q keeps that exact v9.3P boundary and replaces only the screening reduction:
+8 outcome bits are collapsed into one precomputed byte lookup, avoiding repeated
+306k-bit unpack/dot work for thousands of masks while leaving survivors exact.
 """
 
 try:
@@ -48,7 +52,7 @@ try:
     from . import symphony_deep_progress_v93m as progress_telemetry
     from . import symphony_payload_rank_cache_v93n as payload_rank_cache
     from . import symphony_beam_mask_mass_v93o as beam_mass_cache
-    from . import symphony_beam_screen_v93p as beam_screen_cache
+    from . import symphony_beam_screen_v93q as beam_screen_cache
 except ImportError:
     import symphony_engine_v90 as core
     import symphony_engine_v91 as fast
@@ -60,7 +64,7 @@ except ImportError:
     import symphony_deep_progress_v93m as progress_telemetry
     import symphony_payload_rank_cache_v93n as payload_rank_cache
     import symphony_beam_mask_mass_v93o as beam_mass_cache
-    import symphony_beam_screen_v93p as beam_screen_cache
+    import symphony_beam_screen_v93q as beam_screen_cache
 
 # Keep the historical runtime contract stable for BO5/runtime consumers.
 # Later adapters are exposed independently below.
@@ -215,6 +219,7 @@ def run(legs: int = 4) -> dict:
             "beam_vector_screen_is_ranking_prefilter_only": True,
             "beam_boundary_exact_rechecked_legacy_accumulator": True,
             "beam_candidate_marginal_mass_reused_from_v93f": True,
+            "beam_screen_byte_lut_reduction_only": True,
             "beam_screen_score_envelope": beam_screen_cache.SCORE_ENVELOPE,
             "beam_screen_version": BEAM_SCREEN_VERSION,
             "player_name_order_coherence_guard": True,
