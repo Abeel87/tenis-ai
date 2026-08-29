@@ -29,6 +29,8 @@ except ImportError:
     import symphony_beam_screen_v93p as screen
 
 VERSION = "v9.3Q-byte-lut-screen-exact-boundary"
+SCORE_ENVELOPE = screen.SCORE_ENVELOPE
+EXACT_HEADROOM = screen.EXACT_HEADROOM
 
 
 class _ByteLookupScreenMass(screen._VectorScreenMass):
