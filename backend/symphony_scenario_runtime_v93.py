@@ -19,6 +19,10 @@ composed into one story.
 v9.3L keeps the same beam and score maths but precomputes candidate-pair
 compatibility and pair affinity once per sorted pool instead of recalculating the
 same pair-only values for thousands of expanded combinations.
+
+v9.3M adds zero-influence progress markers around major deep stages. If the parent
+watchdog kills the child, the last atomic marker shows the exact match/stage where
+time was being spent without changing any scenario maths.
 """
 
 try:
@@ -29,6 +33,7 @@ try:
     from . import symphony_deep_mask_cache_v93f as mask_cache
     from . import symphony_coherence_guard_v93h as coherence
     from . import symphony_pair_matrix_v93l as pair_cache
+    from . import symphony_deep_progress_v93m as progress_telemetry
 except ImportError:
     import symphony_engine_v90 as core
     import symphony_engine_v91 as fast
@@ -37,12 +42,14 @@ except ImportError:
     import symphony_deep_mask_cache_v93f as mask_cache
     import symphony_coherence_guard_v93h as coherence
     import symphony_pair_matrix_v93l as pair_cache
+    import symphony_deep_progress_v93m as progress_telemetry
 
 # Keep the historical runtime contract stable for BO5/runtime consumers.
 # Later adapters are exposed independently below.
 VERSION = "v9.3C-runtime-compact-bo5"
 PERFORMANCE_VERSION = mask_cache.VERSION
 PAIR_MATRIX_VERSION = pair_cache.VERSION
+PROGRESS_TELEMETRY_VERSION = progress_telemetry.VERSION
 COHERENCE_VERSION = coherence.VERSION
 
 
@@ -107,10 +114,12 @@ def run(legs: int = 4) -> dict:
             adapter["bo5_evidence_only_markets"] = sorted(compact.BO5_EVIDENCE_ONLY_MARKETS)
             adapter["coherence_guard_version"] = COHERENCE_VERSION
             adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
+            adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
             row["market_adapter"] = adapter
         elif row:
             adapter = dict(row.get("market_adapter") or {})
             adapter["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
+            adapter["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
             row["market_adapter"] = adapter
         return row
 
@@ -122,9 +131,15 @@ def run(legs: int = 4) -> dict:
     coherence_guard = coherence.install(core)
     shared_masks = mask_cache.install(deep)
     pair_matrix = pair_cache.install(fast)
+    progress = progress_telemetry.install(deep, fast, core)
     try:
         result = dict(deep.run(legs=legs))
+        progress.finish(result)
+    except Exception as exc:
+        progress.fail(exc)
+        raise
     finally:
+        progress.uninstall()
         pair_matrix.uninstall()
         shared_masks.uninstall()
         coherence_guard.uninstall()
@@ -139,6 +154,7 @@ def run(legs: int = 4) -> dict:
         report["runtime_adapter_version"] = VERSION
         report["performance_adapter_version"] = PERFORMANCE_VERSION
         report["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
+        report["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
         report["coherence_guard_version"] = COHERENCE_VERSION
         contract = dict(report.get("contract") or {})
         contract.update({
@@ -152,6 +168,8 @@ def run(legs: int = 4) -> dict:
             "pair_compatibility_affinity_precomputed_exact_equivalent": True,
             "pair_matrix_cache_version": PAIR_MATRIX_VERSION,
             "candidate_pool_beam_width_and_sort_order_unchanged": True,
+            "deep_progress_telemetry_zero_influence": True,
+            "progress_telemetry_version": PROGRESS_TELEMETRY_VERSION,
             "player_name_order_coherence_guard": True,
             "set1_game_handicap_exact_path_supported": True,
             "one_handicap_per_period_in_scenario": True,
@@ -165,6 +183,7 @@ def run(legs: int = 4) -> dict:
     result["runtime_guard_version"] = VERSION
     result["performance_adapter_version"] = PERFORMANCE_VERSION
     result["pair_matrix_cache_version"] = PAIR_MATRIX_VERSION
+    result["progress_telemetry_version"] = PROGRESS_TELEMETRY_VERSION
     result["coherence_guard_version"] = COHERENCE_VERSION
     result["bo3_exact_scope"] = "SET1+SET2+MATCH"
     result["bo5_scope"] = compact.SCOPE
