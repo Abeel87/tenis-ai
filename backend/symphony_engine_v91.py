@@ -12,6 +12,11 @@ v9.3E additionally isolates the much heavier deep MODEL/RAW lattice in a bounded
 subprocess.  A slow deep build can no longer hold the whole FULL data workflow
 forever; the previously published deep report remains intact if the subprocess
 times out or fails.  Operator-aware Symphony output is still written first.
+
+v9.3H adds a hard scenario-coherence guard without changing model probability:
+``Last, First`` player labels resolve to the same side as ``First Last``, first-set
+game handicaps use the exact set-1 score already present in the state engine, and
+duplicate/opposite handicap legs from one period cannot share one Symphony.
 """
 
 import json
@@ -21,14 +26,17 @@ import sys
 
 try:
     from . import symphony_engine_v90c as base
+    from . import symphony_coherence_guard_v93h as coherence
     from .symphony_operator_guard_v91 import VERSION as OPERATOR_VERSION, apply_superbet_market_guard
 except ImportError:
     import symphony_engine_v90c as base
+    import symphony_coherence_guard_v93h as coherence
     from symphony_operator_guard_v91 import VERSION as OPERATOR_VERSION, apply_superbet_market_guard
 
 VERSION = "v9.1"
 PERFORMANCE_VERSION = "v9.2.4-fast-outcome-masks"
 DEEP_EXECUTION_VERSION = "v9.3E-bounded-subprocess"
+COHERENCE_VERSION = coherence.VERSION
 DEEP_TIMEOUT_SECONDS_DEFAULT = 480
 DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"
 BASE_VERSION = base.VERSION
@@ -195,6 +203,7 @@ def _fast_one_pass_compositions(match: dict, candidates: list, outcomes: list[di
 def build_report(legs: int = 4) -> dict:
     previous_augment = base.augment_match_c4
     previous_compositions = base._one_pass_compositions
+    coherence_guard = coherence.install(base.core)
     base.augment_match_c4 = _guarded_augment
     base._one_pass_compositions = _fast_one_pass_compositions
     try:
@@ -202,11 +211,13 @@ def build_report(legs: int = 4) -> dict:
     finally:
         base.augment_match_c4 = previous_augment
         base._one_pass_compositions = previous_compositions
+        coherence_guard.uninstall()
     report = dict(report)
     report["version"] = VERSION
     report["base_symphony_version"] = BASE_VERSION
     report["operator_market_context_version"] = OPERATOR_VERSION
     report["performance_adapter_version"] = PERFORMANCE_VERSION
+    report["coherence_guard_version"] = COHERENCE_VERSION
     contract = dict(report.get("contract") or {})
     contract.update({
         "real_superbet_availability_gates_ready_to_bet_pool": True,
@@ -216,6 +227,10 @@ def build_report(legs: int = 4) -> dict:
         "unavailable_markets_remain_analysis_only": True,
         "full_superbet_line_ladders_preserved": True,
         "beam_math_unchanged_predicates_cached_only": True,
+        "player_name_order_coherence_guard": True,
+        "set1_game_handicap_exact_path_supported": True,
+        "one_handicap_per_period_in_scenario": True,
+        "coherence_guard_version": COHERENCE_VERSION,
     })
     report["contract"] = contract
     return report
@@ -322,6 +337,7 @@ def run(legs: int = 4) -> dict:
         "base_version": BASE_VERSION,
         "operator_market_context_version": OPERATOR_VERSION,
         "performance_adapter_version": PERFORMANCE_VERSION,
+        "coherence_guard_version": COHERENCE_VERSION,
         "deep_execution_version": DEEP_EXECUTION_VERSION,
         "matches": report.get("matches_count", 0),
         "operator_context_matches": active,
