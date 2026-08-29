@@ -8,7 +8,8 @@ Each supported candidate predicate is evaluated against the current exact-state
 outcomes at most once per match; the resulting bit mask is then reused by:
 - candidate marginal probability scoring;
 - the v9.2.4 fast beam mask adapter;
-- deep top-path extraction.
+- deep top-path extraction;
+- v9.3K payload fragility/top-path generation inside ``_scenario_payload``.
 
 No bookmaker prices or external requests are used.
 """
@@ -22,7 +23,9 @@ except ImportError:
     import symphony_engine_v90 as core
     import symphony_engine_v91 as fast
 
+# Historical contract kept stable for existing consumers/tests.
 VERSION = "v9.3F-shared-predicate-masks"
+PAYLOAD_REUSE_VERSION = "v9.3K-payload-mask-reuse"
 _CACHE_KEY_ATTR = "_tenis_ai_v93f_mask_key"
 
 
@@ -41,6 +44,7 @@ class _Snapshot:
     masks: int = 0
     hits: int = 0
     predicate_evaluations: int = 0
+    payload_joint_reuses: int = 0
 
 
 class PredicateMaskCache:
@@ -52,6 +56,7 @@ class PredicateMaskCache:
         self._mass: dict[tuple, float] = {}
         self.hits = 0
         self.predicate_evaluations = 0
+        self.payload_joint_reuses = 0
 
     def begin(self, outcomes: list[dict]) -> list[dict]:
         self.outcomes = outcomes
@@ -61,6 +66,7 @@ class PredicateMaskCache:
         self._mass = {}
         self.hits = 0
         self.predicate_evaluations = 0
+        self.payload_joint_reuses = 0
         return outcomes
 
     def tag(self, predicate, candidate):
@@ -134,11 +140,46 @@ class PredicateMaskCache:
             mask ^= bit
         return rows
 
+    def joint_for_combo(self, match: dict, combo, outcomes):
+        """Exact-equivalent ``core._joint`` using cached candidate truth masks.
+
+        Matching outcome probabilities are accumulated in ascending original
+        outcome index order, preserving the same floating-point addition order as
+        the legacy implementation.
+        """
+        if outcomes is not self.outcomes:
+            return None
+        mask = self.full_mask
+        supported = 0
+        for candidate in combo:
+            predicate = core._predicate(match, candidate)
+            if predicate is None:
+                continue
+            supported += 1
+            key = getattr(predicate, _CACHE_KEY_ATTR, _candidate_key(candidate))
+            candidate_mask, _ = self._ensure(key, predicate)
+            mask &= candidate_mask
+            if not mask:
+                self.payload_joint_reuses += 1
+                return 0.0, supported
+        if not supported:
+            return None, 0
+
+        probability = 0.0
+        while mask:
+            bit = mask & -mask
+            idx = bit.bit_length() - 1
+            probability += self.probabilities[idx]
+            mask ^= bit
+        self.payload_joint_reuses += 1
+        return probability, supported
+
     def snapshot(self) -> _Snapshot:
         return _Snapshot(
             masks=len(self._masks),
             hits=self.hits,
             predicate_evaluations=self.predicate_evaluations,
+            payload_joint_reuses=self.payload_joint_reuses,
         )
 
 
@@ -160,6 +201,8 @@ class InstalledAdapter:
         self.original_build_match = deep.build_match_model_scenario
         self.original_marginal = core._marginal
         self.original_fast_masks = fast._predicate_masks
+        self.original_core_top_paths = core._top_matching_paths
+        self.original_fragility = core._fragility
 
         def finalize(outcomes):
             return cache.begin(self.original_finalize(outcomes))
@@ -196,6 +239,70 @@ class InstalledAdapter:
                 })
             return out
 
+        def core_top_paths(match: dict, combo, outcomes: list[dict], limit=5):
+            rows = cache.matching_rows(match, combo, outcomes)
+            if rows is None:
+                return self.original_core_top_paths(match, combo, outcomes, limit=limit)
+            rows.sort(key=lambda row: row["prob"], reverse=True)
+            return [
+                {
+                    "path": core._path_text(row),
+                    "cp2": f"{row['cp2'][0]}:{row['cp2'][1]}",
+                    "cp4": f"{row['cp4'][0]}:{row['cp4'][1]}",
+                    "cp6": f"{row['cp6'][0]}:{row['cp6'][1]}",
+                    "set1": f"{row['set1'][0]}:{row['set1'][1]}",
+                    "match_score": f"{row['sets'][0]}:{row['sets'][1]}",
+                    "total_games": row["total_games"],
+                    "probability_mass": round(row["prob"] * 100.0, 3),
+                }
+                for row in rows[:limit]
+            ]
+
+        def fragility(match: dict, combo, outcomes: list[dict]):
+            if outcomes is not cache.outcomes:
+                return self.original_fragility(match, combo, outcomes)
+            if len(combo) < 2:
+                return []
+
+            full = cache.joint_for_combo(match, combo, outcomes)
+            if full is None:
+                return self.original_fragility(match, combo, outcomes)
+            full_joint, full_supported = full
+            rows = []
+            for i, candidate in enumerate(combo):
+                reduced = combo[:i] + combo[i + 1:]
+                reduced_result = cache.joint_for_combo(match, reduced, outcomes)
+                if reduced_result is None:
+                    return self.original_fragility(match, combo, outcomes)
+                reduced_joint, reduced_supported = reduced_result
+                lift = 0.0
+                if (
+                    full_joint is not None
+                    and reduced_joint is not None
+                    and full_joint > core.EPS
+                    and full_supported == len(combo)
+                    and reduced_supported == len(reduced)
+                ):
+                    lift = max(0.0, (reduced_joint / full_joint - 1.0) * 20.0)
+                frag = (
+                    (100.0 - candidate.evidence_score)
+                    + 18.0 * candidate.conflict
+                    + min(50.0, lift)
+                )
+                rows.append({
+                    "key": candidate.key,
+                    "label": candidate.label,
+                    "fragility": round(frag, 1),
+                    "evidence_score": round(candidate.evidence_score, 1),
+                    "remove_joint_probability": (
+                        round(reduced_joint * 100.0, 2)
+                        if reduced_joint is not None and reduced_supported == len(reduced)
+                        else None
+                    ),
+                })
+            rows.sort(key=lambda row: row["fragility"], reverse=True)
+            return rows
+
         def build_match(match: dict, shadow_for_match: dict[str, dict[str, float]], legs: int = 4):
             row = self.original_build_match(match, shadow_for_match, legs=legs)
             if row:
@@ -207,6 +314,9 @@ class InstalledAdapter:
                     "predicate_mask_entries": snap.masks,
                     "predicate_mask_hits": snap.hits,
                     "predicate_evaluations": snap.predicate_evaluations,
+                    "payload_mask_reuse_version": PAYLOAD_REUSE_VERSION,
+                    "payload_fragility_top_paths_cached": True,
+                    "payload_joint_reuses": snap.payload_joint_reuses,
                 })
                 row["market_adapter"] = adapter
             return row
@@ -217,6 +327,8 @@ class InstalledAdapter:
         deep.build_match_model_scenario = build_match
         core._marginal = marginal
         fast._predicate_masks = predicate_masks
+        core._top_matching_paths = core_top_paths
+        core._fragility = fragility
         self._installed = True
         return self
 
@@ -230,6 +342,8 @@ class InstalledAdapter:
         deep.build_match_model_scenario = self.original_build_match
         core._marginal = self.original_marginal
         fast._predicate_masks = self.original_fast_masks
+        core._top_matching_paths = self.original_core_top_paths
+        core._fragility = self.original_fragility
         self._installed = False
 
 
