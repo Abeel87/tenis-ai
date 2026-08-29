@@ -1,0 +1,42 @@
+name: Tennis data stale-run guard
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/tennis-data-stale-run-guard.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-stale-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STALE_AFTER_MINUTES: '120'
+    steps:
+      - name: Cancel stale FULL builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          now_epoch=$(date -u +%s)
+          cutoff=$((now_epoch - STALE_AFTER_MINUTES * 60))
+          found=0
+          while IFS=$'\t' read -r run_id created_at; do
+            [ -z "${run_id:-}" ] && continue
+            created_epoch=$(date -u -d "$created_at" +%s)
+            if [ "$created_epoch" -lt "$cutoff" ]; then
+              echo "Cancelling stale FULL run $run_id created $created_at (> ${STALE_AFTER_MINUTES}m)."
+              gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/cancel" >/dev/null || true
+              found=1
+            fi
+          done < <(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-pages.yml/runs?status=in_progress&per_page=100" --jq '.workflow_runs[] | [.id,.created_at] | @tsv')
+          if [ "$found" -eq 0 ]; then
+            echo "No stale FULL run found."
+          fi
