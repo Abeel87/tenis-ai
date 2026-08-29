@@ -105,6 +105,52 @@ def test_shared_mask_reuses_exact_predicate_scan_for_marginal_beam_and_top_paths
         adapter.uninstall()
 
 
+def test_payload_fragility_and_core_top_paths_are_exact_equivalent_without_rescans():
+    rows = [
+        _row(0.50, 1, (6, 4), (6, 3), 19),
+        _row(0.20, 1, (7, 5), (6, 4), 22),
+        _row(0.30, 2, (4, 6), (3, 6), 19),
+    ]
+    match = _match()
+    winner = _candidate()
+    total = _candidate(market="match_total", pick="over", line=20.5)
+    combo = (winner, total)
+
+    base_predicate = core._predicate
+    deep_predicate = deep._deep_predicate(base_predicate)
+    original_predicate = core._predicate
+    core._predicate = deep_predicate
+    try:
+        legacy_fragility = core._fragility(match, combo, rows)
+        legacy_top = core._top_matching_paths(match, combo, rows, limit=5)
+    finally:
+        core._predicate = original_predicate
+
+    adapter = mask_cache.install(deep)
+    base_predicate = core._predicate
+    try:
+        rows = deep._deep_outcome_finalize(rows)
+        core._predicate = deep._deep_predicate(base_predicate)
+
+        # Prime the masks once, as candidate marginal scoring does in production.
+        for candidate in combo:
+            core._marginal(rows, core._predicate(match, candidate))
+        primed = adapter.cache.snapshot()
+
+        cached_fragility = core._fragility(match, combo, rows)
+        cached_top = core._top_matching_paths(match, combo, rows, limit=5)
+        after = adapter.cache.snapshot()
+
+        assert cached_fragility == legacy_fragility
+        assert cached_top == legacy_top
+        assert after.predicate_evaluations == primed.predicate_evaluations
+        assert after.payload_joint_reuses >= 3
+        assert mask_cache.PAYLOAD_REUSE_VERSION == "v9.3K-payload-mask-reuse"
+    finally:
+        core._predicate = base_predicate
+        adapter.uninstall()
+
+
 def test_runtime_exposes_shared_mask_performance_contract(monkeypatch):
     monkeypatch.setattr(deep, "run", lambda legs=4: {"status": "OK", "matches": 0})
     stored = {}
