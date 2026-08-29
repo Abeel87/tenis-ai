@@ -1,6 +1,6 @@
 {
   "version": "v8.6-shadow",
-  "generated_at": "2026-08-29T18:31:26.926873+00:00",
+  "generated_at": "2026-08-29T18:53:09.174032+00:00",
   "status": "ACTIVE",
   "production_mode": "shadow_only",
   "production_changed": false,
@@ -98,28 +98,28 @@
     "features": 36,
     "numeric_features": 29,
     "categorical_features": 7,
-    "best_iteration": 65,
+    "best_iteration": 107,
     "anti_leak_cutoff": "strictly_before_fixture_calendar_day",
     "elo": "overall_plus_surface_standard_elo_shadow_feature",
     "serve_return_interactions": true,
     "calibration": {
       "n": 248,
       "coverage": 1.0,
-      "brier": 0.1966,
-      "log_loss": 0.58061,
-      "selected_n": 197,
-      "selected_coverage": 0.7944,
-      "accuracy": 75.6,
+      "brier": 0.19945,
+      "log_loss": 0.58603,
+      "selected_n": 199,
+      "selected_coverage": 0.8024,
+      "accuracy": 74.9,
       "threshold": 65.0
     },
     "validation": {
       "n": 309,
       "coverage": 1.0,
-      "brier": 0.2074,
-      "log_loss": 0.60367,
-      "selected_n": 213,
-      "selected_coverage": 0.6893,
-      "accuracy": 75.1,
+      "brier": 0.20674,
+      "log_loss": 0.60247,
+      "selected_n": 216,
+      "selected_coverage": 0.699,
+      "accuracy": 73.6,
       "threshold": 65.0
     }
   },
@@ -129,7 +129,7 @@
     "variants": {}
   },
   "router_shadow": {
-    "global_cal_champion": "direct_catboost",
+    "global_cal_champion": "current",
     "segment_levels": [
       {
         "fields": [
@@ -145,16 +145,16 @@
             "log_loss": 0.47782
           },
           "set1_total|ATP|HARD": {
-            "model": "direct_catboost",
+            "model": "current",
             "cal_n": 71,
-            "brier": 0.19411,
-            "log_loss": 0.57516
+            "brier": 0.19464,
+            "log_loss": 0.57772
           },
           "set1_total|WTA|HARD": {
-            "model": "current",
+            "model": "direct_catboost",
             "cal_n": 36,
-            "brier": 0.13426,
-            "log_loss": 0.44169
+            "brier": 0.12576,
+            "log_loss": 0.42357
           }
         }
       },
@@ -167,8 +167,8 @@
           "match_total|CHALLENGER": {
             "model": "direct_catboost",
             "cal_n": 32,
-            "brier": 0.18895,
-            "log_loss": 0.5648
+            "brier": 0.18809,
+            "log_loss": 0.56171
           },
           "set1_total|CHALLENGER": {
             "model": "current",
@@ -177,16 +177,16 @@
             "log_loss": 0.55152
           },
           "set1_total|ATP": {
-            "model": "direct_catboost",
+            "model": "current",
             "cal_n": 71,
-            "brier": 0.19411,
-            "log_loss": 0.57516
+            "brier": 0.19464,
+            "log_loss": 0.57772
           },
           "set1_total|WTA": {
-            "model": "current",
+            "model": "direct_catboost",
             "cal_n": 36,
-            "brier": 0.13426,
-            "log_loss": 0.44169
+            "brier": 0.12576,
+            "log_loss": 0.42357
           }
         }
       },
@@ -198,8 +198,8 @@
           "match_total": {
             "model": "direct_catboost",
             "cal_n": 61,
-            "brier": 0.21537,
-            "log_loss": 0.62126
+            "brier": 0.21328,
+            "log_loss": 0.61547
           },
           "set1_total": {
             "model": "current",
@@ -213,16 +213,16 @@
     "validation": {
       "n": 309,
       "coverage": 1.0,
-      "brier": 0.20892,
-      "log_loss": 0.60725,
-      "selected_n": 216,
-      "selected_coverage": 0.699,
-      "accuracy": 75.0,
+      "brier": 0.20592,
+      "log_loss": 0.60137,
+      "selected_n": 236,
+      "selected_coverage": 0.7638,
+      "accuracy": 71.6,
       "threshold": 65.0
     },
     "validation_model_usage": {
-      "current": 120,
-      "direct_catboost": 189
+      "current": 195,
+      "direct_catboost": 114
     },
     "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
   },
