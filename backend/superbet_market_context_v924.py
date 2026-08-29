@@ -14,10 +14,12 @@ import sys
 from contextlib import contextmanager
 
 try:
+    from . import superbet_fixture_matching_v927 as fixture_matching
     from . import superbet_market_context_v91 as base
     from . import superbet_market_context_v913 as v913
     from . import superbet_market_context_v923 as v923
 except ImportError:
+    import superbet_fixture_matching_v927 as fixture_matching
     import superbet_market_context_v91 as base
     import superbet_market_context_v913 as v913
     import superbet_market_context_v923 as v923
@@ -149,10 +151,17 @@ def _patched_runtime():
     old_canonical = base.canonical_market
     old_pick = v913._selection_pick
     old_sanitize = v913._sanitize_fixture
+    old_best_fixture = base._best_fixture_for_match
+    old_best_cached = base._best_cached_fixture
+    old_availability_due = base._availability_due
+    fixture_matching.reset_telemetry()
     try:
         base.canonical_market = canonical_market
         v913._selection_pick = selection_pick
         v913._sanitize_fixture = mapped_sanitize
+        base._best_fixture_for_match = fixture_matching.best_fixture_for_match
+        base._best_cached_fixture = fixture_matching.best_cached_fixture
+        base._availability_due = lambda previous, now: fixture_matching.availability_due(old_availability_due, previous, now)
         v913.LINE_MARKETS.update(NEW_LINE_MARKETS)
         v913.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS)
         v913.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS)
@@ -164,6 +173,9 @@ def _patched_runtime():
         base.canonical_market = old_canonical
         v913._selection_pick = old_pick
         v913._sanitize_fixture = old_sanitize
+        base._best_fixture_for_match = old_best_fixture
+        base._best_cached_fixture = old_best_cached
+        base._availability_due = old_availability_due
         v913.LINE_MARKETS.clear(); v913.LINE_MARKETS.update(old_line)
         v913.HANDICAP_MARKETS.clear(); v913.HANDICAP_MARKETS.update(old_handicap)
         v913.WINNER_MARKETS.clear(); v913.WINNER_MARKETS.update(old_winner)
@@ -189,8 +201,10 @@ def prepare() -> dict:
     with _patched_runtime():
         result = dict(v923.prepare())
         audit = _stamp_alias()
+        matching = fixture_matching.stamp_availability()
     result["market_mapping_version"] = VERSION
     result["raw_family_audit_v924"] = audit
+    result["fixture_matching_v927"] = matching
     result["additional_external_requests"] = 0
     return result
 
