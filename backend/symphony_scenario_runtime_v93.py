@@ -30,7 +30,9 @@ except ImportError:
     import symphony_deep_mask_cache_v93f as mask_cache
     import symphony_coherence_guard_v93h as coherence
 
-VERSION = "v9.3H-runtime-coherent-paths"
+# Keep the historical runtime contract stable for BO5/runtime consumers.
+# v9.3H is exposed independently through COHERENCE_VERSION below.
+VERSION = "v9.3C-runtime-compact-bo5"
 PERFORMANCE_VERSION = mask_cache.VERSION
 COHERENCE_VERSION = coherence.VERSION
 
