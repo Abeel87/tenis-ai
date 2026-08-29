@@ -234,7 +234,8 @@ def _cached_compositions(fast, shared_masks, match: dict, candidates: list, outc
     exact_rechecks = 0
 
     beam_rows = []
-    for ordinal, (idx, candidate) in enumerate(pool):
+    for idx, candidate in enumerate(pool):
+        ordinal = idx
         candidate_mask = masks[idx]
         supported = 0 if candidate_mask is None else 1
         joint_mask = full_mask if candidate_mask is None else candidate_mask
