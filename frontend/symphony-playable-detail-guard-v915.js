@@ -193,3 +193,14 @@
 
   if (document.querySelector('#p751-match-overlay:not([hidden])')) schedule(100);
 })();
+
+/* v9.3J is a separate MODEL/RAW presentation addon. Loading it here keeps the
+   existing index contract untouched; the addon itself never reads PLAYABLE data. */
+(() => {
+  if (document.getElementById('symphony-raw-story-v93j-addon')) return;
+  const s = document.createElement('script');
+  s.id = 'symphony-raw-story-v93j-addon';
+  s.src = 'symphony-raw-story-v93j.js?v=93j';
+  s.async = false;
+  document.body.appendChild(s);
+})();
