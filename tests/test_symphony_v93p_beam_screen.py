@@ -84,7 +84,7 @@ def test_v93p_screen_survivors_are_exact_v93o_equivalent(monkeypatch):
         "c5": sum(1 << i for i in range(len(outcomes)) if i % 7 <= 3),
         "c6": sum(1 << i for i in range(len(outcomes)) if i % 8 in {1, 2, 3, 4}),
         "c7": sum(1 << i for i in range(len(outcomes)) if i % 9 not in {0, 8}),
-        "c8": mask_by_key_c8 if False else full,  # overwritten below; keeps construction explicit
+        "c8": full,
         "c9": None,
     }
     mask_by_key["c8"] = mask_by_key["c4"]  # deliberate duplicate truth mask
