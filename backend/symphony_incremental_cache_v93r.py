@@ -8,14 +8,14 @@ after the normal deep builder returns, keyed by an exact fingerprint of the
 current match payload, its Shadow evidence, requested leg count and the complete
 runtime-engine token.
 
-A later FULL run may reuse that finished row byte-for-byte when the fingerprint
-matches.  Cache misses are evaluated in a deterministic cheapest-first order so
-a killed child can still leave useful completed rows behind for the next run.
-The final report is still produced by the original build_report function and is
-sorted by its original rules.
+A later FULL run may reuse that finished row through a JSON round-trip when the
+fingerprint matches. Cache misses are evaluated in a deterministic cheapest-first
+order so a killed child can still leave useful completed rows behind for the next
+run. The final report is still produced by the original build_report function and
+is sorted by its original rules.
 
 The cache lives under data/cache, which the existing FULL workflow already
-restores/saves with Actions cache.  A tiny public telemetry file under
+restores/saves with Actions cache. A tiny public telemetry file under
 frontend/data exposes only progress counters, never cached scenario rows.
 """
 
@@ -60,9 +60,9 @@ def _signal_count(match: dict) -> int:
 
 def _priority(core, match: dict) -> tuple:
     # BO5 uses the compact exact state adapter and is normally much cheaper than
-    # the 306k-state BO3 lattice.  Within the same format, fewer candidate
-    # signals generally means fewer beam intersections.  This changes only work
-    # order; the legacy report re-sorts completed rows before publication.
+    # the 306k-state BO3 lattice. Within the same format, fewer candidate signals
+    # generally means fewer beam intersections. This changes only work order; the
+    # legacy report re-sorts completed rows before publication.
     best_of = int(core._best_of(match))
     format_rank = 0 if best_of == 5 else 1
     return (
@@ -153,8 +153,9 @@ class InstalledIncrementalCache:
             hits: set[str] = set()
             misses: list[dict] = []
             for match in model_ready:
-                key = str(core._match_key(match) or "")
-                shadow_for_match = shadow_idx.get(key, {})
+                raw_key = core._match_key(match)
+                key = str(raw_key or "")
+                shadow_for_match = shadow_idx.get(raw_key, {})
                 fp = _fingerprint(match, shadow_for_match, int(legs), self.engine_token)
                 fingerprints[key] = fp
                 entry = entries.get(key)
@@ -259,7 +260,7 @@ class InstalledIncrementalCache:
             contract.update({
                 "deep_per_match_cache_exact_fingerprint_only": True,
                 "deep_cache_changes_work_order_only": True,
-                "deep_cached_rows_reused_byte_for_byte": True,
+                "deep_cached_rows_serialized_exact_equivalent": True,
                 "deep_cache_actions_cache_only_not_model_input": True,
                 "deep_incremental_cache_version": VERSION,
             })
