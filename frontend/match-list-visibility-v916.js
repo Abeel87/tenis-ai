@@ -5,7 +5,7 @@
 (()=>{
 'use strict';
 
-const VERSION='v9.2.2';
+const VERSION='v9.3G';
 const previousFilteredReady=typeof filteredReady==='function'?filteredReady:null;
 
 function visibleMatches(now=Date.now()){
@@ -71,12 +71,22 @@ function refreshVisibleUi(){
   }catch{}
 }
 
+function loadMarketSegregationV93G(){
+  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]'))return;
+  const script=document.createElement('script');
+  script.src='market-segregation-v93g.js?v=93g&contract=raw-playable-ui-only';
+  script.async=false;
+  script.dataset.marketSegregationV93g='1';
+  document.head.appendChild(script);
+}
+
 function loadSuperbetModelCoverageV922(){
-  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]'))return;
+  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]')){loadMarketSegregationV93G();return}
   const script=document.createElement('script');
   script.src='superbet-model-coverage-v922.js?v=922&contract=operator-model-coverage';
   script.async=false;
   script.dataset.superbetModelCoverageV922='1';
+  script.addEventListener('load',loadMarketSegregationV93G,{once:true});
   document.head.appendChild(script);
 }
 
@@ -116,7 +126,8 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 // its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// PLAYABLE loads first, MODEL/RAW second, then the v9.2.2 read-only coverage
-// bridge annotates only real Superbet rows with our existing model probability.
+// PLAYABLE loads first, MODEL/RAW second, then the existing v9.2.2 coverage bridge.
+// The UI-only v9.3G segregation attaches after that bridge is ready, so the old
+// MODEL/RAW -> SUPERBET load contract remains byte-compatible with its guard.
 setTimeout(loadPlayableUiV917,0);
 })();
