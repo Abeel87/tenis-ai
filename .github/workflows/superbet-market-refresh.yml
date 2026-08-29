@@ -113,7 +113,9 @@ jobs:
         run: |
           python backend/player_model_shadow_v89.py
           python backend/ensemble_player_learning_v891.py
-          python backend/surface_elo_integration_v893.py
+          # Surface Elo needs data/tennis.db restored by FULL. The lightweight
+          # operator refresh intentionally does not rebuild it, so running the
+          # Elo trainer here would replace a valid SHADOW report with 0 events.
           python backend/shadow_signal_center_v894.py
 
       - name: Reproject Symphony gate and frontend PLAYABLE view
