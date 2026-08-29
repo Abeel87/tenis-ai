@@ -7,9 +7,17 @@ scenario maths stays exactly the same, but the v9.2.4 performance adapter
 pre-evaluates every exact-state predicate once per candidate and reuses compact
 outcome masks during beam search.  This avoids repeatedly evaluating the same
 predicate functions for thousands of candidate combinations.
+
+v9.3E additionally isolates the much heavier deep MODEL/RAW lattice in a bounded
+subprocess.  A slow deep build can no longer hold the whole FULL data workflow
+forever; the previously published deep report remains intact if the subprocess
+times out or fails.  Operator-aware Symphony output is still written first.
 """
 
 import json
+import os
+import subprocess
+import sys
 
 try:
     from . import symphony_engine_v90c as base
@@ -20,6 +28,9 @@ except ImportError:
 
 VERSION = "v9.1"
 PERFORMANCE_VERSION = "v9.2.4-fast-outcome-masks"
+DEEP_EXECUTION_VERSION = "v9.3E-bounded-subprocess"
+DEEP_TIMEOUT_SECONDS_DEFAULT = 480
+DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"
 BASE_VERSION = base.VERSION
 _BASE_AUGMENT = base.augment_match_c4
 
@@ -210,18 +221,94 @@ def build_report(legs: int = 4) -> dict:
     return report
 
 
+def _deep_timeout_seconds() -> int:
+    raw = os.getenv("SYMPHONY_DEEP_TIMEOUT_SECONDS", str(DEEP_TIMEOUT_SECONDS_DEFAULT))
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = DEEP_TIMEOUT_SECONDS_DEFAULT
+    return max(30, min(1800, value))
+
+
+def _write_deep_runtime_status(payload: dict) -> None:
+    status = dict(payload)
+    status["execution_version"] = DEEP_EXECUTION_VERSION
+    status["production_influence"] = False
+    status["playable_influence"] = False
+    status["prices_used"] = False
+    base.core._write(DEEP_RUNTIME_STATUS, status)
+
+
+def _run_deep_bounded(legs: int = 4) -> dict:
+    """Run deep MODEL/RAW in a child process with a hard wall-clock bound.
+
+    The deep report writer is atomic, so a killed/failed child cannot replace the
+    last complete `symphony_model_v93.json` with a partial file.
+    """
+    timeout_seconds = _deep_timeout_seconds()
+    runner = base.core.ROOT / "backend" / "symphony_deep_runner_v93e.py"
+    command = [sys.executable, str(runner), "--legs", str(int(legs))]
+
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(base.core.ROOT),
+            text=True,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        result = {
+            "status": "TIMEOUT",
+            "timeout_seconds": timeout_seconds,
+            "preserved_previous_report": True,
+            "reason": "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND",
+        }
+        _write_deep_runtime_status(result)
+        return result
+
+    if completed.returncode != 0:
+        result = {
+            "status": "ERROR",
+            "returncode": int(completed.returncode),
+            "timeout_seconds": timeout_seconds,
+            "preserved_previous_report": True,
+            "stderr_tail": (completed.stderr or "")[-2000:],
+        }
+        _write_deep_runtime_status(result)
+        return result
+
+    stdout = (completed.stdout or "").strip()
+    try:
+        result = json.loads(stdout.splitlines()[-1]) if stdout else {}
+    except (json.JSONDecodeError, IndexError):
+        result = {
+            "status": "ERROR",
+            "returncode": 0,
+            "timeout_seconds": timeout_seconds,
+            "preserved_previous_report": True,
+            "reason": "DEEP_RUNNER_DID_NOT_RETURN_JSON",
+            "stdout_tail": stdout[-2000:],
+        }
+        _write_deep_runtime_status(result)
+        return result
+
+    result = dict(result) if isinstance(result, dict) else {"status": "ERROR", "reason": "INVALID_DEEP_RESULT"}
+    result["timeout_seconds"] = timeout_seconds
+    result["preserved_previous_report"] = False
+    result["execution_version"] = DEEP_EXECUTION_VERSION
+    _write_deep_runtime_status(result)
+    return result
+
+
 def run(legs: int = 4) -> dict:
     report = build_report(legs=legs)
+    # Save the small operator-aware layer before starting the expensive deep
+    # analysis. Even if deep MODEL/RAW hits the watchdog, PLAYABLE projection and
+    # the rest of FULL can continue from a complete operator-aware report.
     base.core._write(base.core.REPORT, report)
-
-    # v9.3A is intentionally generated as a separate MODEL/RAW report. It
-    # consumes the same model snapshot but never changes the Superbet-gated
-    # Symphony report written above. BO5 is bounded to evidence-only in v9.3A.
-    try:
-        from .symphony_scenario_runtime_v93 import run as run_deep_scenario
-    except ImportError:
-        from symphony_scenario_runtime_v93 import run as run_deep_scenario
-    deep = run_deep_scenario(legs=legs)
+    deep = _run_deep_bounded(legs=legs)
 
     source_rows = base.core._read(base.core.RESULTS, [])
     active = sum(
@@ -235,6 +322,7 @@ def run(legs: int = 4) -> dict:
         "base_version": BASE_VERSION,
         "operator_market_context_version": OPERATOR_VERSION,
         "performance_adapter_version": PERFORMANCE_VERSION,
+        "deep_execution_version": DEEP_EXECUTION_VERSION,
         "matches": report.get("matches_count", 0),
         "operator_context_matches": active,
         "deep_model_scenario": deep,
