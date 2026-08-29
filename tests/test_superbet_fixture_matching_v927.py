@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from backend import superbet_fixture_matching_v927 as matching
 from backend import superbet_market_context_v91 as base
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _match(p1="Alexander Zverev", p2="Jannik Sinner", when="2026-08-29T12:00:00Z"):
@@ -125,3 +129,12 @@ def test_matching_contract_adds_zero_requests_and_never_uses_prices():
     assert report["prices_used"] is False
     assert report["contract"]["model_math_unchanged"] is True
     assert report["contract"]["ambiguous_relaxed_match_is_rejected"] is True
+
+
+def test_superbet_refresh_runs_after_full_build_without_parallel_write():
+    workflow = (ROOT / ".github" / "workflows" / "superbet-market-refresh.yml").read_text(encoding="utf-8")
+    assert "workflow_run:" in workflow
+    assert "workflows: ['Update tennis data and deploy Pages']" in workflow
+    assert "types: [completed]" in workflow
+    assert "|| 'tennis-data-build'" in workflow
+    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in workflow
