@@ -651,6 +651,7 @@ def _playable_stats(history: list[dict], results: list[dict], shadow_center: dic
 
     verified = sum(1 for m in results if isinstance(m, dict) and operator_context_active(m))
     model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))
+    verified_model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m))
     current_playable = sum(
         1 for m in results if isinstance(m, dict) and operator_context_active(m)
         for s in ((m.get("superbet_market_v91") or {}).get("model_signals") or [])
@@ -676,7 +677,8 @@ def _playable_stats(history: list[dict], results: list[dict], shadow_center: dic
         "current": {
             "model_ready_matches": model_ready,
             "verified_superbet_matches": verified,
-            "verified_match_coverage": round(verified / model_ready, 4) if model_ready else 0.0,
+            "verified_model_ready_matches": verified_model_ready,
+            "verified_match_coverage": round(verified_model_ready / model_ready, 4) if model_ready else 0.0,
             "playable_green_signals": current_playable,
             "shadow_model_signal_counts": shadow_counts if isinstance(shadow_counts, dict) else {},
             "suppressed_raw_display_estimate": int(projection_info.get("suppressed", 0)),

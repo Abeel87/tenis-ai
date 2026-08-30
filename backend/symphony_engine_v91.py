@@ -39,6 +39,8 @@ DEEP_EXECUTION_VERSION = "v9.3E-bounded-subprocess"
 COHERENCE_VERSION = coherence.VERSION
 DEEP_TIMEOUT_SECONDS_DEFAULT = 480
 DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"
+DEEP_INCREMENTAL_STATUS = base.core.OUT / "symphony_model_incremental_v93r.json"
+DEEP_PROGRESS_STATUS = base.core.OUT / "symphony_model_progress_v93m.json"
 BASE_VERSION = base.VERSION
 _BASE_AUGMENT = base.augment_match_c4
 
@@ -245,6 +247,29 @@ def _deep_timeout_seconds() -> int:
     return max(30, min(1800, value))
 
 
+def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
+    """Reconcile diagnostics after the parent stops the deep child."""
+    for path, replace_status in (
+        (DEEP_INCREMENTAL_STATUS, True),
+        (DEEP_PROGRESS_STATUS, False),
+    ):
+        payload = base.core._read(path, {})
+        if not isinstance(payload, dict) or not payload:
+            continue
+        payload = dict(payload)
+        if replace_status:
+            payload.setdefault("child_status_at_termination", payload.get("status"))
+            payload["status"] = status
+        payload["terminal_status"] = status
+        payload["terminal_execution_version"] = DEEP_EXECUTION_VERSION
+        if reason:
+            payload["terminal_reason"] = reason
+        payload["production_influence"] = False
+        payload["playable_influence"] = False
+        payload["prices_used"] = False
+        base.core._write(path, payload)
+
+
 def _write_deep_runtime_status(payload: dict) -> None:
     status = dict(payload)
     status["execution_version"] = DEEP_EXECUTION_VERSION
@@ -252,6 +277,9 @@ def _write_deep_runtime_status(payload: dict) -> None:
     status["playable_influence"] = False
     status["prices_used"] = False
     base.core._write(DEEP_RUNTIME_STATUS, status)
+    terminal = str(status.get("status") or "").upper()
+    if terminal in {"TIMEOUT", "ERROR"}:
+        _mark_deep_terminal(terminal, status.get("reason") or status.get("stderr_tail"))
 
 
 def _run_deep_bounded(legs: int = 4) -> dict:

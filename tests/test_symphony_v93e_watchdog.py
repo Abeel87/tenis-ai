@@ -57,8 +57,8 @@ def test_deep_watchdog_timeout_preserves_previous_complete_report(monkeypatch):
         "preserved_previous_report": True,
         "reason": "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND",
     }
-    assert written[-1][0] == engine.DEEP_RUNTIME_STATUS
-    assert written[-1][1]["execution_version"] == engine.DEEP_EXECUTION_VERSION
+    runtime_payload = next(payload for path, payload in written if path == engine.DEEP_RUNTIME_STATUS)
+    assert runtime_payload["execution_version"] == engine.DEEP_EXECUTION_VERSION
 
 
 def test_deep_watchdog_failure_is_nonfatal_and_diagnostic(monkeypatch):
@@ -78,3 +78,24 @@ def test_deep_watchdog_failure_is_nonfatal_and_diagnostic(monkeypatch):
     assert result["preserved_previous_report"] is True
     assert result["stderr_tail"].endswith("trace")
     assert written[-1][1]["prices_used"] is False
+
+
+def test_terminal_telemetry_reconciles_stale_running_state(monkeypatch):
+    writes = []
+    payloads = {
+        engine.DEEP_INCREMENTAL_STATUS: {"status": "RUNNING", "completed_this_run": 37, "pending_entries": 70},
+        engine.DEEP_PROGRESS_STATUS: {"stage": "OUTCOME_LATTICE_DONE", "completed_matches": 37},
+    }
+    monkeypatch.setattr(engine.base.core, "_read", lambda path, default=None: dict(payloads.get(path, default or {})))
+    monkeypatch.setattr(engine.base.core, "_write", lambda path, payload: writes.append((path, dict(payload))))
+    engine._mark_deep_terminal("TIMEOUT", "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND")
+    by_path = {path: payload for path, payload in writes}
+    inc = by_path[engine.DEEP_INCREMENTAL_STATUS]
+    progress = by_path[engine.DEEP_PROGRESS_STATUS]
+    assert inc["status"] == "TIMEOUT"
+    assert inc["child_status_at_termination"] == "RUNNING"
+    assert inc["completed_this_run"] == 37 and inc["pending_entries"] == 70
+    assert progress["stage"] == "OUTCOME_LATTICE_DONE"
+    assert progress["terminal_status"] == "TIMEOUT"
+    assert progress["completed_matches"] == 37
+    assert inc["prices_used"] is False and progress["prices_used"] is False
