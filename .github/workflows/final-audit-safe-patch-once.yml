@@ -28,11 +28,7 @@ jobs:
           p = Path('backend/superbet_playable_v912.py')
           s = p.read_text(encoding='utf-8')
           needle = '    model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))\n'
-          insert = needle + '''    verified_model_ready = sum(
-              1 for m in results
-              if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m)
-          )
-          '''.replace('          ', '')
+          insert = needle + '    verified_model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m))\n'
           if needle not in s or 'verified_model_ready = sum(' in s:
               raise SystemExit('Unexpected Superbet model_ready anchor state')
           s = s.replace(needle, insert, 1)
@@ -50,8 +46,15 @@ jobs:
               raise SystemExit('Unexpected deep status constants state')
           s = s.replace(needle, repl, 1)
 
-          helper_anchor = 'def _run_deep_bounded(legs: int = 4) -> dict:\n'
-          helper = '''def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
+          old = '''def _write_deep_runtime_status(payload: dict) -> None:
+              status = dict(payload)
+              status["execution_version"] = DEEP_EXECUTION_VERSION
+              status["production_influence"] = False
+              status["playable_influence"] = False
+              status["prices_used"] = False
+              base.core._write(DEEP_RUNTIME_STATUS, status)
+          '''.replace('          ', '')
+          new = '''def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
               """Reconcile diagnostics after the parent stops the deep child."""
               for path, replace_status in (
                   (DEEP_INCREMENTAL_STATUS, True),
@@ -74,32 +77,20 @@ jobs:
                   base.core._write(path, payload)
 
 
-          def _run_deep_bounded(legs: int = 4) -> dict:
+          def _write_deep_runtime_status(payload: dict) -> None:
+              status = dict(payload)
+              status["execution_version"] = DEEP_EXECUTION_VERSION
+              status["production_influence"] = False
+              status["playable_influence"] = False
+              status["prices_used"] = False
+              base.core._write(DEEP_RUNTIME_STATUS, status)
+              terminal = str(status.get("status") or "").upper()
+              if terminal in {"TIMEOUT", "ERROR"}:
+                  _mark_deep_terminal(terminal, status.get("reason") or status.get("stderr_tail"))
           '''.replace('          ', '')
-          if helper_anchor not in s:
-              raise SystemExit('Deep runner anchor missing')
-          s = s.replace(helper_anchor, helper, 1)
-
-          # Patch each terminal branch by its unique nearby payload field.
-          timeout_block = '''        _write_deep_runtime_status(result)
-              return result
-          '''.replace('          ', '')
-          if timeout_block not in s:
-              raise SystemExit('No terminal runtime write found')
-          s = s.replace(timeout_block, '''        _write_deep_runtime_status(result)
-              _mark_deep_terminal("TIMEOUT", result.get("reason"))
-              return result
-          '''.replace('          ', ''), 1)
-          error_block = '''        _write_deep_runtime_status(result)
-              return result
-          '''.replace('          ', '')
-          if s.count(error_block) < 2:
-              raise SystemExit(f'Expected two remaining error exits, found {s.count(error_block)}')
-          s = s.replace(error_block, '''        _write_deep_runtime_status(result)
-              _mark_deep_terminal("ERROR", result.get("reason") or result.get("stderr_tail"))
-              return result
-          '''.replace('          ', ''), 2)
-          p.write_text(s, encoding='utf-8')
+          if old not in s:
+              raise SystemExit('Deep runtime status function anchor not found')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
           Path('tests/test_final_audit_safe_fixes_v923.py').write_text('''from backend import superbet_playable_v912 as playable\n\n\ndef _verified_match(*, model_ready: bool):\n    return {"model_ready": model_ready, "superbet_market_v91": {"operator_verified": True, "status": "VERIFIED", "canonical_selections": [], "model_signals": []}}\n\n\ndef test_superbet_verified_match_coverage_uses_model_ready_intersection():\n    results = [_verified_match(model_ready=True), _verified_match(model_ready=False), {"model_ready": True}]\n    current = playable._playable_stats([], results, {}, {})["current"]\n    assert current["model_ready_matches"] == 2\n    assert current["verified_superbet_matches"] == 2\n    assert current["verified_model_ready_matches"] == 1\n    assert current["verified_match_coverage"] == 0.5\n    assert 0.0 <= current["verified_match_coverage"] <= 1.0\n''', encoding='utf-8')
 
