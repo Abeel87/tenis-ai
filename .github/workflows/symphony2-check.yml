@@ -28,20 +28,31 @@ jobs:
         run: |
           python -m py_compile backend/symphony2_learning.py
           python -m py_compile backend/symphony2_engine.py
+          python -m py_compile backend/symphony2_tracker.py
       - name: Operator-first contract
-        run: python -m pytest -q tests/test_symphony2_learning.py
-      - name: No legacy Symphony UI references
+        run: python -m pytest -q tests/test_symphony2_learning.py tests/test_symphony2_tracker.py
+      - name: No legacy Symphony active surface
         run: |
           python - <<'PY'
           from pathlib import Path
-          text = Path('frontend/index.html').read_text(encoding='utf-8')
-          forbidden = [
+
+          index = Path('frontend/index.html').read_text(encoding='utf-8')
+          forbidden_ui = [
               'symphony-v90.js', 'symphony-v90.css', 'symphony-stats-v90d.js',
               'symphony-stats-v90d.css', 'symphony-surface-v90.js',
               'symphony-playable-detail-guard-v915.js'
           ]
-          for token in forbidden:
-              assert token not in text, token
-          assert 'symphony2.js' in text
-          assert 'symphony2.css' in text
+          for token in forbidden_ui:
+              assert token not in index, token
+          assert 'symphony2.js' in index
+          assert 'symphony2.css' in index
+
+          legacy_backend = [p for p in Path('backend').glob('symphony*') if not p.name.startswith('symphony2_')]
+          assert not legacy_backend, legacy_backend
+          legacy_frontend = [p for p in Path('frontend').glob('symphony-*')]
+          assert not legacy_frontend, legacy_frontend
+          legacy_data = [p for p in Path('frontend/data').glob('symphony_*')]
+          assert not legacy_data, legacy_data
+          legacy_tests = [p for p in Path('tests').glob('test_symphony*') if not p.name.startswith('test_symphony2_')]
+          assert not legacy_tests, legacy_tests
           PY
