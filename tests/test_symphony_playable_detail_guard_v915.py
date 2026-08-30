@@ -39,7 +39,10 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 let active=true,writes=0,html='';
 const panel={dataset:{},get innerHTML(){return html;},set innerHTML(v){html=v;writes++;}};
-const overlay={dataset:{matchKey:'1'},querySelector:()=>panel};
+const overlay={
+ dataset:{matchKey:'1'},
+ querySelector:(selector)=>selector==='[data-symphony-match-detail]'?panel:null
+};
 const comp={selection:[{label:'One',market:'set1_total',line:12.5},{label:'Two'}],symphony_score:80};
 const report={matches:[{id:1,operator_reprojection:{active:true,verified_operator_match:true,status:'PLAYABLE_SUPERBET_ONLY'},compositions:{'2':comp}}]};
 const win={TENIS_AI_PLAYABLE_UI_V917:{findMatch:()=>({id:1}),active:()=>active,compositionPlayable:(_m,c)=>active&&c===comp}};
