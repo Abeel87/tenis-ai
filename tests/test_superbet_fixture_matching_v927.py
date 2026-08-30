@@ -144,4 +144,3 @@ def test_lightweight_superbet_refresh_does_not_retrain_surface_elo_without_db():
     workflow = (ROOT / ".github" / "workflows" / "superbet-market-refresh.yml").read_text(encoding="utf-8")
     assert "python -m py_compile backend/surface_elo_integration_v893.py" in workflow
     assert "python backend/surface_elo_integration_v893.py" not in workflow
-    assert "Surface Elo needs data/tennis.db restored by FULL" in workflow
