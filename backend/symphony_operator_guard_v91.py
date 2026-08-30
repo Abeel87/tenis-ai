@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-"""Tenis AI v9.1 — operator availability guard for Tennis Symphony.
+"""Tenis AI v9.3.0 — operator availability guard for Tennis Symphony.
 
 Runs after the existing v9.0C/C.4 evidence adapter. When a fresh verified
 Superbet market context exists, the ready-to-bet Symphony pool is restricted to
 markets/selections that are actually present at Superbet. The full model
 analysis remains untouched upstream.
+
+v9.3.0 aligns the backend selection signature with the frontend PLAYABLE gate:
+player-scoped markets now include the normalized player identity in the
+signature. This prevents a line for one player from validating the same line for
+the opponent and then being rejected only later by the UI.
 """
 
 import math
 from copy import deepcopy
 
-VERSION = "v9.1"
+VERSION = "v9.3.0"
 STRICT_MARKETS = {
     "match_winner", "set1_winner", "set2_winner", "set3_winner",
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -20,6 +25,7 @@ STRICT_MARKETS = {
     "player_total_games", "match_total_aces", "most_aces",
     "player_aces", "player_double_faults", "most_double_faults", "most_aces_plus_df",
 }
+PLAYER_SCOPED_MARKETS = {"player_total_games", "player_aces", "player_double_faults"}
 ALIASES = {
     "match_win": "match_winner",
     "first_set_win": "set1_winner",
@@ -40,6 +46,10 @@ def _num(value, default=None):
 
 def _norm(value):
     return " ".join(str(value or "").strip().casefold().split())
+
+
+def _name_key(value):
+    return " ".join(sorted(_norm(value).replace(",", " ").split()))
 
 
 def _market(value):
@@ -64,11 +74,14 @@ def _checkpoint(signal):
 
 
 def _signature(signal):
+    market = _market(signal.get("market"))
+    player = _name_key(signal.get("player")) if market in PLAYER_SCOPED_MARKETS else ""
     return (
-        _market(signal.get("market")),
+        market,
         _norm(signal.get("pick")),
         round(float(_num(signal.get("line"), -999999.0)), 6),
         _checkpoint(signal),
+        player,
     )
 
 
@@ -191,6 +204,7 @@ def apply_superbet_market_guard(augmented: dict, evidence_meta: dict, original_m
     meta["operator_strict_actionable_markets"] = sorted(STRICT_MARKETS)
     meta["operator_contract"] = {
         "ready_to_bet_pool_requires_real_superbet_availability": True,
+        "player_scoped_signature_matches_frontend": True,
         "bookmaker_prices_not_used": True,
         "core_model_scores_unchanged": True,
         "unavailable_model_markets_remain_analysis_only_upstream": True,
