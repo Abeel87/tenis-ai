@@ -1,0 +1,47 @@
+name: Symphony 2 checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/symphony2_*.py'
+      - 'frontend/symphony2.*'
+      - 'SYMPHONY_2_ARCHITECTURE.md'
+      - 'tests/test_symphony2_*.py'
+      - '.github/workflows/symphony2-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Syntax
+        run: |
+          python -m py_compile backend/symphony2_learning.py
+          python -m py_compile backend/symphony2_engine.py
+      - name: Operator-first contract
+        run: python -m pytest -q tests/test_symphony2_learning.py
+      - name: No legacy Symphony UI references
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('frontend/index.html').read_text(encoding='utf-8')
+          forbidden = [
+              'symphony-v90.js', 'symphony-v90.css', 'symphony-stats-v90d.js',
+              'symphony-stats-v90d.css', 'symphony-surface-v90.js',
+              'symphony-playable-detail-guard-v915.js'
+          ]
+          for token in forbidden:
+              assert token not in text, token
+          assert 'symphony2.js' in text
+          assert 'symphony2.css' in text
+          PY
