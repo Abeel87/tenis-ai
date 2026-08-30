@@ -1,0 +1,39 @@
+name: Fix release shell once
+
+on:
+  push:
+    branches:
+      - audit/ui-release-metadata-v923
+
+permissions:
+  contents: write
+
+jobs:
+  patch-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/ui-release-metadata-v923
+      - name: Align static shell release labels
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('frontend/index.html')
+          s = p.read_text(encoding='utf-8')
+          updated = s.replace('v9.1.9', 'v9.2.3')
+          if updated == s:
+              print('Static shell already aligned; nothing to commit.')
+              raise SystemExit(0)
+          p.write_text(updated, encoding='utf-8')
+          PY
+          if git diff --quiet -- frontend/index.html; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/index.html
+          git commit -m 'fix(ui): align static release shell with v9.2.3'
+          git push origin HEAD:audit/ui-release-metadata-v923
