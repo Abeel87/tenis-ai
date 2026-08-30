@@ -1,8 +1,8 @@
-/* Tenis AI v8.8.15 — honest model ranking + PLAYABLE stats */
+/* Tenis AI v8.8.16 — honest model ranking + PLAYABLE stats */
 (()=>{
 'use strict';
 
-const VERSION='v8.8.15';
+const VERSION='v8.8.16';
 const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 
 function text(node){return String(node?.textContent||'').trim()}
@@ -85,6 +85,31 @@ function patchModelRanking(){
   return true;
 }
 
+function patchTrendSampleContext(card){
+  card=card||document.querySelector('#pc77 .pc12-main-trend');
+  const chart=card?.querySelector('.pc77-chart');
+  const titles=chart?[...chart.querySelectorAll('circle title')]:[];
+  const raw=text(titles.at(-1));
+  if(!card||!raw)return false;
+
+  const match=raw.match(/^(.*?)\s*·\s*(.*?)\s*·\s*n=(\d+)\s*$/i);
+  if(!match)return false;
+  const [,date,accuracy,nRaw]=match;
+  const n=Number(nRaw);
+  if(!Number.isFinite(n))return false;
+
+  let note=card.querySelector('[data-v886-trend-sample]');
+  if(!note){
+    note=document.createElement('p');
+    note.className='pc882-note';
+    note.dataset.v886TrendSample='1';
+    chart.insertAdjacentElement('afterend',note);
+  }
+  const strength=n<5?'BARDZO MAŁA PRÓBA':n<10?'MAŁA PRÓBA':n<20?'PRÓBA DO OSTROŻNEJ OCENY':'PRÓBA OK';
+  note.innerHTML=`<b>Ostatni punkt: ${date} · ${accuracy} · n=${n}</b><br><span>${strength}${n<10?' — pojedynczy skok nie oznacza jeszcze trwałej poprawy modelu.':''}</span>`;
+  return true;
+}
+
 function promoteMainTrend(){
   const host=document.querySelector('#pc77');
   const summary=host?.querySelector('.pc12-summary');
@@ -93,12 +118,13 @@ function promoteMainTrend(){
 
   const trendCard=[...proBody.children].find(section=>
     section.matches?.('section.pc77-card')&&/Trend skuteczności/i.test(text(section.querySelector('.pc77-card-head b')))
-  );
+  )||host.querySelector('.pc12-main-trend');
   if(!trendCard)return false;
 
   trendCard.dataset.v8812MainTrend='1';
   trendCard.classList.add('pc12-main-trend');
   summary.insertAdjacentElement('afterend',trendCard);
+  patchTrendSampleContext(trendCard);
   return true;
 }
 
@@ -128,6 +154,7 @@ window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
   dashboardReadyEvent:DASHBOARD_READY_EVENT,
   patch:patchModelRanking,
   promoteTrend:promoteMainTrend,
+  patchTrendSampleContext,
   loadSymphonyStats,
   loadSuperbetPlayableStats
 });
