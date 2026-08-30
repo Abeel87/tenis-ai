@@ -5,6 +5,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 from prune_results_payload_v854 import prune_results
 
 ROOT = Path(__file__).resolve().parents[1]
