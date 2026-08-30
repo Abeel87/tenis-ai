@@ -37,13 +37,14 @@ def test_auto_can_fallback_to_another_currently_playable_leg_count():
     assert "fallback:true" in text
 
 
-def test_bootstrap_loads_playable_gate_before_save_layer():
+def test_bootstrap_loads_playable_gate_and_freshness_before_save_layer():
     text = META.read_text(encoding="utf-8")
-    playable = text.index("playable-ui-coherence-v917.js?v=924")
-    save = text.index("symphony-superbet-save-v924.js?v=924")
-    assert playable >= 0
-    assert save >= 0
-    assert "if(window.TENIS_AI_PLAYABLE_UI_V917)save()" in text
+    assert "playable-ui-coherence-v917.js?v=925" in text
+    assert "playable-line-freshness-v925.js?v=925" in text
+    assert "symphony-superbet-save-v924.js?v=925" in text
+    assert "const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925',save);" in text
+    assert "if(window.TENIS_AI_PLAYABLE_UI_V917)freshness()" in text
+    assert "load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness)" in text
 
 
 def test_v924_does_not_write_model_math_or_prices():

@@ -1,0 +1,64 @@
+/* Tenis AI v9.2.5 — strict freshness wrapper for actionable Superbet PLAYABLE.
+   Presentation gate only. MODEL/RAW, scores, training, prices and history remain untouched. */
+(()=>{
+  'use strict';
+  if(window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925)return;
+  const base=window.TENIS_AI_PLAYABLE_UI_V917;
+  if(!base)return;
+
+  const VERSION='v9.2.5';
+  const MAX_OPERATOR_AGE_MS=12*60*1000;
+  const MAX_START_DRIFT_MS=35*60*1000;
+  const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+
+  function context(match){
+    const x=match?.superbet_market_v91;
+    return x&&typeof x==='object'?x:{};
+  }
+  function sourceAgeMs(match,now=Date.now()){
+    const generated=Date.parse(context(match)?.source_generated_at||'');
+    return Number.isFinite(generated)?Number(now)-generated:Infinity;
+  }
+  function sourceFresh(match,now=Date.now()){
+    const age=sourceAgeMs(match,now);
+    return Number.isFinite(age)&&age>=0&&age<=MAX_OPERATOR_AGE_MS;
+  }
+  function startAligned(match){
+    const op=Date.parse(context(match)?.operator_start_time||'');
+    const fixture=Date.parse(match?.scheduled_time||'');
+    if(!Number.isFinite(op)||!Number.isFinite(fixture))return true;
+    return Math.abs(op-fixture)<=MAX_START_DRIFT_MS;
+  }
+  function strictActive(match,now=Date.now()){
+    return base.active?.(match,now)===true&&sourceFresh(match,now)&&startAligned(match);
+  }
+  function strictIsPlayable(match,row){
+    return strictActive(match)&&base.isPlayable?.(match,row)===true;
+  }
+  function strictCompositionPlayable(match,comp){
+    const legs=comp?.selection;
+    return strictActive(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>strictIsPlayable(match,leg));
+  }
+  function strictPlayableSignals(match,limit=100){
+    if(!strictActive(match))return[];
+    const rows=base.playableSignals?.(match,Math.max(100,Number(limit)||100))||[];
+    return rows.filter(row=>strictIsPlayable(match,row)).slice(0,Math.max(1,Number(limit)||100));
+  }
+
+  const wrapped=Object.freeze({
+    ...base,
+    version:VERSION,
+    active:strictActive,
+    isPlayable:strictIsPlayable,
+    compositionPlayable:strictCompositionPlayable,
+    playableSignals:strictPlayableSignals,
+    sourceFresh,
+    sourceAgeMs,
+    startAligned,
+    maxOperatorAgeMinutes:MAX_OPERATOR_AGE_MS/60000
+  });
+  window.TENIS_AI_PLAYABLE_UI_V917=wrapped;
+  window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925=Object.freeze({
+    version:VERSION,sourceFresh,sourceAgeMs,startAligned,maxOperatorAgeMinutes:MAX_OPERATOR_AGE_MS/60000
+  });
+})();
