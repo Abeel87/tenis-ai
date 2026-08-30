@@ -1,13 +1,19 @@
-/* Tenis AI v9.2.5 — strict freshness wrapper for actionable Superbet PLAYABLE.
-   Presentation gate only. MODEL/RAW, scores, training, prices and history remain untouched. */
+/* Tenis AI v9.2.8 — bounded freshness wrapper for actionable Superbet PLAYABLE.
+   Presentation gate only. MODEL/RAW, scores, training, prices and history remain untouched.
+
+   IMPORTANT: the Superbet catalogue refresh is hourly and the operator-aware Symphony
+   rebuild can take ~20 minutes. A 12-minute UI TTL therefore expired before a freshly
+   rebuilt report was even published. Keep the gate strict/exact, but make its age bound
+   compatible with the real refresh cadence: one hourly interval + rebuild/deploy margin.
+*/
 (()=>{
   'use strict';
   if(window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925)return;
   const base=window.TENIS_AI_PLAYABLE_UI_V917;
   if(!base)return;
 
-  const VERSION='v9.2.5';
-  const MAX_OPERATOR_AGE_MS=12*60*1000;
+  const VERSION='v9.2.8';
+  const MAX_OPERATOR_AGE_MS=90*60*1000;
   const MAX_START_DRIFT_MS=35*60*1000;
   const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 
