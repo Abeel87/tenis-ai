@@ -4,7 +4,7 @@ from __future__ import annotations
 
 Fixes a PLAYABLE integrity bug where a generic/catalogue handicap could be used
 as the actionable line even when the concrete Superbet fixture/outcome exposed a
-different tennis total.  For non-handicap line markets the fixture payload is
+different tennis total. For non-handicap line markets the fixture payload is
 now authoritative whenever it contains an explicit line; the catalogue value is
 only a fallback for opaque fixture identifiers.
 
@@ -28,34 +28,33 @@ except ImportError:
 VERSION = "v9.3.1"
 
 
+def _total_threshold(value):
+    line = base._line(value)
+    return abs(line) if line is not None else None
+
+
 def _fixture_line(market: str, market_meta: dict, market_data: dict, outcome_data: dict,
                   player_data: dict, outcome_name, bookmaker_outcome_id,
                   *, pick=None, p1=None, p2=None):
-    """Resolve a real fixture line before falling back to catalogue metadata."""
     if market not in v913.LINE_MARKETS:
         return None, None
 
-    # Handicaps retain v9.1.5's participant-sign semantics. This patch targets
-    # O/U-style totals where the exact threshold must equal the fixture offer.
     if market in v913.HANDICAP_MARKETS:
         return v913._market_line(
             market, market_meta, outcome_name, bookmaker_outcome_id,
             pick=pick, p1=p1, p2=p2,
         )
 
-    # Prefer explicit structured fixture fields when OddsPapi supplies them.
     for holder, field in (
         (player_data, "handicap"), (player_data, "line"),
         (outcome_data, "handicap"), (outcome_data, "line"),
         (market_data, "handicap"), (market_data, "line"),
     ):
         if isinstance(holder, dict):
-            value = base._line(holder.get(field))
+            value = _total_threshold(holder.get(field))
             if value is not None:
                 return value, f"oddspapi_fixture_{field}"
 
-    # Fixture-specific textual IDs/names can carry the actual step (e.g. 18.5)
-    # even when the global market catalogue still reports a different threshold.
     explicit = base._line_from_text(
         outcome_name,
         bookmaker_outcome_id,
@@ -63,10 +62,9 @@ def _fixture_line(market: str, market_meta: dict, market_data: dict, outcome_dat
         outcome_data.get("bookmakerOutcomeId") if isinstance(outcome_data, dict) else None,
     )
     if explicit is not None:
-        return explicit, "oddspapi_fixture_text_line"
+        return abs(explicit), "oddspapi_fixture_text_line"
 
-    # Opaque fixture IDs: catalogue handicap remains the only trustworthy line.
-    catalogue = base._line(market_meta.get("handicap"))
+    catalogue = _total_threshold(market_meta.get("handicap"))
     if catalogue is not None:
         return catalogue, "oddspapi_market_handicap_fallback"
     return None, None
