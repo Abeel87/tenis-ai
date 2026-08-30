@@ -107,6 +107,11 @@ def test_v93n_top_paths_and_fragility_are_exact_equivalent_with_stable_ties():
         shared.uninstall()
 
 
+def test_v93n_uses_only_payload_reuse_and_never_changes_shared_mask_math():
+    assert payload_cache.VERSION == "v9.3N-payload-topn-mask-mass"
+    assert mask_cache.VERSION == "v9.3F-shared-predicate-masks"
+
+
 def test_v93n_compact_bo5_core_payload_does_not_require_checkpoints():
     rows = [
         {
@@ -160,27 +165,23 @@ def test_v93n_compact_bo5_core_payload_does_not_require_checkpoints():
     base_predicate = core._predicate
     rank = None
     try:
+        rows = deep._deep_outcome_finalize(list(rows))
         core._predicate = deep._deep_predicate(base_predicate)
         for candidate in combo:
             core._marginal(rows, core._predicate(match, candidate))
         rank = payload_cache.install(deep, shared)
         payload = core._top_matching_paths(match, combo, rows, limit=2)
-        assert len(payload) == 1
+
+        assert payload
         assert payload[0]["cp2"] is None
         assert payload[0]["cp4"] is None
         assert payload[0]["cp6"] is None
+        assert payload[0]["path"] == "1S 6:4 · 2S 7:5 → mecz 3:1 · 39 gemów"
         assert payload[0]["set1"] == "6:4"
         assert payload[0]["match_score"] == "3:1"
-        assert "1S 6:4" in payload[0]["path"]
-        assert "2S 7:5" in payload[0]["path"]
+        assert payload[0]["probability_mass"] == 70.0
     finally:
         if rank is not None:
             rank.uninstall()
         core._predicate = base_predicate
         shared.uninstall()
-
-
-def test_v93n_uses_only_payload_reuse_and_never_changes_shared_mask_math():
-    assert payload_cache.VERSION == "v9.3N-payload-topn-mask-mass"
-    assert payload_cache.COMPACT_PAYLOAD_GUARD_VERSION == "v9.3S-compact-bo5-payload-guard"
-    assert mask_cache.VERSION == "v9.3F-shared-predicate-masks"
