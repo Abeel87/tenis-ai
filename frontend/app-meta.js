@@ -175,9 +175,9 @@
   });
 })();
 
-/* v9.2.4 Symphony actionable bootstrap.
-   Keep MODEL/RAW independent, but make every actionable Symphony surface fail
-   closed unless the exact current Superbet selection is verified. */
+/* v9.2.5 Symphony actionable bootstrap.
+   Load exact-line gate, then tighten snapshot freshness before any actionable
+   Symphony card/save layer is allowed to call a selection PLAYABLE. */
 (() => {
   'use strict';
   function fullDom(){
@@ -196,9 +196,10 @@
   }
   function boot(){
     if(!fullDom())return;
-    const save=()=>load('symphony-superbet-save-v924.js?v=924','symphony-superbet-save-v924');
-    if(window.TENIS_AI_PLAYABLE_UI_V917)save();
-    else load('playable-ui-coherence-v917.js?v=924','playable-ui-coherence-v917',save);
+    const save=()=>load('symphony-superbet-save-v924.js?v=925','symphony-superbet-save-v924');
+    const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925',save);
+    if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();
+    else load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness);
   }
   if(typeof document!=='undefined'&&document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
