@@ -1,10 +1,12 @@
 (() => {
   'use strict';
 
-  const VERSION = 'v9.0C.4';
+  const VERSION = 'v9.2.9';
   const DATA_URL = './data/symphony_v90.json';
+  const RESULTS_URL = './data/results.json';
   let cache = null;
   let cachedAt = 0;
+  let currentResultsAt = 0;
 
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -32,6 +34,23 @@
     cache = await res.json();
     cachedAt = Date.now();
     return cache;
+  }
+
+  async function refreshCurrentResults(force = false) {
+    if (!force && currentResultsAt && Date.now()-currentResultsAt < 30000) return true;
+    // Symphony is an actionable Superbet surface. Never validate a freshly rebuilt
+    // Symphony against the SPA's hours-old in-memory `all` array. Pull the current
+    // published results snapshot immediately before every open/generate action.
+    window.TENIS_AI_FAST_BOOT_V888?.clear?.();
+    const res = await fetch(`${RESULTS_URL}?symphony=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`RESULTS HTTP ${res.status}`);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error('RESULTS_EMPTY');
+    // `all` is the canonical dataset used by TENIS_AI_PROJECT_UI.findMatch(). It is
+    // declared by the classic app scripts and intentionally shared across them.
+    all = rows;
+    currentResultsAt = Date.now();
+    return true;
   }
 
   function timeLabel(value) {
@@ -205,7 +224,7 @@
         </div>
 
         <div class="symphony-note">
-          v9.0C.4 porównuje kompozycje 2–6 zdarzeń dla każdego meczu. AUTO wybiera liczbę nóg wg jakości, joint coverage i fragility. Rynki „najwięcej asów / DF / asów+DF” są na razie evidence-only A/remis/B i nie udają exact joint probability.
+          v9.2.9 przed pokazaniem akcyjnej Symfonii pobiera bieżący results.json i bieżący raport operatorowy. AUTO nadal porównuje 2–6 zdarzeń wg jakości, joint coverage i fragility; MODEL/RAW, trening i historia pozostają bez zmian.
         </div>
         <div id="symphony-results" class="symphony-grid">${resultsHtml(data, 4, 'auto', 0)}</div>
       </section>`;
@@ -230,17 +249,17 @@
   async function openSymphony() {
     const body = scenarioBody();
     if (!body) return;
-    body.innerHTML = '<div class="sc82-loading">Stroję modele, rynki i liczbę nóg…</div>';
+    body.innerHTML = '<div class="sc82-loading">Odświeżam aktualne linie Superbet i stroję Symfonię…</div>';
     try {
-      const data = await loadData();
+      const [, data] = await Promise.all([refreshCurrentResults(true), loadData(true)]);
       body.innerHTML = shell(data);
       bindBody(body, data);
     } catch (err) {
-      console.warn('[Symphony] load failed', err);
+      console.warn('[Symphony] live load failed', err);
       body.innerHTML = `
         <section class="symphony-shell">
           <button class="symphony-back" type="button" data-symphony-back>← Scenariusze</button>
-          <div class="symphony-empty"><b>Symfonia nie ma jeszcze aktualnego raportu.</b><br>Po następnym przebiegu danych spróbuj ponownie.</div>
+          <div class="symphony-empty"><b>Nie udało się pobrać aktualnej warstwy SUPERBET PLAYABLE.</b><br>Nie pokazuję starej kompozycji jako bieżącej. Spróbuj ponownie po chwili.</div>
         </section>`;
       bindBody(body, null);
     }
@@ -252,12 +271,24 @@
       setTimeout(decorateHome, 0);
     });
     if (!data) return;
-    body.querySelector('#symphony-generate')?.addEventListener('click', () => {
+    body.querySelector('#symphony-generate')?.addEventListener('click', async () => {
       const matchCount = Number(body.querySelector('#symphony-match-count')?.value || 4);
       const legs = String(body.querySelector('#symphony-leg-count')?.value || 'auto');
       const variant = Number(body.querySelector('#symphony-variant')?.value || 0);
       const target = body.querySelector('#symphony-results');
-      if (target) target.innerHTML = resultsHtml(data, matchCount, legs, variant);
+      const button = body.querySelector('#symphony-generate');
+      if (button) button.disabled = true;
+      if (target) target.innerHTML = '<div class="sc82-loading">Sprawdzam bieżące linie Superbet…</div>';
+      try {
+        await refreshCurrentResults(true);
+        const latest = await loadData(true);
+        if (target) target.innerHTML = resultsHtml(latest, matchCount, legs, variant);
+      } catch (err) {
+        console.warn('[Symphony] generate refresh failed', err);
+        if (target) target.innerHTML = '<div class="symphony-empty">Nie mogę teraz potwierdzić aktualnej oferty Superbet. Nie pokazuję starej kompozycji.</div>';
+      } finally {
+        if (button) button.disabled = false;
+      }
     });
   }
 
@@ -315,7 +346,10 @@
   window.TENIS_AI_SYMPHONY_V90 = {
     version: VERSION,
     open: openSymphony,
-    reload: () => loadData(true),
+    reload: async () => {
+      await refreshCurrentResults(true);
+      return loadData(true);
+    },
     refreshVisible,
     rankedMatches,
   };
