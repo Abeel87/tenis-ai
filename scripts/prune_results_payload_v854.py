@@ -3,22 +3,20 @@ from __future__ import annotations
 
 """Tenis AI v8.5.4 — safe publication pruning for ``results.json``.
 
-``player_trends.py`` embeds up to 20 raw historical source rows twice per player
-(`recent_matches` and `recent_surface_matches`) in every current match. The
-frontend trend views use the aggregate 5/10/20 ``all``/``surface`` windows and
-BASIC PBP summaries, not those duplicated raw rows.
+This pass only removes data that is proven redundant for the published frontend
+payload:
+- raw tendency source rows duplicated for every current match;
+- ``autolearn_v84.by_key`` only when it is byte-for-structure equivalent to the
+  canonical ``autolearn_v84.signals`` list.
 
-This publication-only pass removes only those two raw diagnostic arrays. It does
-not modify model probabilities, aggregate tendency metrics, current match data,
-Superbet/PLAYABLE data, SHADOW data, training/history files or settlement data.
-The regular FULL build recreates the raw source rows before all model/enrichment
-steps and this script runs again only when preparing the frontend payload.
+The AutoLearn backend creates ``by_key`` directly from ``signals`` and the UI has
+a ``signals`` lookup fallback. We therefore keep ``signals`` untouched and drop
+the index only after strict equality verification. Any mismatch is fail-safe: the
+index is preserved and reported.
 
-The diagnostic report below only measures serialized contribution of fields in
-the already-built frontend payload. It does not mutate anything beyond the two
-explicit tendency raw arrays above. This lets CI show which duplicated layer is
-actually responsible for the remaining payload size before we remove anything
-else.
+No model probability, training/history, dynamic weight, Superbet/PLAYABLE,
+SHADOW, settlement or Supabase input is changed. The regular FULL build recreates
+all calculation data before the final publication pass.
 """
 
 import json
@@ -36,12 +34,6 @@ def _compact_bytes(value) -> bytes:
 
 
 def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
-    """Measure top-level and one-level nested JSON byte contributors.
-
-    Values are serialized independently, so this is diagnostic attribution rather
-    than an exact reconstruction of the file size (key names and commas are not
-    included). It is deterministic and read-only.
-    """
     top_bytes: dict[str, int] = defaultdict(int)
     top_count: dict[str, int] = defaultdict(int)
     nested_bytes: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
@@ -69,10 +61,7 @@ def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
         if not children:
             continue
         child_order = sorted(children, key=lambda k: (-children[k], k))[:12]
-        nested[key] = [
-            {"key": child, "bytes": children[child]}
-            for child in child_order
-        ]
+        nested[key] = [{"key": child, "bytes": children[child]} for child in child_order]
 
     return {
         "top_level": [
@@ -83,32 +72,62 @@ def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
     }
 
 
+def _verified_autolearn_index(signals, by_key) -> bool:
+    if not isinstance(signals, list) or not isinstance(by_key, dict):
+        return False
+    expected = {}
+    for row in signals:
+        if not isinstance(row, dict) or row.get("key") is None:
+            return False
+        key = str(row["key"])
+        if key in expected:
+            # A duplicate key means dictionary projection is not lossless.
+            return False
+        expected[key] = row
+    return expected == by_key
+
+
 def prune_rows(rows: list[dict]) -> dict:
     removed_fields = 0
     affected_profiles = 0
     removed_items = 0
+    autolearn_indexes_removed = 0
+    autolearn_index_mismatches = 0
+    autolearn_index_bytes_removed = 0
 
     for match in rows:
         if not isinstance(match, dict):
             continue
+
         tendencies = match.get("tendencies_v71")
-        if not isinstance(tendencies, dict):
-            continue
-        for side in ("p1", "p2"):
-            profile = tendencies.get(side)
-            if not isinstance(profile, dict):
-                continue
-            touched = False
-            for key in REMOVED_TENDENCY_KEYS:
-                if key not in profile:
+        if isinstance(tendencies, dict):
+            for side in ("p1", "p2"):
+                profile = tendencies.get(side)
+                if not isinstance(profile, dict):
                     continue
-                value = profile.pop(key)
-                removed_fields += 1
-                if isinstance(value, list):
-                    removed_items += len(value)
-                touched = True
-            if touched:
-                affected_profiles += 1
+                touched = False
+                for key in REMOVED_TENDENCY_KEYS:
+                    if key not in profile:
+                        continue
+                    value = profile.pop(key)
+                    removed_fields += 1
+                    if isinstance(value, list):
+                        removed_items += len(value)
+                    touched = True
+                if touched:
+                    affected_profiles += 1
+
+        autolearn = match.get("autolearn_v84")
+        if not isinstance(autolearn, dict) or "by_key" not in autolearn:
+            continue
+        signals = autolearn.get("signals")
+        by_key = autolearn.get("by_key")
+        if _verified_autolearn_index(signals, by_key):
+            autolearn_index_bytes_removed += len(_compact_bytes(by_key))
+            autolearn.pop("by_key", None)
+            autolearn_indexes_removed += 1
+        else:
+            autolearn_index_mismatches += 1
 
     return {
         "version": VERSION,
@@ -117,6 +136,13 @@ def prune_rows(rows: list[dict]) -> dict:
         "removed_fields": removed_fields,
         "removed_items": removed_items,
         "removed_keys": list(REMOVED_TENDENCY_KEYS),
+        "autolearn_by_key": {
+            "removed_verified_indexes": autolearn_indexes_removed,
+            "mismatches_preserved": autolearn_index_mismatches,
+            "estimated_value_bytes_removed": autolearn_index_bytes_removed,
+            "canonical_signals_preserved": True,
+            "strict_equality_required": True,
+        },
     }
 
 
