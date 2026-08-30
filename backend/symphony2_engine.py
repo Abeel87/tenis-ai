@@ -2,10 +2,9 @@ from __future__ import annotations
 
 """Symfonia 2.0 operator-first runtime.
 
-The current Superbet offer is the only actionable candidate universe. Each exact
-selection is scored by a model trained on settled real operator lines and, where
-possible, by a shared tennis-state distribution. MODEL/RAW may add features but
-can never introduce a PLAYABLE line.
+The current Superbet offer is the only actionable candidate universe. Exact
+state probability and existing model outputs are features of one supervised,
+calibrated operator-line model; no hand-written percentage blend creates P_final.
 """
 
 from copy import deepcopy
@@ -30,7 +29,7 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-runtime-2"
+VERSION = "symphony2-runtime-3"
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -133,36 +132,15 @@ def _selection_id(row: dict) -> str:
     return "|".join(map(str, signal_signature(row)))
 
 
-def _base_probability(merged: dict) -> float | None:
-    candidates = [
-        ((merged.get("adaptive_prod_v79") or {}).get("final_score")),
-        merged.get("score"), merged.get("current"),
-        ((merged.get("model_scores") or {}).get("ensemble")),
-    ]
-    for value in candidates:
-        x = _num(value)
-        if x is not None:
-            return max(0.001, min(0.999, x / 100.0 if x > 1.0 else x))
-    return None
-
-
-def _final_probability(learned: float, state: float | None, base: float | None) -> tuple[float, dict]:
-    learned = max(0.001, min(0.999, learned))
-    if state is not None:
-        components = [("operator_line_learning", learned, 0.60), ("exact_state", state, 0.30)]
-        if base is not None:
-            components.append(("existing_prod", base, 0.10))
-        else:
-            components = [("operator_line_learning", learned, 2.0 / 3.0), ("exact_state", state, 1.0 / 3.0)]
-    elif base is not None:
-        components = [("operator_line_learning", learned, 0.85), ("existing_prod", base, 0.15)]
-    else:
-        components = [("operator_line_learning", learned, 1.0)]
-    total = sum(weight for _, _, weight in components)
-    p = sum(value * weight for _, value, weight in components) / total
-    return max(0.001, min(0.999, p)), {
-        name: {"probability": round(value * 100.0, 2), "weight": round(weight / total, 4)}
-        for name, value, weight in components
+def _existing_evidence(merged: dict) -> dict:
+    adaptive = _num((merged.get("adaptive_prod_v79") or {}).get("final_score"))
+    scores = merged.get("model_scores") or {}
+    return {
+        "base": _num(merged.get("score")),
+        "current": _num(scores.get("current"), _num(merged.get("current"))),
+        "catboost": _num(scores.get("catboost"), _num(merged.get("catboost"))),
+        "tabpfn": _num(scores.get("tabpfn"), _num(merged.get("tabpfn"))),
+        "adaptive": adaptive,
     }
 
 
@@ -172,10 +150,11 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
     for selection in _current_offer(match):
         sig = signal_signature(selection)
         merged = _merge_model_features(selection, models.get(sig))
-        learned = model.predict(feature_row(match, merged)) if model.ready else None
         state_p = marginal_probability(match, selection, outcomes) if outcomes else None
-        base_p = _base_probability(merged)
-        final_p, components = _final_probability(learned, state_p, base_p) if learned is not None else (None, {})
+        merged["state_probability"] = state_p * 100.0 if state_p is not None else -1.0
+        features = feature_row(match, merged)
+        learned = model.predict(features) if model.ready else None
+        support = model.support_for(features) if model.ready else 0
         rows.append({
             "selection_id": _selection_id(selection),
             "market": selection.get("market"), "pick": selection.get("pick"),
@@ -186,13 +165,13 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "operator_outcome_id": selection.get("outcome_id"),
             "fixture_line_verified": selection.get("fixture_line_verified", selection.get("market") not in LINE_MARKETS),
             "operator_line_source": selection.get("operator_line_source"),
-            "line_model_probability": round(learned * 100.0, 2) if learned is not None else None,
+            "operator_model_probability": round(learned * 100.0, 2) if learned is not None else None,
             "state_probability": round(state_p * 100.0, 2) if state_p is not None else None,
-            "base_model_probability": round(base_p * 100.0, 2) if base_p is not None else None,
-            "operator_model_probability": round(final_p * 100.0, 2) if final_p is not None else None,
-            "probability_components": components,
+            "existing_model_evidence": _existing_evidence(merged),
+            "learning_support_rows": support,
             "state_supported": state_p is not None,
             "learning_model_ready": model.ready,
+            "probability_kind": "SUPERVISED_CALIBRATED_OPERATOR_LINE_P_HIT",
         })
     rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
@@ -221,8 +200,10 @@ def _composition_utility(selection: tuple[dict, ...], joint: float) -> float:
     geometric = math.exp(sum(math.log(p) for p in ps) / n)
     weakest = min(ps)
     joint_equivalent = max(0.001, joint) ** (1.0 / n)
+    support = min(int(x.get("learning_support_rows") or 0) for x in selection)
+    support_quality = min(1.0, support / 120.0)
     complexity_penalty = 0.008 * max(0, n - 2)
-    return 100.0 * max(0.0, 0.55 * geometric + 0.25 * weakest + 0.20 * joint_equivalent - complexity_penalty)
+    return 100.0 * max(0.0, 0.48 * geometric + 0.22 * weakest + 0.22 * joint_equivalent + 0.08 * support_quality - complexity_penalty)
 
 
 def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) -> dict:
@@ -240,10 +221,9 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
             joint, supported = joint_probability(match, list(combo), outcomes)
             if joint is None or supported != n:
                 continue
-            utility = _composition_utility(combo, joint)
             candidate = {
                 "legs": n,
-                "score": round(utility, 2),
+                "score": round(_composition_utility(combo, joint), 2),
                 "joint_probability": round(joint * 100.0, 3),
                 "joint_status": "EXACT_SHARED_STATE",
                 "state_version": STATE_VERSION,
@@ -285,7 +265,8 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     current = {
         "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
         "generated_at": generated_at, "operator": OPERATOR,
-        "architecture": "CURRENT_SUPERBET_OFFER -> EXACT_SELECTION_SCORE -> SHARED_STATE_JOINT -> SYMPHONY2",
+        "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
+        "probability_policy": "CALIBRATED_SUPERVISED_MODEL; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS",
         "model_status": model.status, "matches_count": len(matches), "matches": matches,
     }
     stats = {
