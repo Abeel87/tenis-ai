@@ -24,7 +24,9 @@ on:
       - 'backend/surface_elo_integration_v893.py'
       - 'backend/shadow_signal_center_v894.py'
       - 'backend/symphony2_learning.py'
+      - 'backend/symphony2_state.py'
       - 'backend/symphony2_engine.py'
+      - 'backend/symphony2_tracker.py'
       - 'frontend/symphony2.js'
       - 'frontend/symphony2.css'
       - 'frontend/superbet-model-coverage-v922.js'
@@ -40,6 +42,8 @@ on:
       - 'tests/test_superbet_line_coverage_v924.py'
       - 'tests/test_superbet_model_coverage_ui_v922.py'
       - 'tests/test_symphony2_learning.py'
+      - 'tests/test_symphony2_state.py'
+      - 'tests/test_symphony2_tracker.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
 permissions:
@@ -84,11 +88,13 @@ jobs:
           python -m py_compile backend/surface_elo_integration_v893.py
           python -m py_compile backend/shadow_signal_center_v894.py
           python -m py_compile backend/symphony2_learning.py
+          python -m py_compile backend/symphony2_state.py
           python -m py_compile backend/symphony2_engine.py
+          python -m py_compile backend/symphony2_tracker.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching and Symphony 2 guards
-        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py
+        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -112,10 +118,11 @@ jobs:
           python backend/ensemble_player_learning_v891.py
           python backend/shadow_signal_center_v894.py
 
-      - name: Build Symphony 2 from exact current Superbet offer
+      - name: Build and track Symphony 2 from exact current Superbet offer
         run: |
           python backend/superbet_playable_v912.py project
           python backend/symphony2_engine.py
+          python backend/symphony2_tracker.py
           python scripts/compact_frontend_data_v853.py
 
       - name: Runtime sanity guard
@@ -129,6 +136,7 @@ jobs:
           results = json.loads((data/'results.json').read_text(encoding='utf-8'))
           meta = json.loads((data/'meta.json').read_text(encoding='utf-8'))
           symphony = json.loads((data/'symphony2_current.json').read_text(encoding='utf-8'))
+          history = json.loads((data/'symphony2_history.json').read_text(encoding='utf-8'))
           stats = json.loads((data/'symphony2_stats.json').read_text(encoding='utf-8'))
           assert isinstance(results, list) and results, 'results.json empty after market refresh'
           assert availability.get('contains_prices') is False
@@ -149,10 +157,12 @@ jobs:
           assert coverage.get('version') == 'v9.2.4'
           assert int(coverage.get('external_requests', -1)) == 0
           assert coverage.get('prices_used') is False
-          assert symphony.get('architecture') == 'CURRENT_SUPERBET_OFFER -> EXACT_SELECTION_SCORE -> SYMPHONY2'
+          assert symphony.get('architecture') == 'CURRENT_SUPERBET_OFFER -> EXACT_SELECTION_SCORE -> SHARED_STATE_JOINT -> SYMPHONY2'
           assert symphony.get('operator') == 'superbet.pl'
+          assert history.get('legacy_symphony_results_imported') is False
           assert stats.get('legacy_symphony_stats_used') is False
           assert stats.get('prices_used') is False
+          assert stats.get('joint_probability_policy') == 'EXACT_SHARED_STATE_ONLY'
           for match in symphony.get('matches') or []:
               for row in match.get('scored_selections') or []:
                   if row.get('market') in {
@@ -161,6 +171,9 @@ jobs:
                       'player_total_games','match_total_aces','player_aces','player_double_faults'
                   }:
                       assert row.get('fixture_line_verified') is True
+              for comp in (match.get('compositions') or {}).values():
+                  assert comp.get('joint_status') == 'EXACT_SHARED_STATE'
+                  assert comp.get('joint_probability') is not None
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
