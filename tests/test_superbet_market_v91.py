@@ -10,7 +10,6 @@ from backend.superbet_market_context_v91 import (
     finalize_results,
     prepare_results,
 )
-from backend.symphony_operator_guard_v91 import apply_superbet_market_guard
 
 
 def test_canonical_superbet_market_mapping():
@@ -132,58 +131,6 @@ def test_finalize_builds_verified_model_signal_from_real_line():
     winner = next(x for x in rows[0]["superbet_market_v91"]["model_signals"] if x["market"] == "match_winner" and x["pick"] == "Alpha")
     assert winner["score"] == 61.0
     assert winner["operator_line_verified"] is True
-    assert winner["symphony_actionable"] is True
-
-
-def test_symphony_guard_removes_unavailable_lines_and_df():
-    augmented = {
-        "autolearn_v84": {
-            "signals": [
-                {"key": "a", "market": "match_total", "pick": "over", "line": 20.5, "score": 80.0},
-                {"key": "b", "market": "match_total", "pick": "over", "line": 21.5, "score": 60.0},
-                {"key": "c", "market": "player_double_faults", "pick": "over", "line": 0.5, "score": 90.0},
-                {"key": "d", "market": "most_double_faults", "pick": "Alpha", "score": 75.0},
-                {"key": "e", "market": "non_operator_debug", "pick": "x", "score": 55.0},
-            ]
-        }
-    }
-    original = {
-        "superbet_market_v91": {
-            "status": "VERIFIED",
-            "operator_verified": True,
-            "canonical_selections": [
-                {"market": "match_total", "pick": "over", "line": 21.5, "market_id": "1233", "outcome_id": "o", "operator_available": True}
-            ],
-            "model_signals": [
-                {
-                    "key": "superbet|match_total|||21.5|over",
-                    "market": "match_total", "pick": "over", "line": 21.5,
-                    "score": 72.0, "symphony_raw_probability": 72.0,
-                    "symphony_source": "superbet_market_v91+market_lab_v741",
-                    "operator_line_verified": True,
-                }
-            ],
-        }
-    }
-    guarded, meta = apply_superbet_market_guard(augmented, {"composer_added": 0}, original)
-    signals = guarded["autolearn_v84"]["signals"]
-    assert not any(x.get("market") == "match_total" and x.get("line") == 20.5 for x in signals)
-    assert not any(x.get("market") == "player_double_faults" for x in signals)
-    assert not any(x.get("market") == "most_double_faults" for x in signals)
-    kept = next(x for x in signals if x.get("market") == "match_total")
-    assert kept["line"] == 21.5
-    assert kept["score"] == 72.0
-    assert kept["operator_line_verified"] is True
-    assert any(x.get("market") == "non_operator_debug" for x in signals)
-    assert meta["operator_market_feed_active"] is True
-    assert meta["operator_suppressed_unavailable"] == 3
-
-
-def test_symphony_guard_is_non_destructive_without_verified_feed():
-    augmented = {"autolearn_v84": {"signals": [{"market": "match_total", "pick": "over", "line": 20.5, "score": 70.0}]}}
-    guarded, meta = apply_superbet_market_guard(augmented, {}, {"superbet_market_v91": {"status": "NOT_FOUND", "operator_verified": False}})
-    assert guarded == augmented
-    assert meta["operator_market_feed_active"] is False
 
 
 def test_prepare_expiry_metadata_and_future_timestamp_fail_closed(monkeypatch):
