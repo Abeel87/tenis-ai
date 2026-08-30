@@ -1,9 +1,8 @@
 {
-  "status": "ERROR",
-  "returncode": 1,
+  "status": "TIMEOUT",
   "timeout_seconds": 480,
   "preserved_previous_report": true,
-  "stderr_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_scenario_runtime_v93.py\", line 131, in build_match\n    row = original_build_match(match, shadow_for_match, legs=legs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_scenario_lattice_v93.py\", line 605, in build_match_model_scenario\n    comps = fast._fast_one_pass_compositions(augmented, candidates, outcomes)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_deep_progress_v93m.py\", line 114, in compositions\n    result = original_compositions(match, candidates, outcomes_rows)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_beam_screen_v93p.py\", line 389, in cached\n    result = _cached_compositions(fast, shared, match, candidates, outcomes, stats_out=stats)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_beam_screen_v93p.py\", line 352, in _cached_compositions\n    **fast.base.core._scenario_payload(match, best_combo, best_metrics, outcomes),\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_engine_v90.py\", line 773, in _scenario_payload\n    \"top_paths\": _top_matching_paths(match, combo, outcomes),\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_payload_rank_cache_v93n.py\", line 158, in core_top_paths\n    \"path\": core._path_text(row),\n            ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/tenis-ai/tenis-ai/backend/symphony_engine_v90.py\", line 707, in _path_text\n    cp2 = f\"{o['cp2'][0]}:{o['cp2'][1]}\"\n             ~^^^^^^^\nKeyError: 'cp2'\n",
+  "reason": "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND",
   "execution_version": "v9.3E-bounded-subprocess",
   "production_influence": false,
   "playable_influence": false,

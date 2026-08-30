@@ -1,15 +1,15 @@
 {
   "version": "v8.6-shadow",
-  "generated_at": "2026-08-30T05:48:56.557581+00:00",
+  "generated_at": "2026-08-30T06:33:15.307494+00:00",
   "status": "ACTIVE",
   "production_mode": "shadow_only",
   "production_changed": false,
   "training": {
-    "rows": 1834,
+    "rows": 1840,
     "matches": 397,
     "train": 1263,
     "cal": 253,
-    "val": 318
+    "val": 324
   },
   "current": {
     "calibration": {
@@ -23,12 +23,12 @@
       "threshold": 65.0
     },
     "validation": {
-      "n": 318,
+      "n": 324,
       "coverage": 1.0,
-      "brier": 0.20212,
-      "log_loss": 0.59285,
+      "brier": 0.20341,
+      "log_loss": 0.59559,
       "selected_n": 257,
-      "selected_coverage": 0.8082,
+      "selected_coverage": 0.7932,
       "accuracy": 72.0,
       "threshold": 65.0
     }
@@ -113,88 +113,20 @@
       "threshold": 65.0
     },
     "validation": {
-      "n": 318,
+      "n": 324,
       "coverage": 1.0,
-      "brier": 0.20378,
-      "log_loss": 0.5952,
+      "brier": 0.20409,
+      "log_loss": 0.5959,
       "selected_n": 210,
-      "selected_coverage": 0.6604,
+      "selected_coverage": 0.6481,
       "accuracy": 78.1,
       "threshold": 65.0
     }
   },
   "tabpfn_native_ab": {
-    "status": "ok",
-    "variants": {
-      "native_300_e1": {
-        "status": "ok",
-        "train_rows": 300,
-        "n_estimators": 1,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 253,
-          "coverage": 1.0,
-          "brier": 0.20337,
-          "log_loss": 0.59754,
-          "selected_n": 226,
-          "selected_coverage": 0.8933,
-          "accuracy": 73.9,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 318,
-          "coverage": 1.0,
-          "brier": 0.21017,
-          "log_loss": 0.61054,
-          "selected_n": 255,
-          "selected_coverage": 0.8019,
-          "accuracy": 71.4,
-          "threshold": 65.0
-        }
-      },
-      "native_600_e4": {
-        "status": "ok",
-        "train_rows": 600,
-        "n_estimators": 4,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 253,
-          "coverage": 1.0,
-          "brier": 0.20144,
-          "log_loss": 0.59227,
-          "selected_n": 215,
-          "selected_coverage": 0.8498,
-          "accuracy": 74.4,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 318,
-          "coverage": 1.0,
-          "brier": 0.20164,
-          "log_loss": 0.59032,
-          "selected_n": 243,
-          "selected_coverage": 0.7642,
-          "accuracy": 73.3,
-          "threshold": 65.0
-        }
-      }
-    }
+    "status": "unavailable",
+    "reason": "tabpfn_not_installed_this_run",
+    "variants": {}
   },
   "router_shadow": {
     "global_cal_champion": "current",
@@ -207,16 +139,16 @@
         ],
         "segments": {
           "set1_total|ATP|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 71,
-            "brier": 0.18968,
-            "log_loss": 0.56666
+            "brier": 0.19464,
+            "log_loss": 0.57772
           },
           "set1_total|WTA|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 39,
-            "brier": 0.14806,
-            "log_loss": 0.47371
+            "brier": 0.15352,
+            "log_loss": 0.48491
           }
         }
       },
@@ -227,22 +159,22 @@
         ],
         "segments": {
           "set1_total|CHALLENGER": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 40,
-            "brier": 0.17269,
-            "log_loss": 0.52657
+            "brier": 0.18302,
+            "log_loss": 0.55289
           },
           "set1_total|ATP": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 71,
-            "brier": 0.18968,
-            "log_loss": 0.56666
+            "brier": 0.19464,
+            "log_loss": 0.57772
           },
           "set1_total|WTA": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 39,
-            "brier": 0.14806,
-            "log_loss": 0.47371
+            "brier": 0.15352,
+            "log_loss": 0.48491
           }
         }
       },
@@ -258,29 +190,27 @@
             "log_loss": 0.61412
           },
           "set1_total": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 156,
-            "brier": 0.17981,
-            "log_loss": 0.54376
+            "brier": 0.18566,
+            "log_loss": 0.55742
           }
         }
       }
     ],
     "validation": {
-      "n": 318,
+      "n": 324,
       "coverage": 1.0,
-      "brier": 0.19906,
-      "log_loss": 0.58511,
-      "selected_n": 232,
-      "selected_coverage": 0.7296,
-      "accuracy": 74.1,
+      "brier": 0.20239,
+      "log_loss": 0.59334,
+      "selected_n": 236,
+      "selected_coverage": 0.7284,
+      "accuracy": 74.2,
       "threshold": 65.0
     },
     "validation_model_usage": {
-      "current": 77,
-      "direct_catboost": 82,
-      "native_300_e1": 130,
-      "native_600_e4": 29
+      "current": 242,
+      "direct_catboost": 82
     },
     "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
   },
@@ -300,9 +230,7 @@
   ],
   "models_available_for_router": [
     "current",
-    "direct_catboost",
-    "native_300_e1",
-    "native_600_e4"
+    "direct_catboost"
   ],
   "promotion_gate": {
     "status": "shadow_only",
