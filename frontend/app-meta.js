@@ -174,3 +174,32 @@
     snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})
   });
 })();
+
+/* v9.2.4 Symphony actionable bootstrap.
+   Keep MODEL/RAW independent, but make every actionable Symphony surface fail
+   closed unless the exact current Superbet selection is verified. */
+(() => {
+  'use strict';
+  function fullDom(){
+    return typeof document!=='undefined' &&
+      typeof document.getElementById==='function' &&
+      typeof document.createElement==='function' &&
+      !!document.body && typeof document.body.appendChild==='function';
+  }
+  function load(src,id,onload){
+    if(!fullDom())return;
+    if(document.getElementById(id)){onload?.();return}
+    const s=document.createElement('script');
+    s.id=id;s.src=src;s.async=false;
+    if(onload&&typeof s.addEventListener==='function')s.addEventListener('load',onload,{once:true});
+    document.body.appendChild(s);
+  }
+  function boot(){
+    if(!fullDom())return;
+    const save=()=>load('symphony-superbet-save-v924.js?v=924','symphony-superbet-save-v924');
+    if(window.TENIS_AI_PLAYABLE_UI_V917)save();
+    else load('playable-ui-coherence-v917.js?v=924','playable-ui-coherence-v917',save);
+  }
+  if(typeof document!=='undefined'&&document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
