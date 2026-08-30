@@ -24,6 +24,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          from textwrap import dedent
 
           p = Path('backend/superbet_playable_v912.py')
           s = p.read_text(encoding='utf-8')
@@ -46,15 +47,17 @@ jobs:
               raise SystemExit('Unexpected deep status constants state')
           s = s.replace(needle, repl, 1)
 
-          old = '''def _write_deep_runtime_status(payload: dict) -> None:
+          old = dedent('''\
+          def _write_deep_runtime_status(payload: dict) -> None:
               status = dict(payload)
               status["execution_version"] = DEEP_EXECUTION_VERSION
               status["production_influence"] = False
               status["playable_influence"] = False
               status["prices_used"] = False
               base.core._write(DEEP_RUNTIME_STATUS, status)
-          '''.replace('          ', '')
-          new = '''def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
+          ''')
+          new = dedent('''\
+          def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
               """Reconcile diagnostics after the parent stops the deep child."""
               for path, replace_status in (
                   (DEEP_INCREMENTAL_STATUS, True),
@@ -87,17 +90,55 @@ jobs:
               terminal = str(status.get("status") or "").upper()
               if terminal in {"TIMEOUT", "ERROR"}:
                   _mark_deep_terminal(terminal, status.get("reason") or status.get("stderr_tail"))
-          '''.replace('          ', '')
+          ''')
           if old not in s:
               raise SystemExit('Deep runtime status function anchor not found')
           p.write_text(s.replace(old, new, 1), encoding='utf-8')
 
-          Path('tests/test_final_audit_safe_fixes_v923.py').write_text('''from backend import superbet_playable_v912 as playable\n\n\ndef _verified_match(*, model_ready: bool):\n    return {"model_ready": model_ready, "superbet_market_v91": {"operator_verified": True, "status": "VERIFIED", "canonical_selections": [], "model_signals": []}}\n\n\ndef test_superbet_verified_match_coverage_uses_model_ready_intersection():\n    results = [_verified_match(model_ready=True), _verified_match(model_ready=False), {"model_ready": True}]\n    current = playable._playable_stats([], results, {}, {})["current"]\n    assert current["model_ready_matches"] == 2\n    assert current["verified_superbet_matches"] == 2\n    assert current["verified_model_ready_matches"] == 1\n    assert current["verified_match_coverage"] == 0.5\n    assert 0.0 <= current["verified_match_coverage"] <= 1.0\n''', encoding='utf-8')
+          Path('tests/test_final_audit_safe_fixes_v923.py').write_text(dedent('''\
+          from backend import superbet_playable_v912 as playable
+
+
+          def _verified_match(*, model_ready: bool):
+              return {"model_ready": model_ready, "superbet_market_v91": {"operator_verified": True, "status": "VERIFIED", "canonical_selections": [], "model_signals": []}}
+
+
+          def test_superbet_verified_match_coverage_uses_model_ready_intersection():
+              results = [_verified_match(model_ready=True), _verified_match(model_ready=False), {"model_ready": True}]
+              current = playable._playable_stats([], results, {}, {})["current"]
+              assert current["model_ready_matches"] == 2
+              assert current["verified_superbet_matches"] == 2
+              assert current["verified_model_ready_matches"] == 1
+              assert current["verified_match_coverage"] == 0.5
+              assert 0.0 <= current["verified_match_coverage"] <= 1.0
+          '''), encoding='utf-8')
 
           p = Path('tests/test_symphony_v93e_watchdog.py')
           t = p.read_text(encoding='utf-8')
           if 'test_terminal_telemetry_reconciles_stale_running_state' not in t:
-              t += '''\n\ndef test_terminal_telemetry_reconciles_stale_running_state(monkeypatch):\n    writes = []\n    payloads = {\n        engine.DEEP_INCREMENTAL_STATUS: {"status": "RUNNING", "completed_this_run": 37, "pending_entries": 70},\n        engine.DEEP_PROGRESS_STATUS: {"stage": "OUTCOME_LATTICE_DONE", "completed_matches": 37},\n    }\n    monkeypatch.setattr(engine.base.core, "_read", lambda path, default=None: dict(payloads.get(path, default or {})))\n    monkeypatch.setattr(engine.base.core, "_write", lambda path, payload: writes.append((path, dict(payload))))\n    engine._mark_deep_terminal("TIMEOUT", "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND")\n    by_path = {path: payload for path, payload in writes}\n    inc = by_path[engine.DEEP_INCREMENTAL_STATUS]\n    progress = by_path[engine.DEEP_PROGRESS_STATUS]\n    assert inc["status"] == "TIMEOUT"\n    assert inc["child_status_at_termination"] == "RUNNING"\n    assert inc["completed_this_run"] == 37 and inc["pending_entries"] == 70\n    assert progress["stage"] == "OUTCOME_LATTICE_DONE"\n    assert progress["terminal_status"] == "TIMEOUT"\n    assert progress["completed_matches"] == 37\n    assert inc["prices_used"] is False and progress["prices_used"] is False\n'''
+              t += dedent('''\
+
+
+          def test_terminal_telemetry_reconciles_stale_running_state(monkeypatch):
+              writes = []
+              payloads = {
+                  engine.DEEP_INCREMENTAL_STATUS: {"status": "RUNNING", "completed_this_run": 37, "pending_entries": 70},
+                  engine.DEEP_PROGRESS_STATUS: {"stage": "OUTCOME_LATTICE_DONE", "completed_matches": 37},
+              }
+              monkeypatch.setattr(engine.base.core, "_read", lambda path, default=None: dict(payloads.get(path, default or {})))
+              monkeypatch.setattr(engine.base.core, "_write", lambda path, payload: writes.append((path, dict(payload))))
+              engine._mark_deep_terminal("TIMEOUT", "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND")
+              by_path = {path: payload for path, payload in writes}
+              inc = by_path[engine.DEEP_INCREMENTAL_STATUS]
+              progress = by_path[engine.DEEP_PROGRESS_STATUS]
+              assert inc["status"] == "TIMEOUT"
+              assert inc["child_status_at_termination"] == "RUNNING"
+              assert inc["completed_this_run"] == 37 and inc["pending_entries"] == 70
+              assert progress["stage"] == "OUTCOME_LATTICE_DONE"
+              assert progress["terminal_status"] == "TIMEOUT"
+              assert progress["completed_matches"] == 37
+              assert inc["prices_used"] is False and progress["prices_used"] is False
+          ''')
               p.write_text(t, encoding='utf-8')
           PY
           python -m py_compile backend/superbet_playable_v912.py backend/symphony_engine_v91.py
