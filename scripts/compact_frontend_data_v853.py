@@ -5,6 +5,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from prune_results_payload_v854 import prune_results
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'frontend' / 'data'
 TARGETS = (
@@ -190,10 +192,12 @@ def build_symphony_match_cards() -> dict:
 def main() -> None:
     symphony_model_stats = track_deep_symphony_stats()
     symphony_cards = build_symphony_match_cards()
+    results_prune = prune_results(DATA / 'results.json')
     report = [compact(path) for path in TARGETS]
     print(json.dumps({
-        'version': 'v8.5.3',
+        'version': 'v8.5.4',
         'targets': report,
+        'results_publication_prune': results_prune,
         'symphony_model_stats': symphony_model_stats,
         'symphony_match_cards': symphony_cards,
     }, ensure_ascii=False, indent=2))
