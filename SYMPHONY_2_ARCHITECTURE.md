@@ -4,7 +4,7 @@
 
 Symfonia 2.0 nie generuje własnych linii do PLAYABLE. Jej zadaniem jest ocenić **dokładne selekcje z aktualnej oferty Superbet** i z nich zbudować najbardziej spójne kompozycje 2–6 zdarzeń.
 
-Stara Symfonia v9.x jest wycofywana. Jej raporty, UI, statystyki i workflow nie są źródłem Symfonii 2.0.
+Stara Symfonia v9.x została usunięta z aktywnego stosu. Jej raporty, UI, statystyki, trackery i workflow nie są źródłem Symfonii 2.0.
 
 ## Twardy podział warstw
 
@@ -13,7 +13,7 @@ Stara Symfonia v9.x jest wycofywana. Jej raporty, UI, statystyki i workflow nie 
 - pozostaje niezależny od operatora;
 - może liczyć pełne rozkłady, własne progi i własne linie diagnostyczne;
 - nie jest źródłem kandydatów PLAYABLE;
-- służy jako feature/evidence dla oceny realnej linii operatora.
+- jego wyniki są wyłącznie cechami/evidence przy ocenie dokładnej linii operatora.
 
 ### SUPERBET SNAPSHOT
 
@@ -21,37 +21,53 @@ Dla każdego fixture zapisujemy dokładny zbiór bieżących selekcji:
 
 `fixture + market + pick + line + player/checkpoint`
 
-Nie ma nearest-line, model-line ani catalogue/global fallback.
+Nie ma nearest-line, model-line ani catalogue/global fallback. Rynek liniowy bez `fixture_line_verified=true` nie jest kandydatem Symfonii 2.0.
 
 ### TRAINING DATASET
 
 Jednostką treningową jest konkretna historyczna selekcja operatora:
 
-`match_features + market + pick + line + player/checkpoint + model/path features -> hit/miss`
+`match_features + market + pick + exact_line + player/checkpoint + state_probability + existing_model_features -> hit/miss`
 
-Etykietą jest wynik zdarzenia, nie linia bukmachera. Uczymy prawdopodobieństwa trafienia **na zadanej realnej linii**.
+Etykietą jest wynik zdarzenia, nie linia bukmachera. Uczymy bezpośrednio `P(hit)` **na zadanej realnej linii Superbet**.
 
 Źródła historyczne:
 
-- zamrożone `playable_signals_v912`;
-- `playable_autolearn_signals_v912`;
-- `playable_shadow_models_v912` jako evidence, nigdy jako automatyczny PROD;
-- kolejne snapshoty Symfonii 2.0 będą zapisywane w osobnej warstwie `symphony2_*`.
+- zamrożone `playable_autolearn_signals_v912` jako najbogatsza warstwa cech;
+- `playable_signals_v912` jako fallback;
+- wynik `hit/miss` dokładnie tej samej selekcji;
+- historia Symfonii 2.0 jest osobna i nie importuje trafień/pudeł starej Symfonii.
 
 Nie tworzymy sztucznych obserwacji dla linii, których operator nie wystawił.
 
-## Scoring aktualnej oferty
+## Model prawdopodobieństwa
 
-Dla każdej aktualnej selekcji Superbet obliczamy niezależne komponenty:
+`P_final` nie jest ręczną średnią procentów.
 
-1. `path_probability` — prawdopodobieństwo z jednej wspólnej dystrybucji przebiegu meczu, gdy dany rynek jest wspierany;
-2. `operator_model_probability` — model uczony na historycznych realnych liniach;
-3. `prod_evidence` — istniejące modele PROD ocenione dla dokładnej selekcji, jeśli dostępne;
-4. `shadow_evidence` — pomocnicze, ograniczone wagą;
-5. `calibration` — kalibracja per rodzina rynku / zakres linii;
-6. `data_quality` i `sample_support` — jawna kara za małą próbkę lub brak danych.
+Model CatBoost jest uczony na chronologicznym time-split. Jako cechy dostaje m.in.:
 
-Wynik końcowy `P_final` musi być kalibrowanym prawdopodobieństwem, nie prostą średnią procentów.
+- market, pick, surface, tour, player scope;
+- dokładną linię i checkpoint;
+- exact-state probability, jeśli rynek jest wspierany przez wspólną dystrybucję meczu;
+- istniejące Current/CatBoost/TabPFN/Adaptive/PROD evidence dla tej samej dokładnej selekcji.
+
+Następnie:
+
+1. kalibracja Platt jest akceptowana tylko wtedy, gdy nie pogarsza Brier score;
+2. przy wystarczającej próbce stosujemy kalibrację osobno dla rodziny rynku;
+3. przy małej liczbie historycznych obserwacji danej rodziny wynik jest jawnie shrinkowany w stronę 50%, zamiast udawać wysoką pewność;
+4. `operator_model_probability` jest końcowym nadzorowanym `P_final`, a nie ręcznie ustawioną wagą modeli.
+
+## Exact shared-state
+
+Czysty moduł `symphony2_state.py` buduje wspólną dystrybucję przebiegu meczu z modelu serwisowego i dostępnych targetów setowych.
+
+Dla rynków obsługiwanych przez tę samą dystrybucję liczymy:
+
+- marginalne `state_probability` jako cechę modelu `P_final`;
+- prawdziwe `joint_probability` kompozycji przez sumowanie masy **tych samych stanów**, które spełniają wszystkie nogi jednocześnie.
+
+Iloczyn marginalnych prawdopodobieństw nie jest pokazywany jako joint. Jeżeli którejś nogi nie umiemy osadzić w tym samym state-space, nie dostaje ona fałszywego joint i nie wchodzi do kompozycji exact-state.
 
 ## Generator
 
@@ -59,42 +75,36 @@ Generator dostaje **wyłącznie aktualne, dokładne selekcje Superbet z P_final*
 
 Dla każdej kompozycji 2–6 nóg ocenia:
 
-- joint probability z tej samej dystrybucji meczu;
-- korelację i redundancję;
-- konflikt logiczny;
-- fragility;
-- jakość danych / kalibracji;
-- minimalną jakość pojedynczej nogi.
+- prawdziwy joint probability z tej samej dystrybucji meczu;
+- konflikt i redundancję rynku;
+- najsłabszą nogę;
+- jakość wsparcia historycznego;
+- karę za niepotrzebną złożoność.
 
-Nie wybiera zdarzeń tylko dlatego, że mają najwyższe marginalne P.
+Nie wybiera zdarzeń tylko dlatego, że mają najwyższe marginalne P i nie stackuje kilku progów z tej samej rodziny rynku.
 
-## Output
+## Historia, settlement i statystyki
 
 Nowe pliki runtime:
 
-- `frontend/data/symphony2_current.json` — bieżące ocenione selekcje i kompozycje;
-- `frontend/data/symphony2_stats.json` — wyłącznie statystyki Symfonii 2.0;
-- `frontend/data/symphony2_history.json` — zamrożone predykcje operator-first do settlementu i nauki.
+- `frontend/data/symphony2_current.json` — bieżące ocenione realne selekcje i kompozycje;
+- `frontend/data/symphony2_history.json` — predykcje Symfonii 2.0 od zera;
+- `frontend/data/symphony2_stats.json` — wyłącznie statystyki Symfonii 2.0.
 
-Stare `symphony_v90*.json`, stare statystyki Symfonii i stare komponenty UI nie są używane przez Symfonię 2.0.
+Settlement nogi wymaga dokładnej zgodności:
+
+`match + market + pick + line + checkpoint + player`
+
+Inna linia nigdy nie rozlicza predykcji. Statystyki starej Symfonii nie są importowane.
 
 ## UI
 
 W aplikacji istnieje jeden generator: **Symfonia 2.0**.
 
-Ekran pokazuje:
-
-- aktualność snapshotu Superbet;
-- liczbę fixture/rynków/selekcji dostępnych do oceny;
-- ocenę każdej wybranej nogi na dokładnej linii;
-- joint probability kompozycji;
-- źródła evidence i jakość danych;
-- powód braku kompozycji, jeśli nie ma wystarczająco jakościowych realnych selekcji.
-
-Nie pokazujemy statystyk starej Symfonii.
+Ekran pokazuje realne linie Superbet, `P_final`, joint probability, jakość/wsparcie i powód braku kompozycji. Nie pokazujemy statystyk starej Symfonii ani nie wracamy do niej jako fallback.
 
 ## Zasada bezpieczeństwa architektury
 
-`DANE/MODELE RAW -> FEATURES/DYSTRYBUCJA -> AKTUALNA OFERTA SUPERBET -> SCORE DOKŁADNYCH SELEKCJI -> SYMFONIA 2.0 -> PLAYABLE`
+`DANE/MODELE RAW -> FEATURES + SHARED STATE -> AKTUALNA OFERTA SUPERBET -> SUPERVISED P(HIT) DOKŁADNYCH SELEKCJI -> EXACT JOINT -> SYMFONIA 2.0 -> PLAYABLE`
 
 Nigdy odwrotnie i nigdy przez dopasowanie własnej linii modelu do najbliższej linii operatora.
