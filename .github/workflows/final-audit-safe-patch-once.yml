@@ -115,6 +115,11 @@ jobs:
 
           p = Path('tests/test_symphony_v93e_watchdog.py')
           t = p.read_text(encoding='utf-8')
+          old_assert = '    assert written[-1][0] == engine.DEEP_RUNTIME_STATUS\n    assert written[-1][1]["execution_version"] == engine.DEEP_EXECUTION_VERSION\n'
+          new_assert = '    runtime_payload = next(payload for path, payload in written if path == engine.DEEP_RUNTIME_STATUS)\n    assert runtime_payload["execution_version"] == engine.DEEP_EXECUTION_VERSION\n'
+          if old_assert not in t:
+              raise SystemExit('Watchdog timeout assertion anchor not found')
+          t = t.replace(old_assert, new_assert, 1)
           if 'test_terminal_telemetry_reconciles_stale_running_state' not in t:
               t += dedent('''\
 
@@ -139,7 +144,7 @@ jobs:
               assert progress["completed_matches"] == 37
               assert inc["prices_used"] is False and progress["prices_used"] is False
           ''')
-              p.write_text(t, encoding='utf-8')
+          p.write_text(t, encoding='utf-8')
           PY
           python -m py_compile backend/superbet_playable_v912.py backend/symphony_engine_v91.py
           python -m pip install -r requirements.txt
