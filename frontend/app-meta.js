@@ -7,7 +7,7 @@
     displayVersion: 'v8.8.7',
     currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock',
     // User-facing release can advance without rewriting the protected runtime contract.
-    releaseVersion: 'v9.1.9',
+    releaseVersion: 'v9.2.3',
     modelVersion: 'v7.8D',
     calibrationModelVersion: 'v7.8D-calibration-guard',
     productionModelVersion: 'v8.4B',
