@@ -25,58 +25,34 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # 1) Superbet coverage must compare the same population on both sides.
           p = Path('backend/superbet_playable_v912.py')
           s = p.read_text(encoding='utf-8')
-          old = '''    verified = sum(1 for m in results if isinstance(m, dict) and operator_context_active(m))
-              model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))
-          '''.replace('              ', '')
-          new = '''    verified = sum(1 for m in results if isinstance(m, dict) and operator_context_active(m))
-              model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))
-              verified_model_ready = sum(
-                  1 for m in results
-                  if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m)
-              )
-          '''.replace('              ', '')
-          if old not in s:
-              raise SystemExit('Superbet coverage anchor not found')
-          s = s.replace(old, new, 1)
-          old2 = '''            "model_ready_matches": model_ready,
-              "verified_superbet_matches": verified,
-              "verified_match_coverage": round(verified / model_ready, 4) if model_ready else 0.0,
-          '''.replace('              ', '')
-          new2 = '''            "model_ready_matches": model_ready,
-              "verified_superbet_matches": verified,
-              "verified_model_ready_matches": verified_model_ready,
-              "verified_match_coverage": round(verified_model_ready / model_ready, 4) if model_ready else 0.0,
-          '''.replace('              ', '')
-          if old2 not in s:
-              raise SystemExit('Superbet stats payload anchor not found')
-          p.write_text(s.replace(old2, new2, 1), encoding='utf-8')
+          needle = '    model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))\n'
+          insert = needle + '''    verified_model_ready = sum(
+              1 for m in results
+              if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m)
+          )
+          '''.replace('          ', '')
+          if needle not in s or 'verified_model_ready = sum(' in s:
+              raise SystemExit('Unexpected Superbet model_ready anchor state')
+          s = s.replace(needle, insert, 1)
+          needle = '            "verified_superbet_matches": verified,\n            "verified_match_coverage": round(verified / model_ready, 4) if model_ready else 0.0,\n'
+          repl = '            "verified_superbet_matches": verified,\n            "verified_model_ready_matches": verified_model_ready,\n            "verified_match_coverage": round(verified_model_ready / model_ready, 4) if model_ready else 0.0,\n'
+          if needle not in s:
+              raise SystemExit('Unexpected Superbet coverage payload anchor state')
+          p.write_text(s.replace(needle, repl, 1), encoding='utf-8')
 
-          # 2) When the parent watchdog kills deep MODEL/RAW, public child telemetry
-          # must no longer claim it is still RUNNING. Counters/stage are preserved.
           p = Path('backend/symphony_engine_v91.py')
           s = p.read_text(encoding='utf-8')
-          anchor = '''DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"
-          BASE_VERSION = base.VERSION
-          '''.replace('          ', '')
-          repl = '''DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"
-          DEEP_INCREMENTAL_STATUS = base.core.OUT / "symphony_model_incremental_v93r.json"
-          DEEP_PROGRESS_STATUS = base.core.OUT / "symphony_model_progress_v93m.json"
-          BASE_VERSION = base.VERSION
-          '''.replace('          ', '')
-          if anchor not in s:
-              raise SystemExit('Deep status constants anchor not found')
-          s = s.replace(anchor, repl, 1)
-          anchor2 = '''def _run_deep_bounded(legs: int = 4) -> dict:
-          '''.replace('          ', '')
-          helper = '''def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
-              """Reconcile public child telemetry after the parent stops the process.
+          needle = 'DEEP_RUNTIME_STATUS = base.core.OUT / "symphony_model_runtime_v93e.json"\n'
+          repl = needle + 'DEEP_INCREMENTAL_STATUS = base.core.OUT / "symphony_model_incremental_v93r.json"\nDEEP_PROGRESS_STATUS = base.core.OUT / "symphony_model_progress_v93m.json"\n'
+          if needle not in s or 'DEEP_INCREMENTAL_STATUS' in s:
+              raise SystemExit('Unexpected deep status constants state')
+          s = s.replace(needle, repl, 1)
 
-              This changes diagnostics only. Existing progress counters and the last
-              deep stage are retained; model inputs, outputs and cached rows are untouched.
-              """
+          helper_anchor = 'def _run_deep_bounded(legs: int = 4) -> dict:\n'
+          helper = '''def _mark_deep_terminal(status: str, reason: str | None = None) -> None:
+              """Reconcile diagnostics after the parent stops the deep child."""
               for path, replace_status in (
                   (DEEP_INCREMENTAL_STATUS, True),
                   (DEEP_PROGRESS_STATUS, False),
@@ -100,40 +76,37 @@ jobs:
 
           def _run_deep_bounded(legs: int = 4) -> dict:
           '''.replace('          ', '')
-          if anchor2 not in s:
-              raise SystemExit('Deep bounded anchor not found')
-          s = s.replace(anchor2, helper, 1)
-          timeout_anchor = '''        _write_deep_runtime_status(result)
-                  return result
+          if helper_anchor not in s:
+              raise SystemExit('Deep runner anchor missing')
+          s = s.replace(helper_anchor, helper, 1)
+
+          # Patch each terminal branch by its unique nearby payload field.
+          timeout_block = '''        _write_deep_runtime_status(result)
+              return result
           '''.replace('          ', '')
-          timeout_repl = '''        _write_deep_runtime_status(result)
-                  _mark_deep_terminal("TIMEOUT", result.get("reason"))
-                  return result
+          if timeout_block not in s:
+              raise SystemExit('No terminal runtime write found')
+          s = s.replace(timeout_block, '''        _write_deep_runtime_status(result)
+              _mark_deep_terminal("TIMEOUT", result.get("reason"))
+              return result
+          '''.replace('          ', ''), 1)
+          error_block = '''        _write_deep_runtime_status(result)
+              return result
           '''.replace('          ', '')
-          if timeout_anchor not in s:
-              raise SystemExit('Timeout write anchor not found')
-          s = s.replace(timeout_anchor, timeout_repl, 1)
-          # Mark all ERROR exits after their runtime status write without touching success.
-          error_pattern = '''        _write_deep_runtime_status(result)
-                  return result
-          '''.replace('          ', '')
-          error_repl = '''        _write_deep_runtime_status(result)
-                  _mark_deep_terminal("ERROR", result.get("reason") or result.get("stderr_tail"))
-                  return result
-          '''.replace('          ', '')
-          # There are two ERROR exits remaining: non-zero child and malformed JSON.
-          if s.count(error_pattern) < 2:
-              raise SystemExit(f'Expected at least two ERROR anchors, got {s.count(error_pattern)}')
-          s = s.replace(error_pattern, error_repl, 2)
+          if s.count(error_block) < 2:
+              raise SystemExit(f'Expected two remaining error exits, found {s.count(error_block)}')
+          s = s.replace(error_block, '''        _write_deep_runtime_status(result)
+              _mark_deep_terminal("ERROR", result.get("reason") or result.get("stderr_tail"))
+              return result
+          '''.replace('          ', ''), 2)
           p.write_text(s, encoding='utf-8')
 
-          # Regression tests.
-          Path('tests/test_final_audit_safe_fixes_v923.py').write_text('''from backend import superbet_playable_v912 as playable\n\n\ndef _verified_match(*, model_ready: bool):\n    return {\n        "model_ready": model_ready,\n        "superbet_market_v91": {\n            "operator_verified": True,\n            "status": "VERIFIED",\n            "canonical_selections": [],\n            "model_signals": [],\n        },\n    }\n\n\ndef test_superbet_verified_match_coverage_uses_model_ready_intersection():\n    results = [\n        _verified_match(model_ready=True),\n        _verified_match(model_ready=False),\n        {"model_ready": True},\n    ]\n    stats = playable._playable_stats([], results, {}, {})\n    current = stats["current"]\n    assert current["model_ready_matches"] == 2\n    assert current["verified_superbet_matches"] == 2\n    assert current["verified_model_ready_matches"] == 1\n    assert current["verified_match_coverage"] == 0.5\n    assert 0.0 <= current["verified_match_coverage"] <= 1.0\n''', encoding='utf-8')
+          Path('tests/test_final_audit_safe_fixes_v923.py').write_text('''from backend import superbet_playable_v912 as playable\n\n\ndef _verified_match(*, model_ready: bool):\n    return {"model_ready": model_ready, "superbet_market_v91": {"operator_verified": True, "status": "VERIFIED", "canonical_selections": [], "model_signals": []}}\n\n\ndef test_superbet_verified_match_coverage_uses_model_ready_intersection():\n    results = [_verified_match(model_ready=True), _verified_match(model_ready=False), {"model_ready": True}]\n    current = playable._playable_stats([], results, {}, {})["current"]\n    assert current["model_ready_matches"] == 2\n    assert current["verified_superbet_matches"] == 2\n    assert current["verified_model_ready_matches"] == 1\n    assert current["verified_match_coverage"] == 0.5\n    assert 0.0 <= current["verified_match_coverage"] <= 1.0\n''', encoding='utf-8')
 
           p = Path('tests/test_symphony_v93e_watchdog.py')
           t = p.read_text(encoding='utf-8')
           if 'test_terminal_telemetry_reconciles_stale_running_state' not in t:
-              t += '''\n\ndef test_terminal_telemetry_reconciles_stale_running_state(monkeypatch):\n    writes = []\n    payloads = {\n        engine.DEEP_INCREMENTAL_STATUS: {"status": "RUNNING", "completed_this_run": 37, "pending_entries": 70},\n        engine.DEEP_PROGRESS_STATUS: {"stage": "OUTCOME_LATTICE_DONE", "completed_matches": 37},\n    }\n    monkeypatch.setattr(engine.base.core, "_read", lambda path, default=None: dict(payloads.get(path, default or {})))\n    monkeypatch.setattr(engine.base.core, "_write", lambda path, payload: writes.append((path, dict(payload))))\n\n    engine._mark_deep_terminal("TIMEOUT", "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND")\n\n    by_path = {path: payload for path, payload in writes}\n    inc = by_path[engine.DEEP_INCREMENTAL_STATUS]\n    progress = by_path[engine.DEEP_PROGRESS_STATUS]\n    assert inc["status"] == "TIMEOUT"\n    assert inc["child_status_at_termination"] == "RUNNING"\n    assert inc["completed_this_run"] == 37 and inc["pending_entries"] == 70\n    assert progress["stage"] == "OUTCOME_LATTICE_DONE"\n    assert progress["terminal_status"] == "TIMEOUT"\n    assert progress["completed_matches"] == 37\n    assert inc["prices_used"] is False and progress["prices_used"] is False\n'''
+              t += '''\n\ndef test_terminal_telemetry_reconciles_stale_running_state(monkeypatch):\n    writes = []\n    payloads = {\n        engine.DEEP_INCREMENTAL_STATUS: {"status": "RUNNING", "completed_this_run": 37, "pending_entries": 70},\n        engine.DEEP_PROGRESS_STATUS: {"stage": "OUTCOME_LATTICE_DONE", "completed_matches": 37},\n    }\n    monkeypatch.setattr(engine.base.core, "_read", lambda path, default=None: dict(payloads.get(path, default or {})))\n    monkeypatch.setattr(engine.base.core, "_write", lambda path, payload: writes.append((path, dict(payload))))\n    engine._mark_deep_terminal("TIMEOUT", "DEEP_MODEL_RAW_EXCEEDED_WALL_CLOCK_BOUND")\n    by_path = {path: payload for path, payload in writes}\n    inc = by_path[engine.DEEP_INCREMENTAL_STATUS]\n    progress = by_path[engine.DEEP_PROGRESS_STATUS]\n    assert inc["status"] == "TIMEOUT"\n    assert inc["child_status_at_termination"] == "RUNNING"\n    assert inc["completed_this_run"] == 37 and inc["pending_entries"] == 70\n    assert progress["stage"] == "OUTCOME_LATTICE_DONE"\n    assert progress["terminal_status"] == "TIMEOUT"\n    assert progress["completed_matches"] == 37\n    assert inc["prices_used"] is False and progress["prices_used"] is False\n'''
               p.write_text(t, encoding='utf-8')
           PY
           python -m py_compile backend/superbet_playable_v912.py backend/symphony_engine_v91.py
@@ -141,6 +114,6 @@ jobs:
           rm .github/workflows/final-audit-safe-patch-once.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add backend/superbet_playable_v912.py backend/symphony_engine_v91.py tests/test_final_audit_safe_fixes_v923.py tests/test_symphony_v93e_watchdog.py .github/workflows/final-audit-safe-patch-once.yml
+          git add -A
           git commit -m 'audit: fix coverage denominator and deep terminal telemetry'
           git push origin HEAD:audit/final-safe-pass-v923
