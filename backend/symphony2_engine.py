@@ -2,8 +2,10 @@ from __future__ import annotations
 
 """Symfonia 2.0 operator-first runtime.
 
-Current Superbet selections are the candidate universe. MODEL/RAW may provide
-features, but it may never introduce a line into the actionable universe.
+The current Superbet offer is the only actionable candidate universe. Each exact
+selection is scored by a model trained on settled real operator lines and, where
+possible, by a shared tennis-state distribution. MODEL/RAW may add features but
+can never introduce a PLAYABLE line.
 """
 
 from copy import deepcopy
@@ -15,9 +17,11 @@ from pathlib import Path
 
 try:
     from .symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION
+    from .symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
     from .superbet_playable_v912 import signal_signature
 except ImportError:
     from symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION
+    from symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
     from superbet_playable_v912 import signal_signature
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +30,7 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-runtime-1"
+VERSION = "symphony2-runtime-2"
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -34,7 +38,7 @@ LINE_MARKETS = {
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 MIN_ACTIONABLE_P = 0.55
-TOP_POOL = 14
+TOP_POOL = 16
 
 
 def _read(path: Path, fallback):
@@ -86,10 +90,7 @@ def _current_offer(match: dict) -> list[dict]:
             continue
         market = _market(raw.get("market"))
         if market in LINE_MARKETS:
-            # Symfonia 2 does not accept catalogue/global/model-line evidence.
-            if raw.get("fixture_line_verified") is not True:
-                continue
-            if _num(raw.get("line")) is None:
+            if raw.get("fixture_line_verified") is not True or _num(raw.get("line")) is None:
                 continue
         row = dict(raw)
         row["market"] = market
@@ -120,10 +121,8 @@ def _merge_model_features(selection: dict, model_row: dict | None) -> dict:
 def _label(row: dict) -> str:
     if row.get("label"):
         return str(row["label"])
-    market = str(row.get("market") or "rynek")
-    pick = str(row.get("pick") or "")
-    line = _num(row.get("line"))
-    player = str(row.get("player") or "").strip()
+    market, pick = str(row.get("market") or "rynek"), str(row.get("pick") or "")
+    line, player = _num(row.get("line")), str(row.get("player") or "").strip()
     parts = [market, player, pick]
     if line is not None:
         parts.append(f"{line:g}")
@@ -134,33 +133,68 @@ def _selection_id(row: dict) -> str:
     return "|".join(map(str, signal_signature(row)))
 
 
-def _score_offer(match: dict, model) -> list[dict]:
+def _base_probability(merged: dict) -> float | None:
+    candidates = [
+        ((merged.get("adaptive_prod_v79") or {}).get("final_score")),
+        merged.get("score"), merged.get("current"),
+        ((merged.get("model_scores") or {}).get("ensemble")),
+    ]
+    for value in candidates:
+        x = _num(value)
+        if x is not None:
+            return max(0.001, min(0.999, x / 100.0 if x > 1.0 else x))
+    return None
+
+
+def _final_probability(learned: float, state: float | None, base: float | None) -> tuple[float, dict]:
+    learned = max(0.001, min(0.999, learned))
+    if state is not None:
+        components = [("operator_line_learning", learned, 0.60), ("exact_state", state, 0.30)]
+        if base is not None:
+            components.append(("existing_prod", base, 0.10))
+        else:
+            components = [("operator_line_learning", learned, 2.0 / 3.0), ("exact_state", state, 1.0 / 3.0)]
+    elif base is not None:
+        components = [("operator_line_learning", learned, 0.85), ("existing_prod", base, 0.15)]
+    else:
+        components = [("operator_line_learning", learned, 1.0)]
+    total = sum(weight for _, _, weight in components)
+    p = sum(value * weight for _, value, weight in components) / total
+    return max(0.001, min(0.999, p)), {
+        name: {"probability": round(value * 100.0, 2), "weight": round(weight / total, 4)}
+        for name, value, weight in components
+    }
+
+
+def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
     models = _model_index(match)
     rows = []
     for selection in _current_offer(match):
         sig = signal_signature(selection)
         merged = _merge_model_features(selection, models.get(sig))
-        features = feature_row(match, merged)
-        p = model.predict(features) if model.ready else None
-        row = {
+        learned = model.predict(feature_row(match, merged)) if model.ready else None
+        state_p = marginal_probability(match, selection, outcomes) if outcomes else None
+        base_p = _base_probability(merged)
+        final_p, components = _final_probability(learned, state_p, base_p) if learned is not None else (None, {})
+        rows.append({
             "selection_id": _selection_id(selection),
-            "market": selection.get("market"),
-            "pick": selection.get("pick"),
-            "line": selection.get("line"),
-            "checkpoint": selection.get("checkpoint"),
-            "player": selection.get("player"),
-            "label": _label(selection),
+            "market": selection.get("market"), "pick": selection.get("pick"),
+            "line": selection.get("line"), "checkpoint": selection.get("checkpoint"),
+            "player": selection.get("player"), "label": _label(selection),
             "operator": OPERATOR,
             "operator_market_id": selection.get("market_id"),
             "operator_outcome_id": selection.get("outcome_id"),
             "fixture_line_verified": selection.get("fixture_line_verified", selection.get("market") not in LINE_MARKETS),
             "operator_line_source": selection.get("operator_line_source"),
-            "operator_model_probability": round(p * 100.0, 2) if p is not None else None,
-            "base_model_score": _num(merged.get("score")),
+            "line_model_probability": round(learned * 100.0, 2) if learned is not None else None,
+            "state_probability": round(state_p * 100.0, 2) if state_p is not None else None,
+            "base_model_probability": round(base_p * 100.0, 2) if base_p is not None else None,
+            "operator_model_probability": round(final_p * 100.0, 2) if final_p is not None else None,
+            "probability_components": components,
+            "state_supported": state_p is not None,
             "learning_model_ready": model.ready,
-        }
-        rows.append(row)
-    rows.sort(key=lambda x: (_num(x.get("operator_model_probability"), -1.0), _num(x.get("base_model_score"), -1.0)), reverse=True)
+        })
+    rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
 
 
@@ -170,8 +204,6 @@ def _same_market_conflict(a: dict, b: dict) -> bool:
         return False
     if ma == "game_state":
         return _num(a.get("checkpoint"), 0) == _num(b.get("checkpoint"), 0)
-    # A bookmaker builder normally does not need two legs from one exact market
-    # family; forbidding this also prevents trivial nested O20.5 + O21.5 stacks.
     return True
 
 
@@ -183,33 +215,38 @@ def _compatible(selection: tuple[dict, ...]) -> bool:
     return True
 
 
-def _composition_score(selection: tuple[dict, ...]) -> tuple[float, float]:
+def _composition_utility(selection: tuple[dict, ...], joint: float) -> float:
     ps = [max(0.001, min(0.999, _num(x.get("operator_model_probability"), 0.0) / 100.0)) for x in selection]
-    if not ps or any(p <= 0.0 for p in ps):
-        return 0.0, 0.0
-    geometric = math.exp(sum(math.log(p) for p in ps) / len(ps))
+    n = len(ps)
+    geometric = math.exp(sum(math.log(p) for p in ps) / n)
     weakest = min(ps)
-    # Ranking utility only. It is deliberately NOT called joint probability.
-    utility = 100.0 * (0.72 * geometric + 0.28 * weakest)
-    independent_product = math.prod(ps) * 100.0
-    return utility, independent_product
+    joint_equivalent = max(0.001, joint) ** (1.0 / n)
+    complexity_penalty = 0.008 * max(0, n - 2)
+    return 100.0 * max(0.0, 0.55 * geometric + 0.25 * weakest + 0.20 * joint_equivalent - complexity_penalty)
 
 
-def _best_compositions(scored: list[dict]) -> dict:
-    pool = [x for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0][:TOP_POOL]
+def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) -> dict:
+    pool = [
+        x for x in scored
+        if x.get("state_supported") is True
+        and _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0
+    ][:TOP_POOL]
     out = {}
     for n in range(2, 7):
         best = None
         for combo in combinations(pool, n):
             if not _compatible(combo):
                 continue
-            utility, independent = _composition_score(combo)
+            joint, supported = joint_probability(match, list(combo), outcomes)
+            if joint is None or supported != n:
+                continue
+            utility = _composition_utility(combo, joint)
             candidate = {
                 "legs": n,
                 "score": round(utility, 2),
-                "independent_product_reference": round(independent, 3),
-                "joint_probability": None,
-                "joint_status": "PENDING_EXACT_SHARED_STATE_ENGINE",
+                "joint_probability": round(joint * 100.0, 3),
+                "joint_status": "EXACT_SHARED_STATE",
+                "state_version": STATE_VERSION,
                 "selection": [dict(x) for x in combo],
             }
             if best is None or candidate["score"] > best["score"]:
@@ -222,49 +259,47 @@ def _best_compositions(scored: list[dict]) -> dict:
 def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     model = train_operator_line_model(history)
     matches = []
-    fixture_count = selection_count = actionable_count = 0
+    fixture_count = selection_count = actionable_count = state_supported_count = 0
     for match in results or []:
         if not isinstance(match, dict) or not _operator_context(match):
             continue
-        scored = _score_offer(match, model)
+        outcomes = build_outcomes(match)
+        scored = _score_offer(match, model, outcomes)
         fixture_count += 1
         selection_count += len(scored)
         actionable_count += sum(1 for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0)
-        comps = _best_compositions(scored) if model.ready else {}
+        state_supported_count += sum(1 for x in scored if x.get("state_supported") is True)
+        comps = _best_compositions(match, scored, outcomes) if model.ready and outcomes else {}
         matches.append({
             "match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
             "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"),
             "p1": match.get("p1"), "p2": match.get("p2"),
-            "scheduled_time": match.get("scheduled_time"),
-            "tour": match.get("tour"), "surface": match.get("surface"), "best_of": match.get("best_of"),
-            "offer_selections": len(scored),
-            "scored_selections": scored,
-            "compositions": comps,
+            "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"),
+            "surface": match.get("surface"), "best_of": match.get("best_of"),
+            "offer_selections": len(scored), "shared_state_outcomes": len(outcomes),
+            "scored_selections": scored, "compositions": comps,
             "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None,
         })
 
+    generated_at = datetime.now(timezone.utc).isoformat()
     current = {
-        "version": VERSION,
-        "learning_version": LEARNING_VERSION,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "operator": OPERATOR,
-        "architecture": "CURRENT_SUPERBET_OFFER -> EXACT_SELECTION_SCORE -> SYMPHONY2",
-        "model_status": model.status,
-        "matches_count": len(matches),
-        "matches": matches,
+        "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
+        "generated_at": generated_at, "operator": OPERATOR,
+        "architecture": "CURRENT_SUPERBET_OFFER -> EXACT_SELECTION_SCORE -> SHARED_STATE_JOINT -> SYMPHONY2",
+        "model_status": model.status, "matches_count": len(matches), "matches": matches,
     }
     stats = {
-        "version": VERSION,
-        "generated_at": current["generated_at"],
-        "operator": OPERATOR,
+        "version": VERSION, "generated_at": generated_at, "operator": OPERATOR,
         "model_status": model.status,
         "training": model.metrics or {"version": LEARNING_VERSION, "training_rows": model.trained_rows},
         "current_offer": {
             "verified_fixtures": fixture_count,
             "exact_operator_selections": selection_count,
+            "state_supported_selections": state_supported_count,
             "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0,
         },
+        "joint_probability_policy": "EXACT_SHARED_STATE_ONLY",
         "legacy_symphony_stats_used": False,
         "prices_used": False,
     }
@@ -281,13 +316,7 @@ def run() -> dict:
     current, stats = build(results, history)
     _write(CURRENT, current)
     _write(STATS, stats)
-    return {
-        "status": "OK",
-        "version": VERSION,
-        "model_status": current["model_status"],
-        "matches": current["matches_count"],
-        **stats["current_offer"],
-    }
+    return {"status": "OK", "version": VERSION, "model_status": current["model_status"], "matches": current["matches_count"], **stats["current_offer"]}
 
 
 if __name__ == "__main__":
