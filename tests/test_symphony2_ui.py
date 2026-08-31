@@ -57,8 +57,8 @@ def test_runtime_does_not_boot_deleted_legacy_symphony_save_layer():
     assert "Legacy Symphony save/card modules are intentionally not loaded" in APP_META
 
 
-def test_symphony2_never_reads_legacy_compact_card_feed():
+def test_no_runtime_reads_legacy_compact_card_feed():
     assert "symphony_match_cards_v90.json" not in JS
-    # The old Superbet UI bridge may still know how to clean old mini cards, but
-    # Symphony 2.0 itself must never depend on their deleted data feed.
-    assert "symphony_match_cards_v90.json" in PLAYABLE_UI
+    assert "symphony_match_cards_v90.json" not in PLAYABLE_UI
+    assert "patchSymphonyMinis" not in PLAYABLE_UI
+    assert "reloadCompact" not in PLAYABLE_UI
