@@ -1,0 +1,25 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_registration_script_query_is_valid():
+    html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
+    assert "registration-ux-v752.js&amp;review=" not in html
+    assert "registration-ux-v752.js?v=752&amp;review=932" in html
+
+
+def test_primary_boot_does_not_fetch_heavy_history_payload():
+    js = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
+    primary = js.split("async function load(){", 1)[1].split("document.querySelectorAll('#tour-nav", 1)[0]
+    assert "Promise.all([safeJson('data/results.json',[]),safeJson('data/meta.json',{})])" in primary
+    assert "if(view==='stats'||view==='history')await loadSecondaryData()" in primary
+    secondary = js.split("async function loadSecondaryData", 1)[1].split("async function load(){", 1)[0]
+    assert "data/history.json" in secondary
+    assert "data/history_stats.json" in secondary
+
+
+def test_final_generated_state_regression_gate_exists():
+    workflow = (ROOT / ".github/workflows/update-and-pages.yml").read_text(encoding="utf-8")
+    assert "Final full regression after generated layers v9.3.2" in workflow
+    assert workflow.index("Final full regression after generated layers v9.3.2") > workflow.index("Symphony 2.0 Guard")

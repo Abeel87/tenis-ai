@@ -126,3 +126,22 @@ def test_tracking_governor_weights_sum_to_one():
     for weights, tracking in test_cases:
         w, _ = _apply_tracking_governor(weights, tracking)
         assert abs(sum(w.values()) - 1.0) < 1e-9
+
+def test_tracking_governor_cached_two_model_weights_keep_hard_caps_with_eligible_current():
+    tracking = {
+        "catboost": {"selected_n": 1394, "accuracy": 70.8, "brier": 0.21715},
+        "current": {"selected_n": 1208, "accuracy": 73.6, "brier": 0.21156},
+        "tabpfn": {"selected_n": 607, "accuracy": 73.0, "brier": 0.20330},
+    }
+    initial_weights = {"catboost": 0.533, "tabpfn": 0.467}
+    w, policy = _apply_tracking_governor(
+        initial_weights, tracking, tabpfn_cap=0.35,
+        eligible_names=["current", "catboost", "tabpfn"],
+    )
+    assert policy["active"] is True
+    assert policy["catboost_capped"] is True
+    assert w["catboost"] <= 0.40 + 1e-9
+    assert w["tabpfn"] <= 0.35 + 1e-9
+    assert w["current"] >= 0.25 - 1e-9
+    assert abs(sum(w.values()) - 1.0) < 1e-9
+

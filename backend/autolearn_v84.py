@@ -821,8 +821,10 @@ def _bounded_tabpfn_weights(raw_weights: dict[str, float], previous_validation: 
 
 
 def _apply_tracking_governor(weights: dict[str, float], previous_tracking: dict,
-                            tabpfn_cap: float = 0.35) -> tuple[dict[str, float], dict]:
+                            tabpfn_cap: float = 0.35, eligible_names=None) -> tuple[dict[str, float], dict]:
     weights = _normalize_weights(weights)
+    initial_weights = dict(weights)
+    eligible = [str(x) for x in dict.fromkeys(eligible_names or []) if x]
     if not previous_tracking or not isinstance(previous_tracking, dict):
         return weights, {
             "active": False,
@@ -884,6 +886,12 @@ def _apply_tracking_governor(weights: dict[str, float], previous_tracking: dict,
             "governed_weights": {k: round(v, 4) for k, v in weights.items()},
         }
 
+    # Cached challenger weights can omit Current even though its probability is available.
+    # Add it with zero mass before bounded redistribution so hard caps stay feasible instead
+    # of being destroyed by a later normalization back to 100%.
+    if "current" in eligible and "current" not in weights:
+        weights = {**weights, "current": 0.0}
+
     lower_bounds = {m: 0.0 for m in weights}
     upper_bounds = {m: 1.0 for m in weights}
 
@@ -932,7 +940,50 @@ def _apply_tracking_governor(weights: dict[str, float], previous_tracking: dict,
             for m in free:
                 w[m] = max(lower_bounds[m], w[m] - (-diff) * shares[m])
 
-    w = _normalize_weights(w)
+    # Do not call _normalize_weights here: proportional normalization can violate
+    # the very upper/lower bounds enforced above. The loop already projects onto the
+    # bounded simplex; only repair tiny floating-point residue inside remaining headroom.
+    residue = 1.0 - sum(w.values())
+    if abs(residue) > 1e-9:
+        if residue > 0:
+            free = [m for m in w if w[m] < upper_bounds[m] - 1e-9]
+            for m in sorted(free, key=lambda n: upper_bounds[n] - w[n], reverse=True):
+                add = min(residue, upper_bounds[m] - w[m])
+                w[m] += add
+                residue -= add
+                if residue <= 1e-9:
+                    break
+        else:
+            free = [m for m in w if w[m] > lower_bounds[m] + 1e-9]
+            for m in sorted(free, key=lambda n: w[n] - lower_bounds[n], reverse=True):
+                take = min(-residue, w[m] - lower_bounds[m])
+                w[m] -= take
+                residue += take
+                if residue >= -1e-9:
+                    break
+
+    feasible = abs(sum(w.values()) - 1.0) <= 1e-7
+    bounds_ok = all(lower_bounds[m] - 1e-9 <= w[m] <= upper_bounds[m] + 1e-9 for m in w)
+    if not (feasible and bounds_ok):
+        # Never publish a policy claiming caps were applied when the bounded simplex is
+        # infeasible. Fall back to the incoming allocation and report the guard failure.
+        return initial_weights, {
+            "active": False,
+            "status": "infeasible_bounds",
+            "catboost_capped": False,
+            "tabpfn_boosted": False,
+            "current_floored": False,
+            "rules_applied": [],
+            "sample_sizes": {
+                "catboost_selected_n": cat_n,
+                "current_selected_n": cur_n,
+                "tabpfn_selected_n": tab_n,
+            },
+            "initial_weights": {k: round(v, 4) for k, v in initial_weights.items()},
+            "governed_weights": {k: round(v, 4) for k, v in initial_weights.items()},
+        }
+
+    w = {m: v for m, v in w.items() if v > 1e-12}
 
     policy_details = {
         "active": True,
@@ -971,7 +1022,7 @@ def _choose_weights(rows, probs_by_model: dict[str, list[float]], previous_weigh
         stable, stability = _stabilize_ensemble_weights(weights, names, rows)
         tab_cap = policy.get("cap", 0.35) if isinstance(policy, dict) else 0.35
         governed_weights, tracking_governor = _apply_tracking_governor(
-            stable, previous_tracking, tabpfn_cap=tab_cap
+            stable, previous_tracking, tabpfn_cap=tab_cap, eligible_names=names
         )
         return governed_weights, {**policy, "stability": stability, "tracking_governor": tracking_governor}
 
