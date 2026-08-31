@@ -164,6 +164,7 @@
     // Protected bootstrap path retained; direct index load provides the newer v8.8.9 logic.
     loadAddon('generator-quality-v888.js?v=888','generator888-quality-addon');
     loadAddon('app-coherence-v892.js?v=892&audit=919','app892-coherence-addon');
+    loadAddon('symphony2-live-ui-v201.js?v=201','symphony2-live-ui-v201');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxHotfixes,{once:true});
   else loadUxHotfixes();
