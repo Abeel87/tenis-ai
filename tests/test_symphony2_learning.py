@@ -117,7 +117,7 @@ def test_runtime_reports_true_shared_state_joint():
     assert comp["joint_status"] == "EXACT_SHARED_STATE"
 
 
-def test_low_market_support_shrinks_probability_toward_half_and_reports_diagnostics():
+def test_low_market_support_does_not_distort_supervised_probability():
     class FakeModel:
         def predict_proba(self, x):
             return [[0.1, 0.9]]
@@ -126,10 +126,24 @@ def test_low_market_support_shrinks_probability_toward_half_and_reports_diagnost
     row = {name: 0 for name in learning.FEATURES}
     row.update({"market": "match_total", "pick": "over", "surface": "hard", "tour": "atp", "player_scope": "none"})
     diagnostics = model.predict_diagnostics(row)
-    p = model.predict(row)
     assert diagnostics["raw"] == 0.9
     assert diagnostics["calibrated"] == 0.9
     assert diagnostics["support"] == 12
     assert diagnostics["reliability"] == 0.1
-    assert diagnostics["final"] == p
-    assert 0.5 < p < 0.9
+    assert diagnostics["final"] == 0.9
+    assert diagnostics["global_calibrator_applied"] is False
+
+
+def test_zero_market_support_is_unscored_not_fake_fifty_percent():
+    class FakeModel:
+        def predict_proba(self, x):
+            return [[0.1, 0.9]]
+
+    model = learning.OperatorLineModel(model=FakeModel(), status="ready", market_support={})
+    row = {name: 0 for name in learning.FEATURES}
+    row.update({"market": "game_state", "pick": "2:2", "surface": "hard", "tour": "atp", "player_scope": "none"})
+    diagnostics = model.predict_diagnostics(row)
+    assert diagnostics["raw"] == 0.9
+    assert diagnostics["support"] == 0
+    assert diagnostics["final"] is None
+    assert model.predict(row) is None
