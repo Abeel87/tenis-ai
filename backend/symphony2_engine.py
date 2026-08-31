@@ -70,6 +70,31 @@ def _market(value) -> str:
     return _norm(value).replace(" ", "_")
 
 
+def _scheduled_utc(match: dict) -> datetime | None:
+    raw = str(match.get("scheduled_time") or "").strip()
+    if not raw:
+        return None
+    try:
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _is_current_pre_match_fixture(match: dict, now: datetime | None = None) -> bool:
+    scheduled = _scheduled_utc(match)
+    if scheduled is None:
+        return True
+    reference = now or datetime.now(timezone.utc)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=timezone.utc)
+    else:
+        reference = reference.astimezone(timezone.utc)
+    return scheduled > reference
+
+
 def _operator_context(match: dict) -> dict | None:
     ctx = match.get("superbet_market_v91")
     if not isinstance(ctx, dict):
@@ -317,8 +342,11 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     matches = []
     all_scored = []
     fixture_count = selection_count = actionable_count = state_supported_count = 0
+    generated_at_dt = datetime.now(timezone.utc)
     for match in results or []:
         if not isinstance(match, dict) or not _operator_context(match):
+            continue
+        if not _is_current_pre_match_fixture(match, generated_at_dt):
             continue
         outcomes = build_outcomes(match)
         scored = _score_offer(match, model, outcomes)
@@ -339,7 +367,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None,
         })
 
-    generated_at = datetime.now(timezone.utc).isoformat()
+    generated_at = generated_at_dt.isoformat()
     probability_diagnostics = _probability_diagnostics(all_scored)
     current = {
         "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
