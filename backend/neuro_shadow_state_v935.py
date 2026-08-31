@@ -141,6 +141,20 @@ def _conditional_probability(
     return numerator / denominator
 
 
+def _settled_probability(
+    outcomes: list[dict[str, Any]],
+    voided: Callable[[dict[str, Any]], bool],
+    hit: Callable[[dict[str, Any]], bool],
+) -> float | None:
+    """Return P(hit | selection settles), excluding VOID/push mass.
+
+    Candidate Brier/accuracy is computed only from hit/miss rows, so integer
+    operator lines that can push must not dilute the model probability with
+    outcomes that settlement later removes as VOID.
+    """
+    return _conditional_probability(outcomes, lambda o: not voided(o), hit)
+
+
 def set_reach_probability(match: dict[str, Any], set_no: int) -> float | None:
     """Return P(the requested set is played) in the SHADOW state."""
     if set_no not in {2, 3}:
@@ -161,9 +175,9 @@ def shadow_probability(
 ) -> float | None:
     """Evaluate newly retained markets without fabricating unavailable outcomes.
 
-    Set-specific markets are conditional on that set being played. This matches
-    the existing settlement contract where a selection on a non-existent later
-    set is VOID rather than a MISS.
+    Later-set markets condition on that set being played. Any exact-line push is
+    also excluded from the denominator because shared settlement records it as
+    VOID and candidate calibration is measured only on hit/miss observations.
     """
     outcomes = build_shadow_outcomes(match)
     if not outcomes:
@@ -180,21 +194,36 @@ def shadow_probability(
 
     if market in {"set2_total", "set3_total"} and line is not None and pick in {"over", "under"}:
         field = "set2" if market.startswith("set2") else "set3"
-        if pick == "over":
-            hit = lambda o: sum(o[field]) > float(line)
-        else:
-            hit = lambda o: sum(o[field]) < float(line)
-        return _conditional_probability(outcomes, lambda o: o.get(field) is not None, hit)
+        target = float(line)
+        eligible = [o for o in outcomes if o.get(field) is not None]
+        if not eligible:
+            return None
+        return _settled_probability(
+            eligible,
+            lambda o: sum(o[field]) == target,
+            (lambda o: sum(o[field]) > target) if pick == "over" else (lambda o: sum(o[field]) < target),
+        )
 
     if market == "player_total_games" and side in {1, 2} and line is not None and pick in {"over", "under"}:
         field = "p1_total_games" if side == 1 else "p2_total_games"
-        if pick == "over":
-            return sum(o["prob"] for o in outcomes if o[field] > float(line))
-        return sum(o["prob"] for o in outcomes if o[field] < float(line))
+        target = float(line)
+        return _settled_probability(
+            outcomes,
+            lambda o: o[field] == target,
+            (lambda o: o[field] > target) if pick == "over" else (lambda o: o[field] < target),
+        )
 
     if market == "match_game_handicap" and side in {1, 2} and line is not None:
-        if side == 1:
-            return sum(o["prob"] for o in outcomes if o["p1_total_games"] + float(line) > o["p2_total_games"])
-        return sum(o["prob"] for o in outcomes if o["p2_total_games"] + float(line) > o["p1_total_games"])
+        handicap = float(line)
+        adjusted = (
+            (lambda o: o["p1_total_games"] + handicap - o["p2_total_games"])
+            if side == 1
+            else (lambda o: o["p2_total_games"] + handicap - o["p1_total_games"])
+        )
+        return _settled_probability(
+            outcomes,
+            lambda o: abs(adjusted(o)) <= 1e-12,
+            lambda o: adjusted(o) > 0.0,
+        )
 
     return None
