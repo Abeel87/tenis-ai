@@ -29,7 +29,7 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-runtime-4"
+VERSION = "symphony2-runtime-5"
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -176,7 +176,7 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "learning_support_rows": support,
             "state_supported": state_p is not None,
             "learning_model_ready": model.ready,
-            "probability_kind": "SUPERVISED_CALIBRATED_OPERATOR_LINE_P_HIT",
+            "probability_kind": "SUPERVISED_OPERATOR_LINE_P_HIT",
         })
     rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
@@ -209,13 +209,19 @@ def _distribution(rows: list[dict], key: str) -> dict:
 
 def _probability_diagnostics(rows: list[dict]) -> dict:
     scored = [r for r in rows if _num(r.get("operator_model_probability")) is not None]
+    zero_support = [r for r in rows if int(r.get("learning_support_rows") or 0) == 0]
+    supported = [r for r in rows if int(r.get("learning_support_rows") or 0) > 0]
     per_market = {}
-    for market in sorted({_market(r.get("market")) for r in scored}):
+    all_markets = sorted({_market(r.get("market")) for r in rows})
+    for market in all_markets:
+        offered_subset = [r for r in rows if _market(r.get("market")) == market]
         subset = [r for r in scored if _market(r.get("market")) == market]
         finals = [_num(r.get("operator_model_probability"), 0.0) for r in subset]
-        supports = [int(r.get("learning_support_rows") or 0) for r in subset]
+        supports = [int(r.get("learning_support_rows") or 0) for r in offered_subset]
         per_market[market] = {
-            "selections": len(subset),
+            "offered_selections": len(offered_subset),
+            "scored_selections": len(subset),
+            "unscored_zero_support": sum(1 for r in offered_subset if int(r.get("learning_support_rows") or 0) == 0 and _num(r.get("operator_model_probability")) is None),
             "support_rows": max(supports) if supports else 0,
             "max_final": round(max(finals), 3) if finals else None,
             "p90_final": _quantile(finals, 0.90),
@@ -224,9 +230,12 @@ def _probability_diagnostics(rows: list[dict]) -> dict:
             "above_55": sum(1 for p in finals if p >= 55.0),
         }
     return {
-        "raw": _distribution(scored, "raw_model_probability"),
-        "calibrated": _distribution(scored, "calibrated_model_probability"),
-        "final_after_support_shrink": _distribution(scored, "operator_model_probability"),
+        "offer_selections": len(rows),
+        "scored_selections": len(scored),
+        "raw_all_model_outputs": _distribution(rows, "raw_model_probability"),
+        "raw_scored": _distribution(scored, "raw_model_probability"),
+        "calibrated_scored": _distribution(scored, "calibrated_model_probability"),
+        "final_scored": _distribution(scored, "operator_model_probability"),
         "threshold_counts": {
             "above_50": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 50.0),
             "above_52": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 52.0),
@@ -234,9 +243,11 @@ def _probability_diagnostics(rows: list[dict]) -> dict:
         },
         "support": {
             "full_support_rows": FULL_SUPPORT_ROWS,
-            "below_full_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) < FULL_SUPPORT_ROWS),
-            "at_full_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) >= FULL_SUPPORT_ROWS),
-            "zero_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) == 0),
+            "supported_offer_selections": len(supported),
+            "below_full_support": sum(1 for r in supported if int(r.get("learning_support_rows") or 0) < FULL_SUPPORT_ROWS),
+            "at_full_support": sum(1 for r in supported if int(r.get("learning_support_rows") or 0) >= FULL_SUPPORT_ROWS),
+            "zero_support_offer_selections": len(zero_support),
+            "unscored_zero_support": sum(1 for r in zero_support if _num(r.get("operator_model_probability")) is None),
         },
         "per_market": per_market,
     }
@@ -283,8 +294,8 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
         for combo in combinations(pool, n):
             if not _compatible(combo):
                 continue
-            joint, supported = joint_probability(match, list(combo), outcomes)
-            if joint is None or supported != n:
+            joint, supported_count = joint_probability(match, list(combo), outcomes)
+            if joint is None or supported_count != n:
                 continue
             candidate = {
                 "legs": n,
@@ -334,7 +345,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
         "generated_at": generated_at, "operator": OPERATOR,
         "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
-        "probability_policy": "CALIBRATED_SUPERVISED_MODEL; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS",
+        "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS",
         "model_status": model.status, "matches_count": len(matches), "matches": matches,
     }
     stats = {
