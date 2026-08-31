@@ -63,7 +63,7 @@ def test_symphony2_has_own_fullscreen_hub_and_nav_ownership():
     assert "const VERSION='2.1'" in js
     assert "#symphony2-hub" in js
     assert "data-p751-nav=\"symphony2\"" in js
-    assert "nav.dataset.p751Nav='symphony2'" in js
+    assert 'data-p751-nav="scenarios"' not in js
     assert "<span>🎼</span><b>Symfonia 2.0</b>" in js
     assert "TENIS_AI_SYMPHONY2" in js
     assert "TENIS_AI_SCENARIOS" not in js
