@@ -18,7 +18,7 @@ try:
 except Exception:  # pragma: no cover
     CatBoostClassifier = None
 
-VERSION = "symphony2-learning-3"
+VERSION = "symphony2-learning-4"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
 MIN_MARKET_CALIBRATION_ROWS = 40
@@ -285,17 +285,22 @@ class OperatorLineModel:
         if not self.ready:
             return None
         x = [[row.get(name) for name in FEATURES]]
-        raw = float(self.model.predict_proba(x)[0][1])
+        raw = _clip(float(self.model.predict_proba(x)[0][1]))
         market = _norm(row.get("market"))
-        calibrator = self.market_calibrators.get(market, self.calibrator)
-        calibrated = calibrator.predict(raw)
+        market_calibrator = self.market_calibrators.get(market)
+        calibrated = market_calibrator.predict(raw) if market_calibrator is not None else raw
         support = self.support_for(row)
         reliability = min(1.0, support / FULL_SUPPORT_ROWS)
-        final = _clip(0.5 + (calibrated - 0.5) * reliability)
+        final = calibrated if support > 0 else None
         return {
-            "raw": _clip(raw), "calibrated": _clip(calibrated), "final": final,
-            "support": support, "reliability": reliability,
-            "market_calibrator": market in self.market_calibrators,
+            "raw": raw,
+            "calibrated": _clip(calibrated),
+            "final": final,
+            "support": support,
+            "reliability": reliability,
+            "market_calibrator": market_calibrator is not None,
+            "global_calibrator_applied": False,
+            "actionable_support": support > 0,
         }
 
     def predict(self, row: dict) -> float | None:
@@ -329,13 +334,18 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     model.fit(x_train, y_train, cat_features=cat_indexes)
 
     metrics = {
-        "version": VERSION, "training_rows": len(train), "validation_rows": len(valid),
-        "time_split": bool(valid), "feature_names": FEATURES, "cat_features": CAT_FEATURES,
+        "version": VERSION,
+        "training_rows": len(train),
+        "validation_rows": len(valid),
+        "time_split": bool(valid),
+        "feature_names": FEATURES,
+        "cat_features": CAT_FEATURES,
         "market_support": dict(sorted(support.items())),
         "history_layer_policy": "UNION_EXACT_FROZEN_OPERATOR_LAYERS_RICHEST_DUPLICATE_WINS",
-        "calibration_policy": "market_platt_if_improves_brier_else_global_if_improves_else_raw",
-        "low_support_policy": f"shrink_to_50_until_{FULL_SUPPORT_ROWS}_market_rows",
+        "calibration_policy": "PER_MARKET_PLATT_IF_IMPROVES_BRIER_ELSE_RAW; GLOBAL_DIAGNOSTIC_ONLY",
+        "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
+
     global_calibrator = PlattCalibrator()
     market_calibrators: dict[str, PlattCalibrator] = {}
     if valid:
@@ -343,6 +353,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         y_valid = [r["target"] for r in valid]
         raw = [float(x[1]) for x in model.predict_proba(x_valid)]
         global_calibrator, global_info = _accepted_calibrator(raw, y_valid)
+        global_info["production_applied"] = False
         metrics["global_calibration"] = global_info
         per_market = {}
         for market in sorted({r["market"] for r in valid}):
@@ -359,7 +370,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
                 market_calibrators[market] = calibrator
         metrics["market_calibration"] = per_market
     else:
-        metrics["global_calibration"] = {"fitted": False, "accepted": False}
+        metrics["global_calibration"] = {"fitted": False, "accepted": False, "production_applied": False}
         metrics["market_calibration"] = {}
 
     out.model = model
