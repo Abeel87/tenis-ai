@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-"""Tenis AI v8.5.4 — safe publication pruning for ``results.json``.
+"""Tenis AI v8.5.5 — safe publication pruning for ``results.json``.
 
-This pass only removes data that is proven redundant for the published frontend
-payload:
-- raw tendency source rows duplicated for every current match;
-- ``autolearn_v84.by_key`` only when it is byte-for-structure equivalent to the
-  canonical ``autolearn_v84.signals`` list.
-
-The AutoLearn backend creates ``by_key`` directly from ``signals`` and the UI has
-a ``signals`` lookup fallback. We therefore keep ``signals`` untouched and drop
-the index only after strict equality verification. Any mismatch is fail-safe: the
-index is preserved and reported.
-
-No model probability, training/history, dynamic weight, Superbet/PLAYABLE,
-SHADOW, settlement or Supabase input is changed. The regular FULL build recreates
-all calculation data before the final publication pass.
+Only publication-only or strictly redundant structures are removed. Model math,
+training/history, exact Superbet PLAYABLE selection matching and settlement inputs
+remain untouched. The regular FULL build recreates calculation data before this
+publication pass.
 """
 
 import json
@@ -25,8 +15,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_PATH = ROOT / "frontend" / "data" / "results.json"
-VERSION = "v8.5.4-results-publication-prune"
+VERSION = "v8.5.5-results-publication-prune"
 REMOVED_TENDENCY_KEYS = ("recent_matches", "recent_surface_matches")
+# Diagnostic-only shadow coverage is published separately and has no frontend
+# consumer in the repository. Keeping it duplicated inside every match adds ~3.5 MB.
+REMOVED_SUPERBET_PUBLICATION_KEYS = ("coverage_shadow_signals",)
 
 
 def _compact_bytes(value) -> bytes:
@@ -37,7 +30,6 @@ def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
     top_bytes: dict[str, int] = defaultdict(int)
     top_count: dict[str, int] = defaultdict(int)
     nested_bytes: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-
     for match in rows:
         if not isinstance(match, dict):
             continue
@@ -53,7 +45,6 @@ def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
                         nested_bytes[str(key)][str(child_key)] += len(_compact_bytes(child_value))
                     except (TypeError, ValueError):
                         continue
-
     ordered = sorted(top_bytes, key=lambda k: (-top_bytes[k], k))[:limit]
     nested = {}
     for key in ordered:
@@ -62,12 +53,8 @@ def _payload_contributors(rows: list[dict], limit: int = 18) -> dict:
             continue
         child_order = sorted(children, key=lambda k: (-children[k], k))[:12]
         nested[key] = [{"key": child, "bytes": children[child]} for child in child_order]
-
     return {
-        "top_level": [
-            {"key": key, "bytes": top_bytes[key], "matches": top_count[key]}
-            for key in ordered
-        ],
+        "top_level": [{"key": key, "bytes": top_bytes[key], "matches": top_count[key]} for key in ordered],
         "nested": nested,
     }
 
@@ -81,7 +68,6 @@ def _verified_autolearn_index(signals, by_key) -> bool:
             return False
         key = str(row["key"])
         if key in expected:
-            # A duplicate key means dictionary projection is not lossless.
             return False
         expected[key] = row
     return expected == by_key
@@ -94,6 +80,8 @@ def prune_rows(rows: list[dict]) -> dict:
     autolearn_indexes_removed = 0
     autolearn_index_mismatches = 0
     autolearn_index_bytes_removed = 0
+    superbet_fields_removed = 0
+    superbet_bytes_removed = 0
 
     for match in rows:
         if not isinstance(match, dict):
@@ -117,6 +105,17 @@ def prune_rows(rows: list[dict]) -> dict:
                 if touched:
                     affected_profiles += 1
 
+        superbet = match.get("superbet_market_v91")
+        if isinstance(superbet, dict):
+            for key in REMOVED_SUPERBET_PUBLICATION_KEYS:
+                if key in superbet:
+                    value = superbet.pop(key)
+                    superbet_fields_removed += 1
+                    try:
+                        superbet_bytes_removed += len(_compact_bytes(value))
+                    except (TypeError, ValueError):
+                        pass
+
         autolearn = match.get("autolearn_v84")
         if not isinstance(autolearn, dict) or "by_key" not in autolearn:
             continue
@@ -136,6 +135,11 @@ def prune_rows(rows: list[dict]) -> dict:
         "removed_fields": removed_fields,
         "removed_items": removed_items,
         "removed_keys": list(REMOVED_TENDENCY_KEYS),
+        "superbet_publication_prune": {
+            "removed_keys": list(REMOVED_SUPERBET_PUBLICATION_KEYS),
+            "removed_fields": superbet_fields_removed,
+            "estimated_value_bytes_removed": superbet_bytes_removed,
+        },
         "autolearn_by_key": {
             "removed_verified_indexes": autolearn_indexes_removed,
             "mismatches_preserved": autolearn_index_mismatches,
@@ -149,17 +153,10 @@ def prune_rows(rows: list[dict]) -> dict:
 def prune_results(path: Path = RESULTS_PATH) -> dict:
     if not path.exists():
         return {"version": VERSION, "status": "missing", "path": str(path)}
-
     before = path.stat().st_size
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, list):
-        return {
-            "version": VERSION,
-            "status": "skipped-non-list",
-            "path": str(path),
-            "before_bytes": before,
-        }
-
+        return {"version": VERSION, "status": "skipped-non-list", "path": str(path), "before_bytes": before}
     stats = prune_rows(data)
     contributors = _payload_contributors(data)
     payload = _compact_bytes(data)
@@ -167,7 +164,6 @@ def prune_results(path: Path = RESULTS_PATH) -> dict:
     tmp.write_bytes(payload)
     tmp.replace(path)
     after = path.stat().st_size
-
     return {
         **stats,
         "status": "ok",
