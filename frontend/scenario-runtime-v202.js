@@ -1,15 +1,16 @@
-/* Tenis AI — Scenario runtime v2.0.4
+/* Tenis AI — Scenario runtime v2.0.6
    Runtime-only reliability layer for the existing Scenario Composer.
    It does not change generator scoring, model math, market selection or thresholds. */
 (() => {
   'use strict';
 
-  const VERSION='v2.0.4';
+  const VERSION='v2.0.6';
   const READY_TIMEOUT_MS=1200;
   const API_TIMEOUT_MS=2200;
   const MAX_DRAFT_ITEMS=32;
   const DRAFT_KEY='tenis-ai-v82a-scenario-draft';
-  const STUDIO_SRC='scenario-studio-v82a.js?v=82a6&recovery=204';
+  const BROKEN_DRAFT_BACKUP_KEY='tenis-ai-v82a-scenario-draft-recovery';
+  const STUDIO_SRC='scenario-studio-v82a.js?v=82a6&recovery=206';
   const NAV_SELECTOR='#p751-bottom-nav [data-p751-nav="scenarios"]';
   let studioReloadPromise=null;
   let navBindTimer=null;
@@ -47,20 +48,38 @@
     try{return getComputedStyle(panel).display!=='none'}catch{return true}
   }
 
+  function draftShape(raw){
+    try{
+      const data=JSON.parse(raw||'null');
+      if(!data||typeof data!=='object'||Array.isArray(data)||!Array.isArray(data.items))return {valid:false,data:null};
+      if(data.items.length>MAX_DRAFT_ITEMS)return {valid:false,data};
+      const validItems=data.items.filter(item=>item&&typeof item==='object'&&!Array.isArray(item));
+      return {valid:validItems.length===data.items.length,data,validItems};
+    }catch{return {valid:false,data:null}}
+  }
+
   function sanitizeLegacyDraft(){
+    let raw=null;
+    try{raw=localStorage.getItem(DRAFT_KEY)}catch{return false}
+    if(!raw)return false;
+    const shape=draftShape(raw);
+    if(shape.valid)return false;
+    try{
+      localStorage.setItem(BROKEN_DRAFT_BACKUP_KEY,raw);
+      localStorage.removeItem(DRAFT_KEY);
+      console.warn('[Scenario runtime] Quarantined broken open draft; saved scenario history was untouched.');
+    }catch{}
+    return true;
+  }
+
+  function quarantineOpenDraft(reason='open-failed'){
     try{
       const raw=localStorage.getItem(DRAFT_KEY);
-      if(!raw)return false;
-      const data=JSON.parse(raw);
-      const invalid=!data||typeof data!=='object'||!Array.isArray(data.items)||data.items.length>MAX_DRAFT_ITEMS;
-      if(!invalid)return false;
+      if(raw)localStorage.setItem(BROKEN_DRAFT_BACKUP_KEY,raw);
       localStorage.removeItem(DRAFT_KEY);
-      console.warn('[Scenario runtime] Removed corrupted legacy open draft; saved scenario history was untouched.');
-      return true;
-    }catch{
-      try{localStorage.removeItem(DRAFT_KEY)}catch{}
-      return true;
-    }
+      console.warn(`[Scenario runtime] Cleared only the open draft after ${reason}; saved scenario history was untouched.`);
+      return !!raw;
+    }catch{return false}
   }
 
   function removeBrokenShell(){
@@ -78,9 +97,9 @@
     if(studioReloadPromise)return studioReloadPromise;
     removeBrokenShell();
     studioReloadPromise=new Promise(resolve=>{
-      document.getElementById('scenario-studio-recovery-v204')?.remove();
+      document.getElementById('scenario-studio-recovery-v206')?.remove();
       const s=document.createElement('script');
-      s.id='scenario-studio-recovery-v204';
+      s.id='scenario-studio-recovery-v206';
       s.src=`${STUDIO_SRC}&ts=${Date.now()}`;
       s.async=false;
       s.onload=()=>resolve(scenarioApi());
@@ -107,12 +126,18 @@
   async function openScenarios(tab='home'){
     let api=scenarioApi();
     if(!api)api=await loadStudioFresh();
+    let firstError=null;
     try{
       if(tryOpen(api,tab))return true;
     }catch(err){
-      console.warn('[Scenario runtime] first open failed; retrying clean Studio bootstrap',err);
+      firstError=err;
+      console.warn('[Scenario runtime] first open failed; rebuilding Studio with a clean open draft',err);
     }
 
+    // Studio reads the open draft once during script evaluation. A malformed legacy
+    // item can therefore remain broken in memory even after localStorage is cleaned.
+    // Quarantine only the OPEN draft, rebuild Studio, and leave saved scenarios intact.
+    quarantineOpenDraft(firstError?'render-exception':'panel-not-visible');
     resetStudioRuntime();
     api=await loadStudioFresh();
     try{
@@ -135,12 +160,9 @@
   function bindDirectNav(){
     const nav=document.querySelector(NAV_SELECTOR);
     if(!nav)return false;
-    if(nav.dataset.scenarioDirectNav==='204')return true;
-
-    // ui-v751 used to own this button and could silently mark it active even when
-    // TENIS_AI_SCENARIOS was missing. v2.0.4 replaces that handler directly.
+    if(nav.dataset.scenarioDirectNav==='206')return true;
     nav.onclick=directNavClick;
-    nav.dataset.scenarioDirectNav='204';
+    nav.dataset.scenarioDirectNav='206';
     return true;
   }
 
@@ -154,21 +176,17 @@
   hardenQualityGuard();
   scheduleDirectNavBind();
 
-  // Capture fallback: protects against another late UI layer replacing onclick.
   document.addEventListener('click',e=>{
     const nav=e.target?.closest?.(NAV_SELECTOR);
     if(nav){
-      if(nav.dataset.scenarioDirectNav!=='204')bindDirectNav();
+      if(nav.dataset.scenarioDirectNav!=='206')bindDirectNav();
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation?.();
       directNavClick(e);
       return;
     }
-
-    if(e.target?.closest?.('[data-sc-generate]')){
-      hardenQualityGuard();
-    }
+    if(e.target?.closest?.('[data-sc-generate]'))hardenQualityGuard();
   },true);
 
   document.addEventListener('tenis-ai:ui-ready',scheduleDirectNavBind);
@@ -189,6 +207,7 @@
     apiTimeoutMs:API_TIMEOUT_MS,
     hardenQualityGuard,
     sanitizeLegacyDraft,
+    quarantineOpenDraft,
     loadStudioFresh,
     bindDirectNav,
     openScenarios
