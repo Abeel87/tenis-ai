@@ -5,7 +5,7 @@ UI = (ROOT / "frontend" / "market-segregation-v93g.js").read_text(encoding="utf-
 LOADER = (ROOT / "frontend" / "match-list-visibility-v916.js").read_text(encoding="utf-8")
 
 
-def test_market_segregation_mirrors_decision_center_style_filters():
+def test_market_segregation_keeps_readable_filters():
     for marker in (
         "['all','Wszystkie'",
         "['result','Wynik'",
@@ -17,11 +17,13 @@ def test_market_segregation_mirrors_decision_center_style_filters():
         assert marker in UI
 
 
-def test_raw_and_superbet_keep_independent_filter_state():
-    assert "state={raw:'all',book:'all'}" in UI
-    assert "text.includes('superbet')?'book':'raw'" in UI
-    assert "data-rp93g-layer" in UI
-    assert "[data-rp921-match] details" in UI
+def test_segregation_groups_only_current_superbet_coverage_panel():
+    assert "[data-superbet-model-coverage-v922]" in UI
+    assert ":scope > .sbmc922-lines" in UI
+    assert "sbmc922-line" in UI
+    assert "data-sbmc922-market" in UI
+    assert "[data-rp921-match]" not in UI
+    assert ".rp921-line" not in UI
 
 
 def test_market_groups_cover_current_large_lists():
@@ -33,15 +35,15 @@ def test_market_groups_cover_current_large_lists():
     ):
         assert marker in UI
     assert "rp93g-group-head" in UI
-    assert "countsFor(rows)" in UI
+    assert "marketGroup" in UI
 
 
-def test_segregation_is_presentation_only_and_loaded_after_raw_layer():
-    assert "market-segregation-v93g.js?v=93g&contract=raw-playable-ui-only" in LOADER
+def test_segregation_is_presentation_only_and_loaded_after_coverage():
+    assert "market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only" in LOADER
     assert "loadMarketSegregationV93G" in LOADER
     assert "script.addEventListener('load',loadMarketSegregationV93G,{once:true})" in LOADER
-    # Preserve the existing RAW -> coverage contract; segregation is chained after coverage.
-    assert "if(window.TENIS_AI_RAW_PLAYABLE_V921){loadSuperbetModelCoverageV922();return}" in LOADER
+    assert "loadSuperbetModelCoverageV922" in LOADER
+    assert "raw-playable-separation-v921" not in LOADER
     assert "fetch(" not in UI
     assert "setInterval(" not in UI
     assert "TENIS_AI_MARKET_SEGREGATION_V93G" in UI
