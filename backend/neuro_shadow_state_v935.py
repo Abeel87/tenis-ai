@@ -18,19 +18,17 @@ PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 
-# These markets can be evaluated by this SHADOW state, but they are deliberately
-# separated by today's capture/settlement readiness. In particular set3_total
-# still needs a shared settlement rule before it can enter candidate tracking.
+# These markets now have SHADOW state + exact shared settlement/capture semantics.
+# This is evidence collection only; it never changes PLAYABLE or Symphony PROD.
 CANDIDATE_CAPTURE_READY_MARKETS = frozenset({
+    "set2_winner",
+    "set3_winner",
     "set2_total",
+    "set3_total",
     "player_total_games",
     "match_game_handicap",
 })
-CANDIDATE_CAPTURE_GAP_MARKETS = frozenset({
-    "set2_winner",
-    "set3_winner",
-    "set3_total",
-})
+CANDIDATE_CAPTURE_GAP_MARKETS = frozenset()
 
 
 def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
