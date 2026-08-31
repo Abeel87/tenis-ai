@@ -1,18 +1,18 @@
 {
   "version": "v8.9",
-  "generated_at": "2026-08-31T06:58:20.168016+00:00",
+  "generated_at": "2026-08-31T10:29:27.060139+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
   "auto_promotion": false,
   "training": {
-    "rows_total": 863,
-    "matches_total": 244,
-    "train_rows": 693,
-    "train_matches": 195,
-    "holdout_rows": 170,
-    "holdout_matches": 49,
-    "rows_with_granular_pi_features": 863,
+    "rows_total": 872,
+    "matches_total": 247,
+    "train_rows": 701,
+    "train_matches": 197,
+    "holdout_rows": 171,
+    "holdout_matches": 50,
+    "rows_with_granular_pi_features": 872,
     "granular_feature_share": 1.0,
     "chronological_match_split": "80/20"
   },
@@ -43,82 +43,90 @@
   },
   "holdout": {
     "player_catboost_shadow": {
-      "n": 170,
-      "selected_n": 82,
-      "accuracy": 76.8,
-      "brier": 0.21574,
-      "log_loss": 0.62032,
-      "avg_probability": 60.1
+      "n": 171,
+      "selected_n": 85,
+      "accuracy": 77.6,
+      "brier": 0.21375,
+      "log_loss": 0.62112,
+      "avg_probability": 61.3
     },
     "baselines": {
       "catboost": {
-        "n": 170,
-        "selected_n": 91,
-        "accuracy": 76.9,
-        "brier": 0.19896,
-        "log_loss": 0.58623,
-        "avg_probability": 61.0
+        "n": 171,
+        "selected_n": 93,
+        "accuracy": 75.3,
+        "brier": 0.20124,
+        "log_loss": 0.59096,
+        "avg_probability": 61.6
       },
       "ensemble": {
-        "n": 170,
-        "selected_n": 92,
-        "accuracy": 77.2,
-        "brier": 0.19969,
-        "log_loss": 0.5894,
-        "avg_probability": 61.2
+        "n": 171,
+        "selected_n": 95,
+        "accuracy": 75.8,
+        "brier": 0.20252,
+        "log_loss": 0.59559,
+        "avg_probability": 61.8
       },
       "ensemble_player_formula": {
-        "n": 170,
-        "selected_n": 93,
-        "accuracy": 77.4,
-        "brier": 0.19876,
-        "log_loss": 0.58684,
-        "avg_probability": 61.2
+        "n": 171,
+        "selected_n": 96,
+        "accuracy": 76.0,
+        "brier": 0.20127,
+        "log_loss": 0.59231,
+        "avg_probability": 61.8
       },
       "player_formula": {
-        "n": 170,
-        "selected_n": 93,
-        "accuracy": 77.4,
-        "brier": 0.2032,
-        "log_loss": 0.59685,
-        "avg_probability": 60.0
+        "n": 171,
+        "selected_n": 98,
+        "accuracy": 76.5,
+        "brier": 0.20525,
+        "log_loss": 0.60125,
+        "avg_probability": 60.9
       }
     },
     "segments": {
       "surface": {
         "HARD": {
-          "n": 136,
-          "selected_n": 69,
-          "accuracy": 76.8,
-          "brier": 0.20935,
-          "log_loss": 0.60647,
-          "avg_probability": 61.8
+          "n": 142,
+          "selected_n": 70,
+          "accuracy": 78.6,
+          "brier": 0.20717,
+          "log_loss": 0.60621,
+          "avg_probability": 61.6
         },
         "CLAY": {
-          "n": 34,
-          "selected_n": 13,
-          "accuracy": 76.9,
-          "brier": 0.24128,
-          "log_loss": 0.67571,
-          "avg_probability": 53.1
+          "n": 29,
+          "selected_n": 15,
+          "accuracy": 73.3,
+          "brier": 0.24599,
+          "log_loss": 0.69412,
+          "avg_probability": 59.8
         }
       },
       "market": {
         "set1_total": {
-          "n": 105,
-          "selected_n": 77,
-          "accuracy": 79.2,
-          "brier": 0.18749,
-          "log_loss": 0.5591,
-          "avg_probability": 70.1
+          "n": 107,
+          "selected_n": 81,
+          "accuracy": 79.0,
+          "brier": 0.19235,
+          "log_loss": 0.57803,
+          "avg_probability": 71.8
         },
         "game_state": {
-          "n": 45,
+          "n": 42,
           "selected_n": 1,
           "accuracy": 100.0,
-          "brier": 0.24514,
-          "log_loss": 0.68553,
-          "avg_probability": 39.1
+          "brier": 0.22267,
+          "log_loss": 0.63793,
+          "avg_probability": 40.1
+        },
+        "match_winner": {
+          "n": 10,
+          "selected_n": 1,
+          "accuracy": 0.0,
+          "brier": 0.30978,
+          "log_loss": 0.8176,
+          "avg_probability": 50.6
         }
       }
     }
@@ -127,13 +135,13 @@
     "status": "watch",
     "production_influence": false,
     "auto_promotion": false,
-    "comparison_baseline": "ensemble_player_formula",
-    "brier_gain": -0.01698,
-    "log_loss_gain": -0.03348,
-    "accuracy_delta_pp": -0.6,
+    "comparison_baseline": "catboost",
+    "brier_gain": -0.01251,
+    "log_loss_gain": -0.03016,
+    "accuracy_delta_pp": 2.3,
     "reason": "shadow_only_manual_gate"
   },
-  "current_scored_signals": 510,
+  "current_scored_signals": 1982,
   "frozen_feature_snapshots_added": 0,
   "historical_feature_snapshots_added": 0,
   "historical_backfill_matches_skipped": 0,
