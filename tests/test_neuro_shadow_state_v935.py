@@ -62,6 +62,27 @@ def test_set3_probabilities_are_conditional_on_third_set_being_played():
     assert math.isclose(over + under, 1.0, rel_tol=0, abs_tol=1e-9)
 
 
+def test_integer_total_lines_condition_on_non_void_outcomes():
+    for market, line in (("set2_total", 9.0), ("set3_total", 9.0)):
+        over = shadow_probability(_match(), market, line=line, pick="over")
+        under = shadow_probability(_match(), market, line=line, pick="under")
+        assert over is not None and under is not None
+        assert math.isclose(over + under, 1.0, rel_tol=0, abs_tol=1e-9)
+
+    for side in (1, 2):
+        over = shadow_probability(_match(), "player_total_games", side=side, line=12.0, pick="over")
+        under = shadow_probability(_match(), "player_total_games", side=side, line=12.0, pick="under")
+        assert over is not None and under is not None
+        assert math.isclose(over + under, 1.0, rel_tol=0, abs_tol=1e-9)
+
+
+def test_integer_handicap_push_mass_is_removed_from_calibration_probability():
+    p1 = shadow_probability(_match(), "match_game_handicap", side=1, line=0.0)
+    p2 = shadow_probability(_match(), "match_game_handicap", side=2, line=0.0)
+    assert p1 is not None and p2 is not None
+    assert math.isclose(p1 + p2, 1.0, rel_tol=0, abs_tol=1e-9)
+
+
 def test_new_shadow_marginals_are_real_probabilities():
     for market, kwargs in (
         ("set2_winner", {"side": 1}),
