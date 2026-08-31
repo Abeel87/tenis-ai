@@ -2,7 +2,7 @@
 /* v8.9.2 Full App Coherence + controlled Adaptive PROD compatibility layer */
 (() => {
   const META = Object.freeze({
-    appVersion:'v8.0.1',
+    appVersion: 'v8.0.1',
     displayVersion:'v8.8.7',
     currentUiArchitecture:'v8.8.7-checkpoint-quality-lock',
     releaseVersion:'v9.2.3',
@@ -19,7 +19,7 @@
     productionModelName:'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion:'v7.9B-bayesian-meta',
     uiArchitecture:'v8.0.1-clean-core',
-    cacheVersion:'v801',
+    cacheVersion: 'v801',
     runtimeCacheVersion:'v87',
     fastBootVersion:'v8.8.8',
     playerHumanUiVersion:'v8.8.8'
