@@ -8,7 +8,7 @@ let queued=false;
 
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const decode=v=>{try{return decodeURIComponent(String(v||''))}catch{return String(v||'')}};
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const fmt=v=>finite(v)?`${Number(v).toFixed(1).replace('.0','')}%`:'—';
 const key=r=>[
   r?.market||'',r?.checkpoint||'',r?.player||'',
@@ -35,6 +35,18 @@ function findMatch(raw){
   const k=decode(raw).replace(/^id:/,'');
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(k)||null}catch{return null}
 }
+function context(match){return match?.superbet_market_v91||{}}
+function rowsOf(match){
+  const ctx=context(match);
+  const selections=(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(r=>r&&r.operator_available!==false);
+  const playable=Array.isArray(ctx.model_signals)?ctx.model_signals:[];
+  const shadow=Array.isArray(ctx.coverage_shadow_signals)?ctx.coverage_shadow_signals:[];
+  return {ctx,selections,playable,shadow};
+}
+function coverageKey(match){
+  const {ctx,selections,playable,shadow}=rowsOf(match);
+  return [ctx.source_generated_at||'',ctx.status||'',ctx.suspended===true?'1':'0',selections.length,playable.length,shadow.length].join('|');
+}
 function marketLabel(r){
   const parts=[];
   const market=String(r?.market||'rynek').replaceAll('_',' ');
@@ -54,10 +66,7 @@ function signalHtml(signal){
   return '<span class="sbmc922-model missing">MODEL: niepokryty</span><small class="sbmc922-meta">Superbet ✓</small>';
 }
 function panelHtml(match){
-  const ctx=match?.superbet_market_v91||{};
-  const selections=(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(r=>r&&r.operator_available!==false);
-  const playable=Array.isArray(ctx.model_signals)?ctx.model_signals:[];
-  const shadow=Array.isArray(ctx.coverage_shadow_signals)?ctx.coverage_shadow_signals:[];
+  const {selections,playable,shadow}=rowsOf(match);
   const byKey=new Map([...playable,...shadow].map(r=>[key(r),r]));
   const active=window.TENIS_AI_PLAYABLE_UI_V917?.active?.(match)===true;
   const rows=selections.map(selection=>{
@@ -82,9 +91,12 @@ function annotate(){
     const screen=overlay.querySelector('.p751-detail-screen');
     if(dc)dc.before(panel);else screen?.prepend(panel);
   }
-  const html=panelHtml(match);
-  if(panel.innerHTML!==html)panel.innerHTML=html;
+  const nextKey=coverageKey(match);
+  if(panel.dataset.coverageKey===nextKey&&panel.dataset.matchKey===String(overlay.dataset.matchKey||''))return;
+  panel.innerHTML=panelHtml(match);
+  panel.dataset.coverageKey=nextKey;
   panel.dataset.matchKey=String(overlay.dataset.matchKey||'');
+  delete panel.dataset.rp93gReady;
 }
 
 function schedule(){if(queued)return;queued=true;queueMicrotask(annotate)}
@@ -97,6 +109,6 @@ function boot(){
   setTimeout(schedule,0);
 }
 
-window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922=Object.freeze({version:VERSION,refresh:schedule,key,panelHtml});
+window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922=Object.freeze({version:VERSION,refresh:schedule,key,panelHtml,coverageKey});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
