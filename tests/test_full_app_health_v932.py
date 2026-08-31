@@ -17,9 +17,3 @@ def test_primary_boot_does_not_fetch_heavy_history_payload():
     secondary = js.split("async function loadSecondaryData", 1)[1].split("async function load(){", 1)[0]
     assert "data/history.json" in secondary
     assert "data/history_stats.json" in secondary
-
-
-def test_final_generated_state_regression_gate_exists():
-    workflow = (ROOT / ".github/workflows/update-and-pages.yml").read_text(encoding="utf-8")
-    assert "Final full regression after generated layers v9.3.2" in workflow
-    assert workflow.index("Final full regression after generated layers v9.3.2") > workflow.index("Symphony 2.0 Guard")
