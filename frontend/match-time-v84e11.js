@@ -1,5 +1,5 @@
 /* Tenis AI v8.4E1.1 — Global Match Time Status
-   One formatter + one lightweight clock for Matches, History and Scenario AI.
+   One formatter + one lightweight clock for Matches and History.
    No API calls. No MutationObserver. A passed scheduled time never implies LIVE.
 */
 (function(root,factory){
@@ -15,7 +15,6 @@
 
   const VERSION='v8.4E1.1';
   const TICK_MS=15000;
-  const LOCAL_KEY='tenis-ai-v82a-scenarios-local';
 
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -232,71 +231,6 @@
     });
   }
 
-  function scenarioDraftGroups(){
-    try{
-      const d=root.TENIS_AI_SCENARIOS?.draft?.();
-      const map=new Map();
-      for(const item of d?.items||[]){
-        const key=String(item?.match_key||item?.match_id||`${item?.p1}|${item?.p2}|${item?.scheduled_time}`);
-        if(!map.has(key))map.set(key,item);
-      }
-      return [...map.values()];
-    }catch{return []}
-  }
-
-  function savedRows(){
-    try{
-      const rows=JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]');
-      return Array.isArray(rows)?rows:[];
-    }catch{return []}
-  }
-
-  function decorateDraft(){
-    if(typeof document==='undefined')return;
-    const articles=[...document.querySelectorAll('#scenario-v82a-panel .sc82-draft-list > article')];
-    const groups=scenarioDraftGroups();
-    articles.forEach((article,i)=>{
-      const header=article.querySelector('header');
-      if(!header||header.querySelector('[data-tai-match-time="1"]'))return;
-      const item=groups[i];
-      if(!item)return;
-      header.insertAdjacentHTML('beforeend',html(item,'scenario'));
-    });
-  }
-
-  function findSavedByTitle(title){
-    const rows=savedRows().filter(x=>String(x?.title||'')===String(title||''));
-    return rows[0]||null;
-  }
-
-  function decorateSaved(){
-    if(typeof document==='undefined')return;
-    const articles=[...document.querySelectorAll('#scenario-v82a-panel .sc82-saved > article')];
-    articles.forEach(article=>{
-      const title=article.querySelector('header b')?.textContent?.trim()||'';
-      const scenario=findSavedByTitle(title);
-      if(!scenario)return;
-      const domItems=[...article.querySelectorAll('.sc82-saved-item')];
-      const items=Array.isArray(scenario.items)?scenario.items:[];
-      const seen=new Set();
-      domItems.forEach((row,i)=>{
-        if(row.querySelector('[data-tai-match-time="1"]'))return;
-        const item=items[i];
-        if(!item)return;
-        const key=String(item?.match_key||item?.match_id||`${item?.p1}|${item?.p2}|${item?.scheduled_time}`);
-        if(seen.has(key))return;
-        seen.add(key);
-        const anchor=row.querySelector('span');
-        if(anchor)anchor.insertAdjacentHTML('afterend',html(item,'history'));
-      });
-    });
-  }
-
-  function decorateScenario(){
-    decorateDraft();
-    decorateSaved();
-  }
-
   function installMainWrappers(){
     if(typeof root.renderMatchCard==='function' && !root.renderMatchCard.__tai_time_e11){
       const base=root.renderMatchCard;
@@ -328,14 +262,12 @@
   function scheduleDecorate(){
     [0,60,220,600].forEach(ms=>setTimeout(()=>{
       decorateHistory();
-      decorateScenario();
       refreshAllMarkersOnly();
     },ms));
   }
 
   function refreshAll(){
     if(typeof document==='undefined'||document.hidden)return;
-    decorateScenario();
     refreshAllMarkersOnly();
     root.TENIS_AI_MATCH_VISIBILITY_V916?.refreshClock?.();
     root.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.();
@@ -352,7 +284,6 @@
     installMainWrappers();
     scheduleDecorate();
     document.addEventListener('click',scheduleDecorate,true);
-    document.addEventListener('tenis-ai-scenario-settlement',scheduleDecorate);
     document.addEventListener('visibilitychange',refreshAll);
     root.addEventListener?.('pageshow',refreshAll);
     if(!timer)timer=setInterval(refreshAll,TICK_MS);
