@@ -50,7 +50,7 @@
     if(!hub)return;
     hub.hidden=true;
     document.documentElement.classList.remove('s2-hub-open');
-    markNav('matches',false);
+    markNav('symphony2',false);
   }
   function markNav(which='symphony2',active=true){
     document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(btn=>{
