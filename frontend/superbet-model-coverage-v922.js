@@ -8,7 +8,7 @@ let queued=false;
 
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const decode=v=>{try{return decodeURIComponent(String(v||''))}catch{return String(v||'')}};
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>finite(v)?`${Number(v).toFixed(1).replace('.0','')}%`:'—';
 const key=r=>[
   r?.market||'',r?.checkpoint||'',r?.player||'',
