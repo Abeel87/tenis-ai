@@ -68,6 +68,19 @@ def _settle_parity(total: int, pick) -> str:
     return "hit" if total % 2 == wanted else "miss"
 
 
+def _settle_over_under(total, signal: dict) -> str:
+    try:
+        line = float(signal.get('line'))
+    except (TypeError, ValueError):
+        return 'unverifiable'
+    pick = str(signal.get('pick') or '').strip().casefold()
+    if pick not in ('over', 'under'):
+        return 'unverifiable'
+    if total == line:
+        return 'void'
+    return 'hit' if (total > line if pick == 'over' else total < line) else 'miss'
+
+
 def _settle_game_handicap(signal: dict, final: dict, sets, market: str) -> str:
     if market == 'set1_game_handicap':
         if len(sets) < 1:
@@ -100,6 +113,17 @@ def _settle_game_handicap(signal: dict, final: dict, sets, market: str) -> str:
     return 'hit' if adjusted > 0 else 'miss'
 
 
+def _settle_player_total_games(signal: dict, final: dict, sets) -> str:
+    if not sets:
+        return 'void'
+    p1, p2 = final.get('p1'), final.get('p2')
+    player = _key(signal.get('player'))
+    if not p1 or not p2 or player not in {_key(p1), _key(p2)}:
+        return 'unverifiable'
+    total = sum(int(a) for a, _ in sets) if player == _key(p1) else sum(int(b) for _, b in sets)
+    return _settle_over_under(total, signal)
+
+
 def settle_signal(signal: dict, final: dict) -> str:
     if final.get('status') != 'completed':
         return 'void'
@@ -126,49 +150,25 @@ def settle_signal(signal: dict, final: dict) -> str:
     if market == 'total_sets':
         direction = pick.strip().casefold()
         if direction in ('over', 'under'):
-            try:
-                line = float(signal.get('line'))
-            except (TypeError, ValueError):
-                return 'unverifiable'
             total = final.get('number_of_sets')
             if total is None:
                 return 'void'
-            if total == line:
-                return 'void'
-            ok = total > line if direction == 'over' else total < line
-            return 'hit' if ok else 'miss'
+            return _settle_over_under(total, signal)
         wanted = 2 if pick.startswith('2') else (3 if pick.startswith('3') else None)
         return 'hit' if wanted == final.get('number_of_sets') else 'miss' if wanted else 'void'
     if market == 'exact_match':
         return 'hit' if pick.replace('-', ':') == str(final.get('match_score') or '').replace('-', ':') else 'miss'
     if market == 'set1_total':
-        if not sets:
-            return 'void'
-        total = sum(sets[0])
-        try:
-            line = float(signal.get('line'))
-        except (TypeError, ValueError):
-            return 'unverifiable'
-        if pick not in ('over', 'under'):
-            return 'unverifiable'
-        if total == line:
-            return 'void'
-        ok = total > line if pick == 'over' else total < line
-        return 'hit' if ok else 'miss'
+        return _settle_over_under(sum(sets[0]), signal) if sets else 'void'
+    if market == 'set2_total':
+        return _settle_over_under(sum(sets[1]), signal) if len(sets) >= 2 else 'void'
     if market == 'match_total':
         total = final.get('total_games')
-        if total is None:
-            return 'void'
-        try:
-            line = float(signal.get('line'))
-        except (TypeError, ValueError):
-            return 'unverifiable'
-        if pick not in ('over', 'under'):
-            return 'unverifiable'
-        if total == line:
-            return 'void'
-        ok = total > line if pick == 'over' else total < line
-        return 'hit' if ok else 'miss'
+        if total is None and sets:
+            total = sum(a + b for a, b in sets)
+        return _settle_over_under(total, signal) if total is not None else 'void'
+    if market == 'player_total_games':
+        return _settle_player_total_games(signal, final, sets)
     if market == 'exact_set1':
         return 'hit' if pick.replace('-', ':') == str(final.get('first_set_score') or '').replace('-', ':') else 'miss'
     if market in {'match_game_handicap', 'set1_game_handicap', 'set2_game_handicap'}:
@@ -256,7 +256,7 @@ def settle_signal_live(signal: dict, final: dict) -> str:
     if market in ("game_state", "set2_game_state"):
         return "unverifiable"
     if market in (
-        "match_winner", "total_sets", "exact_match", "match_total", "match_game_handicap",
+        "match_winner", "total_sets", "exact_match", "match_total", "match_game_handicap", "player_total_games",
         "exact_sets", "match_games_parity", "any_set_to_nil",
         "p1_exactly_1_set", "p1_exactly_2_sets",
         "p2_exactly_1_set", "p2_exactly_2_sets",
@@ -274,10 +274,11 @@ def settle_signal_live(signal: dict, final: dict) -> str:
         actual = p1 if a > b else p2
         return "hit" if _key(pick) == _key(actual) else "miss"
 
-    if market == "set1_total":
-        if not sets or not complete or not complete[0]:
+    if market in ("set1_total", "set2_total"):
+        idx = 0 if market == "set1_total" else 1
+        if len(sets) <= idx or len(complete) <= idx or not complete[idx]:
             return "void"
-        return settle_signal(signal, {**final, "status": "completed"})
+        return _settle_over_under(sum(sets[idx]), signal)
 
     if market == "exact_set1":
         if not sets or not complete or not complete[0]:
@@ -293,7 +294,7 @@ def settle_signal_live(signal: dict, final: dict) -> str:
             actual = f"{sets[1][0]}:{sets[1][1]}"
             return "hit" if pick.replace('-', ':') == actual else "miss"
         if market in ("set1_game_handicap", "set2_game_handicap"):
-            return settle_signal(signal, {**final, "status": "completed", "sets": sets})
+            return _settle_game_handicap(signal, final, sets, market)
         return _settle_parity(sum(sets[idx]), pick)
 
     return "unverifiable"
