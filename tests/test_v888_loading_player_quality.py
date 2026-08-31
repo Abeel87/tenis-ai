@@ -33,22 +33,26 @@ def test_player_intelligence_has_plain_language_layer_and_keeps_shadow_semantics
     assert "Mecz praktycznie równy" in s
     assert "Zaawansowane dane" in s
     assert "SHADOW" in s
-    assert "nie zmienia końcowego sygnału ani generatora" in s
 
 
-def test_generator_quality_lock_matches_generator_profile_floors_and_keeps_validation_guard():
-    s = read("frontend/generator-quality-v888.js")
-    assert "Quality Lock" in s
-    assert "balanced:{minItem:72,minAvg:72" in s
-    assert "stable:{minItem:74,minAvg:74" in s
-    assert "strong:{minItem:80,minAvg:80" in s
-    assert "generatorProfilePolicy()" in s
-    assert "Nie dokładam słabszych" in s
-    assert "match_total" in s
-    assert "accuracy_lab_v86.json" in s
+def test_retired_generator_is_not_bootstrapped_anymore():
+    index = read("frontend/index.html")
+    meta = read("frontend/app-meta.js")
+    for retired in (
+        "generator-quality-v888.js",
+        "scenario-studio-v82a.js",
+        "scenario-runtime-v202.js",
+        "scenario-dynamic-v84d3.js",
+        "scenario-settlement-v83c.js",
+    ):
+        assert retired not in index
+        assert retired not in meta
 
 
-def test_hotfix_addons_are_loaded_from_central_metadata_bootstrap():
-    s = read("frontend/app-meta.js")
-    assert "player-intelligence-v888-human.js?v=888" in s
-    assert "generator-quality-v888.js?v=888" in s
+def test_symphony2_is_loaded_from_central_app_bootstrap():
+    index = read("frontend/index.html")
+    meta = read("frontend/app-meta.js")
+    assert "symphony2.js?v=210" in index
+    assert "symphony2.css?v=210" in index
+    assert "symphony2-live-ui-v201.js?v=201" in meta
+    assert "symphonyVersion:'v2.1'" in meta
