@@ -1,3 +1,6 @@
+from copy import deepcopy
+from datetime import datetime, timezone
+
 from backend import symphony2_learning as learning
 from backend import symphony2_engine as engine
 from backend.symphony2_state import build_outcomes
@@ -89,6 +92,30 @@ def test_current_offer_rejects_line_without_fixture_verification():
     rows = engine._current_offer(match)
     assert len(rows) == 1
     assert rows[0]["line"] == 21.5
+
+
+def test_current_symphony_feed_excludes_started_fixture_but_keeps_future_fixture():
+    now = datetime(2026, 8, 31, 18, 30, tzinfo=timezone.utc)
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "2026-08-31T18:00:00Z"}, now) is False
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "2026-08-31T19:00:00+00:00"}, now) is True
+
+
+def test_current_symphony_time_filter_does_not_mutate_model_raw_payload():
+    match = {
+        "scheduled_time": "2026-08-31T18:00:00Z",
+        "raw_signals": [{"market": "match_total", "line": 99.5, "score": 99}],
+        "match_over_under": {"99.5": {"over": 99.0, "under": 1.0}},
+    }
+    before = deepcopy(match)
+    assert engine._is_current_pre_match_fixture(match, datetime(2026, 8, 31, 18, 30, tzinfo=timezone.utc)) is False
+    assert match == before
+
+
+def test_current_symphony_time_parser_handles_naive_utc_and_unknown_time_conservatively():
+    now = datetime(2026, 8, 31, 18, 30, tzinfo=timezone.utc)
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "2026-08-31T19:00:00"}, now) is True
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is True
+    assert engine._is_current_pre_match_fixture({}, now) is True
 
 
 def test_supported_market_scores_verified_current_line_even_if_exact_number_was_not_repeated_in_history():
