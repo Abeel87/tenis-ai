@@ -115,10 +115,7 @@ def test_large_calibration_sample_can_use_full_optimizer_weight():
     assert w["catboost"] == 1.0
 
 def test_bad_platt_candidate_is_rejected_on_cal_split():
-    rows = [
-        {"match_key": f"id:{i}", "base_score": 80, "target": 0}
-        for i in range(40)
-    ]
+    rows = [{"match_key": f"id:{i}", "base_score": 80, "target": 0} for i in range(40)]
     candidate = {
         "method": "platt_logit", "fit_scope": "train_only",
         "fit_rows": 100, "fit_matches": 50,
@@ -130,10 +127,7 @@ def test_bad_platt_candidate_is_rejected_on_cal_split():
     assert gated["a"] == 1.0 and gated["b"] == 0.0
 
 def test_identity_equivalent_calibration_is_allowed_within_tolerance():
-    rows = [
-        {"match_key": f"id:{i}", "base_score": 70 if i % 2 else 60, "target": i % 2}
-        for i in range(40)
-    ]
+    rows = [{"match_key": f"id:{i}", "base_score": 70 if i % 2 else 60, "target": i % 2} for i in range(40)]
     candidate = {
         "method": "platt_logit", "fit_scope": "train_only",
         "fit_rows": 100, "fit_matches": 50,
@@ -145,73 +139,45 @@ def test_identity_equivalent_calibration_is_allowed_within_tolerance():
 
 def test_history_fallback_uses_tournament_to_disambiguate():
     hist = pd.DataFrame([
-        {
-            "winner_name": "A", "loser_name": "B", "tourney_date": 20260824,
-            "tourney_name": "Event X", "score": "6-4 6-4",
-        },
-        {
-            "winner_name": "B", "loser_name": "A", "tourney_date": 20260824,
-            "tourney_name": "Event Y", "score": "6-3 6-3",
-        },
+        {"winner_name": "A", "loser_name": "B", "tourney_date": 20260824, "tourney_name": "Event X", "score": "6-4 6-4"},
+        {"winner_name": "B", "loser_name": "A", "tourney_date": 20260824, "tourney_name": "Event Y", "score": "6-3 6-3"},
     ])
-    entry = {
-        "p1": "A", "p2": "B",
-        "scheduled_time": "2026-08-24T10:00:00+00:00",
-        "tournament": "Event Y",
-    }
+    entry = {"p1": "A", "p2": "B", "scheduled_time": "2026-08-24T10:00:00+00:00", "tournament": "Event Y"}
     final = history_tracker.find_final_result(hist, entry)
     assert final is not None
     assert final["winner"] == "B"
 
 def test_history_fallback_does_not_guess_between_two_equal_candidates():
     hist = pd.DataFrame([
-        {
-            "winner_name": "A", "loser_name": "B", "tourney_date": 20260824,
-            "tourney_name": "Event X", "score": "6-4 6-4",
-        },
-        {
-            "winner_name": "B", "loser_name": "A", "tourney_date": 20260824,
-            "tourney_name": "Event Y", "score": "6-3 6-3",
-        },
+        {"winner_name": "A", "loser_name": "B", "tourney_date": 20260824, "tourney_name": "Event X", "score": "6-4 6-4"},
+        {"winner_name": "B", "loser_name": "A", "tourney_date": 20260824, "tourney_name": "Event Y", "score": "6-3 6-3"},
     ])
-    entry = {
-        "p1": "A", "p2": "B",
-        "scheduled_time": "2026-08-24T10:00:00+00:00",
-        "tournament": "",
-    }
+    entry = {"p1": "A", "p2": "B", "scheduled_time": "2026-08-24T10:00:00+00:00", "tournament": ""}
     assert history_tracker.find_final_result(hist, entry) is None
 
 def test_pwa_uses_one_canonical_cache_key_per_data_json():
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
     app = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
     assert "canonicalDataRequest" in sw
-    assert "url.origin + url.pathname" in sw
+    assert "url.origin+url.pathname" in sw.replace(" ", "")
     assert "isDataJson" in sw
     assert "serviceWorker.register('sw.js?v=801')" in app
     assert ".then(r=>r.update())" in app
     assert "{cache:'no-store'}" in app
 
-def test_previous_protected_scenario_pin_survives():
+def test_symphony2_replaces_previous_scenario_pin():
     index = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "scenario-studio-v82a.js?v=82a6" in index
+    assert "symphony2.js?v=210" in index
+    assert "scenario-studio-v82a.js" not in index
+    assert "scenario-runtime-v202.js" not in index
 
 
 def test_history_tournament_can_beat_one_day_archive_date_drift():
     hist = pd.DataFrame([
-        {
-            "winner_name": "A", "loser_name": "B", "tourney_date": 20260824,
-            "tourney_name": "Wrong Event", "score": "6-4 6-4",
-        },
-        {
-            "winner_name": "B", "loser_name": "A", "tourney_date": 20260823,
-            "tourney_name": "Target Event", "score": "6-3 6-3",
-        },
+        {"winner_name": "A", "loser_name": "B", "tourney_date": 20260824, "tourney_name": "Wrong Event", "score": "6-4 6-4"},
+        {"winner_name": "B", "loser_name": "A", "tourney_date": 20260823, "tourney_name": "Target Event", "score": "6-3 6-3"},
     ])
-    entry = {
-        "p1": "A", "p2": "B",
-        "scheduled_time": "2026-08-24T00:30:00+00:00",
-        "tournament": "Target Event",
-    }
+    entry = {"p1": "A", "p2": "B", "scheduled_time": "2026-08-24T00:30:00+00:00", "tournament": "Target Event"}
     final = history_tracker.find_final_result(hist, entry)
     assert final is not None
     assert final["winner"] == "B"
