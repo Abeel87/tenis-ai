@@ -57,9 +57,10 @@ def test_scenario_runtime_is_loaded_directly_after_studio_not_by_symphony():
     index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
     sym = (ROOT / "frontend" / "symphony2-live-ui-v201.js").read_text(encoding="utf-8")
     studio = 'scenario-studio-v82a.js?v=82a6&hf=84a1&amp;audit=884'
-    runtime = 'scenario-runtime-v202.js?v=203'
+    runtime = 'scenario-runtime-v202.js?v=205'
     assert studio in index
     assert runtime in index
+    assert 'scenario-runtime-v202.js?v=203' not in index
     assert index.index(studio) < index.index(runtime) < index.index('symphony2.js?v=200')
     assert "scenario-runtime-v202.js" not in sym
     assert "data-sc-generate" not in sym
