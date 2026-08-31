@@ -22,6 +22,7 @@ def main():
     auto = read("backend/autolearn_v84.py")
     tel = read("backend/model_telemetry_v84c.py")
     ui = read("frontend/autolearn-v84.js")
+    audit = read("frontend/dynamic-weights-v84d1.js")
     idx = read("frontend/index.html")
     wf = read(".github/workflows/update-and-pages.yml")
 
@@ -44,9 +45,14 @@ def main():
     req(tel, '"dynamic": "Dynamic Ensemble v8.4D"', "telemetria nie ma osobnego modelu Dynamic v8.4D")
     req(tel, 'dyn.get("active")', "telemetria nie filtruje aktywnych decyzji v8.4D")
     req(ui, "'dynamic'", "UI telemetrii nie pokazuje Dynamic Ensemble")
+    req(audit, "Audyt pełnej puli MODEL/RAW", "Dynamic Weights UI nie jest odseparowane od PLAYABLE")
+    req(audit, "Symfonia 2.0 korzysta z własnego operator-first pipeline", "brak jawnego rozdziału Dynamic Weights / Symfonia 2.0")
 
     req(idx, 'autolearn-v84.css?v=84a1&hf=84a3', "naruszono chroniony pin CSS")
-    req(idx, 'scenario-studio-v82a.js?v=82a6', "naruszono chroniony pin Scenario Studio")
+    req(idx, 'dynamic-weights-v84d1.js?v=84e0', "brak aktywnego Dynamic Weights UI")
+    req(idx, 'symphony2.js?v=210', "brak aktywnej Symfonii 2.0")
+    if 'scenario-studio-v82a.js' in idx:
+        ERRORS.append("wycofany Scenario Studio nadal aktywny")
     req(wf, "Dynamic Weights Guard v8.4D", "workflow nie uruchamia guarda v8.4D")
 
     if ERRORS:
