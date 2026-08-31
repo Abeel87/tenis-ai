@@ -18,13 +18,12 @@ def test_live_recovery_exposes_symphony_on_match_cards_and_details():
     assert "data-p751-open" in js
 
 
-def test_scenario_recovery_has_finite_quality_wait_and_live_api_back_link():
+def test_symphony_live_ui_no_longer_owns_scenario_runtime():
     js = (ROOT / "frontend" / "symphony2-live-ui-v201.js").read_text(encoding="utf-8")
-    assert "Promise.race" in js
-    assert "timeout(2500)" in js
-    assert "TENIS_AI_SCENARIOS" in js
-    assert "TENIS_AI_SCENARIOS_V82A" not in js
-    assert "data-sc-generate" in js
+    assert "MutationObserver" not in js
+    assert "data-sc-generate" not in js
+    assert "TENIS_AI_GENERATOR_QUALITY_V888" not in js
+    assert "TENIS_AI_SCENARIOS" not in js
 
 
 def test_sym2_feed_parser_rejects_empty_or_invalid_payloads():
