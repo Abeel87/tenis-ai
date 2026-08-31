@@ -94,7 +94,7 @@ def test_current_offer_rejects_line_without_fixture_verification():
 def test_supported_market_scores_verified_current_line_even_if_exact_number_was_not_repeated_in_history():
     class FakeModel:
         def predict_proba(self, x):
-            assert float(x.iloc[0]["line"]) == 23.5
+            assert float(x[0][learning.FEATURES.index("line")]) == 23.5
             return [[0.18, 0.82]]
 
     model = learning.OperatorLineModel(model=FakeModel(), status="ready", market_support={"match_total": 384})
