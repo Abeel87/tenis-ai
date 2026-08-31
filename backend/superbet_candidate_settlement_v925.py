@@ -40,7 +40,10 @@ SETTLEMENT_SUPPORTED_MARKETS = {
     "match_game_handicap",
     "set1_game_handicap",
     "set2_game_handicap",
+    "set2_winner",
+    "set3_winner",
     "set2_total",
+    "set3_total",
     "player_total_games",
 }
 PBP_ONLY_MARKETS = {"set2_game_state"}
@@ -48,7 +51,10 @@ ACTIONABLE_EVIDENCE_MARKETS = {
     "match_game_handicap",
     "set1_game_handicap",
     "set2_game_handicap",
+    "set2_winner",
+    "set3_winner",
     "set2_total",
+    "set3_total",
     "player_total_games",
 }
 
