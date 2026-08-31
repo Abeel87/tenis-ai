@@ -6,11 +6,13 @@ on:
       - fix/full-app-health-v932
     paths:
       - 'scripts/repair_full_app_health_v932.py'
+      - 'scripts/repair_full_app_health_v932_post.py'
       - '.github/workflows/full-app-health-v932-one-shot.yml'
   pull_request:
     branches: [main]
     paths:
       - 'scripts/repair_full_app_health_v932.py'
+      - 'scripts/repair_full_app_health_v932_post.py'
       - '.github/workflows/full-app-health-v932-one-shot.yml'
   workflow_dispatch:
 
@@ -40,7 +42,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Apply audited source repairs
-        run: python scripts/repair_full_app_health_v932.py
+        run: |
+          python scripts/repair_full_app_health_v932.py
+          python scripts/repair_full_app_health_v932_post.py
 
       - name: Syntax guard
         run: |
@@ -60,7 +64,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Remove one-shot repair machinery
-        run: git rm scripts/repair_full_app_health_v932.py .github/workflows/full-app-health-v932-one-shot.yml
+        run: git rm scripts/repair_full_app_health_v932.py scripts/repair_full_app_health_v932_post.py .github/workflows/full-app-health-v932-one-shot.yml
 
       - name: Commit repaired source
         run: |
