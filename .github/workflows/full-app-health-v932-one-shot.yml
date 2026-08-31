@@ -62,14 +62,17 @@ jobs:
       - name: Full pytest regression
         run: python -m pytest -q
 
-      - name: Remove one-shot repair machinery
-        run: git rm scripts/repair_full_app_health_v932.py scripts/repair_full_app_health_v932_post.py .github/workflows/full-app-health-v932-one-shot.yml
+      - name: Keep workflow edits for direct authenticated update
+        run: git restore .github/workflows/update-and-pages.yml .github/workflows/superbet-market-refresh.yml
+
+      - name: Remove temporary repair scripts
+        run: git rm scripts/repair_full_app_health_v932.py scripts/repair_full_app_health_v932_post.py
 
       - name: Commit repaired source
         run: |
           git config user.name "tenis-ai-health-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add backend frontend tests .github/workflows
+          git add backend frontend tests scripts
           git diff --cached --quiet && { echo 'No final changes produced'; exit 1; }
           git commit -m "fix: full app health v9.3.2"
           git push origin HEAD:fix/full-app-health-v932
