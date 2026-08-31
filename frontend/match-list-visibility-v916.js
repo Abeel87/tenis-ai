@@ -5,7 +5,7 @@
 (()=>{
 'use strict';
 
-const VERSION='v9.3G';
+const VERSION='v9.3.3';
 const previousFilteredReady=typeof filteredReady==='function'?filteredReady:null;
 
 function visibleMatches(now=Date.now()){
@@ -13,7 +13,6 @@ function visibleMatches(now=Date.now()){
     if(!m)return false;
     const time=window.TENIS_AI_MATCH_TIME;
     if(time)return time.isCurrent(m,now);
-    // Compatibility fallback if the shared clock has not loaded yet.
     return (typeof clientCurrent!=='function'||clientCurrent(m))
       &&!window.TENIS_AI_E0_1?.isUnavailableFixture(m);
   });
@@ -24,15 +23,10 @@ function analysisReadyMatches(){
   catch{return []}
 }
 
-// ui-v751 currentRows(), legacy renderMatches() and updateCounts() all resolve
-// filteredReady dynamically. Model readiness must not hide fixtures, but the
-// backend snapshot still ages between deployments: retain lifecycle/time guards.
 filteredReady=function(){return visibleMatches()};
 
 const matchKey=m=>String(m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|'));
 
-// Called by the existing global clock and on foreground return. Remove only
-// expired entries; do not rebuild cards, collapse groups or close match details.
 function refreshClock(){
   const visible=new Set(visibleMatches().map(matchKey));
   const known=new Set((Array.isArray(all)?all:[]).filter(Boolean).map(matchKey));
@@ -74,7 +68,7 @@ function refreshVisibleUi(){
 function loadMarketSegregationV93G(){
   if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]'))return;
   const script=document.createElement('script');
-  script.src='market-segregation-v93g.js?v=93g&contract=raw-playable-ui-only';
+  script.src='market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only';
   script.async=false;
   script.dataset.marketSegregationV93g='1';
   document.head.appendChild(script);
@@ -83,34 +77,22 @@ function loadMarketSegregationV93G(){
 function loadSuperbetModelCoverageV922(){
   if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]')){loadMarketSegregationV93G();return}
   const script=document.createElement('script');
-  script.src='superbet-model-coverage-v922.js?v=922&contract=operator-model-coverage';
+  script.src='superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage';
   script.async=false;
   script.dataset.superbetModelCoverageV922='1';
   script.addEventListener('load',loadMarketSegregationV93G,{once:true});
   document.head.appendChild(script);
 }
 
-function loadRawPlayableV921(){
-  if(window.TENIS_AI_RAW_PLAYABLE_V921){loadSuperbetModelCoverageV922();return}
-  const existing=document.querySelector('script[data-raw-playable-v921]');
+function loadPlayableUiV917(){
+  if(window.TENIS_AI_PLAYABLE_UI_V917){loadSuperbetModelCoverageV922();return}
+  const existing=document.querySelector('script[data-playable-ui-v917]');
   if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
   const script=document.createElement('script');
-  script.src='raw-playable-separation-v921.js?v=921&contract=raw-playable';
-  script.async=false;
-  script.dataset.rawPlayableV921='1';
-  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
-  document.head.appendChild(script);
-}
-
-function loadPlayableUiV917(){
-  if(window.TENIS_AI_PLAYABLE_UI_V917){loadRawPlayableV921();return}
-  const existing=document.querySelector('script[data-playable-ui-v917]');
-  if(existing){existing.addEventListener('load',loadRawPlayableV921,{once:true});return}
-  const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=922&contract=raw-playable';
+  script.src='playable-ui-coherence-v917.js?v=925&contract=raw-playable';
   script.async=false;
   script.dataset.playableUiV917='1';
-  script.addEventListener('load',loadRawPlayableV921,{once:true});
+  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
   document.head.appendChild(script);
 }
 
@@ -122,12 +104,9 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
   refresh:refreshVisibleUi
 });
 
-// If app.js has already finished loading data, refresh immediately. Otherwise
-// its normal load() path will use the replacement selector when results arrive.
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// PLAYABLE loads first, MODEL/RAW second, then the existing v9.2.2 coverage bridge.
-// The UI-only v9.3G segregation attaches after that bridge is ready, so the old
-// MODEL/RAW -> SUPERBET load contract remains byte-compatible with its guard.
+// Current ownership chain: strict PLAYABLE gate -> complete operator/model coverage
+// -> presentation-only market grouping. Legacy v921 RAW/Symphony panel is gone.
 setTimeout(loadPlayableUiV917,0);
 })();
