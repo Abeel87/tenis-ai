@@ -1,5 +1,5 @@
 /* Tenis AI v8.9.4 — SHADOW Signal Center
-   Read-only manual-test view. It never changes PROD, Generator or final_score.
+   Read-only manual-test view. It never changes PROD, Symphony 2.0 or final_score.
 */
 (()=>{
 'use strict';
@@ -67,8 +67,8 @@ function ensureNav(){
     btn.type='button';
     btn.dataset.p751Nav='shadow-signals';
     btn.innerHTML='<span>👻</span><b>SHADOW</b>';
-    const scenarios=nav.querySelector('[data-p751-nav="scenarios"]');
-    if(scenarios)scenarios.insertAdjacentElement('afterend',btn);
+    const symphony=nav.querySelector('[data-p751-nav="symphony2"]');
+    if(symphony)symphony.insertAdjacentElement('afterend',btn);
     else nav.appendChild(btn);
   }
   btn.onclick=()=>open();
@@ -203,7 +203,7 @@ function render(){
     ${controls()}
     <div class="sh894-summary"><span>Mecze z sygnałem <b data-sh894-count>${rows.length}</b></span><span>Historia Elo <b>${Number(state.report.elo_events||0).toLocaleString('pl-PL')}</b></span><span>Uczenie <b>${Number(state.report.training_rows||0)}</b></span></div>
     ${rows.length?`<div class="sh894-groups">${groups(rows).map((g,i)=>`<details class="sh894-group" ${i<5?'open':''}><summary><div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b><small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'}</small></div><i>⌄</i></summary><div>${g.rows.map(matchCard).join('')}</div></details>`).join('')}</div>`:'<div class="sh894-empty"><b>Brak aktualnych sygnałów dla tych filtrów.</b><span>Sprawdź filtry i świeżość oferty Superbet. Historia modeli pozostaje dostępna.</span></div>'}
-    <p class="sh894-note">SHADOW = eksperyment. Wyniki służą do porównywania modeli i ręcznych testów; nie są częścią Generatora ani final_score.</p>
+    <p class="sh894-note">SHADOW = eksperyment. Wyniki służą do porównywania modeli i ręcznych testów; nie są częścią Symfonii 2.0 ani final_score.</p>
   </section>`;
   bind();
 }
