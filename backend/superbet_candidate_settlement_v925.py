@@ -40,12 +40,16 @@ SETTLEMENT_SUPPORTED_MARKETS = {
     "match_game_handicap",
     "set1_game_handicap",
     "set2_game_handicap",
+    "set2_total",
+    "player_total_games",
 }
 PBP_ONLY_MARKETS = {"set2_game_state"}
 ACTIONABLE_EVIDENCE_MARKETS = {
     "match_game_handicap",
     "set1_game_handicap",
     "set2_game_handicap",
+    "set2_total",
+    "player_total_games",
 }
 
 
@@ -117,9 +121,9 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
     """Freeze operator-verified evidence rows before result settlement.
 
     Existing snapshots are immutable; a later operator refresh must not rewrite a
-    forecast that was already captured for a match. v9.2.4 display/shadow rows and
-    the v9.2.2 exact operator game-handicap model rows are tracked in this shadow
-    layer only; production PLAYABLE remains untouched.
+    forecast that was already captured for a match. Existing display/shadow rows
+    plus selected exact operator-line model rows are tracked in this shadow layer
+    only; production PLAYABLE remains untouched.
     """
     now = now or datetime.now(timezone.utc)
     index = {_match_key(m): m for m in results or [] if isinstance(m, dict)}
@@ -148,7 +152,7 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
         seen = set()
         sources = (
             (ctx.get("coverage_shadow_signals") or [], "superbet_v924_display_shadow"),
-            (ctx.get("model_signals") or [], "superbet_v922_operator_line_model"),
+            (ctx.get("model_signals") or [], "superbet_operator_line_model"),
         )
         for source_rows, source_model in sources:
             for signal in source_rows:
@@ -160,9 +164,9 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
                     continue
                 if market not in SETTLEMENT_SUPPORTED_MARKETS:
                     continue
-                if source_model == "superbet_v922_operator_line_model" and market not in ACTIONABLE_EVIDENCE_MARKETS:
+                if source_model == "superbet_operator_line_model" and market not in ACTIONABLE_EVIDENCE_MARKETS:
                     continue
-                if source_model == "superbet_v922_operator_line_model" and signal.get("operator_line_verified") is not True:
+                if source_model == "superbet_operator_line_model" and signal.get("operator_line_verified") is not True:
                     continue
                 score = _num(signal.get("score"))
                 if score is None or score < TRACK_MIN_SCORE:
