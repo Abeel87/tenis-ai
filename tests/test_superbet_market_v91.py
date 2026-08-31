@@ -17,6 +17,9 @@ def test_canonical_superbet_market_mapping():
     assert canonical_market("Correct Score First Set After Six Games") == ("game_state", 6, None)
     assert canonical_market("Participant 1 Total Games") == ("player_total_games", None, "p1")
     assert canonical_market("Total Aces") == ("match_total_aces", None, None)
+    assert canonical_market("Winner Second Set") == ("set2_winner", None, None)
+    assert canonical_market("Winner Third Set") == ("set3_winner", None, None)
+    assert canonical_market("Total Games Third Set") == ("set3_total", None, None)
 
 
 def test_sanitize_fixture_keeps_lines_but_discards_prices():
