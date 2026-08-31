@@ -18,7 +18,7 @@ try:
 except Exception:  # pragma: no cover
     CatBoostClassifier = None
 
-VERSION = "symphony2-learning-2"
+VERSION = "symphony2-learning-3"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
 MIN_MARKET_CALIBRATION_ROWS = 40
@@ -106,12 +106,48 @@ def feature_row(match: dict, signal: dict) -> dict:
     }
 
 
+def _history_signal_key(signal: dict) -> tuple:
+    return (
+        _norm(signal.get("market")), _pick(signal.get("pick")),
+        _num(signal.get("line")), _num(signal.get("checkpoint")), _norm(signal.get("player")),
+    )
+
+
+def _history_signal_richness(signal: dict) -> int:
+    """Prefer the most informative frozen row when exact operator layers overlap."""
+    score = 0
+    for key in ("result", "score", "current", "catboost", "tabpfn", "operator", "operator_line_verified"):
+        if signal.get(key) is not None:
+            score += 1
+    models = signal.get("model_scores")
+    if isinstance(models, dict):
+        score += sum(1 for value in models.values() if value is not None)
+    adaptive = signal.get("adaptive_prod_v79")
+    if isinstance(adaptive, dict) and adaptive.get("final_score") is not None:
+        score += 1
+    return score
+
+
 def _history_layer(entry: dict) -> list[dict]:
-    for key in ("playable_autolearn_signals_v912", "playable_signals_v912"):
+    """Union exact frozen operator rows from both canonical PLAYABLE history layers.
+
+    AutoLearn no longer hides a unique base-layer observation. Exact duplicates are
+    kept once and the richer frozen row wins. No RAW/model synthetic layer is read.
+    """
+    by_key: dict[tuple, tuple[int, int, dict]] = {}
+    for source_rank, key in enumerate(("playable_signals_v912", "playable_autolearn_signals_v912")):
         rows = entry.get(key)
-        if isinstance(rows, list) and rows:
-            return [x for x in rows if isinstance(x, dict)]
-    return []
+        if not isinstance(rows, list):
+            continue
+        for raw in rows:
+            if not isinstance(raw, dict):
+                continue
+            signal_key = _history_signal_key(raw)
+            candidate = (_history_signal_richness(raw), source_rank, raw)
+            previous = by_key.get(signal_key)
+            if previous is None or candidate[:2] > previous[:2]:
+                by_key[signal_key] = candidate
+    return [item[2] for item in by_key.values()]
 
 
 def build_training_rows(history: Iterable[dict]) -> list[dict]:
@@ -245,7 +281,7 @@ class OperatorLineModel:
     def support_for(self, row: dict) -> int:
         return int(self.market_support.get(_norm(row.get("market")), 0))
 
-    def predict(self, row: dict) -> float | None:
+    def predict_diagnostics(self, row: dict) -> dict | None:
         if not self.ready:
             return None
         x = [[row.get(name) for name in FEATURES]]
@@ -253,10 +289,18 @@ class OperatorLineModel:
         market = _norm(row.get("market"))
         calibrator = self.market_calibrators.get(market, self.calibrator)
         calibrated = calibrator.predict(raw)
-        # Empirical-Bayes shrinkage for poorly represented market families.
         support = self.support_for(row)
         reliability = min(1.0, support / FULL_SUPPORT_ROWS)
-        return _clip(0.5 + (calibrated - 0.5) * reliability)
+        final = _clip(0.5 + (calibrated - 0.5) * reliability)
+        return {
+            "raw": _clip(raw), "calibrated": _clip(calibrated), "final": final,
+            "support": support, "reliability": reliability,
+            "market_calibrator": market in self.market_calibrators,
+        }
+
+    def predict(self, row: dict) -> float | None:
+        diagnostics = self.predict_diagnostics(row)
+        return diagnostics["final"] if diagnostics is not None else None
 
 
 def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
@@ -288,6 +332,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "version": VERSION, "training_rows": len(train), "validation_rows": len(valid),
         "time_split": bool(valid), "feature_names": FEATURES, "cat_features": CAT_FEATURES,
         "market_support": dict(sorted(support.items())),
+        "history_layer_policy": "UNION_EXACT_FROZEN_OPERATOR_LAYERS_RICHEST_DUPLICATE_WINS",
         "calibration_policy": "market_platt_if_improves_brier_else_global_if_improves_else_raw",
         "low_support_policy": f"shrink_to_50_until_{FULL_SUPPORT_ROWS}_market_rows",
     }
