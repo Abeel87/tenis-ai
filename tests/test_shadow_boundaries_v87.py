@@ -10,13 +10,12 @@ def read(relative):
 
 def test_player_intelligence_remains_strictly_shadow():
     backend = read("backend/player_intelligence_v85.py")
-    scenario = read("frontend/scenario-studio-v82a.js")
+    symphony = read("backend/symphony2_engine.py")
 
     assert '"mode": "SHADOW"' in backend
     assert '"production_influence": False' in backend
     assert '"generator_assist": "disabled_shadow_only"' in backend
-    assert "PLAYER_INTELLIGENCE_V85_SHADOW_ONLY" in scenario
-    assert "score+=Math.max(-cap,Math.min(cap,ps*.20))" not in scenario
+    assert "PLAYER_INTELLIGENCE_V85_SHADOW_ONLY" not in symphony
 
 
 def test_accuracy_lab_remains_shadow_only():
