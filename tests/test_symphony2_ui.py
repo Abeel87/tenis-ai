@@ -50,6 +50,14 @@ def test_symphony2_close_clears_its_own_nav_state():
     assert "markNav('matches',false)" not in JS
 
 
+def test_symphony2_nav_binding_is_idempotent_under_mutation_observer():
+    assert "new MutationObserver(" in JS
+    assert "if(nav.dataset.symphony2Nav!=='1'){" in JS
+    guarded = JS.split("if(nav.dataset.symphony2Nav!=='1'){", 1)[1].split("}", 1)[0]
+    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in guarded
+    assert "nav.dataset.symphony2Nav='1'" in guarded
+
+
 def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
     assert "symphony2-match-detail" in JS
     assert "cleanupLegacySymphony" in JS
