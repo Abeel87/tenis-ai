@@ -17,7 +17,6 @@ def req(text,needle,msg):
 
 def main():
     index=read("frontend/index.html")
-    scenario=read("frontend/scenario-studio-v82a.js")
     auto=read("backend/autolearn_v84.py")
     front=read("frontend/autolearn-v84.js")
     workflow=read(".github/workflows/update-and-pages.yml")
@@ -28,7 +27,7 @@ def main():
     req(auto,"def _choose_weights","brak zachowania wagi challengera między retrainingami")
     req(auto,"def _bounded_tabpfn_weights","brak bounded weight policy TabPFN")
     changelog=read("CHANGELOG.md")
-    req(changelog,'quality_lock_no_forced_fill_v852',"CHANGELOG nie opisuje nowej polityki quality_lock_no_forced_fill_v852")
+    req(changelog,'quality_lock_no_forced_fill_v852',"CHANGELOG nie opisuje polityki quality_lock_no_forced_fill_v852")
     req(auto,'quality_lock_no_forced_fill_v852',"backend/autolearn_v84.py nie ustawia polityki quality_lock_no_forced_fill_v852")
     req(auto,'"weight_policy": weight_policy',"report nie publikuje weight_policy")
 
@@ -37,34 +36,16 @@ def main():
     req(front,"Wagi produkcyjne","statystyki nie pokazują wag produkcyjnych")
     req(front,"Challenger","statystyki nie pokazują stanu challengera")
 
-    req(scenario,"function repairGeneratorCandidate","brak soft-fill generatora")
-    req(scenario,"function generatorProfilePolicy","brak progów per profil")
-    req(scenario,"function autoLearnSourceLabel","brak czytelnego źródła CatBoost/TabPFN")
-    req(scenario,".map(x=>repairGeneratorCandidate(x,spm,profile)).filter(x=>x.picked.length===spm)",
-        "generator nadal odrzuca mecze przed próbą bezpiecznego uzupełnienia")
-    req(scenario,"raw_ensemble_score","scenariusz nie zapisuje raw Ensemble")
-    req(scenario,"base_source_model","scenariusz nie zachowuje bazowego modelu")
-    req(scenario,"floor:72","brak hard floor 72 dla balanced")
-    req(scenario,"floor:74","brak hard floor 74 dla stable")
-    req(scenario,"floor:80","brak hard floor 80 dla strong")
-    req(scenario,"floor:62","brak hard floor 62 dla experimental")
-    if any(old_floor in scenario for old_floor in ("floor:57", "floor:58", "floor:63")):
-        ERRORS.append("wykryto stare progi floor 57/58/63 w scenario-studio-v82a.js")
-
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a2", "autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS v8.4A.1+")
     if not any(x in index for x in ("autolearn-v84.css?v=84a1&hf=84a2", "autolearn-v84.css?v=84a1&hf=84a3")):
         ERRORS.append("brak kompatybilnego cache-bust CSS v8.4A.1+")
-    req(index,"scenario-studio-v82a.js?v=82a6&hf=84a1","brak cache-bust Scenario Studio hotfix")
-    req(index,"scenario-studio-v82a.js?v=82a6","naruszono chroniony pin v82a6")
 
-    req(workflow,"AutoLearn Hotfix Guard v8.4A.1","workflow nie ma nowego guarda")
-    if not any(x in old_guard for x in (
-        "('v8.4A','v8.4A.1')",
-        "('v8.4A','v8.4A.1','v8.4A.2')",
-        "('v8.4A','v8.4A.1','v8.4A.2','v8.4B')",
-    )):
-        ERRORS.append("stary v8.4A guard nie akceptuje raportów v8.4A.1+")
+    req(workflow,"AutoLearn Hotfix Guard v8.4A.1","workflow nie ma guarda AutoLearn")
+    if "scenario-studio-v82a" in index or "generator-quality-v888" in index:
+        ERRORS.append("wycofany Scenario Generator nadal jest bootstrappowany")
+    if "scenario-studio-v82a" in old_guard:
+        ERRORS.append("AutoLearn Integration Guard nadal zależy od Scenario Studio")
 
     report=ROOT/"frontend/data/autolearn_v84.json"
     if report.exists():
