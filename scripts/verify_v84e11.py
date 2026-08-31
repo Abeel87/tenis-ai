@@ -29,8 +29,6 @@ def main():
     req(js,"postponed","brak statusu postponed")
     req(js,"setInterval(refreshAll,TICK_MS)","brak jednego globalnego zegara")
     req(js,"decorateHistory","brak integracji Historia")
-    req(js,"decorateDraft","brak integracji Scenario draft")
-    req(js,"decorateSaved","brak integracji zapisanych scenariuszy")
     req(js,"renderMatchCard","brak integracji głównej listy")
 
     if "fetch(" in js or "XMLHttpRequest" in js:
@@ -44,7 +42,8 @@ def main():
     req(idx,'match-time-v84e11.css?v=84e11',"index nie ładuje CSS E1.1")
     req(idx,'match-time-v84e11.js?v=84e11',"index nie ładuje JS E1.1")
     req(idx,'app.js?v=84b1',"naruszono chroniony app.js pin")
-    req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono chroniony Scenario Studio pin")
+    if 'scenario-studio-v82a.js' in idx:
+        ERR.append("wycofany Scenario Studio nadal jest ładowany w index.html")
     req(ui,"Global Match Time Guard v8.4E1.1","UI smoke nie ma guarda")
     req(pages,"Global Match Time Guard v8.4E1.1","Pages workflow nie ma guarda")
 

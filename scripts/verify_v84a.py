@@ -20,20 +20,14 @@ def req(text,needle,msg):
 
 def main():
     index=read("frontend/index.html")
-    scenario=read("frontend/scenario-studio-v82a.js")
     workflow=read(".github/workflows/update-and-pages.yml")
     settle=read("backend/live_history_settle.py") + read("backend/signal_settlement.py")
     auto=read("backend/autolearn_v84.py")
     tab=read("backend/tabpfn_challenger_v84.py")
     front=read("frontend/autolearn-v84.js")
-    req(index,'scenario-studio-v82a.js?v=82a6','zmieniono chroniony pin Scenario Studio')
+
     req(index,'autolearn-v84.js?v=84a1','brak JS AutoLearn')
     req(index,'autolearn-v84.css?v=84a1','brak CSS AutoLearn')
-    if index.find('autolearn-v84.js?v=84a1')>index.find('scenario-studio-v82a.js?v=82a6'):
-        ERRORS.append('AutoLearn musi być załadowany przed Scenario Studio')
-    req(scenario,'TENIS_AI_AUTOLEARN_V84','Generator nie czyta AutoLearn')
-    req(scenario,'const selectedMatches=ranked.length','Generator nadal wymaga pełnej liczby spotkań')
-    if 'if(candidates.length<mc)' in scenario: ERRORS.append('Pozostał stary hard-fail pełnego scenariusza')
     req(settle,'autolearn_signals_v84','Settlement nie rozlicza AutoLearn')
     req(auto,'chronological_split','Brak chronologicznego splitu')
     req(auto,'ML is not allowed to create new Live Tennis API settlement work','Brak guarda zerowego dodatkowego settlement work')
@@ -43,6 +37,12 @@ def main():
     for marker in ['Optional TabPFN V2 runtime v8.4A','AutoLearn Ensemble v8.4A','AutoLearn Integration Guard v8.4A']:
         req(workflow,marker,f'workflow: brak {marker}')
     if workflow.count('AutoLearn Ensemble v8.4A')!=1: ERRORS.append('workflow: AutoLearn powinien wystąpić dokładnie raz')
+
+    # Scenario Composer was retired in favor of Symphony 2.0. AutoLearn remains
+    # an independent model/evidence layer and must not require any Scenario files.
+    for retired in ('scenario-studio-v82a.js','generator-quality-v888.js','scenario-runtime-v202.js'):
+        if retired in index: ERRORS.append(f'index nadal ładuje wycofany asset: {retired}')
+
     report=ROOT/'frontend/data/autolearn_v84.json'
     if report.exists():
         try:

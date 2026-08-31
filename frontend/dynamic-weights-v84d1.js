@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
 
-  const VERSION='v8.4D.3';
+  const VERSION='v8.4D.4';
   const ROOT_ID='dynamic-weights-audit-v84d1';
   const DATA_URL='data/results.json';
 
@@ -17,9 +17,7 @@
     return Number.isFinite(n)?`${Math.round(n*100)}%`:'—';
   };
 
-  const matchKey=(m)=>String(
-    m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|')
-  );
+  const matchKey=(m)=>String(m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|'));
 
   function signalRows(results){
     const rows=[];
@@ -47,47 +45,9 @@
     return rows;
   }
 
-  function currentDraft(){
-    try{
-      const api=window.TENIS_AI_SCENARIOS;
-      const draft=api?.draft?.();
-      return draft&&Array.isArray(draft.items)?draft:{items:[]};
-    }catch{
-      return {items:[]};
-    }
-  }
-
-  function currentScenarioRows(allRows){
-    const draft=currentDraft();
-    if(!draft.items.length)return [];
-
-    const wanted=new Set(
-      draft.items.map(x=>`${String(x?.match_key||'')}::${String(x?.signal_key||'')}`)
-    );
-
-    return allRows.filter(
-      row=>wanted.has(`${row.matchKey}::${row.signalKey}`)
-    );
-  }
-
-  function currentScenarioMeta(){
-    const draft=currentDraft();
-    const matches=new Set(
-      draft.items.map(x=>String(x?.match_key||'')).filter(Boolean)
-    );
-    return {
-      signalCount:draft.items.length,
-      matchCount:matches.size,
-      mode:String(draft?.mode||'manual'),
-      profile:String(draft?.profile||'manual'),
-    };
-  }
-
   function dimsText(row){
     if(!row.dimensions.length)return 'brak aktywnego segmentu';
-    return row.dimensions
-      .map(x=>`${x.dimension||'?'}:${x.value||'N/D'}`)
-      .join(' · ');
+    return row.dimensions.map(x=>`${x.dimension||'?'}:${x.value||'N/D'}`).join(' · ');
   }
 
   function weightsHtml(w){
@@ -103,18 +63,9 @@
     if(!host)return false;
 
     const poolRows=signalRows(results);
-    const scenarioRows=currentScenarioRows(poolRows);
-    const scenarioMeta=currentScenarioMeta();
-
     const activePool=poolRows.filter(x=>x.active);
     const globalPool=poolRows.filter(x=>!x.active);
-    const activeScenario=scenarioRows.filter(x=>x.active);
-    const globalScenario=scenarioRows.filter(x=>!x.active);
-
-    const scopeRows=scenarioRows.length?scenarioRows:poolRows;
-    const maxShift=scopeRows.length
-      ?Math.max(...scopeRows.map(x=>x.maxShift))
-      :0;
+    const maxShift=poolRows.length?Math.max(...poolRows.map(x=>x.maxShift)):0;
 
     let root=document.getElementById(ROOT_ID);
     if(!root){
@@ -126,39 +77,25 @@
       else host.appendChild(root);
     }
 
-    const examples=(scenarioRows.length
-      ?scenarioRows
-      :(activePool.length?activePool:poolRows)
-    ).slice(0,6);
-
-    const scenarioMode=scenarioRows.length
-      ?(activeScenario.length?'DYNAMIC':'GLOBAL / SAFE')
-      :'BRAK SCENARIUSZA';
+    const examples=(activePool.length?activePool:poolRows).slice(0,6);
+    const mode=activePool.length?'DYNAMIC':'GLOBAL / SAFE';
 
     root.innerHTML=`
       <div class="dw84-head">
         <div>
           <span>DYNAMIC WEIGHTS ${VERSION}</span>
           <h4>Podgląd decyzji wag</h4>
-          <p>Aktualny scenariusz jest liczony osobno od całej puli results.json.</p>
+          <p>Audyt pełnej puli MODEL/RAW. Symfonia 2.0 korzysta z własnego operator-first pipeline.</p>
         </div>
-        <b class="${activeScenario.length?'active':'safe'}">${scenarioMode}</b>
+        <b class="${activePool.length?'active':'safe'}">${mode}</b>
       </div>
 
       <div class="dw84-summary">
-        <div><small>Aktualny scenariusz</small><strong>${scenarioMeta.signalCount}</strong><small>${scenarioMeta.matchCount} spotk.</small></div>
-        <div><small>Dynamiczne w scenariuszu</small><strong>${activeScenario.length}</strong></div>
-        <div><small>Global w scenariuszu</small><strong>${globalScenario.length}</strong></div>
-        <div><small>Cała pula</small><strong>${poolRows.length}</strong><small>${activePool.length} dynamic · ${globalPool.length} global</small></div>
+        <div><small>Wszystkie sygnały</small><strong>${poolRows.length}</strong></div>
+        <div><small>Dynamiczne</small><strong>${activePool.length}</strong></div>
+        <div><small>Global / SAFE</small><strong>${globalPool.length}</strong></div>
+        <div><small>Max shift</small><strong>${(maxShift*100).toFixed(1)} pp</strong></div>
       </div>
-
-      ${scenarioMeta.signalCount?`
-        <p class="dw84-scope-note">
-          Bieżący draft: ${scenarioMeta.matchCount} spotk. · ${scenarioMeta.signalCount} sygnałów ·
-          ${esc(scenarioMeta.mode)} / ${esc(scenarioMeta.profile)} ·
-          max shift ${(maxShift*100).toFixed(1)} pp
-        </p>
-      `:''}
 
       <div class="dw84-examples">
         ${examples.length?examples.map(row=>`
@@ -170,11 +107,7 @@
               </div>
               <em>${row.active?'DYNAMIC':'GLOBAL'}</em>
             </header>
-
-            <div class="dw84-weights">
-              ${weightsHtml(row.effective)}
-            </div>
-
+            <div class="dw84-weights">${weightsHtml(row.effective)}</div>
             <div class="dw84-meta">
               <span>${esc(dimsText(row))}</span>
               <span>shift ${(row.maxShift*100).toFixed(1)} pp</span>
@@ -185,76 +118,36 @@
       </div>
 
       <p class="dw84-note">
-        v8.4D nie może włączyć modelu wyłączonego przez globalny gate.
-        „Cała pula” to pełny results.json, a „Aktualny scenariusz” to dokładnie draft z Scenariuszy AI.
+        v8.4D nie może włączyć modelu wyłączonego przez globalny gate. Ten moduł nie steruje PLAYABLE i nie tworzy kandydatów dla Symfonii 2.0.
       </p>
     `;
     return true;
   }
 
   function memoryResults(){
-    try{
-      return typeof all!=='undefined'&&Array.isArray(all)?all:null;
-    }catch{
-      return null;
-    }
+    try{return typeof all!=='undefined'&&Array.isArray(all)?all:null}catch{return null}
   }
 
   async function load(){
     try{
       const memory=memoryResults();
-      if(memory){
-        render(memory);
-        return;
-      }
+      if(memory){render(memory);return}
       const res=await fetch(`${DATA_URL}?v=${Date.now()}`,{cache:'no-store'});
       if(!res.ok)throw new Error(`HTTP ${res.status}`);
-      const data=await res.json();
-      render(data);
-    }catch(err){
+      render(await res.json());
+    }catch{
       const host=document.querySelector('.al84-performance');
       if(!host)return;
       let root=document.getElementById(ROOT_ID);
-      if(!root){
-        root=document.createElement('section');
-        root.id=ROOT_ID;
-        root.className='dw84-audit';
-        host.appendChild(root);
-      }
-      root.innerHTML=`
-        <div class="dw84-head">
-          <div><span>DYNAMIC WEIGHTS ${VERSION}</span><h4>Podgląd decyzji wag</h4></div>
-          <b class="safe">SAFE</b>
-        </div>
-        <p class="dw84-empty">Nie udało się odczytać bieżącego results.json — moduł obliczeń nie jest przez to zmieniany.</p>
-      `;
+      if(!root){root=document.createElement('section');root.id=ROOT_ID;root.className='dw84-audit';host.appendChild(root)}
+      root.innerHTML=`<div class="dw84-head"><div><span>DYNAMIC WEIGHTS ${VERSION}</span><h4>Podgląd decyzji wag</h4></div><b class="safe">SAFE</b></div><p class="dw84-empty">Nie udało się odczytać bieżącego results.json — moduł obliczeń nie jest przez to zmieniany.</p>`;
     }
   }
 
   let timer=null;
-  function schedule(ms=150){
-    clearTimeout(timer);
-    timer=setTimeout(load,ms);
-  }
-
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>schedule(250),{once:true});
-  else schedule(50);
-
-  // v8.4E3: event-driven mount. AutoLearn is injected after the stats owner renders;
-  // schedule slightly later than that injection instead of watching every DOM mutation.
+  function schedule(ms=150){clearTimeout(timer);timer=setTimeout(load,ms)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>schedule(250),{once:true});else schedule(50);
   document.addEventListener('tenis-ai:stats-ready',()=>schedule(180));
   document.addEventListener('tenis-ai:stats-dashboard-ready',()=>schedule(180));
-
-  document.addEventListener('click',(e)=>{
-    if(e.target?.closest?.('#refresh'))schedule(1800);
-    if(e.target?.closest?.('[data-sc-generate],[data-sc-add],[data-sc-remove],[data-sc-clear],[data-sc-line-pick]')){
-      schedule(250);
-    }
-  });
-
-  window.addEventListener('storage',(e)=>{
-    if(e.key==='tenis-ai-v82a-scenario-draft')schedule(100);
-  });
-
-  // v8.4E0: no minute-wide results.json rescan; refresh/scenario events already reschedule this audit.
+  document.addEventListener('click',(e)=>{if(e.target?.closest?.('#refresh'))schedule(1800)});
 })();

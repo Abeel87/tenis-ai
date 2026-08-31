@@ -43,19 +43,22 @@ def test_v88_preserves_protected_runtime_contract():
     meta=text("frontend/app-meta.js")
     upgrade=text("frontend/v88-upgrade.js")
 
-    assert "scenario-studio-v82a.js?v=82a6" in html
-    assert "scenario-studio-v82a.css?v=82a51" in html
+    assert "symphony2.js?v=210" in html
+    assert "symphony2.css?v=210" in html
+    assert "scenario-studio-v82a.js" not in html
+    assert "scenario-studio-v82a.css" not in html
     assert "model-guide.js?v=87dc1" in html
 
     assert "v88-upgrade.css?v=88" in html
     assert "v88-upgrade.js?v=88" in html
 
-    # Runtime compatibility remains fixed; visible version stays on the last
-    # UI release while recommendation policy can advance independently.
+    # Keep the compatibility metadata contract, but do not freeze whitespace
+    # or resurrect the retired Scenario generator policy.
     assert "appVersion: 'v8.0.1'" in meta
-    assert "displayVersion: 'v8.8.7'" in meta
-    assert "generatorPolicyVersion: 'v8.8.10-cross-view-quality-source'" in meta
-    assert "currentUiArchitecture: 'v8.8.7-checkpoint-quality-lock'" in meta
+    assert "displayVersion:'v8.8.7'" in meta
+    assert "currentUiArchitecture:'v8.8.7-checkpoint-quality-lock'" in meta
+    assert "symphonyVersion:'v2.1'" in meta
+    assert "generatorPolicyVersion" not in meta
 
     # Compatibility bridge delegates visible branding to central metadata.
     assert "function applyV88Brand()" in upgrade

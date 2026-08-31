@@ -93,58 +93,20 @@ def test_report_exports_e2_sections():
 
 def test_quality_lock_v852_capture_time_split():
     m = module()
-    # Scheduled time is constant (early), proving split uses autolearn_captured_at, NOT scheduled_time
     test_rows = [
-        # Before cutover (2026-08-25T09:55:27Z)
-        {
-            "model": "current",
-            "score": 75,
-            "target": 1,
-            "scheduled_time": "2026-08-01T10:00:00Z",
-            "autolearn_captured_at": "2026-08-25T09:00:00Z",
-        },
-        # At cutover
-        {
-            "model": "current",
-            "score": 75,
-            "target": 0,
-            "scheduled_time": "2026-08-01T10:00:00Z",
-            "autolearn_captured_at": "2026-08-25T09:55:27Z",
-        },
-        # After cutover
-        {
-            "model": "current",
-            "score": 75,
-            "target": 1,
-            "scheduled_time": "2026-08-01T10:00:00Z",
-            "autolearn_captured_at": "2026-08-25T10:00:00Z",
-        },
-        # Missing capture time (must be counted as unknown, NEVER before_v852)
-        {
-            "model": "current",
-            "score": 75,
-            "target": 1,
-            "scheduled_time": "2026-08-01T10:00:00Z",
-            "autolearn_captured_at": None,
-        },
+        {"model": "current", "score": 75, "target": 1, "scheduled_time": "2026-08-01T10:00:00Z", "autolearn_captured_at": "2026-08-25T09:00:00Z"},
+        {"model": "current", "score": 75, "target": 0, "scheduled_time": "2026-08-01T10:00:00Z", "autolearn_captured_at": "2026-08-25T09:55:27Z"},
+        {"model": "current", "score": 75, "target": 1, "scheduled_time": "2026-08-01T10:00:00Z", "autolearn_captured_at": "2026-08-25T10:00:00Z"},
+        {"model": "current", "score": 75, "target": 1, "scheduled_time": "2026-08-01T10:00:00Z", "autolearn_captured_at": None},
     ]
-
     ql = m.build_quality_lock_v852(test_rows)
     curr = ql["current"]
-
-    # Sections contain selected_n, accuracy, brier
     assert set(curr["before_v852"].keys()) == {"selected_n", "accuracy", "brier"}
     assert set(curr["since_v852"].keys()) == {"selected_n", "accuracy", "brier"}
-
-    # before cutover -> before_v852
     assert curr["before_v852"]["selected_n"] == 1
     assert curr["before_v852"]["accuracy"] == 100.0
-
-    # at/after cutover -> since_v852
     assert curr["since_v852"]["selected_n"] == 2
     assert curr["since_v852"]["accuracy"] == 50.0
-
-    # missing capture time -> unknown_capture_time_n (never before_v852)
     assert curr["unknown_capture_time_n"] == 1
 
 
@@ -161,4 +123,5 @@ def test_frontend_is_additive_and_no_new_polling():
     assert "zbieramy próbę" in js
     assert "model-trends-v84e2.js?v=84e2&hf=852a1" in idx
     assert "autolearn-v84.js?v=84a1&hf=84b1" in idx
-    assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in idx
+    assert "symphony2.js?v=210" in idx
+    assert "scenario-studio-v82a.js" not in idx

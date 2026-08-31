@@ -93,8 +93,6 @@ jobs:
         run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
-      - name: Build Scenario Settlement feed v8.3C
-        run: python backend/scenario_settlement_v83c.py
       - name: Historical backfill v8.3B (central spare quota)
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
@@ -188,8 +186,6 @@ jobs:
         run: python scripts/verify_v84d1.py
       - name: Dynamic Weights View Scope Guard v8.4D.2
         run: python scripts/verify_v84d2.py
-      - name: Scenario Dynamic Audit Guard v8.4D.3
-        run: python scripts/verify_v84d3.py
       - name: Signal Mapping Bridge Guard v8.4D.4
         run: python scripts/verify_v84d4.py
       - name: Game-State Tracking Guard v8.4E1
@@ -200,8 +196,6 @@ jobs:
         run: python scripts/verify_v84e2.py
       - name: Final API quota report v8.3B
         run: python backend/api_quota_v83b.py report
-      - name: Integration Guard v8.3D
-        run: python scripts/verify_v83d.py
       - name: Superbet PLAYABLE v9.1.2 PROJECT frontend + stats
         run: python backend/superbet_playable_v912.py project
       - name: Superbet PLAYABLE v9.1.2 Guard

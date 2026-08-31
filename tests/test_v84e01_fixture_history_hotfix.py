@@ -7,11 +7,11 @@ ROOT=Path(__file__).resolve().parents[1]
 def read(path):
     return (ROOT/path).read_text(encoding="utf-8")
 
-def test_hotfix_loaded_after_runtime_before_scenario():
+def test_hotfix_loaded_after_runtime_before_symphony2():
     h=read("frontend/index.html")
     assert h.index("app.js") < h.index("runtime-health-v84e0.js?v=84e0")
     assert h.index("runtime-health-v84e0.js?v=84e0") < h.index("hotfix-v84e01.js?v=84e01")
-    assert h.index("hotfix-v84e01.js?v=84e01") < h.index("scenario-studio-v82a.js?v=82a6&hf=84a1")
+    assert h.index("hotfix-v84e01.js?v=84e01") < h.index("symphony2.js?v=210")
 
 def test_history_refresh_is_lightweight():
     s=read("frontend/hotfix-v84e01.js")
@@ -37,23 +37,13 @@ const bad=[
   {event_status:"Retired"},
   {event_status:"Completed"}
 ];
-for(const m of bad){
-  if(!h.isUnavailableFixture(m)){
-    console.error("not blocked",m);
-    process.exit(11);
-  }
-}
+for(const m of bad){if(!h.isUnavailableFixture(m))process.exit(11);}
 const good=[
   {event_status:null,feed_status:"upcoming"},
   {event_status:"Scheduled"},
   {feed_status:"upcoming"}
 ];
-for(const m of good){
-  if(h.isUnavailableFixture(m)){
-    console.error("wrongly blocked",m);
-    process.exit(12);
-  }
-}
+for(const m of good){if(h.isUnavailableFixture(m))process.exit(12);}
 '''
     subprocess.run([node,"-e",script],cwd=ROOT,check=True)
 

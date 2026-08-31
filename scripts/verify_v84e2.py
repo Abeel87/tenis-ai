@@ -21,7 +21,9 @@ def main():
     if 'new MutationObserver(' in js: ERR.append('Trend Monitor nie może dodawać MutationObservera')
     if 'setInterval(' in js: ERR.append('Trend Monitor nie może dodawać interwału')
     req(css,'.mt84e2','brak CSS E2'); req(idx,'model-trends-v84e2.css?v=84e2','index nie ładuje CSS E2'); req(idx,'model-trends-v84e2.js?v=84e2','index nie ładuje JS E2')
-    req(idx,'autolearn-v84.css?v=84a1&hf=84a3','naruszono chroniony AutoLearn CSS pin'); req(idx,'autolearn-v84.js?v=84a1&hf=84b1','naruszono chroniony AutoLearn JS pin'); req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1','naruszono chroniony Scenario Studio pin')
+    req(idx,'autolearn-v84.css?v=84a1&hf=84a3','naruszono chroniony AutoLearn CSS pin'); req(idx,'autolearn-v84.js?v=84a1&hf=84b1','naruszono chroniony AutoLearn JS pin')
+    if 'scenario-studio-v82a.js' in idx:
+        ERR.append('legacy Scenario Studio nie może wrócić do aktywnego indexu')
     req(ui,'Model Trend Monitor Guard v8.4E2','UI smoke nie ma guarda E2'); req(pages,'Model Trend Monitor Guard v8.4E2','deploy workflow nie ma guarda E2')
     if ERR:
         print('❌ Model Trend Monitor Guard v8.4E2 — FAIL'); [print('  -',e) for e in ERR]; return 1

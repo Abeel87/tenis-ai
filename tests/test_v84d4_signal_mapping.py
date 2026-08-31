@@ -7,11 +7,11 @@ ROOT=Path(__file__).resolve().parents[1]
 def read(p):
     return (ROOT/p).read_text(encoding="utf-8")
 
-def test_bridge_is_loaded_before_scenario_studio():
+def test_bridge_is_loaded_before_symphony2():
     h=read("frontend/index.html")
     bridge=h.index("signal-mapping-v84d4.js?v=84d4")
-    studio=h.index("scenario-studio-v82a.js?v=82a6&hf=84a1")
-    assert bridge < studio
+    symphony=h.index("symphony2.js?v=210")
+    assert bridge < symphony
 
 def test_bridge_does_not_replace_existing_model_files():
     h=read("frontend/index.html")
@@ -20,12 +20,12 @@ def test_bridge_does_not_replace_existing_model_files():
         "dynamic-weights-v84d1.js?v=84d2",
         "dynamic-weights-v84d1.js?v=84e0",
     ))
-    assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in h
+    assert "symphony2.js?v=210" in h
+    assert "scenario-studio-v82a.js" not in h
 
-def test_scenario_audit_uses_mapping_bridge():
-    s=read("frontend/scenario-dynamic-v84d3.js")
-    assert "TENIS_AI_SIGNAL_MAPPING_V84D4" in s
-    assert "aliasesFor" in s
+def test_retired_scenario_audit_is_not_loaded():
+    h=read("frontend/index.html")
+    assert "scenario-dynamic-v84d3.js" not in h
 
 def test_bridge_contains_strict_state_aliases():
     s=read("frontend/signal-mapping-v84d4.js")

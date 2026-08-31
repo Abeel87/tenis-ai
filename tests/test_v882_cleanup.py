@@ -5,13 +5,15 @@ ROOT=Path(__file__).resolve().parents[1]
 def t(path):
     return (ROOT/path).read_text(encoding="utf-8")
 
-def test_v882_generator_relative_ranking():
-    s=t("frontend/scenario-studio-v82a.js")
-    assert "v8.8.2 GENERATOR RELATIVE RANKING" in s
-    assert "softPairFloor" in s
-    assert "signalFloor" in s
-    assert "runPairFloor" in s
-    assert "pair_preserved:true" in s
+def test_v882_generator_is_retired_for_symphony2_ranking():
+    index=t("frontend/index.html")
+    engine=t("backend/symphony2_engine.py")
+    assert not (ROOT/"frontend/scenario-studio-v82a.js").exists()
+    assert "scenario-studio-v82a.js" not in index
+    assert "symphony2.js?v=210" in index
+    assert "MIN_ACTIONABLE_P = 0.55" in engine
+    assert "from itertools import combinations" in engine
+    assert "joint_probability" in engine
 
 def test_v882_stats_feed_selection_only():
     s=t("frontend/v882-cleanup.js")

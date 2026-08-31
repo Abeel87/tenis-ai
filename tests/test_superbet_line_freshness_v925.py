@@ -11,8 +11,6 @@ def test_actionable_superbet_snapshot_uses_bounded_pipeline_safe_freshness():
     match = re.search(r"MAX_OPERATOR_AGE_MS=(\d+)\*60\*1000", text)
     assert match, "freshness TTL constant missing"
     ttl_minutes = int(match.group(1))
-    # Hourly operator refresh + current rebuild/deploy takes longer than 12 min,
-    # so the UI TTL must survive publication but still remain bounded.
     assert 60 <= ttl_minutes <= 90
     assert "base.active?.(match,now)===true&&sourceFresh(match,now)&&startAligned(match)" in text
     assert "strictCompositionPlayable" in text
@@ -31,4 +29,3 @@ def test_freshness_gate_loads_after_playable_ui_without_legacy_symphony_save_lay
     assert "const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');" in text
     assert "load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness)" in text
     assert "symphony-superbet-save-v924.js" not in text
-    assert "Legacy Symphony save/card modules are intentionally not loaded." in text
