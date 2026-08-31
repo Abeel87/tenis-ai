@@ -33,6 +33,43 @@ def test_training_rows_use_exact_frozen_operator_line():
     assert "state_probability" in rows[0]
 
 
+def test_history_layer_unions_unique_exact_rows_from_base_and_autolearn():
+    entry = _entry(line=21.5)
+    entry["playable_signals_v912"] = [{
+        "market": "match_total", "pick": "under", "line": 22.5,
+        "score": 65.0, "result": "miss", "operator": "superbet.pl",
+        "operator_line_verified": True,
+    }]
+    rows = learning.build_training_rows([entry])
+    assert {(r["pick"], r["line"], r["target"]) for r in rows} == {
+        ("over", 21.5, 1), ("under", 22.5, 0),
+    }
+
+
+def test_history_layer_exact_duplicate_is_kept_once_and_richer_row_wins():
+    entry = _entry(line=21.5)
+    entry["playable_signals_v912"] = [{
+        "market": "match_total", "pick": "over", "line": 21.5,
+        "score": 61.0, "result": "hit", "operator": "superbet.pl",
+        "operator_line_verified": True,
+    }]
+    rows = learning.build_training_rows([entry])
+    assert len(rows) == 1
+    assert rows[0]["base_score"] == 72.0
+    assert rows[0]["current_score"] == 70.0
+
+
+def test_history_layer_does_not_read_unrelated_raw_layers():
+    entry = _entry()
+    entry["playable_autolearn_signals_v912"] = []
+    entry["playable_signals_v912"] = []
+    entry["raw_signals"] = [{
+        "market": "match_total", "pick": "over", "line": 12.5,
+        "result": "hit", "score": 99.0,
+    }]
+    assert learning.build_training_rows([entry]) == []
+
+
 def test_training_does_not_invent_line_from_raw_fields():
     entry = _entry()
     entry["match_over_under"] = {"12.5": {"over": 99.0, "under": 1.0}}
@@ -80,7 +117,7 @@ def test_runtime_reports_true_shared_state_joint():
     assert comp["joint_status"] == "EXACT_SHARED_STATE"
 
 
-def test_low_market_support_shrinks_probability_toward_half():
+def test_low_market_support_shrinks_probability_toward_half_and_reports_diagnostics():
     class FakeModel:
         def predict_proba(self, x):
             return [[0.1, 0.9]]
@@ -88,5 +125,11 @@ def test_low_market_support_shrinks_probability_toward_half():
     model = learning.OperatorLineModel(model=FakeModel(), status="ready", market_support={"match_total": 12})
     row = {name: 0 for name in learning.FEATURES}
     row.update({"market": "match_total", "pick": "over", "surface": "hard", "tour": "atp", "player_scope": "none"})
+    diagnostics = model.predict_diagnostics(row)
     p = model.predict(row)
+    assert diagnostics["raw"] == 0.9
+    assert diagnostics["calibrated"] == 0.9
+    assert diagnostics["support"] == 12
+    assert diagnostics["reliability"] == 0.1
+    assert diagnostics["final"] == p
     assert 0.5 < p < 0.9
