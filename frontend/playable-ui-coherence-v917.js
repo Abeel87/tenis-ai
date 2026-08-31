@@ -1,13 +1,13 @@
-/* Tenis AI v9.2.2 — one Superbet PLAYABLE gate for actionable UI.
-   MODEL/RAW analytics own the normal Top pick, signal strength, Top strip and
-   model-signal page. This layer adds Superbet information beside them and only
-   gates surfaces that are explicitly actionable as Superbet PLAYABLE. */
+/* Tenis AI v9.2.3 — one Superbet PLAYABLE gate for actionable UI.
+   MODEL/RAW analytics stay independent. This bridge only verifies actionable
+   Superbet surfaces against the current fixture offer. It contains no Symphony
+   v9.x card/feed/bootstrap logic; Symphony 2.0 owns all Symphony UI. */
 (()=>{
 'use strict';
 if(window.TENIS_AI_PLAYABLE_UI_V917)return;
 
-const VERSION='v9.2.2';
-const WRAP='__tenisAiPlayableUiV922';
+const VERSION='v9.2.3';
+const WRAP='__tenisAiPlayableUiV923';
 const LINE_MARKETS=new Set([
   'match_total','set1_total','set2_total','set3_total','total_sets',
   'match_game_handicap','set1_game_handicap','set2_game_handicap',
@@ -235,8 +235,6 @@ function patchTopStrip(){
 function patchSignalPage(){
   const page=document.querySelector('#app .p751-signals-page');
   if(!page)return;
-  // This screen belongs to MODEL/RAW. Never remove rows or replace model scores
-  // based on operator availability. Superbet PLAYABLE stays a separate layer.
   page.dataset.playableUiV917='raw-preserved';
 }
 function patchHome(){
@@ -249,13 +247,13 @@ function patchDecisionHeader(root,match,rows){
   if(!root)return;
   root.dataset.playableUiV917=active(match)?'verified':'nd';
   const kicker=root.querySelector('.dc87-kicker');
-  if(kicker)kicker.textContent='Centrum Decyzji Meczu · SUPERBET PLAYABLE';
+  if(kicker)kicker.textContent='SUPERBET · REALNA OFERTA';
   const title=root.querySelector('#dc87-title');
-  if(title)title.textContent='Realne rynki i linie Superbet';
+  if(title)title.textContent='Dokładne rynki i linie Superbet';
   const p=root.querySelector('.dc87-head p');
   if(p)p.textContent=active(match)
-    ?'Pokazujemy wyłącznie rynki i dokładne linie zweryfikowane w Superbet. FINAL to wynik modelu dla tej selekcji, nie gwarancja ani kurs.'
-    :'Brak świeżo zweryfikowanej oferty Superbet dla tego meczu. MODEL / RAW może istnieć w analizie, ale Centrum Decyzji nie pokazuje go jako typu.';
+    ?'Pokazujemy wyłącznie rynki i dokładne linie zweryfikowane w bieżącej ofercie Superbet.'
+    :'Brak świeżo zweryfikowanej oferty Superbet dla tego meczu. MODEL / RAW pozostaje niezależny.';
   const health=root.querySelector('.dc87-health');
   if(health){
     let badge=health.querySelector('[data-v917-book]');
@@ -302,66 +300,15 @@ function patchOpenDecision(){
   window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(match);
 }
 
-let compactPromise=null;
-function loadCompact(){
-  if(compactPromise)return compactPromise;
-  compactPromise=fetch('./data/symphony_match_cards_v90.json?playable=922',{cache:'no-cache'})
-    .then(r=>r.ok?r.json():null).catch(()=>null);
-  return compactPromise;
-}
-function compactMap(report){
-  const map=new Map();
-  for(const row of report?.matches||[]){
-    if(!row||typeof row!=='object')continue;
-    if(row.id!=null)map.set(String(row.id),row);
-    const key=String(row.match_key||'');
-    if(key){map.set(key,row);if(key.startsWith('id:'))map.set(key.slice(3),row)}
-    const fallback=[row.p1,row.p2,row.scheduled_time].map(x=>String(x||'')).join('|');
-    if(fallback!=='||')map.set(fallback,row);
-  }
-  return map;
-}
-function compactRow(map,raw,match){
-  const decoded=decode(raw);
-  return map.get(decoded)||map.get(`id:${decoded}`)||map.get(String(match?.id??match?.match_id??''))||null;
-}
-async function patchSymphonyMinis(){
-  const report=await loadCompact();
-  if(!report)return;
-  const map=compactMap(report);
-  for(const mini of [...document.querySelectorAll('#app [data-symphony-match-mini]')]){
-    const card=mini.closest('.p751-match-card[data-p751-open]');
-    const raw=card?.getAttribute('data-p751-open')||'';
-    const match=card?findMatch(raw):null;
-    const row=compactRow(map,raw,match);
-    const comp=row?.composition;
-    const legs=Array.isArray(comp?.selection)?comp.selection:[];
-    const ok=!!match&&active(match)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
-    // v9.2.1 renders an independent RAW Symphony beside this actionable mini.
-    // Therefore this mini may remain the explicitly PLAYABLE Symphony surface.
-    if(!ok){mini.remove();continue}
-    const span=mini.querySelector('.symmatch-mini__head span');
-    if(span)span.textContent='🎼 SYMFONIA · SUPERBET';
-    const b=mini.querySelector('.symmatch-mini__head b');
-    if(b&&!/^PLAYABLE ·/.test(b.textContent||''))b.textContent=`PLAYABLE · ${b.textContent}`;
-    const small=mini.querySelector('small');
-    if(small&&!/Superbet ✓/.test(small.textContent||''))small.textContent=`${small.textContent} · Superbet ✓`;
-    mini.dataset.playableUiV917='verified';
-  }
-}
-
 function wrapRenderMatches(){
   const current=window.renderMatches;
   if(typeof current!=='function'||current[WRAP])return false;
   const wrapped=function(...args){
-    // ui-v751's legacy ⭐ 80+ filter used the exported PLAYABLE API. During the
-    // synchronous RAW render only, expose raw model rows so operator availability
-    // cannot hide a strong model match. Restore the strict API immediately after.
     const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
     if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
     let result;
     try{result=current.apply(this,args)}finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}
-    queueMicrotask(()=>{patchHome();patchSymphonyMinis()});
+    queueMicrotask(patchHome);
     return result;
   };
   Object.defineProperty(wrapped,WRAP,{value:true});
@@ -377,7 +324,6 @@ function schedule(ms=40){
     wrapDecisionCenter();
     patchHome();
     patchOpenDecision();
-    patchSymphonyMinis();
   },ms);
 }
 function boot(){
@@ -412,9 +358,7 @@ window.TENIS_AI_PLAYABLE_UI_V917=Object.freeze({
   isPlayable,
   playableSignals,
   patchHome,
-  patchOpenDecision,
-  patchSymphonyMinis,
-  reloadCompact:()=>{compactPromise=null;return patchSymphonyMinis()}
+  patchOpenDecision
 });
 
 if(typeof document!=='undefined'){

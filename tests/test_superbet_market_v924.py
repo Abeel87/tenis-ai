@@ -48,8 +48,6 @@ def test_new_outcome_parsers_keep_semantics_explicit():
 
 
 def test_set_handicap_uses_catalogue_line_and_flips_participant_two_sign():
-    # Legacy parser semantics are preserved internally, but mapped_sanitize below
-    # no longer accepts catalogue metadata alone as sufficient PLAYABLE evidence.
     with ctx._patched_runtime():
         p1, source1 = ctx.v913._market_line(
             "set_handicap", {"handicap": -1.5}, "1", None, pick="A", p1="A", p2="B"
@@ -108,7 +106,7 @@ def _total_row(bookmaker_market_id="fixture-total-18.5", over_id="sb-over-18.5",
     }
 
 
-def test_current_fixture_line_overrides_stale_catalogue_line():
+def test_current_fixture_line_overrides_catalogue_metadata():
     out = ctx.mapped_sanitize(_total_row(), _total_meta(15.5))
     assert out is not None
     selections = out["canonical_selections"]
@@ -117,14 +115,40 @@ def test_current_fixture_line_overrides_stale_catalogue_line():
     assert all(x["fixture_line_verified"] is True for x in selections)
 
 
-def test_opaque_fixture_does_not_fall_back_to_catalogue_line():
+def test_active_fixture_market_id_uses_its_own_catalogue_handicap_when_ids_are_opaque():
     out = ctx.mapped_sanitize(
         _total_row(bookmaker_market_id="opaque", over_id="opaque-over", under_id="opaque-under"),
         _total_meta(22.5),
     )
     assert out is not None
+    selections = out["canonical_selections"]
+    assert {(x["pick"], x["line"]) for x in selections} == {("over", 22.5), ("under", 22.5)}
+    assert {x["operator_line_source"] for x in selections} == {"oddspapi_active_fixture_market_id_handicap"}
+    assert all(x["fixture_line_verified"] is True for x in selections)
+    assert out["suppressed_line_selections_without_fixture_evidence"] == 0
+
+
+def test_direct_outcome_carriers_keep_real_active_total_lines():
+    row = _total_row(bookmaker_market_id="opaque")
+    market = row["bookmakerOdds"]["superbet.pl"]["markets"]["13000"]
+    market["outcomes"] = {
+        "13000": {"active": True, "bookmakerOutcomeId": "over", "mainLine": True},
+        "13001": {"active": True, "bookmakerOutcomeId": "under", "mainLine": True},
+    }
+    out = ctx.mapped_sanitize(row, _total_meta(23.5))
+    assert out is not None
+    selections = out["canonical_selections"]
+    assert {(x["pick"], x["line"]) for x in selections} == {("over", 23.5), ("under", 23.5)}
+    assert {x["operator_line_source"] for x in selections} == {"oddspapi_active_fixture_market_id_handicap"}
+    assert all(x["fixture_line_verified"] is True for x in selections)
+
+
+def test_unreferenced_catalogue_market_cannot_create_a_selection():
+    row = _total_row(bookmaker_market_id="opaque", over_id="opaque-over", under_id="opaque-under")
+    row["bookmakerOdds"]["superbet.pl"]["markets"] = {}
+    out = ctx.mapped_sanitize(row, _total_meta(22.5))
+    assert out is not None
     assert out["canonical_selections"] == []
-    assert out["suppressed_line_selections_without_fixture_evidence"] == 2
 
 
 def test_structured_current_fixture_line_is_authoritative():
@@ -140,6 +164,7 @@ def test_structured_current_fixture_line_is_authoritative():
 def test_strict_contract_forbids_non_fixture_fallbacks():
     source = (BACKEND / "superbet_market_context_v924.py").read_text(encoding="utf-8")
     assert '"current_fixture_evidence_required": True' in source
+    assert '"active_fixture_market_id_metadata_allowed": True' in source
     assert '"catalogue_fallback_allowed": False' in source
     assert '"model_line_fallback_allowed": False' in source
     assert '"nearest_line_fallback_allowed": False' in source

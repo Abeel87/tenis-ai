@@ -1,0 +1,64 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+JS = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
+CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
+INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
+PLAYABLE_UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
+
+
+def test_single_symphony2_frontend_is_loaded():
+    assert "symphony2.js" in INDEX
+    assert "symphony2.css" in INDEX
+    for legacy in (
+        "symphony-v90.js", "symphony-v90.css", "symphony-stats-v90d.js",
+        "symphony-stats-v90d.css", "symphony-surface-v90.js",
+        "symphony-playable-detail-guard-v915.js",
+    ):
+        assert legacy not in INDEX
+
+
+def test_stats_ui_reads_only_symphony2_stats():
+    assert "./data/symphony2_stats.json" in JS
+    assert "#pc77" in JS
+    assert "symphony2-performance" in JS
+    assert "Wyniki starej Symfonii v9.x nie są importowane" in JS
+    assert "symphony_stats_v90d.json" not in JS
+    assert "symphony_model_stats_v93.json" not in JS
+
+
+def test_generator_explains_exact_superbet_probability_contract():
+    assert "dokładną aktualną ofertę Superbet" in JS
+    assert "operator_model_probability" in JS
+    assert "joint_probability" in JS
+    assert "learning_support_rows" in JS
+
+
+def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
+    assert "symphony2-match-detail" in JS
+    assert "cleanupLegacySymphony" in JS
+    assert "data-symphony-match-mini" in JS
+    assert "SYMFONIA 2.0 · PLAYABLE" in JS
+    assert "RAW nie jest źródłem linii PLAYABLE" in JS
+    assert ".s2-match-detail" in CSS
+
+
+def test_match_view_compacts_full_superbet_offer_without_changing_data():
+    assert "compactSuperbet" in JS
+    assert "SUPERBET · REALNA OFERTA" in JS
+    assert "Dokładne rynki i linie Superbet" in JS
+    assert "Pokaż pełną ofertę" in JS
+    assert "data-s2-offer-extra" in CSS
+
+
+def test_runtime_does_not_boot_deleted_legacy_symphony_save_layer():
+    assert "symphony-superbet-save-v924.js" not in APP_META
+    assert "Legacy Symphony save/card modules are intentionally not loaded" in APP_META
+
+
+def test_no_runtime_reads_legacy_compact_card_feed():
+    assert "symphony_match_cards_v90.json" not in JS
+    assert "symphony_match_cards_v90.json" not in PLAYABLE_UI
+    assert "patchSymphonyMinis" not in PLAYABLE_UI
+    assert "reloadCompact" not in PLAYABLE_UI

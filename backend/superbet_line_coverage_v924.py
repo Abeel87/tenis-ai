@@ -2,45 +2,32 @@ from __future__ import annotations
 
 """Tenis AI v9.2.4 — zero-request coverage for audited Superbet families.
 
-The adapter runs after v9.2.2 and adds deterministic model probabilities for
-newly mapped real operator markets using only distributions already implied by
-Market Lab / Symphony inputs. New families remain DISPLAY/SHADOW-only until
-settlement support and backtest evidence are wired, so they cannot silently
-inflate PLAYABLE accuracy.
+This adapter enriches real Superbet selections with probabilities derived from
+existing model distributions. It is intentionally operator/display focused and
+has no dependency on the retired Symphony v9.x stack.
 """
 
 import json
-import math
 import re
 from collections import defaultdict
 
 try:
     from . import market_lab_v741 as lab
     from . import superbet_line_coverage_v922 as base
-    from . import symphony_engine_v90 as sym
+    from . import symphony2_state as state
 except ImportError:
     import market_lab_v741 as lab
     import superbet_line_coverage_v922 as base
-    import symphony_engine_v90 as sym
+    import symphony2_state as state
 
 VERSION = "v9.2.4"
 RESULTS = base.RESULTS
 META = base.META
 DISPLAY_DERIVED_MARKETS = {
-    "any_set_to_nil",
-    "set2_exact_score",
-    "set2_game_state",
-    "exact_sets",
-    "match_games_parity",
-    "set1_games_parity",
-    "set2_games_parity",
-    "p1_exactly_1_set",
-    "p1_exactly_2_sets",
-    "p2_exactly_1_set",
-    "p2_exactly_2_sets",
-    "p1_wins_a_set",
-    "p2_wins_a_set",
-    "set_handicap",
+    "any_set_to_nil", "set2_exact_score", "set2_game_state", "exact_sets",
+    "match_games_parity", "set1_games_parity", "set2_games_parity",
+    "p1_exactly_1_set", "p1_exactly_2_sets", "p2_exactly_1_set",
+    "p2_exactly_2_sets", "p1_wins_a_set", "p2_wins_a_set", "set_handicap",
 }
 
 
@@ -104,9 +91,9 @@ def _extended_bundle(match: dict) -> dict:
     third = lab.reweight(raw, base._target(match.get("third_set_win"), p1, first_p1))
     joint, _, exact = lab.build_match(first, second_if_win, second_if_loss, third)
 
-    raw_paths = sym._first_set_paths(h1, h2)
-    path_if_win = sym._reweight_winner(raw_paths, target_if_win)
-    path_if_loss = sym._reweight_winner(raw_paths, target_if_loss)
+    raw_paths = state._first_set_paths(h1, h2)
+    path_if_win = state._reweight_winner(raw_paths, target_if_win)
+    path_if_loss = state._reweight_winner(raw_paths, target_if_loss)
     keys = set(path_if_win) | set(path_if_loss)
     second_paths = {
         key: first_p1 * path_if_win.get(key, 0.0) + (1.0 - first_p1) * path_if_loss.get(key, 0.0)
@@ -158,18 +145,17 @@ def _parity_probability(dist, parity):
 def _set2_checkpoint_probability(paths, checkpoint, target):
     if not isinstance(paths, dict) or checkpoint not in {2, 4, 6} or target is None:
         return None
-    indexes = {2: (0, 1), 4: (2, 3), 6: (4, 5)}[checkpoint]
-    ia, ib = indexes
+    ia, ib = {2: (0, 1), 4: (2, 3), 6: (4, 5)}[checkpoint]
     return 100.0 * sum(float(p) for path, p in paths.items() if (path[ia], path[ib]) == tuple(target))
 
 
-def _set_score_probs(exact: dict | None) -> dict[str, float]:
+def _set_score_probs(exact):
     if not isinstance(exact, dict):
         return {}
     return {str(k): float(v) for k, v in exact.items()}
 
 
-def _sets_event_probability(exact: dict | None, market: str, selection: dict):
+def _sets_event_probability(exact, market: str, selection: dict):
     probs = _set_score_probs(exact)
     if not probs:
         return None
@@ -201,8 +187,7 @@ def _sets_event_probability(exact: dict | None, market: str, selection: dict):
         p2 = base._name_key(selection.get("_p2"))
         if line is None or side not in {p1, p2}:
             return None
-        yes = 0.0
-        push = 0.0
+        yes = push = 0.0
         for score, probability in probs.items():
             a, b = map(int, score.split(":"))
             margin = (a - b) if side == p1 else (b - a)
@@ -223,8 +208,10 @@ def _sets_event_probability(exact: dict | None, market: str, selection: dict):
         return {"score": 100.0 * yes, "probability_semantics": "exact_match_set_score_distribution"}
     if yn is None:
         return None
-    score = yes if yn else 1.0 - yes
-    return {"score": 100.0 * score, "probability_semantics": "exact_match_set_score_distribution"}
+    return {
+        "score": 100.0 * (yes if yn else 1.0 - yes),
+        "probability_semantics": "exact_match_set_score_distribution",
+    }
 
 
 def _derived(match: dict, selection: dict, bundle: dict):
@@ -235,7 +222,7 @@ def _derived(match: dict, selection: dict, bundle: dict):
         return ({"score": score, "probability_semantics": "market_lab_v741_set2_distribution"} if score is not None else None), "market_lab_v741_set2_distribution"
     if market == "set2_game_state":
         score = _set2_checkpoint_probability(bundle.get("set2_paths"), int(selection.get("checkpoint") or 0), _score_pair(pick))
-        return ({"score": score, "probability_semantics": "market_lab_reweighted_set2_game_paths"} if score is not None else None), "symphony_paths+market_lab_targets"
+        return ({"score": score, "probability_semantics": "market_lab_reweighted_set2_game_paths"} if score is not None else None), "symphony2_state+market_lab_targets"
     if market == "set1_games_parity":
         score = _parity_probability(bundle.get("set1"), _parity(pick))
         return ({"score": score, "probability_semantics": "exact_set_score_parity"} if score is not None else None), "market_lab_v741_set1_distribution"
@@ -250,37 +237,27 @@ def _derived(match: dict, selection: dict, bundle: dict):
         p = bundle.get("any_set_nil")
         if yn is None or p is None:
             return None, None
-        score = 100.0 * (p if yn else 1.0 - p)
-        return {"score": score, "probability_semantics": "joint_set_score_paths"}, "market_lab_v741_joint_set_paths"
+        return {"score": 100.0 * (p if yn else 1.0 - p), "probability_semantics": "joint_set_score_paths"}, "market_lab_v741_joint_set_paths"
     if market in {
-        "exact_sets", "p1_exactly_1_set", "p1_exactly_2_sets",
-        "p2_exactly_1_set", "p2_exactly_2_sets", "p1_wins_a_set", "p2_wins_a_set",
-        "set_handicap",
+        "exact_sets", "p1_exactly_1_set", "p1_exactly_2_sets", "p2_exactly_1_set",
+        "p2_exactly_2_sets", "p1_wins_a_set", "p2_wins_a_set", "set_handicap",
     }:
         enriched = dict(selection)
         enriched["_p1"], enriched["_p2"] = match.get("p1"), match.get("p2")
-        result = _sets_event_probability(bundle.get("match_sets"), market, enriched)
-        return result, "market_lab_v741_exact_match_sets"
+        return _sets_event_probability(bundle.get("match_sets"), market, enriched), "market_lab_v741_exact_match_sets"
     return None, None
 
 
 def _label(selection: dict) -> str:
     market = str(selection.get("market") or "")
     names = {
-        "any_set_to_nil": "Set do zera w meczu",
-        "set2_exact_score": "2. set · dokładny wynik",
-        "set2_game_state": "2. set · stan po gemach",
-        "exact_sets": "Dokładna liczba setów",
-        "match_games_parity": "Mecz · parzystość gemów",
-        "set1_games_parity": "1. set · parzystość gemów",
-        "set2_games_parity": "2. set · parzystość gemów",
-        "p1_exactly_1_set": "Zawodnik 1 · dokładnie 1 set",
-        "p1_exactly_2_sets": "Zawodnik 1 · dokładnie 2 sety",
-        "p2_exactly_1_set": "Zawodnik 2 · dokładnie 1 set",
-        "p2_exactly_2_sets": "Zawodnik 2 · dokładnie 2 sety",
-        "p1_wins_a_set": "Zawodnik 1 · wygra co najmniej set",
-        "p2_wins_a_set": "Zawodnik 2 · wygra co najmniej set",
-        "set_handicap": "Handicap setów",
+        "any_set_to_nil": "Set do zera w meczu", "set2_exact_score": "2. set · dokładny wynik",
+        "set2_game_state": "2. set · stan po gemach", "exact_sets": "Dokładna liczba setów",
+        "match_games_parity": "Mecz · parzystość gemów", "set1_games_parity": "1. set · parzystość gemów",
+        "set2_games_parity": "2. set · parzystość gemów", "p1_exactly_1_set": "Zawodnik 1 · dokładnie 1 set",
+        "p1_exactly_2_sets": "Zawodnik 1 · dokładnie 2 sety", "p2_exactly_1_set": "Zawodnik 2 · dokładnie 1 set",
+        "p2_exactly_2_sets": "Zawodnik 2 · dokładnie 2 sety", "p1_wins_a_set": "Zawodnik 1 · wygra co najmniej set",
+        "p2_wins_a_set": "Zawodnik 2 · wygra co najmniej set", "set_handicap": "Handicap setów",
     }
     bits = [names.get(market, market.replace("_", " "))]
     if selection.get("player"):
@@ -319,10 +296,7 @@ def _recompute(ctx: dict, new_shadow_added: int) -> dict:
         pm = int(row["playable_model"])
         sm = int(row["shadow_model"])
         by_market[market] = {
-            "available": available,
-            "model": pm + sm,
-            "playable_model": pm,
-            "shadow_model": sm,
+            "available": available, "model": pm + sm, "playable_model": pm, "shadow_model": sm,
             "coverage": round((pm + sm) / available, 4) if available else 0.0,
             "playable_coverage": round(pm / available, 4) if available else 0.0,
         }
@@ -367,8 +341,7 @@ def enrich_match(raw: dict) -> dict:
         existing.add(base._selection_key(selection))
         added += 1
     ctx["coverage_shadow_signals"] = shadow
-    ctx = _recompute(ctx, added)
-    match["superbet_market_v91"] = ctx
+    match["superbet_market_v91"] = _recompute(ctx, added)
     return match
 
 
@@ -415,8 +388,6 @@ def main():
     meta = base._read(META, {})
     if not isinstance(meta, dict):
         meta = {}
-    # Keep the historical key consumed by the existing UI and add a versioned
-    # alias for audits. The semantics remain compatible with v9.2.2.
     meta["superbet_line_coverage_v922"] = report
     meta["superbet_line_coverage_v924"] = report
     base._write(META, meta)

@@ -26,12 +26,9 @@ def test_freshness_wrapper_does_not_touch_model_math():
     assert "MODEL/RAW" in text
 
 
-def test_freshness_gate_loads_before_symphony_save_layer():
+def test_freshness_gate_loads_after_playable_ui_without_legacy_symphony_save_layer():
     text = META.read_text(encoding="utf-8")
-    freshness = text.index("playable-line-freshness-v925.js?v=925")
-    save = text.index("symphony-superbet-save-v924.js?v=925")
-    # Source declares save first as a callback, but execution chain must call freshness
-    # and pass save as its onload callback.
-    assert "const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925',save);" in text
+    assert "const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');" in text
     assert "load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness)" in text
-    assert freshness > 0 and save > 0
+    assert "symphony-superbet-save-v924.js" not in text
+    assert "Legacy Symphony save/card modules are intentionally not loaded." in text
