@@ -30,6 +30,53 @@ def _read(path: Path, fallback):
         return fallback
 
 
+def _primary_gap_class(status: str, *, scored: int, pbp_required: bool, review_ready: bool) -> str:
+    """Assign one exclusive current-state class so counts never double-count."""
+    if scored > 0 or status == "EXISTING_SUPPORTED":
+        return "SUPPORTED"
+    if pbp_required or status == "PBP_GAP":
+        return "PBP_GAP"
+    if review_ready or status == "EXISTING_SHADOW_EVIDENCE":
+        return "SHADOW_EVIDENCE"
+    if "SETTLEMENT_GAP" in status:
+        return "SETTLEMENT_GAP"
+    if "MAPPING_GAP" in status:
+        return "MAPPING_GAP"
+    if status.startswith("TRUE_NEURO_CANDIDATE"):
+        return "TRUE_NEURO_CANDIDATE"
+    return "UNASSIGNED"
+
+
+def _next_action(gap_class: str) -> str:
+    return {
+        "SUPPORTED": "KEEP_BASELINE_AND_COMPARE_NEURO_SHADOW",
+        "PBP_GAP": "COLLECT_OR_MAP_PBP_STATE_EVIDENCE",
+        "SHADOW_EVIDENCE": "REVIEW_EXISTING_SHADOW_BEFORE_NEW_MODEL",
+        "SETTLEMENT_GAP": "FIX_OR_MATURE_EXACT_LINE_SETTLEMENT",
+        "MAPPING_GAP": "WIRE_EXISTING_MODEL_FAMILY_TO_CANONICAL_MARKET",
+        "TRUE_NEURO_CANDIDATE": "COLLECT_SAMPLE_THEN_TRAIN_NEURAL_SPECIALIST",
+        "UNASSIGNED": "MANUAL_CLASSIFICATION_REQUIRED",
+    }[gap_class]
+
+
+def _priority_score(*, unscored: int, gap_class: str, review_ready: bool, settled: int) -> int:
+    """Audit triage only; higher means more useful to work on first."""
+    base = min(max(int(unscored), 0), 5000)
+    class_bonus = {
+        "SHADOW_EVIDENCE": 4000,
+        "MAPPING_GAP": 3000,
+        "SETTLEMENT_GAP": 2500,
+        "PBP_GAP": 1500,
+        "TRUE_NEURO_CANDIDATE": 500,
+        "UNASSIGNED": 0,
+        "SUPPORTED": -5000,
+    }[gap_class]
+    evidence_bonus = min(max(int(settled), 0), 500)
+    if review_ready:
+        evidence_bonus += 1500
+    return base + class_bonus + evidence_bonus
+
+
 def build_audit(symphony_stats: dict | None = None, candidate_stats: dict | None = None) -> dict:
     symphony_stats = symphony_stats if isinstance(symphony_stats, dict) else _read(SYMPHONY_STATS, {})
     candidate_stats = candidate_stats if isinstance(candidate_stats, dict) else _read(CANDIDATE_STATS, {})
@@ -49,13 +96,30 @@ def build_audit(symphony_stats: dict | None = None, candidate_stats: dict | None
         unscored = int(current.get("unscored_zero_support") or 0)
         support_rows = int(current.get("support_rows") or 0)
         settled = int(shadow.get("settled") or 0)
+        review_ready = bool(shadow.get("review_ready"))
+        status = str(meta.get("coverage_status") or "UNASSIGNED")
+        pbp_required = bool(meta.get("pbp_required"))
+        gap_class = _primary_gap_class(
+            status,
+            scored=scored,
+            pbp_required=pbp_required,
+            review_ready=review_ready,
+        )
         rows.append({
             "canonical_market": market,
             "family": meta.get("family"),
             "sources": list(meta.get("sources") or []),
-            "coverage_status": meta.get("coverage_status"),
+            "coverage_status": status,
+            "primary_gap_class": gap_class,
+            "next_action": _next_action(gap_class),
+            "priority_score": _priority_score(
+                unscored=unscored,
+                gap_class=gap_class,
+                review_ready=review_ready,
+                settled=settled,
+            ),
             "neuro_eligible": bool(meta.get("neuro_eligible")),
-            "pbp_required": bool(meta.get("pbp_required")),
+            "pbp_required": pbp_required,
             "offered": offered,
             "scored": scored,
             "unscored": unscored,
@@ -65,7 +129,7 @@ def build_audit(symphony_stats: dict | None = None, candidate_stats: dict | None
             "candidate_settled": settled,
             "candidate_accuracy": shadow.get("accuracy"),
             "candidate_brier": shadow.get("brier"),
-            "candidate_review_ready": bool(shadow.get("review_ready")),
+            "candidate_review_ready": review_ready,
             "candidate_promotion_status": shadow.get("promotion_status"),
         })
 
@@ -76,23 +140,16 @@ def build_audit(symphony_stats: dict | None = None, candidate_stats: dict | None
 
     status_counts: dict[str, int] = {}
     family_counts: dict[str, int] = {}
+    gap_counts: dict[str, int] = {}
     for row in current_rows:
         status_counts[row["coverage_status"]] = status_counts.get(row["coverage_status"], 0) + row["offered"]
         family_counts[row["family"]] = family_counts.get(row["family"], 0) + row["offered"]
+        gap = row["primary_gap_class"]
+        gap_counts[gap] = gap_counts.get(gap, 0) + row["unscored"]
 
-    mapping_gap = sum(
-        row["unscored"] for row in current_rows
-        if "MAPPING_GAP" in str(row["coverage_status"] or "")
-    )
-    evidence_gap = sum(
-        row["unscored"] for row in current_rows
-        if "SETTLEMENT_GAP" in str(row["coverage_status"] or "")
-        or row["coverage_status"] == "EXISTING_SHADOW_EVIDENCE"
-    )
-    pbp_gap = sum(row["unscored"] for row in current_rows if row["coverage_status"] == "PBP_GAP")
-    true_neuro = sum(
-        row["unscored"] for row in current_rows
-        if str(row["coverage_status"] or "").startswith("TRUE_NEURO_CANDIDATE")
+    priority = sorted(
+        [row for row in current_rows if row["unscored"] > 0],
+        key=lambda row: (-row["priority_score"], -row["unscored"], row["canonical_market"]),
     )
 
     return {
@@ -109,13 +166,21 @@ def build_audit(symphony_stats: dict | None = None, candidate_stats: dict | None
             "scored": scored,
             "unscored": unscored,
             "coverage_pct": round(scored * 100.0 / exact_offer, 2) if exact_offer else None,
-            "mapping_gap_unscored": mapping_gap,
-            "evidence_gap_unscored": evidence_gap,
-            "pbp_gap_unscored": pbp_gap,
-            "true_neuro_candidate_unscored": true_neuro,
+            "exclusive_unscored_by_gap_class": dict(sorted(gap_counts.items())),
             "status_offer_counts": dict(sorted(status_counts.items())),
             "family_offer_counts": dict(sorted(family_counts.items())),
         },
+        "priority_queue": [
+            {
+                "canonical_market": row["canonical_market"],
+                "family": row["family"],
+                "unscored": row["unscored"],
+                "primary_gap_class": row["primary_gap_class"],
+                "next_action": row["next_action"],
+                "priority_score": row["priority_score"],
+            }
+            for row in priority
+        ],
         "markets": rows,
     }
 
