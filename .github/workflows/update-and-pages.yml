@@ -10,6 +10,7 @@ on:
       - 'scripts/**'
       - 'data/**'
       - 'frontend/data/**'
+      - '.github/workflows/update-and-pages.yml'
       - 'requirements.txt'
 permissions:
   contents: write
@@ -208,6 +209,17 @@ jobs:
         run: python -m pytest -q tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py
       - name: Compact frontend data v8.5.4
         run: python scripts/compact_frontend_data_v853.py
+      - name: Final full regression after generated layers v9.3.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          find frontend/data -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/frontend-data.before
+          python -m pytest -q
+          find frontend/data -type f -print0 | sort -z | xargs -0 sha256sum > /tmp/frontend-data.after
+          if ! diff -u /tmp/frontend-data.before /tmp/frontend-data.after; then
+            echo "::error::Tests modified published frontend/data after generation"
+            exit 1
+          fi
       - name: Save tennis history + PBP cache
         if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4

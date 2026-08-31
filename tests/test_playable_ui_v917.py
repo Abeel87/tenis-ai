@@ -34,8 +34,9 @@ def test_v917_missing_score_is_nd_not_zero():
 
 
 def test_v917_loader_runs_after_existing_frontend_scripts():
-    assert "playable-ui-coherence-v917.js?v=922&contract=raw-playable" in LOADER
+    assert "playable-ui-coherence-v917.js?v=925&contract=raw-playable" in LOADER
     assert "setTimeout(loadPlayableUiV917,0)" in LOADER
+    assert "raw-playable-separation-v921" not in LOADER
 
 
 def test_runtime_expiry_keeps_exact_selection_gate():
