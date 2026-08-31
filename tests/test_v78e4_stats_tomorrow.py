@@ -18,8 +18,7 @@ def test_v78e4_keeps_current_and_legacy_separate():
 def test_v78e4_bumps_pwa_cache():
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
 
-    # E10 replaced the historical chained cache name with one
-    # resilient current cache version. The test should verify that
-    # the cache was bumped, not freeze the project on an old name.
-    assert "const CACHE = 'tenis-ai-" in sw
+    # Verify the current cache contract without freezing whitespace formatting.
+    assert "const CACHE='tenis-ai-" in sw
+    assert "symphony2-v210" in sw
     assert "cache.addAll(ASSETS)" not in sw
