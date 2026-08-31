@@ -26,7 +26,6 @@ def main():
     workflow = read(".github/workflows/update-and-pages.yml")
     project_health = read("scripts/project_health.py")
 
-    # PBP: primary + retry branch only.
     if pbp.count('record_calls("pbp_current", 1)') != 2:
         ERRORS.append("PBP quota accounting nie ma dokładnie primary+retry")
     req(pbp, 'self.calls += 1\n            record_calls("pbp_current", 1)', "retry PBP nie zapisuje realnego calla")
@@ -55,7 +54,9 @@ def main():
     req(app, "{cache:'no-store'}", "JSON loader nie wymusza świeżości")
     req(index, 'app.js?v=84b1', "brak cache-bust app.js")
     req(index, 'autolearn-v84.js?v=84a1&hf=84b1', "brak cache-bust AutoLearn v8.4B")
-    req(index, 'scenario-studio-v82a.js?v=82a6', "naruszono chroniony pin Scenario Studio")
+    if 'scenario-studio-v82a.js' in index:
+        ERRORS.append("wycofany Scenario Studio nadal jest aktywny")
+    req(index, 'symphony2.js?v=210', "brak aktywnej Symfonii 2.0")
     req(ui, "🤖 AUTOLEARN v8.4B", "UI nie pokazuje v8.4B")
     req(project_health, "cache_v84b", "Project Health nie akceptuje aktywnego cache v8.4B")
     req(project_health, "legacy_v801_marker", "Project Health nie pilnuje kompatybilności v801")
