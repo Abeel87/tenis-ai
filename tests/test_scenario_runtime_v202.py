@@ -31,10 +31,16 @@ def test_scenario_runtime_recovers_missing_or_broken_studio_api():
     assert "return !document.querySelector('#scenario-v82a-panel')?.hidden" in js
 
 
-def test_symphony_live_ui_boots_new_scenario_runtime_without_intercepting_it():
-    js = (ROOT / "frontend" / "symphony2-live-ui-v201.js").read_text(encoding="utf-8")
-    assert "scenario-runtime-v202.js?v=203" in js
-    assert "data-sc-generate" not in js
-    assert "TENIS_AI_GENERATOR_QUALITY_V888" not in js
-    assert "MutationObserver" not in js
-    assert "stopImmediatePropagation" not in js
+def test_scenario_runtime_is_loaded_directly_after_studio_not_by_symphony():
+    index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+    sym = (ROOT / "frontend" / "symphony2-live-ui-v201.js").read_text(encoding="utf-8")
+    studio = 'scenario-studio-v82a.js?v=82a6&hf=84a1&amp;audit=884'
+    runtime = 'scenario-runtime-v202.js?v=203'
+    assert studio in index
+    assert runtime in index
+    assert index.index(studio) < index.index(runtime) < index.index('symphony2.js?v=200')
+    assert "scenario-runtime-v202.js" not in sym
+    assert "data-sc-generate" not in sym
+    assert "TENIS_AI_GENERATOR_QUALITY_V888" not in sym
+    assert "MutationObserver" not in sym
+    assert "stopImmediatePropagation" not in sym
