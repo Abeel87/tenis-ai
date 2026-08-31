@@ -62,8 +62,10 @@ def test_history_source_and_pwa():
 
     assert "source_model='early_hold_pbp'" in h
 
-    # PWA version is maintained centrally from E10 onward.
-    assert "const CACHE = 'tenis-ai-" in sw
+    # PWA cache is allowed to use compact formatting; verify the live contract,
+    # not whitespace around '='.
+    assert "const CACHE='tenis-ai-" in sw
+    assert "symphony2-v210" in sw
     assert "appVersion: 'v8.0.1'" in meta
     assert "modelVersion: 'v7.8D'" in meta
     assert "modelName: 'AutoLearn Ensemble + Adaptive Learning'" in meta
