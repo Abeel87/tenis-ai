@@ -68,6 +68,38 @@ def _settle_parity(total: int, pick) -> str:
     return "hit" if total % 2 == wanted else "miss"
 
 
+def _settle_game_handicap(signal: dict, final: dict, sets, market: str) -> str:
+    if market == 'set1_game_handicap':
+        if len(sets) < 1:
+            return 'void'
+        relevant = [sets[0]]
+    elif market == 'set2_game_handicap':
+        if len(sets) < 2:
+            return 'void'
+        relevant = [sets[1]]
+    else:
+        if not sets:
+            return 'void'
+        relevant = sets
+
+    p1, p2 = final.get('p1'), final.get('p2')
+    side = _key(signal.get('pick'))
+    if not p1 or not p2 or side not in {_key(p1), _key(p2)}:
+        return 'unverifiable'
+    try:
+        line = float(signal.get('line'))
+    except (TypeError, ValueError):
+        return 'unverifiable'
+
+    p1_games = sum(int(a) for a, _ in relevant)
+    p2_games = sum(int(b) for _, b in relevant)
+    margin = (p1_games - p2_games) if side == _key(p1) else (p2_games - p1_games)
+    adjusted = margin + line
+    if abs(adjusted) <= 1e-9:
+        return 'void'
+    return 'hit' if adjusted > 0 else 'miss'
+
+
 def settle_signal(signal: dict, final: dict) -> str:
     if final.get('status') != 'completed':
         return 'void'
@@ -85,7 +117,6 @@ def settle_signal(signal: dict, final: dict) -> str:
         if len(sets) <= idx:
             return 'void'
         a, b = sets[idx]
-        # final sets are p1:p2; use the signal entry's player names supplied below.
         p1 = final.get('p1')
         p2 = final.get('p2')
         if not p1 or not p2:
@@ -93,8 +124,6 @@ def settle_signal(signal: dict, final: dict) -> str:
         actual = p1 if a > b else p2
         return 'hit' if _key(pick) == _key(actual) else 'miss'
     if market == 'total_sets':
-        # Legacy layer stored exact count picks ("2 sets" / "3 sets"). v9.1.2
-        # additionally freezes real Superbet O/U lines, so settle both forms.
         direction = pick.strip().casefold()
         if direction in ('over', 'under'):
             try:
@@ -142,10 +171,9 @@ def settle_signal(signal: dict, final: dict) -> str:
         return 'hit' if ok else 'miss'
     if market == 'exact_set1':
         return 'hit' if pick.replace('-', ':') == str(final.get('first_set_score') or '').replace('-', ':') else 'miss'
+    if market in {'match_game_handicap', 'set1_game_handicap', 'set2_game_handicap'}:
+        return _settle_game_handicap(signal, final, sets, market)
 
-    # v9.2.5 candidate settlement: only deterministic final-result markets are
-    # resolved here. Checkpoints remain PBP-only and never get reconstructed from
-    # final set scores.
     if market == 'set2_exact_score':
         if len(sets) < 2:
             return 'void'
@@ -228,7 +256,7 @@ def settle_signal_live(signal: dict, final: dict) -> str:
     if market in ("game_state", "set2_game_state"):
         return "unverifiable"
     if market in (
-        "match_winner", "total_sets", "exact_match", "match_total",
+        "match_winner", "total_sets", "exact_match", "match_total", "match_game_handicap",
         "exact_sets", "match_games_parity", "any_set_to_nil",
         "p1_exactly_1_set", "p1_exactly_2_sets",
         "p2_exactly_1_set", "p2_exactly_2_sets",
@@ -249,8 +277,6 @@ def settle_signal_live(signal: dict, final: dict) -> str:
     if market == "set1_total":
         if not sets or not complete or not complete[0]:
             return "void"
-        # A finished first set has identical line/push semantics even if a
-        # player retires later. Unknown directions must not become UNDER.
         return settle_signal(signal, {**final, "status": "completed"})
 
     if market == "exact_set1":
@@ -259,13 +285,15 @@ def settle_signal_live(signal: dict, final: dict) -> str:
         actual = f"{sets[0][0]}:{sets[0][1]}"
         return "hit" if pick.replace('-', ':') == actual else "miss"
 
-    if market in ("set1_games_parity", "set2_games_parity", "set2_exact_score"):
-        idx = 0 if market == "set1_games_parity" else 1
+    if market in ("set1_games_parity", "set2_games_parity", "set2_exact_score", "set1_game_handicap", "set2_game_handicap"):
+        idx = 0 if market in ("set1_games_parity", "set1_game_handicap") else 1
         if len(sets) <= idx or len(complete) <= idx or not complete[idx]:
             return "void"
         if market == "set2_exact_score":
             actual = f"{sets[1][0]}:{sets[1][1]}"
             return "hit" if pick.replace('-', ':') == actual else "miss"
+        if market in ("set1_game_handicap", "set2_game_handicap"):
+            return settle_signal(signal, {**final, "status": "completed", "sets": sets})
         return _settle_parity(sum(sets[idx]), pick)
 
     return "unverifiable"
@@ -279,7 +307,6 @@ def settle_layers(entry, final, source, pending_only=False):
             continue
         rows = []
         for signal in entry.get(layer) or []:
-            # PBP-resolved checkpoints carry evidence a final score cannot replace.
             resolved = signal.get("result") in ("hit", "miss", "void")
             if (pending_only and signal.get("result") != "pending") or (
                 signal.get("market") in ("game_state", "set2_game_state") and resolved

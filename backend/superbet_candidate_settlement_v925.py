@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Tenis AI v9.2.5 — settlement shadow for newly mapped Superbet families.
 
-This layer freezes only operator-verified, model-derived v9.2.4 selections. It is
+This layer freezes only operator-verified, model-derived selections. It is
 strictly non-PLAYABLE: rows are collected for settlement/backtest evidence and
 promotion readiness, but never change existing model maths, thresholds, training
 or PLAYABLE accuracy.
@@ -37,8 +37,16 @@ SETTLEMENT_SUPPORTED_MARKETS = {
     "p1_wins_a_set",
     "p2_wins_a_set",
     "set_handicap",
+    "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
 }
 PBP_ONLY_MARKETS = {"set2_game_state"}
+ACTIONABLE_EVIDENCE_MARKETS = {
+    "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
+}
 
 
 def _num(value, default=None):
@@ -79,7 +87,7 @@ def _signature(row: dict) -> tuple:
     )
 
 
-def _candidate_signal(row: dict, now: datetime) -> dict:
+def _candidate_signal(row: dict, now: datetime, source_model: str) -> dict:
     score = _num(row.get("score"))
     out = {
         "id": str(row.get("key") or "|".join(map(str, _signature(row)))),
@@ -92,7 +100,7 @@ def _candidate_signal(row: dict, now: datetime) -> dict:
         "player": row.get("player"),
         "score": round(float(score), 1) if score is not None else None,
         "result": "pending",
-        "source_model": "superbet_v924_display_shadow",
+        "source_model": source_model,
         "operator": "superbet.pl",
         "operator_available": True,
         "operator_line_verified": True,
@@ -100,16 +108,18 @@ def _candidate_signal(row: dict, now: datetime) -> dict:
         "candidate_for_playable": True,
         "candidate_version": VERSION,
         "captured_at": now.isoformat(),
-        "coverage_status": row.get("coverage_status") or "MODEL_DERIVED_DISPLAY_ONLY_PENDING_SETTLEMENT",
+        "coverage_status": row.get("coverage_status") or "MODEL_DERIVED_SETTLEMENT_EVIDENCE",
     }
     return {k: v for k, v in out.items() if v is not None}
 
 
 def capture_candidates(history: list[dict], results: list[dict], now: datetime | None = None):
-    """Freeze v9.2.4 DISPLAY/SHADOW candidates before result settlement.
+    """Freeze operator-verified evidence rows before result settlement.
 
     Existing snapshots are immutable; a later operator refresh must not rewrite a
-    forecast that was already captured for a match.
+    forecast that was already captured for a match. v9.2.4 display/shadow rows and
+    the v9.2.2 exact operator game-handicap model rows are tracked in this shadow
+    layer only; production PLAYABLE remains untouched.
     """
     now = now or datetime.now(timezone.utc)
     index = {_match_key(m): m for m in results or [] if isinstance(m, dict)}
@@ -136,23 +146,32 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
 
         rows = []
         seen = set()
-        for signal in ctx.get("coverage_shadow_signals") or []:
-            if not isinstance(signal, dict):
-                continue
-            market = str(signal.get("market") or "")
-            if market in PBP_ONLY_MARKETS:
-                excluded_pbp += 1
-                continue
-            if market not in SETTLEMENT_SUPPORTED_MARKETS:
-                continue
-            score = _num(signal.get("score"))
-            if score is None or score < TRACK_MIN_SCORE:
-                continue
-            sig = _signature(signal)
-            if sig in seen:
-                continue
-            seen.add(sig)
-            rows.append(_candidate_signal(signal, now))
+        sources = (
+            (ctx.get("coverage_shadow_signals") or [], "superbet_v924_display_shadow"),
+            (ctx.get("model_signals") or [], "superbet_v922_operator_line_model"),
+        )
+        for source_rows, source_model in sources:
+            for signal in source_rows:
+                if not isinstance(signal, dict):
+                    continue
+                market = str(signal.get("market") or "")
+                if market in PBP_ONLY_MARKETS:
+                    excluded_pbp += 1
+                    continue
+                if market not in SETTLEMENT_SUPPORTED_MARKETS:
+                    continue
+                if source_model == "superbet_v922_operator_line_model" and market not in ACTIONABLE_EVIDENCE_MARKETS:
+                    continue
+                if source_model == "superbet_v922_operator_line_model" and signal.get("operator_line_verified") is not True:
+                    continue
+                score = _num(signal.get("score"))
+                if score is None or score < TRACK_MIN_SCORE:
+                    continue
+                sig = _signature(signal)
+                if sig in seen:
+                    continue
+                seen.add(sig)
+                rows.append(_candidate_signal(signal, now, source_model))
 
         if rows:
             entry[LAYER] = rows
