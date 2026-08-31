@@ -237,7 +237,6 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
             row["operator_model_probability_pre_coherence"] = round(before, 2)
             row["operator_model_probability"] = final
             row["probability_coherence"] = "NORMALIZED_EXCLUSIVE_GROUP"
-            row["probability_kind"] = "SUPERVISED_OPERATOR_LINE_P_HIT_COHERENT"
     return rows
 
 
