@@ -8,9 +8,13 @@ sanitizer how to name and parse market families discovered by the raw-family
 audit. Prices remain discarded and MODEL/RAW remains independent of Superbet.
 
 Actionable line contract: a line market is kept only when the concrete current
-Superbet fixture carries line evidence for that exact market/outcome/player.
-Catalogue/global handicaps are metadata only and are never sufficient to mark a
-selection SUPERBET PLAYABLE.
+Superbet fixture carries evidence for that exact market variant. Structured
+fixture fields and fixture bookmaker labels have priority. When the current
+fixture explicitly contains an active market ID, the handicap attached to that
+same ID in the OddsPapi market catalogue is valid exact-market metadata (not a
+catalogue/global fallback): the fixture itself selected that concrete variant.
+Unreferenced catalogue lines, model lines and nearest-line substitutions remain
+forbidden for SUPERBET PLAYABLE.
 """
 
 import json
@@ -30,7 +34,7 @@ except ImportError:
     import superbet_market_context_v923 as v923
 
 VERSION = "v9.2.4"
-STRICT_FIXTURE_LINE_VERSION = "v9.3.2-core"
+STRICT_FIXTURE_LINE_VERSION = "v9.3.3-core"
 NEW_LINE_MARKETS = {"set_handicap"}
 NEW_HANDICAP_MARKETS = {"set_handicap"}
 NEW_MARKETS = {
@@ -134,9 +138,21 @@ def _fixture_numeric(holder: dict, *fields):
     return None, None
 
 
+def _orient_line(market, value, outcome_name, bookmaker_outcome_id, pick, p1, p2):
+    if value is None:
+        return None
+    if market in v913.HANDICAP_MARKETS:
+        side = v913._handicap_side(outcome_name, bookmaker_outcome_id, pick, p1, p2)
+        if side == "p2":
+            return -value
+        return value
+    return abs(value)
+
+
 def _fixture_line_for_selection(
     market: str,
     market_data: dict,
+    market_meta: dict,
     outcome_data: dict,
     player_data: dict,
     outcome_name,
@@ -146,26 +162,20 @@ def _fixture_line_for_selection(
     p1=None,
     p2=None,
 ):
-    """Return line evidence from the concrete fixture only; never from catalogue metadata."""
+    """Resolve a line only for the exact active market variant in this fixture."""
     if market not in v913.LINE_MARKETS:
         return None, None
 
-    # Player/outcome fields are selection-specific and therefore authoritative as-is.
+    # Player/outcome fields are selection-specific and therefore authoritative.
     for holder, prefix in ((player_data, "player"), (outcome_data, "outcome")):
         value, field = _fixture_numeric(holder, "handicap", "line")
         if value is not None:
-            return value, f"oddspapi_fixture_{prefix}_{field}"
+            return _orient_line(market, value, outcome_name, bookmaker_outcome_id, pick, p1, p2), f"oddspapi_fixture_{prefix}_{field}"
 
-    # A market-level handicap is participant-1 perspective for handicap markets.
+    # Structured market fields from the current fixture outrank all metadata.
     value, field = _fixture_numeric(market_data, "handicap", "line")
     if value is not None:
-        if market in v913.HANDICAP_MARKETS:
-            side = v913._handicap_side(outcome_name, bookmaker_outcome_id, pick, p1, p2)
-            if side == "p2":
-                value = -value
-        elif market not in v913.HANDICAP_MARKETS:
-            value = abs(value)
-        return value, f"oddspapi_fixture_market_{field}"
+        return _orient_line(market, value, outcome_name, bookmaker_outcome_id, pick, p1, p2), f"oddspapi_fixture_market_{field}"
 
     # Fixture-specific bookmaker identifiers/names may encode the current line.
     text_line = base._line_from_text(
@@ -175,9 +185,17 @@ def _fixture_line_for_selection(
         outcome_data.get("bookmakerOutcomeId") if isinstance(outcome_data, dict) else None,
     )
     if text_line is not None:
-        if market not in v913.HANDICAP_MARKETS:
-            text_line = abs(text_line)
-        return text_line, "oddspapi_fixture_text_line"
+        return _orient_line(market, text_line, outcome_name, bookmaker_outcome_id, pick, p1, p2), "oddspapi_fixture_text_line"
+
+    # OddsPapi represents many total/handicap steps as separate market IDs.
+    # If (and only if) this exact ID is active in the current fixture, its
+    # catalogue handicap describes the active fixture variant. This is not a
+    # search/fallback to another catalogue line: no other market ID is used.
+    if isinstance(market_data, dict) and market_data.get("marketActive") is not False:
+        catalogue_line = base._line((market_meta or {}).get("handicap"))
+        if catalogue_line is not None:
+            return _orient_line(market, catalogue_line, outcome_name, bookmaker_outcome_id, pick, p1, p2), "oddspapi_active_fixture_market_id_handicap"
+
     return None, None
 
 
@@ -251,6 +269,7 @@ def mapped_sanitize(row: dict, meta: dict):
             line, source = _fixture_line_for_selection(
                 market,
                 market_data,
+                market_meta,
                 outcome_data,
                 player_data or {},
                 outcome_name,
@@ -307,8 +326,6 @@ def _patched_runtime():
         v913.LINE_MARKETS.update(NEW_LINE_MARKETS)
         v913.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS)
         v913.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS)
-        # v9.2.3 uses its VERSION to force a normal parser refresh. Temporarily
-        # bump it so existing cached fixtures are re-sanitized once after merge.
         v923.VERSION = STRICT_FIXTURE_LINE_VERSION
         yield
     finally:
@@ -338,6 +355,7 @@ def _stamp_alias() -> dict:
     availability["fixture_line_contract"] = {
         "version": STRICT_FIXTURE_LINE_VERSION,
         "current_fixture_evidence_required": True,
+        "active_fixture_market_id_metadata_allowed": True,
         "catalogue_fallback_allowed": False,
         "model_line_fallback_allowed": False,
         "nearest_line_fallback_allowed": False,
