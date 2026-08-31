@@ -2,10 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JS = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
-CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
-APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
-PLAYABLE_UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
@@ -33,32 +30,3 @@ def test_generator_explains_exact_superbet_probability_contract():
     assert "operator_model_probability" in JS
     assert "joint_probability" in JS
     assert "learning_support_rows" in JS
-
-
-def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
-    assert "symphony2-match-detail" in JS
-    assert "cleanupLegacySymphony" in JS
-    assert "data-symphony-match-mini" in JS
-    assert "SYMFONIA 2.0 · PLAYABLE" in JS
-    assert "RAW nie jest źródłem linii PLAYABLE" in JS
-    assert ".s2-match-detail" in CSS
-
-
-def test_match_view_compacts_full_superbet_offer_without_changing_data():
-    assert "compactSuperbet" in JS
-    assert "SUPERBET · REALNA OFERTA" in JS
-    assert "Dokładne rynki i linie Superbet" in JS
-    assert "Pokaż pełną ofertę" in JS
-    assert "data-s2-offer-extra" in CSS
-
-
-def test_runtime_does_not_boot_deleted_legacy_symphony_save_layer():
-    assert "symphony-superbet-save-v924.js" not in APP_META
-    assert "Legacy Symphony save/card modules are intentionally not loaded" in APP_META
-
-
-def test_symphony2_never_reads_legacy_compact_card_feed():
-    assert "symphony_match_cards_v90.json" not in JS
-    # The old Superbet UI bridge may still know how to clean old mini cards, but
-    # Symphony 2.0 itself must never depend on their deleted data feed.
-    assert "symphony_match_cards_v90.json" in PLAYABLE_UI

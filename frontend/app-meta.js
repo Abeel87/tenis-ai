@@ -175,9 +175,9 @@
   });
 })();
 
-/* Exact Superbet UI bootstrap for Symphony 2.0 era.
-   This layer only loads the fixture-specific PLAYABLE gate and freshness guard.
-   Legacy Symphony save/card modules are intentionally not loaded. */
+/* v9.2.5 Symphony actionable bootstrap.
+   Load exact-line gate, then tighten snapshot freshness before any actionable
+   Symphony card/save layer is allowed to call a selection PLAYABLE. */
 (() => {
   'use strict';
   function fullDom(){
@@ -196,7 +196,8 @@
   }
   function boot(){
     if(!fullDom())return;
-    const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');
+    const save=()=>load('symphony-superbet-save-v924.js?v=925','symphony-superbet-save-v924');
+    const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925',save);
     if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();
     else load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness);
   }
