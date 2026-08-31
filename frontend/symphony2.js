@@ -41,7 +41,7 @@
 
   function decorate(){
     const b=homeButton();if(!b)return;
-    b.innerHTML='<b>🎼 Symfonia 2.0</b><span>Realne linie Superbet → kalibrowane P(hit) → exact joint → najlepsza spójna kompozycja</span>';
+    b.innerHTML='<b>🎼 Symfonia 2.0</b><span>Realne linie Superbet → uczone P(hit) → kalibracja tylko gdy poprawia Brier → exact joint</span>';
     b.dataset.symphony2='1';
   }
 
@@ -112,7 +112,8 @@
     const markets=training?.market_calibration||{};
     const accepted=Object.entries(markets).filter(([,v])=>v?.accepted).length;
     const raw=num(global.raw_brier),cal=num(global.calibrated_brier);
-    return `<div class="s2stats-cal"><span>Time split <b>${training?.time_split?'TAK':'NIE'}</b></span><span>Global calibration <b>${global.accepted?'AKTYWNA':'RAW'}</b></span><span>Brier <b>${raw==null?'N/D':raw.toFixed(4)}${cal==null?'':` → ${cal.toFixed(4)}`}</b></span><span>Kalibracje rynków <b>${accepted}</b></span></div>`;
+    const globalMode=global.production_applied===true?'UŻYWANA':global.accepted?'DIAGNOSTYKA':'RAW';
+    return `<div class="s2stats-cal"><span>Time split <b>${training?.time_split?'TAK':'NIE'}</b></span><span>Kalibracja globalna <b>${globalMode}</b></span><span>Brier globalny <b>${raw==null?'N/D':raw.toFixed(4)}${cal==null?'':` → ${cal.toFixed(4)}`}</b></span><span>Aktywne kalibracje rynków <b>${accepted}</b></span></div>`;
   }
 
   function byLegHtml(perf){
