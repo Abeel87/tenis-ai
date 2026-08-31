@@ -43,8 +43,10 @@ def test_v88_preserves_protected_runtime_contract():
     meta=text("frontend/app-meta.js")
     upgrade=text("frontend/v88-upgrade.js")
 
-    assert "scenario-studio-v82a.js?v=82a6" in html
-    assert "scenario-studio-v82a.css?v=82a51" in html
+    assert "symphony2.js?v=210" in html
+    assert "symphony2.css?v=210" in html
+    assert "scenario-studio-v82a.js" not in html
+    assert "scenario-studio-v82a.css" not in html
     assert "model-guide.js?v=87dc1" in html
 
     assert "v88-upgrade.css?v=88" in html
