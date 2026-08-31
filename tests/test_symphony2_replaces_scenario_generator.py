@@ -40,13 +40,30 @@ def test_index_loads_only_symphony2_composer_assets():
         assert retired not in index
 
 
+def test_project_ui_owns_symphony2_slot_without_legacy_scenario_bridge():
+    ui = text("frontend/ui-v751.js")
+    assert 'data-p751-nav="symphony2"' in ui
+    assert "<span>🎼</span><b>Symfonia 2.0</b>" in ui
+    assert "TENIS_AI_SYMPHONY2" in ui
+    assert "TENIS_AI_SCENARIOS" not in ui
+    assert 'data-p751-nav="scenarios"' not in ui
+    assert "route='scenarios'" not in ui
+
+
+def test_no_active_frontend_javascript_references_retired_scenario_runtime():
+    for path in (ROOT / "frontend").glob("*.js"):
+        source = path.read_text(encoding="utf-8")
+        assert "TENIS_AI_SCENARIOS" not in source, path
+        assert 'data-p751-nav="scenarios"' not in source, path
+
+
 def test_symphony2_has_own_fullscreen_hub_and_nav_ownership():
     js = text("frontend/symphony2.js")
     css = text("frontend/symphony2.css")
     assert "const VERSION='2.1'" in js
     assert "#symphony2-hub" in js
     assert "data-p751-nav=\"symphony2\"" in js
-    assert "nav.dataset.p751Nav='symphony2'" in js
+    assert 'data-p751-nav="scenarios"' not in js
     assert "<span>🎼</span><b>Symfonia 2.0</b>" in js
     assert "TENIS_AI_SYMPHONY2" in js
     assert "TENIS_AI_SCENARIOS" not in js

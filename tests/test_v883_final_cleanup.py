@@ -59,26 +59,29 @@ def test_v887_v8810_market_quality_layer_is_scoped_to_core_and_cross_view():
     assert "new MutationObserver(" not in js
     assert "setInterval(" not in js
 
-def test_v883_pair_reasoning_is_visible():
+def test_v883_no_longer_contains_retired_generator_pair_ui():
     js=t("frontend/v883-final.js")
-    for token in ["PAIR SELECTOR · RANKING","DLACZEGO TEN MECZ","HISTORIA","selector_match_score","selector_pair","selector_reason"]:
-        assert token in js
+    for token in [
+        "PAIR SELECTOR · RANKING",
+        "DLACZEGO TEN MECZ",
+        "selector_match_score",
+        "selector_pair",
+        "selector_reason",
+        "decorateGeneratorCards",
+        "wrapScenarioOpen",
+        "TENIS_AI_SCENARIOS",
+    ]:
+        assert token not in js
 
-def test_v883_scenario_scores_are_semantically_clear():
+def test_v883_no_longer_decorates_retired_scenario_scores():
     js=t("frontend/v883-final.js")
-    css=t("frontend/v883-final.css")
     for token in [
         "function clarifyScenarioScores()",
-        "Composer $1",
-        "Model FINAL $1",
         "Ocena scenariusza · Composer",
-        "Model FINAL</strong> = wynik produkcyjnego modelu Adaptive",
-        "To nie są gwarantowane prawdopodobieństwa",
         "sc883-saved-label",
+        "scenario-v82a-panel",
     ]:
-        assert token in js
-    assert ".sc883-score-note" in css
-    assert ".sc883-saved-label" in css
+        assert token not in js
     assert "new MutationObserver(" not in js
     assert "setInterval(" not in js
 

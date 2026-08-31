@@ -30,10 +30,12 @@ def test_time_logic_with_node():
     script='\nconst t=require("./frontend/match-time-v84e11.js");\nconst now=Date.parse("2026-08-24T11:00:00Z");\n\nfunction must(cond,msg){\n  if(!cond){console.error(msg);process.exit(13)}\n}\n\nlet x=t.compute({scheduled_time:"2026-08-24T16:17:00Z",feed_status:"upcoming"},now,"full");\nmust(x.kind==="scheduled","future must be scheduled");\nmust(x.text.includes("za 5 h 17 min"),x.text);\n\nx=t.compute({scheduled_time:"2026-08-24T10:47:00Z",feed_status:"upcoming"},now,"full");\nmust(x.kind==="scheduled","past clock cannot imply live");\nmust(x.text.includes("start planowany 13 min temu"),x.text);\nmust(!x.text.includes("TRWA"),"must never fake live");\n\nx=t.compute({scheduled_time:"2026-08-24T10:47:00Z",event_status:"Live"},now,"full");\nmust(x.kind==="live" && x.text.includes("TRWA"),x.text);\n\nx=t.compute({scheduled_time:"2026-08-24T16:17:00Z",event_status:"Cancelled"},now,"full");\nmust(x.kind==="cancelled" && x.text.includes("ANULOWANY"),x.text);\n\nx=t.compute({scheduled_time:"2026-08-24T16:17:00Z",event_status:"Postponed"},now,"full");\nmust(x.kind==="postponed" && x.text.includes("PRZEŁOŻONY"),x.text);\n\nx=t.compute({scheduled_time:"2026-08-24T08:00:00Z",status:"settled"},now,"history");\nmust(x.kind==="finished" && x.text.includes("ZAKOŃCZONY"),x.text);\n'
     subprocess.run([node,"-e",script],cwd=ROOT,check=True)
 
-def test_integrations_are_present():
+def test_integrations_are_present_without_retired_scenario_runtime():
     js=read("frontend/match-time-v84e11.js")
-    for token in ["renderMatchCard","decorateHistory","decorateDraft","decorateSaved"]:
+    for token in ["renderMatchCard","decorateHistory"]:
         assert token in js
+    for retired in ["decorateDraft","decorateSaved","decorateScenario","TENIS_AI_SCENARIOS","scenario-v82a-panel","tenis-ai-scenario-settlement"]:
+        assert retired not in js
 
 
 def test_current_match_selector_and_card_status_regression():

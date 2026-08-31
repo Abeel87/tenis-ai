@@ -109,10 +109,8 @@
   }
 
   function bindNav(){
-    const old=document.querySelector('#p751-bottom-nav [data-p751-nav="scenarios"]');
-    const nav=document.querySelector(NAV_SELECTOR)||old;
+    const nav=document.querySelector(NAV_SELECTOR);
     if(!nav)return false;
-    if(nav.dataset.p751Nav!=='symphony2')nav.dataset.p751Nav='symphony2';
     nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>';
     nav.setAttribute('aria-label','Symfonia 2.0');
     nav.onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();open()};

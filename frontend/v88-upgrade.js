@@ -1,8 +1,8 @@
 /* Tenis AI v8.8 · compatibility bridge.
    v8.8.2+ owns the performance dashboard; this file keeps only the
-   Adaptive PROD bridge and generator header. Old v8.8 stats rendering is
-   intentionally disabled to avoid duplicate dashboards/fetches.
-   v8.8.21 runtime cleanup: explicit scenario/stats events replace polling.
+   Adaptive PROD bridge. Old v8.8 stats rendering is intentionally disabled
+   to avoid duplicate dashboards/fetches.
+   v8.8.21 runtime cleanup: explicit stats events replace polling.
 */
 (()=>{
 'use strict';
@@ -10,7 +10,6 @@ const V88_COMPAT_BRAND = 'Tenis AI · v8.8';
 
 const VERSION='v8.8-compat';
 const RUNTIME_FIX='v8.8.21';
-const WRAP_KEY='__v88ScenarioOpen';
 const num=x=>x==null||x===''||!Number.isFinite(Number(x))?null:Number(x);
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
 const marketAlias=x=>({
@@ -104,21 +103,6 @@ function wrapAutoLearn(){
   return true;
 }
 
-function decorateGenerator(){
-  const builder=document.querySelector('.sc82-builder');
-  if(!builder||builder.querySelector('.sc88-generator-head'))return;
-  builder.insertAdjacentHTML('afterbegin',`
-    <div class="sc88-generator-head">
-      <div>
-        <span>GENERATOR AI v8.8</span>
-        <b>Adaptive PROD jako główny wynik</b>
-        <small>RAW Ensemble zostaje do audytu. Player Intelligence i Accuracy Lab nadal SHADOW.</small>
-      </div>
-      <em>PROD ACTIVE</em>
-    </div>
-  `);
-}
-
 /* Compatibility symbols retained for guards/tests. The real dashboard lives in
    v882-cleanup.js. These functions are intentionally not wired to renderStats. */
 function confidenceRows(){return[]}
@@ -144,34 +128,12 @@ function applyV88Brand(){
   window.TENIS_AI_APPLY_META?.();
 }
 
-function wrapScenarioOpen(){
-  const api=window.TENIS_AI_SCENARIOS;
-  if(!api||api[WRAP_KEY]||typeof api.open!=='function')return false;
-  const open=api.open;
-  api.open=(...args)=>{
-    const result=open.apply(api,args);
-    queueMicrotask(decorateGenerator);
-    return result;
-  };
-  Object.defineProperty(api,WRAP_KEY,{value:true});
-  return true;
-}
-
 function boot(){
   applyV88Brand();
   wrapAutoLearn();
-  wrapScenarioOpen();
-  decorateGenerator();
   injectStats();
 }
 
-document.addEventListener('click',event=>{
-  if(!event.target?.closest?.('#scenario-v82a-panel,[data-p751-nav="scenarios"]'))return;
-  requestAnimationFrame(()=>{
-    wrapScenarioOpen();
-    decorateGenerator();
-  });
-},true);
 document.addEventListener('tenis-ai:stats-ready',injectStats);
 document.addEventListener('tenis-ai:stats-dashboard-ready',injectStats);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
@@ -182,8 +144,6 @@ window.TENIS_AI_V88={
   runtimeFix:RUNTIME_FIX,
   wrapAutoLearn,
   injectStats,
-  decorateGenerator,
-  wrapScenarioOpen,
   wrapStats,
   LEGACY_STATS_SOURCES
 };
