@@ -91,6 +91,24 @@ def test_current_offer_rejects_line_without_fixture_verification():
     assert rows[0]["line"] == 21.5
 
 
+def test_supported_market_scores_verified_current_line_even_if_exact_number_was_not_repeated_in_history():
+    class FakeModel:
+        def predict_proba(self, x):
+            assert float(x.iloc[0]["line"]) == 23.5
+            return [[0.18, 0.82]]
+
+    model = learning.OperatorLineModel(model=FakeModel(), status="ready", market_support={"match_total": 384})
+    row = {name: 0 for name in learning.FEATURES}
+    row.update({
+        "market": "match_total", "pick": "over", "line": 23.5,
+        "surface": "hard", "tour": "atp", "player_scope": "none",
+    })
+    diagnostics = model.predict_diagnostics(row)
+    assert diagnostics["support"] == 384
+    assert diagnostics["raw"] == 0.82
+    assert diagnostics["final"] == 0.82
+
+
 def test_composer_does_not_stack_two_lines_from_same_market():
     match = _match()
     outcomes = build_outcomes(match)
