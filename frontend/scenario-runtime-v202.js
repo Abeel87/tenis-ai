@@ -8,6 +8,8 @@
   const VERSION='v2.0.3';
   const READY_TIMEOUT_MS=1200;
   const API_TIMEOUT_MS=2200;
+  const MAX_DRAFT_ITEMS=32;
+  const DRAFT_KEY='tenis-ai-v82a-scenario-draft';
   const STUDIO_SRC='scenario-studio-v82a.js?v=82a6&recovery=203';
   let studioReloadPromise=null;
 
@@ -38,11 +40,36 @@
     return api&&typeof api.open==='function'?api:null;
   }
 
-  function removeBrokenShell(){
+  function panelVisible(){
     const panel=document.querySelector('#scenario-v82a-panel');
-    if(panel&&!scenarioApi())panel.remove();
-    const dock=document.querySelector('#scenario-v82a-dock');
-    if(dock&&!scenarioApi())dock.remove();
+    if(!panel||panel.hidden)return false;
+    try{return getComputedStyle(panel).display!=='none'}catch{return true}
+  }
+
+  function sanitizeLegacyDraft(){
+    try{
+      const raw=localStorage.getItem(DRAFT_KEY);
+      if(!raw)return false;
+      const data=JSON.parse(raw);
+      const invalid=!data||typeof data!=='object'||!Array.isArray(data.items)||data.items.length>MAX_DRAFT_ITEMS;
+      if(!invalid)return false;
+      localStorage.removeItem(DRAFT_KEY);
+      console.warn('[Scenario runtime] Removed corrupted legacy open draft; saved scenario history was untouched.');
+      return true;
+    }catch{
+      try{localStorage.removeItem(DRAFT_KEY)}catch{}
+      return true;
+    }
+  }
+
+  function removeBrokenShell(){
+    document.querySelector('#scenario-v82a-panel')?.remove();
+    document.querySelector('#scenario-v82a-dock')?.remove();
+  }
+
+  function resetStudioRuntime(){
+    try{delete window.TENIS_AI_SCENARIOS}catch{window.TENIS_AI_SCENARIOS=null}
+    removeBrokenShell();
   }
 
   function loadStudioFresh(){
@@ -69,26 +96,35 @@
     });
   }
 
+  function tryOpen(api,tab){
+    if(!api?.open)return false;
+    api.open(tab);
+    if(!panelVisible())return false;
+    markScenarioNav();
+    return true;
+  }
+
   async function openScenarios(tab='home'){
     let api=scenarioApi();
     if(!api)api=await loadStudioFresh();
-    if(!api?.open)return false;
     try{
-      api.open(tab);
-      markScenarioNav();
-      return !document.querySelector('#scenario-v82a-panel')?.hidden;
+      if(tryOpen(api,tab))return true;
     }catch(err){
-      console.warn('[Scenario runtime] open failed; retrying clean studio bootstrap',err);
-      try{delete window.TENIS_AI_SCENARIOS}catch{window.TENIS_AI_SCENARIOS=null}
-      removeBrokenShell();
-      api=await loadStudioFresh();
-      if(!api?.open)return false;
-      api.open(tab);
-      markScenarioNav();
-      return !document.querySelector('#scenario-v82a-panel')?.hidden;
+      console.warn('[Scenario runtime] first open failed; retrying clean Studio bootstrap',err);
+    }
+
+    resetStudioRuntime();
+    api=await loadStudioFresh();
+    try{
+      return tryOpen(api,tab);
+    }catch(err){
+      console.error('[Scenario runtime] clean Studio bootstrap failed',err);
+      return false;
     }
   }
 
+  const draftWasCorrupt=sanitizeLegacyDraft();
+  if(draftWasCorrupt&&scenarioApi())resetStudioRuntime();
   hardenQualityGuard();
 
   document.addEventListener('click',e=>{
@@ -122,6 +158,7 @@
     readyTimeoutMs:READY_TIMEOUT_MS,
     apiTimeoutMs:API_TIMEOUT_MS,
     hardenQualityGuard,
+    sanitizeLegacyDraft,
     loadStudioFresh,
     openScenarios
   });
