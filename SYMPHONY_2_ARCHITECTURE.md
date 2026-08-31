@@ -108,3 +108,5 @@ Ekran pokazuje realne linie Superbet, `P_final`, joint probability, jakość/wsp
 `DANE/MODELE RAW -> FEATURES + SHARED STATE -> AKTUALNA OFERTA SUPERBET -> SUPERVISED P(HIT) DOKŁADNYCH SELEKCJI -> EXACT JOINT -> SYMFONIA 2.0 -> PLAYABLE`
 
 Nigdy odwrotnie i nigdy przez dopasowanie własnej linii modelu do najbliższej linii operatora.
+
+<!-- CI revalidation: force fresh PR checks after legacy Symphony cleanup -->
