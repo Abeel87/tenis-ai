@@ -37,10 +37,9 @@ def test_symphony_hub_explains_exact_superbet_probability_contract():
     assert "Ułóż Symfonię 2.0" in JS
 
 
-def test_symphony2_owns_the_retired_scenario_nav_slot():
+def test_symphony2_owns_native_nav_without_retired_scenario_migration_lookup():
     assert "data-p751-nav=\"symphony2\"" in JS
-    assert "data-p751-nav=\"scenarios\"" in JS  # migration lookup only
-    assert "nav.dataset.p751Nav='symphony2'" in JS
+    assert "data-p751-nav=\"scenarios\"" not in JS
     assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in JS
     assert "TENIS_AI_SCENARIOS" not in JS
     assert "scenario-v82a-panel" not in JS
