@@ -1,6 +1,6 @@
 /* Tenis AI — Symphony 2.0 live UI recovery v2.0.2
    UI-only layer: exposes current Symphony 2.0 on match cards/details.
-   Scenario runtime is intentionally NOT intercepted here. */
+   Scenario runtime is intentionally NOT intercepted or bootstrapped here. */
 (() => {
   'use strict';
   if (window.TENIS_AI_SYMPHONY2_LIVE_V201) return;
@@ -55,14 +55,6 @@
   const style=document.createElement('style');style.textContent=`.s2-live-card-badge{display:flex;justify-content:space-between;align-items:center;gap:.55rem;margin:.55rem .75rem;padding:.52rem .65rem;border:1px solid rgba(89,226,255,.2);border-radius:10px;background:rgba(40,190,220,.06);font-size:.7rem}.s2-live-card-badge span{color:#9eddea}.s2-live-card-badge strong{color:#c8f3fa;text-align:right}.s2-live-card-badge.ready{border-color:rgba(161,255,91,.25);background:rgba(161,255,91,.055)}.s2-live-card-badge.ready strong{color:#bdff85}`;document.head.appendChild(style);
   [80,500,1400].forEach((ms,i)=>setTimeout(()=>decorateCards(i===0),ms));
   setTimeout(()=>ensureDetail(false),300);
-
-  if(!document.getElementById('scenario-runtime-v202')){
-    const s=document.createElement('script');
-    s.id='scenario-runtime-v202';
-    s.src='scenario-runtime-v202.js?v=202';
-    s.async=false;
-    document.body.appendChild(s);
-  }
 
   window.TENIS_AI_SYMPHONY2_LIVE_V201=Object.freeze({version:VERSION,fetchFeed,decorateCards,ensureDetail});
 })();
