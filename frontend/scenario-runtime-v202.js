@@ -1,17 +1,18 @@
-/* Tenis AI — Scenario runtime v2.0.3
+/* Tenis AI — Scenario runtime v2.0.4
    Runtime-only reliability layer for the existing Scenario Composer.
    It does not change generator scoring, model math, market selection or thresholds. */
 (() => {
   'use strict';
-  if(window.TENIS_AI_SCENARIO_RUNTIME_V202)return;
 
-  const VERSION='v2.0.3';
+  const VERSION='v2.0.4';
   const READY_TIMEOUT_MS=1200;
   const API_TIMEOUT_MS=2200;
   const MAX_DRAFT_ITEMS=32;
   const DRAFT_KEY='tenis-ai-v82a-scenario-draft';
-  const STUDIO_SRC='scenario-studio-v82a.js?v=82a6&recovery=203';
+  const STUDIO_SRC='scenario-studio-v82a.js?v=82a6&recovery=204';
+  const NAV_SELECTOR='#p751-bottom-nav [data-p751-nav="scenarios"]';
   let studioReloadPromise=null;
+  let navBindTimer=null;
 
   function resolvedAfter(ms,value){return new Promise(resolve=>setTimeout(()=>resolve(value),ms))}
 
@@ -77,10 +78,9 @@
     if(studioReloadPromise)return studioReloadPromise;
     removeBrokenShell();
     studioReloadPromise=new Promise(resolve=>{
-      const old=document.getElementById('scenario-studio-recovery-v203');
-      old?.remove();
+      document.getElementById('scenario-studio-recovery-v204')?.remove();
       const s=document.createElement('script');
-      s.id='scenario-studio-recovery-v203';
+      s.id='scenario-studio-recovery-v204';
       s.src=`${STUDIO_SRC}&ts=${Date.now()}`;
       s.async=false;
       s.onload=()=>resolve(scenarioApi());
@@ -123,19 +123,46 @@
     }
   }
 
-  const draftWasCorrupt=sanitizeLegacyDraft();
-  if(draftWasCorrupt&&scenarioApi())resetStudioRuntime();
-  hardenQualityGuard();
+  async function directNavClick(event){
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    hardenQualityGuard();
+    const ok=await openScenarios('home');
+    if(!ok)console.error('[Scenario runtime] Scenario Composer could not be opened');
+    return ok;
+  }
 
+  function bindDirectNav(){
+    const nav=document.querySelector(NAV_SELECTOR);
+    if(!nav)return false;
+    if(nav.dataset.scenarioDirectNav==='204')return true;
+
+    // ui-v751 used to own this button and could silently mark it active even when
+    // TENIS_AI_SCENARIOS was missing. v2.0.4 replaces that handler directly.
+    nav.onclick=directNavClick;
+    nav.dataset.scenarioDirectNav='204';
+    return true;
+  }
+
+  function scheduleDirectNavBind(){
+    clearTimeout(navBindTimer);
+    if(bindDirectNav())return;
+    [50,200,700,1500,3000].forEach(ms=>setTimeout(bindDirectNav,ms));
+  }
+
+  sanitizeLegacyDraft();
+  hardenQualityGuard();
+  scheduleDirectNavBind();
+
+  // Capture fallback: protects against another late UI layer replacing onclick.
   document.addEventListener('click',e=>{
-    const nav=e.target?.closest?.('#p751-bottom-nav [data-p751-nav="scenarios"]');
+    const nav=e.target?.closest?.(NAV_SELECTOR);
     if(nav){
+      if(nav.dataset.scenarioDirectNav!=='204')bindDirectNav();
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation?.();
-      openScenarios('home').then(ok=>{
-        if(!ok)console.error('[Scenario runtime] Scenario Composer could not be opened');
-      });
+      directNavClick(e);
       return;
     }
 
@@ -144,12 +171,15 @@
     }
   },true);
 
+  document.addEventListener('tenis-ai:ui-ready',scheduleDirectNavBind);
   window.addEventListener('pageshow',()=>{
     hardenQualityGuard();
+    scheduleDirectNavBind();
     if(!scenarioApi())loadStudioFresh();
   });
 
   setTimeout(()=>{
+    scheduleDirectNavBind();
     if(!scenarioApi())loadStudioFresh();
   },300);
 
@@ -160,6 +190,7 @@
     hardenQualityGuard,
     sanitizeLegacyDraft,
     loadStudioFresh,
+    bindDirectNav,
     openScenarios
   });
 })();
