@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from history_tracker import archive_predictions, history_stats, load_history, save_history
-from superbet_candidate_settlement_v925 import capture_candidates
+from superbet_candidate_settlement_v925 import build_candidate_stats, capture_candidates
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
 RESULTS_PATH = OUT / "results.json"
 HISTORY_PATH = OUT / "history.json"
 HISTORY_STATS_PATH = OUT / "history_stats.json"
+CANDIDATE_STATS_PATH = OUT / "superbet_candidate_stats_v925.json"
 META_PATH = OUT / "meta.json"
 
 
@@ -31,6 +32,7 @@ def capture_history(
     results_path: Path = RESULTS_PATH,
     history_path: Path = HISTORY_PATH,
     stats_path: Path = HISTORY_STATS_PATH,
+    candidate_stats_path: Path = CANDIDATE_STATS_PATH,
     meta_path: Path = META_PATH,
     now: datetime | None = None,
 ) -> dict:
@@ -53,9 +55,13 @@ def capture_history(
         reverse=True,
     )[:2500]
 
-    # Zawsze twórz pliki historii/statystyk, nawet jeśli jeszcze nie ma typów.
+    # Always publish history and the candidate-evidence report from the same frozen
+    # snapshot. This keeps the report schema/support list synchronized even if a
+    # later unrelated workflow guard aborts before final settlement reports run.
     save_history(history_path, entries)
     _write_json(stats_path, history_stats(entries))
+    candidate_stats = build_candidate_stats(entries)
+    _write_json(candidate_stats_path, candidate_stats)
 
     meta = _read_json(meta_path, {})
     if not isinstance(meta, dict):
@@ -76,7 +82,11 @@ def capture_history(
             "history_pending": pending,
             "history_capture_at": now.isoformat(),
             "history_capture_mode": "last-analysis" if degraded else "current-analysis",
-            "superbet_candidate_settlement_v925": candidate_capture,
+            "superbet_candidate_settlement_v925": {
+                **candidate_capture,
+                "review_ready_markets": candidate_stats.get("review_ready_markets") or [],
+                "production_influence": False,
+            },
         }
     )
     _write_json(meta_path, meta)
@@ -87,6 +97,7 @@ def capture_history(
         "capture_mode": meta["history_capture_mode"],
         "source_results": len(results),
         "superbet_candidate_capture": candidate_capture,
+        "superbet_candidate_review_ready_markets": candidate_stats.get("review_ready_markets") or [],
     }
 
 
