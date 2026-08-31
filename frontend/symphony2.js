@@ -111,10 +111,12 @@
   function bindNav(){
     const nav=document.querySelector(NAV_SELECTOR);
     if(!nav)return false;
-    nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>';
-    nav.setAttribute('aria-label','Symfonia 2.0');
+    if(nav.dataset.symphony2Nav!=='1'){
+      nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>';
+      nav.setAttribute('aria-label','Symfonia 2.0');
+      nav.dataset.symphony2Nav='1';
+    }
     nav.onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();open()};
-    nav.dataset.symphony2Nav='1';
     return true;
   }
   function scheduleNav(){
