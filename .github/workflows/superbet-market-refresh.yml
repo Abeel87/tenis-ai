@@ -129,6 +129,7 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          from collections import Counter
           from pathlib import Path
 
           data = Path('frontend/data')
@@ -177,6 +178,49 @@ jobs:
               for comp in (match.get('compositions') or {}).values():
                   assert comp.get('joint_status') == 'EXACT_SHARED_STATE'
                   assert comp.get('joint_probability') is not None
+
+          offer_markets = Counter()
+          offer_verified_lines = Counter()
+          suppressed_fixture_lines = 0
+          for match in results:
+              if not isinstance(match, dict):
+                  continue
+              ctx = match.get('superbet_market_v91') or {}
+              suppressed_fixture_lines += int(ctx.get('suppressed_line_selections_without_fixture_evidence') or 0)
+              for row in ctx.get('canonical_selections') or []:
+                  if not isinstance(row, dict):
+                      continue
+                  market = str(row.get('market') or '')
+                  offer_markets[market] += 1
+                  if row.get('fixture_line_verified') is True:
+                      offer_verified_lines[market] += 1
+
+          sym2_rows = [
+              row
+              for match in (symphony.get('matches') or [])
+              for row in (match.get('scored_selections') or [])
+              if isinstance(row, dict)
+          ]
+          sym2_offer = Counter(str(row.get('market') or '') for row in sym2_rows)
+          sym2_scored = Counter(
+              str(row.get('market') or '')
+              for row in sym2_rows
+              if row.get('operator_model_probability') is not None
+          )
+          sym2_zero_support = Counter(
+              str(row.get('market') or '')
+              for row in sym2_rows
+              if int(row.get('learning_support_rows') or 0) == 0
+          )
+          print('SYMPHONY2_MARKET_DIAGNOSTIC ' + json.dumps({
+              'operator_offer_markets': dict(sorted(offer_markets.items())),
+              'operator_verified_line_markets': dict(sorted(offer_verified_lines.items())),
+              'suppressed_without_fixture_line': suppressed_fixture_lines,
+              'symphony2_offer_markets': dict(sorted(sym2_offer.items())),
+              'symphony2_scored_markets': dict(sorted(sym2_scored.items())),
+              'symphony2_zero_support_markets': dict(sorted(sym2_zero_support.items())),
+          }, sort_keys=True))
+
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
