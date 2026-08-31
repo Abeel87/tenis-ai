@@ -1,7 +1,7 @@
 /* Tenis AI v8.8.9 — bounded PWA cache */
 // Protected compatibility marker: old v8.0.1 tests and clients still identify this family.
 const LEGACY_CACHE_CONTRACT = 'tenis-ai-v801-player-profile';
-const CACHE = 'tenis-ai-v84b-logic-stability';
+const CACHE = 'tenis-ai-v84b-logic-stability-scenario-v205';
 const RUNTIME_CACHE_POLICY = 'v853-large-json-bypass';
 
 const CORE = [
@@ -65,6 +65,16 @@ self.addEventListener('fetch', event => {
         return (await cache.match('index.html'))||(await cache.match('./'))||Response.error();
       }
     })());
+    return;
+  }
+
+  // Scenario bootstrap is a control path, not a data payload. Never allow an old
+  // installed-PWA script response to hide a newer navigation fix behind the same URL.
+  const isScenarioRuntimeAsset =
+    url.pathname.endsWith('/scenario-runtime-v202.js') ||
+    url.pathname.endsWith('/scenario-studio-v82a.js');
+  if(isScenarioRuntimeAsset){
+    event.respondWith(fetch(new Request(request,{cache:'no-store'})));
     return;
   }
 
