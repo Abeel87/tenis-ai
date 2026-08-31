@@ -13,7 +13,8 @@ def test_global_time_assets_and_protected_pins():
     assert "match-time-v84e11.css?v=84e11" in idx
     assert "match-time-v84e11.js?v=84e11" in idx
     assert "app.js?v=84b1" in idx
-    assert "scenario-studio-v82a.js?v=82a6&hf=84a1" in idx
+    assert "symphony2.js?v=210" in idx
+    assert "scenario-studio-v82a.js" not in idx
 
 def test_no_network_or_mutation_observer_and_one_timer():
     js=read("frontend/match-time-v84e11.js")
