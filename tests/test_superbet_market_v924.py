@@ -128,6 +128,21 @@ def test_active_fixture_market_id_uses_its_own_catalogue_handicap_when_ids_are_o
     assert out["suppressed_line_selections_without_fixture_evidence"] == 0
 
 
+def test_direct_outcome_carriers_keep_real_active_total_lines():
+    row = _total_row(bookmaker_market_id="opaque")
+    market = row["bookmakerOdds"]["superbet.pl"]["markets"]["13000"]
+    market["outcomes"] = {
+        "13000": {"active": True, "bookmakerOutcomeId": "over", "mainLine": True},
+        "13001": {"active": True, "bookmakerOutcomeId": "under", "mainLine": True},
+    }
+    out = ctx.mapped_sanitize(row, _total_meta(23.5))
+    assert out is not None
+    selections = out["canonical_selections"]
+    assert {(x["pick"], x["line"]) for x in selections} == {("over", 23.5), ("under", 23.5)}
+    assert {x["operator_line_source"] for x in selections} == {"oddspapi_active_fixture_market_id_handicap"}
+    assert all(x["fixture_line_verified"] is True for x in selections)
+
+
 def test_unreferenced_catalogue_market_cannot_create_a_selection():
     row = _total_row(bookmaker_market_id="opaque", over_id="opaque-over", under_id="opaque-under")
     row["bookmakerOdds"]["superbet.pl"]["markets"] = {}
