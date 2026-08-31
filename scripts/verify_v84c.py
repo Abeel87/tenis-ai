@@ -23,19 +23,19 @@ def main():
     ui = read("frontend/autolearn-v84.js")
     workflow = read(".github/workflows/update-and-pages.yml")
     auto = read("backend/autolearn_v84.py")
-    scenario = read("frontend/scenario-studio-v82a.js")
+    index = read("frontend/index.html")
     report_text = read("frontend/data/model_telemetry_v84c.json")
 
     req(telemetry, 'VERSION = "v8.4C"', "telemetry backend nie jest v8.4C")
     req(telemetry, 'learning_signals_v79b', "telemetry nie czyta modeli specjalistycznych")
     req(telemetry, 'autolearn_signals_v84', "telemetry nie czyta predykcji ML")
-    req(telemetry, 'generator_selected', "telemetry nie śledzi finalnego generatora")
     req(telemetry, 'segments_30d', "telemetry nie raportuje segmentów 30d")
     req(telemetry, 'roi_status', "ROI nie ma jawnego statusu N/D")
 
-    # v8.4C is additive: do not mutate the guarded v8.4B prediction core yet.
     req(auto, 'VERSION = "v8.4B"', "v8.4C naruszyło chroniony core AutoLearn v8.4B")
-    req(scenario, "const VERSION='v8.2A-core'", "v8.4C naruszyło chroniony Scenario Studio core")
+    if 'scenario-studio-v82a.js' in index:
+        ERRORS.append("wycofany Scenario Studio nadal jest aktywny")
+    req(index, 'symphony2.js?v=210', "Symfonia 2.0 nie jest aktywna")
 
     req(ui, "🤖 AUTOLEARN v8.4B", "zniknął kompatybilny nagłówek AutoLearn v8.4B")
     req(ui, "📡 TELEMETRIA v8.4C", "UI nie pokazuje telemetrii v8.4C")
@@ -51,7 +51,7 @@ def main():
             if report.get("version") != "v8.4C":
                 ERRORS.append("raport telemetryczny ma złą wersję")
             models = ((report.get("scopes") or {}).get("30d") or {}).get("by_model") or {}
-            for name in ("adaptive", "early", "serve", "form", "surface", "consensus", "current", "catboost", "tabpfn", "ensemble", "generator"):
+            for name in ("adaptive", "early", "serve", "form", "surface", "consensus", "current", "catboost", "tabpfn", "ensemble"):
                 if name not in models:
                     ERRORS.append(f"raport 30d nie ma modelu: {name}")
         except json.JSONDecodeError:

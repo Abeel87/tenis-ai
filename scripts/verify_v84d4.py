@@ -16,7 +16,6 @@ def req(text,needle,msg):
 
 def main():
     bridge=read("frontend/signal-mapping-v84d4.js")
-    audit=read("frontend/scenario-dynamic-v84d3.js")
     idx=read("frontend/index.html")
     wf=read(".github/workflows/update-and-pages.yml")
 
@@ -28,18 +27,13 @@ def main():
     req(bridge,"auto.scoreFor=function","bridge nie podpina się pod AutoLearn scoreFor")
     req(bridge,"No fuzzy matching","brak deklaracji zakazu fuzzy matchingu")
 
-    req(audit,"TENIS_AI_SIGNAL_MAPPING_V84D4","audyt scenariusza nie korzysta z bridge v8.4D.4")
-    req(audit,"aliasesFor","audyt nie indeksuje aliasów równoważnych kluczy")
-
     req(idx,'autolearn-v84.js?v=84a1&hf=84b1',"naruszono chroniony AutoLearn JS")
-    if not any(x in idx for x in (
-        'dynamic-weights-v84d1.js?v=84d2',
-        'dynamic-weights-v84d1.js?v=84e0',
-    )):
-        ERR.append("naruszono kompatybilny pin v8.4D.2/v8.4E0")
+    req(idx,'dynamic-weights-v84d1.js?v=84e0',"naruszono aktywny Dynamic Weights pin")
     req(idx,'signal-mapping-v84d4.js?v=84d4',"brak Signal Mapping Bridge w index.html")
-    req(idx,'scenario-studio-v82a.js?v=82a6&hf=84a1',"naruszono Scenario Studio")
-    req(idx,'scenario-dynamic-v84d3.js?v=84d4',"brak nowego cache-bust audytu scenariusza")
+    req(idx,'symphony2.js?v=210',"brak aktywnej Symfonii 2.0")
+    for retired in ('scenario-studio-v82a.js','scenario-dynamic-v84d3.js','scenario-runtime-v202.js'):
+        if retired in idx:
+            ERR.append(f"wycofany asset nadal aktywny: {retired}")
 
     req(wf,"Signal Mapping Bridge Guard v8.4D.4","workflow nie uruchamia guarda v8.4D.4")
 
