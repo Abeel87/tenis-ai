@@ -20,7 +20,6 @@ def main():
     auto=read("backend/autolearn_v84.py")
     front=read("frontend/autolearn-v84.js")
     workflow=read(".github/workflows/update-and-pages.yml")
-    old_guard=read("scripts/verify_v84a.py")
 
     if not any(v in auto for v in ('VERSION = "v8.4A.1"', 'VERSION = "v8.4A.2"', 'VERSION = "v8.4B"')):
         ERRORS.append("backend AutoLearn nie jest kompatybilny z v8.4A.1+")
@@ -42,10 +41,12 @@ def main():
         ERRORS.append("brak kompatybilnego cache-bust CSS v8.4A.1+")
 
     req(workflow,"AutoLearn Hotfix Guard v8.4A.1","workflow nie ma guarda AutoLearn")
-    if "scenario-studio-v82a" in index or "generator-quality-v888" in index:
-        ERRORS.append("wycofany Scenario Generator nadal jest bootstrappowany")
-    if "scenario-studio-v82a" in old_guard:
-        ERRORS.append("AutoLearn Integration Guard nadal zależy od Scenario Studio")
+    # Scenario Generator/Studio was retired in favor of Symphony 2.0. AutoLearn
+    # is an independent model/evidence layer: guard only that retired assets are
+    # not bootstrapped; do not require legacy Scenario code in another guard.
+    for retired in ('scenario-studio-v82a.js','generator-quality-v888.js','scenario-runtime-v202.js'):
+        if retired in index:
+            ERRORS.append(f"wycofany Scenario Generator nadal jest bootstrappowany: {retired}")
 
     report=ROOT/"frontend/data/autolearn_v84.json"
     if report.exists():
