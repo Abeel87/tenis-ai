@@ -19,13 +19,7 @@ def main():
     ui = read("frontend/autolearn-v84.js")
     index = read("frontend/index.html")
     workflow = read(".github/workflows/update-and-pages.yml")
-
-    legacy_guard = read("scripts/verify_v84a1.py")
-    legacy_test = read("tests/test_v84a1_generator_hotfix.py")
-    req(legacy_guard, 'VERSION = "v8.4A.2"', "v8.4A.1 guard nie akceptuje v8.4A.2")
-    req(legacy_guard, "hf=84a3", "v8.4A.1 guard nie akceptuje nowego cache-bust")
-    req(legacy_guard, "raportów v8.4A.1+", "v8.4A.1 guard nadal pinował stary base-guard tuple")
-    req(legacy_test, "hf=84a3", "stary test generatora nadal pinował cache-bust hf=84a2")
+    previous_guard = read("scripts/verify_v84a1.py")
 
     if not any(v in backend for v in ('VERSION = "v8.4A.2"', 'VERSION = "v8.4B"')):
         ERRORS.append("backend nie jest kompatybilny z v8.4A.2+")
@@ -44,6 +38,11 @@ def main():
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS")
     req(index, "autolearn-v84.css?v=84a1&hf=84a3", "brak cache-bust CSS")
+    req(index, "symphony2.js?v=210", "brak aktywnej Symfonii 2.0")
+    if "scenario-studio-v82a.js" in index or "generator-quality-v888.js" in index:
+        ERRORS.append("wycofany Scenario Generator nadal jest bootstrappowany")
+    if "scenario-studio-v82a" in previous_guard:
+        ERRORS.append("poprzedni AutoLearn guard nadal zależy od Scenario Studio")
 
     if 'current_probs = [_prob_from_score(r) for r in current_rows]' in backend:
         ERRORS.append("produkcja nadal traktuje /100 jak probability bez calibratora")
