@@ -9,8 +9,8 @@ PLAYABLE_UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(en
 
 
 def test_single_symphony2_frontend_is_loaded():
-    assert "symphony2.js" in INDEX
-    assert "symphony2.css" in INDEX
+    assert "symphony2.js?v=210" in INDEX
+    assert "symphony2.css?v=210" in INDEX
     for legacy in (
         "symphony-v90.js", "symphony-v90.css", "symphony-stats-v90d.js",
         "symphony-stats-v90d.css", "symphony-surface-v90.js",
@@ -23,16 +23,27 @@ def test_stats_ui_reads_only_symphony2_stats():
     assert "./data/symphony2_stats.json" in JS
     assert "#pc77" in JS
     assert "symphony2-performance" in JS
-    assert "Wyniki starej Symfonii v9.x nie są importowane" in JS
+    assert "Wyniki starej Symfonii i starego generatora nie są importowane" in JS
     assert "symphony_stats_v90d.json" not in JS
     assert "symphony_model_stats_v93.json" not in JS
 
 
-def test_generator_explains_exact_superbet_probability_contract():
+def test_symphony_hub_explains_exact_superbet_probability_contract():
     assert "dokładną aktualną ofertę Superbet" in JS
     assert "operator_model_probability" in JS
     assert "joint_probability" in JS
     assert "learning_support_rows" in JS
+    assert "#symphony2-hub" in JS
+    assert "Ułóż Symfonię 2.0" in JS
+
+
+def test_symphony2_owns_the_retired_scenario_nav_slot():
+    assert "data-p751-nav=\"symphony2\"" in JS
+    assert "data-p751-nav=\"scenarios\"" in JS  # migration lookup only
+    assert "nav.dataset.p751Nav='symphony2'" in JS
+    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in JS
+    assert "TENIS_AI_SCENARIOS" not in JS
+    assert "scenario-v82a-panel" not in JS
 
 
 def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
@@ -52,13 +63,14 @@ def test_match_view_compacts_full_superbet_offer_without_changing_data():
     assert "data-s2-offer-extra" in CSS
 
 
-def test_runtime_does_not_boot_deleted_legacy_symphony_save_layer():
-    assert "symphony-superbet-save-v924.js" not in APP_META
-    assert "Legacy Symphony save/card modules are intentionally not loaded" in APP_META
-
-
 def test_no_runtime_reads_legacy_compact_card_feed():
     assert "symphony_match_cards_v90.json" not in JS
     assert "symphony_match_cards_v90.json" not in PLAYABLE_UI
     assert "patchSymphonyMinis" not in PLAYABLE_UI
     assert "reloadCompact" not in PLAYABLE_UI
+
+
+def test_metadata_boots_symphony_live_ui_without_generator_bootstrap():
+    assert "symphony2-live-ui-v201.js?v=201" in APP_META
+    assert "generator-quality-v888.js" not in APP_META
+    assert "scenario-studio-v82a.js" not in APP_META
