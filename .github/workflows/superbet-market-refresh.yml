@@ -159,7 +159,7 @@ jobs:
           assert int(coverage.get('external_requests', -1)) == 0
           assert coverage.get('prices_used') is False
           assert symphony.get('architecture') == 'CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2'
-          assert symphony.get('probability_policy') == 'CALIBRATED_SUPERVISED_MODEL; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS'
+          assert symphony.get('probability_policy') == 'SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS'
           assert symphony.get('operator') == 'superbet.pl'
           assert history.get('legacy_symphony_results_imported') is False
           assert stats.get('legacy_symphony_stats_used') is False
@@ -174,7 +174,7 @@ jobs:
                   }:
                       assert row.get('fixture_line_verified') is True
                   if row.get('operator_model_probability') is not None:
-                      assert row.get('probability_kind') == 'SUPERVISED_CALIBRATED_OPERATOR_LINE_P_HIT'
+                      assert row.get('probability_kind') == 'SUPERVISED_OPERATOR_LINE_P_HIT'
               for comp in (match.get('compositions') or {}).values():
                   assert comp.get('joint_status') == 'EXACT_SHARED_STATE'
                   assert comp.get('joint_probability') is not None
