@@ -19,7 +19,6 @@ def main():
     ui = read("frontend/autolearn-v84.js")
     index = read("frontend/index.html")
     workflow = read(".github/workflows/update-and-pages.yml")
-    previous_guard = read("scripts/verify_v84a1.py")
 
     if not any(v in backend for v in ('VERSION = "v8.4A.2"', 'VERSION = "v8.4B"')):
         ERRORS.append("backend nie jest kompatybilny z v8.4A.2+")
@@ -39,10 +38,12 @@ def main():
         ERRORS.append("brak kompatybilnego cache-bust JS")
     req(index, "autolearn-v84.css?v=84a1&hf=84a3", "brak cache-bust CSS")
     req(index, "symphony2.js?v=210", "brak aktywnej Symfonii 2.0")
-    if "scenario-studio-v82a.js" in index or "generator-quality-v888.js" in index:
-        ERRORS.append("wycofany Scenario Generator nadal jest bootstrappowany")
-    if "scenario-studio-v82a" in previous_guard:
-        ERRORS.append("poprzedni AutoLearn guard nadal zależy od Scenario Studio")
+    # Scenario Generator/Studio is retired. This guard must only ensure that its
+    # assets are not bootstrapped; it must not require legacy Scenario text in an
+    # older guard, otherwise removing Scenario correctly breaks the pipeline.
+    for retired in ('scenario-studio-v82a.js', 'generator-quality-v888.js', 'scenario-runtime-v202.js'):
+        if retired in index:
+            ERRORS.append(f"wycofany Scenario Generator nadal jest bootstrappowany: {retired}")
 
     if 'current_probs = [_prob_from_score(r) for r in current_rows]' in backend:
         ERRORS.append("produkcja nadal traktuje /100 jak probability bez calibratora")
