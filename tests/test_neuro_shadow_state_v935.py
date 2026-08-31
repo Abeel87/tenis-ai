@@ -65,6 +65,7 @@ def test_set3_probabilities_are_conditional_on_third_set_being_played():
 def test_new_shadow_marginals_are_real_probabilities():
     for market, kwargs in (
         ("set2_winner", {"side": 1}),
+        ("set3_winner", {"side": 2}),
         ("set2_total", {"line": 9.5, "pick": "over"}),
         ("set3_total", {"line": 9.5, "pick": "under"}),
         ("player_total_games", {"side": 1, "line": 12.5, "pick": "over"}),
@@ -84,10 +85,16 @@ def test_bo5_keeps_only_needed_set_scores_but_preserves_game_totals():
     assert math.isclose(sum(o["prob"] for o in outcomes), 1.0, rel_tol=0, abs_tol=1e-9)
 
 
-def test_capture_readiness_does_not_overclaim_set3_support():
-    assert {"set2_total", "player_total_games", "match_game_handicap"} <= CANDIDATE_CAPTURE_READY_MARKETS
-    assert {"set2_winner", "set3_winner", "set3_total"} <= CANDIDATE_CAPTURE_GAP_MARKETS
-    assert "set3_total" not in CANDIDATE_CAPTURE_READY_MARKETS
+def test_capture_readiness_closes_later_set_gaps_without_prod_promotion():
+    assert {
+        "set2_winner",
+        "set3_winner",
+        "set2_total",
+        "set3_total",
+        "player_total_games",
+        "match_game_handicap",
+    } <= CANDIDATE_CAPTURE_READY_MARKETS
+    assert CANDIDATE_CAPTURE_GAP_MARKETS == frozenset()
 
 
 def test_production_runtime_does_not_import_neuro_shadow_state():
