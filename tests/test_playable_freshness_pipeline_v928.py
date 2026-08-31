@@ -30,7 +30,7 @@ def test_symphony2_builder_exposes_runtime_contract_without_committed_runtime_da
     """Project-health tests must validate code, not depend on generated runtime JSON being committed."""
     current, stats = build_symphony2([], [])
     assert current.get("architecture") == "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2"
-    assert current.get("probability_policy") == "CALIBRATED_SUPERVISED_MODEL; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS"
+    assert current.get("probability_policy") == "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS"
     assert current.get("operator") == "superbet.pl"
     assert current.get("matches") == []
     assert stats.get("joint_probability_policy") == "EXACT_SHARED_STATE_ONLY"
