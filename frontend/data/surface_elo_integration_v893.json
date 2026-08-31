@@ -1,6 +1,6 @@
 {
   "version": "v8.9.3",
-  "generated_at": "2026-08-31T21:22:05.604040+00:00",
+  "generated_at": "2026-08-31T22:14:05.505043+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
@@ -12,18 +12,18 @@
     "scale": 400.0,
     "surface_shrink_n": 12.0,
     "decay_half_life_days": 720.0,
-    "events": 20502,
+    "events": 20505,
     "players": 1674,
     "player_surface_timelines": 3014,
-    "rows_with_both_surface_history": 998
+    "rows_with_both_surface_history": 1003
   },
   "training": {
-    "rows_total": 1005,
-    "matches_total": 290,
-    "train_rows": 833,
-    "train_matches": 232,
-    "holdout_rows": 172,
-    "holdout_matches": 58,
+    "rows_total": 1010,
+    "matches_total": 292,
+    "train_rows": 836,
+    "train_matches": 233,
+    "holdout_rows": 174,
+    "holdout_matches": 59,
     "chronological_match_split": "80/20",
     "leakage_policy": "elo_strictly_before_match_day_and_fit_train_only_for_holdout"
   },
@@ -33,78 +33,78 @@
   },
   "holdout": {
     "catboost_player": {
-      "n": 172,
-      "selected_n": 104,
-      "accuracy": 76.0,
-      "brier": 0.20764,
-      "log_loss": 0.60316,
+      "n": 174,
+      "selected_n": 117,
+      "accuracy": 75.2,
+      "brier": 0.21033,
+      "log_loss": 0.60904,
       "avg_probability": 67.6
     },
     "catboost_player_elo": {
-      "n": 172,
-      "selected_n": 115,
-      "accuracy": 72.2,
-      "brier": 0.20967,
-      "log_loss": 0.60942,
-      "avg_probability": 67.8
+      "n": 174,
+      "selected_n": 129,
+      "accuracy": 75.2,
+      "brier": 0.20028,
+      "log_loss": 0.58518,
+      "avg_probability": 70.1
     },
     "ensemble_player": {
-      "n": 172,
-      "selected_n": 115,
-      "accuracy": 73.0,
-      "brier": 0.20379,
-      "log_loss": 0.59713,
-      "avg_probability": 66.2
+      "n": 174,
+      "selected_n": 117,
+      "accuracy": 73.5,
+      "brier": 0.20422,
+      "log_loss": 0.59807,
+      "avg_probability": 66.1
     },
     "ensemble_player_elo": {
-      "n": 172,
-      "selected_n": 116,
-      "accuracy": 74.1,
-      "brier": 0.20308,
-      "log_loss": 0.59548,
-      "avg_probability": 66.4
+      "n": 174,
+      "selected_n": 118,
+      "accuracy": 74.6,
+      "brier": 0.20352,
+      "log_loss": 0.59644,
+      "avg_probability": 66.3
     },
     "tabpfn": {
-      "n": 36,
-      "selected_n": 18,
-      "accuracy": 83.3,
-      "brier": 0.19257,
-      "log_loss": 0.57504,
+      "n": 37,
+      "selected_n": 19,
+      "accuracy": 84.2,
+      "brier": 0.19061,
+      "log_loss": 0.571,
       "avg_probability": 64.3
     },
     "tabpfn_elo": {
-      "n": 36,
-      "selected_n": 19,
-      "accuracy": 84.2,
-      "brier": 0.19362,
-      "log_loss": 0.57694,
+      "n": 37,
+      "selected_n": 20,
+      "accuracy": 85.0,
+      "brier": 0.19164,
+      "log_loss": 0.57284,
       "avg_probability": 64.8
     }
   },
   "gates": {
     "catboost_player_elo": {
-      "status": "watch",
+      "status": "strong_candidate",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": -0.00203,
-      "log_loss_gain": -0.00626,
-      "accuracy_delta_pp": -3.8
+      "brier_gain": 0.01005,
+      "log_loss_gain": 0.02386,
+      "accuracy_delta_pp": 0.0
     },
     "ensemble_player_elo": {
       "status": "watch",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": 0.00071,
-      "log_loss_gain": 0.00165,
+      "brier_gain": 0.0007,
+      "log_loss_gain": 0.00163,
       "accuracy_delta_pp": 1.1
     },
     "tabpfn_elo": {
       "status": "watch",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": -0.00105,
-      "log_loss_gain": -0.0019,
-      "accuracy_delta_pp": 0.9
+      "brier_gain": -0.00103,
+      "log_loss_gain": -0.00184,
+      "accuracy_delta_pp": 0.8
     }
   },
   "note": "Elo zasila wyłącznie eksperymenty SHADOW: CatBoost+Player+Elo, Ensemble+Player Learning+Elo i TabPFN+Elo. 0% wpływu na PROD/Generator/final_score."
