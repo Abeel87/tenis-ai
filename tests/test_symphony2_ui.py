@@ -45,6 +45,11 @@ def test_symphony2_owns_native_nav_without_retired_scenario_migration_lookup():
     assert "scenario-v82a-panel" not in JS
 
 
+def test_symphony2_close_clears_its_own_nav_state():
+    assert "markNav('symphony2',false)" in JS
+    assert "markNav('matches',false)" not in JS
+
+
 def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
     assert "symphony2-match-detail" in JS
     assert "cleanupLegacySymphony" in JS
