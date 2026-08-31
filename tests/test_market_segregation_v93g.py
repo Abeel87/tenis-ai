@@ -21,7 +21,7 @@ def test_segregation_groups_only_current_superbet_coverage_panel():
     assert "[data-superbet-model-coverage-v922]" in UI
     assert ":scope > .sbmc922-lines" in UI
     assert "sbmc922-line" in UI
-    assert "data-sbmc922-market" in UI
+    assert "dataset.sbmc922Market" in UI
     assert "[data-rp921-match]" not in UI
     assert ".rp921-line" not in UI
 
