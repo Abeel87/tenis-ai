@@ -1,0 +1,47 @@
+name: Test side-effect audit one-shot
+
+on:
+  push:
+    branches: [fix/full-app-health-v932]
+    paths: ['.github/workflows/test-side-effect-audit-once.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/full-app-health-v932
+          fetch-depth: 1
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Find test files mutating frontend data
+        shell: bash
+        run: |
+          set -uo pipefail
+          bad=0
+          for f in tests/test_*.py; do
+            git restore frontend/data || true
+            python -m pytest -q "$f" >/tmp/pytest-one.log 2>&1
+            rc=$?
+            changed=$(git diff --name-only -- frontend/data)
+            if [ -n "$changed" ]; then
+              echo "SIDE_EFFECT_FILE=$f"
+              echo "$changed"
+              git diff --stat -- frontend/data
+              bad=1
+            fi
+            if [ "$rc" -ne 0 ]; then
+              echo "TEST_FAILURE_FILE=$f rc=$rc"
+              cat /tmp/pytest-one.log
+              bad=1
+            fi
+          done
+          git restore frontend/data || true
+          exit "$bad"
