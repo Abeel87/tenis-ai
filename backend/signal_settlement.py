@@ -162,6 +162,8 @@ def settle_signal(signal: dict, final: dict) -> str:
         return _settle_over_under(sum(sets[0]), signal) if sets else 'void'
     if market == 'set2_total':
         return _settle_over_under(sum(sets[1]), signal) if len(sets) >= 2 else 'void'
+    if market == 'set3_total':
+        return _settle_over_under(sum(sets[2]), signal) if len(sets) >= 3 else 'void'
     if market == 'match_total':
         total = final.get('total_games')
         if total is None and sets:
@@ -274,8 +276,8 @@ def settle_signal_live(signal: dict, final: dict) -> str:
         actual = p1 if a > b else p2
         return "hit" if _key(pick) == _key(actual) else "miss"
 
-    if market in ("set1_total", "set2_total"):
-        idx = 0 if market == "set1_total" else 1
+    if market in ("set1_total", "set2_total", "set3_total"):
+        idx = {"set1_total": 0, "set2_total": 1, "set3_total": 2}[market]
         if len(sets) <= idx or len(complete) <= idx or not complete[idx]:
             return "void"
         return _settle_over_under(sum(sets[idx]), signal)
