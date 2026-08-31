@@ -26,6 +26,12 @@ WEAK_BASE_NEURO_LATER = "WEAK_BASE_NEURO_LATER"
 CAPABILITY_MAP = {
     "match_winner": {"capability": DIRECT_STATE_NOW, "state_fields": ["winner"], "owner": "RESULT"},
     "set1_winner": {"capability": DIRECT_STATE_NOW, "state_fields": ["set1_winner"], "owner": "RESULT"},
+    # Later-set winner targets are consumed while constructing the shared state,
+    # but build_outcomes does not currently retain set2/set3 terminal scores or
+    # winner fields in each emitted outcome. They therefore need a real state
+    # extension before an exact Superbet marginal can be exposed.
+    "set2_winner": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set2", "set2_winner"], "owner": "RESULT", "settlement_required": True},
+    "set3_winner": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set3", "set3_winner"], "owner": "RESULT", "settlement_required": True},
     "exact_match_score": {"capability": DIRECT_STATE_NOW, "state_fields": ["sets"], "owner": "EXACT_SCORE"},
     "set1_exact_score": {"capability": DIRECT_STATE_NOW, "state_fields": ["set1"], "owner": "EXACT_SCORE"},
     "match_total": {"capability": DIRECT_STATE_NOW, "state_fields": ["total_games"], "owner": "TOTALS"},
@@ -46,6 +52,7 @@ CAPABILITY_MAP = {
     # outcome. These markets are natural state extensions, not new neural targets.
     "set2_exact_score": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set2"], "owner": "EXACT_SCORE", "settlement_required": True},
     "set2_total": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set2"], "owner": "TOTALS", "settlement_required": True},
+    "set3_total": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set3"], "owner": "TOTALS", "settlement_required": True},
     "set2_game_handicap": {"capability": STATE_EXTENSION_REQUIRED, "required_fields": ["set2"], "owner": "HANDICAP", "settlement_required": True},
     "set1_game_handicap": {"capability": DIRECT_STATE_NOW, "state_fields": ["set1"], "owner": "HANDICAP", "settlement_required": True},
     "set_handicap": {"capability": DIRECT_STATE_NOW, "state_fields": ["sets"], "owner": "HANDICAP", "settlement_required": True, "blocked_by": "current settlement quality/unverifiable rows"},
