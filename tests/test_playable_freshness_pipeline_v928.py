@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FRESHNESS_JS = ROOT / "frontend" / "playable-line-freshness-v925.js"
 WORKFLOW = ROOT / ".github" / "workflows" / "superbet-market-refresh.yml"
-SYMPHONY = ROOT / "frontend" / "data" / "symphony_v90.json"
+SYMPHONY = ROOT / "frontend" / "data" / "symphony2_current.json"
 
 
 def _max_operator_age_minutes() -> int:
@@ -19,32 +19,24 @@ def _max_operator_age_minutes() -> int:
 
 
 def test_playable_ttl_cannot_expire_before_hourly_pipeline_can_publish() -> None:
-    """Regression for v9.2.5: 12 min TTL + ~20 min rebuild blanked the whole UI.
-
-    The operator source is refreshed hourly. The UI freshness budget therefore has
-    to cover one full refresh interval plus bounded rebuild/deploy slack. Exact
-    market/line matching remains a separate hard gate.
-    """
+    """The UI freshness budget must cover the hourly operator refresh plus rebuild slack."""
     workflow = WORKFLOW.read_text(encoding="utf-8")
     assert "cron: '5 * * * *'" in workflow
     assert _max_operator_age_minutes() >= 80
     assert _max_operator_age_minutes() <= 90
 
 
-def test_current_symphony_report_is_not_structurally_empty() -> None:
+def test_current_symphony2_report_has_runtime_contract() -> None:
     report = json.loads(SYMPHONY.read_text(encoding="utf-8"))
+    assert report.get("architecture") == "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2"
     matches = [m for m in (report.get("matches") or []) if isinstance(m, dict)]
-    assert matches, "symphony_v90.json has no matches"
-
-    useful = 0
+    assert isinstance(matches, list)
     for match in matches:
-        comps = match.get("compositions") or {}
-        if any(
-            isinstance(comp, dict) and len(comp.get("selection") or []) >= 2
-            for comp in comps.values()
-        ):
-            useful += 1
-    assert useful > 0, "operator-aware Symphony report has zero usable compositions"
+        for row in match.get("selections") or []:
+            if row.get("line") is not None:
+                assert row.get("fixture_line_verified") is True
+        for comp in match.get("compositions") or []:
+            assert comp.get("joint_status") == "EXACT_SHARED_STATE"
 
 
 def test_freshness_wrapper_keeps_exact_playable_gate() -> None:
