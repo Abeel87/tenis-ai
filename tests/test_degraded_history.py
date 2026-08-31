@@ -29,6 +29,7 @@ def test_degraded_capture_creates_history_and_stats(tmp_path):
     results = tmp_path / "results.json"
     history = tmp_path / "history.json"
     stats = tmp_path / "history_stats.json"
+    candidate_stats = tmp_path / "superbet_candidate_stats_v925.json"
     meta = tmp_path / "meta.json"
 
     results.write_text(json.dumps([_match()]), encoding="utf-8")
@@ -38,6 +39,7 @@ def test_degraded_capture_creates_history_and_stats(tmp_path):
         results_path=results,
         history_path=history,
         stats_path=stats,
+        candidate_stats_path=candidate_stats,
         meta_path=meta,
         now=datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc),
     )
@@ -49,6 +51,7 @@ def test_degraded_capture_creates_history_and_stats(tmp_path):
     assert saved[0]["status"] == "pending"
     assert saved[0]["signals"]
     assert stats.exists()
+    assert candidate_stats.exists()
     assert info["history_matches"] == 1
     assert saved_meta["history_capture_mode"] == "last-analysis"
 
@@ -57,6 +60,7 @@ def test_degraded_capture_never_backfills_after_match_start(tmp_path):
     results = tmp_path / "results.json"
     history = tmp_path / "history.json"
     stats = tmp_path / "history_stats.json"
+    candidate_stats = tmp_path / "superbet_candidate_stats_v925.json"
     meta = tmp_path / "meta.json"
 
     results.write_text(json.dumps([_match("2026-08-20T09:00:00Z")]), encoding="utf-8")
@@ -65,9 +69,11 @@ def test_degraded_capture_never_backfills_after_match_start(tmp_path):
         results_path=results,
         history_path=history,
         stats_path=stats,
+        candidate_stats_path=candidate_stats,
         meta_path=meta,
         now=datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc),
     )
 
     saved = json.loads(history.read_text(encoding="utf-8"))
     assert saved == []
+    assert candidate_stats.exists()

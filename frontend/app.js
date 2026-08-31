@@ -1,6 +1,8 @@
 let all=[];
 let historyRows=[];
 let statsData=null;
+let secondaryDataPromise=null;
+let secondaryDataLoaded=false;
 let filter='all';
 let view='matches';
 
@@ -123,13 +125,14 @@ function render(){
 }
 
 async function safeJson(url,fallback){try{const sep=url.includes('?')?'&':'?';const r=await fetch(`${url}${sep}ts=${Date.now()}`,{cache:'no-store'});if(!r.ok)return fallback;return await r.json()}catch{return fallback}}
-async function load(){try{const [results,meta,hist,stat]=await Promise.all([safeJson('data/results.json',[]),safeJson('data/meta.json',{}),safeJson('data/history.json',[]),safeJson('data/history_stats.json',{})]);all=results;historyRows=hist;statsData=stat;document.querySelector('#updated').textContent=meta.updated_at?'Aktualizacja: '+new Date(meta.updated_at).toLocaleString('pl-PL'):'Aktualizacja: —';document.querySelector('#mode').textContent='Źródło: '+(meta.fixtures_mode||'—');const hm=document.querySelector('#history-mode');if(hm){const x=meta.history_mode||'—';hm.textContent=x==='degraded-previous'?'Historia: awaria źródła · poprzednie dane':x==='cache'?'Historia: cache':x==='fresh'?'Historia: świeża':x==='fresh+cache'?'Historia: cache + świeże':'Historia: '+x}updateCounts();render()}catch(e){document.querySelector('#app').innerHTML='<div class="empty">Nie udało się wczytać danych.</div>'}}
+async function loadSecondaryData(force=false){if(secondaryDataPromise&&!force)return secondaryDataPromise;if(secondaryDataLoaded&&!force)return[historyRows,statsData];secondaryDataPromise=Promise.all([safeJson('data/history.json',[]),safeJson('data/history_stats.json',{})]).then(([hist,stat])=>{historyRows=hist;statsData=stat;secondaryDataLoaded=true;return[hist,stat]}).finally(()=>{secondaryDataPromise=null});return secondaryDataPromise}
+async function load(){try{const [results,meta]=await Promise.all([safeJson('data/results.json',[]),safeJson('data/meta.json',{})]);all=results;if(view==='stats'||view==='history')await loadSecondaryData();document.querySelector('#updated').textContent=meta.updated_at?'Aktualizacja: '+new Date(meta.updated_at).toLocaleString('pl-PL'):'Aktualizacja: —';document.querySelector('#mode').textContent='Źródło: '+(meta.fixtures_mode||'—');const hm=document.querySelector('#history-mode');if(hm){const x=meta.history_mode||'—';hm.textContent=x==='degraded-previous'?'Historia: awaria źródła · poprzednie dane':x==='cache'?'Historia: cache':x==='fresh'?'Historia: świeża':x==='fresh+cache'?'Historia: cache + świeże':'Historia: '+x}updateCounts();render()}catch(e){document.querySelector('#app').innerHTML='<div class="empty">Nie udało się wczytać danych.</div>'}}
 
 document.querySelectorAll('#tour-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tour-nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderMatches()});
-document.querySelectorAll('.main-tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.main-tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;render()});
+document.querySelectorAll('.main-tabs button').forEach(b=>b.onclick=async()=>{document.querySelectorAll('.main-tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;if(view==='stats'||view==='history')await loadSecondaryData();render()});
 document.querySelector('#collapse-all').onclick=()=>setAllDetails(false);
 document.querySelector('#expand-all').onclick=()=>setAllDetails(true);
-document.querySelector('#refresh').onclick=load;
+document.querySelector('#refresh').onclick=async()=>{if(view==='stats'||view==='history')secondaryDataLoaded=false;await load()};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js?v=801').then(r=>r.update()).catch(()=>{});
 load();
 // v7.8E2.3: nie przebudowuj całej listy co minutę podczas dotyku/przewijania.

@@ -169,6 +169,77 @@ def _existing_evidence(merged: dict) -> dict:
     }
 
 
+COHERENT_WINNER_MARKETS = {"match_winner", "set1_winner", "set2_winner", "set3_winner"}
+COHERENT_OU_MARKETS = {
+    "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
+    "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
+}
+
+
+def _coherence_pick(value) -> str:
+    raw = _norm(value)
+    if raw in {"o", "over", "powyzej"} or raw.startswith("over "):
+        return "over"
+    if raw in {"u", "under", "ponizej"} or raw.startswith("under "):
+        return "under"
+    return raw
+
+
+def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
+    """Normalize only exact mutually-exclusive groups, never unsupported selections.
+
+    The supervised model is still the source of relative strength. This final coherence
+    projection prevents impossible states such as both match winners being below 50%
+    or an exact Over/Under pair summing to something other than 100%.
+    """
+    groups = {}
+    for row in rows or []:
+        p = _num(row.get("operator_model_probability"))
+        if p is None:
+            continue
+        market = _market(row.get("market"))
+        if market in COHERENT_WINNER_MARKETS:
+            key = ("winner", market)
+        elif market in COHERENT_OU_MARKETS and _coherence_pick(row.get("pick")) in {"over", "under"}:
+            line = _num(row.get("line"))
+            if line is None:
+                continue
+            key = (
+                "ou", market, round(line, 6), _norm(row.get("player")),
+                int(_num(row.get("checkpoint"), 0) or 0),
+            )
+        else:
+            continue
+        groups.setdefault(key, []).append(row)
+
+    for key, group in groups.items():
+        if key[0] == "winner":
+            if len(group) != 2:
+                continue
+        else:
+            picks = {_coherence_pick(row.get("pick")) for row in group}
+            if len(group) != 2 or picks != {"over", "under"}:
+                continue
+        total = sum(_num(row.get("operator_model_probability"), 0.0) or 0.0 for row in group)
+        if total <= 0:
+            continue
+        normalized = []
+        for row in group:
+            before = float(_num(row.get("operator_model_probability"), 0.0) or 0.0)
+            after = before * 100.0 / total
+            normalized.append((row, before, after))
+        # Round the first legs and give the final leg the remainder so displayed values
+        # remain exactly 100.00 rather than 99.99/100.01 because of decimal rounding.
+        running = 0.0
+        for idx, (row, before, after) in enumerate(normalized):
+            final = round(100.0 - running, 2) if idx == len(normalized) - 1 else round(after, 2)
+            running += final
+            row["operator_model_probability_pre_coherence"] = round(before, 2)
+            row["operator_model_probability"] = final
+            row["probability_coherence"] = "NORMALIZED_EXCLUSIVE_GROUP"
+    return rows
+
+
 def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
     models = _model_index(match)
     rows = []
@@ -203,6 +274,7 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "learning_model_ready": model.ready,
             "probability_kind": "SUPERVISED_OPERATOR_LINE_P_HIT",
         })
+    rows = _cohere_exclusive_probabilities(rows)
     rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
 
