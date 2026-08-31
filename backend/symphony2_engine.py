@@ -15,11 +15,11 @@ import math
 from pathlib import Path
 
 try:
-    from .symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION
+    from .symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
     from .symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
     from .superbet_playable_v912 import signal_signature
 except ImportError:
-    from symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION
+    from symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
     from symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
     from superbet_playable_v912 import signal_signature
 
@@ -29,7 +29,7 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-runtime-3"
+VERSION = "symphony2-runtime-4"
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -153,8 +153,9 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
         state_p = marginal_probability(match, selection, outcomes) if outcomes else None
         merged["state_probability"] = state_p * 100.0 if state_p is not None else -1.0
         features = feature_row(match, merged)
-        learned = model.predict(features) if model.ready else None
-        support = model.support_for(features) if model.ready else 0
+        diagnostics = model.predict_diagnostics(features) if model.ready else None
+        learned = diagnostics["final"] if diagnostics else None
+        support = diagnostics["support"] if diagnostics else 0
         rows.append({
             "selection_id": _selection_id(selection),
             "market": selection.get("market"), "pick": selection.get("pick"),
@@ -166,6 +167,10 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "fixture_line_verified": selection.get("fixture_line_verified", selection.get("market") not in LINE_MARKETS),
             "operator_line_source": selection.get("operator_line_source"),
             "operator_model_probability": round(learned * 100.0, 2) if learned is not None else None,
+            "raw_model_probability": round(diagnostics["raw"] * 100.0, 2) if diagnostics else None,
+            "calibrated_model_probability": round(diagnostics["calibrated"] * 100.0, 2) if diagnostics else None,
+            "learning_reliability": round(diagnostics["reliability"], 4) if diagnostics else None,
+            "market_calibrator_used": bool(diagnostics["market_calibrator"]) if diagnostics else False,
             "state_probability": round(state_p * 100.0, 2) if state_p is not None else None,
             "existing_model_evidence": _existing_evidence(merged),
             "learning_support_rows": support,
@@ -175,6 +180,66 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
         })
     rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
+
+
+def _quantile(values: list[float], q: float):
+    xs = sorted(float(x) for x in values if _num(x) is not None)
+    if not xs:
+        return None
+    if len(xs) == 1:
+        return round(xs[0], 3)
+    pos = (len(xs) - 1) * q
+    lo, hi = int(math.floor(pos)), int(math.ceil(pos))
+    value = xs[lo] if lo == hi else xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
+    return round(value, 3)
+
+
+def _distribution(rows: list[dict], key: str) -> dict:
+    values = [_num(r.get(key)) for r in rows]
+    values = [x for x in values if x is not None]
+    return {
+        "count": len(values),
+        "min": round(min(values), 3) if values else None,
+        "p50": _quantile(values, 0.50),
+        "p90": _quantile(values, 0.90),
+        "p95": _quantile(values, 0.95),
+        "max": round(max(values), 3) if values else None,
+    }
+
+
+def _probability_diagnostics(rows: list[dict]) -> dict:
+    scored = [r for r in rows if _num(r.get("operator_model_probability")) is not None]
+    per_market = {}
+    for market in sorted({_market(r.get("market")) for r in scored}):
+        subset = [r for r in scored if _market(r.get("market")) == market]
+        finals = [_num(r.get("operator_model_probability"), 0.0) for r in subset]
+        supports = [int(r.get("learning_support_rows") or 0) for r in subset]
+        per_market[market] = {
+            "selections": len(subset),
+            "support_rows": max(supports) if supports else 0,
+            "max_final": round(max(finals), 3) if finals else None,
+            "p90_final": _quantile(finals, 0.90),
+            "above_50": sum(1 for p in finals if p >= 50.0),
+            "above_52": sum(1 for p in finals if p >= 52.0),
+            "above_55": sum(1 for p in finals if p >= 55.0),
+        }
+    return {
+        "raw": _distribution(scored, "raw_model_probability"),
+        "calibrated": _distribution(scored, "calibrated_model_probability"),
+        "final_after_support_shrink": _distribution(scored, "operator_model_probability"),
+        "threshold_counts": {
+            "above_50": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 50.0),
+            "above_52": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 52.0),
+            "above_55": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 55.0),
+        },
+        "support": {
+            "full_support_rows": FULL_SUPPORT_ROWS,
+            "below_full_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) < FULL_SUPPORT_ROWS),
+            "at_full_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) >= FULL_SUPPORT_ROWS),
+            "zero_support": sum(1 for r in scored if int(r.get("learning_support_rows") or 0) == 0),
+        },
+        "per_market": per_market,
+    }
 
 
 def _same_market_conflict(a: dict, b: dict) -> bool:
@@ -201,7 +266,7 @@ def _composition_utility(selection: tuple[dict, ...], joint: float) -> float:
     weakest = min(ps)
     joint_equivalent = max(0.001, joint) ** (1.0 / n)
     support = min(int(x.get("learning_support_rows") or 0) for x in selection)
-    support_quality = min(1.0, support / 120.0)
+    support_quality = min(1.0, support / float(FULL_SUPPORT_ROWS))
     complexity_penalty = 0.008 * max(0, n - 2)
     return 100.0 * max(0.0, 0.48 * geometric + 0.22 * weakest + 0.22 * joint_equivalent + 0.08 * support_quality - complexity_penalty)
 
@@ -239,12 +304,14 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
 def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     model = train_operator_line_model(history)
     matches = []
+    all_scored = []
     fixture_count = selection_count = actionable_count = state_supported_count = 0
     for match in results or []:
         if not isinstance(match, dict) or not _operator_context(match):
             continue
         outcomes = build_outcomes(match)
         scored = _score_offer(match, model, outcomes)
+        all_scored.extend(scored)
         fixture_count += 1
         selection_count += len(scored)
         actionable_count += sum(1 for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0)
@@ -262,6 +329,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         })
 
     generated_at = datetime.now(timezone.utc).isoformat()
+    probability_diagnostics = _probability_diagnostics(all_scored)
     current = {
         "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
         "generated_at": generated_at, "operator": OPERATOR,
@@ -279,6 +347,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "state_supported_selections": state_supported_count,
             "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0,
+            "probability_diagnostics": probability_diagnostics,
         },
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY",
         "legacy_symphony_stats_used": False,
@@ -297,7 +366,13 @@ def run() -> dict:
     current, stats = build(results, history)
     _write(CURRENT, current)
     _write(STATS, stats)
-    return {"status": "OK", "version": VERSION, "model_status": current["model_status"], "matches": current["matches_count"], **stats["current_offer"]}
+    return {
+        "status": "OK", "version": VERSION, "model_status": current["model_status"],
+        "matches": current["matches_count"],
+        "training": stats.get("training"),
+        **{k: v for k, v in stats["current_offer"].items() if k != "probability_diagnostics"},
+        "probability_diagnostics": stats["current_offer"]["probability_diagnostics"],
+    }
 
 
 if __name__ == "__main__":
