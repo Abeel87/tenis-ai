@@ -424,7 +424,8 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         "current_offer": {"verified_fixtures": fixture_count, "exact_operator_selections": selection_count,
             "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
-        "joint_probability_policy": "EXACT_SHARED_STATE_ONLY; SEMANTICALLY_REDUNDANT_LEGS_REJECTED", "legacy_symphony_stats_used": False, "prices_used": False}
+        "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
+        "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
 
 
