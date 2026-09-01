@@ -118,6 +118,8 @@ def adapt_canonical_selection(
         "line": line,
         "player": selection.get("player"),
         "probability": float(probability),
+        "probability_kind": "SHADOW_STATE_P_HIT",
+        "source_model": "state_distribution",
         "mode": "SHADOW",
         "operator": "Superbet",
         "operator_available": True,
