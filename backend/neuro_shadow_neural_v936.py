@@ -9,9 +9,10 @@ probability until its sample/class gates are satisfied.
 
 import math
 import random
+from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.6"
+VERSION = "neuro-shadow-neural-v9.3.8"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -51,6 +52,22 @@ def _num(value: Any) -> float | None:
 
 def _time_key(row: dict[str, Any]) -> str:
     return str(row.get("scheduled_time") or row.get("created_at") or "")
+
+
+def _match_key(row: dict[str, Any]) -> str:
+    """Stable split identity so selections from one match never cross train/validation."""
+    match_id = row.get("match_id") or row.get("id")
+    if match_id is not None:
+        return f"id:{match_id}"
+    p1 = str(row.get("p1") or "")
+    p2 = str(row.get("p2") or "")
+    scheduled = str(row.get("scheduled_time") or "")
+    if p1 or p2:
+        return f"fixture:{p1}|{p2}|{scheduled}"
+    prediction_key = row.get("prediction_key")
+    if prediction_key:
+        return f"prediction:{prediction_key}"
+    return f"time:{_time_key(row)}"
 
 
 def _feature_vector(row: dict[str, Any]) -> list[float] | None:
@@ -163,6 +180,38 @@ def _metrics(probabilities: list[float], targets: list[float]) -> dict[str, Any]
     return {"n": n, "accuracy": hits / n, "brier": brier, "log_loss": log_loss / n}
 
 
+def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float], float]]):
+    """Split chronologically on whole-match boundaries, never individual selections."""
+    groups: dict[str, list[tuple[dict[str, Any], list[float], float]]] = defaultdict(list)
+    for item in eligible:
+        groups[_match_key(item[0])].append(item)
+    ordered_groups = sorted(
+        groups.items(),
+        key=lambda pair: (min(_time_key(item[0]) for item in pair[1]), pair[0]),
+    )
+    if len(ordered_groups) < 2:
+        return [], [], 0, 0
+
+    target_train_rows = len(eligible) * (1.0 - VALIDATION_FRACTION)
+    cumulative = 0
+    split_group = 1
+    best_distance = float("inf")
+    for index in range(1, len(ordered_groups)):
+        cumulative += len(ordered_groups[index - 1][1])
+        distance = abs(cumulative - target_train_rows)
+        if distance < best_distance:
+            best_distance = distance
+            split_group = index
+
+    train_groups = ordered_groups[:split_group]
+    validation_groups = ordered_groups[split_group:]
+    train = [item for _, group in train_groups for item in group]
+    validation = [item for _, group in validation_groups for item in group]
+    train.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
+    validation.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
+    return train, validation, len(train_groups), len(validation_groups)
+
+
 def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
     """Train one chronological market model or return COLLECTING_DATA."""
     eligible = []
@@ -174,7 +223,7 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
         if y is None or x is None:
             continue
         eligible.append((row, x, y))
-    eligible.sort(key=lambda item: _time_key(item[0]))
+    eligible.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
     positives = sum(int(y == 1.0) for _, _, y in eligible)
     negatives = len(eligible) - positives
     gate = {
@@ -198,8 +247,21 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
             "playable_influence": False,
         }
 
-    split = max(1, min(len(eligible) - 1, int(len(eligible) * (1.0 - VALIDATION_FRACTION))))
-    train, validation = eligible[:split], eligible[split:]
+    train, validation, train_matches, validation_matches = _chronological_match_split(eligible)
+    if not train or not validation:
+        return {
+            "version": VERSION,
+            "market": market,
+            "mode": MODE,
+            "status": "COLLECTING_DATA",
+            "gate": {**gate, "reason": "insufficient_distinct_matches"},
+            "model": None,
+            "validation": None,
+            "auto_promote": False,
+            "production_influence": False,
+            "playable_influence": False,
+        }
+
     train_y = [item[2] for item in train]
     if min(sum(int(y == 1.0) for y in train_y), sum(int(y == 0.0) for y in train_y)) < MIN_CLASS_COUNT // 2:
         return {
@@ -230,8 +292,11 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
         "status": "SHADOW_MODEL_READY",
         "gate": gate,
         "feature_names": list(FEATURE_NAMES) + [f"missing_{name}" for name in MODEL_PROBABILITY_FEATURES],
+        "split_unit": "match",
         "train_rows": len(train),
         "validation_rows": len(validation),
+        "train_matches": train_matches,
+        "validation_matches": validation_matches,
         "validation_start": _time_key(validation[0][0]) if validation else None,
         "validation_end": _time_key(validation[-1][0]) if validation else None,
         "validation": _metrics(val_p, val_y),
