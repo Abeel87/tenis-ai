@@ -18,8 +18,6 @@ PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 
-# These markets now have SHADOW state + exact shared settlement/capture semantics.
-# This is evidence collection only; it never changes PLAYABLE or Symphony PROD.
 CANDIDATE_CAPTURE_READY_MARKETS = frozenset({
     "set2_winner",
     "set3_winner",
@@ -32,13 +30,7 @@ CANDIDATE_CAPTURE_GAP_MARKETS = frozenset()
 
 
 def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
-    """Build a bounded SHADOW-only state distribution.
-
-    Production state intentionally remains unchanged. For BO5 matches we do not
-    retain complete set-score sequences for sets 4/5 because doing so destroys
-    aggregation and creates a combinatorial state explosion. Current v9.3.5
-    needs only set2/set3 terminal scores plus P1/P2 aggregate game totals.
-    """
+    """Build a bounded SHADOW-only state distribution once per match."""
     holds = s2._service_holds(match)
     if not holds:
         return []
@@ -55,8 +47,6 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
         for n in range(2, best_of + 1)
     }
 
-    # Key: checkpoints, set1, set2, set3, final set score and per-player games.
-    # Later BO5 set scores are intentionally folded into aggregate game totals.
     agg: dict[tuple, float] = defaultdict(float)
     for path, p0 in first.items():
         c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b = path
@@ -65,7 +55,6 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
             agg[(c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b, None, None, None, None, sa, sb, s1a, s1b)] += p0
             continue
 
-        # (set wins, P1/P2 games, set2 score, set3 score)
         frontier = {(sa, sb, int(s1a), int(s1b), None, None, None, None): p0}
         for set_no in range(2, best_of + 1):
             nxt: dict[tuple, float] = defaultdict(float)
@@ -129,11 +118,7 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
-def _conditional_probability(
-    outcomes: list[dict[str, Any]],
-    eligible: Callable[[dict[str, Any]], bool],
-    hit: Callable[[dict[str, Any]], bool],
-) -> float | None:
+def _conditional_probability(outcomes: list[dict[str, Any]], eligible: Callable[[dict[str, Any]], bool], hit: Callable[[dict[str, Any]], bool]) -> float | None:
     denominator = sum(o["prob"] for o in outcomes if eligible(o))
     if denominator <= 0.0:
         return None
@@ -141,22 +126,11 @@ def _conditional_probability(
     return numerator / denominator
 
 
-def _settled_probability(
-    outcomes: list[dict[str, Any]],
-    voided: Callable[[dict[str, Any]], bool],
-    hit: Callable[[dict[str, Any]], bool],
-) -> float | None:
-    """Return P(hit | selection settles), excluding VOID/push mass.
-
-    Candidate Brier/accuracy is computed only from hit/miss rows, so integer
-    operator lines that can push must not dilute the model probability with
-    outcomes that settlement later removes as VOID.
-    """
+def _settled_probability(outcomes: list[dict[str, Any]], voided: Callable[[dict[str, Any]], bool], hit: Callable[[dict[str, Any]], bool]) -> float | None:
     return _conditional_probability(outcomes, lambda o: not voided(o), hit)
 
 
 def set_reach_probability(match: dict[str, Any], set_no: int) -> float | None:
-    """Return P(the requested set is played) in the SHADOW state."""
     if set_no not in {2, 3}:
         return None
     outcomes = build_shadow_outcomes(match)
@@ -172,30 +146,22 @@ def shadow_probability(
     side: int | None = None,
     line: float | None = None,
     pick: str | None = None,
+    outcomes: list[dict[str, Any]] | None = None,
 ) -> float | None:
-    """Evaluate newly retained markets without fabricating unavailable outcomes.
-
-    Later-set markets condition on that set being played. Any exact-line push is
-    also excluded from the denominator because shared settlement records it as
-    VOID and candidate calibration is measured only on hit/miss observations.
-    """
-    outcomes = build_shadow_outcomes(match)
-    if not outcomes:
+    """Evaluate one selection, optionally reusing a prebuilt match distribution."""
+    state = outcomes if outcomes is not None else build_shadow_outcomes(match)
+    if not state:
         return None
 
     market = str(market or "")
     if market in {"set2_winner", "set3_winner"} and side in {1, 2}:
         field = market.replace("_winner", "")
-        return _conditional_probability(
-            outcomes,
-            lambda o: o.get(field) is not None,
-            lambda o: o.get(market) == side,
-        )
+        return _conditional_probability(state, lambda o: o.get(field) is not None, lambda o: o.get(market) == side)
 
     if market in {"set2_total", "set3_total"} and line is not None and pick in {"over", "under"}:
         field = "set2" if market.startswith("set2") else "set3"
         target = float(line)
-        eligible = [o for o in outcomes if o.get(field) is not None]
+        eligible = [o for o in state if o.get(field) is not None]
         if not eligible:
             return None
         return _settled_probability(
@@ -208,7 +174,7 @@ def shadow_probability(
         field = "p1_total_games" if side == 1 else "p2_total_games"
         target = float(line)
         return _settled_probability(
-            outcomes,
+            state,
             lambda o: o[field] == target,
             (lambda o: o[field] > target) if pick == "over" else (lambda o: o[field] < target),
         )
@@ -220,10 +186,6 @@ def shadow_probability(
             if side == 1
             else (lambda o: o["p2_total_games"] + handicap - o["p1_total_games"])
         )
-        return _settled_probability(
-            outcomes,
-            lambda o: abs(adjusted(o)) <= 1e-12,
-            lambda o: adjusted(o) > 0.0,
-        )
+        return _settled_probability(state, lambda o: abs(adjusted(o)) <= 1e-12, lambda o: adjusted(o) > 0.0)
 
     return None
