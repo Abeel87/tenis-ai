@@ -2,10 +2,9 @@ from __future__ import annotations
 
 """Isolated runner for NEURO SHADOW capture, settlement, training and current feed.
 
-Hourly ``run`` is intentionally lightweight: settle -> capture only unseen exact
-operator rows -> rebuild current UI feed. Neural retraining lives in explicit
-``train``/``full`` modes so the hourly Superbet refresh does not become a
-long-running training job.
+Hourly ``run`` is intentionally lightweight: settle -> rebuild current UI feed.
+Heavy state capture and neural retraining live in explicit ``full`` mode so the
+hourly Superbet refresh cannot become a long-running NEURO job.
 """
 
 import argparse
@@ -23,7 +22,11 @@ from backend.neuro_shadow_history_v935 import (
 )
 from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
 from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
-from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH, refresh_training_artifact
+from backend.neuro_shadow_training_v936 import (
+    DEFAULT_TRAINING_PATH,
+    build_training_report,
+    refresh_training_artifact,
+)
 
 VERSION = "neuro-shadow-runner-v9.3.6"
 MODE = "SHADOW"
@@ -41,6 +44,28 @@ def _read_rows(path: Path) -> list[dict[str, Any]]:
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         return []
     return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
+
+
+def _write_json_atomic(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
+
+
+def _ensure_training_shell(training_path: Path) -> dict[str, Any] | None:
+    """Create a cheap SHADOW-only status artifact when heavy training has not run yet.
+
+    The hourly workflow must never fail merely because the separate heavy trainer
+    has not published a model artifact on this branch/check-out. Existing trained
+    artifacts are never overwritten.
+    """
+    if training_path.exists():
+        return None
+    report = build_training_report([])
+    report["status_reason"] = "HEAVY_TRAINING_NOT_RUN_YET"
+    _write_json_atomic(training_path, report)
+    return report
 
 
 def _match_identity(match: dict[str, Any]) -> Any:
@@ -80,8 +105,8 @@ def capture_matches(
 ) -> dict[str, Any]:
     """Capture only new exact Superbet selections as immutable SHADOW forecasts.
 
-    Existing exact selections are rejected before state-space construction, so
-    unchanged hourly refreshes avoid recomputing the expensive state per match.
+    This is deliberately a heavy operation and is not called by hourly ``run``.
+    Existing exact selections are rejected before state-space construction.
     """
     matches_seen = matches_with_operator = adapted = 0
     skipped_captured = new_candidate_selections = 0
@@ -201,20 +226,22 @@ def run_action(
 ) -> dict[str, Any]:
     """Execute one isolated pipeline mode.
 
-    ``run`` is hourly/light and never trains. ``full`` is the explicit heavy
-    pipeline for scheduled/manual neural retraining.
+    ``run`` is hourly/light: settle -> ensure status shell -> current feed.
+    It NEVER captures state and NEVER trains. ``full`` owns the heavy work:
+    settle -> capture unseen exact rows -> train -> current feed.
     """
     payload: dict[str, Any] = {
         "version": VERSION,
         "mode": MODE,
         "action": action,
         "heavy_training": action in {"train", "full"},
+        "heavy_capture": action in {"capture", "full"},
     }
     if action in {"settle", "run", "full"}:
         payload["settlement"] = settle_file(
             results_path, history_path=history_path, stats_path=stats_path
         )
-    if action in {"capture", "run", "full"}:
+    if action in {"capture", "full"}:
         payload["capture"] = capture_file(
             results_path, history_path=history_path, stats_path=stats_path
         )
@@ -222,6 +249,9 @@ def run_action(
         payload["training"] = train_file(
             history_path=history_path, training_path=training_path
         )
+    if action == "run":
+        shell = _ensure_training_shell(training_path)
+        payload["training_shell_created"] = shell is not None
     if action in {"current", "run", "full"}:
         payload["current"] = current_file(
             results_path,
