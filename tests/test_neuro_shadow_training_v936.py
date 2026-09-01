@@ -8,6 +8,7 @@ from backend.neuro_shadow_training_v936 import (
     SYMPHONY_PROD_INFLUENCE,
     build_training_report,
     refresh_training_artifact,
+    training_fingerprint,
 )
 
 
@@ -84,6 +85,64 @@ def test_training_groups_history_before_calling_each_market_model(monkeypatch):
         ("match_game_handicap", ["match_game_handicap"]),
         ("set2_total", ["set2_total", "set2_total"]),
     ]
+
+
+def test_fingerprint_ignores_pending_and_void_but_tracks_scored_evidence():
+    base = [{
+        "prediction_key": "k1",
+        "market": "set2_total",
+        "settlement": "hit",
+        "probability": 0.61,
+        "feature_snapshot": {"numeric": {"state_probability": 0.61}},
+    }]
+    fp = training_fingerprint(base)
+    assert training_fingerprint(base + [{"prediction_key": "pending", "settlement": None}]) == fp
+    assert training_fingerprint(base + [{"prediction_key": "void", "settlement": "void"}]) == fp
+    changed = [dict(base[0], settlement="miss")]
+    assert training_fingerprint(changed) != fp
+
+
+def test_refresh_reuses_model_when_scored_evidence_is_unchanged(tmp_path, monkeypatch):
+    history = tmp_path / "history.json"
+    artifact = tmp_path / "neural.json"
+    rows = [{
+        "prediction_key": "k1",
+        "market": "set2_total",
+        "settlement": "hit",
+        "probability": 0.61,
+        "feature_snapshot": {"numeric": {"state_probability": 0.61}},
+    }]
+    history.write_text(json.dumps(rows), encoding="utf-8")
+    first = refresh_training_artifact(history, artifact)
+    assert first["training_reused"] is False
+    before = artifact.read_text(encoding="utf-8")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("unchanged scored evidence must not retrain")
+
+    monkeypatch.setattr(training, "build_training_report", fail_if_called)
+    second = refresh_training_artifact(history, artifact)
+    assert second["training_reused"] is True
+    assert artifact.read_text(encoding="utf-8") == before
+
+
+def test_new_scored_evidence_invalidates_training_cache(tmp_path):
+    history = tmp_path / "history.json"
+    artifact = tmp_path / "neural.json"
+    history.write_text("[]", encoding="utf-8")
+    first = refresh_training_artifact(history, artifact)
+    assert first["training_reused"] is False
+    rows = [{
+        "prediction_key": "k2",
+        "market": "set2_total",
+        "settlement": "miss",
+        "probability": 0.47,
+        "feature_snapshot": {"numeric": {"state_probability": 0.47}},
+    }]
+    history.write_text(json.dumps(rows), encoding="utf-8")
+    second = refresh_training_artifact(history, artifact)
+    assert second["training_reused"] is False
+    assert second["training_fingerprint"] != first["training_fingerprint"]
 
 
 def test_refresh_writes_dedicated_artifact(tmp_path):
