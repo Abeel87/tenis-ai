@@ -12,7 +12,7 @@ import random
 from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.8"
+VERSION = "neuro-shadow-neural-v9.3.9"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -144,16 +144,18 @@ def _forward(net: dict[str, Any], x: list[float]) -> tuple[list[float], float]:
     return hidden, out
 
 
-def _fit(xs: list[list[float]], ys: list[float], *, seed: int) -> dict[str, Any]:
+def _fit(xs: list[list[float]], ys: list[float], *, seed: int, weights: list[float] | None = None) -> dict[str, Any]:
     net = _init_network(len(xs[0]), HIDDEN_UNITS, seed)
     order = list(range(len(xs)))
     rng = random.Random(seed)
+    sample_weights = weights if weights is not None and len(weights) == len(xs) else [1.0] * len(xs)
     for _ in range(EPOCHS):
         rng.shuffle(order)
         for idx in order:
             x, y = xs[idx], ys[idx]
+            weight = max(0.0, float(sample_weights[idx]))
             hidden, p = _forward(net, x)
-            dz2 = p - y
+            dz2 = (p - y) * weight
             old_w2 = list(net["w2"])
             for j in range(HIDDEN_UNITS):
                 net["w2"][j] -= LEARNING_RATE * (dz2 * hidden[j] + L2 * net["w2"][j])
@@ -166,18 +168,30 @@ def _fit(xs: list[list[float]], ys: list[float], *, seed: int) -> dict[str, Any]
     return net
 
 
-def _metrics(probabilities: list[float], targets: list[float]) -> dict[str, Any]:
+def _metrics(probabilities: list[float], targets: list[float], weights: list[float] | None = None) -> dict[str, Any]:
     if not probabilities:
         return {"n": 0, "accuracy": None, "brier": None, "log_loss": None}
     n = len(probabilities)
-    hits = sum(int((p >= 0.5) == bool(y)) for p, y in zip(probabilities, targets))
-    brier = sum((p - y) ** 2 for p, y in zip(probabilities, targets)) / n
-    eps = 1e-12
+    sample_weights = weights if weights is not None and len(weights) == n else [1.0] * n
+    total_weight = sum(max(0.0, float(w)) for w in sample_weights)
+    if total_weight <= 0.0:
+        return {"n": n, "accuracy": None, "brier": None, "log_loss": None}
+    correct = 0.0
+    brier = 0.0
     log_loss = 0.0
-    for p, y in zip(probabilities, targets):
+    eps = 1e-12
+    for p, y, weight in zip(probabilities, targets, sample_weights):
+        w = max(0.0, float(weight))
+        correct += w * int((p >= 0.5) == bool(y))
+        brier += w * (p - y) ** 2
         pc = min(1.0 - eps, max(eps, p))
-        log_loss += -(y * math.log(pc) + (1.0 - y) * math.log(1.0 - pc))
-    return {"n": n, "accuracy": hits / n, "brier": brier, "log_loss": log_loss / n}
+        log_loss += w * (-(y * math.log(pc) + (1.0 - y) * math.log(1.0 - pc)))
+    return {
+        "n": n,
+        "accuracy": correct / total_weight,
+        "brier": brier / total_weight,
+        "log_loss": log_loss / total_weight,
+    }
 
 
 def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float], float]]):
@@ -210,6 +224,23 @@ def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float],
     train.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
     validation.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
     return train, validation, len(train_groups), len(validation_groups)
+
+
+def _match_balanced_weights(items: list[tuple[dict[str, Any], list[float], float]]) -> list[float]:
+    """Give every match equal total influence regardless of selection count.
+
+    Weights are normalized to mean 1.0 so the optimizer keeps approximately the
+    same step scale while multiple correlated operator lines cannot dominate a
+    market simply because that fixture exposed more selections.
+    """
+    if not items:
+        return []
+    counts: dict[str, int] = defaultdict(int)
+    for row, _, _ in items:
+        counts[_match_key(row)] += 1
+    distinct_matches = len(counts)
+    scale = len(items) / distinct_matches if distinct_matches else 1.0
+    return [scale / counts[_match_key(row)] for row, _, _ in items]
 
 
 def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
@@ -279,9 +310,16 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
 
     means, scales = _standardizer([item[1] for item in train])
     train_x = [_transform(item[1], means, scales) for item in train]
-    net = _fit(train_x, train_y, seed=SEED + sum(ord(ch) for ch in str(market)))
+    train_weights = _match_balanced_weights(train)
+    net = _fit(
+        train_x,
+        train_y,
+        seed=SEED + sum(ord(ch) for ch in str(market)),
+        weights=train_weights,
+    )
     val_x = [_transform(item[1], means, scales) for item in validation]
     val_y = [item[2] for item in validation]
+    val_weights = _match_balanced_weights(validation)
     val_p = [_forward(net, x)[1] for x in val_x]
     baseline_p = [max(0.0, min(1.0, item[1][0])) for item in validation]
 
@@ -293,14 +331,15 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
         "gate": gate,
         "feature_names": list(FEATURE_NAMES) + [f"missing_{name}" for name in MODEL_PROBABILITY_FEATURES],
         "split_unit": "match",
+        "weighting_unit": "match",
         "train_rows": len(train),
         "validation_rows": len(validation),
         "train_matches": train_matches,
         "validation_matches": validation_matches,
         "validation_start": _time_key(validation[0][0]) if validation else None,
         "validation_end": _time_key(validation[-1][0]) if validation else None,
-        "validation": _metrics(val_p, val_y),
-        "state_baseline_validation": _metrics(baseline_p, val_y),
+        "validation": _metrics(val_p, val_y, val_weights),
+        "state_baseline_validation": _metrics(baseline_p, val_y, val_weights),
         "model": {"means": means, "scales": scales, **net},
         "auto_promote": False,
         "production_influence": False,
