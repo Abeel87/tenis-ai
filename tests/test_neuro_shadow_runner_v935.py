@@ -7,6 +7,7 @@ from backend.neuro_shadow_runner_v935 import (
     SYMPHONY_PROD_INFLUENCE,
     capture_file,
     capture_matches,
+    run_action,
     train_file,
 )
 from backend.neuro_shadow_history_v935 import load_history
@@ -137,6 +138,40 @@ def test_training_status_can_run_after_capture(tmp_path):
     assert report["status"] == "COLLECTING_DATA"
     assert report["production_influence"] is False
     assert report["playable_influence"] is False
+
+
+def test_hourly_run_never_invokes_heavy_training(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(runner, "settle_file", lambda *a, **k: calls.append("settle") or {})
+    monkeypatch.setattr(runner, "capture_file", lambda *a, **k: calls.append("capture") or {})
+    monkeypatch.setattr(runner, "current_file", lambda *a, **k: calls.append("current") or {})
+
+    def fail_train(*args, **kwargs):
+        raise AssertionError("hourly run must not train neural model")
+
+    monkeypatch.setattr(runner, "train_file", fail_train)
+    payload = run_action(
+        "run",
+        results_path=tmp_path / "results.json",
+        history_path=tmp_path / "history.json",
+        stats_path=tmp_path / "stats.json",
+        training_path=tmp_path / "training.json",
+        current_path=tmp_path / "current.json",
+    )
+    assert calls == ["settle", "capture", "current"]
+    assert payload["heavy_training"] is False
+    assert "training" not in payload
+
+
+def test_full_mode_keeps_explicit_heavy_training(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(runner, "settle_file", lambda *a, **k: calls.append("settle") or {})
+    monkeypatch.setattr(runner, "capture_file", lambda *a, **k: calls.append("capture") or {})
+    monkeypatch.setattr(runner, "train_file", lambda *a, **k: calls.append("train") or {})
+    monkeypatch.setattr(runner, "current_file", lambda *a, **k: calls.append("current") or {})
+    payload = run_action("full")
+    assert calls == ["settle", "capture", "train", "current"]
+    assert payload["heavy_training"] is True
 
 
 def test_missing_or_bad_results_is_safe_noop(tmp_path):
