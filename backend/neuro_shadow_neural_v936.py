@@ -12,7 +12,7 @@ import random
 from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.11"
+VERSION = "neuro-shadow-neural-v9.3.12"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -111,13 +111,27 @@ def _sigmoid(x: float) -> float:
     return z / (1.0 + z)
 
 
-def _standardizer(xs: list[list[float]]) -> tuple[list[float], list[float]]:
+def _standardizer(
+    xs: list[list[float]], weights: list[float] | None = None
+) -> tuple[list[float], list[float]]:
+    """Fit feature scaling with optional sample weights.
+
+    NEURO uses match-balanced weights here so fixtures exposing many correlated
+    operator lines cannot shift feature means/scales before the weighted fit.
+    """
     width = len(xs[0])
+    sample_weights = weights if weights is not None and len(weights) == len(xs) else [1.0] * len(xs)
+    clean_weights = [max(0.0, float(weight)) for weight in sample_weights]
+    total_weight = sum(clean_weights)
+    if total_weight <= 0.0:
+        clean_weights = [1.0] * len(xs)
+        total_weight = float(len(xs))
+
     means, scales = [], []
     for col in range(width):
         vals = [row[col] for row in xs]
-        mean = sum(vals) / len(vals)
-        var = sum((v - mean) ** 2 for v in vals) / len(vals)
+        mean = sum(weight * value for weight, value in zip(clean_weights, vals)) / total_weight
+        var = sum(weight * (value - mean) ** 2 for weight, value in zip(clean_weights, vals)) / total_weight
         means.append(mean)
         scales.append(max(math.sqrt(var), 1e-6))
     return means, scales
@@ -309,9 +323,9 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
             "playable_influence": False,
         }
 
-    means, scales = _standardizer([item[1] for item in train])
-    train_x = [_transform(item[1], means, scales) for item in train]
     train_weights = _match_balanced_weights(train)
+    means, scales = _standardizer([item[1] for item in train], train_weights)
+    train_x = [_transform(item[1], means, scales) for item in train]
     net = _fit(train_x, train_y, seed=SEED + sum(ord(ch) for ch in str(market)), weights=train_weights)
     val_x = [_transform(item[1], means, scales) for item in validation]
     val_y = [item[2] for item in validation]
@@ -328,6 +342,7 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
         "feature_names": list(FEATURE_NAMES) + [f"missing_{name}" for name in MODEL_PROBABILITY_FEATURES],
         "split_unit": "match",
         "weighting_unit": "match",
+        "standardization_unit": "match",
         "train_rows": len(train),
         "validation_rows": len(validation),
         "train_matches": train_matches,
