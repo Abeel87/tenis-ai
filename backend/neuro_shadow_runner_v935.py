@@ -17,9 +17,11 @@ from backend.neuro_shadow_history_v935 import (
     DEFAULT_HISTORY_PATH,
     DEFAULT_STATS_PATH,
     append_prediction_batches,
+    load_history,
     settle_history,
 )
 from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
+from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
 from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH, refresh_training_artifact
 
 VERSION = "neuro-shadow-runner-v9.3.6"
@@ -40,15 +42,54 @@ def _read_rows(path: Path) -> list[dict[str, Any]]:
     return [row for row in value if isinstance(row, dict)] if isinstance(value, list) else []
 
 
+def _match_identity(match: dict[str, Any]) -> Any:
+    return match.get("match_id") or match.get("id") or f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
+
+
+def _selection_prediction_key(match: dict[str, Any], selection: dict[str, Any]) -> str:
+    """Mirror tracker prediction_key without building the costly state."""
+    return "|".join(
+        str(x or "")
+        for x in (
+            _match_identity(match),
+            selection.get("market"),
+            selection.get("pick"),
+            selection.get("line"),
+            selection.get("player"),
+            selection.get("market_id"),
+            selection.get("outcome_id"),
+        )
+    )
+
+
+def _ready_candidates(context: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        row for row in (context.get("canonical_selections") or [])
+        if isinstance(row, dict)
+        and row.get("operator_available") is True
+        and str(row.get("market") or "") in CANDIDATE_CAPTURE_READY_MARKETS
+    ]
+
+
 def capture_matches(
     matches: Iterable[dict[str, Any]],
     *,
     history_path: Path = DEFAULT_HISTORY_PATH,
     stats_path: Path = DEFAULT_STATS_PATH,
 ) -> dict[str, Any]:
-    """Capture exact current Superbet selections as immutable SHADOW forecasts."""
+    """Capture only new exact Superbet selections as immutable SHADOW forecasts.
+
+    Existing exact selections are rejected before state-space construction, so
+    unchanged hourly refreshes avoid recomputing the expensive state per match.
+    """
     matches_seen = matches_with_operator = adapted = 0
+    skipped_captured = new_candidate_selections = 0
     batches: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+    existing_keys = {
+        str(row.get("prediction_key"))
+        for row in load_history(history_path)
+        if isinstance(row, dict) and row.get("prediction_key")
+    }
 
     for match in matches or []:
         if not isinstance(match, dict):
@@ -58,10 +99,37 @@ def capture_matches(
         if not isinstance(context, dict) or context.get("operator_verified") is not True:
             continue
         matches_with_operator += 1
-        rows = adapt_market_context(match, context)
+
+        candidates = _ready_candidates(context)
+        if not candidates:
+            continue
+        fresh = [
+            selection for selection in candidates
+            if _selection_prediction_key(match, selection) not in existing_keys
+        ]
+        if not fresh:
+            skipped_captured += 1
+            continue
+        new_candidate_selections += len(fresh)
+
+        # Preserve model_signals and all context metadata, but send only unseen
+        # canonical selections through the costly shared-state adapter.
+        fresh_context = dict(context)
+        fresh_context["canonical_selections"] = fresh
+        rows = adapt_market_context(match, fresh_context)
         adapted += len(rows)
         if rows:
             batches.append((match, rows))
+            for row in rows:
+                key = "|".join(
+                    str(x or "")
+                    for x in (
+                        _match_identity(match), row.get("market"), row.get("pick"),
+                        row.get("line"), row.get("player"), row.get("source_market_id"),
+                        row.get("source_outcome_id"),
+                    )
+                )
+                existing_keys.add(key)
 
     persist = append_prediction_batches(
         batches,
@@ -74,6 +142,8 @@ def capture_matches(
         "mode": MODE,
         "matches_seen": matches_seen,
         "matches_with_verified_operator": matches_with_operator,
+        "matches_skipped_already_captured": skipped_captured,
+        "new_candidate_selections": new_candidate_selections,
         "adapted_predictions": adapted,
         "added_predictions": int(persist.get("added") or 0),
         "production_influence": False,
