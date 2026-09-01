@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 
 from joint_builder_v78b import add_joint_builder
+from pbp_cache_recovery_v941 import recover_rows_from_cache
 from pbp_market_evidence_v940 import enrich_market_evidence
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "frontend" / "data" / "results.json"
+META = ROOT / "frontend" / "data" / "meta.json"
 
 
 def main():
@@ -17,6 +19,7 @@ def main():
     if not isinstance(rows, list):
         raise SystemExit("STOP: results.json is not a list")
 
+    rows, recovery = recover_rows_from_cache(rows)
     enriched = [enrich_market_evidence(add_joint_builder(m)) for m in rows]
     ready = sum(1 for m in enriched if (m.get("joint_builder_v78b") or {}).get("status") == "READY")
     nd = sum(1 for m in enriched if (m.get("joint_builder_v78b") or {}).get("status") == "N/D")
@@ -26,12 +29,26 @@ def main():
     tmp = RESULTS.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(enriched, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(RESULTS)
+
+    try:
+        meta = json.loads(META.read_text(encoding="utf-8")) if META.exists() else {}
+    except Exception:
+        meta = {}
+    if not isinstance(meta, dict):
+        meta = {}
+    meta["pbp_cache_recovery_v941"] = recovery
+    meta["pbp_market_ready_v940"] = pbp_market_ready
+    meta_tmp = META.with_suffix(".json.tmp")
+    meta_tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    meta_tmp.replace(META)
+
     print(json.dumps({
         "matches": len(enriched),
         "READY": ready,
         "N/D": nd,
         "FAIL": failed,
         "pbp_market_ready": pbp_market_ready,
+        "pbp_cache_recovery": recovery,
     }, ensure_ascii=False))
 
 
