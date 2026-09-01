@@ -15,7 +15,10 @@ call cap is exactly zero.
 
 from typing import Any
 
-import pbp_enrich as core
+try:
+    from . import pbp_enrich as core
+except ImportError:  # pragma: no cover - direct script/import from backend cwd
+    import pbp_enrich as core
 
 VERSION = "v9.4.1-pbp-cache-recovery"
 
