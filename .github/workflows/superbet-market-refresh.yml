@@ -29,8 +29,11 @@ on:
       - 'backend/symphony2_tracker.py'
       - 'backend/neuro_shadow_state_v935.py'
       - 'backend/neuro_shadow_market_adapter_v935.py'
+      - 'backend/neuro_shadow_features_v935.py'
       - 'backend/neuro_shadow_tracker_v935.py'
       - 'backend/neuro_shadow_history_v935.py'
+      - 'backend/neuro_shadow_neural_v936.py'
+      - 'backend/neuro_shadow_neural_artifact_v936.py'
       - 'backend/neuro_shadow_runner_v935.py'
       - 'frontend/symphony2.js'
       - 'frontend/symphony2.css'
@@ -49,6 +52,12 @@ on:
       - 'tests/test_symphony2_learning.py'
       - 'tests/test_symphony2_state.py'
       - 'tests/test_symphony2_tracker.py'
+      - 'tests/test_neuro_shadow_state_v935.py'
+      - 'tests/test_neuro_shadow_market_adapter_v935.py'
+      - 'tests/test_neuro_shadow_features_v935.py'
+      - 'tests/test_neuro_shadow_tracker_v935.py'
+      - 'tests/test_neuro_shadow_neural_v936.py'
+      - 'tests/test_neuro_shadow_neural_artifact_v936.py'
       - 'tests/test_neuro_shadow_runner_v935.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
@@ -97,11 +106,18 @@ jobs:
           python -m py_compile backend/symphony2_state.py
           python -m py_compile backend/symphony2_engine.py
           python -m py_compile backend/symphony2_tracker.py
+          python -m py_compile backend/neuro_shadow_state_v935.py
+          python -m py_compile backend/neuro_shadow_market_adapter_v935.py
+          python -m py_compile backend/neuro_shadow_features_v935.py
+          python -m py_compile backend/neuro_shadow_tracker_v935.py
+          python -m py_compile backend/neuro_shadow_history_v935.py
+          python -m py_compile backend/neuro_shadow_neural_v936.py
+          python -m py_compile backend/neuro_shadow_neural_artifact_v936.py
           python -m py_compile backend/neuro_shadow_runner_v935.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
-      - name: Zero-request coverage, fixture matching and Symphony 2 guards
-        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_runner_v935.py
+      - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
+        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -132,7 +148,7 @@ jobs:
           python backend/symphony2_tracker.py
           python scripts/compact_frontend_data_v853.py
 
-      - name: Capture isolated NEURO SHADOW evidence
+      - name: Capture and train isolated NEURO SHADOW evidence
         run: python -m backend.neuro_shadow_runner_v935 run
 
       - name: Runtime sanity guard
@@ -151,12 +167,24 @@ jobs:
           stats = json.loads((data/'symphony2_stats.json').read_text(encoding='utf-8'))
           neuro_history = json.loads((data/'neuro_shadow_history_v935.json').read_text(encoding='utf-8'))
           neuro_stats = json.loads((data/'neuro_shadow_stats_v935.json').read_text(encoding='utf-8'))
+          neuro_models = json.loads((data/'neuro_shadow_neural_v936.json').read_text(encoding='utf-8'))
           assert isinstance(results, list) and results, 'results.json empty after market refresh'
           assert isinstance(neuro_history, list)
           assert neuro_stats.get('mode') == 'SHADOW'
           assert neuro_stats.get('production_influence') is False
           assert neuro_stats.get('playable_influence') is False
           assert all(row.get('mode') == 'SHADOW' and row.get('operator_playable') is False for row in neuro_history)
+          assert neuro_models.get('mode') == 'SHADOW'
+          assert neuro_models.get('production_influence') is False
+          assert neuro_models.get('playable_influence') is False
+          assert neuro_models.get('symphony_prod_influence') is False
+          assert neuro_models.get('auto_promote') is False
+          for report in (neuro_models.get('markets') or {}).values():
+              assert report.get('mode') == 'SHADOW'
+              assert report.get('production_influence') is False
+              assert report.get('playable_influence') is False
+              if report.get('status') != 'SHADOW_MODEL_READY':
+                  assert report.get('model') is None
           assert availability.get('contains_prices') is False
           assert availability.get('prices_used') is False
           assert availability.get('refresh_hours') == 1
@@ -244,7 +272,7 @@ jobs:
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
               f'coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} '
               f'symphony2_matches={symphony.get("matches_count")} model={symphony.get("model_status")} '
-              f'neuro_shadow={len(neuro_history)}'
+              f'neuro_shadow={len(neuro_history)} neuro_ready={neuro_models.get("ready_markets")}'
           )
           PY
 
