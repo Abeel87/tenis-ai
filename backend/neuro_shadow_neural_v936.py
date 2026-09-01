@@ -12,7 +12,7 @@ import random
 from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.10"
+VERSION = "neuro-shadow-neural-v9.3.11"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -199,7 +199,7 @@ def _metrics(probabilities: list[float], targets: list[float], weights: list[flo
 
 
 def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float], float]]):
-    """Split chronologically on whole-match boundaries, never individual selections."""
+    """Split chronologically on whole-match boundaries using match counts, not row counts."""
     groups: dict[str, list[tuple[dict[str, Any], list[float], float]]] = defaultdict(list)
     for item in eligible:
         groups[_match_key(item[0])].append(item)
@@ -210,16 +210,8 @@ def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float],
     if len(ordered_groups) < 2:
         return [], [], 0, 0
 
-    target_train_rows = len(eligible) * (1.0 - VALIDATION_FRACTION)
-    cumulative = 0
-    split_group = 1
-    best_distance = float("inf")
-    for index in range(1, len(ordered_groups)):
-        cumulative += len(ordered_groups[index - 1][1])
-        distance = abs(cumulative - target_train_rows)
-        if distance < best_distance:
-            best_distance = distance
-            split_group = index
+    split_group = int(len(ordered_groups) * (1.0 - VALIDATION_FRACTION))
+    split_group = max(1, min(len(ordered_groups) - 1, split_group))
 
     train_groups = ordered_groups[:split_group]
     validation_groups = ordered_groups[split_group:]
