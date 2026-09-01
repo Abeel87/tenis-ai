@@ -5,6 +5,11 @@ from __future__ import annotations
 One training row is one exact historical Superbet selection. The target is its
 settled hit/miss outcome. Exact-state probability and existing model outputs are
 features; no hand-written blend decides their weights in production.
+
+v9.4.0 extends the training universe with the existing frozen candidate
+settlement layer, but only for market families which have independently passed
+the candidate REVIEW_READY gate. This never promotes those rows into legacy
+PLAYABLE statistics and never changes RAW/PROD model mathematics.
 """
 
 from collections import Counter
@@ -18,12 +23,13 @@ try:
 except Exception:  # pragma: no cover
     CatBoostClassifier = None
 
-VERSION = "symphony2-learning-4"
+VERSION = "symphony2-learning-5"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
 MIN_MARKET_CALIBRATION_ROWS = 40
 FULL_SUPPORT_ROWS = 120
 EPS = 1e-6
+CANDIDATE_LAYER = "superbet_candidate_signals_v925"
 
 CAT_FEATURES = ["market", "pick", "surface", "tour", "player_scope"]
 NUM_FEATURES = [
@@ -128,19 +134,57 @@ def _history_signal_richness(signal: dict) -> int:
     return score
 
 
-def _history_layer(entry: dict) -> list[dict]:
-    """Union exact frozen operator rows from both canonical PLAYABLE history layers.
+def _candidate_review_ready_markets(history: list[dict]) -> set[str]:
+    """Resolve the existing candidate promotion gate from the same frozen history.
 
-    AutoLearn no longer hides a unique base-layer observation. Exact duplicates are
-    kept once and the richer frozen row wins. No RAW/model synthetic layer is read.
+    Importing the gate implementation keeps one source of truth for sample size,
+    accuracy, Wilson lower bound and Brier requirements. No auto-promotion to
+    PLAYABLE occurs here; the result only controls Symphony training evidence.
     """
+    try:
+        from .superbet_candidate_settlement_v925 import build_candidate_stats
+    except ImportError:
+        from superbet_candidate_settlement_v925 import build_candidate_stats
+
+    try:
+        stats = build_candidate_stats(history)
+    except Exception:
+        return set()
+    return {_norm(x) for x in (stats.get("review_ready_markets") or []) if _norm(x)}
+
+
+def _candidate_row_allowed(raw: dict, allowed_markets: set[str]) -> bool:
+    market = _norm(raw.get("market"))
+    return bool(
+        market in allowed_markets
+        and _norm(raw.get("operator")) == "superbet.pl"
+        and raw.get("operator_line_verified") is True
+        and _norm(raw.get("result")) in {"hit", "miss"}
+    )
+
+
+def _history_layer(entry: dict, candidate_markets: set[str] | None = None) -> list[dict]:
+    """Union exact frozen operator rows with gated candidate evidence.
+
+    Canonical PLAYABLE layers keep priority for exact duplicates. Candidate rows
+    are admitted only after their market family passes REVIEW_READY and remain a
+    Symphony-only training source; they are not rewritten into PLAYABLE history.
+    """
+    allowed = candidate_markets or set()
     by_key: dict[tuple, tuple[int, int, dict]] = {}
-    for source_rank, key in enumerate(("playable_signals_v912", "playable_autolearn_signals_v912")):
+    sources = (
+        (0, CANDIDATE_LAYER),
+        (1, "playable_signals_v912"),
+        (2, "playable_autolearn_signals_v912"),
+    )
+    for source_rank, key in sources:
         rows = entry.get(key)
         if not isinstance(rows, list):
             continue
         for raw in rows:
             if not isinstance(raw, dict):
+                continue
+            if key == CANDIDATE_LAYER and not _candidate_row_allowed(raw, allowed):
                 continue
             signal_key = _history_signal_key(raw)
             candidate = (_history_signal_richness(raw), source_rank, raw)
@@ -156,15 +200,15 @@ def build_training_rows(history: Iterable[dict]) -> list[dict]:
     except ImportError:
         from symphony2_state import build_outcomes, marginal_probability
 
+    history_rows = [x for x in (history or []) if isinstance(x, dict)]
+    candidate_markets = _candidate_review_ready_markets(history_rows)
     rows: list[dict] = []
     seen: set[tuple] = set()
-    for entry in history or []:
-        if not isinstance(entry, dict):
-            continue
+    for entry in history_rows:
         captured = entry.get("captured_at") or entry.get("playable_captured_at_v912") or entry.get("scheduled_time")
         match_id = entry.get("match_id") if entry.get("match_id") is not None else entry.get("id")
         outcomes = build_outcomes(entry)
-        for signal in _history_layer(entry):
+        for signal in _history_layer(entry, candidate_markets):
             result = _norm(signal.get("result"))
             if result not in {"hit", "miss"}:
                 continue
@@ -182,6 +226,9 @@ def build_training_rows(history: Iterable[dict]) -> list[dict]:
             row["target"] = 1 if result == "hit" else 0
             row["captured_ts"] = _date_key(captured)
             row["signature"] = signature
+            row["training_source"] = (
+                "candidate_review_ready" if signal.get("candidate_version") is not None else "playable_frozen"
+            )
             rows.append(row)
     rows.sort(key=lambda x: x["captured_ts"])
     return rows
@@ -309,8 +356,11 @@ class OperatorLineModel:
 
 
 def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
-    rows = build_training_rows(history)
+    history_rows = [x for x in (history or []) if isinstance(x, dict)]
+    candidate_markets = _candidate_review_ready_markets(history_rows)
+    rows = build_training_rows(history_rows)
     support = Counter(r["market"] for r in rows)
+    source_counts = Counter(r.get("training_source", "unknown") for r in rows)
     out = OperatorLineModel(trained_rows=len(rows), market_support=dict(support), metrics={"version": VERSION})
     if CatBoostClassifier is None:
         out.status = "catboost_unavailable"
@@ -341,7 +391,10 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "feature_names": FEATURES,
         "cat_features": CAT_FEATURES,
         "market_support": dict(sorted(support.items())),
-        "history_layer_policy": "UNION_EXACT_FROZEN_OPERATOR_LAYERS_RICHEST_DUPLICATE_WINS",
+        "training_source_counts": dict(sorted(source_counts.items())),
+        "candidate_review_ready_markets": sorted(candidate_markets),
+        "history_layer_policy": "UNION_EXACT_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
+        "candidate_gate_policy": "REVIEW_READY_ONLY; EXACT_OPERATOR_VERIFIED; NO_PLAYABLE_STATS_MUTATION",
         "calibration_policy": "PER_MARKET_PLATT_IF_IMPROVES_BRIER_ELSE_RAW; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
