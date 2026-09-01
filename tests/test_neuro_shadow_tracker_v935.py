@@ -2,6 +2,7 @@ from backend.neuro_shadow_tracker_v935 import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
+    prediction_key,
     register_predictions,
     settle_prediction,
     summarize,
@@ -51,6 +52,15 @@ def test_register_deduplicates_and_rejects_non_shadow_rows():
     assert rows[0]["source_model"] == "state_distribution"
     bad = dict(row, mode="PROD")
     assert register_predictions(_match(), [bad]) == []
+
+
+def test_prediction_identity_preserves_zero_line_instead_of_collapsing_to_none():
+    zero = _row("match_game_handicap", "Alpha", 0.6, line=0.0)
+    missing = _row("match_game_handicap", "Alpha", 0.6, line=None)
+    assert prediction_key(_match(), zero) != prediction_key(_match(), missing)
+    rows = register_predictions(_match(), [zero, missing])
+    assert len(rows) == 2
+    assert {row["line"] for row in rows} == {0.0, None}
 
 
 def test_feature_snapshot_is_deep_frozen_at_registration():
