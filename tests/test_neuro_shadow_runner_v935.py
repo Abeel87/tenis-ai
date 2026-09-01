@@ -6,6 +6,7 @@ from backend.neuro_shadow_runner_v935 import (
     SYMPHONY_PROD_INFLUENCE,
     capture_file,
     capture_matches,
+    train_file,
 )
 from backend.neuro_shadow_history_v935 import load_history
 
@@ -93,6 +94,19 @@ def test_capture_file_handles_real_results_shape(tmp_path):
     assert result["added_predictions"] == 1
     assert history.exists()
     assert stats.exists()
+
+
+def test_training_status_can_run_after_capture(tmp_path):
+    history = tmp_path / "history.json"
+    stats = tmp_path / "stats.json"
+    training = tmp_path / "training.json"
+    capture_matches([_match()], history_path=history, stats_path=stats)
+    report = train_file(history_path=history, training_path=training)
+    assert training.exists()
+    assert report["mode"] == "SHADOW"
+    assert report["status"] == "COLLECTING_DATA"
+    assert report["production_influence"] is False
+    assert report["playable_influence"] is False
 
 
 def test_missing_or_bad_results_is_safe_noop(tmp_path):
