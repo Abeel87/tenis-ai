@@ -91,6 +91,36 @@ def test_repeated_capture_keeps_first_forecast_and_skips_state_rebuild(tmp_path,
     assert len(load_history(history)) == 1
 
 
+def test_zero_line_identity_matches_tracker_and_skips_rebuild(tmp_path, monkeypatch):
+    history = tmp_path / "history.json"
+    stats = tmp_path / "stats.json"
+    match = _match()
+    match["superbet_market_v91"]["canonical_selections"] = [
+        {
+            "market": "match_game_handicap",
+            "pick": "Alpha",
+            "line": 0.0,
+            "player": None,
+            "market_id": "m-zero",
+            "outcome_id": "o-zero",
+            "operator_available": True,
+            "operator_line_verified": True,
+        }
+    ]
+    first = capture_matches([match], history_path=history, stats_path=stats)
+    assert first["added_predictions"] == 1
+    assert "|0.0|" in load_history(history)[0]["prediction_key"]
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("zero-line selection must use the same tracker identity contract")
+
+    monkeypatch.setattr(runner, "adapt_market_context", fail_if_called)
+    second = capture_matches([match], history_path=history, stats_path=stats)
+    assert second["added_predictions"] == 0
+    assert second["new_candidate_selections"] == 0
+    assert second["matches_skipped_already_captured"] == 1
+
+
 def test_new_operator_selection_after_capture_is_processed_incrementally(tmp_path):
     history = tmp_path / "history.json"
     stats = tmp_path / "stats.json"
