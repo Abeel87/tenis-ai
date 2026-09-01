@@ -1,5 +1,6 @@
 import json
 
+import backend.neuro_shadow_runner_v935 as runner
 from backend.neuro_shadow_runner_v935 import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
@@ -67,6 +68,7 @@ def test_capture_uses_verified_canonical_context_only(tmp_path):
 
     assert result["matches_seen"] == 2
     assert result["matches_with_verified_operator"] == 1
+    assert result["new_candidate_selections"] == 1
     assert result["adapted_predictions"] == 1
     assert result["added_predictions"] == 1
     rows = load_history(history)
@@ -75,14 +77,42 @@ def test_capture_uses_verified_canonical_context_only(tmp_path):
     assert rows[0]["operator_playable"] is False
 
 
-def test_repeated_capture_keeps_first_forecast(tmp_path):
+def test_repeated_capture_keeps_first_forecast_and_skips_state_rebuild(tmp_path, monkeypatch):
     history = tmp_path / "history.json"
     stats = tmp_path / "stats.json"
     first = capture_matches([_match()], history_path=history, stats_path=stats)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("unchanged selection must skip costly state adapter")
+
+    monkeypatch.setattr(runner, "adapt_market_context", fail_if_called)
     second = capture_matches([_match()], history_path=history, stats_path=stats)
     assert first["added_predictions"] == 1
     assert second["added_predictions"] == 0
+    assert second["new_candidate_selections"] == 0
+    assert second["matches_skipped_already_captured"] == 1
     assert len(load_history(history)) == 1
+
+
+def test_new_operator_selection_after_capture_is_processed_incrementally(tmp_path):
+    history = tmp_path / "history.json"
+    stats = tmp_path / "stats.json"
+    capture_matches([_match()], history_path=history, stats_path=stats)
+    changed = _match()
+    changed["superbet_market_v91"]["canonical_selections"].append({
+        "market": "set2_total",
+        "pick": "under",
+        "line": 9.5,
+        "player": None,
+        "market_id": "m1",
+        "outcome_id": "o3",
+        "operator_available": True,
+        "operator_line_verified": True,
+    })
+    result = capture_matches([changed], history_path=history, stats_path=stats)
+    assert result["new_candidate_selections"] == 1
+    assert result["added_predictions"] == 1
+    assert len(load_history(history)) == 2
 
 
 def test_capture_file_handles_real_results_shape(tmp_path):
