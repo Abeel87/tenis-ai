@@ -6,6 +6,7 @@ from backend.neuro_shadow_neural_v936 import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
+    _chronological_match_split,
     predict,
     train_market,
 )
@@ -36,6 +37,7 @@ def _row(index, hit, market="set2_total"):
     jitter = ((index % 7) - 3) * 0.01
     state = max(0.05, min(0.95, state + jitter))
     return {
+        "match_id": f"match-{index}",
         "market": market,
         "settlement": "hit" if hit else "miss",
         "scheduled_time": f"2026-01-{1 + index // 24:02d}T{index % 24:02d}:00:00Z",
@@ -87,6 +89,35 @@ def test_training_is_deterministic_and_chronological():
     assert report1["validation_end"] == report2["validation_end"]
     assert report1["validation"] == report2["validation"]
     assert report1["model"] == report2["model"]
+    assert report1["split_unit"] == "match"
+
+
+def test_chronological_split_never_leaks_one_match_across_train_and_validation():
+    eligible = []
+    for index in range(10):
+        row = {
+            "match_id": f"m-{index}",
+            "scheduled_time": f"2026-01-{index + 1:02d}T12:00:00Z",
+            "prediction_key": f"p-{index}",
+        }
+        eligible.append((row, [0.5], float(index % 2 == 0)))
+    # Three correlated selections from the same late fixture must move together.
+    for suffix in range(3):
+        row = {
+            "match_id": "m-grouped",
+            "scheduled_time": "2026-01-09T18:00:00Z",
+            "prediction_key": f"p-grouped-{suffix}",
+        }
+        eligible.append((row, [0.5], float(suffix % 2 == 0)))
+
+    train, validation, train_matches, validation_matches = _chronological_match_split(eligible)
+    train_ids = {item[0]["match_id"] for item in train}
+    validation_ids = {item[0]["match_id"] for item in validation}
+    assert train_ids.isdisjoint(validation_ids)
+    assert train_matches + validation_matches == len(train_ids | validation_ids)
+    grouped_in_train = sum(item[0]["match_id"] == "m-grouped" for item in train)
+    grouped_in_validation = sum(item[0]["match_id"] == "m-grouped" for item in validation)
+    assert {grouped_in_train, grouped_in_validation} == {0, 3}
 
 
 def test_ready_model_returns_bounded_neural_shadow_probability():
@@ -99,6 +130,7 @@ def test_ready_model_returns_bounded_neural_shadow_probability():
     assert report["validation"]["brier"] is not None
     assert report["state_baseline_validation"]["brier"] is not None
     assert report["auto_promote"] is False
+    assert report["train_matches"] + report["validation_matches"] == MIN_SETTLED + 40
 
 
 def test_missing_model_inputs_are_masked_not_fabricated_from_results():
