@@ -15,7 +15,7 @@ from typing import Any, Iterable
 from backend.neuro_shadow_history_v935 import (
     DEFAULT_HISTORY_PATH,
     DEFAULT_STATS_PATH,
-    append_predictions,
+    append_prediction_batches,
     settle_history,
 )
 from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
@@ -45,7 +45,9 @@ def capture_matches(
     stats_path: Path = DEFAULT_STATS_PATH,
 ) -> dict[str, Any]:
     """Capture exact current Superbet selections as immutable SHADOW forecasts."""
-    matches_seen = matches_with_operator = adapted = added = 0
+    matches_seen = matches_with_operator = adapted = 0
+    batches: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+
     for match in matches or []:
         if not isinstance(match, dict):
             continue
@@ -56,15 +58,14 @@ def capture_matches(
         matches_with_operator += 1
         rows = adapt_market_context(match, context)
         adapted += len(rows)
-        if not rows:
-            continue
-        result = append_predictions(
-            match,
-            rows,
-            history_path=history_path,
-            stats_path=stats_path,
-        )
-        added += int(result.get("added") or 0)
+        if rows:
+            batches.append((match, rows))
+
+    persist = append_prediction_batches(
+        batches,
+        history_path=history_path,
+        stats_path=stats_path,
+    )
 
     return {
         "version": VERSION,
@@ -72,7 +73,7 @@ def capture_matches(
         "matches_seen": matches_seen,
         "matches_with_verified_operator": matches_with_operator,
         "adapted_predictions": adapted,
-        "added_predictions": added,
+        "added_predictions": int(persist.get("added") or 0),
         "production_influence": False,
         "playable_influence": False,
     }
