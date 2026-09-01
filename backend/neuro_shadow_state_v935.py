@@ -4,8 +4,8 @@ from __future__ import annotations
 
 This module deliberately does not change symphony2_state or any production
 PLAYABLE/Symphony path. It builds a bounded richer outcome distribution for
-audit and SHADOW evaluation only: set2/set3 scores/winners plus per-player
-match games.
+audit and SHADOW evaluation only: later-set scores/winners, per-player match
+games and additional set-outcome marginals already implied by that same state.
 """
 
 from collections import defaultdict
@@ -19,12 +19,21 @@ PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 
 CANDIDATE_CAPTURE_READY_MARKETS = frozenset({
+    "set1_tiebreak",
     "set2_winner",
     "set3_winner",
+    "set2_exact_score",
     "set2_total",
     "set3_total",
     "player_total_games",
     "match_game_handicap",
+    "exact_sets",
+    "p1_exactly_1_set",
+    "p1_exactly_2_sets",
+    "p2_exactly_1_set",
+    "p2_exactly_2_sets",
+    "p1_wins_a_set",
+    "p2_wins_a_set",
 })
 CANDIDATE_CAPTURE_GAP_MARKETS = frozenset()
 
@@ -114,11 +123,16 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
         for set_no in (1, 2, 3):
             score = row.get(f"set{set_no}")
             row[f"set{set_no}_winner"] = (1 if score[0] > score[1] else 2) if score else None
+        row["set1_tiebreak"] = set1 in {(7, 6), (6, 7)}
         out.append(row)
     return out
 
 
-def _conditional_probability(outcomes: list[dict[str, Any]], eligible: Callable[[dict[str, Any]], bool], hit: Callable[[dict[str, Any]], bool]) -> float | None:
+def _conditional_probability(
+    outcomes: list[dict[str, Any]],
+    eligible: Callable[[dict[str, Any]], bool],
+    hit: Callable[[dict[str, Any]], bool],
+) -> float | None:
     denominator = sum(o["prob"] for o in outcomes if eligible(o))
     if denominator <= 0.0:
         return None
@@ -126,8 +140,21 @@ def _conditional_probability(outcomes: list[dict[str, Any]], eligible: Callable[
     return numerator / denominator
 
 
-def _settled_probability(outcomes: list[dict[str, Any]], voided: Callable[[dict[str, Any]], bool], hit: Callable[[dict[str, Any]], bool]) -> float | None:
+def _settled_probability(
+    outcomes: list[dict[str, Any]],
+    voided: Callable[[dict[str, Any]], bool],
+    hit: Callable[[dict[str, Any]], bool],
+) -> float | None:
     return _conditional_probability(outcomes, lambda o: not voided(o), hit)
+
+
+def _yes_no(value: str | None) -> bool | None:
+    token = str(value or "").strip().casefold()
+    if token in {"yes", "tak", "true", "1"}:
+        return True
+    if token in {"no", "nie", "false", "0"}:
+        return False
+    return None
 
 
 def set_reach_probability(match: dict[str, Any], set_no: int) -> float | None:
@@ -148,7 +175,7 @@ def shadow_probability(
     pick: str | None = None,
     outcomes: list[dict[str, Any]] | None = None,
 ) -> float | None:
-    """Evaluate one selection, optionally reusing a prebuilt match distribution."""
+    """Evaluate one exact canonical selection, optionally reusing one match state."""
     state = outcomes if outcomes is not None else build_shadow_outcomes(match)
     if not state:
         return None
@@ -157,6 +184,14 @@ def shadow_probability(
     if market in {"set2_winner", "set3_winner"} and side in {1, 2}:
         field = market.replace("_winner", "")
         return _conditional_probability(state, lambda o: o.get(field) is not None, lambda o: o.get(market) == side)
+
+    if market == "set2_exact_score" and pick:
+        wanted = str(pick).strip().replace("-", ":")
+        return _conditional_probability(
+            state,
+            lambda o: o.get("set2") is not None,
+            lambda o: f'{o["set2"][0]}:{o["set2"][1]}' == wanted,
+        )
 
     if market in {"set2_total", "set3_total"} and line is not None and pick in {"over", "under"}:
         field = "set2" if market.startswith("set2") else "set3"
@@ -187,5 +222,44 @@ def shadow_probability(
             else (lambda o: o["p2_total_games"] + handicap - o["p1_total_games"])
         )
         return _settled_probability(state, lambda o: abs(adjusted(o)) <= 1e-12, lambda o: adjusted(o) > 0.0)
+
+    if market == "exact_sets" and pick:
+        try:
+            wanted = int(float(str(pick).strip()))
+        except (TypeError, ValueError):
+            return None
+        return sum(o["prob"] for o in state if o["set_count"] == wanted)
+
+    if market == "set1_tiebreak":
+        wanted = _yes_no(pick)
+        if wanted is None:
+            return None
+        return sum(o["prob"] for o in state if bool(o["set1_tiebreak"]) is wanted)
+
+    set_outcome_markets = {
+        "p1_exactly_1_set",
+        "p1_exactly_2_sets",
+        "p2_exactly_1_set",
+        "p2_exactly_2_sets",
+        "p1_wins_a_set",
+        "p2_wins_a_set",
+    }
+    if market in set_outcome_markets:
+        wanted = _yes_no(pick)
+        if wanted is None:
+            return None
+
+        def actual(o: dict[str, Any]) -> bool:
+            w1, w2 = o["sets"]
+            return {
+                "p1_exactly_1_set": w1 == 1,
+                "p1_exactly_2_sets": w1 == 2,
+                "p2_exactly_1_set": w2 == 1,
+                "p2_exactly_2_sets": w2 == 2,
+                "p1_wins_a_set": w1 >= 1,
+                "p2_wins_a_set": w2 >= 1,
+            }[market]
+
+        return sum(o["prob"] for o in state if actual(o) is wanted)
 
     return None
