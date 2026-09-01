@@ -65,12 +65,14 @@ def test_parity_pairs_sum_to_one():
         assert math.isclose(odd + even, 1.0, rel_tol=0, abs_tol=1e-9)
 
 
-def test_any_set_to_nil_is_exact_for_bo3_and_refused_for_bounded_bo5():
-    yes = shadow_probability(_match(3), "any_set_to_nil", pick="yes")
-    no = shadow_probability(_match(3), "any_set_to_nil", pick="no")
-    assert yes is not None and no is not None
-    assert math.isclose(yes + no, 1.0, rel_tol=0, abs_tol=1e-9)
-    assert shadow_probability(_match(5), "any_set_to_nil", pick="yes") is None
+def test_any_set_to_nil_is_exact_for_bo3_and_bo5():
+    for best_of in (3, 5):
+        yes = shadow_probability(_match(best_of), "any_set_to_nil", pick="yes")
+        no = shadow_probability(_match(best_of), "any_set_to_nil", pick="no")
+        assert yes is not None and no is not None
+        assert 0.0 <= yes <= 1.0
+        assert 0.0 <= no <= 1.0
+        assert math.isclose(yes + no, 1.0, rel_tol=0, abs_tol=1e-9)
 
 
 def test_adapter_accepts_new_exact_canonical_state_markets():
