@@ -19,7 +19,7 @@ def _match():
     }
 
 
-def _row(market="set2_winner", pick="Alpha", probability=0.7, *, line=None, player=None):
+def _row(market="set2_winner", pick="Alpha", probability=0.7, *, line=None, player=None, source_model="state_distribution"):
     return {
         "market": market,
         "pick": pick,
@@ -32,6 +32,7 @@ def _row(market="set2_winner", pick="Alpha", probability=0.7, *, line=None, play
         "source_market_id": "sm1",
         "source_outcome_id": "so1",
         "adapter_version": "test",
+        "source_model": source_model,
     }
 
 
@@ -47,6 +48,7 @@ def test_register_deduplicates_and_rejects_non_shadow_rows():
     assert len(rows) == 1
     assert rows[0]["operator_playable"] is False
     assert rows[0]["production_influence"] is False
+    assert rows[0]["source_model"] == "state_distribution"
     bad = dict(row, mode="PROD")
     assert register_predictions(_match(), [bad]) == []
 
@@ -58,8 +60,9 @@ def test_hit_and_miss_receive_brier_and_log_loss():
         "p1": "Alpha",
         "p2": "Beta",
         "sets": [[6, 4], [6, 3]],
-    })
+    }, settled_at="2026-09-01T14:00:00Z")
     assert hit["settlement"] == "hit"
+    assert hit["settled_at"] == "2026-09-01T14:00:00Z"
     assert abs(hit["brier"] - 0.04) < 1e-12
     assert hit["log_loss"] > 0
 
@@ -105,6 +108,30 @@ def test_push_void_is_excluded_from_metrics():
     assert report["overall"]["brier"] is None
 
 
+def test_summary_recomputes_metrics_instead_of_trusting_cached_fields():
+    row = register_predictions(_match(), [_row(probability=0.8)])[0]
+    row["settlement"] = "hit"
+    row["brier"] = 999.0
+    row["log_loss"] = 999.0
+    report = summarize([row])
+    assert abs(report["overall"]["brier"] - 0.04) < 1e-12
+    assert 0 < report["overall"]["log_loss"] < 1
+
+
+def test_calibration_boundary_probability_one_is_counted_once():
+    rows = []
+    for index, probability in enumerate((0.0, 0.2, 0.4, 0.8, 1.0), start=1):
+        row = register_predictions(
+            _match(),
+            [dict(_row(probability=probability), source_outcome_id=f"so{index}")],
+        )[0]
+        row["settlement"] = "hit" if probability >= 0.5 else "miss"
+        rows.append(row)
+    report = summarize(rows, calibration_bins=5)
+    assert sum(bucket["n"] for bucket in report["calibration"]) == len(rows)
+    assert sum(1 for bucket in report["calibration"] if bucket["from"] <= 1.0 <= bucket["to"]) == 1
+
+
 def test_summary_calculates_accuracy_brier_logloss_and_groups():
     base = register_predictions(
         _match(),
@@ -127,4 +154,5 @@ def test_summary_calculates_accuracy_brier_logloss_and_groups():
     assert report["overall"]["log_loss"] > 0
     assert report["by_market"]["set2_winner"]["n"] == 2
     assert report["by_surface"]["hard"]["n"] == 2
+    assert report["by_source_model"]["state_distribution"]["n"] == 2
     assert sum(bucket["n"] for bucket in report["calibration"]) == 2
