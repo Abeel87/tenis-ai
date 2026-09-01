@@ -14,7 +14,7 @@ from typing import Any, Iterable
 
 from backend.neuro_shadow_tracker_v935 import register_predictions, settle_prediction, summarize
 
-VERSION = "neuro-shadow-history-v9.3.5"
+VERSION = "neuro-shadow-history-v9.3.6"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -124,7 +124,7 @@ def append_prediction_batches(
 
 
 def _final_key(final: dict[str, Any]) -> str | None:
-    value = final.get("match_id") or final.get("id")
+    value = final.get("match_id") if final.get("match_id") is not None else final.get("id")
     return str(value) if value is not None else None
 
 
@@ -134,7 +134,13 @@ def settle_history(
     history_path: Path = DEFAULT_HISTORY_PATH,
     stats_path: Path = DEFAULT_STATS_PATH,
 ) -> dict[str, Any]:
-    """Settle pending rows against completed/retired/void final match records."""
+    """Settle pending or retryable unverifiable rows against final match records.
+
+    HIT/MISS/VOID are terminal and remain immutable. ``unverifiable`` is
+    intentionally retryable so later settlement coverage or newly available
+    final evidence can recover old SHADOW rows without changing the original
+    forecast probability or selection identity.
+    """
     rows = load_history(history_path)
     final_map = {
         key: final
@@ -145,9 +151,12 @@ def settle_history(
     }
 
     settled_now = 0
+    retried_unverifiable = 0
+    recovered_unverifiable = 0
     out: list[dict[str, Any]] = []
     for row in rows:
-        if row.get("settlement") is not None:
+        previous = row.get("settlement")
+        if previous not in {None, "unverifiable"}:
             out.append(row)
             continue
         match_id = row.get("match_id")
@@ -155,9 +164,14 @@ def settle_history(
         if final is None:
             out.append(row)
             continue
+        if previous == "unverifiable":
+            retried_unverifiable += 1
         settled = settle_prediction(row, final)
-        if settled.get("settlement") is not None:
+        current = settled.get("settlement")
+        if previous is None and current is not None:
             settled_now += 1
+        elif previous == "unverifiable" and current != "unverifiable":
+            recovered_unverifiable += 1
         out.append(settled)
 
     _write_json_atomic(history_path, out)
@@ -168,7 +182,10 @@ def settle_history(
         "mode": MODE,
         "total": len(out),
         "settled_now": settled_now,
+        "retried_unverifiable": retried_unverifiable,
+        "recovered_unverifiable": recovered_unverifiable,
         "pending": sum(1 for row in out if row.get("settlement") is None),
+        "unverifiable": sum(1 for row in out if row.get("settlement") == "unverifiable"),
         "scored": stats.get("scored", 0),
         "production_influence": False,
         "playable_influence": False,
