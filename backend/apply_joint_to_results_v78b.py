@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
 
 from joint_builder_v78b import add_joint_builder
@@ -24,7 +25,14 @@ def main():
     ready = sum(1 for m in enriched if (m.get("joint_builder_v78b") or {}).get("status") == "READY")
     nd = sum(1 for m in enriched if (m.get("joint_builder_v78b") or {}).get("status") == "N/D")
     failed = sum(1 for m in enriched if (m.get("joint_builder_v78b") or {}).get("status") == "FAIL")
-    pbp_market_ready = sum(1 for m in enriched if ((m.get("early_hold_v7") or {}).get("market_evidence_v940") or {}).get("market_ready"))
+    pbp_market_ready = 0
+    ready_by_market = Counter()
+    for match in enriched:
+        evidence = ((match.get("early_hold_v7") or {}).get("market_evidence_v940") or {})
+        if evidence.get("market_ready"):
+            pbp_market_ready += 1
+        for market in evidence.get("ready_markets") or []:
+            ready_by_market[str(market)] += 1
 
     tmp = RESULTS.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(enriched, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -38,6 +46,7 @@ def main():
         meta = {}
     meta["pbp_cache_recovery_v941"] = recovery
     meta["pbp_market_ready_v940"] = pbp_market_ready
+    meta["pbp_market_ready_by_market_v940"] = dict(sorted(ready_by_market.items()))
     meta_tmp = META.with_suffix(".json.tmp")
     meta_tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     meta_tmp.replace(META)
@@ -48,6 +57,7 @@ def main():
         "N/D": nd,
         "FAIL": failed,
         "pbp_market_ready": pbp_market_ready,
+        "pbp_market_ready_by_market": dict(sorted(ready_by_market.items())),
         "pbp_cache_recovery": recovery,
     }, ensure_ascii=False))
 
