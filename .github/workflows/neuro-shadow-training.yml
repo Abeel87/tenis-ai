@@ -1,0 +1,97 @@
+name: NEURO SHADOW heavy training
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 2,14 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/neuro_shadow_neural_v936.py'
+      - 'backend/neuro_shadow_training_v936.py'
+      - 'backend/neuro_shadow_current_v936.py'
+      - 'backend/neuro_shadow_runner_v935.py'
+      - 'tests/test_neuro_shadow_neural_v936.py'
+      - 'tests/test_neuro_shadow_training_v936.py'
+      - 'tests/test_neuro_shadow_current_v936.py'
+      - 'tests/test_neuro_shadow_runner_v935.py'
+      - '.github/workflows/neuro-shadow-training.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: neuro-shadow-heavy-training
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: NEURO heavy-path guards
+        run: |
+          python -m py_compile backend/neuro_shadow_neural_v936.py
+          python -m py_compile backend/neuro_shadow_training_v936.py
+          python -m py_compile backend/neuro_shadow_current_v936.py
+          python -m py_compile backend/neuro_shadow_runner_v935.py
+          python -m pytest -q tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_training_v936.py tests/test_neuro_shadow_current_v936.py tests/test_neuro_shadow_runner_v935.py
+
+      - name: Train neural SHADOW models
+        if: github.event_name != 'pull_request'
+        run: python -m backend.neuro_shadow_runner_v935 train
+
+      - name: Rebuild NEURO current feed from trained models
+        if: github.event_name != 'pull_request'
+        run: python -m backend.neuro_shadow_runner_v935 current
+
+      - name: Hard isolation guard
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data=Path('frontend/data')
+          model=json.loads((data/'neuro_shadow_neural_v936.json').read_text(encoding='utf-8'))
+          current=json.loads((data/'neuro_shadow_current_v936.json').read_text(encoding='utf-8'))
+          assert model.get('mode') == 'SHADOW'
+          assert model.get('production_influence') is False
+          assert model.get('playable_influence') is False
+          assert model.get('symphony_prod_influence') is False
+          assert model.get('auto_promote') is False
+          assert current.get('mode') == 'SHADOW'
+          assert current.get('production_influence') is False
+          assert current.get('playable_influence') is False
+          assert current.get('operator_playable') is False
+          PY
+
+      - name: Publish trained NEURO artifacts
+        if: github.event_name != 'pull_request'
+        id: commit
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/data/neuro_shadow_neural_v936.json frontend/data/neuro_shadow_current_v936.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "data: refresh NEURO SHADOW training"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch FAST Pages deploy
+        if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages-fast.yml --ref main
