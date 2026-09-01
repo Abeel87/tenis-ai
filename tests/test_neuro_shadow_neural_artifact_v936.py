@@ -17,4 +17,5 @@ def test_neuro_artifact_compatibility_stays_shadow_only():
     report = build_training_report([])
     assert report["status"] == "COLLECTING_DATA"
     assert report["auto_promote"] is False
-    assert report["ready_markets"] == 0
+    assert report["markets_ready"] == 0
+    assert report["ready_markets"] == []
