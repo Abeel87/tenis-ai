@@ -53,6 +53,19 @@ def test_register_deduplicates_and_rejects_non_shadow_rows():
     assert register_predictions(_match(), [bad]) == []
 
 
+def test_feature_snapshot_is_deep_frozen_at_registration():
+    row = _row()
+    row["feature_snapshot"] = {
+        "numeric": {"state_probability": 0.61},
+        "metadata": {"surface": "hard"},
+    }
+    saved = register_predictions(_match(), [row])[0]
+    row["feature_snapshot"]["numeric"]["state_probability"] = 0.99
+    row["feature_snapshot"]["metadata"]["surface"] = "clay"
+    assert saved["feature_snapshot"]["numeric"]["state_probability"] == 0.61
+    assert saved["feature_snapshot"]["metadata"]["surface"] == "hard"
+
+
 def test_hit_and_miss_receive_brier_and_log_loss():
     hit = register_predictions(_match(), [_row(probability=0.8)])[0]
     hit = settle_prediction(hit, {
