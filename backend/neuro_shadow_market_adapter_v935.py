@@ -19,19 +19,31 @@ from backend.neuro_shadow_state_v935 import (
     shadow_probability,
 )
 
-VERSION = "neuro-shadow-market-adapter-v9.3.5"
+VERSION = "neuro-shadow-market-adapter-v9.3.6"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 
 YES_NO_MARKETS = frozenset({
     "set1_tiebreak",
+    "any_set_to_nil",
     "p1_exactly_1_set",
     "p1_exactly_2_sets",
     "p2_exactly_1_set",
     "p2_exactly_2_sets",
     "p1_wins_a_set",
     "p2_wins_a_set",
+})
+HANDICAP_MARKETS = frozenset({
+    "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
+    "set_handicap",
+})
+PARITY_MARKETS = frozenset({
+    "match_games_parity",
+    "set1_games_parity",
+    "set2_games_parity",
 })
 
 
@@ -96,7 +108,7 @@ def adapt_canonical_selection(
         if side is None or selection.get("operator_line_verified") is not True or line is None or pick not in {"over", "under"}:
             return None
         kwargs.update(side=side, line=float(line), pick=pick)
-    elif market == "match_game_handicap":
+    elif market in HANDICAP_MARKETS:
         side = _side_for_pick(selection, match)
         if side is None or selection.get("operator_line_verified") is not True or line is None:
             return None
@@ -109,6 +121,10 @@ def adapt_canonical_selection(
         kwargs["pick"] = pick
     elif market in YES_NO_MARKETS:
         if pick not in {"yes", "no", "tak", "nie", "true", "false", "1", "0"}:
+            return None
+        kwargs["pick"] = pick
+    elif market in PARITY_MARKETS:
+        if pick not in {"odd", "even", "nieparzyste", "nieparzysta", "parzyste", "parzysta"}:
             return None
         kwargs["pick"] = pick
     else:
