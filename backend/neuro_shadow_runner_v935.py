@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-"""Isolated runner for capturing, settling and training NEURO SHADOW evidence.
+"""Isolated runner for NEURO SHADOW capture, settlement, training and current feed.
 
-This module is deliberately opt-in. Production/Symphony/PLAYABLE code does not
-import it. The runner reads the already-built canonical Superbet context and
-writes only dedicated NEURO SHADOW history/stat/training/current files.
+Hourly ``run`` is intentionally lightweight: settle -> capture only unseen exact
+operator rows -> rebuild current UI feed. Neural retraining lives in explicit
+``train``/``full`` modes so the hourly Superbet refresh does not become a
+long-running training job.
 """
 
 import argparse
@@ -112,8 +113,6 @@ def capture_matches(
             continue
         new_candidate_selections += len(fresh)
 
-        # Preserve model_signals and all context metadata, but send only unseen
-        # canonical selections through the costly shared-state adapter.
         fresh_context = dict(context)
         fresh_context["canonical_selections"] = fresh
         rows = adapt_market_context(match, fresh_context)
@@ -191,9 +190,56 @@ def current_file(
     return refresh_current_feed(results_path, history_path, training_path, current_path)
 
 
+def run_action(
+    action: str,
+    *,
+    results_path: Path = DEFAULT_RESULTS_PATH,
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    stats_path: Path = DEFAULT_STATS_PATH,
+    training_path: Path = DEFAULT_TRAINING_PATH,
+    current_path: Path = DEFAULT_CURRENT_PATH,
+) -> dict[str, Any]:
+    """Execute one isolated pipeline mode.
+
+    ``run`` is hourly/light and never trains. ``full`` is the explicit heavy
+    pipeline for scheduled/manual neural retraining.
+    """
+    payload: dict[str, Any] = {
+        "version": VERSION,
+        "mode": MODE,
+        "action": action,
+        "heavy_training": action in {"train", "full"},
+    }
+    if action in {"settle", "run", "full"}:
+        payload["settlement"] = settle_file(
+            results_path, history_path=history_path, stats_path=stats_path
+        )
+    if action in {"capture", "run", "full"}:
+        payload["capture"] = capture_file(
+            results_path, history_path=history_path, stats_path=stats_path
+        )
+    if action in {"train", "full"}:
+        payload["training"] = train_file(
+            history_path=history_path, training_path=training_path
+        )
+    if action in {"current", "run", "full"}:
+        payload["current"] = current_file(
+            results_path,
+            history_path=history_path,
+            training_path=training_path,
+            current_path=current_path,
+        )
+    return payload
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated capture/settlement/training/current runner")
-    parser.add_argument("action", choices=("capture", "settle", "train", "current", "run"), nargs="?", default="run")
+    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated runner")
+    parser.add_argument(
+        "action",
+        choices=("capture", "settle", "train", "current", "run", "full"),
+        nargs="?",
+        default="run",
+    )
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--history", type=Path, default=DEFAULT_HISTORY_PATH)
     parser.add_argument("--stats", type=Path, default=DEFAULT_STATS_PATH)
@@ -201,24 +247,14 @@ def main() -> int:
     parser.add_argument("--current", type=Path, default=DEFAULT_CURRENT_PATH)
     args = parser.parse_args()
 
-    payload: dict[str, Any] = {"version": VERSION, "mode": MODE}
-    if args.action in {"settle", "run"}:
-        payload["settlement"] = settle_file(
-            args.results, history_path=args.history, stats_path=args.stats
-        )
-    if args.action in {"capture", "run"}:
-        payload["capture"] = capture_file(
-            args.results, history_path=args.history, stats_path=args.stats
-        )
-    if args.action in {"train", "run"}:
-        payload["training"] = train_file(history_path=args.history, training_path=args.training)
-    if args.action in {"current", "run"}:
-        payload["current"] = current_file(
-            args.results,
-            history_path=args.history,
-            training_path=args.training,
-            current_path=args.current,
-        )
+    payload = run_action(
+        args.action,
+        results_path=args.results,
+        history_path=args.history,
+        stats_path=args.stats,
+        training_path=args.training,
+        current_path=args.current,
+    )
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return 0
 
