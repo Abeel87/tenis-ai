@@ -25,5 +25,20 @@ def test_neuro_nav_is_placed_next_to_symphony_and_brain_targets_superbet_panel()
 
 def test_neuro_ui_never_formats_missing_neural_probability_as_a_number():
     js = (ROOT / "frontend" / "neuro-shadow-v936.js").read_text(encoding="utf-8")
-    assert "row.neural_probability==null?'NEURO: zbieranie'" in js
+    assert "row.neural_probability==null" in js
     assert "NEURO ${pct(row.neural_probability)}" in js
+
+
+def test_neuro_ui_never_shows_ready_from_incompatible_training_artifact():
+    js = (ROOT / "frontend" / "neuro-shadow-v936.js").read_text(encoding="utf-8")
+    assert "c.training_artifact_compatible!==false" in js
+    assert "compatible&&r.status==='SHADOW_MODEL_READY'" in js
+    assert "STALE ARTIFACT" in js
+    assert "STALE_MODEL_ARTIFACT" in js
+
+
+def test_neuro_ui_preserves_zero_match_identity():
+    js = (ROOT / "frontend" / "neuro-shadow-v936.js").read_text(encoding="utf-8")
+    assert "String(v??'')" in js
+    assert "normalizeId(m.match_id)===id" in js
+    assert "m.match_id||''" not in js
