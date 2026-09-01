@@ -127,3 +127,70 @@ def test_missing_final_leaves_prediction_pending(tmp_path):
     assert result["settled_now"] == 0
     assert result["pending"] == 1
     assert load_history(history)[0]["settlement"] is None
+
+
+def test_unverifiable_row_can_be_recovered_without_changing_forecast(tmp_path):
+    history = tmp_path / "history.json"
+    stats = tmp_path / "stats.json"
+    row = {
+        **_row(0.64),
+        "market": "set1_tiebreak",
+        "pick": "yes",
+        "source_market_id": "tb1",
+        "source_outcome_id": "yes",
+    }
+    append_predictions(_match(), [row], history_path=history, stats_path=stats, created_at="t1")
+    saved = load_history(history)
+    saved[0]["settlement"] = "unverifiable"
+    saved[0]["settled_at"] = "old-settlement"
+    history.write_text(json.dumps(saved), encoding="utf-8")
+
+    final = {
+        "match_id": "m-1",
+        "status": "completed",
+        "p1": "Alpha",
+        "p2": "Beta",
+        "sets": [[7, 6], [6, 4]],
+        "completed_sets": [True, True],
+        "number_of_sets": 2,
+    }
+    result = settle_history([final], history_path=history, stats_path=stats)
+    recovered = load_history(history)[0]
+
+    assert result["retried_unverifiable"] == 1
+    assert result["recovered_unverifiable"] == 1
+    assert result["scored"] == 1
+    assert recovered["settlement"] == "hit"
+    assert recovered["probability"] == 0.64
+    assert recovered["created_at"] == "t1"
+    assert recovered["target"] == 1.0
+
+
+def test_terminal_scored_settlement_is_never_rewritten(tmp_path):
+    history = tmp_path / "history.json"
+    stats = tmp_path / "stats.json"
+    append_predictions(_match(), [_row(0.7)], history_path=history, stats_path=stats, created_at="t1")
+    final_hit = {
+        "match_id": "m-1",
+        "status": "completed",
+        "p1": "Alpha",
+        "p2": "Beta",
+        "sets": [[6, 4], [6, 3]],
+        "number_of_sets": 2,
+    }
+    settle_history([final_hit], history_path=history, stats_path=stats)
+    before = load_history(history)[0]
+
+    contradictory = {
+        "match_id": "m-1",
+        "status": "completed",
+        "p1": "Alpha",
+        "p2": "Beta",
+        "sets": [[4, 6], [3, 6]],
+        "number_of_sets": 2,
+    }
+    result = settle_history([contradictory], history_path=history, stats_path=stats)
+    after = load_history(history)[0]
+
+    assert result["retried_unverifiable"] == 0
+    assert after == before
