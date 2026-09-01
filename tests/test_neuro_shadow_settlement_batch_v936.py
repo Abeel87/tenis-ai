@@ -36,6 +36,23 @@ def test_parity_markets_settle_from_exact_finished_games():
     assert _settle("set2_games_parity", "odd") == "hit"
 
 
+def test_set1_tiebreak_settles_from_finished_first_set_score():
+    tiebreak = {
+        "status": "completed",
+        "p1": "Alpha",
+        "p2": "Beta",
+        "sets": [[7, 6], [6, 4]],
+        "completed_sets": [True, True],
+        "total_games": 23,
+        "number_of_sets": 2,
+    }
+    assert _settle("set1_tiebreak", "yes", final=tiebreak) == "hit"
+    assert _settle("set1_tiebreak", "no", final=tiebreak) == "miss"
+    assert _settle("set1_tiebreak", "no") == "hit"
+    assert _settle("set1_tiebreak", "yes") == "miss"
+    assert _settle("set1_tiebreak", "maybe") == "unverifiable"
+
+
 def test_any_set_to_nil_and_player_set_props_are_exactly_settled():
     assert _settle("any_set_to_nil", "no") == "hit"
     assert _settle("any_set_to_nil", "yes") == "miss"
@@ -70,7 +87,20 @@ def test_retirement_only_settles_completed_set_specific_markets():
     }
     assert _settle("set1_game_handicap", "Alpha", line=-1.5, final=retired) == "hit"
     assert _settle("set1_games_parity", "even", final=retired) == "hit"
+    assert _settle("set1_tiebreak", "no", final=retired) == "hit"
     assert _settle("set2_game_handicap", "Alpha", line=-1.5, final=retired) == "void"
     assert _settle("set2_games_parity", "odd", final=retired) == "void"
     assert _settle("match_game_handicap", "Alpha", line=-1.5, final=retired) == "void"
     assert _settle("any_set_to_nil", "no", final=retired) == "void"
+
+
+def test_retired_incomplete_first_set_voids_tiebreak_market():
+    retired = {
+        "status": "retired",
+        "p1": "Alpha",
+        "p2": "Beta",
+        "sets": [[5, 5]],
+        "completed_sets": [False],
+    }
+    assert _settle("set1_tiebreak", "yes", final=retired) == "void"
+    assert _settle("set1_tiebreak", "no", final=retired) == "void"
