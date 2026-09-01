@@ -15,7 +15,7 @@ from typing import Any
 
 from backend.signal_settlement import settle_signal_live
 
-VERSION = "neuro-shadow-tracker-v9.3.5"
+VERSION = "neuro-shadow-tracker-v9.3.8"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -48,10 +48,15 @@ def _row_metrics(row: dict[str, Any]) -> tuple[float, float] | None:
     return brier, log_loss
 
 
+def _key_part(value: Any) -> str:
+    """Serialize identity fields without collapsing valid falsy values like 0.0."""
+    return "" if value is None else str(value)
+
+
 def prediction_key(match: dict[str, Any], row: dict[str, Any]) -> str:
     match_id = match.get("match_id") or match.get("id") or f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
     return "|".join(
-        str(x or "")
+        _key_part(x)
         for x in (
             match_id,
             row.get("market"),
