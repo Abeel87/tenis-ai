@@ -34,6 +34,19 @@ def _prob(value: Any) -> float | None:
     return p
 
 
+def _row_metrics(row: dict[str, Any]) -> tuple[float, float] | None:
+    p = _prob(row.get("probability"))
+    status = row.get("settlement")
+    if p is None or status not in SCORED_STATUSES:
+        return None
+    y = 1.0 if status == "hit" else 0.0
+    brier = (p - y) ** 2
+    eps = 1e-12
+    pc = min(1.0 - eps, max(eps, p))
+    log_loss = -(y * math.log(pc) + (1.0 - y) * math.log(1.0 - pc))
+    return brier, log_loss
+
+
 def prediction_key(match: dict[str, Any], row: dict[str, Any]) -> str:
     match_id = match.get("match_id") or match.get("id") or f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
     return "|".join(
@@ -85,6 +98,7 @@ def register_predictions(
                 "source_market_id": row.get("source_market_id"),
                 "source_outcome_id": row.get("source_outcome_id"),
                 "adapter_version": row.get("adapter_version"),
+                "source_model": row.get("source_model"),
                 "tracker_version": VERSION,
                 "mode": MODE,
                 "operator_playable": False,
@@ -97,7 +111,12 @@ def register_predictions(
     return out
 
 
-def settle_prediction(prediction: dict[str, Any], final: dict[str, Any]) -> dict[str, Any]:
+def settle_prediction(
+    prediction: dict[str, Any],
+    final: dict[str, Any],
+    *,
+    settled_at: str | None = None,
+) -> dict[str, Any]:
     """Settle one registered prediction using the shared tennis settlement rules."""
     row = dict(prediction)
     signal = {
@@ -108,16 +127,17 @@ def settle_prediction(prediction: dict[str, Any], final: dict[str, Any]) -> dict
     }
     status = settle_signal_live(signal, final)
     row["settlement"] = status
-    row["settled_at"] = datetime.now(timezone.utc).isoformat()
-    if status in SCORED_STATUSES:
-        y = 1.0 if status == "hit" else 0.0
-        p = _prob(row.get("probability"))
-        if p is not None:
-            row["target"] = y
-            row["brier"] = (p - y) ** 2
-            eps = 1e-12
-            pc = min(1.0 - eps, max(eps, p))
-            row["log_loss"] = -(y * math.log(pc) + (1.0 - y) * math.log(1.0 - pc))
+    row["settled_at"] = settled_at or datetime.now(timezone.utc).isoformat()
+    values = _row_metrics(row)
+    if values is not None:
+        brier, log_loss = values
+        row["target"] = 1.0 if status == "hit" else 0.0
+        row["brier"] = brier
+        row["log_loss"] = log_loss
+    else:
+        row.pop("target", None)
+        row.pop("brier", None)
+        row.pop("log_loss", None)
     return row
 
 
@@ -128,26 +148,41 @@ def _group_key(row: dict[str, Any], fields: tuple[str, ...]) -> str:
 def summarize(rows: list[dict[str, Any]], *, calibration_bins: int = 10) -> dict[str, Any]:
     """Compute non-leaky metrics from settled hit/miss rows only.
 
-    VOID and unverifiable rows stay visible in counts but never enter Brier,
-    log-loss, accuracy or calibration denominators.
+    Metrics are recomputed from immutable probability + settlement rather than
+    trusting cached metric fields. VOID and unverifiable rows stay visible in
+    counts but never enter Brier, log-loss, accuracy or calibration denominators.
     """
     all_rows = [row for row in rows or [] if isinstance(row, dict)]
-    scored = [row for row in all_rows if row.get("settlement") in SCORED_STATUSES and _prob(row.get("probability")) is not None]
+    scored = [
+        row for row in all_rows
+        if row.get("settlement") in SCORED_STATUSES and _prob(row.get("probability")) is not None
+    ]
 
     def metrics(group: list[dict[str, Any]]) -> dict[str, Any]:
         n = len(group)
         if not n:
             return {"n": 0, "accuracy": None, "brier": None, "log_loss": None}
         hits = sum(1 for row in group if row.get("settlement") == "hit")
-        brier = sum(float(row.get("brier", 0.0)) for row in group) / n
-        log_loss = sum(float(row.get("log_loss", 0.0)) for row in group) / n
-        return {"n": n, "accuracy": hits / n, "brier": brier, "log_loss": log_loss}
+        pairs = [_row_metrics(row) for row in group]
+        pairs = [pair for pair in pairs if pair is not None]
+        if not pairs:
+            return {"n": 0, "accuracy": None, "brier": None, "log_loss": None}
+        return {
+            "n": n,
+            "accuracy": hits / n,
+            "brier": sum(pair[0] for pair in pairs) / n,
+            "log_loss": sum(pair[1] for pair in pairs) / n,
+        }
 
     bins = max(2, int(calibration_bins))
     calibration = []
     for idx in range(bins):
         lo, hi = idx / bins, (idx + 1) / bins
-        bucket = [row for row in scored if lo <= float(row["probability"]) <= hi if (idx == bins - 1 or float(row["probability"]) < hi)]
+        bucket = []
+        for row in scored:
+            p = float(row["probability"])
+            if (lo <= p < hi) or (idx == bins - 1 and lo <= p <= hi):
+                bucket.append(row)
         if not bucket:
             continue
         calibration.append(
@@ -162,9 +197,11 @@ def summarize(rows: list[dict[str, Any]], *, calibration_bins: int = 10) -> dict
 
     by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
     by_surface: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    by_source_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in scored:
         by_market[_group_key(row, ("market",))].append(row)
         by_surface[_group_key(row, ("surface",))].append(row)
+        by_source_model[_group_key(row, ("source_model",))].append(row)
 
     status_counts = defaultdict(int)
     for row in all_rows:
@@ -181,5 +218,6 @@ def summarize(rows: list[dict[str, Any]], *, calibration_bins: int = 10) -> dict
         "overall": metrics(scored),
         "by_market": {key: metrics(group) for key, group in sorted(by_market.items())},
         "by_surface": {key: metrics(group) for key, group in sorted(by_surface.items())},
+        "by_source_model": {key: metrics(group) for key, group in sorted(by_source_model.items())},
         "calibration": calibration,
     }
