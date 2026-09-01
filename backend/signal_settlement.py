@@ -124,6 +124,13 @@ def _settle_player_total_games(signal: dict, final: dict, sets) -> str:
     return _settle_over_under(total, signal)
 
 
+def _settle_set1_tiebreak(pick, sets) -> str:
+    if not sets:
+        return 'void'
+    a, b = sets[0]
+    return _settle_yes_no({int(a), int(b)} == {6, 7}, pick)
+
+
 def settle_signal(signal: dict, final: dict) -> str:
     if final.get('status') != 'completed':
         return 'void'
@@ -175,7 +182,8 @@ def settle_signal(signal: dict, final: dict) -> str:
         return 'hit' if pick.replace('-', ':') == str(final.get('first_set_score') or '').replace('-', ':') else 'miss'
     if market in {'match_game_handicap', 'set1_game_handicap', 'set2_game_handicap'}:
         return _settle_game_handicap(signal, final, sets, market)
-
+    if market == 'set1_tiebreak':
+        return _settle_set1_tiebreak(pick, sets)
     if market == 'set2_exact_score':
         if len(sets) < 2:
             return 'void'
@@ -287,6 +295,11 @@ def settle_signal_live(signal: dict, final: dict) -> str:
             return "void"
         actual = f"{sets[0][0]}:{sets[0][1]}"
         return "hit" if pick.replace('-', ':') == actual else "miss"
+
+    if market == "set1_tiebreak":
+        if not sets or not complete or not complete[0]:
+            return "void"
+        return _settle_set1_tiebreak(pick, sets)
 
     if market in ("set1_games_parity", "set2_games_parity", "set2_exact_score", "set1_game_handicap", "set2_game_handicap"):
         idx = 0 if market in ("set1_games_parity", "set1_game_handicap") else 1
