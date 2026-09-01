@@ -64,9 +64,7 @@ def test_capture_uses_verified_canonical_context_only(tmp_path):
     unverified = _match()
     unverified["id"] = 124
     unverified["superbet_market_v91"]["operator_verified"] = False
-
     result = capture_matches([_match(), unverified], history_path=history, stats_path=stats)
-
     assert result["matches_seen"] == 2
     assert result["matches_with_verified_operator"] == 1
     assert result["new_candidate_selections"] == 1
@@ -82,10 +80,8 @@ def test_repeated_capture_keeps_first_forecast_and_skips_state_rebuild(tmp_path,
     history = tmp_path / "history.json"
     stats = tmp_path / "stats.json"
     first = capture_matches([_match()], history_path=history, stats_path=stats)
-
     def fail_if_called(*args, **kwargs):
         raise AssertionError("unchanged selection must skip costly state adapter")
-
     monkeypatch.setattr(runner, "adapt_market_context", fail_if_called)
     second = capture_matches([_match()], history_path=history, stats_path=stats)
     assert first["added_predictions"] == 1
@@ -140,16 +136,12 @@ def test_training_status_can_run_after_capture(tmp_path):
     assert report["playable_influence"] is False
 
 
-def test_hourly_run_never_invokes_heavy_training(monkeypatch, tmp_path):
+def test_hourly_run_never_invokes_heavy_capture_or_training(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(runner, "settle_file", lambda *a, **k: calls.append("settle") or {})
-    monkeypatch.setattr(runner, "capture_file", lambda *a, **k: calls.append("capture") or {})
+    monkeypatch.setattr(runner, "capture_file", lambda *a, **k: (_ for _ in ()).throw(AssertionError("hourly run must not capture heavy state")))
+    monkeypatch.setattr(runner, "train_file", lambda *a, **k: (_ for _ in ()).throw(AssertionError("hourly run must not train")))
     monkeypatch.setattr(runner, "current_file", lambda *a, **k: calls.append("current") or {})
-
-    def fail_train(*args, **kwargs):
-        raise AssertionError("hourly run must not train neural model")
-
-    monkeypatch.setattr(runner, "train_file", fail_train)
     payload = run_action(
         "run",
         results_path=tmp_path / "results.json",
@@ -158,12 +150,28 @@ def test_hourly_run_never_invokes_heavy_training(monkeypatch, tmp_path):
         training_path=tmp_path / "training.json",
         current_path=tmp_path / "current.json",
     )
-    assert calls == ["settle", "capture", "current"]
+    assert calls == ["settle", "current"]
     assert payload["heavy_training"] is False
-    assert "training" not in payload
+    assert payload["heavy_capture"] is False
+    assert payload["training_shell_created"] is True
+    assert (tmp_path / "training.json").exists()
+    shell = json.loads((tmp_path / "training.json").read_text(encoding="utf-8"))
+    assert shell["mode"] == "SHADOW"
+    assert shell["ready_markets"] == []
+    assert shell["production_influence"] is False
 
 
-def test_full_mode_keeps_explicit_heavy_training(monkeypatch, tmp_path):
+def test_hourly_run_does_not_overwrite_existing_training_artifact(monkeypatch, tmp_path):
+    training = tmp_path / "training.json"
+    training.write_text(json.dumps({"mode": "SHADOW", "sentinel": 123}), encoding="utf-8")
+    monkeypatch.setattr(runner, "settle_file", lambda *a, **k: {})
+    monkeypatch.setattr(runner, "current_file", lambda *a, **k: {})
+    payload = run_action("run", training_path=training)
+    assert payload["training_shell_created"] is False
+    assert json.loads(training.read_text(encoding="utf-8"))["sentinel"] == 123
+
+
+def test_full_mode_keeps_explicit_heavy_capture_and_training(monkeypatch):
     calls = []
     monkeypatch.setattr(runner, "settle_file", lambda *a, **k: calls.append("settle") or {})
     monkeypatch.setattr(runner, "capture_file", lambda *a, **k: calls.append("capture") or {})
@@ -172,6 +180,7 @@ def test_full_mode_keeps_explicit_heavy_training(monkeypatch, tmp_path):
     payload = run_action("full")
     assert calls == ["settle", "capture", "train", "current"]
     assert payload["heavy_training"] is True
+    assert payload["heavy_capture"] is True
 
 
 def test_missing_or_bad_results_is_safe_noop(tmp_path):
