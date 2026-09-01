@@ -8,6 +8,11 @@ never changes PLAYABLE/Symphony PROD and never invents a line or probability.
 
 from typing import Any
 
+from backend.neuro_shadow_features_v935 import (
+    extract_feature_snapshot,
+    model_signal_index,
+    selection_signature,
+)
 from backend.neuro_shadow_state_v935 import (
     CANDIDATE_CAPTURE_READY_MARKETS,
     build_shadow_outcomes,
@@ -57,6 +62,7 @@ def adapt_canonical_selection(
     selection: dict[str, Any],
     *,
     outcomes: list[dict[str, Any]] | None = None,
+    model_signal: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Return one SHADOW assessment or None when semantics are not exact."""
     if not isinstance(selection, dict):
@@ -111,15 +117,22 @@ def adapt_canonical_selection(
     probability = shadow_probability(match, market, outcomes=outcomes, **kwargs)
     if probability is None:
         return None
+    probability = float(probability)
 
     return {
         "market": market,
         "pick": selection.get("pick"),
         "line": line,
         "player": selection.get("player"),
-        "probability": float(probability),
+        "probability": probability,
         "probability_kind": "SHADOW_STATE_P_HIT",
         "source_model": "state_distribution",
+        "feature_snapshot": extract_feature_snapshot(
+            match,
+            selection,
+            state_probability=probability,
+            model_signal=model_signal,
+        ),
         "mode": "SHADOW",
         "operator": "Superbet",
         "operator_available": True,
@@ -146,9 +159,15 @@ def adapt_market_context(match: dict[str, Any], market_context: dict[str, Any]) 
     outcomes = build_shadow_outcomes(match)
     if not outcomes:
         return []
+    model_index = model_signal_index(market_context)
     out = []
     for selection in selections:
-        adapted = adapt_canonical_selection(match, selection, outcomes=outcomes)
+        adapted = adapt_canonical_selection(
+            match,
+            selection,
+            outcomes=outcomes,
+            model_signal=model_index.get(selection_signature(selection)),
+        )
         if adapted is not None:
             out.append(adapted)
     return out
