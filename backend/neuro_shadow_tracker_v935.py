@@ -15,7 +15,7 @@ from typing import Any
 
 from backend.signal_settlement import settle_signal_live
 
-VERSION = "neuro-shadow-tracker-v9.3.8"
+VERSION = "neuro-shadow-tracker-v9.3.15"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -53,12 +53,22 @@ def _key_part(value: Any) -> str:
     return "" if value is None else str(value)
 
 
+def _match_id(match: dict[str, Any]) -> Any:
+    """Preserve valid falsy IDs; only fall back when an ID is genuinely absent."""
+    match_id = match.get("match_id")
+    if match_id is not None:
+        return match_id
+    match_id = match.get("id")
+    if match_id is not None:
+        return match_id
+    return f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
+
+
 def prediction_key(match: dict[str, Any], row: dict[str, Any]) -> str:
-    match_id = match.get("match_id") or match.get("id") or f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
     return "|".join(
         _key_part(x)
         for x in (
-            match_id,
+            _match_id(match),
             row.get("market"),
             row.get("pick"),
             row.get("line"),
@@ -90,7 +100,7 @@ def register_predictions(
         out.append(
             {
                 "prediction_key": key,
-                "match_id": match.get("match_id") or match.get("id"),
+                "match_id": _match_id(match),
                 "p1": match.get("p1") or match.get("participant1Name"),
                 "p2": match.get("p2") or match.get("participant2Name"),
                 "scheduled_time": match.get("scheduled_time") or match.get("start_time"),
@@ -108,125 +118,103 @@ def register_predictions(
                 "source_outcome_id": row.get("source_outcome_id"),
                 "adapter_version": row.get("adapter_version"),
                 "source_model": row.get("source_model"),
-                "tracker_version": VERSION,
                 "mode": MODE,
                 "operator_playable": False,
                 "production_influence": False,
                 "playable_influence": False,
                 "created_at": created_at,
                 "settlement": None,
+                "target": None,
+                "settled_at": None,
+                "brier": None,
+                "log_loss": None,
             }
         )
     return out
 
 
 def settle_prediction(
-    prediction: dict[str, Any],
-    final: dict[str, Any],
-    *,
-    settled_at: str | None = None,
+    row: dict[str, Any], final: dict[str, Any], *, settled_at: str | None = None
 ) -> dict[str, Any]:
-    """Settle one registered prediction using the shared tennis settlement rules."""
-    row = dict(prediction)
-    signal = {
-        "market": row.get("market"),
-        "pick": row.get("pick"),
-        "line": row.get("line"),
-        "player": row.get("player"),
-    }
-    status = settle_signal_live(signal, final)
-    row["settlement"] = status
-    row["settled_at"] = settled_at or datetime.now(timezone.utc).isoformat()
-    values = _row_metrics(row)
-    if values is not None:
-        brier, log_loss = values
-        row["target"] = 1.0 if status == "hit" else 0.0
-        row["brier"] = brier
-        row["log_loss"] = log_loss
+    """Settle a stored SHADOW row without changing its original forecast fields."""
+    out = copy.deepcopy(row)
+    status = settle_signal_live(out, final)
+    out["settlement"] = status
+    out["settled_at"] = settled_at or datetime.now(timezone.utc).isoformat()
+    if status in SCORED_STATUSES:
+        out["target"] = 1.0 if status == "hit" else 0.0
+        metrics = _row_metrics(out)
+        if metrics:
+            out["brier"], out["log_loss"] = metrics
     else:
-        row.pop("target", None)
-        row.pop("brier", None)
-        row.pop("log_loss", None)
-    return row
+        out["target"] = None
+        out["brier"] = None
+        out["log_loss"] = None
+    return out
 
 
-def _group_key(row: dict[str, Any], fields: tuple[str, ...]) -> str:
-    return "|".join(str(row.get(field) or "unknown") for field in fields)
-
-
-def summarize(rows: list[dict[str, Any]], *, calibration_bins: int = 10) -> dict[str, Any]:
-    """Compute non-leaky metrics from settled hit/miss rows only.
-
-    Metrics are recomputed from immutable probability + settlement rather than
-    trusting cached metric fields. VOID and unverifiable rows stay visible in
-    counts but never enter Brier, log-loss, accuracy or calibration denominators.
-    """
-    all_rows = [row for row in rows or [] if isinstance(row, dict)]
-    scored = [
-        row for row in all_rows
-        if row.get("settlement") in SCORED_STATUSES and _prob(row.get("probability")) is not None
-    ]
-
-    def metrics(group: list[dict[str, Any]]) -> dict[str, Any]:
-        n = len(group)
-        if not n:
-            return {"n": 0, "accuracy": None, "brier": None, "log_loss": None}
-        hits = sum(1 for row in group if row.get("settlement") == "hit")
-        pairs = [_row_metrics(row) for row in group]
-        pairs = [pair for pair in pairs if pair is not None]
-        if not pairs:
-            return {"n": 0, "accuracy": None, "brier": None, "log_loss": None}
-        return {
-            "n": n,
-            "accuracy": hits / n,
-            "brier": sum(pair[0] for pair in pairs) / n,
-            "log_loss": sum(pair[1] for pair in pairs) / n,
-        }
-
-    bins = max(2, int(calibration_bins))
-    calibration = []
-    for idx in range(bins):
-        lo, hi = idx / bins, (idx + 1) / bins
-        bucket = []
-        for row in scored:
-            p = float(row["probability"])
-            if (lo <= p < hi) or (idx == bins - 1 and lo <= p <= hi):
-                bucket.append(row)
+def _calibration(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    bins: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        p = _prob(row.get("probability"))
+        if p is None or row.get("settlement") not in SCORED_STATUSES:
+            continue
+        idx = min(9, int(p * 10))
+        bins[idx].append(row)
+    out = []
+    for idx in range(10):
+        bucket = bins.get(idx) or []
         if not bucket:
             continue
-        calibration.append(
-            {
-                "from": lo,
-                "to": hi,
-                "n": len(bucket),
-                "mean_probability": sum(float(row["probability"]) for row in bucket) / len(bucket),
-                "hit_rate": sum(1 for row in bucket if row.get("settlement") == "hit") / len(bucket),
-            }
-        )
+        probs = [_prob(row.get("probability")) for row in bucket]
+        probs = [p for p in probs if p is not None]
+        hits = sum(1 for row in bucket if row.get("settlement") == "hit")
+        out.append({
+            "from": idx / 10.0,
+            "to": (idx + 1) / 10.0,
+            "n": len(bucket),
+            "avg_probability": sum(probs) / len(probs),
+            "hit_rate": hits / len(bucket),
+        })
+    return out
 
-    by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    by_surface: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    by_source_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in scored:
-        by_market[_group_key(row, ("market",))].append(row)
-        by_surface[_group_key(row, ("surface",))].append(row)
-        by_source_model[_group_key(row, ("source_model",))].append(row)
 
-    status_counts = defaultdict(int)
-    for row in all_rows:
-        status_counts[str(row.get("settlement") or "pending")] += 1
+def _metric_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    scored = [row for row in rows if row.get("settlement") in SCORED_STATUSES and _prob(row.get("probability")) is not None]
+    if not scored:
+        return {"n": 0, "hits": 0, "misses": 0, "accuracy": None, "brier": None, "log_loss": None}
+    hits = sum(1 for row in scored if row.get("settlement") == "hit")
+    briers = [float(row["brier"]) for row in scored if row.get("brier") is not None]
+    losses = [float(row["log_loss"]) for row in scored if row.get("log_loss") is not None]
+    return {
+        "n": len(scored),
+        "hits": hits,
+        "misses": len(scored) - hits,
+        "accuracy": hits / len(scored),
+        "brier": sum(briers) / len(briers) if briers else None,
+        "log_loss": sum(losses) / len(losses) if losses else None,
+    }
 
+
+def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return read-only evidence metrics; VOID/unverifiable never count as scored."""
+    rows = [row for row in rows or [] if isinstance(row, dict)]
+    scored = [row for row in rows if row.get("settlement") in SCORED_STATUSES]
+    by_market: dict[str, dict[str, Any]] = {}
+    for market in sorted({str(row.get("market") or "unknown") for row in rows}):
+        subset = [row for row in rows if str(row.get("market") or "unknown") == market]
+        by_market[market] = _metric_summary(subset)
     return {
         "version": VERSION,
         "mode": MODE,
+        "total_predictions": len(rows),
+        "scored": len(scored),
+        "pending": sum(1 for row in rows if row.get("settlement") is None),
+        "void": sum(1 for row in rows if row.get("settlement") == "void"),
+        "unverifiable": sum(1 for row in rows if row.get("settlement") == "unverifiable"),
+        "overall": _metric_summary(rows),
+        "by_market": by_market,
+        "calibration": _calibration(rows),
         "production_influence": False,
         "playable_influence": False,
-        "total": len(all_rows),
-        "scored": len(scored),
-        "status_counts": dict(status_counts),
-        "overall": metrics(scored),
-        "by_market": {key: metrics(group) for key, group in sorted(by_market.items())},
-        "by_surface": {key: metrics(group) for key, group in sorted(by_surface.items())},
-        "by_source_model": {key: metrics(group) for key, group in sorted(by_source_model.items())},
-        "calibration": calibration,
     }
