@@ -1,5 +1,6 @@
 import json
 
+import backend.neuro_shadow_training_v936 as training
 from backend.neuro_shadow_training_v936 import (
     AUTO_PROMOTION,
     PLAYABLE_INFLUENCE,
@@ -22,6 +23,7 @@ def test_empty_history_stays_collecting():
     assert report["status"] == "COLLECTING_DATA"
     assert report["markets_seen"] == 0
     assert report["markets_ready"] == 0
+    assert report["ready_markets"] == []
     assert report["markets"] == {}
 
 
@@ -55,6 +57,35 @@ def test_small_market_history_does_not_fabricate_model():
     assert market["model"] is None
 
 
+def test_training_groups_history_before_calling_each_market_model(monkeypatch):
+    calls = []
+
+    def fake_train(rows, market):
+        calls.append((market, [row.get("market") for row in rows]))
+        return {
+            "market": market,
+            "mode": "SHADOW",
+            "status": "COLLECTING_DATA",
+            "model": None,
+            "production_influence": False,
+            "playable_influence": False,
+        }
+
+    monkeypatch.setattr(training, "train_market", fake_train)
+    report = training.build_training_report([
+        {"market": "set2_total"},
+        {"market": "match_game_handicap"},
+        {"market": "set2_total"},
+        {"market": ""},
+    ])
+
+    assert report["markets_seen"] == 2
+    assert calls == [
+        ("match_game_handicap", ["match_game_handicap"]),
+        ("set2_total", ["set2_total", "set2_total"]),
+    ]
+
+
 def test_refresh_writes_dedicated_artifact(tmp_path):
     history = tmp_path / "history.json"
     artifact = tmp_path / "neural.json"
@@ -66,3 +97,4 @@ def test_refresh_writes_dedicated_artifact(tmp_path):
     assert saved["production_influence"] is False
     assert saved["playable_influence"] is False
     assert saved["auto_promotion"] is False
+    assert saved["auto_promote"] is False
