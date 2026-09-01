@@ -7,6 +7,7 @@ pure helpers for recording SHADOW predictions, settling them with the shared
 settlement contract and computing calibration metrics later.
 """
 
+import copy
 import math
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -96,7 +97,7 @@ def register_predictions(
                 "player": row.get("player"),
                 "probability": p,
                 "probability_kind": row.get("probability_kind"),
-                "feature_snapshot": dict(feature_snapshot) if feature_snapshot else None,
+                "feature_snapshot": copy.deepcopy(feature_snapshot) if feature_snapshot else None,
                 "operator": row.get("operator") or "Superbet",
                 "source_market_id": row.get("source_market_id"),
                 "source_outcome_id": row.get("source_outcome_id"),
