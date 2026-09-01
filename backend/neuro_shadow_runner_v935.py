@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-"""Isolated runner for capturing NEURO SHADOW predictions from current results.
+"""Isolated runner for capturing, settling and training NEURO SHADOW evidence.
 
 This module is deliberately opt-in. Production/Symphony/PLAYABLE code does not
 import it. The runner reads the already-built canonical Superbet context and
-writes only dedicated NEURO SHADOW history/stat files.
+writes only dedicated NEURO SHADOW history/stat/training files.
 """
 
 import argparse
@@ -19,8 +19,9 @@ from backend.neuro_shadow_history_v935 import (
     settle_history,
 )
 from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
+from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH, refresh_training_artifact
 
-VERSION = "neuro-shadow-runner-v9.3.5"
+VERSION = "neuro-shadow-runner-v9.3.6"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -101,12 +102,21 @@ def settle_file(
     )
 
 
+def train_file(
+    *,
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    training_path: Path = DEFAULT_TRAINING_PATH,
+) -> dict[str, Any]:
+    return refresh_training_artifact(history_path, training_path)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated capture/settlement runner")
-    parser.add_argument("action", choices=("capture", "settle", "run"), nargs="?", default="run")
+    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated capture/settlement/training runner")
+    parser.add_argument("action", choices=("capture", "settle", "train", "run"), nargs="?", default="run")
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--history", type=Path, default=DEFAULT_HISTORY_PATH)
     parser.add_argument("--stats", type=Path, default=DEFAULT_STATS_PATH)
+    parser.add_argument("--training", type=Path, default=DEFAULT_TRAINING_PATH)
     args = parser.parse_args()
 
     payload: dict[str, Any] = {"version": VERSION, "mode": MODE}
@@ -118,6 +128,8 @@ def main() -> int:
         payload["capture"] = capture_file(
             args.results, history_path=args.history, stats_path=args.stats
         )
+    if args.action in {"train", "run"}:
+        payload["training"] = train_file(history_path=args.history, training_path=args.training)
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return 0
 
