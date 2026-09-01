@@ -12,7 +12,7 @@ import random
 from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.12"
+VERSION = "neuro-shadow-neural-v9.3.13"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -172,16 +172,22 @@ def _fit(xs: list[list[float]], ys: list[float], *, seed: int, weights: list[flo
         for idx in order:
             x, y = xs[idx], ys[idx]
             weight = max(0.0, float(sample_weights[idx]))
+            if weight <= 0.0:
+                continue
             hidden, p = _forward(net, x)
             dz2 = (p - y) * weight
             old_w2 = list(net["w2"])
             for j in range(HIDDEN_UNITS):
-                net["w2"][j] -= LEARNING_RATE * (dz2 * hidden[j] + L2 * net["w2"][j])
+                net["w2"][j] -= LEARNING_RATE * (
+                    dz2 * hidden[j] + weight * L2 * net["w2"][j]
+                )
             net["b2"] -= LEARNING_RATE * dz2
             for j in range(HIDDEN_UNITS):
                 dz1 = dz2 * old_w2[j] * (1.0 - hidden[j] ** 2)
                 for k in range(len(x)):
-                    net["w1"][j][k] -= LEARNING_RATE * (dz1 * x[k] + L2 * net["w1"][j][k])
+                    net["w1"][j][k] -= LEARNING_RATE * (
+                        dz1 * x[k] + weight * L2 * net["w1"][j][k]
+                    )
                 net["b1"][j] -= LEARNING_RATE * dz1
     return net
 
