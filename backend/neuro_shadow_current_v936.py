@@ -15,7 +15,7 @@ from backend.neuro_shadow_history_v935 import DEFAULT_HISTORY_PATH, load_history
 from backend.neuro_shadow_neural_v936 import VERSION as NEURAL_VERSION, predict
 from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH
 
-VERSION = "neuro-shadow-current-v9.3.7"
+VERSION = "neuro-shadow-current-v9.3.8"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -42,7 +42,7 @@ def _write_json_atomic(path: Path, value: Any) -> None:
 
 def _match_id(row: dict[str, Any]) -> str:
     value = row.get("match_id") if row.get("match_id") is not None else row.get("id")
-    return str(value or "")
+    return "" if value is None else str(value)
 
 
 def build_current_feed(
