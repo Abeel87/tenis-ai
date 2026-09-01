@@ -4,7 +4,7 @@ from __future__ import annotations
 
 This module is deliberately opt-in. Production/Symphony/PLAYABLE code does not
 import it. The runner reads the already-built canonical Superbet context and
-writes only dedicated NEURO SHADOW history/stat/training files.
+writes only dedicated NEURO SHADOW history/stat/training/current files.
 """
 
 import argparse
@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from backend.neuro_shadow_current_v936 import DEFAULT_CURRENT_PATH, refresh_current_feed
 from backend.neuro_shadow_history_v935 import (
     DEFAULT_HISTORY_PATH,
     DEFAULT_STATS_PATH,
@@ -110,13 +111,24 @@ def train_file(
     return refresh_training_artifact(history_path, training_path)
 
 
+def current_file(
+    results_path: Path = DEFAULT_RESULTS_PATH,
+    *,
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    training_path: Path = DEFAULT_TRAINING_PATH,
+    current_path: Path = DEFAULT_CURRENT_PATH,
+) -> dict[str, Any]:
+    return refresh_current_feed(results_path, history_path, training_path, current_path)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated capture/settlement/training runner")
-    parser.add_argument("action", choices=("capture", "settle", "train", "run"), nargs="?", default="run")
+    parser = argparse.ArgumentParser(description="NEURO SHADOW isolated capture/settlement/training/current runner")
+    parser.add_argument("action", choices=("capture", "settle", "train", "current", "run"), nargs="?", default="run")
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--history", type=Path, default=DEFAULT_HISTORY_PATH)
     parser.add_argument("--stats", type=Path, default=DEFAULT_STATS_PATH)
     parser.add_argument("--training", type=Path, default=DEFAULT_TRAINING_PATH)
+    parser.add_argument("--current", type=Path, default=DEFAULT_CURRENT_PATH)
     args = parser.parse_args()
 
     payload: dict[str, Any] = {"version": VERSION, "mode": MODE}
@@ -130,6 +142,13 @@ def main() -> int:
         )
     if args.action in {"train", "run"}:
         payload["training"] = train_file(history_path=args.history, training_path=args.training)
+    if args.action in {"current", "run"}:
+        payload["current"] = current_file(
+            args.results,
+            history_path=args.history,
+            training_path=args.training,
+            current_path=args.current,
+        )
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
     return 0
 
