@@ -2,6 +2,7 @@ import math
 
 from backend.neuro_shadow_neural_v936 import (
     AUTO_PROMOTE,
+    MIN_DISTINCT_MATCHES,
     MIN_SETTLED,
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
@@ -33,7 +34,6 @@ def _snapshot(state, base=None, catboost=None):
 
 
 def _row(index, hit, market="set2_total"):
-    # Learnable but not perfect relation: high state probability usually hits.
     state = 0.72 if hit else 0.28
     jitter = ((index % 7) - 3) * 0.01
     state = max(0.05, min(0.95, state + jitter))
@@ -69,6 +69,23 @@ def test_class_imbalance_gate_blocks_training():
     assert report["model"] is None
 
 
+def test_many_correlated_lines_from_too_few_matches_do_not_unlock_model():
+    rows = []
+    match_count = max(2, MIN_DISTINCT_MATCHES - 1)
+    for i in range(MIN_SETTLED + 40):
+        row = _row(i, i % 2 == 0)
+        row["match_id"] = f"crowded-{i % match_count}"
+        row["prediction_key"] = f"crowded-{i}"
+        rows.append(row)
+    report = train_market(rows, "set2_total")
+    assert report["status"] == "COLLECTING_DATA"
+    assert report["model"] is None
+    assert report["gate"]["settled"] >= MIN_SETTLED
+    assert report["gate"]["distinct_matches"] == match_count
+    assert report["gate"]["min_distinct_matches"] == MIN_DISTINCT_MATCHES
+    assert report["gate"]["reason"] == "insufficient_distinct_matches"
+
+
 def test_settled_hit_miss_only_and_per_market_only():
     rows = [_row(i, i % 2 == 0) for i in range(MIN_SETTLED + 20)]
     rows.extend([
@@ -78,6 +95,7 @@ def test_settled_hit_miss_only_and_per_market_only():
     ])
     report = train_market(rows, "set2_total")
     assert report["gate"]["settled"] == MIN_SETTLED + 20
+    assert report["gate"]["distinct_matches"] == MIN_SETTLED + 20
     assert report["status"] == "SHADOW_MODEL_READY"
 
 
@@ -103,7 +121,6 @@ def test_chronological_split_never_leaks_one_match_across_train_and_validation()
             "prediction_key": f"p-{index}",
         }
         eligible.append((row, [0.5], float(index % 2 == 0)))
-    # Three correlated selections from the same late fixture must move together.
     for suffix in range(3):
         row = {
             "match_id": "m-grouped",
