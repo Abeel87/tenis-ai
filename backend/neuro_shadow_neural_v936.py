@@ -12,7 +12,7 @@ import random
 from collections import defaultdict
 from typing import Any
 
-VERSION = "neuro-shadow-neural-v9.3.9"
+VERSION = "neuro-shadow-neural-v9.3.10"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -34,6 +34,10 @@ FEATURE_NAMES = (
 MODEL_PROBABILITY_FEATURES = FEATURE_NAMES[:6]
 MIN_SETTLED = 80
 MIN_CLASS_COUNT = 20
+# Safety floor, not a tuned performance threshold: 80 correlated selections
+# from only a handful of fixtures must never unlock a neural model. Keep this
+# deliberately conservative until real SHADOW history is large enough to tune.
+MIN_DISTINCT_MATCHES = 20
 VALIDATION_FRACTION = 0.20
 HIDDEN_UNITS = 6
 LEARNING_RATE = 0.025
@@ -64,9 +68,9 @@ def _match_key(row: dict[str, Any]) -> str:
     scheduled = str(row.get("scheduled_time") or "")
     if p1 or p2:
         return f"fixture:{p1}|{p2}|{scheduled}"
-    prediction_key = row.get("prediction_key")
-    if prediction_key:
-        return f"prediction:{prediction_key}"
+    prediction_key_value = row.get("prediction_key")
+    if prediction_key_value:
+        return f"prediction:{prediction_key_value}"
     return f"time:{_time_key(row)}"
 
 
@@ -227,12 +231,7 @@ def _chronological_match_split(eligible: list[tuple[dict[str, Any], list[float],
 
 
 def _match_balanced_weights(items: list[tuple[dict[str, Any], list[float], float]]) -> list[float]:
-    """Give every match equal total influence regardless of selection count.
-
-    Weights are normalized to mean 1.0 so the optimizer keeps approximately the
-    same step scale while multiple correlated operator lines cannot dominate a
-    market simply because that fixture exposed more selections.
-    """
+    """Give every match equal total influence regardless of selection count."""
     if not items:
         return []
     counts: dict[str, int] = defaultdict(int)
@@ -257,20 +256,30 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
     eligible.sort(key=lambda item: (_time_key(item[0]), _match_key(item[0]), str(item[0].get("prediction_key") or "")))
     positives = sum(int(y == 1.0) for _, _, y in eligible)
     negatives = len(eligible) - positives
+    distinct_matches = len({_match_key(row) for row, _, _ in eligible})
     gate = {
         "min_settled": MIN_SETTLED,
         "min_class_count": MIN_CLASS_COUNT,
+        "min_distinct_matches": MIN_DISTINCT_MATCHES,
         "settled": len(eligible),
+        "distinct_matches": distinct_matches,
         "hits": positives,
         "misses": negatives,
     }
-    if len(eligible) < MIN_SETTLED or min(positives, negatives) < MIN_CLASS_COUNT:
+    gate_reason = None
+    if len(eligible) < MIN_SETTLED:
+        gate_reason = "insufficient_settled"
+    elif min(positives, negatives) < MIN_CLASS_COUNT:
+        gate_reason = "insufficient_class_balance"
+    elif distinct_matches < MIN_DISTINCT_MATCHES:
+        gate_reason = "insufficient_distinct_matches"
+    if gate_reason:
         return {
             "version": VERSION,
             "market": market,
             "mode": MODE,
             "status": "COLLECTING_DATA",
-            "gate": gate,
+            "gate": {**gate, "reason": gate_reason},
             "model": None,
             "validation": None,
             "auto_promote": False,
@@ -285,7 +294,7 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
             "market": market,
             "mode": MODE,
             "status": "COLLECTING_DATA",
-            "gate": {**gate, "reason": "insufficient_distinct_matches"},
+            "gate": {**gate, "reason": "insufficient_split_matches"},
             "model": None,
             "validation": None,
             "auto_promote": False,
@@ -311,12 +320,7 @@ def train_market(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
     means, scales = _standardizer([item[1] for item in train])
     train_x = [_transform(item[1], means, scales) for item in train]
     train_weights = _match_balanced_weights(train)
-    net = _fit(
-        train_x,
-        train_y,
-        seed=SEED + sum(ord(ch) for ch in str(market)),
-        weights=train_weights,
-    )
+    net = _fit(train_x, train_y, seed=SEED + sum(ord(ch) for ch in str(market)), weights=train_weights)
     val_x = [_transform(item[1], means, scales) for item in validation]
     val_y = [item[2] for item in validation]
     val_weights = _match_balanced_weights(validation)
