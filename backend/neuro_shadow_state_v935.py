@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 from backend import symphony2_state as s2
 
-VERSION = "neuro-shadow-state-v9.3.6"
+VERSION = "neuro-shadow-state-v9.3.8"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
@@ -67,16 +67,17 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
     for path, p0 in first.items():
         c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b = path
         sa, sb = ((1, 0) if s1a > s1b else (0, 1))
+        nil_seen = int(s1a) == 0 or int(s1b) == 0
         if sa >= need or sb >= need:
-            agg[(c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b, None, None, None, None, sa, sb, s1a, s1b)] += p0
+            agg[(c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b, None, None, None, None, nil_seen, sa, sb, s1a, s1b)] += p0
             continue
 
-        frontier = {(sa, sb, int(s1a), int(s1b), None, None, None, None): p0}
+        frontier = {(sa, sb, int(s1a), int(s1b), None, None, None, None, nil_seen): p0}
         for set_no in range(2, best_of + 1):
             nxt: dict[tuple, float] = defaultdict(float)
-            for (xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b), probability in frontier.items():
+            for (xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b, branch_nil_seen), probability in frontier.items():
                 if xa >= need or xb >= need:
-                    nxt[(xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b)] += probability
+                    nxt[(xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b, branch_nil_seen)] += probability
                     continue
                 for (ga, gb), sp in later[set_no].items():
                     ns2a, ns2b = (int(ga), int(gb)) if set_no == 2 else (s2a, s2b)
@@ -90,17 +91,18 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
                         ns2b,
                         ns3a,
                         ns3b,
+                        bool(branch_nil_seen or int(ga) == 0 or int(gb) == 0),
                     )] += probability * sp
             frontier = nxt
             if all(xa >= need or xb >= need for xa, xb, *_ in frontier):
                 break
 
-        for (xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b), probability in frontier.items():
+        for (xa, xb, p1_games, p2_games, s2a, s2b, s3a, s3b, branch_nil_seen), probability in frontier.items():
             if xa >= need or xb >= need:
                 agg[(
                     c2a, c2b, c4a, c4b, c6a, c6b,
                     s1a, s1b, s2a, s2b, s3a, s3b,
-                    xa, xb, p1_games, p2_games,
+                    branch_nil_seen, xa, xb, p1_games, p2_games,
                 )] += probability
 
     total = sum(agg.values())
@@ -119,12 +121,13 @@ def build_shadow_outcomes(match: dict[str, Any]) -> list[dict[str, Any]]:
             "set1": set1,
             "set2": set2,
             "set3": set3,
-            "sets": (int(key[12]), int(key[13])),
-            "p1_total_games": int(key[14]),
-            "p2_total_games": int(key[15]),
-            "total_games": int(key[14] + key[15]),
-            "set_count": int(key[12] + key[13]),
-            "winner": 1 if key[12] > key[13] else 2,
+            "any_set_to_nil": bool(key[12]),
+            "sets": (int(key[13]), int(key[14])),
+            "p1_total_games": int(key[15]),
+            "p2_total_games": int(key[16]),
+            "total_games": int(key[15] + key[16]),
+            "set_count": int(key[13] + key[14]),
+            "winner": 1 if key[13] > key[14] else 2,
             "prob": probability / total,
         }
         for set_no in (1, 2, 3):
@@ -289,15 +292,7 @@ def shadow_probability(
         wanted = _yes_no(pick)
         if wanted is None:
             return None
-        best_of = 5 if int(s2._num(match.get("best_of"), 3) or 3) >= 5 else 3
-        if best_of != 3:
-            return None
-
-        def actual(o: dict[str, Any]) -> bool:
-            scores = [o.get("set1"), o.get("set2"), o.get("set3")]
-            return any(score is not None and (score[0] == 0 or score[1] == 0) for score in scores)
-
-        return sum(o["prob"] for o in state if actual(o) is wanted)
+        return sum(o["prob"] for o in state if bool(o.get("any_set_to_nil")) is wanted)
 
     set_outcome_markets = {
         "p1_exactly_1_set",
