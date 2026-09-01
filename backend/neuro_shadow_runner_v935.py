@@ -22,13 +22,14 @@ from backend.neuro_shadow_history_v935 import (
 )
 from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
 from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
+from backend.neuro_shadow_tracker_v935 import prediction_key
 from backend.neuro_shadow_training_v936 import (
     DEFAULT_TRAINING_PATH,
     build_training_report,
     refresh_training_artifact,
 )
 
-VERSION = "neuro-shadow-runner-v9.3.6"
+VERSION = "neuro-shadow-runner-v9.3.8"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -68,23 +69,18 @@ def _ensure_training_shell(training_path: Path) -> dict[str, Any] | None:
     return report
 
 
-def _match_identity(match: dict[str, Any]) -> Any:
-    return match.get("match_id") or match.get("id") or f"{match.get('p1')}|{match.get('p2')}|{match.get('scheduled_time')}"
-
-
 def _selection_prediction_key(match: dict[str, Any], selection: dict[str, Any]) -> str:
-    """Mirror tracker prediction_key without building the costly state."""
-    return "|".join(
-        str(x or "")
-        for x in (
-            _match_identity(match),
-            selection.get("market"),
-            selection.get("pick"),
-            selection.get("line"),
-            selection.get("player"),
-            selection.get("market_id"),
-            selection.get("outcome_id"),
-        )
+    """Use the tracker identity contract before building the costly SHADOW state."""
+    return prediction_key(
+        match,
+        {
+            "market": selection.get("market"),
+            "pick": selection.get("pick"),
+            "line": selection.get("line"),
+            "player": selection.get("player"),
+            "source_market_id": selection.get("market_id"),
+            "source_outcome_id": selection.get("outcome_id"),
+        },
     )
 
 
@@ -145,15 +141,7 @@ def capture_matches(
         if rows:
             batches.append((match, rows))
             for row in rows:
-                key = "|".join(
-                    str(x or "")
-                    for x in (
-                        _match_identity(match), row.get("market"), row.get("pick"),
-                        row.get("line"), row.get("player"), row.get("source_market_id"),
-                        row.get("source_outcome_id"),
-                    )
-                )
-                existing_keys.add(key)
+                existing_keys.add(prediction_key(match, row))
 
     persist = append_prediction_batches(
         batches,
