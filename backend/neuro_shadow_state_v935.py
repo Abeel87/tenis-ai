@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 from backend import symphony2_state as s2
 
-VERSION = "neuro-shadow-state-v9.3.5"
+VERSION = "neuro-shadow-state-v9.3.6"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
@@ -27,6 +27,9 @@ CANDIDATE_CAPTURE_READY_MARKETS = frozenset({
     "set3_total",
     "player_total_games",
     "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
+    "set_handicap",
     "exact_sets",
     "p1_exactly_1_set",
     "p1_exactly_2_sets",
@@ -34,6 +37,10 @@ CANDIDATE_CAPTURE_READY_MARKETS = frozenset({
     "p2_exactly_2_sets",
     "p1_wins_a_set",
     "p2_wins_a_set",
+    "match_games_parity",
+    "set1_games_parity",
+    "set2_games_parity",
+    "any_set_to_nil",
 })
 CANDIDATE_CAPTURE_GAP_MARKETS = frozenset()
 
@@ -157,6 +164,15 @@ def _yes_no(value: str | None) -> bool | None:
     return None
 
 
+def _parity(value: str | None) -> int | None:
+    token = str(value or "").strip().casefold()
+    if token in {"odd", "nieparzyste", "nieparzysta"}:
+        return 1
+    if token in {"even", "parzyste", "parzysta"}:
+        return 0
+    return None
+
+
 def set_reach_probability(match: dict[str, Any], set_no: int) -> float | None:
     if set_no not in {2, 3}:
         return None
@@ -214,14 +230,34 @@ def shadow_probability(
             (lambda o: o[field] > target) if pick == "over" else (lambda o: o[field] < target),
         )
 
-    if market == "match_game_handicap" and side in {1, 2} and line is not None:
+    if market in {"match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap"} and side in {1, 2} and line is not None:
         handicap = float(line)
-        adjusted = (
-            (lambda o: o["p1_total_games"] + handicap - o["p2_total_games"])
-            if side == 1
-            else (lambda o: o["p2_total_games"] + handicap - o["p1_total_games"])
-        )
-        return _settled_probability(state, lambda o: abs(adjusted(o)) <= 1e-12, lambda o: adjusted(o) > 0.0)
+        if market == "match_game_handicap":
+            eligible = state
+            margin = (
+                (lambda o: o["p1_total_games"] - o["p2_total_games"])
+                if side == 1 else
+                (lambda o: o["p2_total_games"] - o["p1_total_games"])
+            )
+        elif market in {"set1_game_handicap", "set2_game_handicap"}:
+            field = "set1" if market.startswith("set1") else "set2"
+            eligible = [o for o in state if o.get(field) is not None]
+            if not eligible:
+                return None
+            margin = (
+                (lambda o: o[field][0] - o[field][1])
+                if side == 1 else
+                (lambda o: o[field][1] - o[field][0])
+            )
+        else:
+            eligible = state
+            margin = (
+                (lambda o: o["sets"][0] - o["sets"][1])
+                if side == 1 else
+                (lambda o: o["sets"][1] - o["sets"][0])
+            )
+        adjusted = lambda o: margin(o) + handicap
+        return _settled_probability(eligible, lambda o: abs(adjusted(o)) <= 1e-12, lambda o: adjusted(o) > 0.0)
 
     if market == "exact_sets" and pick:
         try:
@@ -235,6 +271,33 @@ def shadow_probability(
         if wanted is None:
             return None
         return sum(o["prob"] for o in state if bool(o["set1_tiebreak"]) is wanted)
+
+    if market in {"match_games_parity", "set1_games_parity", "set2_games_parity"}:
+        wanted = _parity(pick)
+        if wanted is None:
+            return None
+        if market == "match_games_parity":
+            return sum(o["prob"] for o in state if int(o["total_games"]) % 2 == wanted)
+        field = "set1" if market.startswith("set1") else "set2"
+        return _conditional_probability(
+            state,
+            lambda o: o.get(field) is not None,
+            lambda o: sum(o[field]) % 2 == wanted,
+        )
+
+    if market == "any_set_to_nil":
+        wanted = _yes_no(pick)
+        if wanted is None:
+            return None
+        best_of = 5 if int(s2._num(match.get("best_of"), 3) or 3) >= 5 else 3
+        if best_of != 3:
+            return None
+
+        def actual(o: dict[str, Any]) -> bool:
+            scores = [o.get("set1"), o.get("set2"), o.get("set3")]
+            return any(score is not None and (score[0] == 0 or score[1] == 0) for score in scores)
+
+        return sum(o["prob"] for o in state if actual(o) is wanted)
 
     set_outcome_markets = {
         "p1_exactly_1_set",
