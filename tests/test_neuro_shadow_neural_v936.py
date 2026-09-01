@@ -7,6 +7,7 @@ from backend.neuro_shadow_neural_v936 import (
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
     _chronological_match_split,
+    _match_balanced_weights,
     predict,
     train_market,
 )
@@ -90,6 +91,7 @@ def test_training_is_deterministic_and_chronological():
     assert report1["validation"] == report2["validation"]
     assert report1["model"] == report2["model"]
     assert report1["split_unit"] == "match"
+    assert report1["weighting_unit"] == "match"
 
 
 def test_chronological_split_never_leaks_one_match_across_train_and_validation():
@@ -120,6 +122,18 @@ def test_chronological_split_never_leaks_one_match_across_train_and_validation()
     assert {grouped_in_train, grouped_in_validation} == {0, 3}
 
 
+def test_match_balanced_weights_give_each_fixture_equal_total_influence():
+    items = []
+    for suffix in range(4):
+        items.append(({"match_id": "rich"}, [0.5], float(suffix % 2 == 0)))
+    items.append(({"match_id": "thin"}, [0.5], 1.0))
+    weights = _match_balanced_weights(items)
+    rich_total = sum(w for item, w in zip(items, weights) if item[0]["match_id"] == "rich")
+    thin_total = sum(w for item, w in zip(items, weights) if item[0]["match_id"] == "thin")
+    assert math.isclose(rich_total, thin_total, rel_tol=0, abs_tol=1e-12)
+    assert math.isclose(sum(weights) / len(weights), 1.0, rel_tol=0, abs_tol=1e-12)
+
+
 def test_ready_model_returns_bounded_neural_shadow_probability():
     rows = [_row(i, i % 2 == 0) for i in range(MIN_SETTLED + 40)]
     report = train_market(rows, "set2_total")
@@ -131,6 +145,7 @@ def test_ready_model_returns_bounded_neural_shadow_probability():
     assert report["state_baseline_validation"]["brier"] is not None
     assert report["auto_promote"] is False
     assert report["train_matches"] + report["validation_matches"] == MIN_SETTLED + 40
+    assert report["weighting_unit"] == "match"
 
 
 def test_missing_model_inputs_are_masked_not_fabricated_from_results():
