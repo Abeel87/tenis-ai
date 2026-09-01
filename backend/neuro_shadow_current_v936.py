@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from backend.neuro_shadow_history_v935 import DEFAULT_HISTORY_PATH, load_history
-from backend.neuro_shadow_neural_v936 import predict
+from backend.neuro_shadow_neural_v936 import VERSION as NEURAL_VERSION, predict
 from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH
 
-VERSION = "neuro-shadow-current-v9.3.6"
+VERSION = "neuro-shadow-current-v9.3.7"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -55,7 +55,10 @@ def build_current_feed(
         for match in results or []
         if isinstance(match, dict) and _match_id(match)
     }
-    market_reports = training.get("markets") if isinstance(training, dict) else {}
+    training = training if isinstance(training, dict) else {}
+    artifact_neural_version = str(training.get("neural_version") or "")
+    training_compatible = artifact_neural_version == NEURAL_VERSION
+    market_reports = training.get("markets") if training_compatible else {}
     market_reports = market_reports if isinstance(market_reports, dict) else {}
 
     grouped: dict[str, dict[str, Any]] = {}
@@ -70,9 +73,12 @@ def build_current_feed(
         state_probability = row.get("probability")
         report = market_reports.get(market) if market else None
         neural_probability = predict(report, row.get("feature_snapshot") or {}) if isinstance(report, dict) else None
-        neural_status = report.get("status") if isinstance(report, dict) else "COLLECTING_DATA"
-        if neural_probability is None and neural_status == "SHADOW_MODEL_READY":
-            neural_status = "FEATURES_UNAVAILABLE"
+        if not training_compatible and artifact_neural_version:
+            neural_status = "STALE_MODEL_ARTIFACT"
+        else:
+            neural_status = report.get("status") if isinstance(report, dict) else "COLLECTING_DATA"
+            if neural_probability is None and neural_status == "SHADOW_MODEL_READY":
+                neural_status = "FEATURES_UNAVAILABLE"
 
         item = {
             "prediction_key": row.get("prediction_key"),
@@ -111,13 +117,16 @@ def build_current_feed(
     total_rows = sum(len(match["rows"]) for match in matches)
     return {
         "version": VERSION,
+        "neural_version": NEURAL_VERSION,
+        "training_artifact_neural_version": artifact_neural_version or None,
+        "training_artifact_compatible": training_compatible,
         "mode": MODE,
         "status": "SHADOW_ACTIVE" if total_rows else "NO_CURRENT_ROWS",
         "matches_count": len(matches),
         "rows_count": total_rows,
         "neural_rows_count": neural_rows,
         "state_only_rows_count": total_rows - neural_rows,
-        "ready_markets": list(training.get("ready_markets") or []) if isinstance(training, dict) else [],
+        "ready_markets": list(training.get("ready_markets") or []) if training_compatible else [],
         "production_influence": False,
         "playable_influence": False,
         "symphony_prod_influence": False,
