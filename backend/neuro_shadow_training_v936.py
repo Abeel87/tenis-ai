@@ -8,6 +8,7 @@ COLLECTING_DATA until the strict trainer gates are satisfied.
 """
 
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -32,23 +33,37 @@ def _write_json_atomic(path: Path, value: Any) -> None:
     tmp.replace(path)
 
 
+def _group_by_market(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows or []:
+        if not isinstance(row, dict):
+            continue
+        market = str(row.get("market") or "")
+        if market:
+            grouped[market].append(row)
+    return dict(grouped)
+
+
 def build_training_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    markets = sorted({
-        str(row.get("market") or "")
-        for row in rows or []
-        if isinstance(row, dict) and str(row.get("market") or "")
-    })
-    reports = {market: train_market(rows, market) for market in markets}
-    ready = sum(1 for report in reports.values() if report.get("status") == "SHADOW_MODEL_READY")
+    grouped = _group_by_market(rows)
+    reports = {
+        market: train_market(grouped[market], market)
+        for market in sorted(grouped)
+    }
+    ready_markets = sorted(
+        market for market, report in reports.items()
+        if report.get("status") == "SHADOW_MODEL_READY"
+    )
+    ready = len(ready_markets)
     collecting = len(reports) - ready
     return {
         "version": VERSION,
         "mode": MODE,
         "status": "SHADOW_READY" if ready else "COLLECTING_DATA",
         "history_rows": len(rows or []),
-        "markets_seen": len(markets),
+        "markets_seen": len(reports),
         "markets_ready": ready,
-        "ready_markets": ready,
+        "ready_markets": ready_markets,
         "markets_collecting": collecting,
         "markets": reports,
         "auto_promotion": False,
