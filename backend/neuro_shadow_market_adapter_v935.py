@@ -10,6 +10,7 @@ from typing import Any
 
 from backend.neuro_shadow_state_v935 import (
     CANDIDATE_CAPTURE_READY_MARKETS,
+    build_shadow_outcomes,
     shadow_probability,
 )
 
@@ -41,7 +42,12 @@ def _side_for_pick(selection: dict[str, Any], match: dict[str, Any]) -> int | No
     return None
 
 
-def adapt_canonical_selection(match: dict[str, Any], selection: dict[str, Any]) -> dict[str, Any] | None:
+def adapt_canonical_selection(
+    match: dict[str, Any],
+    selection: dict[str, Any],
+    *,
+    outcomes: list[dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
     """Return one SHADOW assessment or None when semantics are not exact."""
     if not isinstance(selection, dict):
         return None
@@ -78,7 +84,7 @@ def adapt_canonical_selection(match: dict[str, Any], selection: dict[str, Any]) 
     else:
         return None
 
-    probability = shadow_probability(match, market, **kwargs)
+    probability = shadow_probability(match, market, outcomes=outcomes, **kwargs)
     if probability is None:
         return None
 
@@ -101,12 +107,22 @@ def adapt_canonical_selection(match: dict[str, Any], selection: dict[str, Any]) 
 
 
 def adapt_market_context(match: dict[str, Any], market_context: dict[str, Any]) -> list[dict[str, Any]]:
-    """Adapt canonical_selections from the existing Superbet market context."""
+    """Adapt all canonical selections while building the costly state only once."""
     if not isinstance(market_context, dict):
         return []
+    selections = [
+        row for row in (market_context.get("canonical_selections") or [])
+        if isinstance(row, dict) and row.get("operator_available") is True
+        and str(row.get("market") or "") in CANDIDATE_CAPTURE_READY_MARKETS
+    ]
+    if not selections:
+        return []
+    outcomes = build_shadow_outcomes(match)
+    if not outcomes:
+        return []
     out = []
-    for selection in market_context.get("canonical_selections") or []:
-        adapted = adapt_canonical_selection(match, selection)
+    for selection in selections:
+        adapted = adapt_canonical_selection(match, selection, outcomes=outcomes)
         if adapted is not None:
             out.append(adapted)
     return out
