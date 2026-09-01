@@ -60,17 +60,13 @@ def merge_registered(existing: Iterable[dict[str, Any]], incoming: Iterable[dict
     return merged
 
 
-def append_predictions(
-    match: dict[str, Any],
-    shadow_rows: list[dict[str, Any]],
+def _persist_registered(
+    existing: list[dict[str, Any]],
+    registered: list[dict[str, Any]],
     *,
-    history_path: Path = DEFAULT_HISTORY_PATH,
-    stats_path: Path = DEFAULT_STATS_PATH,
-    created_at: str | None = None,
+    history_path: Path,
+    stats_path: Path,
 ) -> dict[str, Any]:
-    """Persist new SHADOW predictions without mutating prior forecasts."""
-    existing = load_history(history_path)
-    registered = register_predictions(match, shadow_rows, created_at=created_at)
     merged = merge_registered(existing, registered)
     _write_json_atomic(history_path, merged)
     stats = summarize(merged)
@@ -87,6 +83,44 @@ def append_predictions(
         "production_influence": False,
         "playable_influence": False,
     }
+
+
+def append_predictions(
+    match: dict[str, Any],
+    shadow_rows: list[dict[str, Any]],
+    *,
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    stats_path: Path = DEFAULT_STATS_PATH,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    """Persist new SHADOW predictions without mutating prior forecasts."""
+    existing = load_history(history_path)
+    registered = register_predictions(match, shadow_rows, created_at=created_at)
+    return _persist_registered(existing, registered, history_path=history_path, stats_path=stats_path)
+
+
+def append_prediction_batches(
+    batches: Iterable[tuple[dict[str, Any], list[dict[str, Any]]]],
+    *,
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    stats_path: Path = DEFAULT_STATS_PATH,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    """Persist many match batches with one history read, one merge and one write.
+
+    Hourly capture can touch dozens of matches and thousands of selections. The
+    old per-match append path repeatedly rewrote the entire growing history and
+    stats files, turning one refresh into O(matches * history_size) file I/O.
+    This batch path preserves the exact same first-forecast immutability while
+    making the persistence cost O(history_size + new_predictions).
+    """
+    existing = load_history(history_path)
+    registered: list[dict[str, Any]] = []
+    for match, shadow_rows in batches or []:
+        if not isinstance(match, dict) or not shadow_rows:
+            continue
+        registered.extend(register_predictions(match, shadow_rows, created_at=created_at))
+    return _persist_registered(existing, registered, history_path=history_path, stats_path=stats_path)
 
 
 def _final_key(final: dict[str, Any]) -> str | None:
