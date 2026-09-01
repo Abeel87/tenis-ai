@@ -38,14 +38,23 @@ def test_adapter_is_hard_shadow_only():
     assert SYMPHONY_PROD_INFLUENCE is False
 
 
-def test_winner_and_line_markets_adapt_from_canonical_schema():
+def test_supported_markets_adapt_from_canonical_schema():
     cases = [
+        _selection("set1_tiebreak", "yes"),
         _selection("set2_winner", "Alpha"),
         _selection("set3_winner", "Beta"),
+        _selection("set2_exact_score", "6:4"),
         _selection("set2_total", "over", line=9.5),
         _selection("set3_total", "under", line=9.5),
         _selection("player_total_games", "over", line=12.5, player="Alpha"),
         _selection("match_game_handicap", "Alpha", line=-1.5),
+        _selection("exact_sets", "2"),
+        _selection("p1_exactly_1_set", "yes"),
+        _selection("p1_exactly_2_sets", "no"),
+        _selection("p2_exactly_1_set", "yes"),
+        _selection("p2_exactly_2_sets", "no"),
+        _selection("p1_wins_a_set", "yes"),
+        _selection("p2_wins_a_set", "no"),
     ]
     for selection in cases:
         row = adapt_canonical_selection(_match(), selection)
@@ -64,6 +73,12 @@ def test_adapter_refuses_unverified_or_invented_line():
     assert adapt_canonical_selection(
         _match(), _selection("set3_total", "over", line=None)
     ) is None
+
+
+def test_adapter_refuses_invalid_non_line_semantics():
+    assert adapt_canonical_selection(_match(), _selection("set2_exact_score", "banana")) is None
+    assert adapt_canonical_selection(_match(), _selection("exact_sets", "banana")) is None
+    assert adapt_canonical_selection(_match(), _selection("p1_wins_a_set", "maybe")) is None
 
 
 def test_adapter_refuses_unknown_player_and_unsupported_market():
@@ -86,10 +101,14 @@ def test_market_context_only_emits_safe_shadow_rows():
         "canonical_selections": [
             _selection("set2_winner", "Alpha"),
             _selection("set3_total", "over", line=9.5),
+            _selection("exact_sets", "2"),
+            _selection("p1_wins_a_set", "yes"),
             _selection("future_unknown", "Alpha"),
         ]
     }
     rows = adapt_market_context(_match(), context)
-    assert len(rows) == 2
-    assert {row["market"] for row in rows} == {"set2_winner", "set3_total"}
+    assert len(rows) == 4
+    assert {row["market"] for row in rows} == {
+        "set2_winner", "set3_total", "exact_sets", "p1_wins_a_set"
+    }
     assert all(row["operator_playable"] is False for row in rows)
