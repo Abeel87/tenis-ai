@@ -80,6 +80,7 @@ def register_predictions(
         if key in seen:
             continue
         seen.add(key)
+        feature_snapshot = row.get("feature_snapshot") if isinstance(row.get("feature_snapshot"), dict) else None
         out.append(
             {
                 "prediction_key": key,
@@ -94,6 +95,8 @@ def register_predictions(
                 "line": row.get("line"),
                 "player": row.get("player"),
                 "probability": p,
+                "probability_kind": row.get("probability_kind"),
+                "feature_snapshot": dict(feature_snapshot) if feature_snapshot else None,
                 "operator": row.get("operator") or "Superbet",
                 "source_market_id": row.get("source_market_id"),
                 "source_outcome_id": row.get("source_outcome_id"),
