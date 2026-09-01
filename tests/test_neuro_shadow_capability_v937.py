@@ -31,12 +31,12 @@ def test_state_extensions_completed_in_108_are_reported_shadow_ready():
         assert shadow_capability(market)["status"] == READY
 
 
-def test_any_set_to_nil_is_truthfully_scoped_to_bo3():
-    assert shadow_capability("any_set_to_nil")["scope"] == "BO3_ONLY"
+def test_any_set_to_nil_is_ready_for_bo3_and_bo5_shadow_state():
+    assert shadow_capability("any_set_to_nil")["scope"] == "ALL_SUPPORTED_MATCH_FORMATS"
     assert shadow_capability("any_set_to_nil", best_of=3)["status"] == READY
-    assert shadow_capability("any_set_to_nil", best_of=5)["status"] == UNSUPPORTED
+    assert shadow_capability("any_set_to_nil", best_of=5)["status"] == READY
     assert "any_set_to_nil" in ready_markets(best_of=3)
-    assert "any_set_to_nil" not in ready_markets(best_of=5)
+    assert "any_set_to_nil" in ready_markets(best_of=5)
 
 
 def test_unknown_market_is_never_reported_ready():
