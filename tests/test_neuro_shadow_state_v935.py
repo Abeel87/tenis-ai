@@ -44,6 +44,7 @@ def test_shadow_outcomes_retain_later_sets_and_player_game_totals():
     assert any(o["set3"] is not None for o in outcomes)
     assert all(o["set2_winner"] in {1, 2} for o in outcomes)
     assert all(isinstance(o["set1_tiebreak"], bool) for o in outcomes)
+    assert all(isinstance(o["any_set_to_nil"], bool) for o in outcomes)
     assert all("all_set_scores" not in o for o in outcomes)
 
 
@@ -112,6 +113,16 @@ def test_set_outcome_yes_no_probabilities_are_complements():
         assert math.isclose(yes + no, 1.0, rel_tol=0, abs_tol=1e-9)
 
 
+def test_any_set_to_nil_is_exact_complement_for_bo3_and_bo5():
+    for best_of in (3, 5):
+        yes = shadow_probability(_match(best_of), "any_set_to_nil", pick="yes")
+        no = shadow_probability(_match(best_of), "any_set_to_nil", pick="no")
+        assert yes is not None and no is not None
+        assert 0.0 <= yes <= 1.0
+        assert 0.0 <= no <= 1.0
+        assert math.isclose(yes + no, 1.0, rel_tol=0, abs_tol=1e-9)
+
+
 def test_exact_sets_distribution_sums_to_one():
     best3 = sum(shadow_probability(_match(), "exact_sets", pick=str(n)) or 0.0 for n in (2, 3))
     assert math.isclose(best3, 1.0, rel_tol=0, abs_tol=1e-9)
@@ -138,11 +149,12 @@ def test_new_shadow_marginals_are_real_probabilities():
         assert 0.0 <= p <= 1.0
 
 
-def test_bo5_keeps_only_needed_set_scores_but_preserves_game_totals():
+def test_bo5_keeps_bounded_state_but_preserves_nil_and_game_totals():
     outcomes = build_shadow_outcomes(_match(best_of=5))
     assert outcomes
     assert all(o["set2"] is not None and o["set3"] is not None for o in outcomes)
     assert all("all_set_scores" not in o for o in outcomes)
+    assert all(isinstance(o["any_set_to_nil"], bool) for o in outcomes)
     assert all(o["p1_total_games"] + o["p2_total_games"] == o["total_games"] for o in outcomes)
     assert math.isclose(sum(o["prob"] for o in outcomes), 1.0, rel_tol=0, abs_tol=1e-9)
 
@@ -164,6 +176,7 @@ def test_capture_readiness_includes_existing_state_markets_without_prod_promotio
         "p2_exactly_2_sets",
         "p1_wins_a_set",
         "p2_wins_a_set",
+        "any_set_to_nil",
     } <= CANDIDATE_CAPTURE_READY_MARKETS
     assert CANDIDATE_CAPTURE_GAP_MARKETS == frozenset()
 
