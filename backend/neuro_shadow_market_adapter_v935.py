@@ -19,6 +19,16 @@ PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 
+YES_NO_MARKETS = frozenset({
+    "set1_tiebreak",
+    "p1_exactly_1_set",
+    "p1_exactly_2_sets",
+    "p2_exactly_1_set",
+    "p2_exactly_2_sets",
+    "p1_wins_a_set",
+    "p2_wins_a_set",
+})
+
 
 def _side_for_player(selection: dict[str, Any], match: dict[str, Any]) -> int | None:
     player = str(selection.get("player") or "").strip().casefold()
@@ -67,6 +77,10 @@ def adapt_canonical_selection(
         if side is None:
             return None
         kwargs["side"] = side
+    elif market == "set2_exact_score":
+        if not pick or ":" not in pick.replace("-", ":"):
+            return None
+        kwargs["pick"] = pick
     elif market in {"set2_total", "set3_total"}:
         if selection.get("operator_line_verified") is not True or line is None or pick not in {"over", "under"}:
             return None
@@ -81,6 +95,16 @@ def adapt_canonical_selection(
         if side is None or selection.get("operator_line_verified") is not True or line is None:
             return None
         kwargs.update(side=side, line=float(line))
+    elif market == "exact_sets":
+        try:
+            int(float(pick))
+        except (TypeError, ValueError):
+            return None
+        kwargs["pick"] = pick
+    elif market in YES_NO_MARKETS:
+        if pick not in {"yes", "no", "tak", "nie", "true", "false", "1", "0"}:
+            return None
+        kwargs["pick"] = pick
     else:
         return None
 
