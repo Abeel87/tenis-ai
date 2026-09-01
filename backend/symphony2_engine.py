@@ -29,7 +29,7 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-runtime-5"
+VERSION = "symphony2-runtime-6"
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -186,12 +186,6 @@ def _coherence_pick(value) -> str:
 
 
 def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
-    """Normalize only exact mutually-exclusive groups, never unsupported selections.
-
-    The supervised model is still the source of relative strength. This final coherence
-    projection prevents impossible states such as both match winners being below 50%
-    or an exact Over/Under pair summing to something other than 100%.
-    """
     groups = {}
     for row in rows or []:
         p = _num(row.get("operator_model_probability"))
@@ -204,14 +198,10 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
             line = _num(row.get("line"))
             if line is None:
                 continue
-            key = (
-                "ou", market, round(line, 6), _norm(row.get("player")),
-                int(_num(row.get("checkpoint"), 0) or 0),
-            )
+            key = ("ou", market, round(line, 6), _norm(row.get("player")), int(_num(row.get("checkpoint"), 0) or 0))
         else:
             continue
         groups.setdefault(key, []).append(row)
-
     for key, group in groups.items():
         if key[0] == "winner":
             if len(group) != 2:
@@ -226,10 +216,7 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
         normalized = []
         for row in group:
             before = float(_num(row.get("operator_model_probability"), 0.0) or 0.0)
-            after = before * 100.0 / total
-            normalized.append((row, before, after))
-        # Round the first legs and give the final leg the remainder so displayed values
-        # remain exactly 100.00 rather than 99.99/100.01 because of decimal rounding.
+            normalized.append((row, before, before * 100.0 / total))
         running = 0.0
         for idx, (row, before, after) in enumerate(normalized):
             final = round(100.0 - running, 2) if idx == len(normalized) - 1 else round(after, 2)
@@ -253,12 +240,9 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
         learned = diagnostics["final"] if diagnostics else None
         support = diagnostics["support"] if diagnostics else 0
         rows.append({
-            "selection_id": _selection_id(selection),
-            "market": selection.get("market"), "pick": selection.get("pick"),
-            "line": selection.get("line"), "checkpoint": selection.get("checkpoint"),
-            "player": selection.get("player"), "label": _label(selection),
-            "operator": OPERATOR,
-            "operator_market_id": selection.get("market_id"),
+            "selection_id": _selection_id(selection), "market": selection.get("market"), "pick": selection.get("pick"),
+            "line": selection.get("line"), "checkpoint": selection.get("checkpoint"), "player": selection.get("player"),
+            "label": _label(selection), "operator": OPERATOR, "operator_market_id": selection.get("market_id"),
             "operator_outcome_id": selection.get("outcome_id"),
             "fixture_line_verified": selection.get("fixture_line_verified", selection.get("market") not in LINE_MARKETS),
             "operator_line_source": selection.get("operator_line_source"),
@@ -268,10 +252,8 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "learning_reliability": round(diagnostics["reliability"], 4) if diagnostics else None,
             "market_calibrator_used": bool(diagnostics["market_calibrator"]) if diagnostics else False,
             "state_probability": round(state_p * 100.0, 2) if state_p is not None else None,
-            "existing_model_evidence": _existing_evidence(merged),
-            "learning_support_rows": support,
-            "state_supported": state_p is not None,
-            "learning_model_ready": model.ready,
+            "existing_model_evidence": _existing_evidence(merged), "learning_support_rows": support,
+            "state_supported": state_p is not None, "learning_model_ready": model.ready,
             "probability_kind": "SUPERVISED_OPERATOR_LINE_P_HIT",
         })
     rows = _cohere_exclusive_probabilities(rows)
@@ -294,14 +276,8 @@ def _quantile(values: list[float], q: float):
 def _distribution(rows: list[dict], key: str) -> dict:
     values = [_num(r.get(key)) for r in rows]
     values = [x for x in values if x is not None]
-    return {
-        "count": len(values),
-        "min": round(min(values), 3) if values else None,
-        "p50": _quantile(values, 0.50),
-        "p90": _quantile(values, 0.90),
-        "p95": _quantile(values, 0.95),
-        "max": round(max(values), 3) if values else None,
-    }
+    return {"count": len(values), "min": round(min(values), 3) if values else None, "p50": _quantile(values, 0.50),
+            "p90": _quantile(values, 0.90), "p95": _quantile(values, 0.95), "max": round(max(values), 3) if values else None}
 
 
 def _probability_diagnostics(rows: list[dict]) -> dict:
@@ -309,45 +285,27 @@ def _probability_diagnostics(rows: list[dict]) -> dict:
     zero_support = [r for r in rows if int(r.get("learning_support_rows") or 0) == 0]
     supported = [r for r in rows if int(r.get("learning_support_rows") or 0) > 0]
     per_market = {}
-    all_markets = sorted({_market(r.get("market")) for r in rows})
-    for market in all_markets:
+    for market in sorted({_market(r.get("market")) for r in rows}):
         offered_subset = [r for r in rows if _market(r.get("market")) == market]
         subset = [r for r in scored if _market(r.get("market")) == market]
         finals = [_num(r.get("operator_model_probability"), 0.0) for r in subset]
         supports = [int(r.get("learning_support_rows") or 0) for r in offered_subset]
-        per_market[market] = {
-            "offered_selections": len(offered_subset),
-            "scored_selections": len(subset),
+        per_market[market] = {"offered_selections": len(offered_subset), "scored_selections": len(subset),
             "unscored_zero_support": sum(1 for r in offered_subset if int(r.get("learning_support_rows") or 0) == 0 and _num(r.get("operator_model_probability")) is None),
-            "support_rows": max(supports) if supports else 0,
-            "max_final": round(max(finals), 3) if finals else None,
-            "p90_final": _quantile(finals, 0.90),
-            "above_50": sum(1 for p in finals if p >= 50.0),
-            "above_52": sum(1 for p in finals if p >= 52.0),
-            "above_55": sum(1 for p in finals if p >= 55.0),
-        }
-    return {
-        "offer_selections": len(rows),
-        "scored_selections": len(scored),
-        "raw_all_model_outputs": _distribution(rows, "raw_model_probability"),
-        "raw_scored": _distribution(scored, "raw_model_probability"),
-        "calibrated_scored": _distribution(scored, "calibrated_model_probability"),
-        "final_scored": _distribution(scored, "operator_model_probability"),
-        "threshold_counts": {
-            "above_50": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 50.0),
+            "support_rows": max(supports) if supports else 0, "max_final": round(max(finals), 3) if finals else None,
+            "p90_final": _quantile(finals, 0.90), "above_50": sum(1 for p in finals if p >= 50.0),
+            "above_52": sum(1 for p in finals if p >= 52.0), "above_55": sum(1 for p in finals if p >= 55.0)}
+    return {"offer_selections": len(rows), "scored_selections": len(scored),
+        "raw_all_model_outputs": _distribution(rows, "raw_model_probability"), "raw_scored": _distribution(scored, "raw_model_probability"),
+        "calibrated_scored": _distribution(scored, "calibrated_model_probability"), "final_scored": _distribution(scored, "operator_model_probability"),
+        "threshold_counts": {"above_50": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 50.0),
             "above_52": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 52.0),
-            "above_55": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 55.0),
-        },
-        "support": {
-            "full_support_rows": FULL_SUPPORT_ROWS,
-            "supported_offer_selections": len(supported),
+            "above_55": sum(1 for r in scored if _num(r.get("operator_model_probability"), 0.0) >= 55.0)},
+        "support": {"full_support_rows": FULL_SUPPORT_ROWS, "supported_offer_selections": len(supported),
             "below_full_support": sum(1 for r in supported if int(r.get("learning_support_rows") or 0) < FULL_SUPPORT_ROWS),
             "at_full_support": sum(1 for r in supported if int(r.get("learning_support_rows") or 0) >= FULL_SUPPORT_ROWS),
             "zero_support_offer_selections": len(zero_support),
-            "unscored_zero_support": sum(1 for r in zero_support if _num(r.get("operator_model_probability")) is None),
-        },
-        "per_market": per_market,
-    }
+            "unscored_zero_support": sum(1 for r in zero_support if _num(r.get("operator_model_probability")) is None)}, "per_market": per_market}
 
 
 def _same_market_conflict(a: dict, b: dict) -> bool:
@@ -359,10 +317,45 @@ def _same_market_conflict(a: dict, b: dict) -> bool:
     return True
 
 
+def _score_pair(value):
+    raw = str(value or "").strip().replace("-", ":")
+    parts = raw.split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+
+
+def _semantic_redundancy(a: dict, b: dict) -> bool:
+    """Reject legs where one selection already guarantees the other.
+
+    Example: exact match score 2:0 already guarantees under 2.5 sets. Superbet may
+    allow both legs in a builder, but the second leg adds no independent condition
+    and therefore must not be presented by Symphony as increasing composition value.
+    Match-game totals and set-game totals are deliberately NOT treated as redundant.
+    """
+    for exact, other in ((a, b), (b, a)):
+        if _market(exact.get("market")) != "exact_match_score" or _market(other.get("market")) != "total_sets":
+            continue
+        score = _score_pair(exact.get("pick"))
+        line = _num(other.get("line"))
+        direction = _coherence_pick(other.get("pick"))
+        if score is None or line is None or direction not in {"over", "under"}:
+            continue
+        set_count = score[0] + score[1]
+        if direction == "under" and set_count < line:
+            return True
+        if direction == "over" and set_count > line:
+            return True
+    return False
+
+
 def _compatible(selection: tuple[dict, ...]) -> bool:
     for i, a in enumerate(selection):
         for b in selection[i + 1:]:
-            if _same_market_conflict(a, b):
+            if _same_market_conflict(a, b) or _semantic_redundancy(a, b):
                 return False
     return True
 
@@ -380,11 +373,7 @@ def _composition_utility(selection: tuple[dict, ...], joint: float) -> float:
 
 
 def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) -> dict:
-    pool = [
-        x for x in scored
-        if x.get("state_supported") is True
-        and _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0
-    ][:TOP_POOL]
+    pool = [x for x in scored if x.get("state_supported") is True and _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0][:TOP_POOL]
     out = {}
     for n in range(2, 7):
         best = None
@@ -394,14 +383,8 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
             joint, supported_count = joint_probability(match, list(combo), outcomes)
             if joint is None or supported_count != n:
                 continue
-            candidate = {
-                "legs": n,
-                "score": round(_composition_utility(combo, joint), 2),
-                "joint_probability": round(joint * 100.0, 3),
-                "joint_status": "EXACT_SHARED_STATE",
-                "state_version": STATE_VERSION,
-                "selection": [dict(x) for x in combo],
-            }
+            candidate = {"legs": n, "score": round(_composition_utility(combo, joint), 2), "joint_probability": round(joint * 100.0, 3),
+                "joint_status": "EXACT_SHARED_STATE", "state_version": STATE_VERSION, "selection": [dict(x) for x in combo]}
             if best is None or candidate["score"] > best["score"]:
                 best = candidate
         if best:
@@ -411,14 +394,11 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
 
 def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     model = train_operator_line_model(history)
-    matches = []
-    all_scored = []
+    matches, all_scored = [], []
     fixture_count = selection_count = actionable_count = state_supported_count = 0
     generated_at_dt = datetime.now(timezone.utc)
     for match in results or []:
-        if not isinstance(match, dict) or not _operator_context(match):
-            continue
-        if not _is_current_pre_match_fixture(match, generated_at_dt):
+        if not isinstance(match, dict) or not _operator_context(match) or not _is_current_pre_match_fixture(match, generated_at_dt):
             continue
         outcomes = build_outcomes(match)
         scored = _score_offer(match, model, outcomes)
@@ -428,42 +408,24 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         actionable_count += sum(1 for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0)
         state_supported_count += sum(1 for x in scored if x.get("state_supported") is True)
         comps = _best_compositions(match, scored, outcomes) if model.ready and outcomes else {}
-        matches.append({
-            "match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
-            "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"),
-            "p1": match.get("p1"), "p2": match.get("p2"),
-            "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"),
-            "surface": match.get("surface"), "best_of": match.get("best_of"),
-            "offer_selections": len(scored), "shared_state_outcomes": len(outcomes),
-            "scored_selections": scored, "compositions": comps,
-            "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None,
-        })
-
+        matches.append({"match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
+            "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"), "p1": match.get("p1"), "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"), "surface": match.get("surface"), "best_of": match.get("best_of"),
+            "offer_selections": len(scored), "shared_state_outcomes": len(outcomes), "scored_selections": scored, "compositions": comps,
+            "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None})
     generated_at = generated_at_dt.isoformat()
     probability_diagnostics = _probability_diagnostics(all_scored)
-    current = {
-        "version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION,
-        "generated_at": generated_at, "operator": OPERATOR,
-        "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
+    current = {"version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION, "generated_at": generated_at,
+        "operator": OPERATOR, "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
         "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS",
-        "model_status": model.status, "matches_count": len(matches), "matches": matches,
-    }
-    stats = {
-        "version": VERSION, "generated_at": generated_at, "operator": OPERATOR,
-        "model_status": model.status,
+        "model_status": model.status, "matches_count": len(matches), "matches": matches}
+    stats = {"version": VERSION, "generated_at": generated_at, "operator": OPERATOR, "model_status": model.status,
         "training": model.metrics or {"version": LEARNING_VERSION, "training_rows": model.trained_rows},
-        "current_offer": {
-            "verified_fixtures": fixture_count,
-            "exact_operator_selections": selection_count,
-            "state_supported_selections": state_supported_count,
-            "selections_above_actionable_threshold": actionable_count,
-            "threshold": MIN_ACTIONABLE_P * 100.0,
-            "probability_diagnostics": probability_diagnostics,
-        },
-        "joint_probability_policy": "EXACT_SHARED_STATE_ONLY",
-        "legacy_symphony_stats_used": False,
-        "prices_used": False,
-    }
+        "current_offer": {"verified_fixtures": fixture_count, "exact_operator_selections": selection_count,
+            "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
+            "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
+        "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
+        "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
 
 
@@ -477,13 +439,9 @@ def run() -> dict:
     current, stats = build(results, history)
     _write(CURRENT, current)
     _write(STATS, stats)
-    return {
-        "status": "OK", "version": VERSION, "model_status": current["model_status"],
-        "matches": current["matches_count"],
-        "training": stats.get("training"),
-        **{k: v for k, v in stats["current_offer"].items() if k != "probability_diagnostics"},
-        "probability_diagnostics": stats["current_offer"]["probability_diagnostics"],
-    }
+    return {"status": "OK", "version": VERSION, "model_status": current["model_status"], "matches": current["matches_count"],
+        "training": stats.get("training"), **{k: v for k, v in stats["current_offer"].items() if k != "probability_diagnostics"},
+        "probability_diagnostics": stats["current_offer"]["probability_diagnostics"]}
 
 
 if __name__ == "__main__":
