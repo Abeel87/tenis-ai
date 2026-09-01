@@ -13,6 +13,14 @@ def test_exact_02_and_under_25_sets_are_semantically_redundant():
     assert _compatible((_row("exact_match_score", "0:2"), _row("total_sets", "under", 2.5))) is False
 
 
+def test_exact_21_and_over_25_sets_are_semantically_redundant():
+    assert _compatible((_row("exact_match_score", "2:1"), _row("total_sets", "over", 2.5))) is False
+
+
+def test_exact_12_and_over_25_sets_are_semantically_redundant():
+    assert _compatible((_row("exact_match_score", "1:2"), _row("total_sets", "over", 2.5))) is False
+
+
 def test_exact_score_can_still_combine_with_match_games_total():
     assert _compatible((_row("exact_match_score", "2:0"), _row("match_total", "under", 22.5))) is True
 
