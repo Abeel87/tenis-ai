@@ -148,8 +148,11 @@ jobs:
           python backend/symphony2_tracker.py
           python scripts/compact_frontend_data_v853.py
 
-      - name: Capture and train isolated NEURO SHADOW evidence
-        run: python -m backend.neuro_shadow_runner_v935 run
+      - name: Capture isolated NEURO SHADOW evidence and refresh current feed
+        run: |
+          python -m backend.neuro_shadow_runner_v935 settle
+          python -m backend.neuro_shadow_runner_v935 capture
+          python -m backend.neuro_shadow_runner_v935 run
 
       - name: Runtime sanity guard
         run: |
