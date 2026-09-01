@@ -16,7 +16,7 @@ from typing import Any
 from backend.neuro_shadow_history_v935 import DEFAULT_HISTORY_PATH, load_history
 from backend.neuro_shadow_neural_v936 import VERSION as NEURAL_VERSION, train_market
 
-VERSION = "neuro-shadow-training-v9.3.6"
+VERSION = "neuro-shadow-training-v9.3.11"
 MODE = "SHADOW"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
@@ -54,10 +54,10 @@ def _group_by_market(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any
 
 
 def training_fingerprint(rows: list[dict[str, Any]]) -> str:
-    """Hash only evidence that can affect neural training.
+    """Hash every settled field that can affect neural training or its split.
 
-    Pending/VOID rows do not trigger an expensive retrain. A new HIT/MISS,
-    changed immutable probability or changed feature snapshot does.
+    Pending/VOID rows do not trigger an expensive retrain. HIT/MISS evidence,
+    immutable features, match grouping identity and chronological split time do.
     """
     evidence = []
     for row in rows or []:
@@ -65,12 +65,19 @@ def training_fingerprint(rows: list[dict[str, Any]]) -> str:
             continue
         evidence.append({
             "prediction_key": row.get("prediction_key"),
+            "match_id": row.get("match_id") or row.get("id"),
+            "p1": row.get("p1"),
+            "p2": row.get("p2"),
+            "scheduled_time": row.get("scheduled_time"),
+            "created_at": row.get("created_at"),
             "market": row.get("market"),
             "settlement": row.get("settlement"),
             "probability": row.get("probability"),
             "feature_snapshot": row.get("feature_snapshot"),
         })
     evidence.sort(key=lambda row: (
+        str(row.get("scheduled_time") or row.get("created_at") or ""),
+        str(row.get("match_id") or ""),
         str(row.get("prediction_key") or ""),
         str(row.get("market") or ""),
         str(row.get("settlement") or ""),
