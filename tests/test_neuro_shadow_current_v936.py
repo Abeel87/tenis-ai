@@ -94,3 +94,12 @@ def test_stale_ready_artifact_cannot_emit_neural_probability(monkeypatch):
     assert feed["neural_rows_count"] == 0
     assert feed["ready_markets"] == []
     assert feed["training_artifact_compatible"] is False
+
+
+def test_zero_match_id_is_preserved_in_current_feed():
+    result = {**_result(), "match_id": 0}
+    history = [{**_history()[0], "match_id": 0, "prediction_key": "0|set2_winner|Alpha"}]
+    feed = build_current_feed([result], history, {})
+    assert feed["matches_count"] == 1
+    assert feed["matches"][0]["match_id"] == "0"
+    assert feed["rows_count"] == 1
