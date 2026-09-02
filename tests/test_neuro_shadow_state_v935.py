@@ -184,7 +184,7 @@ def test_capture_readiness_includes_existing_state_markets_without_prod_promotio
 def test_production_runtime_does_not_import_neuro_shadow_state():
     production_files = (
         ROOT / "backend" / "symphony2_engine.py",
-        ROOT / "backend" / "superbet_playable_v912.py",
+        ROOT / "backend" / "superbet_playable.py",
         ROOT / "backend" / "update.py",
     )
     for path in production_files:
