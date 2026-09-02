@@ -43,6 +43,7 @@ STABLE_FRONTEND_RUNTIME = {
     "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
     "integrity-status.js", "integrity-status.css", "model-trends.js", "model-trends.css",
     "match-time.js", "match-time.css", "pbp-validation.js", "pbp-validation.css", "market-lab.js", "market-lab.css",
+    "project-analysis.css", "calibration-status.css",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
@@ -60,7 +61,7 @@ RETIRED_FRONTEND_RUNTIME = {
     "checkpoint-quality-v887.js", "project-ui-quality-v8815.js",
     "integrity-v78a.js", "integrity-v78a.css", "model-trends-v84e2.js", "model-trends-v84e2.css",
     "match-time-v84e11.js", "match-time-v84e11.css", "pbp-validation-v73.js", "pbp-validation-v73.css",
-    "market-lab-v741.js", "market-lab-v741.css",
+    "market-lab-v741.js", "market-lab-v741.css", "logic-audit-v772.css", "calibration-v78d.css",
 }
 
 
@@ -138,7 +139,7 @@ def test_index_boots_stable_production_runtime_chain():
         "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
         "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css",
         "performance-dashboard.css", "ui-cleanup.css", "integrity-status.css", "match-time.css", "model-trends.css",
-        "pbp-validation.css", "market-lab.css",
+        "pbp-validation.css", "market-lab.css", "project-analysis.css", "calibration-status.css",
     ):
         assert f'href="{name}"' in text
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
