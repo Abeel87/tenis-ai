@@ -51,4 +51,5 @@ def test_refresh_and_joint_pipeline_are_consistent():
     workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
     assert "`${url.pathname}${url.search}`" in runtime
     assert "mode === 'no-store'" in runtime
-    assert workflow.index("python backend/pbp_enrich.py") < workflow.index("python backend/apply_joint_to_results_v78b.py")
+    assert workflow.index("python backend/pbp_enrich.py") < workflow.index("python backend/apply_joint_to_results.py")
+    assert "python backend/apply_joint_to_results_v78b.py" not in workflow
