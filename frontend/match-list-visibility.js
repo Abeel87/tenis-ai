@@ -69,7 +69,7 @@ function refreshVisibleUi(){
 function loadDetailArchitectureV950(){
   if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail-v950]'))return;
   const script=document.createElement('script');
-  script.src='match-detail-architecture-v950.js?v=950&contract=playable-model-diagnostics';
+  script.src='match-detail-architecture.js?v=950&contract=playable-model-diagnostics';
   script.async=false;
   script.dataset.matchDetailV950='1';
   document.head.appendChild(script);
@@ -78,7 +78,7 @@ function loadDetailArchitectureV950(){
 function loadMarketSegregationV93G(){
   if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]')){loadDetailArchitectureV950();return}
   const script=document.createElement('script');
-  script.src='market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only';
+  script.src='market-segregation.js?v=933&contract=superbet-coverage-ui-only';
   script.async=false;
   script.dataset.marketSegregationV93g='1';
   script.addEventListener('load',loadDetailArchitectureV950,{once:true});
@@ -88,7 +88,7 @@ function loadMarketSegregationV93G(){
 function loadSuperbetModelCoverageV922(){
   if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]')){loadMarketSegregationV93G();return}
   const script=document.createElement('script');
-  script.src='superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage';
+  script.src='superbet-model-coverage.js?v=933&contract=operator-model-coverage';
   script.async=false;
   script.dataset.superbetModelCoverageV922='1';
   script.addEventListener('load',loadMarketSegregationV93G,{once:true});
@@ -97,22 +97,13 @@ function loadSuperbetModelCoverageV922(){
 
 function loadPlayableUiV917(){
   if(window.TENIS_AI_PLAYABLE_UI_V917){loadSuperbetModelCoverageV922();return}
-  const existing=document.querySelector('script[data-playable-ui-v917]');
+  const existing=document.querySelector('script[data-playable-ui-v917],#playable-ui');
   if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
   const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=948&contract=raw-playable-filter-coherence';
+  script.src='playable-ui.js?v=948&contract=raw-playable-filter-coherence';
   script.async=false;
   script.dataset.playableUiV917='1';
   script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
-  document.head.appendChild(script);
-}
-
-function loadMatchBrowserV945(){
-  if(window.TENIS_AI_MATCH_BROWSER_V945||document.querySelector('script[data-match-browser-v945]'))return;
-  const script=document.createElement('script');
-  script.src='match-browser-v945.js?v=949&contract=filter-navigation-state';
-  script.async=false;
-  script.dataset.matchBrowserV945='1';
   document.head.appendChild(script);
 }
 
@@ -126,8 +117,8 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// Ownership chain: strict PLAYABLE gate -> operator/model coverage -> market grouping
-// -> one canonical detail information architecture. MODEL/RAW calculations stay untouched.
+// Ownership chain: base PLAYABLE API -> operator/model coverage -> market grouping
+// -> one canonical detail information architecture. The strict freshness gate owns
+// Match Browser loading, so no other layer may bypass it. MODEL/RAW stays untouched.
 setTimeout(loadPlayableUiV917,0);
-setTimeout(loadMatchBrowserV945,0);
 })();
