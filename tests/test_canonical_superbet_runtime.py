@@ -47,6 +47,15 @@ def test_match_browser_uses_stable_production_filename():
     assert not (FRONTEND / "match-browser-v945.js").exists()
 
 
+def test_active_frontend_does_not_boot_retired_match_browser_filename():
+    offenders = []
+    for path in FRONTEND.glob("*.js"):
+        text = path.read_text(encoding="utf-8")
+        if "match-browser-v945.js" in text:
+            offenders.append(path.name)
+    assert not offenders, f"Active frontend still boots retired Match Browser path: {offenders}"
+
+
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
     text = WORKFLOW.read_text(encoding="utf-8")
     offenders = sorted(set(re.findall(r"python\s+backend/(superbet_[A-Za-z0-9_]+_v\d+[A-Za-z0-9_]*\.py)", text)))
