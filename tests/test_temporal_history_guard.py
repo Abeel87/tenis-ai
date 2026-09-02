@@ -5,7 +5,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
-from model import analyse_match, normalize_matches
+from model import analyse_match, normalize_matches, player_profile
 
 
 def _row(date, *, winner="Alpha", loser="Beta", w_svpt=60, w_1st_won=30):
@@ -65,3 +65,17 @@ def test_undated_history_row_cannot_change_current_engine_prediction():
     assert actual["p2_stats"]["matches"] == expected["p2_stats"]["matches"]
     assert actual["first_set_win"] == expected["first_set_win"]
     assert actual["match_win"] == expected["match_win"]
+
+
+def test_direct_public_player_profile_uses_same_temporal_guard():
+    valid = [_row(20260820 - i) for i in range(10)]
+    baseline = normalize_matches(pd.DataFrame(valid))
+    poisoned = normalize_matches(pd.DataFrame(valid + [_row("bad-date", w_svpt=40, w_1st_won=38)]))
+
+    expected = player_profile(baseline, "Alpha", "hard", "2026-09-02T15:00:00Z")
+    actual = player_profile(poisoned, "Alpha", "hard", "2026-09-02T15:00:00Z")
+
+    assert actual["matches"] == expected["matches"]
+    assert actual["hold_rate"] == expected["hold_rate"]
+    assert actual["serve_points_won"] == expected["serve_points_won"]
+    assert actual["first_set_won"] == expected["first_set_won"]
