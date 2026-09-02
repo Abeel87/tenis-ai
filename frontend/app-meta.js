@@ -123,7 +123,7 @@
   window.TENIS_AI_FAST_BOOT_V888=Object.freeze({version:'v8.8.8',clear:clearDataCache,snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})});
 })();
 
-/* Exact Superbet UI bootstrap for Symphony 2.0 era. */
+/* Canonical Superbet UI bootstrap for Symphony 2.0 era. */
 (() => {
   'use strict';
   function fullDom(){return typeof document!=='undefined'&&typeof document.getElementById==='function'&&typeof document.createElement==='function'&&!!document.body&&typeof document.body.appendChild==='function'}
@@ -134,8 +134,8 @@
   }
   function boot(){
     if(!fullDom())return;
-    const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');
-    if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();else load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness);
+    const freshness=()=>load('playable-freshness.js','tenis-ai-playable-freshness');
+    if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();else load('playable-ui.js','tenis-ai-playable-ui',freshness);
   }
   if(typeof document!=='undefined'&&document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
