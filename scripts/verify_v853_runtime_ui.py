@@ -112,8 +112,8 @@ forbid("frontend/ui-organizer.js", "new MutationObserver(", "MutationObserver w 
 forbid("frontend/ui-organizer.js", "setInterval(", "interwał w organizerze UI")
 
 need(".github/workflows/update-and-pages.yml", "verify_v853_runtime_ui.py", "guard v8.5.3+ w produkcyjnym workflow")
-need(".github/workflows/update-and-pages.yml", "compact_frontend_data_v853.py", "kompaktowanie dużych JSON-ów")
-need("scripts/compact_frontend_data_v853.py", "separators=(',', ':')", "kompaktowy zapis JSON")
+need(".github/workflows/update-and-pages.yml", "compact_frontend_data.py", "kanoniczne kompaktowanie dużych JSON-ów")
+need("scripts/compact_frontend_data.py", "separators=(',', ':')", "kompaktowy zapis JSON")
 need(".github/workflows/ui-smoke.yml", "python -m pytest -q", "pełny pytest na PR")
 need(".github/workflows/ui-smoke.yml", "verify_v853_runtime_ui.py", "guard v8.5.3+ na PR")
 
