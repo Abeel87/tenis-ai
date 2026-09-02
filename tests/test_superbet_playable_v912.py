@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from backend.signal_settlement import SIGNAL_LAYERS, settle_signal
@@ -200,8 +201,11 @@ def test_v925_capture_freezes_candidates_as_non_playable_and_excludes_pbp_only()
             "score": 71.0,
         },
     ]
-    history = [{"match_id": 1, "p1": "Player A", "p2": "Player B", "status": "pending"}]
-    frozen, info = capture_candidates(history, [match])
+    now = datetime.now(timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    match["scheduled_time"] = future
+    history = [{"match_id": 1, "p1": "Player A", "p2": "Player B", "scheduled_time": future, "status": "pending"}]
+    frozen, info = capture_candidates(history, [match], now=now)
     assert info["captured"] == 1
     assert info["pbp_only_excluded"] == 1
     rows = frozen[0][V925_LAYER]
