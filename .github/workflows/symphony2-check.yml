@@ -7,7 +7,7 @@ on:
       - 'backend/symphony2_*.py'
       - 'backend/pbp_market_evidence_v940.py'
       - 'backend/apply_joint_to_results_v78b.py'
-      - 'scripts/compact_frontend_data_v853.py'
+      - 'scripts/compact_frontend_data.py'
       - 'frontend/symphony2.*'
       - 'SYMPHONY_2_ARCHITECTURE.md'
       - 'tests/test_symphony2_*.py'
@@ -38,7 +38,7 @@ jobs:
           python -m py_compile backend/symphony2_tracker.py
           python -m py_compile backend/pbp_market_evidence_v940.py
           python -m py_compile backend/apply_joint_to_results_v78b.py
-          python -m py_compile scripts/compact_frontend_data_v853.py
+          python -m py_compile scripts/compact_frontend_data.py
       - name: Operator-first contract + audit fixes
         run: python -m pytest -q tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_state_coverage_v946.py tests/test_symphony2_tracker.py tests/test_symphony2_ui.py tests/test_symphony2_candidate_training_v940.py tests/test_pbp_market_evidence_v940.py tests/test_compact_symphony2_v940.py
       - name: No legacy Symphony active surface
