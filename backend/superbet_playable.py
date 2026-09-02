@@ -153,8 +153,15 @@ def operator_availability(match: dict) -> dict:
     if not operator_context_active(match):
         return out
     for row in ctx.get("canonical_selections") or []:
-        if isinstance(row, dict) and row.get("operator_available") is not False:
-            out[signal_signature(row)] = row
+        if not isinstance(row, dict) or row.get("operator_available") is False:
+            continue
+        market = _market(row.get("market"))
+        # A line market without explicit fixture-line verification is diagnostic
+        # context only. It must never become PLAYABLE through a malformed/legacy
+        # canonical selection.
+        if market in LINE_MARKETS and row.get("operator_line_verified") is not True:
+            continue
+        out[signal_signature(row)] = row
     return out
 
 
@@ -178,600 +185,416 @@ def is_operator_playable_signal(match: dict, signal: dict) -> bool:
     return signal_signature(signal) in operator_availability(match)
 
 
-def _operator_meta(row: dict, available: dict | None = None) -> dict:
-    out = dict(row)
-    out.update({
-        "operator": OPERATOR,
-        "operator_available": True,
-        "operator_line_verified": True,
-        "operator_line_source": "oddspapi_superbet_pl",
-        "operator_playable": True,
-        "operator_projection_version": VERSION,
-    })
-    if isinstance(available, dict):
-        out["operator_market_id"] = available.get("market_id")
-        out["operator_outcome_id"] = available.get("outcome_id")
-        out["operator_main_line"] = bool(available.get("main_line", False))
+def _copy_signal(signal: dict) -> dict:
+    out = dict(signal)
+    out["market"] = _market(signal.get("market"))
+    if out["market"] in LINE_MARKETS:
+        out["line"] = _num(signal.get("line"))
+    if out["market"] == "game_state":
+        out["checkpoint"] = int(_num(signal.get("checkpoint"), 0) or 0)
     return out
 
 
-def _injected_signal(row: dict, available: dict | None = None) -> dict:
-    out = _operator_meta(row, available)
-    score = _num(out.get("score"), _num(out.get("symphony_raw_probability")))
-    if score is not None:
-        out.setdefault("current", round(score, 1))
-        # AutoLearn itself did not score a newly-created operator line. Keep a
-        # fallback only so downstream generic SHADOW feature builders can inspect
-        # the line; statistics explicitly do not count it as a learned ensemble.
-        out.setdefault("ensemble", round(score, 1))
-        out["operator_projection_fallback"] = True
-        out["ensemble_score_kind"] = "current_model_fallback_not_learned_ensemble"
-    out.setdefault("support", 0)
-    out.setdefault("dynamic_weighting", {
-        "version": VERSION,
-        "active": False,
-        "status": "OPERATOR_LINE_CURRENT_FALLBACK",
-        "reason": "real_line_was_not_in_original_autolearn_candidate_grid",
-    })
-    out.setdefault("local_weights", {"current": 1.0})
-    return out
+def _model_probability_fallback(match: dict, operator_signal: dict):
+    market = _market(operator_signal.get("market"))
+    pick = operator_signal.get("pick")
+    line = _num(operator_signal.get("line"))
+    try:
+        if market == "match_winner":
+            return _lookup_player(match.get("match_win"), pick)
+        if market == "set1_winner":
+            return _lookup_player(match.get("first_set_win"), pick)
+        if market == "set2_winner":
+            return _lookup_player(match.get("second_set_win"), pick)
+        if market == "set3_winner":
+            return _lookup_player(match.get("third_set_win"), pick)
+        if market == "set1_total":
+            return _lookup_ou(match.get("over_under"), line, pick)
+        if market == "match_total":
+            return _lookup_ou(match.get("match_over_under"), line, pick)
+        if market == "set1_exact_score":
+            return _lookup_exact(match.get("exact_first_set"), pick)
+        if market == "exact_match_score":
+            return _lookup_exact(match.get("exact_match_score"), pick)
+        if market == "game_state":
+            cp = str(int(_num(operator_signal.get("checkpoint"), 0) or 0))
+            return _lookup_exact((match.get("game_states") or {}).get(cp), pick)
+    except Exception:
+        return None
+    return None
 
 
-def inject_match(match: dict) -> tuple[dict, dict]:
-    """Add real operator lines after AutoLearn, without deleting raw diagnostics."""
+def _lookup_player(block, pick):
+    if not isinstance(block, dict):
+        return None
+    target = _name_key(pick)
+    for name, value in block.items():
+        if _name_key(name) == target:
+            return _num(value)
+    return None
+
+
+def _lookup_ou(block, line, pick):
+    if not isinstance(block, dict) or line is None:
+        return None
+    for key in (f"{float(line):.1f}", f"{float(line):g}", str(line)):
+        row = block.get(key)
+        if isinstance(row, dict):
+            return _num(row.get(str(pick).lower()))
+    return None
+
+
+def _lookup_exact(block, pick):
+    if not isinstance(block, dict):
+        return None
+    target = str(pick or "").replace("-", ":")
+    for key, value in block.items():
+        if str(key).replace("-", ":") == target:
+            return _num(value)
+    return None
+
+
+def _current_autolearn_signals(match: dict):
+    auto = match.get("autolearn_v84") or {}
+    return [dict(x) for x in (auto.get("signals") or []) if isinstance(x, dict)]
+
+
+def inject_match(match: dict) -> dict:
     m = dict(match)
-    if not operator_context_active(m):
-        return m, {"active": False, "added": 0, "verified_existing": 0}
-
-    available = operator_availability(m)
-    model_signals = operator_model_signals(m)
     auto = dict(m.get("autolearn_v84") or {})
-    rows = [dict(x) for x in (auto.get("signals") or []) if isinstance(x, dict)]
-    seen = set()
-    verified_existing = 0
+    current = _current_autolearn_signals(m)
+    availability = operator_availability(m)
+    model_signals = operator_model_signals(m)
+    by_sig = {signal_signature(s): dict(s) for s in current}
 
-    for i, row in enumerate(rows):
-        sig = signal_signature(row)
-        seen.add(sig)
-        if sig in available:
-            verified_existing += 1
-            row = _operator_meta(row, available[sig])
-            if sig in model_signals:
-                row["operator_model_probability"] = _num(model_signals[sig].get("score"))
-            rows[i] = row
-        elif _market(row.get("market")) in STRICT_MARKETS:
-            row["operator_playable"] = False
-            row["operator_projection_version"] = VERSION
-            row["operator_note"] = "raw_analysis_only_not_in_current_superbet_offer"
-            rows[i] = row
+    for sig, signal in list(by_sig.items()):
+        if _market(signal.get("market")) in STRICT_MARKETS:
+            signal["operator_playable"] = sig in availability
+            signal["operator"] = OPERATOR if signal["operator_playable"] else None
+            row = availability.get(sig)
+            if row:
+                signal["operator_line_verified"] = row.get("operator_line_verified") is True
+                signal["operator_line_source"] = row.get("operator_line_source")
+            by_sig[sig] = signal
 
-    added = 0
-    for sig, row in model_signals.items():
-        if sig in seen:
+    for sig, operator_signal in model_signals.items():
+        if sig not in availability:
             continue
-        rows.append(_injected_signal(row, available.get(sig)))
-        seen.add(sig)
-        added += 1
+        existing = by_sig.get(sig)
+        if existing:
+            existing["operator_playable"] = True
+            existing["operator"] = OPERATOR
+            existing["operator_line_verified"] = True
+            existing["operator_line_source"] = operator_signal.get("operator_line_source")
+            by_sig[sig] = existing
+            continue
+        fallback = _model_probability_fallback(m, operator_signal)
+        if fallback is None:
+            continue
+        item = _copy_signal(operator_signal)
+        item.update({
+            "key": operator_signal.get("key") or "|".join(str(x) for x in sig),
+            "label": operator_signal.get("label") or str(operator_signal.get("market") or ""),
+            "current": round(float(fallback), 1),
+            "catboost": None,
+            "tabpfn": None,
+            "ensemble": round(float(fallback), 1),
+            "support": 0,
+            "local_weights": {"current": 1.0},
+            "dynamic_weighting": {
+                "version": "v8.4D", "active": False, "status": "SAFE_FALLBACK",
+                "reason": "operator_line_not_in_candidate_grid",
+            },
+            "operator_playable": True,
+            "operator": OPERATOR,
+            "operator_line_verified": True,
+            "operator_line_source": operator_signal.get("operator_line_source"),
+            "operator_projection_fallback": True,
+            "ensemble_score_kind": "current_model_fallback_not_learned_ensemble",
+        })
+        by_sig[sig] = item
 
-    auto["signals"] = rows
-    old_by_key = auto.get("by_key") or {}
-    by_key = dict(old_by_key) if isinstance(old_by_key, dict) else {}
-    for row in rows:
-        key = str(row.get("key") or "")
-        if key:
-            previous = by_key.get(key)
-            by_key[key] = {**(previous if isinstance(previous, dict) else {}), **row}
-    auto["by_key"] = by_key
-    auto["superbet_playable_v912"] = {
-        "active": True,
+    signals = sorted(
+        by_sig.values(),
+        key=lambda s: (-float(_num(s.get("ensemble"), _num(s.get("score"), 0.0)) or 0.0), str(s.get("key") or "")),
+    )
+    auto["signals"] = signals
+    auto["by_key"] = {str(s.get("key")): s for s in signals if s.get("key")}
+    auto["superbet_playable_projection"] = {
+        "version": VERSION,
         "operator": OPERATOR,
-        "verified_existing": verified_existing,
-        "operator_lines_added_for_downstream_models": added,
-        "raw_signals_preserved_for_diagnostics": True,
+        "operator_context_active": operator_context_active(m),
+        "available_selections": len(availability),
+        "operator_scored_selections": len(model_signals),
         "prices_used": False,
     }
     m["autolearn_v84"] = auto
-    return m, {"active": True, "added": added, "verified_existing": verified_existing}
+    return m
 
 
-def inject_results(results: list[dict]) -> tuple[list[dict], dict]:
-    out = []
-    active = added = existing = 0
-    for raw in results or []:
-        if not isinstance(raw, dict):
+def _score(signal: dict):
+    for key in ("final_score", "ensemble", "score", "shadow_score", "value"):
+        value = _num(signal.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def _playable_signals(match: dict, limit=None):
+    rows = []
+    for signal in _current_autolearn_signals(match):
+        if not is_operator_playable_signal(match, signal):
             continue
-        row, info = inject_match(raw)
-        active += int(info["active"])
-        added += int(info["added"])
-        existing += int(info["verified_existing"])
-        out.append(row)
-    return out, {"matches_active": active, "signals_added": added, "verified_existing": existing}
+        item = dict(signal)
+        item["operator_playable"] = True
+        item["operator"] = OPERATOR
+        rows.append(item)
+    rows.sort(key=lambda s: (-float(_score(s) or 0.0), str(s.get("key") or "")))
+    return rows[:limit] if limit else rows
 
 
-def _signals_by_market(match: dict) -> dict[str, list[dict]]:
-    groups: dict[str, list[dict]] = defaultdict(list)
-    for row in (match.get("superbet_market_v91") or {}).get("model_signals") or []:
-        if isinstance(row, dict) and row.get("operator_line_verified") is True:
-            groups[_market(row.get("market"))].append(row)
-    return groups
-
-
-def _player_map(rows: list[dict]) -> dict:
+def _project_ladder(block: dict, market: str, availability: dict, player=None):
+    if not isinstance(block, dict):
+        return {}
     out = {}
-    for row in rows:
-        score = _num(row.get("score"))
-        pick = row.get("pick")
-        if score is not None and pick:
-            out[str(pick)] = round(score, 1)
-    return out
-
-
-def _ou_map(rows: list[dict]) -> dict:
-    out = {}
-    for row in rows:
-        line, score = _num(row.get("line")), _num(row.get("score"))
-        pick = _pick(row.get("pick"), _market(row.get("market")))
-        if line is None or score is None or pick not in {"over", "under"}:
-            continue
-        key = f"{line:.1f}"
-        out.setdefault(key, {})[pick] = round(score, 1)
-    return dict(sorted(out.items(), key=lambda kv: float(kv[0])))
-
-
-def _score_map(rows: list[dict]) -> dict:
-    out = {}
-    for row in rows:
-        score = _num(row.get("score"))
-        pick = row.get("pick")
-        if score is not None and pick:
-            out[str(pick).replace("-", ":")] = round(score, 1)
-    return out
-
-
-def _state_map(rows: list[dict]) -> dict:
-    out = {}
-    for row in rows:
-        cp = int(_num(row.get("checkpoint"), 0) or 0)
-        score = _num(row.get("score"))
-        pick = row.get("pick")
-        if cp in {2, 4, 6} and score is not None and pick:
-            out.setdefault(str(cp), {})[str(pick).replace("-", ":")] = round(score, 1)
-    return out
-
-
-def _total_sets_display(rows: list[dict]) -> dict:
-    out = {}
-    for row in rows:
-        line, score = _num(row.get("line")), _num(row.get("score"))
-        pick = _pick(row.get("pick"), "total_sets")
-        if line is None or score is None or pick not in {"over", "under"}:
-            continue
-        out[f"{'OVER' if pick == 'over' else 'UNDER'} {line:g}"] = round(score, 1)
-    return out
-
-
-def _serve_props_analysis_only(match: dict) -> dict | None:
-    props = match.get("serve_props_v72")
-    if not isinstance(props, dict):
-        return props
-    out = dict(props)
-    for side in ("p1", "p2"):
-        block = out.get(side)
-        if not isinstance(block, dict):
-            continue
-        sb = dict(block)
-        for field in ("aces", "double_faults"):
-            mb = sb.get(field)
-            if not isinstance(mb, dict):
+    for key, value in block.items():
+        if market in LINE_MARKETS:
+            line = _num(key)
+            if line is None:
                 continue
-            x = dict(mb)
-            if isinstance(x.get("lines"), dict) and x.get("lines"):
-                x.setdefault("analysis_lines", x.get("lines"))
-            x["lines"] = {}
-            x["operator_lines_verified"] = False
-            x["display_note"] = "średnia modelowa; brak indywidualnych player props w zweryfikowanym feedzie Superbet"
-            sb[field] = x
-        out[side] = sb
-    out["operator_projection_version"] = VERSION
-    out["operator_player_props_actionable"] = False
+            sides = value if isinstance(value, dict) else {}
+            projected = {}
+            for pick, score in sides.items():
+                probe = {"market": market, "pick": pick, "line": line, "player": player}
+                if signal_signature(probe) in availability:
+                    projected[pick] = score
+            if projected:
+                out[str(key)] = projected
+        else:
+            probe = {"market": market, "pick": key, "player": player}
+            if signal_signature(probe) in availability:
+                out[key] = value
     return out
 
 
-def project_match_for_display(match: dict) -> tuple[dict, dict]:
+def project_match_for_display(match: dict) -> dict:
     m = dict(match)
-    if not operator_context_active(m):
+    availability = operator_availability(m)
+    if not availability:
         m["superbet_playable_v912"] = {
-            "version": VERSION, "active": False, "status": "NO_VERIFIED_OPERATOR_MATCH",
-            "raw_analysis_preserved": True,
+            "version": VERSION, "operator": OPERATOR, "status": "NO_VERIFIED_OPERATOR_CONTEXT",
+            "playable": False, "playable_count": 0, "signals": [], "prices_used": False,
         }
-        return m, {"active": False, "suppressed": 0, "playable": 0}
+        return m
 
-    groups = _signals_by_market(m)
-    raw_total = 0
-    for field in ("match_win", "first_set_win", "second_set_win", "third_set_win", "over_under", "match_over_under", "exact_first_set", "exact_match_score", "game_states", "total_sets"):
-        value = m.get(field)
-        if isinstance(value, dict):
-            raw_total += len(value)
+    m["match_win"] = _project_ladder(m.get("match_win"), "match_winner", availability)
+    m["first_set_win"] = _project_ladder(m.get("first_set_win"), "set1_winner", availability)
+    m["second_set_win"] = _project_ladder(m.get("second_set_win"), "set2_winner", availability)
+    m["third_set_win"] = _project_ladder(m.get("third_set_win"), "set3_winner", availability)
+    m["over_under"] = _project_ladder(m.get("over_under"), "set1_total", availability)
+    m["match_over_under"] = _project_ladder(m.get("match_over_under"), "match_total", availability)
+    m["exact_first_set"] = _project_ladder(m.get("exact_first_set"), "set1_exact_score", availability)
+    m["exact_match_score"] = _project_ladder(m.get("exact_match_score"), "exact_match_score", availability)
 
-    m["match_win"] = _player_map(groups.get("match_winner", [])) or None
-    m["first_set_win"] = _player_map(groups.get("set1_winner", [])) or None
-    m["second_set_win"] = _player_map(groups.get("set2_winner", [])) or None
-    m["third_set_win"] = _player_map(groups.get("set3_winner", [])) or None
-    m["over_under"] = _ou_map(groups.get("set1_total", [])) or None
-    m["match_over_under"] = _ou_map(groups.get("match_total", [])) or None
-    m["exact_first_set"] = _score_map(groups.get("set1_exact_score", [])) or None
-    m["exact_match_score"] = _score_map(groups.get("exact_match_score", [])) or None
-    m["game_states"] = _state_map(groups.get("game_state", [])) or None
-    m["total_sets"] = _total_sets_display(groups.get("total_sets", [])) or None
-
-    # Current OddsPapi Free feed does not expose individual tennis player props.
-    # Keep means/diagnostics, but never display model-made ace/DF ladders as bets.
-    has_individual_props = bool(groups.get("player_aces") or groups.get("player_double_faults"))
-    if not has_individual_props:
-        m["serve_props_v72"] = _serve_props_analysis_only(m)
-
-    auto = dict(m.get("autolearn_v84") or {})
-    if isinstance(auto.get("signals"), list):
-        playable = [dict(x) for x in auto["signals"] if isinstance(x, dict) and is_operator_playable_signal(m, x)]
-        auto["analysis_signals_v912"] = [
-            dict(x) for x in auto["signals"]
-            if isinstance(x, dict) and not is_operator_playable_signal(m, x)
-        ]
-        auto["signals"] = playable
-        auto["by_key"] = {str(x.get("key")): x for x in playable if x.get("key")}
-        auto["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
-        m["autolearn_v84"] = auto
-
-    playable_count = sum(len(v) for v in groups.values())
-    suppressed = max(0, raw_total - playable_count)
+    signals = _playable_signals(m)
     m["superbet_playable_v912"] = {
-        "version": VERSION,
-        "active": True,
-        "status": "PLAYABLE_SUPERBET_ONLY",
-        "operator": OPERATOR,
-        "playable_model_signals": playable_count,
-        "raw_display_groups": raw_total,
-        "suppressed_raw_groups_estimate": suppressed,
+        "version": VERSION, "operator": OPERATOR,
+        "status": "PLAYABLE" if signals else "VERIFIED_NO_MODEL_SIGNAL",
+        "playable": bool(signals), "playable_count": len(signals), "signals": signals,
         "prices_used": False,
-        "raw_models_trained_unchanged": True,
     }
-    return m, {"active": True, "suppressed": suppressed, "playable": playable_count}
+    return m
 
 
-def _match_key(row: dict) -> str:
-    mid = row.get("match_id") if row.get("match_id") is not None else row.get("id")
-    if mid is not None and str(mid) != "":
-        return f"id:{mid}"
-    return "|".join([
-        _name_key(row.get("p1")), _name_key(row.get("p2")),
-        str(row.get("scheduled_time") or "")[:10], _norm(row.get("tournament")),
-    ])
-
-
-def _result_index(results: list[dict]) -> dict:
-    return {_match_key(m): m for m in results if isinstance(m, dict)}
-
-
-def _filter_shadow_feed(data, results_index: dict):
-    if isinstance(data, list):
-        rows = []
-        for raw in data:
-            if not isinstance(raw, dict):
-                continue
-            row = dict(raw)
-            match = results_index.get(_match_key(row))
-            if not match or not operator_context_active(match):
-                continue
-            sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
-            if not sigs:
-                continue
-            row["signals"] = sigs
-            row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
-            rows.append(row)
-        return rows
-    if isinstance(data, dict) and isinstance(data.get("matches"), list):
-        out = dict(data)
-        matches = []
-        counts = defaultdict(int)
-        for raw in data.get("matches") or []:
-            if not isinstance(raw, dict):
-                continue
-            row = dict(raw)
-            match = results_index.get(_match_key(row))
-            if not match or not operator_context_active(match):
-                continue
-            sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
-            if not sigs:
-                continue
-            row["signals"] = sigs
-            row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
-            for signal in row["signals"]:
-                for model_id in (signal.get("scores") or {}):
-                    counts[str(model_id)] += 1
-            matches.append(row)
-        out["matches"] = matches
-        out["matches_count"] = len(matches)
-        out["model_signal_counts"] = dict(sorted(counts.items()))
-        out["operator_projection"] = {
-            "version": VERSION, "view": "PLAYABLE_SUPERBET_ONLY", "prices_used": False,
-        }
-        return out
-    return data
-
-
-def _history_signal(row: dict, source_model: str, score=None) -> dict:
-    resolved_score = _num(score if score is not None else row.get("score"))
-    out = {
-        "id": str(row.get("key") or "|".join(map(str, signal_signature(row)))),
-        "key": row.get("key"),
-        "label": row.get("label"),
-        "market": _market(row.get("market")),
-        "pick": row.get("pick"),
-        "line": row.get("line"),
-        "checkpoint": row.get("checkpoint"),
-        "player": row.get("player"),
-        "score": round(resolved_score, 1) if resolved_score is not None else None,
-        "result": "pending",
-        "source_model": source_model,
-        "operator": OPERATOR,
+def _history_signal(signal: dict, source: str):
+    row = {
+        "key": signal.get("key"), "label": signal.get("label"),
+        "market": _market(signal.get("market")), "pick": signal.get("pick"),
+        "line": _num(signal.get("line")), "checkpoint": signal.get("checkpoint"),
+        "player": signal.get("player"), "result": "pending",
+        "source_model": source, "operator": OPERATOR,
         "operator_playable": True,
-        "operator_line_verified": True,
-        "operator_projection_version": VERSION,
+        "operator_line_verified": signal.get("operator_line_verified") is True,
+        "operator_line_source": signal.get("operator_line_source"),
+        "tracker_version": VERSION,
     }
-    return {k: v for k, v in out.items() if v is not None}
+    score = _score(signal)
+    if score is not None:
+        row["score"] = round(float(score), 1)
+    return row
 
 
-def _freeze_history_layers(history: list[dict], results: list[dict], shadow_center: dict) -> tuple[list[dict], dict]:
-    rindex = _result_index(results)
-    sindex = {_match_key(m): m for m in (shadow_center.get("matches") or []) if isinstance(m, dict)} if isinstance(shadow_center, dict) else {}
-    captured_base = captured_auto = captured_shadow = captured_lab = 0
+def _copy_result_layers(entry: dict, signals: list[dict], key: str, source: str):
+    if entry.get(key):
+        return entry
+    entry[key] = [_history_signal(s, source) for s in signals]
+    return entry
+
+
+def _find_current_match(entry: dict, matches: list[dict]):
+    mid = entry.get("match_id") or entry.get("id")
+    if mid is not None:
+        for m in matches:
+            if str(m.get("id") or m.get("match_id") or "") == str(mid):
+                return m
+    p1, p2 = _name_key(entry.get("p1")), _name_key(entry.get("p2"))
+    date = str(entry.get("scheduled_time") or "")[:10]
+    for m in matches:
+        if {_name_key(m.get("p1")), _name_key(m.get("p2"))} == {p1, p2} and str(m.get("scheduled_time") or "")[:10] == date:
+            return m
+    return None
+
+
+def freeze_playable_history(history: list[dict], matches: list[dict]):
     out = []
-
-    for raw in history or []:
-        if not isinstance(raw, dict):
-            continue
+    for raw in history:
         e = dict(raw)
-        if e.get("status") not in ("pending", "upcoming"):
+        if e.get("status") not in {"pending", "upcoming"}:
             out.append(e)
             continue
-        match = rindex.get(_match_key(e))
-        if not match or not operator_context_active(match):
+        match = _find_current_match(e, matches)
+        if not match:
             out.append(e)
             continue
-
-        if not e.get("playable_signals_v912"):
-            rows = []
-            for signal in (match.get("superbet_market_v91") or {}).get("model_signals") or []:
-                market = _market(signal.get("market"))
-                score = _num(signal.get("score"))
-                if market in SETTLE_SUPPORTED and score is not None and score >= GREEN_THRESHOLD:
-                    rows.append(_history_signal(signal, "current_prod", score))
-            if rows:
-                e["playable_signals_v912"] = rows
-                e["playable_captured_at_v912"] = e.get("captured_at") or datetime.now(timezone.utc).isoformat()
-                captured_base += len(rows)
-
-        if not e.get("playable_shadow_lab_v912"):
-            rows = []
-            for signal in (match.get("superbet_market_v91") or {}).get("model_signals") or []:
-                market = _market(signal.get("market"))
-                score = _num(signal.get("score"))
-                if market in SETTLE_SUPPORTED and score is not None and SHADOW_MIN_THRESHOLD <= score < GREEN_THRESHOLD:
-                    rows.append(_history_signal(signal, "shadow_lab_v78e6", score))
-            if rows:
-                e["playable_shadow_lab_v912"] = rows
-                captured_lab += len(rows)
-
-        if not e.get("playable_autolearn_signals_v912"):
-            rows = []
-            for signal in ((match.get("autolearn_v84") or {}).get("signals") or []):
-                if not isinstance(signal, dict) or not is_operator_playable_signal(match, signal):
-                    continue
-                market = _market(signal.get("market"))
-                if market not in SETTLE_SUPPORTED:
-                    continue
-                ensemble = _num(signal.get("ensemble"))
-                current = _num(signal.get("current"), _num(signal.get("score")))
-                selected_score = ensemble if ensemble is not None else current
-                if selected_score is None:
-                    continue
-                row = _history_signal(signal, "ensemble_v84", selected_score)
-                row["model_scores"] = {
-                    "current": current,
-                    "catboost": _num(signal.get("catboost")),
-                    "tabpfn": _num(signal.get("tabpfn")),
-                    "ensemble": ensemble,
-                }
-                row["ensemble_fallback_only"] = bool(signal.get("operator_projection_fallback"))
-                adaptive = signal.get("adaptive_prod_v79")
-                if isinstance(adaptive, dict):
-                    row["adaptive_prod_v79"] = adaptive
-                rows.append(row)
-            if rows:
-                e["playable_autolearn_signals_v912"] = rows
-                captured_auto += len(rows)
-
-        if not e.get("playable_shadow_models_v912"):
-            sm = sindex.get(_match_key(e))
-            rows = []
-            for signal in (sm.get("signals") or []) if isinstance(sm, dict) else []:
-                if _market(signal.get("market")) not in SETTLE_SUPPORTED:
-                    continue
-                for model_id, value in (signal.get("scores") or {}).items():
-                    score = _num(value)
-                    if score is None or score < SHADOW_MIN_THRESHOLD:
-                        continue
-                    row = _history_signal(signal, str(model_id), score)
-                    rows.append(row)
-            if rows:
-                e["playable_shadow_models_v912"] = rows
-                captured_shadow += len(rows)
-
+        playable = _playable_signals(match)
+        if playable:
+            e = _copy_result_layers(e, playable, "playable_autolearn_signals_v912", "ensemble_v84_superbet")
         out.append(e)
-    return out, {
-        "base": captured_base, "shadow_lab": captured_lab,
-        "autolearn": captured_auto, "shadow_models": captured_shadow,
-    }
+    return out
 
 
-def _summary(rows: list[dict], threshold: float) -> dict:
-    selected = [r for r in rows if r.get("result") in {"hit", "miss"} and _num(r.get("score"), -1) >= threshold]
-    hits = sum(1 for r in selected if r.get("result") == "hit")
-    return {
-        "settled": len(selected),
-        "hits": hits,
-        "misses": len(selected) - hits,
-        "accuracy": round(100.0 * hits / len(selected), 1) if selected else None,
-        "threshold": threshold,
-    }
-
-
-def _playable_stats(history: list[dict], results: list[dict], shadow_center: dict, projection_info: dict) -> dict:
-    base_rows = []
-    shadow_lab_rows = []
-    auto_models: dict[str, list[dict]] = defaultdict(list)
-    shadow_models: dict[str, list[dict]] = defaultdict(list)
-
-    for e in history or []:
-        if not isinstance(e, dict):
+def _shadow_models_from_match(match: dict):
+    out = []
+    pi = match.get("player_intelligence_v85") or {}
+    for signal in ((match.get("autolearn_v84") or {}).get("signals") or []):
+        if not is_operator_playable_signal(match, signal):
             continue
-        base_rows.extend(x for x in (e.get("playable_signals_v912") or []) if isinstance(x, dict))
-        shadow_lab_rows.extend(x for x in (e.get("playable_shadow_lab_v912") or []) if isinstance(x, dict))
-        for row in e.get("playable_autolearn_signals_v912") or []:
-            if not isinstance(row, dict) or row.get("result") not in {"hit", "miss"}:
+        details = signal.get("player_intelligence_v85") or {}
+        if _num(details.get("shadow_score")) is not None:
+            item = _copy_signal(signal)
+            item["score"] = details.get("shadow_score")
+            item["source_model"] = "player_intelligence_v85"
+            out.append(item)
+    return out
+
+
+def _filter_shadow_feed(feed: dict, matches_by_id: dict) -> dict:
+    source = feed if isinstance(feed, dict) else {}
+    result = {k: v for k, v in source.items() if k not in {"matches", "matches_count", "model_signal_counts"}}
+    kept = []
+    counts = defaultdict(int)
+    for row in source.get("matches") or []:
+        if not isinstance(row, dict):
+            continue
+        match = None
+        mid = row.get("id") or row.get("match_id")
+        if mid is not None:
+            match = matches_by_id.get(str(mid))
+        if not match:
+            # A PLAYABLE-only projection must never preserve an unmatched RAW row.
+            continue
+        signals = []
+        for signal in row.get("signals") or []:
+            if not isinstance(signal, dict) or not is_operator_playable_signal(match, signal):
                 continue
-            result = row.get("result")
-            scores = row.get("model_scores") or {}
-            for model_id in ("current", "catboost", "tabpfn", "ensemble"):
-                score = _num(scores.get(model_id))
-                if score is None:
+            item = dict(signal)
+            item["operator_playable"] = True
+            item["operator"] = OPERATOR
+            signals.append(item)
+            source_model = str(item.get("source_model") or row.get("source_model") or "shadow")
+            counts[source_model] += 1
+        if not signals:
+            continue
+        item = dict(row)
+        item["signals"] = signals
+        kept.append(item)
+    result["matches"] = kept
+    result["matches_count"] = len(kept)
+    result["model_signal_counts"] = dict(sorted(counts.items()))
+    result["projection"] = "PLAYABLE_SUPERBET_ONLY"
+    return result
+
+
+def _history_stats(history):
+    totals = defaultdict(lambda: {"n": 0, "hits": 0, "misses": 0})
+    for entry in history or []:
+        for layer in ("playable_autolearn_signals_v912", "playable_shadow_models_v912"):
+            for signal in entry.get(layer) or []:
+                result = signal.get("result")
+                if result not in {"hit", "miss"}:
                     continue
-                if model_id == "ensemble" and row.get("ensemble_fallback_only"):
-                    continue
-                auto_models[model_id].append({"result": result, "score": score})
-            adaptive = row.get("adaptive_prod_v79") or {}
-            score = _num(adaptive.get("final_score")) if isinstance(adaptive, dict) else None
-            if score is not None:
-                auto_models["adaptive_prod"].append({"result": result, "score": score})
-        for row in e.get("playable_shadow_models_v912") or []:
-            if not isinstance(row, dict):
-                continue
-            shadow_models[str(row.get("source_model") or "shadow")].append(row)
-
-    verified = sum(1 for m in results if isinstance(m, dict) and operator_context_active(m))
-    model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready"))
-    verified_model_ready = sum(1 for m in results if isinstance(m, dict) and m.get("model_ready") and operator_context_active(m))
-    current_playable = sum(
-        1 for m in results if isinstance(m, dict) and operator_context_active(m)
-        for s in ((m.get("superbet_market_v91") or {}).get("model_signals") or [])
-        if isinstance(s, dict) and _num(s.get("score"), -1) >= GREEN_THRESHOLD
-    )
-    shadow_counts = shadow_center.get("model_signal_counts") if isinstance(shadow_center, dict) else {}
-
-    models = {
-        "current_prod": _summary(base_rows, GREEN_THRESHOLD),
-        "shadow_lab_v78e6": _summary(shadow_lab_rows, SHADOW_MIN_THRESHOLD),
-    }
-    for model_id, rows in sorted(auto_models.items()):
-        models[f"autolearn_{model_id}"] = _summary(rows, MODEL_SELECT_THRESHOLD)
-    for model_id, rows in sorted(shadow_models.items()):
-        models[f"shadow_{model_id}"] = _summary(rows, MODEL_SELECT_THRESHOLD)
-
+                key = (layer, _market(signal.get("market")))
+                totals[key]["n"] += 1
+                totals[key]["hits"] += int(result == "hit")
+                totals[key]["misses"] += int(result == "miss")
     return {
-        "version": VERSION,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "operator": OPERATOR,
-        "mode": "PLAYABLE_SUPERBET_ONLY",
-        "prices_used": False,
-        "current": {
-            "model_ready_matches": model_ready,
-            "verified_superbet_matches": verified,
-            "verified_model_ready_matches": verified_model_ready,
-            "verified_match_coverage": round(verified_model_ready / model_ready, 4) if model_ready else 0.0,
-            "playable_green_signals": current_playable,
-            "shadow_model_signal_counts": shadow_counts if isinstance(shadow_counts, dict) else {},
-            "suppressed_raw_display_estimate": int(projection_info.get("suppressed", 0)),
-        },
-        "models": models,
-        "contract": {
-            "raw_model_training_unchanged": True,
-            "playable_stats_use_only_frozen_operator_verified_signals": True,
-            "legacy_history_without_operator_snapshot_excluded": True,
-            "unavailable_lines_never_count_as_playable_miss_or_hit": True,
-            "bookmaker_prices_not_used": True,
-            "sample_starts_with_version": VERSION,
-        },
+        f"{layer}:{market}": {
+            **row,
+            "accuracy": round(100.0 * row["hits"] / row["n"], 1) if row["n"] else None,
+        }
+        for (layer, market), row in sorted(totals.items())
     }
 
 
-def _update_meta(mode: str, info: dict) -> None:
-    meta = _read(META, {})
-    meta = meta if isinstance(meta, dict) else {}
-    meta["superbet_playable_v912"] = {
+def inject():
+    results = _read(RESULTS, [])
+    results = [inject_match(m) for m in results if isinstance(m, dict)] if isinstance(results, list) else []
+    _write(RESULTS, results)
+    return {"version": VERSION, "matches": len(results), "operator": OPERATOR}
+
+
+def project():
+    results = _read(RESULTS, [])
+    history = _read(HISTORY, [])
+    raw_shadow_current = _read(SHADOW_CURRENT, {})
+    raw_shadow_center = _read(SHADOW_CENTER, {})
+    if not isinstance(results, list): results = []
+    if not isinstance(history, list): history = []
+
+    projected_results = [project_match_for_display(m) for m in results if isinstance(m, dict)]
+    matches_by_id = {
+        str(m.get("id") or m.get("match_id")): m
+        for m in projected_results
+        if m.get("id") is not None or m.get("match_id") is not None
+    }
+    history = freeze_playable_history(history, projected_results)
+    shadow_current = _filter_shadow_feed(raw_shadow_current, matches_by_id)
+    shadow_center = _filter_shadow_feed(raw_shadow_center, matches_by_id)
+    stats = {
         "version": VERSION,
-        "mode": mode,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-        "prices_used": False,
-        **info,
+        "operator": OPERATOR,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "matches": sum(1 for m in projected_results if (m.get("superbet_playable_v912") or {}).get("playable")),
+        "signals": sum(int((m.get("superbet_playable_v912") or {}).get("playable_count") or 0) for m in projected_results),
+        "history": _history_stats(history),
+        "shadow_current": {
+            "matches": shadow_current.get("matches_count", 0),
+            "model_signal_counts": shadow_current.get("model_signal_counts", {}),
+        },
+        "shadow_center": {
+            "matches": shadow_center.get("matches_count", 0),
+            "model_signal_counts": shadow_center.get("model_signal_counts", {}),
+        },
+    }
+    _write(RESULTS, projected_results)
+    _write(HISTORY, history)
+    _write(STATS, stats)
+    meta = _read(META, {})
+    if not isinstance(meta, dict): meta = {}
+    meta["superbet_playable_v912"] = {
+        "version": VERSION, "operator": OPERATOR,
+        "matches": stats["matches"], "signals": stats["signals"],
+        "updated_at": stats["generated_at"],
     }
     _write(META, meta)
-
-
-def inject() -> dict:
-    rows = _read(RESULTS, [])
-    rows = rows if isinstance(rows, list) else []
-    injected, info = inject_results(rows)
-    _write(RESULTS, injected)
-    _update_meta("inject", info)
-    return {"status": "OK", "version": VERSION, "mode": "inject", **info}
-
-
-def project() -> dict:
-    rows = _read(RESULTS, [])
-    rows = rows if isinstance(rows, list) else []
-    projected = []
-    active = suppressed = playable = 0
-    for raw in rows:
-        if not isinstance(raw, dict):
-            continue
-        row, info = project_match_for_display(raw)
-        active += int(info["active"])
-        suppressed += int(info["suppressed"])
-        playable += int(info["playable"])
-        projected.append(row)
-    _write(RESULTS, projected)
-
-    rindex = _result_index(projected)
-    # RAW/SHADOW is an independent model surface. Derive an operator-filtered
-    # projection for PLAYABLE history/statistics, but never rewrite those source
-    # feeds based on bookmaker availability.
-    raw_shadow_center = _read(SHADOW_CENTER, {})
-    shadow_center = _filter_shadow_feed(raw_shadow_center, rindex)
-
-    history = _read(HISTORY, [])
-    history = history if isinstance(history, list) else []
-    history, captured = _freeze_history_layers(history, projected, shadow_center if isinstance(shadow_center, dict) else {})
-    _write(HISTORY, history)
-
-    pinfo = {"matches_active": active, "suppressed": suppressed, "playable": playable}
-    stats = _playable_stats(history, projected, shadow_center if isinstance(shadow_center, dict) else {}, pinfo)
-    _write(STATS, stats)
-    _update_meta("project", {**pinfo, "history_captured": captured})
-    return {
-        "status": "OK", "version": VERSION, "mode": "project",
-        **pinfo, "history_captured": captured,
-        "playable_stats_models": len(stats.get("models") or {}),
-    }
+    return stats
 
 
 def main():
     mode = str(sys.argv[1] if len(sys.argv) > 1 else "project").strip().casefold()
-    if mode == "inject":
-        result = inject()
-    elif mode == "project":
-        result = project()
-    else:
-        raise SystemExit("usage: superbet_playable_v912.py [inject|project]")
+    if mode == "inject": result = inject()
+    elif mode == "project": result = project()
+    else: raise SystemExit("usage: superbet_playable.py [inject|project]")
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
