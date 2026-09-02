@@ -208,21 +208,26 @@ def _wilson_lower(hits: int, n: int, z: float = 1.96) -> float | None:
     return max(0.0, (centre - margin) / denom)
 
 
+def _brier(rows: list[dict]) -> float | None:
+    scored = [r for r in rows if _num(r.get("score")) is not None and r.get("result") in {"hit", "miss"}]
+    if not scored:
+        return None
+    return sum(
+        ((_num(r.get("score")) / 100.0) - (1.0 if r.get("result") == "hit" else 0.0)) ** 2
+        for r in scored
+    ) / len(scored)
+
+
 def _summary(rows: list[dict]) -> dict:
     settled = [r for r in rows if r.get("result") in {"hit", "miss"}]
     hits = sum(1 for r in settled if r.get("result") == "hit")
-    brier_rows = [r for r in settled if _num(r.get("score")) is not None]
-    brier = None
-    if brier_rows:
-        brier = sum(
-            ((_num(r.get("score"), 0.0) / 100.0) - (1.0 if r.get("result") == "hit" else 0.0)) ** 2
-            for r in brier_rows
-        ) / len(brier_rows)
+    tracking_brier = _brier(settled)
 
     promoted_sample = [
         r for r in settled
         if _num(r.get("score"), -1.0) >= PROMOTION_SCORE_THRESHOLD
     ]
+    promotion_brier = _brier(promoted_sample)
     phits = sum(1 for r in promoted_sample if r.get("result") == "hit")
     pacc = 100.0 * phits / len(promoted_sample) if promoted_sample else None
     wilson = _wilson_lower(phits, len(promoted_sample))
@@ -230,7 +235,7 @@ def _summary(rows: list[dict]) -> dict:
         len(promoted_sample) >= PROMOTION_MIN_SETTLED
         and pacc is not None and pacc >= PROMOTION_MIN_ACCURACY
         and wilson is not None and wilson >= PROMOTION_MIN_WILSON
-        and brier is not None and brier <= PROMOTION_MAX_BRIER
+        and promotion_brier is not None and promotion_brier <= PROMOTION_MAX_BRIER
     )
     status = "REVIEW_READY" if ready else (
         "COLLECTING_SAMPLE" if len(promoted_sample) < PROMOTION_MIN_SETTLED else "HOLD"
@@ -244,10 +249,11 @@ def _summary(rows: list[dict]) -> dict:
         "void": sum(1 for r in rows if r.get("result") == "void"),
         "unverifiable": sum(1 for r in rows if r.get("result") == "unverifiable"),
         "accuracy": round(100.0 * hits / len(settled), 1) if settled else None,
-        "brier": round(brier, 4) if brier is not None else None,
+        "brier": round(tracking_brier, 4) if tracking_brier is not None else None,
         "promotion_sample": len(promoted_sample),
         "promotion_hits": phits,
         "promotion_accuracy": round(pacc, 1) if pacc is not None else None,
+        "promotion_brier": round(promotion_brier, 4) if promotion_brier is not None else None,
         "promotion_wilson_lower_95": round(wilson, 4) if wilson is not None else None,
         "promotion_status": status,
         "review_ready": ready,
@@ -282,6 +288,7 @@ def build_candidate_stats(history: list[dict]) -> dict:
             "min_accuracy": PROMOTION_MIN_ACCURACY,
             "min_wilson_lower_95": PROMOTION_MIN_WILSON,
             "max_brier": PROMOTION_MAX_BRIER,
+            "brier_population": "PROMOTION_SAMPLE_ONLY",
             "auto_promote": False,
         },
         "settlement_supported_markets": sorted(SETTLEMENT_SUPPORTED_MARKETS),
