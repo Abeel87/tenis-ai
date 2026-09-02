@@ -9,6 +9,7 @@ from backend.symphony2_engine import _is_current_pre_match_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 SYMPHONY_UI = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
+PLAYABLE_BACKEND = (ROOT / "backend" / "superbet_playable.py").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
 
 
@@ -40,6 +41,13 @@ def test_shadow_playable_feed_fails_closed_without_verified_operator_match():
     assert filtered["matches"] == []
     assert filtered["matches_count"] == 0
     assert filtered["model_signal_counts"] == {}
+
+
+def test_playable_projection_never_overwrites_raw_shadow_sources():
+    assert "_write(SHADOW_CURRENT" not in PLAYABLE_BACKEND
+    assert "_write(SHADOW_CENTER" not in PLAYABLE_BACKEND
+    assert "raw_shadow_center = _read(SHADOW_CENTER" in PLAYABLE_BACKEND
+    assert "shadow_center = _filter_shadow_feed(raw_shadow_center" in PLAYABLE_BACKEND
 
 
 def test_playable_history_does_not_invent_zero_score_when_score_is_missing():
