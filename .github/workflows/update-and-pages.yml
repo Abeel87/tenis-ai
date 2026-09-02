@@ -71,7 +71,7 @@ jobs:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/pbp_enrich.py
       - name: Rebuild Joint Builder after PBP enrichment
-        run: python backend/apply_joint_to_results_v78b.py
+        run: python backend/apply_joint_to_results.py
       - name: Player Intelligence v8.5 PRE
         run: python backend/player_intelligence_v85.py pre
       - name: Prediction integrity gate v7.8A
