@@ -38,6 +38,22 @@ STABLE_FRONTEND_RUNTIME = {
     "superbet-model-coverage.js",
     "market-segregation.js",
     "match-detail.js",
+    "player-intelligence-human.js",
+    "app-coherence.js",
+    "symphony2-live-ui.js",
+    "runtime-fetch.js",
+    "match-loading.js",
+    "data-runtime.js",
+    "fixture-history-freshness.js",
+    "adaptive-prod-bridge.js",
+    "ui-cleanup.js",
+    "ui-organizer.js",
+    "ui-organizer.css",
+    "superbet-playable-stats.js",
+    "superbet-playable-stats.css",
+    "stats-ranking.js",
+    "market-quality.js",
+    "project-ui-quality.js",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js",
@@ -47,6 +63,22 @@ RETIRED_FRONTEND_RUNTIME = {
     "superbet-model-coverage-v922.js",
     "market-segregation-v93g.js",
     "match-detail-architecture-v950.js",
+    "player-intelligence-v888-human.js",
+    "app-coherence-v892.js",
+    "symphony2-live-ui-v201.js",
+    "runtime-fetch-v853.js",
+    "loading-fix-v889.js",
+    "runtime-health-v84e0.js",
+    "hotfix-v84e01.js",
+    "v88-upgrade.js",
+    "v883-final.js",
+    "ui-organizer-v853.js",
+    "ui-organizer-v853.css",
+    "superbet-playable-v912.js",
+    "superbet-playable-v912.css",
+    "stats-ranking-v886.js",
+    "checkpoint-quality-v887.js",
+    "project-ui-quality-v8815.js",
 }
 
 
@@ -72,11 +104,12 @@ def test_retired_playable_frontend_runtime_stays_deleted():
 
 def test_active_frontend_does_not_boot_retired_runtime_filenames():
     offenders = []
-    for path in FRONTEND.glob("*.js"):
-        text = path.read_text(encoding="utf-8")
+    active_texts = [(FRONTEND / "index.html").read_text(encoding="utf-8")]
+    active_texts.extend(path.read_text(encoding="utf-8") for path in FRONTEND.glob("*.js"))
+    for idx, text in enumerate(active_texts):
         for retired in RETIRED_FRONTEND_RUNTIME:
             if retired in text:
-                offenders.append(f"{path.name}:{retired}")
+                offenders.append(f"source-{idx}:{retired}")
     assert not offenders, f"Active frontend still boots retired runtime paths: {offenders}"
 
 
@@ -102,10 +135,25 @@ def test_match_visibility_owns_stable_detail_chain_only():
         assert retired not in text
 
 
-def test_index_boots_stable_match_visibility():
+def test_index_boots_stable_production_runtime_chain():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
-    assert '<script src="match-visibility.js"></script>' in text
-    assert "match-list-visibility-v916.js" not in text
+    for name in (
+        "runtime-fetch.js",
+        "match-loading.js",
+        "data-runtime.js",
+        "fixture-history-freshness.js",
+        "ui-organizer.js",
+        "adaptive-prod-bridge.js",
+        "ui-cleanup.js",
+        "stats-ranking.js",
+        "market-quality.js",
+        "project-ui-quality.js",
+        "match-visibility.js",
+    ):
+        assert f'src="{name}"' in text
+    assert 'href="ui-organizer.css"' in text
+    for retired in RETIRED_FRONTEND_RUNTIME:
+        assert retired not in text
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
