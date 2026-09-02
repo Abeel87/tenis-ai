@@ -45,6 +45,10 @@ STABLE_FRONTEND_RUNTIME = {
     "match-loading.js",
     "data-runtime.js",
     "fixture-history-freshness.js",
+    "history-ui.js",
+    "history-ui.css",
+    "project-ui.js",
+    "project-ui.css",
     "navigation-tools.js",
     "navigation-tools.css",
     "adaptive-prod-bridge.js",
@@ -78,6 +82,10 @@ RETIRED_FRONTEND_RUNTIME = {
     "hotfix-v84e01.js",
     "restore-v762.js",
     "restore-v762.css",
+    "ui-v75.js",
+    "ui-v75.css",
+    "ui-v751.js",
+    "ui-v751.css",
     "v88-upgrade.js",
     "v88-upgrade.css",
     "v882-cleanup.js",
@@ -147,6 +155,16 @@ def test_match_visibility_owns_stable_detail_chain_only():
         assert retired not in text
 
 
+def test_project_ui_has_single_match_list_owner():
+    project = (FRONTEND / "project-ui.js").read_text(encoding="utf-8")
+    history = (FRONTEND / "history-ui.js").read_text(encoding="utf-8")
+    assert "renderMatches=function" in project
+    assert "window.TENIS_AI_PROJECT_UI" in project
+    assert "renderMatches=function" not in history
+    assert "filteredReady" not in history
+    assert "window.renderHistory=render" in history
+
+
 def test_index_boots_stable_production_runtime_chain():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
     for name in (
@@ -154,6 +172,8 @@ def test_index_boots_stable_production_runtime_chain():
         "match-loading.js",
         "data-runtime.js",
         "fixture-history-freshness.js",
+        "history-ui.js",
+        "project-ui.js",
         "navigation-tools.js",
         "ui-organizer.js",
         "adaptive-prod-bridge.js",
@@ -166,6 +186,8 @@ def test_index_boots_stable_production_runtime_chain():
     ):
         assert f'src="{name}"' in text
     for name in (
+        "history-ui.css",
+        "project-ui.css",
         "navigation-tools.css",
         "ui-organizer.css",
         "adaptive-prod-bridge.css",
@@ -173,6 +195,7 @@ def test_index_boots_stable_production_runtime_chain():
         "ui-cleanup.css",
     ):
         assert f'href="{name}"' in text
+    assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
     for retired in RETIRED_FRONTEND_RUNTIME:
         assert retired not in text
 
