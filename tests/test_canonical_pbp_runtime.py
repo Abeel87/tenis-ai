@@ -10,7 +10,7 @@ def test_pbp_evidence_has_one_canonical_module_path():
     assert not (BACKEND / "pbp_market_evidence_v940.py").exists()
     test = (ROOT / "tests" / "test_pbp_market_evidence_v940.py").read_text(encoding="utf-8")
     assert "from backend.pbp_market_evidence import" in test
-    assert "pbp_market_evidence_v940" not in test
+    assert "from backend.pbp_market_evidence_v940" not in test
 
 
 def test_pbp_cache_recovery_has_one_canonical_module_path():
@@ -18,7 +18,7 @@ def test_pbp_cache_recovery_has_one_canonical_module_path():
     assert not (BACKEND / "pbp_cache_recovery_v941.py").exists()
     test = (ROOT / "tests" / "test_pbp_profile_supply_v941.py").read_text(encoding="utf-8")
     assert "from backend import pbp_cache_recovery as recovery" in test
-    assert "pbp_cache_recovery_v941" not in test
+    assert "from backend import pbp_cache_recovery_v941" not in test
 
 
 def test_joint_builder_publication_has_one_canonical_wrapper_path():
@@ -28,8 +28,11 @@ def test_joint_builder_publication_has_one_canonical_wrapper_path():
     assert "from joint_builder_v78b import add_joint_builder" in wrapper
     assert "from pbp_cache_recovery import recover_rows_from_cache" in wrapper
     assert "from pbp_market_evidence import enrich_market_evidence" in wrapper
-    assert "pbp_cache_recovery_v941" not in wrapper
-    assert "pbp_market_evidence_v940" not in wrapper
+    assert "from pbp_cache_recovery_v941 import" not in wrapper
+    assert "from pbp_market_evidence_v940 import" not in wrapper
+    # Persisted metadata keys keep their historical version identity.
+    assert 'meta["pbp_cache_recovery_v941"]' in wrapper
+    assert '"market_evidence_v940"' in wrapper
 
 
 def test_active_workflows_use_canonical_state_pbp_and_publication_paths():
