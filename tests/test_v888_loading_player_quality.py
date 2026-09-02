@@ -17,14 +17,14 @@ def test_fast_boot_starts_results_before_history_and_canonicalizes_timestamp():
 
 
 def test_match_loading_guard_prevents_false_empty_state_and_primes_results():
-    s = read("frontend/loading-fix-v889.js")
+    s = read("frontend/loading-runtime.js")
     index = read("frontend/index.html")
     assert "TENIS_AI_MATCH_LOADING_V889" in s
     assert "state = 'loading'" in s
     assert "data/results.json" in s
     assert "Ładowanie meczów" in s
     assert "originalRenderMatches" in s
-    assert "loading-fix-v889.js?v=889" in index
+    assert "loading-runtime.js?v=889" in index
 
 
 def test_player_intelligence_has_plain_language_layer_and_keeps_shadow_semantics():
@@ -54,5 +54,5 @@ def test_symphony2_is_loaded_from_central_app_bootstrap():
     meta = read("frontend/app-meta.js")
     assert "symphony2.js?v=210" in index
     assert "symphony2.css?v=210" in index
-    assert "symphony2-live-ui-v201.js?v=201" in meta
+    assert "symphony2-live-ui.js?v=201" in meta
     assert "symphonyVersion:'v2.1'" in meta
