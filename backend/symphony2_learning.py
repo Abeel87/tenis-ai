@@ -142,9 +142,9 @@ def _candidate_review_ready_markets(history: list[dict]) -> set[str]:
     PLAYABLE occurs here; the result only controls Symphony training evidence.
     """
     try:
-        from .superbet_candidate_settlement_v925 import build_candidate_stats
+        from .superbet_candidate_settlement import build_candidate_stats
     except ImportError:
-        from superbet_candidate_settlement_v925 import build_candidate_stats
+        from superbet_candidate_settlement import build_candidate_stats
 
     try:
         stats = build_candidate_stats(history)
