@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+from backend.history_tracker import is_current_match
 from backend.superbet_playable import _filter_shadow_feed, _history_signal
 from backend.symphony2_engine import _is_current_pre_match_fixture
 
@@ -15,6 +16,12 @@ def test_symphony_rejects_fixture_without_parseable_schedule():
     now = datetime(2026, 9, 2, 20, 0, tzinfo=timezone.utc)
     assert _is_current_pre_match_fixture({}, now) is False
     assert _is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is False
+
+
+def test_main_results_reject_fixture_without_parseable_schedule():
+    now = datetime(2026, 9, 2, 20, 0, tzinfo=timezone.utc)
+    assert is_current_match({}, now=now) is False
+    assert is_current_match({"scheduled_time": "not-a-date"}, now=now) is False
 
 
 def test_shadow_playable_feed_fails_closed_without_verified_operator_match():
