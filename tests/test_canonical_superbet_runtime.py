@@ -32,7 +32,8 @@ RETIRED_COMPATIBILITY_SHIMS = {
 STABLE_FRONTEND_RUNTIME = {
     "playable-ui.js", "playable-freshness.js", "match-browser.js", "match-visibility.js",
     "superbet-model-coverage.js", "market-segregation.js", "match-detail.js",
-    "player-intelligence-human.js", "app-coherence.js", "symphony2-live-ui.js",
+    "player-intelligence-human.js", "player-intelligence-ui.js", "clarity-labels.js",
+    "app-coherence.js", "symphony2-live-ui.js",
     "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
     "registration-handler.js", "registration-ux.js", "registration-ux.css",
     "history-ui.js", "history-ui.css", "project-ui.js", "project-ui.css", "project-readability.css",
@@ -44,7 +45,8 @@ STABLE_FRONTEND_RUNTIME = {
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
     "match-list-visibility-v916.js", "superbet-model-coverage-v922.js", "market-segregation-v93g.js",
-    "match-detail-architecture-v950.js", "player-intelligence-v888-human.js", "app-coherence-v892.js",
+    "match-detail-architecture-v950.js", "player-intelligence-v888-human.js",
+    "player-intelligence-v851b-ui.js", "clarity-labels-v711.js", "app-coherence-v892.js",
     "symphony2-live-ui-v201.js", "runtime-fetch-v853.js", "loading-fix-v889.js",
     "runtime-health-v84e0.js", "hotfix-v84e01.js", "restore-v762.js", "restore-v762.css",
     "ui-v75.js", "ui-v75.css", "ui-v751.js", "ui-v751.css",
@@ -120,9 +122,10 @@ def test_index_boots_stable_production_runtime_chain():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
     for name in (
         "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
-        "registration-handler.js", "registration-ux.js", "history-ui.js", "project-ui.js",
+        "registration-handler.js", "registration-ux.js", "clarity-labels.js", "history-ui.js", "project-ui.js",
         "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
-        "ui-cleanup.js", "stats-ranking.js", "market-quality.js", "project-ui-quality.js", "match-visibility.js",
+        "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
+        "project-ui-quality.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
     for name in (
