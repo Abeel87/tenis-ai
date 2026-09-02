@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from backend.superbet_candidate_settlement import _summary
+
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
 RETIRED = "superbet_candidate_settlement_v925"
@@ -38,3 +40,23 @@ def test_versioned_settlement_data_contract_is_preserved():
     assert "'superbet_candidate_settlement_v925'" in reports
     assert "from superbet_candidate_settlement import" in degraded
     assert "from superbet_candidate_settlement import" in reports
+
+
+def test_promotion_gate_brier_uses_same_score_population_as_accuracy_and_wilson():
+    # Forty strong, well-calibrated promotion rows satisfy the gate. Extra weak
+    # tracked rows below the promotion threshold must remain diagnostics only and
+    # must not change the gate's Brier population.
+    promoted = [
+        {"score": 80.0, "result": "hit"} for _ in range(32)
+    ] + [
+        {"score": 80.0, "result": "miss"} for _ in range(8)
+    ]
+    weak_tracking = [
+        {"score": 55.0, "result": "miss"} for _ in range(80)
+    ]
+    report = _summary(promoted + weak_tracking)
+    assert report["promotion_sample"] == 40
+    assert report["promotion_accuracy"] == 80.0
+    assert report["promotion_brier"] == 0.16
+    assert report["brier"] != report["promotion_brier"]
+    assert report["review_ready"] is True
