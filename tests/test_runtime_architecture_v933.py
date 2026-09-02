@@ -13,9 +13,9 @@ def test_current_runtime_uses_symphony2_and_exact_superbet_layer_only():
     files = [
         FRONTEND / "index.html",
         FRONTEND / "app-meta.js",
-        FRONTEND / "match-list-visibility-v916.js",
-        FRONTEND / "superbet-model-coverage-v922.js",
-        FRONTEND / "market-segregation-v93g.js",
+        FRONTEND / "match-visibility.js",
+        FRONTEND / "superbet-model-coverage.js",
+        FRONTEND / "market-segregation.js",
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in files)
     index = files[0].read_text(encoding="utf-8")
@@ -26,8 +26,11 @@ def test_current_runtime_uses_symphony2_and_exact_superbet_layer_only():
     assert "symphony_match_cards_v90" not in text
     assert "loadRawPlayableV921" not in loader
     assert "symphony2.js?v=210" in index
-    assert "symphony2-live-ui-v201.js?v=201" in meta
-    assert "playable-ui-coherence-v917.js?v=925" in meta
-    assert "playable-line-freshness-v925.js?v=925" in meta
-    assert "loadSuperbetModelCoverageV922" in loader
-    assert "loadMarketSegregationV93G" in loader
+    assert "symphony2-live-ui.js" in meta
+    assert "playable-ui.js" in meta
+    assert "playable-freshness.js" in meta
+    assert "superbet-model-coverage.js" in loader
+    assert "market-segregation.js" in loader
+    assert "symphony2-live-ui-v201.js" not in meta
+    assert "playable-ui-coherence-v917.js" not in meta
+    assert "playable-line-freshness-v925.js" not in meta
