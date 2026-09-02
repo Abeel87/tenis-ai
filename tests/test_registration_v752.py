@@ -1,7 +1,7 @@
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def test_registration_ux():
-    js=(ROOT/'frontend/registration-ux-v752.js').read_text(encoding='utf-8')
+    js=(ROOT/'frontend/registration-ux.js').read_text(encoding='utf-8')
     for x in [
         '3–24 znaki',
         'Minimum 8 znaków',
@@ -36,7 +36,7 @@ const window={turnstile:{render(){renderCount++;return 'widget-1';},remove(){}}}
 const ctx=vm.createContext({window,setTimeout:fn=>fn(),
  document:{querySelector:s=>s==='#account-auth-form'?form:s==='#tenis-ai-turnstile-style'?{}:null,
  addEventListener(type,fn){if(type==='click')initClick=fn;}}});
-vm.runInContext(fs.readFileSync('frontend/registration-ux-v752.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('frontend/registration-ux.js','utf8'),ctx);
 initClick();initClick();
 Promise.resolve().then(()=>{
  assert.equal(renderCount,1,'shared script load must not produce duplicate widgets');
