@@ -25,14 +25,11 @@ def test_long_data_build_has_its_own_concurrency_lane():
     assert "group: tennis-data-build" in workflow
     assert "group: pages\n" not in workflow
 
-    # The concrete Superbet adapter version is intentionally allowed to move
-    # forward. What this regression protects is that the long build still has
-    # both PREPARE and FINALIZE wired to the same adapter version.
-    prepare = re.findall(r"superbet_market_context_(v\d+)\.py prepare", workflow)
-    finalize = re.findall(r"superbet_market_context_(v\d+)\.py finalize", workflow)
-    assert prepare, "Missing Superbet PREPARE step"
-    assert finalize, "Missing Superbet FINALIZE step"
-    assert prepare[-1] == finalize[-1]
+    # The long build must use the one canonical Superbet market-context module
+    # for both phases. Versioned adapter filenames are retired production paths.
+    assert "python backend/superbet_market_context.py prepare" in workflow
+    assert "python backend/superbet_market_context.py finalize" in workflow
+    assert "superbet_market_context_v" not in workflow
 
 
 def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
