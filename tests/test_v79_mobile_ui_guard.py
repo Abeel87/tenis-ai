@@ -10,7 +10,7 @@ def _compact(text: str) -> str:
 
 
 def test_adaptive_panel_has_mobile_overflow_guardrails():
-    css = (ROOT / "frontend/adaptive-learning-v79.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend/adaptive-learning.css").read_text(encoding="utf-8")
     compact = _compact(css)
 
     assert ".v79-live-panel*,.v79-health*{box-sizing:border-box;min-width:0}" in compact
@@ -25,7 +25,7 @@ def test_adaptive_panel_has_mobile_overflow_guardrails():
 
 
 def test_adaptive_ui_uses_controlled_prod_contract_and_keeps_shadows_separate():
-    ui = (ROOT / "frontend/adaptive-learning-v79.js").read_text(encoding="utf-8")
+    ui = (ROOT / "frontend/adaptive-learning.js").read_text(encoding="utf-8")
 
     # New production payload is preferred, but old snapshots remain readable.
     for token in (
