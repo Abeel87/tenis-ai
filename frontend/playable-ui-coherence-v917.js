@@ -1,4 +1,4 @@
-/* Tenis AI v9.2.3 — one Superbet PLAYABLE gate for actionable UI.
+/* Tenis AI v9.4.8 — one Superbet PLAYABLE gate for actionable UI.
    MODEL/RAW analytics stay independent. This bridge only verifies actionable
    Superbet surfaces against the current fixture offer. It contains no Symphony
    v9.x card/feed/bootstrap logic; Symphony 2.0 owns all Symphony UI. */
@@ -6,7 +6,7 @@
 'use strict';
 if(window.TENIS_AI_PLAYABLE_UI_V917)return;
 
-const VERSION='v9.2.3';
+const VERSION='v9.4.8';
 const WRAP='__tenisAiPlayableUiV923';
 const LINE_MARKETS=new Set([
   'match_total','set1_total','set2_total','set3_total','total_sets',
@@ -208,7 +208,9 @@ function topBarHtml(picks){
   return `<section class="p751-top" data-playable-top-v917="1"><header><b>⚡ Top sygnały · SUPERBET</b><span>${picks.length} najmocniejsze PLAYABLE</span></header><div>${picks.map(({match,signal,raw})=>`<button data-v917-top="1" data-p751-open="${esc(raw)}"><small>${esc(match.p1)} vs ${esc(match.p2)}</small><b>${esc(signal.label||signal.pick||signal.key||'Sygnał PLAYABLE')}</b><strong>${scoreText(valueOf(signal))}</strong><span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${(valueOf(signal)||0)>=i*18?'on':''}"></i>`).join('')}</span><small class="pc882-top-meta">SUPERBET PLAYABLE · linia zweryfikowana ✓</small></button>`).join('')}</div></section>`;
 }
 function patchTopStrip(){
-  const cards=[...document.querySelectorAll('#app .p751-match-card[data-p751-open]')];
+  // Top SUPERBET must be derived from the exact set that Match Browser leaves
+  // visible after its mode / data / surface filters, never from hidden cards.
+  const cards=[...document.querySelectorAll('#app .p751-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])')];
   const picks=cards.map(card=>{
     const raw=card.getAttribute('data-p751-open')||'';
     const match=findMatch(raw);
@@ -339,11 +341,14 @@ function boot(){
       setTimeout(patchOpenDecision,30);
       return;
     }
-    if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-filter],[data-view="matches"],[data-p751-nav="matches"],[data-p751-nav="signals"]'))schedule(80);
+    if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-filter],[data-view="matches"],[data-p751-nav="matches"],[data-p751-nav="signals"],[data-v945-mode],[data-v945-ready],[data-v945-sort]'))schedule(80);
+  },true);
+  document.addEventListener('change',event=>{
+    if(event.target?.matches?.('[data-v945-surface]'))schedule(80);
   },true);
   if('MutationObserver'in window){
     const observer=new MutationObserver(()=>schedule(50));
-    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['hidden']});
   }
 }
 
