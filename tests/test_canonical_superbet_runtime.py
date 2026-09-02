@@ -46,8 +46,11 @@ def test_line_coverage_is_fully_canonical_implementation():
     text = (BACKEND / "superbet_line_coverage.py").read_text(encoding="utf-8")
     assert "def enrich_match(" in text
     assert "def enrich_results(" in text
-    assert "superbet_line_coverage_v924" not in text
-    assert "superbet_line_coverage_v922" not in text
+    # Versioned JSON/meta keys are persisted data contracts and may remain during
+    # code-path consolidation. What must disappear are imports/delegation to old
+    # version-suffixed Python implementations.
+    import_pattern = re.compile(r"(?:from\s+\.?|import\s+)(superbet_line_coverage_v\d+[A-Za-z0-9_]*)")
+    assert not import_pattern.search(text)
     assert "LEGACY_IMPLEMENTATION =" not in text
 
 
