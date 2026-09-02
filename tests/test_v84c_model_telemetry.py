@@ -1,6 +1,8 @@
+from copy import deepcopy
 from datetime import datetime, timezone
 
-from backend.model_telemetry_v84c import build_report
+from backend.autolearn_v84 import tracking_stats
+from backend.model_telemetry_v84c import build_report, collect_rows
 
 
 def demo_history():
@@ -8,6 +10,7 @@ def demo_history():
         "match_key": "id:101",
         "status": "settled",
         "scheduled_time": "2026-08-23T10:00:00+00:00",
+        "autolearn_captured_at": "2026-08-23T08:00:00+00:00",
         "tour": "ATP",
         "surface": "HARD",
         "signals": [
@@ -49,10 +52,28 @@ def test_v84c_segments_and_agreement_are_separate_from_production_weights():
     assert report["agreement"]["ml"]["strong_consensus"]["n"] == 1
 
 
+def test_prod_safe_segments_require_capture_before_match_start():
+    history = demo_history()
+    missing = deepcopy(history[0])
+    missing["match_key"] = "id:missing"
+    missing["autolearn_captured_at"] = None
+    late = deepcopy(history[0])
+    late["match_key"] = "id:late"
+    late["autolearn_captured_at"] = "2026-08-23T10:30:00+00:00"
+    history.extend([missing, late])
+
+    report = build_report(history, now=datetime(2026, 8, 24, 8, 0, tzinfo=timezone.utc))
+    # Diagnostics still see all three settled ML predictions.
+    assert report["segments_30d"]["tour"]["ATP"]["current"]["selected_n"] == 3
+    # PROD-safe telemetry admits only the genuine pre-match snapshot.
+    safe = report["prod_safe_segments_30d"]["tour"]["ATP"]
+    assert safe["current"]["selected_n"] == 1
+    assert safe["catboost"]["selected_n"] == 1
+    assert safe["tabpfn"]["selected_n"] == 1
+    assert report["prod_safe_rows_30d"] == 3
+
+
 def test_final_is_tracked_separately_without_synthesizing_legacy_final():
-    from copy import deepcopy
-    from backend.autolearn_v84 import tracking_stats
-    from backend.model_telemetry_v84c import collect_rows
     history = demo_history()
     legacy = deepcopy(history[0])
     legacy['match_key'] = 'legacy'
