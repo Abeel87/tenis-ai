@@ -8,7 +8,7 @@
   let cache=null,statsCache=null,navTimer=null;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const num=v=>Number.isFinite(Number(v))?Number(v):null;
+  const num=v=>v==null||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
   const pct=v=>num(v)==null?'N/D':`${Number(v).toFixed(1)}%`;
   const nfmt=v=>Number(v||0).toLocaleString('pl-PL');
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ');
