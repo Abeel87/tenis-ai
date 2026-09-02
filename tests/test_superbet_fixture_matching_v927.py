@@ -98,6 +98,18 @@ def test_near_tied_relaxed_candidates_are_rejected_instead_of_guessed():
     assert matching.report()["live"]["ambiguous_rejected"] == 1
 
 
+def test_near_tied_exact_candidates_are_rejected_instead_of_fixture_id_tiebreak():
+    rows = [
+        _fixture(p1="Alexander Zverev", p2="Jannik Sinner", when="2026-08-29T12:00:00Z", fixture_id="exact-a"),
+        _fixture(p1="Jannik Sinner", p2="Alexander Zverev", when="2026-08-29T12:05:00Z", fixture_id="exact-b"),
+    ]
+    match = _match(when="2026-08-29T12:02:00Z")
+    assert matching.best_fixture_for_match(match, rows) is None
+    telemetry = matching.report()["live"]
+    assert telemetry["ambiguous_rejected"] == 1
+    assert telemetry["exact"] == 0
+
+
 def test_cached_index_scans_aliases_when_exact_pair_key_is_missing():
     row = _cached_fixture(p1="A. Zverev", p2="J. Sinner")
     index = {base._pair_key(row["p1"], row["p2"]): [row]}
@@ -129,6 +141,7 @@ def test_matching_contract_adds_zero_requests_and_never_uses_prices():
     assert report["prices_used"] is False
     assert report["contract"]["model_math_unchanged"] is True
     assert report["contract"]["ambiguous_relaxed_match_is_rejected"] is True
+    assert report["contract"]["ambiguous_exact_match_is_rejected"] is True
 
 
 def test_superbet_refresh_runs_after_full_build_without_parallel_write():
