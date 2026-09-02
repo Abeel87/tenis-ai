@@ -83,6 +83,7 @@ def test_no_runtime_reads_legacy_compact_card_feed():
 
 
 def test_metadata_boots_symphony_live_ui_without_generator_bootstrap():
-    assert "symphony2-live-ui-v201.js?v=201" in APP_META
+    assert "symphony2-live-ui.js" in APP_META
+    assert "symphony2-live-ui-v201.js" not in APP_META
     assert "generator-quality-v888.js" not in APP_META
     assert "scenario-studio-v82a.js" not in APP_META
