@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from backend.history_tracker import is_current_match
+from backend.model import _match_distribution_conditional
 from backend.superbet_playable import _filter_shadow_feed, _history_signal
 from backend.symphony2_engine import _is_current_pre_match_fixture
 
@@ -67,3 +68,19 @@ def test_autolearn_uses_previous_telemetry_snapshot_before_current_run_telemetry
     adaptive = WORKFLOW.index("Adaptive Learning v7.9B controlled PROD")
     telemetry = WORKFLOW.index("Model Telemetry v8.4C")
     assert auto < adaptive < telemetry
+
+
+def test_current_engine_bo3_bo5_distributions_are_normalized_and_only_terminal_scores_exist():
+    base_dist = {(6, 3): 0.35, (6, 4): 0.25, (4, 6): 0.20, (3, 6): 0.20}
+    for best_of, expected_scores in (
+        (3, {"2:0", "2:1", "0:2", "1:2"}),
+        (5, {"3:0", "3:1", "3:2", "0:3", "1:3", "2:3"}),
+    ):
+        total_games, winner, total_sets, exact = _match_distribution_conditional(
+            base_dist, 0.58, 0.56, 0.51, 0.54, best_of=best_of
+        )
+        assert set(exact) == expected_scores
+        assert abs(sum(exact.values()) - 1.0) < 1e-9
+        assert abs(sum(total_games.values()) - 1.0) < 1e-9
+        assert abs(sum(winner.values()) - 1.0) < 1e-9
+        assert abs(sum(total_sets.values()) - 1.0) < 1e-9
