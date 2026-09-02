@@ -92,7 +92,7 @@ if legacy_root:
     failures.append('Legacy śmieci w root: '+', '.join(sorted(p.name for p in legacy_root)))
 
 analytics=read(frontend/'player-analytics.js')
-adaptive=read(frontend/'adaptive-learning-v79.js')
+adaptive=read(frontend/'adaptive-learning.js')
 clean_core=read(frontend/'clean-core.js')
 restore=read(frontend/'restore-ui.js')
 
