@@ -45,7 +45,10 @@ STABLE_FRONTEND_RUNTIME = {
     "match-loading.js",
     "data-runtime.js",
     "fixture-history-freshness.js",
+    "navigation-tools.js",
+    "navigation-tools.css",
     "adaptive-prod-bridge.js",
+    "adaptive-prod-bridge.css",
     "performance-dashboard.js",
     "performance-dashboard.css",
     "ui-cleanup.js",
@@ -73,7 +76,10 @@ RETIRED_FRONTEND_RUNTIME = {
     "loading-fix-v889.js",
     "runtime-health-v84e0.js",
     "hotfix-v84e01.js",
+    "restore-v762.js",
+    "restore-v762.css",
     "v88-upgrade.js",
+    "v88-upgrade.css",
     "v882-cleanup.js",
     "v882-cleanup.css",
     "v883-final.js",
@@ -148,6 +154,7 @@ def test_index_boots_stable_production_runtime_chain():
         "match-loading.js",
         "data-runtime.js",
         "fixture-history-freshness.js",
+        "navigation-tools.js",
         "ui-organizer.js",
         "adaptive-prod-bridge.js",
         "performance-dashboard.js",
@@ -158,7 +165,13 @@ def test_index_boots_stable_production_runtime_chain():
         "match-visibility.js",
     ):
         assert f'src="{name}"' in text
-    for name in ("ui-organizer.css", "performance-dashboard.css", "ui-cleanup.css"):
+    for name in (
+        "navigation-tools.css",
+        "ui-organizer.css",
+        "adaptive-prod-bridge.css",
+        "performance-dashboard.css",
+        "ui-cleanup.css",
+    ):
         assert f'href="{name}"' in text
     for retired in RETIRED_FRONTEND_RUNTIME:
         assert retired not in text
