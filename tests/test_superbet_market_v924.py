@@ -6,7 +6,7 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-import superbet_market_context_v924 as ctx
+import superbet_market_context as ctx
 
 
 def test_all_families_found_by_v923_audit_now_have_canonical_mapping():
@@ -49,10 +49,10 @@ def test_new_outcome_parsers_keep_semantics_explicit():
 
 def test_set_handicap_uses_catalogue_line_and_flips_participant_two_sign():
     with ctx._patched_runtime():
-        p1, source1 = ctx.v913._market_line(
+        p1, source1 = ctx.mapping._market_line(
             "set_handicap", {"handicap": -1.5}, "1", None, pick="A", p1="A", p2="B"
         )
-        p2, source2 = ctx.v913._market_line(
+        p2, source2 = ctx.mapping._market_line(
             "set_handicap", {"handicap": -1.5}, "2", None, pick="B", p1="A", p2="B"
         )
     assert p1 == -1.5
@@ -61,8 +61,8 @@ def test_set_handicap_uses_catalogue_line_and_flips_participant_two_sign():
 
 
 def test_wrapper_has_zero_extra_request_contract_and_no_network_client():
-    source = (BACKEND / "superbet_market_context_v924.py").read_text(encoding="utf-8").lower()
-    assert '"additional_external_requests"] = 0' in source
+    source = (BACKEND / "superbet_market_context.py").read_text(encoding="utf-8").lower()
+    assert 'result["additional_external_requests"]=0' in source.replace(" ", "")
     for token in ("urlopen", "requests.get", "httpx", "aiohttp"):
         assert token not in source
 
@@ -162,9 +162,9 @@ def test_structured_current_fixture_line_is_authoritative():
 
 
 def test_strict_contract_forbids_non_fixture_fallbacks():
-    source = (BACKEND / "superbet_market_context_v924.py").read_text(encoding="utf-8")
-    assert '"current_fixture_evidence_required": True' in source
-    assert '"active_fixture_market_id_metadata_allowed": True' in source
-    assert '"catalogue_fallback_allowed": False' in source
-    assert '"model_line_fallback_allowed": False' in source
-    assert '"nearest_line_fallback_allowed": False' in source
+    source = (BACKEND / "superbet_market_context.py").read_text(encoding="utf-8")
+    assert '"current_fixture_evidence_required":True' in source.replace(" ", "")
+    assert '"active_fixture_market_id_metadata_allowed":True' in source.replace(" ", "")
+    assert '"catalogue_fallback_allowed":False' in source.replace(" ", "")
+    assert '"model_line_fallback_allowed":False' in source.replace(" ", "")
+    assert '"nearest_line_fallback_allowed":False' in source.replace(" ", "")
