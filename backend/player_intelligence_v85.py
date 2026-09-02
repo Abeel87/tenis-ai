@@ -167,7 +167,6 @@ def _source_fingerprint(df: pd.DataFrame) -> str:
     return f"{len(df)}:{mx}"
 
 
-
 def _parse_tourney_date(value):
     try:
         s = str(value or "").strip()
@@ -296,7 +295,8 @@ def _surface_priors(df: pd.DataFrame, surface: str, as_of: pd.Timestamp) -> dict
         return {}
     x = df.copy()
     if "date" in x.columns:
-        x = x[x["date"].isna() | (x["date"] < as_of)]
+        # Undated rows cannot be proven to precede the prediction cutoff.
+        x = x[x["date"].notna() & (x["date"] < as_of)]
     if "surface" in x.columns:
         sx = x[x["surface"].astype(str).map(_surface) == surface]
         if len(sx) >= 100:
@@ -409,18 +409,19 @@ def build_profile(df: pd.DataFrame, player: str, surface: str, as_of, early_ehs=
         cut = pd.Timestamp(datetime.now(timezone.utc))
     cut_naive = cut.tz_convert(None) if getattr(cut, "tzinfo", None) else cut
     if "date" in x.columns:
-        x = x[x["date"].isna() | (x["date"] < cut_naive.normalize())]
+        # Fail closed: only positively dated matches older than the prediction.
+        x = x[x["date"].notna() & (x["date"] < cut_naive.normalize())]
     if "surface" in x.columns:
         x = x[x["surface"].astype(str).map(_surface) == surface]
     x = x.sort_values("date", ascending=False, na_position="last") if "date" in x.columns else x
 
     primary = x
     if "date" in x.columns:
-        primary = x[x["date"].isna() | (x["date"] >= cut_naive - pd.Timedelta(days=PRIMARY_DAYS))]
+        primary = x[x["date"].notna() & (x["date"] >= cut_naive - pd.Timedelta(days=PRIMARY_DAYS))]
     fallback_used = False
     usable = primary
     if len(primary) < 5 and "date" in x.columns:
-        usable = x[x["date"].isna() | (x["date"] >= cut_naive - pd.Timedelta(days=FALLBACK_DAYS))]
+        usable = x[x["date"].notna() & (x["date"] >= cut_naive - pd.Timedelta(days=FALLBACK_DAYS))]
         fallback_used = len(usable) > len(primary)
     usable = usable.head(20)
     priors = _surface_priors(df, surface, cut_naive)
@@ -442,7 +443,7 @@ def build_profile(df: pd.DataFrame, player: str, surface: str, as_of, early_ehs=
         "coverage": round(coverage, 4),
         "windows": windows,
         "trend": _trend(usable),
-        "data_policy": "same_surface_only_l5_l10_l20_rank_weighted_shrinkage",
+        "data_policy": "same_surface_only_l5_l10_l20_rank_weighted_shrinkage_dated_history_only",
     }
     profile["indexes"] = _profile_indexes(profile, early_ehs)
     return profile
@@ -524,7 +525,6 @@ def _over_probability(p1: dict, p2: dict, line: float) -> float | None:
     if not vals:
         return None
     p = sum(vals) / len(vals)
-    # High holds push a little toward longer sets; bounded to avoid double counting.
     holds = [v for v in (_metric(p1, "hold_rate"), _metric(p2, "hold_rate")) if v is not None]
     if holds:
         p += max(-.05, min(.05, (sum(holds) / len(holds) - .74) * .35))
@@ -666,7 +666,6 @@ def pre(now=None) -> dict:
     cache["version"] = VERSION
     cache["source_fingerprint"] = fp
     cache["updated_at"] = now.isoformat()
-    # Avoid unbounded growth from per-day keys; keep newest 6000 cached profiles.
     if len(profiles_cache) > 6000:
         keep = list(profiles_cache.items())[-6000:]
         cache["profiles"] = dict(keep)
