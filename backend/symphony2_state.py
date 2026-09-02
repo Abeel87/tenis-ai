@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-"""Symfonia 2.0 shared-state facade with expanded exact market coverage.
+"""Symfonia 2.0 state facade with bounded exact market-family distributions.
 
-The proven v9.4.5 state engine is preserved verbatim in
-``symphony2_state_core_v945``. This module keeps the same probability state and
-adds only predicates that can be derived exactly from that state. Markets that
-need unavailable point-by-point or serve-prop evidence remain unsupported.
-
-For BO5 we intentionally retain only sufficient statistics required by supported
-markets (set1/set2 score, match/set wins, player game totals and any-bagel flag).
-Keeping every later exact set sequence would create an unnecessary combinatorial
-state explosion without adding information used by these markets.
+The proven v9.4.5 engine remains verbatim in ``symphony2_state_core_v945``.
+New coverage is derived from exact bounded sufficient statistics instead of one
+huge universal cross-product. Existing/base markets keep the original shared
+state. New same-family joints stay exact; cross-family joints are deliberately
+unsupported rather than approximated as independent.
 """
 
 from collections import defaultdict
@@ -24,8 +20,24 @@ for _name in dir(_core):
     if not _name.startswith("__"):
         globals()[_name] = getattr(_core, _name)
 
-VERSION = "symphony2-state-2"
-SUPPORTED_MARKETS = set(_core.SUPPORTED_MARKETS) | {
+VERSION = "symphony2-state-3"
+
+SET1_FAMILY = {
+    "set1_winner", "set1_total", "set1_exact_score", "set1_tiebreak",
+    "set1_game_handicap", "set1_games_parity",
+}
+SET2_FAMILY = {
+    "set2_winner", "set2_total", "set2_exact_score",
+    "set2_game_handicap", "set2_games_parity",
+}
+MATCH_FAMILY = {
+    "match_winner", "match_total", "total_sets", "exact_match_score",
+    "match_game_handicap", "player_total_games", "exact_sets", "set_handicap",
+    "match_games_parity", "any_set_to_nil",
+    "p1_exactly_1_set", "p1_exactly_2_sets", "p2_exactly_1_set", "p2_exactly_2_sets",
+    "p1_wins_a_set", "p2_wins_a_set",
+}
+NEW_MARKETS = {
     "set2_winner", "set2_total", "set2_exact_score",
     "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
     "player_total_games", "exact_sets", "set_handicap",
@@ -34,90 +46,132 @@ SUPPORTED_MARKETS = set(_core.SUPPORTED_MARKETS) | {
     "p1_exactly_1_set", "p1_exactly_2_sets", "p2_exactly_1_set", "p2_exactly_2_sets",
     "p1_wins_a_set", "p2_wins_a_set",
 }
+SUPPORTED_MARKETS = set(_core.SUPPORTED_MARKETS) | NEW_MARKETS
 
 
 def build_outcomes(match: dict) -> list[dict]:
+    """Preserve the bounded original shared state for all legacy markets."""
+    return _core.build_outcomes(match)
+
+
+def _best_of(match: dict) -> int:
+    value = _core._num(match.get("best_of"), None)
+    if value is None:
+        value = _core._num(match.get("bestOf"), 3)
+    return 5 if int(value or 3) >= 5 else 3
+
+
+def _normalise(mapping: dict) -> dict:
+    total = sum(float(v) for v in mapping.values())
+    if total <= 0:
+        return {}
+    return {k: float(v) / total for k, v in mapping.items() if float(v) > 0}
+
+
+def _first_score_distribution(match: dict) -> dict[tuple[int, int], float]:
     holds = _core._service_holds(match)
     if not holds:
-        return []
+        return {}
     h1, h2 = holds
-    best_of = 5 if int(_core._num(match.get("best_of"), 3) or 3) >= 5 else 3
+    paths = _core._reweight_winner(
+        _core._first_set_paths(h1, h2),
+        _core._set_target(match, 1),
+    )
+    out: dict[tuple[int, int], float] = defaultdict(float)
+    for path, probability in paths.items():
+        out[(int(path[6]), int(path[7]))] += probability
+    return _normalise(out)
+
+
+def _later_score_distribution(match: dict, set_no: int) -> dict[tuple[int, int], float]:
+    holds = _core._service_holds(match)
+    if not holds:
+        return {}
+    h1, h2 = holds
+    dist = _core._reweight_winner(
+        _core._terminal_set_distribution(h1, h2),
+        _core._set_target(match, set_no),
+        indexes=(0, 1),
+    )
+    return _normalise({(int(a), int(b)): p for (a, b), p in dist.items()})
+
+
+def _set1_outcomes(match: dict) -> list[dict]:
+    return [
+        {
+            "set1": score,
+            "set1_winner": 1 if score[0] > score[1] else 2,
+            "set1_tiebreak": set(score) == {6, 7},
+            "prob": probability,
+        }
+        for score, probability in _first_score_distribution(match).items()
+    ]
+
+
+def _set2_outcomes(match: dict) -> list[dict]:
+    return [
+        {
+            "set2": score,
+            "set2_winner": 1 if score[0] > score[1] else 2,
+            "prob": probability,
+        }
+        for score, probability in _later_score_distribution(match, 2).items()
+    ]
+
+
+def _match_game_outcomes(match: dict) -> list[dict]:
+    """Exact full-match DP collapsed by sufficient aggregate statistics only."""
+    first = _first_score_distribution(match)
+    if not first:
+        return []
+    best_of = _best_of(match)
     need = best_of // 2 + 1
-    first = _core._reweight_winner(_core._first_set_paths(h1, h2), _core._set_target(match, 1))
-    later = {
-        n: _core._reweight_winner(
-            _core._terminal_set_distribution(h1, h2),
-            _core._set_target(match, n),
-            indexes=(0, 1),
-        )
-        for n in range(2, best_of + 1)
-    }
-
-    agg: dict[tuple, float] = defaultdict(float)
-    for path, p0 in first.items():
-        c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b = path
-        sa, sb = ((1, 0) if s1a > s1b else (0, 1))
-        p1_games, p2_games = int(s1a), int(s1b)
-        first_nil = int(s1a) == 0 or int(s1b) == 0
-        # xa, xb, p1 games, p2 games, set2 exact score, any set-to-nil
-        frontier = {(sa, sb, p1_games, p2_games, None, first_nil): p0}
-
-        for set_no in range(2, best_of + 1):
-            nxt: dict[tuple, float] = defaultdict(float)
-            for (xa, xb, ga_total, gb_total, set2_score, any_nil), probability in frontier.items():
-                if xa >= need or xb >= need:
-                    nxt[(xa, xb, ga_total, gb_total, set2_score, any_nil)] += probability
-                    continue
-                for (ga, gb), sp in later[set_no].items():
-                    exact2 = (int(ga), int(gb)) if set_no == 2 else set2_score
-                    nxt[(
-                        xa + int(ga > gb),
-                        xb + int(gb > ga),
-                        ga_total + int(ga),
-                        gb_total + int(gb),
-                        exact2,
-                        bool(any_nil or int(ga) == 0 or int(gb) == 0),
-                    )] += probability * sp
-            frontier = nxt
-            if all(xa >= need or xb >= need for xa, xb, _, _, _, _ in frontier):
-                break
-
-        for (xa, xb, ga_total, gb_total, set2_score, any_nil), probability in frontier.items():
-            if xa < need and xb < need:
-                continue
-            key = (
-                c2a, c2b, c4a, c4b, c6a, c6b,
-                int(s1a), int(s1b), int(xa), int(xb),
-                int(ga_total), int(gb_total), set2_score, bool(any_nil),
-            )
-            agg[key] += probability
-
-    total = sum(agg.values())
-    if not total:
+    later = {n: _later_score_distribution(match, n) for n in range(2, best_of + 1)}
+    if any(not dist for dist in later.values()):
         return []
 
-    out = []
-    for key, probability in agg.items():
-        set2 = key[12]
-        out.append({
-            "cp2": (key[0], key[1]),
-            "cp4": (key[2], key[3]),
-            "cp6": (key[4], key[5]),
-            "set1": (key[6], key[7]),
-            "set2": set2,
-            "sets": (key[8], key[9]),
-            "p1_games": int(key[10]),
-            "p2_games": int(key[11]),
-            "total_games": int(key[10] + key[11]),
-            "set_count": int(key[8] + key[9]),
-            "winner": 1 if key[8] > key[9] else 2,
-            "set1_winner": 1 if key[6] > key[7] else 2,
-            "set2_winner": (1 if set2 and set2[0] > set2[1] else 2) if set2 else None,
-            "set1_tiebreak": {key[6], key[7]} == {6, 7},
-            "any_set_to_nil": bool(key[13]),
-            "prob": probability / total,
-        })
-    return out
+    # (p1 sets, p2 sets, p1 games, p2 games, any set-to-nil) -> probability
+    frontier: dict[tuple[int, int, int, int, bool], float] = defaultdict(float)
+    for (a, b), probability in first.items():
+        frontier[(int(a > b), int(b > a), a, b, a == 0 or b == 0)] += probability
+
+    for set_no in range(2, best_of + 1):
+        nxt: dict[tuple[int, int, int, int, bool], float] = defaultdict(float)
+        for (w1, w2, g1, g2, any_nil), probability in frontier.items():
+            if w1 >= need or w2 >= need:
+                nxt[(w1, w2, g1, g2, any_nil)] += probability
+                continue
+            for (a, b), set_probability in later[set_no].items():
+                nxt[(
+                    w1 + int(a > b),
+                    w2 + int(b > a),
+                    g1 + a,
+                    g2 + b,
+                    bool(any_nil or a == 0 or b == 0),
+                )] += probability * set_probability
+        frontier = nxt
+        if all(w1 >= need or w2 >= need for w1, w2, _, _, _ in frontier):
+            break
+
+    terminal = {
+        state: probability
+        for state, probability in frontier.items()
+        if state[0] >= need or state[1] >= need
+    }
+    terminal = _normalise(terminal)
+    return [
+        {
+            "sets": (w1, w2),
+            "set_count": w1 + w2,
+            "winner": 1 if w1 > w2 else 2,
+            "p1_games": g1,
+            "p2_games": g2,
+            "total_games": g1 + g2,
+            "any_set_to_nil": any_nil,
+            "prob": probability,
+        }
+        for (w1, w2, g1, g2, any_nil), probability in terminal.items()
+    ]
 
 
 def _parity(value):
@@ -158,11 +212,7 @@ def predicate(match: dict, selection: dict):
         ou = _core._ou(pick)
         if ou is None or line is None:
             return None
-        return (
-            (lambda o: o.get("set2") is not None and sum(o["set2"]) > line)
-            if ou == "over"
-            else (lambda o: o.get("set2") is not None and sum(o["set2"]) < line)
-        )
+        return (lambda o: sum(o["set2"]) > line) if ou == "over" else (lambda o: sum(o["set2"]) < line)
 
     if market == "set2_exact_score":
         target = _core._score_pair(pick)
@@ -177,8 +227,6 @@ def predicate(match: dict, selection: dict):
             if market == "set1_game_handicap":
                 a, b = o["set1"]
             elif market == "set2_game_handicap":
-                if o.get("set2") is None:
-                    return False
                 a, b = o["set2"]
             else:
                 a, b = o["p1_games"], o["p2_games"]
@@ -216,7 +264,7 @@ def predicate(match: dict, selection: dict):
             return lambda o: o["total_games"] % 2 == wanted
         if market == "set1_games_parity":
             return lambda o: sum(o["set1"]) % 2 == wanted
-        return lambda o: o.get("set2") is not None and sum(o["set2"]) % 2 == wanted
+        return lambda o: sum(o["set2"]) % 2 == wanted
 
     if market == "any_set_to_nil":
         yn = _core._yes_no(pick)
@@ -232,17 +280,53 @@ def predicate(match: dict, selection: dict):
     return None
 
 
+def _family(market: str) -> str | None:
+    if market in SET1_FAMILY:
+        return "set1"
+    if market in SET2_FAMILY:
+        return "set2"
+    if market in MATCH_FAMILY:
+        return "match"
+    return None
+
+
+def _family_outcomes(match: dict, family: str) -> list[dict]:
+    if family == "set1":
+        return _set1_outcomes(match)
+    if family == "set2":
+        return _set2_outcomes(match)
+    if family == "match":
+        return _match_game_outcomes(match)
+    return []
+
+
 def marginal_probability(match: dict, selection: dict, outcomes: list[dict] | None = None):
-    outcomes = outcomes if outcomes is not None else build_outcomes(match)
+    market = _core._market(selection.get("market"))
+    if market not in NEW_MARKETS:
+        return _core.marginal_probability(match, selection, outcomes)
+    family = _family(market)
+    states = _family_outcomes(match, family) if family else []
     pred = predicate(match, selection)
-    if pred is None or not outcomes:
+    if pred is None or not states:
         return None
-    return sum(o["prob"] for o in outcomes if pred(o))
+    return sum(o["prob"] for o in states if pred(o))
 
 
 def joint_probability(match: dict, selections: list[dict], outcomes: list[dict] | None = None):
-    outcomes = outcomes if outcomes is not None else build_outcomes(match)
-    preds = [predicate(match, x) for x in selections]
-    if not outcomes or not preds or any(p is None for p in preds):
-        return None, sum(p is not None for p in preds)
-    return sum(o["prob"] for o in outcomes if all(p(o) for p in preds)), len(preds)
+    markets = [_core._market(x.get("market")) for x in selections]
+    if not markets:
+        return None, 0
+    if not any(m in NEW_MARKETS for m in markets):
+        return _core.joint_probability(match, selections, outcomes)
+
+    families = [_family(m) for m in markets]
+    supported = sum(predicate(match, selection) is not None for selection in selections)
+    if not families or any(f is None for f in families) or len(set(families)) != 1:
+        # Honest unsupported cross-family joint; never multiply marginals as if independent.
+        return None, supported
+
+    states = _family_outcomes(match, families[0])
+    preds = [predicate(match, selection) for selection in selections]
+    if not states or any(p is None for p in preds):
+        return None, supported
+    return sum(o["prob"] for o in states if all(p(o) for p in preds)), len(preds)
