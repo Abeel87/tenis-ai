@@ -10,6 +10,10 @@ def test_completed_score():
     m={'winner':1,'event_status':None,'score':{'sets':[2,0],'games':[[6,6],[4,3]]}}
     f=final_from_match(m,entry());assert f['winner']=='A';assert f['match_score']=='2:0';assert f['first_set_score']=='6:4';assert f['total_games']==19
 
+def test_completed_payload_with_winner_score_contradiction_fails_closed():
+    m={'winner':2,'event_status':None,'score':{'sets':[2,0],'games':[[6,6],[4,3]]}}
+    assert final_from_match(m,entry()) is None
+
 def test_live_not_final():
     m={'winner':None,'score':{'sets':[1,0],'games':[[6,2],[4,1]]}}
     assert final_from_match(m,entry()) is None
