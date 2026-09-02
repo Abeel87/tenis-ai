@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "frontend" / "index.html"
 
 # Versioned filenames are allowed only when the version is part of an intentional
-# model/core/SHADOW generation identity. Presentation/runtime hotfixes must use
-# canonical stable filenames instead of spawning another vXXX path.
+# model/core/SHADOW generation identity AND that asset is actually booted. Dormant
+# experiments may remain in the repository, but they are not active runtime.
 ALLOWED_VERSIONED_FRONTEND = {
     "early-hold-v7.js",
     "early-hold-v7.css",
@@ -27,8 +27,6 @@ ALLOWED_VERSIONED_FRONTEND = {
     "player-intelligence-v85.css",
     "shadow-lab-v78e6.js",
     "shadow-lab-v78e6.css",
-    "neuro-shadow-v936.js",
-    "neuro-shadow-v936.css",
 }
 
 
