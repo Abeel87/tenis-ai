@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from backend.signal_settlement import SIGNAL_LAYERS, settle_signal
-from backend.superbet_candidate_settlement_v925 import (
+from backend.superbet_candidate_settlement import (
     LAYER as V925_LAYER,
     build_candidate_stats,
     capture_candidates,
