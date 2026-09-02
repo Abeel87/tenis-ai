@@ -20,18 +20,20 @@ def audit(root: Path):
     metrics={}
 
     index=read(frontend/'index.html')
-    runtime=read(frontend/'runtime-health-v84e0.js')
+    runtime=read(frontend/'runtime-health.js')
     dynamic=read(frontend/'dynamic-weights-v84d1.js')
 
     app_pos=index.find('app.js')
-    runtime_pos=index.find('runtime-health-v84e0.js')
+    runtime_pos=index.find('runtime-health.js')
     dynamic_pos=index.find('dynamic-weights-v84d1.js')
     scenario_pos=index.find('scenario-dynamic-v84d3.js')
 
     if runtime_pos < 0:
-        failures.append('index.html nie ładuje runtime-health-v84e0.js')
-    if min(app_pos,runtime_pos,dynamic_pos,scenario_pos) >= 0 and not (app_pos < runtime_pos < dynamic_pos < scenario_pos):
-        failures.append('Runtime Health musi być po app.js i przed modułami Dynamic/Scenario.')
+        failures.append('index.html nie ładuje runtime-health.js')
+    if app_pos >= 0 and runtime_pos >= 0 and dynamic_pos >= 0 and not (app_pos < runtime_pos < dynamic_pos):
+        failures.append('Runtime Health musi być po app.js i przed Dynamic Weights.')
+    if scenario_pos >= 0 and not (runtime_pos < scenario_pos):
+        failures.append('Runtime Health musi być przed opcjonalnym Scenario runtime.')
 
     required_runtime=[
         ("const VERSION='v8.4E0'" in runtime,'Brak markera wersji v8.4E0.'),
@@ -62,12 +64,10 @@ def audit(root: Path):
     direct_results=[]
     service_worker_routes=[]
     global_observers=[]
-    allowed_results={'app.js','dynamic-weights-v84d1.js','scenario-dynamic-v84d3.js','runtime-health-v84e0.js'}
+    allowed_results={'app.js','dynamic-weights-v84d1.js','scenario-dynamic-v84d3.js','runtime-health.js'}
     for path in frontend.glob('*.js'):
         txt=read(path)
         if 'data/results.json' in txt and 'fetch(' in txt:
-            # A service worker is transport/cache policy, not an application data consumer.
-            # Track it separately so adding/removing a PWA route cannot masquerade as a new model reader.
             if path.name=='sw.js' and 'self.addEventListener' in txt and "'fetch'" in txt:
                 service_worker_routes.append(path.name)
             else:
@@ -82,7 +82,7 @@ def audit(root: Path):
     metrics['global_document_observers']=sorted(global_observers)
 
     for path in frontend.glob('*.js'):
-        if path.name in {'app.js','runtime-health-v84e0.js','sw.js'}:
+        if path.name in {'app.js','runtime-health.js','sw.js'}:
             continue
         txt=read(path)
         if 'data/results.json' in txt and re.search(r'\bts\s*=',txt):
