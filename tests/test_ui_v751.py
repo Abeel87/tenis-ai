@@ -1,8 +1,8 @@
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def test_ui_assets():
-    js=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
-    css=(ROOT/'frontend/ui-v751.css').read_text(encoding='utf-8')
+    js=(ROOT/'frontend/ui-detail.js').read_text(encoding='utf-8')
+    css=(ROOT/'frontend/ui-detail.css').read_text(encoding='utf-8')
     for x in ['Szybki werdykt','Szczegóły meczu','Top sygnały','Społeczność','Profil','openMatch','signalPage']:
         assert x in js
     assert '.p751-overlay' in css and '.p751-bottom-nav' in css
