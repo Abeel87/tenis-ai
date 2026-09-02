@@ -96,12 +96,12 @@ function loadPlayableUiV917(){
   document.head.appendChild(script);
 }
 
-function loadMatchBrowserV944(){
-  if(window.TENIS_AI_MATCH_BROWSER_V944||document.querySelector('script[data-match-browser-v944]'))return;
+function loadMatchBrowserV945(){
+  if(window.TENIS_AI_MATCH_BROWSER_V945||document.querySelector('script[data-match-browser-v945]'))return;
   const script=document.createElement('script');
-  script.src='match-browser-v944.js?v=944';
+  script.src='match-browser-v945.js?v=945';
   script.async=false;
-  script.dataset.matchBrowserV944='1';
+  script.dataset.matchBrowserV945='1';
   document.head.appendChild(script);
 }
 
@@ -118,5 +118,5 @@ if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 // Current ownership chain: strict PLAYABLE gate -> complete operator/model coverage
 // -> presentation-only market grouping. Legacy v921 RAW/Symphony panel is gone.
 setTimeout(loadPlayableUiV917,0);
-setTimeout(loadMatchBrowserV944,0);
+setTimeout(loadMatchBrowserV945,0);
 })();
