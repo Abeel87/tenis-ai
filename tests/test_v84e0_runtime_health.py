@@ -12,9 +12,9 @@ def test_v84e0_runtime_health_contract():
 
 def test_v84e0_runtime_is_loaded_before_heavy_consumers():
     index = Path('frontend/index.html').read_text(encoding='utf-8')
-    assert index.index('app.js') < index.index('runtime-health-v84e0.js')
-    assert index.index('runtime-health-v84e0.js') < index.index('dynamic-weights-v84d1.js')
-    assert index.index('runtime-health-v84e0.js') < index.index('symphony2.js?v=210')
+    assert index.index('app.js') < index.index('runtime-health.js')
+    assert index.index('runtime-health.js') < index.index('dynamic-weights-v84d1.js')
+    assert index.index('runtime-health.js') < index.index('symphony2.js?v=210')
     assert 'scenario-dynamic-v84d3.js' not in index
 
 def test_v84e0_removes_minute_full_pool_scan():
