@@ -2,7 +2,11 @@ from copy import deepcopy
 from datetime import datetime, timezone
 
 from backend.autolearn_v84 import tracking_stats
-from backend.model_telemetry_v84c import build_report, collect_rows
+from backend.model_telemetry_v84c import (
+    AUTOLEARN_TRACKER_VERSION,
+    build_report,
+    collect_rows,
+)
 
 
 def demo_history():
@@ -26,6 +30,7 @@ def demo_history():
             "market": "set1_total",
             "pick": "over",
             "result": "hit",
+            "tracker_version": AUTOLEARN_TRACKER_VERSION,
             "model_scores": {"current": 71, "catboost": 76, "tabpfn": 74, "ensemble": 74},
             "generator_selected": True,
         }],
@@ -71,6 +76,28 @@ def test_prod_safe_segments_require_capture_before_match_start():
     assert safe["catboost"]["selected_n"] == 1
     assert safe["tabpfn"]["selected_n"] == 1
     assert report["prod_safe_rows_30d"] == 3
+
+
+def test_prod_safe_segments_reject_legacy_or_missing_tracker_regime():
+    history = demo_history()
+    legacy = deepcopy(history[0])
+    legacy["match_key"] = "id:legacy"
+    legacy["autolearn_signals_v84"][0]["tracker_version"] = "v8.4A.1"
+    missing = deepcopy(history[0])
+    missing["match_key"] = "id:no-version"
+    missing["autolearn_signals_v84"][0].pop("tracker_version", None)
+    history.extend([legacy, missing])
+
+    report = build_report(history, now=datetime(2026, 8, 24, 8, 0, tzinfo=timezone.utc))
+    # Full diagnostics intentionally retain historical regimes.
+    assert report["segments_30d"]["tour"]["ATP"]["current"]["selected_n"] == 3
+    # Only the current scoring regime may drive PROD dynamic weights.
+    safe = report["prod_safe_segments_30d"]["tour"]["ATP"]
+    assert safe["current"]["selected_n"] == 1
+    assert safe["catboost"]["selected_n"] == 1
+    assert safe["tabpfn"]["selected_n"] == 1
+    assert report["prod_safe_rows_30d"] == 3
+    assert report["prod_safe_autolearn_tracker_version"] == AUTOLEARN_TRACKER_VERSION
 
 
 def test_final_is_tracked_separately_without_synthesizing_legacy_final():
