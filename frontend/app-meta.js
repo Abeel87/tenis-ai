@@ -114,8 +114,8 @@
   }
   function loadUxHotfixes(){
     loadAddon('player-intelligence-v888-human.js?v=888','pi888-human-addon');
-    loadAddon('app-coherence-v892.js?v=892&audit=919','app892-coherence-addon');
-    loadAddon('symphony2-live-ui-v201.js?v=201','symphony2-live-ui-v201');
+    loadAddon('app-coherence.js?v=892&audit=919','app-coherence-addon');
+    loadAddon('symphony2-live-ui.js?v=201','symphony2-live-ui');
     loadStyle('neuro-shadow-v936.css?v=936','neuro-shadow-v936-css');
     loadAddon('neuro-shadow-v936.js?v=936','neuro-shadow-v936-js');
   }
@@ -134,8 +134,8 @@
   }
   function boot(){
     if(!fullDom())return;
-    const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');
-    if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();else load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness);
+    const freshness=()=>load('playable-freshness.js?v=925','playable-freshness');
+    if(window.TENIS_AI_PLAYABLE_UI_V917)freshness();else load('playable-ui.js?v=925','playable-ui',freshness);
   }
   if(typeof document!=='undefined'&&document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
