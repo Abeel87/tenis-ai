@@ -10,7 +10,7 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=v=>v==null||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
   const pct=v=>num(v)==null?'N/D':`${Number(v).toFixed(1)}%`;
-  const nfmt=v=>Number(v||0).toLocaleString('pl-PL');
+  const nfmt=v=>num(v)==null?'N/D':Number(v).toLocaleString('pl-PL');
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ');
 
   const MARKET_LABELS={
@@ -60,7 +60,7 @@
   }
 
   function status(data){
-    return `<div class="s2-status"><div class="s2-stat"><small>Model linii</small><strong>${esc(data?.model_status||'N/D')}</strong></div><div class="s2-stat"><small>Mecze z ofertą</small><strong>${Number(data?.matches_count||0)}</strong></div><div class="s2-stat"><small>Wygenerowano</small><strong>${esc((data?.generated_at||'').replace('T',' ').slice(0,16)||'N/D')}</strong></div></div>`;
+    return `<div class="s2-status"><div class="s2-stat"><small>Model linii</small><strong>${esc(data?.model_status||'N/D')}</strong></div><div class="s2-stat"><small>Mecze z ofertą</small><strong>${nfmt(data?.matches_count)}</strong></div><div class="s2-stat"><small>Wygenerowano</small><strong>${esc((data?.generated_at||'').replace('T',' ').slice(0,16)||'N/D')}</strong></div></div>`;
   }
   function marketLabel(x){
     const base=MARKET_LABELS[String(x?.market||'').toLowerCase()]||String(x?.label||x?.market||'Rynek');
@@ -73,7 +73,7 @@
   }
   function leg(x){
     const state=num(x?.state_probability)==null?'':` · STATE ${pct(x.state_probability)}`;
-    const support=Number(x?.learning_support_rows||0);
+    const support=nfmt(x?.learning_support_rows);
     return `<div class="s2-leg"><div><strong>${esc(selectionLabel(x))}</strong><small>${esc(marketLabel(x))} · dokładna linia Superbet${x?.operator_line_source?` · ${esc(x.operator_line_source)}`:''}${state} · historia n=${support}</small></div><div class="s2-prob">${pct(x?.operator_model_probability)}</div></div>`;
   }
   function compositionCard(m,c){
