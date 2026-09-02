@@ -92,5 +92,24 @@ def test_no_cross_surface_fallback():
     assert p["sample_matches"]==0
     assert p["quality"]=="N/D"
 
+
 def test_parse_up_to_five_sets():
     assert pi._set_pairs('6-4 3-6 7-6 2-6 6-3') == [(6,4),(3,6),(7,6),(2,6),(6,3)]
+
+
+def test_undated_history_is_excluded_from_player_profile_and_priors():
+    df = _df()
+    poisoned = df.iloc[[0]].copy()
+    poisoned["date"] = pd.NaT
+    poisoned["hold_rate"] = 0.01
+    poisoned["won"] = 0.0
+    combined = pd.concat([df, poisoned], ignore_index=True)
+
+    clean = pi.build_profile(df, "A", "hard", "2026-08-24T12:00:00Z", 80)
+    guarded = pi.build_profile(combined, "A", "hard", "2026-08-24T12:00:00Z", 80)
+
+    assert guarded["sample_matches"] == clean["sample_matches"]
+    assert guarded["windows"]["10"]["metrics"]["hold_rate"] == clean["windows"]["10"]["metrics"]["hold_rate"]
+    priors_clean = pi._surface_priors(df, "hard", pd.Timestamp("2026-08-24"))
+    priors_guarded = pi._surface_priors(combined, "hard", pd.Timestamp("2026-08-24"))
+    assert priors_guarded.get("hold_rate") == priors_clean.get("hold_rate")
