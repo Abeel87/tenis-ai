@@ -10,7 +10,7 @@ def test_sql_security():
     assert 'delete from auth.users' in s
 
 def test_frontend_confirmation():
-    s=(ROOT/'frontend/admin-delete-v754.js').read_text(encoding='utf-8')
+    s=(ROOT/'frontend/admin-delete.js').read_text(encoding='utf-8')
     assert 'USUŃ NA STAŁE' in s
     assert "role !== 'USER'" in s
     assert "admin_delete_user" in s
