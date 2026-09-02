@@ -1,8 +1,8 @@
-/* Tenis AI v9.4.9 — Match Browser mobile rebuild.
+/* Tenis AI v9.4.9.1 — Match Browser mobile rebuild.
    Presentation/navigation only. Never changes model math, Symphony, Superbet eligibility or PLAYABLE decisions. */
 (()=>{
 'use strict';
-const VERSION='v9.4.9';
+const VERSION='v9.4.9.1';
 const STORE='tenis-ai-match-browser-v945';
 const state={mode:'all',qualityOnly:true,sort:'quality',surface:'all',openGroups:[],groupStateSaved:false,returnScroll:null,returnPending:false};
 try{Object.assign(state,JSON.parse(sessionStorage.getItem(STORE)||'{}'))}catch{}
@@ -30,7 +30,47 @@ function visibleByState(m){if(!m)return false;if(state.qualityOnly&&!hasAnalysis
 function injectStyle(){if(document.querySelector('#v945-style'))return;const s=document.createElement('style');s.id='v945-style';s.textContent=`.v945-tools{display:grid;gap:8px;margin:8px 0 12px}.v945-primary,.v945-secondary{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px}.v945-primary::-webkit-scrollbar,.v945-secondary::-webkit-scrollbar{display:none}.v945-tools button,.v945-tools select{flex:0 0 auto;border:1px solid var(--border,#334155);background:var(--panel,#101827);color:inherit;border-radius:11px;padding:9px 11px;font:inherit;font-size:13px}.v945-tools button.active{border-color:#22c55e;box-shadow:inset 0 0 0 1px #22c55e}.v945-tools select{max-width:145px}.v945-summary-best{display:block;margin-top:4px;font-size:11px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.p751-group[hidden],.p751-match-card[hidden]{display:none!important}.p751-groups{padding-bottom:92px!important}@media(max-width:700px){.p751-focus{display:none!important}.v945-tools{position:sticky;top:0;z-index:20;background:var(--bg,#08111f);padding:7px 0 5px;margin-top:0}.v945-tools button,.v945-tools select{padding:8px 10px;font-size:12px}.p751-group summary small{line-height:1.35}.p751-bottom-nav{padding-bottom:max(6px,env(safe-area-inset-bottom))}}`;document.head.appendChild(s)}
 function toolHtml(){const btn=(mode,label)=>`<button data-v945-mode="${mode}" class="${state.mode===mode?'active':''}">${label}</button>`;const surfaces=[...new Set(rowsAll().map(surface).filter(x=>x&&x!=='—'))].sort();return `<section class="v945-tools" aria-label="Filtry meczów"><div class="v945-primary">${btn('all','Wszystkie')}${btn('2h','⏱ Do 2h')}${btn('80','⭐ 80+')}${btn('playable','🎯 PLAYABLE')}${btn('pbp','🧬 PBP')}</div><div class="v945-secondary"><button data-v945-ready class="${state.qualityOnly?'active':''}">✓ Z danymi</button><button data-v945-sort>⇅ ${state.sort==='quality'?'Najlepsze':'Godzina'}</button><select data-v945-surface aria-label="Nawierzchnia"><option value="all">Wszystkie naw.</option>${surfaces.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${state.surface===x?'selected':''}>${x}</option>`).join('')}</select></div></section>`}
 function ensureTools(){const app=document.querySelector('#app');if(!app)return;app.querySelector('.p751-focus')?.setAttribute('aria-hidden','true');let tools=app.querySelector('.v945-tools');const html=toolHtml();if(!tools)app.insertAdjacentHTML('afterbegin',html);else tools.outerHTML=html}
-function decorateAndFilter(){const groupsWrap=document.querySelector('#app .p751-groups');if(!groupsWrap)return;refreshReadyKeys();const groups=[...groupsWrap.querySelectorAll('.p751-group')],open=new Set(state.openGroups||[]);groups.forEach(g=>{const gk=groupKey(g);g.dataset.v945Group=gk;const cards=[...g.querySelectorAll('.p751-match-card')];let ready=0,high=0,play=0,best=null,bestScore=-1;cards.forEach(c=>{const m=cardMatch(c),show=visibleByState(m);c.hidden=!show;if(m&&show&&hasAnalysis(m))ready++;if(m&&show&&strength(m)>=80)high++;if(m&&show&&isPlayable(m))play++;if(m&&show){const qs=qualityScore(m);c.dataset.v945Score=String(qs);c.dataset.v945Time=String(timeMs(m)||0);if(qs>bestScore){bestScore=qs;best=m}}});const shown=cards.filter(c=>!c.hidden).sort((a,b)=>state.sort==='quality'?Number(b.dataset.v945Score)-Number(a.dataset.v945Score):Number(a.dataset.v945Time)-Number(b.dataset.v945Time));const body=g.querySelector('.p751-group-body');shown.forEach(c=>body?.appendChild(c));g.hidden=shown.length===0;if(state.groupStateSaved)g.open=open.has(gk);const small=g.querySelector('summary small');if(small){const surfaces=[...new Set(shown.map(cardMatch).filter(Boolean).map(surface))].join('/');small.textContent=`${shown.length} ${shown.length===1?'mecz':'meczów'}${surfaces?` · ${surfaces}`:''} · ${ready} policz. · ${high} ≥80 · ${play} PLAYABLE`;let extra=g.querySelector('.v945-summary-best');if(!extra){extra=document.createElement('span');extra.className='v945-summary-best';small.after(extra)}const ts=best?topSignal(best):null;extra.textContent=best&&ts?`★ ${Math.round(ts.value)} · ${best.p1} vs ${best.p2} · ${ts.label}`:(shown.length?'Brak mocnego typu w tej grupie':'Brak meczów dla aktywnego filtra')}}});const shownGroups=groups.filter(g=>!g.hidden).sort((a,b)=>{const ac=[...a.querySelectorAll('.p751-match-card:not([hidden])')],bc=[...b.querySelectorAll('.p751-match-card:not([hidden])')];if(state.sort==='quality')return Math.max(0,...bc.map(x=>Number(x.dataset.v945Score)||0))-Math.max(0,...ac.map(x=>Number(x.dataset.v945Score)||0));return Math.min(...ac.map(x=>Number(x.dataset.v945Time)||Infinity))-Math.min(...bc.map(x=>Number(x.dataset.v945Time)||Infinity))});shownGroups.forEach(g=>groupsWrap.appendChild(g));let empty=groupsWrap.querySelector('.v945-empty');if(!shownGroups.length){if(!empty){empty=document.createElement('div');empty.className='p751-empty v945-empty';groupsWrap.appendChild(empty)}empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr lub wyłącz „Z danymi”.</span>'}else empty?.remove()}
+function decorateAndFilter(){
+  const groupsWrap=document.querySelector('#app .p751-groups');if(!groupsWrap)return;
+  refreshReadyKeys();
+  const groups=[...groupsWrap.querySelectorAll('.p751-group')],open=new Set(state.openGroups||[]);
+  groups.forEach(g=>{
+    const gk=groupKey(g);g.dataset.v945Group=gk;
+    const cards=[...g.querySelectorAll('.p751-match-card')];
+    let ready=0,high=0,play=0,best=null,bestScore=-1;
+    cards.forEach(c=>{
+      const m=cardMatch(c),show=visibleByState(m);c.hidden=!show;
+      if(m&&show&&hasAnalysis(m))ready++;
+      if(m&&show&&strength(m)>=80)high++;
+      if(m&&show&&isPlayable(m))play++;
+      if(m&&show){const qs=qualityScore(m);c.dataset.v945Score=String(qs);c.dataset.v945Time=String(timeMs(m)||0);if(qs>bestScore){bestScore=qs;best=m}}
+    });
+    const shown=cards.filter(c=>!c.hidden).sort((a,b)=>state.sort==='quality'?Number(b.dataset.v945Score)-Number(a.dataset.v945Score):Number(a.dataset.v945Time)-Number(b.dataset.v945Time));
+    const body=g.querySelector('.p751-group-body');shown.forEach(c=>body?.appendChild(c));
+    g.hidden=shown.length===0;
+    if(state.groupStateSaved)g.open=open.has(gk);
+    const small=g.querySelector('summary small');
+    if(small){
+      const shownSurfaces=[...new Set(shown.map(cardMatch).filter(Boolean).map(surface))].join('/');
+      small.textContent=`${shown.length} ${shown.length===1?'mecz':'meczów'}${shownSurfaces?` · ${shownSurfaces}`:''} · ${ready} policz. · ${high} ≥80 · ${play} PLAYABLE`;
+      let extra=g.querySelector('.v945-summary-best');
+      if(!extra){extra=document.createElement('span');extra.className='v945-summary-best';small.after(extra)}
+      const ts=best?topSignal(best):null;
+      extra.textContent=best&&ts?`★ ${Math.round(ts.value)} · ${best.p1} vs ${best.p2} · ${ts.label}`:(shown.length?'Brak mocnego typu w tej grupie':'Brak meczów dla aktywnego filtra');
+    }
+  });
+  const shownGroups=groups.filter(g=>!g.hidden).sort((a,b)=>{
+    const ac=[...a.querySelectorAll('.p751-match-card:not([hidden])')],bc=[...b.querySelectorAll('.p751-match-card:not([hidden])')];
+    if(state.sort==='quality')return Math.max(0,...bc.map(x=>Number(x.dataset.v945Score)||0))-Math.max(0,...ac.map(x=>Number(x.dataset.v945Score)||0));
+    return Math.min(...ac.map(x=>Number(x.dataset.v945Time)||Infinity))-Math.min(...bc.map(x=>Number(x.dataset.v945Time)||Infinity));
+  });
+  shownGroups.forEach(g=>groupsWrap.appendChild(g));
+  let empty=groupsWrap.querySelector('.v945-empty');
+  if(!shownGroups.length){
+    if(!empty){empty=document.createElement('div');empty.className='p751-empty v945-empty';groupsWrap.appendChild(empty)}
+    empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr lub wyłącz „Z danymi”.</span>';
+  }else empty?.remove();
+}
 function enhance(){injectStyle();ensureTools();decorateAndFilter()}
 function captureOpenGroups(){const groups=[...document.querySelectorAll('#app .p751-group')];if(!groups.length)return;state.openGroups=groups.filter(g=>g.open&&!g.hidden).map(groupKey);state.groupStateSaved=true;save()}
 function restoreReturnScroll(){if(!state.returnPending)return;const y=num(state.returnScroll);state.returnPending=false;state.returnScroll=null;save();if(y==null)return;requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'auto'})))}
