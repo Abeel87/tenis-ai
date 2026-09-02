@@ -21,11 +21,11 @@ def audit(root: Path):
 
     index=read(frontend/'index.html')
     runtime=read(frontend/'runtime-health.js')
-    dynamic=read(frontend/'dynamic-weights-v84d1.js')
+    dynamic=read(frontend/'dynamic-weights.js')
 
     app_pos=index.find('app.js')
     runtime_pos=index.find('runtime-health.js')
-    dynamic_pos=index.find('dynamic-weights-v84d1.js')
+    dynamic_pos=index.find('dynamic-weights.js')
     scenario_pos=index.find('scenario-dynamic-v84d3.js')
 
     if runtime_pos < 0:
@@ -64,7 +64,7 @@ def audit(root: Path):
     direct_results=[]
     service_worker_routes=[]
     global_observers=[]
-    allowed_results={'app.js','dynamic-weights-v84d1.js','scenario-dynamic-v84d3.js','runtime-health.js'}
+    allowed_results={'app.js','dynamic-weights.js','scenario-dynamic-v84d3.js','runtime-health.js'}
     for path in frontend.glob('*.js'):
         txt=read(path)
         if 'data/results.json' in txt and 'fetch(' in txt:
