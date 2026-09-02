@@ -41,6 +41,13 @@ def _dated_history(long_df):
     return long_df[long_df["date"].notna()].copy()
 
 
+def player_profile(long_df, player: str, surface: str = '', as_of=None, priors=None):
+    """Public Current Engine profile with the same fail-closed temporal guard as analyse_match."""
+    history_df = _dated_history(long_df)
+    safe_priors = priors if priors is not None else _core._surface_priors(history_df, surface, as_of)
+    return _core.player_profile(history_df, player, surface, as_of, safe_priors)
+
+
 def _match_distribution_conditional(
     base_dist: dict,
     first_target: float,
@@ -141,8 +148,8 @@ def analyse_match(long_df, match: dict) -> dict:
     cut = _core._fixture_date(as_of)
     history_df = _dated_history(long_df)
     priors = _core._surface_priors(history_df, surface, cut)
-    p1 = _core.player_profile(history_df, match['p1'], surface, cut, priors)
-    p2 = _core.player_profile(history_df, match['p2'], surface, cut, priors)
+    p1 = player_profile(history_df, match['p1'], surface, cut, priors)
+    p2 = player_profile(history_df, match['p2'], surface, cut, priors)
 
     h1 = _core._service_hold_probability(p1, p2, priors.get('hold_rate', .72))
     h2 = _core._service_hold_probability(p2, p1, priors.get('hold_rate', .72))
