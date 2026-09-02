@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
-LOADER = (FRONTEND / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+LOADER = (FRONTEND / "match-visibility.js").read_text(encoding="utf-8")
 APP_META = (FRONTEND / "app-meta.js").read_text(encoding="utf-8")
 PLAYABLE = (FRONTEND / "playable-ui.js").read_text(encoding="utf-8")
 COVERAGE = (FRONTEND / "superbet-model-coverage.js").read_text(encoding="utf-8")
