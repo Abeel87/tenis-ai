@@ -1,17 +1,22 @@
 from __future__ import annotations
 
-"""Temporary compatibility shim.
+"""Temporary compatibility shim for the canonical PLAYABLE runtime.
 
-Production uses :mod:`superbet_playable`. This file contains no PLAYABLE logic and
-exists only while legacy tests/workflow references are being removed.
+Production imports :mod:`superbet_playable`. This module contains no business
+logic; it only exposes the canonical module's symbols while legacy imports are
+being removed.
 """
 
 try:
-    from .superbet_playable import inject, main, project
+    from . import superbet_playable as _impl
 except ImportError:
-    from superbet_playable import inject, main, project
+    import superbet_playable as _impl
 
-__all__ = ["inject", "project", "main"]
+for _name in dir(_impl):
+    if not _name.startswith("__"):
+        globals()[_name] = getattr(_impl, _name)
+
+__all__ = [name for name in dir(_impl) if not name.startswith("_")]
 
 if __name__ == "__main__":
-    main()
+    _impl.main()
