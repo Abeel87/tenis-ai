@@ -1,6 +1,6 @@
 import json
 
-from backend import pbp_cache_recovery_v941 as recovery
+from backend import pbp_cache_recovery as recovery
 
 
 def _profile(name):
