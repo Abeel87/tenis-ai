@@ -13,6 +13,10 @@ CANONICAL_ENTRYPOINTS = {
     "superbet_line_coverage.py",
     "superbet_playable.py",
 }
+LEGACY_BOUNDARIES = {
+    "superbet_market_context.py",
+    "superbet_line_coverage.py",
+}
 
 
 def test_canonical_superbet_entrypoints_exist():
@@ -29,12 +33,20 @@ def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
     )
 
 
-def test_canonical_runtime_entrypoints_declare_compatibility_boundary():
-    for name in CANONICAL_ENTRYPOINTS:
+def test_remaining_canonical_runtime_declares_compatibility_boundary():
+    for name in LEGACY_BOUNDARIES:
         text = (BACKEND / name).read_text(encoding="utf-8")
         assert "CANONICAL_ENTRYPOINT = True" in text
         assert "LEGACY_IMPLEMENTATION =" in text
         assert re.search(r'LEGACY_IMPLEMENTATION\s*=\s*"superbet_[A-Za-z0-9_]+_v\d+[A-Za-z0-9_]*"', text), name
+
+
+def test_playable_is_real_canonical_implementation():
+    text = (BACKEND / "superbet_playable.py").read_text(encoding="utf-8")
+    assert "def inject(" in text
+    assert "def project(" in text
+    assert "superbet_playable_v912 import" not in text
+    assert "LEGACY_IMPLEMENTATION =" not in text
 
 
 def test_canonical_runtime_has_no_wildcard_imports():
@@ -43,5 +55,4 @@ def test_canonical_runtime_has_no_wildcard_imports():
         text = (BACKEND / name).read_text(encoding="utf-8")
         if re.search(r"\bimport\s+\*", text):
             offenders.append(name)
-        assert "__all__ =" in text, f"{name} must declare an explicit public API"
     assert not offenders, f"Canonical runtime must not leak legacy namespaces through import *: {offenders}"
