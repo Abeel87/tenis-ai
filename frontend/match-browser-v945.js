@@ -4,7 +4,7 @@
 'use strict';
 const VERSION='v9.4.5';
 const STORE='tenis-ai-match-browser-v945';
-const state={mode:'all',qualityOnly:true,sort:'quality',surface:'all',openGroups:[],returnScroll:null};
+const state={mode:'all',qualityOnly:true,sort:'quality',surface:'all',openGroups:[],groupStateSaved:false,returnScroll:null};
 try{Object.assign(state,JSON.parse(sessionStorage.getItem(STORE)||'{}'))}catch{}
 const save=()=>{try{sessionStorage.setItem(STORE,JSON.stringify(state))}catch{}};
 const num=x=>x==null||!Number.isFinite(Number(x))?null:Number(x);
@@ -17,14 +17,15 @@ const strength=m=>{
   if(vals.length)return Math.max(...vals);
   return Math.max(0,num(m?.model_confidence)||0);
 };
-const readySet=()=>{
-  try{return new Set((window.TENIS_AI_MATCH_VISIBILITY_V916?.analysisReadyMatches?.()||[]).map(key))}
-  catch{return new Set()}
-};
+let readyKeys=null;
+function refreshReadyKeys(){
+  try{readyKeys=new Set((window.TENIS_AI_MATCH_VISIBILITY_V916?.analysisReadyMatches?.()||[]).map(key))}
+  catch{readyKeys=new Set()}
+}
 function hasAnalysis(m){
   if(!m)return false;
-  const ready=readySet();
-  if(ready.size)return ready.has(key(m));
+  if(!readyKeys)refreshReadyKeys();
+  if(readyKeys.size)return readyKeys.has(key(m));
   return strength(m)>=55 || (num(m?.model_confidence)||0)>0;
 }
 const playableSignals=m=>{try{return window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,10)||[]}catch{return []}};
@@ -73,6 +74,7 @@ function ensureTools(){
 }
 function decorateAndFilter(){
   const groupsWrap=document.querySelector('#app .p751-groups');if(!groupsWrap)return;
+  refreshReadyKeys();
   const groups=[...groupsWrap.querySelectorAll('.p751-group')];
   const open=new Set(state.openGroups||[]);
   groups.forEach(g=>{
@@ -89,7 +91,7 @@ function decorateAndFilter(){
     const shown=cards.filter(c=>!c.hidden).sort((a,b)=>state.sort==='quality'?Number(b.dataset.v945Score)-Number(a.dataset.v945Score):Number(a.dataset.v945Time)-Number(b.dataset.v945Time));
     const body=g.querySelector('.p751-group-body');shown.forEach(c=>body?.appendChild(c));
     g.hidden=shown.length===0;
-    if(open.size)g.open=open.has(gk);
+    if(state.groupStateSaved)g.open=open.has(gk);
     const small=g.querySelector('summary small');if(small){
       const base=(small.dataset.v945Base||(small.dataset.v945Base=(small.textContent||'').split(' · ')[0]));
       small.textContent=`${base} · ${shown.length} widocz. · ${ready} policz. · ${high} ≥80 · ${play} PLAYABLE`;
@@ -108,7 +110,13 @@ function decorateAndFilter(){
   else empty?.remove();
 }
 function enhance(){injectStyle();ensureTools();decorateAndFilter()}
-function captureOpenGroups(){state.openGroups=[...document.querySelectorAll('#app .p751-group')].filter(g=>g.open&&!g.hidden).map(groupKey);save()}
+function captureOpenGroups(){
+  const groups=[...document.querySelectorAll('#app .p751-group')];
+  if(!groups.length)return;
+  state.openGroups=groups.filter(g=>g.open&&!g.hidden).map(groupKey);
+  state.groupStateSaved=true;
+  save();
+}
 function restoreReturnScroll(){
   const y=num(state.returnScroll);if(y==null)return;
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'auto'})));
@@ -117,7 +125,7 @@ document.addEventListener('click',e=>{
   const mode=e.target.closest('[data-v945-mode]');if(mode){e.preventDefault();state.mode=mode.dataset.v945Mode;save();enhance();return}
   const ready=e.target.closest('[data-v945-ready]');if(ready){e.preventDefault();state.qualityOnly=!state.qualityOnly;save();enhance();return}
   const sort=e.target.closest('[data-v945-sort]');if(sort){e.preventDefault();state.sort=state.sort==='quality'?'time':'quality';save();enhance();return}
-  const open=e.target.closest('[data-p751-open]');if(open){state.returnScroll=window.scrollY;captureOpenGroups();save();return}
+  const open=e.target.closest('[data-p751-open]');if(open&&!e.target.closest('.v762-player-link')){state.returnScroll=window.scrollY;captureOpenGroups();save();return}
   const close=e.target.closest('[data-p751-close]');if(close){setTimeout(restoreReturnScroll,0)}
 },true);
 document.addEventListener('change',e=>{
@@ -129,8 +137,8 @@ document.addEventListener('toggle',e=>{
 const oldRender=window.renderMatches;
 if(typeof oldRender==='function')window.renderMatches=function(){captureOpenGroups();const r=oldRender.apply(this,arguments);setTimeout(enhance,0);return r};
 const collapse=document.querySelector('#collapse-all'),expand=document.querySelector('#expand-all');
-collapse?.addEventListener('click',()=>{state.openGroups=[];save();setTimeout(()=>document.querySelectorAll('#app .p751-group').forEach(g=>g.open=false),0)});
-expand?.addEventListener('click',()=>setTimeout(()=>{state.openGroups=[...document.querySelectorAll('#app .p751-group:not([hidden])')].map(groupKey);save();document.querySelectorAll('#app .p751-group:not([hidden])').forEach(g=>g.open=true)},0));
+collapse?.addEventListener('click',()=>{state.openGroups=[];state.groupStateSaved=true;save();setTimeout(()=>document.querySelectorAll('#app .p751-group').forEach(g=>g.open=false),0)});
+expand?.addEventListener('click',()=>setTimeout(()=>{state.openGroups=[...document.querySelectorAll('#app .p751-group:not([hidden])')].map(groupKey);state.groupStateSaved=true;save();document.querySelectorAll('#app .p751-group:not([hidden])').forEach(g=>g.open=true)},0));
 window.addEventListener('pagehide',()=>{captureOpenGroups();save()});
 window.addEventListener('pageshow',()=>setTimeout(()=>{enhance();restoreReturnScroll()},0));
 setTimeout(enhance,0);
