@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from backend import superbet_fixture_matching_v927 as matching
-from backend import superbet_market_context_v91 as base
+from backend import superbet_fixture_matching as matching
+from backend import superbet_market_core as base
 
 
 ROOT = Path(__file__).resolve().parents[1]
