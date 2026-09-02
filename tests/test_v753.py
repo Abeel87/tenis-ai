@@ -4,8 +4,8 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 def test_v753_features_migrated_to_current_ui():
-    ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
-    css=(ROOT/'frontend/readability-v753.css').read_text(encoding='utf-8')
+    ui=(ROOT/'frontend/ui-detail.js').read_text(encoding='utf-8')
+    css=(ROOT/'frontend/readability.css').read_text(encoding='utf-8')
     idx=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
 
     # Whole-match totals still exist, but are now owned by current UI.
