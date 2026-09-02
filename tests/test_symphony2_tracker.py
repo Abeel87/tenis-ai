@@ -76,3 +76,11 @@ def test_capture_rejects_unverified_line():
     doc, count = capture(current, {})
     assert count == 0
     assert doc["entries"] == []
+
+
+def test_capture_rejects_missing_verification_bit():
+    current = _current()
+    current["matches"][0]["compositions"]["2"]["selection"][0].pop("fixture_line_verified")
+    doc, count = capture(current, {})
+    assert count == 0
+    assert doc["entries"] == []
