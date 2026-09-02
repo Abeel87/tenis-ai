@@ -212,7 +212,7 @@ def test_v925_promotion_gate_reports_readiness_but_never_auto_promotes():
 
 
 def test_playable_stats_ui_is_explicit_when_operator_feed_is_unverified():
-    js = (ROOT / "frontend/superbet-playable-v912.js").read_text(encoding="utf-8")
+    js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
     assert "FEED N/D" in js
     assert "Brak zweryfikowanej oferty Superbet" in js
     assert "feedActive=verified>0" in js
