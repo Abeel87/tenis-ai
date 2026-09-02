@@ -9,24 +9,24 @@ def t(path):
 def test_v883_assets_and_brand_are_wired():
     h=t("frontend/index.html")
     assert "Tenis AI v8.8.7" in h
-    assert "v883-final.css?v=883" in h
-    assert "v883-final.js?v=883" in h
-    assert h.index("v882-cleanup.js?v=882") < h.index("v883-final.js?v=883")
+    assert "performance-cleanup.css?v=883" in h
+    assert "performance-cleanup.js?v=883" in h
+    assert h.index("performance-dashboard.js?v=882") < h.index("performance-cleanup.js?v=883")
 
 def test_v886_stats_ranking_hotfix_is_wired_after_stats_owners():
     h=t("frontend/index.html")
-    js=t("frontend/stats-ranking-v886.js")
-    assert "stats-ranking-v886.js?v=886" in h
-    assert h.index("v883-final.js?v=883") < h.index("stats-ranking-v886.js?v=886")
+    js=t("frontend/stats-ranking.js")
+    assert "stats-ranking.js?v=886" in h
+    assert h.index("performance-cleanup.js?v=883") < h.index("stats-ranking.js?v=886")
     assert "Porównanie modeli i komponentów" in js
     assert "nie bierze udziału w rankingu" in js
     assert "selector\\s+proxy" in js
 
 def test_v887_v8810_market_quality_layer_is_scoped_to_core_and_cross_view():
     h=t("frontend/index.html")
-    js=t("frontend/checkpoint-quality-v887.js")
-    assert "checkpoint-quality-v887.js?v=887" in h
-    assert h.index("stats-ranking-v886.js?v=886") < h.index("checkpoint-quality-v887.js?v=887")
+    js=t("frontend/checkpoint-quality.js")
+    assert "checkpoint-quality.js?v=887" in h
+    assert h.index("stats-ranking.js?v=886") < h.index("checkpoint-quality.js?v=887")
 
     for token in [
         "CP_MIN_SETTLED=30",
@@ -60,7 +60,7 @@ def test_v887_v8810_market_quality_layer_is_scoped_to_core_and_cross_view():
     assert "setInterval(" not in js
 
 def test_v883_no_longer_contains_retired_generator_pair_ui():
-    js=t("frontend/v883-final.js")
+    js=t("frontend/performance-cleanup.js")
     for token in [
         "PAIR SELECTOR · RANKING",
         "DLACZEGO TEN MECZ",
@@ -74,7 +74,7 @@ def test_v883_no_longer_contains_retired_generator_pair_ui():
         assert token not in js
 
 def test_v883_no_longer_decorates_retired_scenario_scores():
-    js=t("frontend/v883-final.js")
+    js=t("frontend/performance-cleanup.js")
     for token in [
         "function clarifyScenarioScores()",
         "Ocena scenariusza · Composer",
@@ -86,9 +86,9 @@ def test_v883_no_longer_decorates_retired_scenario_scores():
     assert "setInterval(" not in js
 
 def test_v883_has_single_stats_owner_and_hides_legacy_ui_before_cleanup():
-    old=t("frontend/v88-upgrade.js")
-    final=t("frontend/v883-final.js")
-    css=t("frontend/v883-final.css")
+    old=t("frontend/adaptive-prod-bridge.js")
+    final=t("frontend/performance-cleanup.js")
+    css=t("frontend/performance-cleanup.css")
     assert "function wrapStats(){\n  return false;" in old
     assert "v882-cleanup.js" in old
     assert "pc88-dashboard" in final
@@ -102,7 +102,7 @@ def test_v883_pwa_name_is_clean():
     assert m["short_name"]=="Tenis AI"
 
 def test_v883_shadow_boundary_copy_remains():
-    js=t("frontend/v883-final.js")
+    js=t("frontend/performance-cleanup.js")
     assert "window.TENIS_AI_APPLY_META?.()" in js
     meta=t("frontend/app-meta.js")
     assert "Player Intelligence i Player Learning działają w SHADOW" in meta
