@@ -2,23 +2,45 @@ from __future__ import annotations
 
 """Canonical production entrypoint for Superbet market-context mapping.
 
-Production callers must import/execute this stable module instead of version-suffixed
-implementations. The current implementation is kept behind this boundary while the
-legacy adapter chain is collapsed without changing the published JSON contract.
-
-Do not create a new ``superbet_market_context_vXXX.py`` for future fixes. Update the
-canonical implementation/boundary instead.
+Production callers execute this stable module name. The current legacy implementation
+is kept behind an explicit compatibility boundary while its internals are collapsed.
+Future production fixes belong here; do not create another version-suffixed module.
 """
 
 try:
-    from .superbet_market_context_v924 import *  # noqa: F401,F403
-    from .superbet_market_context_v924 import main
+    from . import superbet_market_context_v924 as _impl
 except ImportError:  # direct script execution compatibility
-    from superbet_market_context_v924 import *  # type: ignore # noqa: F401,F403
-    from superbet_market_context_v924 import main  # type: ignore
+    import superbet_market_context_v924 as _impl  # type: ignore
 
 CANONICAL_ENTRYPOINT = True
 LEGACY_IMPLEMENTATION = "superbet_market_context_v924"
+
+VERSION = _impl.VERSION
+STRICT_FIXTURE_LINE_VERSION = _impl.STRICT_FIXTURE_LINE_VERSION
+NEW_LINE_MARKETS = _impl.NEW_LINE_MARKETS
+NEW_HANDICAP_MARKETS = _impl.NEW_HANDICAP_MARKETS
+NEW_MARKETS = _impl.NEW_MARKETS
+
+canonical_market = _impl.canonical_market
+selection_pick = _impl.selection_pick
+mapped_sanitize = _impl.mapped_sanitize
+prepare = _impl.prepare
+finalize = _impl.finalize
+main = _impl.main
+
+__all__ = [
+    "VERSION",
+    "STRICT_FIXTURE_LINE_VERSION",
+    "NEW_LINE_MARKETS",
+    "NEW_HANDICAP_MARKETS",
+    "NEW_MARKETS",
+    "canonical_market",
+    "selection_pick",
+    "mapped_sanitize",
+    "prepare",
+    "finalize",
+    "main",
+]
 
 
 if __name__ == "__main__":
