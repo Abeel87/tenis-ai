@@ -54,6 +54,7 @@ function refreshClock(){
   const groups=document.querySelector('#app .p751-groups');
   if(groups&&!groups.querySelector('.p751-group'))groups.innerHTML='<div class="p751-empty"><b>Brak aktualnych meczów dla tego filtra.</b><span>Minęła planowana godzina spotkań. Odśwież dane, aby sprawdzić nowy terminarz.</span></div>';
   if(typeof updateCounts==='function')updateCounts();
+  window.TENIS_AI_MATCH_BROWSER_V945?.enhance?.();
 }
 
 function refreshVisibleUi(){
@@ -99,7 +100,7 @@ function loadPlayableUiV917(){
 function loadMatchBrowserV945(){
   if(window.TENIS_AI_MATCH_BROWSER_V945||document.querySelector('script[data-match-browser-v945]'))return;
   const script=document.createElement('script');
-  script.src='match-browser-v945.js?v=947&contract=model-output-readiness';
+  script.src='match-browser-v945.js?v=949&contract=filter-navigation-state';
   script.async=false;
   script.dataset.matchBrowserV945='1';
   document.head.appendChild(script);
