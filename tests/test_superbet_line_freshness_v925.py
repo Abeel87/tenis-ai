@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-JS = ROOT / "frontend" / "playable-line-freshness-v925.js"
+JS = ROOT / "frontend" / "playable-freshness.js"
 META = ROOT / "frontend" / "app-meta.js"
 
 
@@ -26,6 +26,6 @@ def test_freshness_wrapper_does_not_touch_model_math():
 
 def test_freshness_gate_loads_after_playable_ui_without_legacy_symphony_save_layer():
     text = META.read_text(encoding="utf-8")
-    assert "const freshness=()=>load('playable-line-freshness-v925.js?v=925','playable-line-freshness-v925');" in text
-    assert "load('playable-ui-coherence-v917.js?v=925','playable-ui-coherence-v917',freshness)" in text
+    assert "const freshness=()=>load('playable-freshness.js?v=925','playable-freshness');" in text
+    assert "load('playable-ui.js?v=925','playable-ui',freshness)" in text
     assert "symphony-superbet-save-v924.js" not in text
