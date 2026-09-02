@@ -23,5 +23,6 @@ def test_player_intelligence_model_generation_remains_separate():
 
     assert (FRONTEND / "player-intelligence-v85.js").is_file()
     assert (FRONTEND / "player-intelligence-v85.css").is_file()
-    assert 'src="player-intelligence-v85.js"' in index
-    assert 'href="player-intelligence-v85.css"' in index
+    assert 'src="player-intelligence-v85.js?' in index
+    assert 'href="player-intelligence-v85.css?' in index
+    assert index.index('src="player-intelligence-v85.js?') < index.index('src="player-intelligence-ui.js"')
