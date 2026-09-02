@@ -4,8 +4,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BROWSER = ROOT / "frontend" / "match-browser-v945.js"
+BROWSER = ROOT / "frontend" / "match-browser.js"
 PLAYABLE = ROOT / "frontend" / "playable-ui-coherence-v917.js"
+FRESHNESS = ROOT / "frontend" / "playable-line-freshness-v925.js"
 
 
 def test_playable_signal_is_analysis_evidence_for_z_danymi_filter():
@@ -22,6 +23,13 @@ def test_top_superbet_is_resynchronized_after_match_browser_filters():
     assert "TENIS_AI_PLAYABLE_UI_V917?.patchHome?.()" in browser
     assert ".p751-match-card[data-p751-open]:not([hidden])" in playable
     assert "Top sygnały · SUPERBET" in playable
+
+
+def test_match_browser_loads_after_strict_playable_gate():
+    text = FRESHNESS.read_text(encoding="utf-8")
+    assert "script.src='match-browser.js'" in text
+    assert "window.TENIS_AI_PLAYABLE_UI_V917=wrapped" in text
+    assert text.index("window.TENIS_AI_PLAYABLE_UI_V917=wrapped") < text.index("script.src='match-browser.js'")
 
 
 def test_match_browser_keeps_navigation_state_across_detail_return():
