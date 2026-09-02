@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAYABLE = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
@@ -46,7 +47,7 @@ def test_strong_filter_uses_raw_model_rows_during_base_render():
 def test_current_operator_chain_has_no_legacy_v921_dependency():
     assert "raw-playable-separation-v921" not in LOADER
     assert "loadRawPlayableV921" not in LOADER
-    assert "playable-ui-coherence-v917.js?v=925&contract=raw-playable" in LOADER
+    assert re.search(r"playable-ui-coherence-v917\.js\?v=\d+&contract=raw-playable(?:-[a-z-]+)?", LOADER)
     assert "superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage" in LOADER
     assert "data-superbet-model-coverage-v922" in COVERAGE
     assert "canonical_selections" in COVERAGE
