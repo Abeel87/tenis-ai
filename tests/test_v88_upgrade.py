@@ -13,7 +13,7 @@ def test_match_winner_uses_same_final_ranking_as_other_markets():
     assert "adaptive_learning_v79?.signals" in js
 
 def test_v88_generator_uses_adaptive_prod_wrapper():
-    js=text("frontend/v88-upgrade.js")
+    js=text("frontend/adaptive-prod-bridge.js")
     assert "adaptive_prod_score:final" in js
     assert "ensemble:rawEnsemble" in js
     assert "final_score:final" in js
@@ -21,8 +21,8 @@ def test_v88_generator_uses_adaptive_prod_wrapper():
     assert "wrapAutoLearn" in js
 
 def test_v88_performance_intelligence_exists():
-    js=text("frontend/v88-upgrade.js")
-    css=text("frontend/v88-upgrade.css")
+    js=text("frontend/adaptive-prod-bridge.js")
+    css=text("frontend/adaptive-prod-bridge.css")
 
     for token in [
         "confidenceRows",
@@ -41,7 +41,7 @@ def test_v88_performance_intelligence_exists():
 def test_v88_preserves_protected_runtime_contract():
     html=text("frontend/index.html")
     meta=text("frontend/app-meta.js")
-    upgrade=text("frontend/v88-upgrade.js")
+    upgrade=text("frontend/adaptive-prod-bridge.js")
 
     assert "symphony2.js?v=210" in html
     assert "symphony2.css?v=210" in html
@@ -49,17 +49,14 @@ def test_v88_preserves_protected_runtime_contract():
     assert "scenario-studio-v82a.css" not in html
     assert "model-guide.js?v=87dc1" in html
 
-    assert "v88-upgrade.css?v=88" in html
-    assert "v88-upgrade.js?v=88" in html
+    assert "adaptive-prod-bridge.css?v=88" in html
+    assert "adaptive-prod-bridge.js?v=88" in html
 
-    # Keep the compatibility metadata contract, but do not freeze whitespace
-    # or resurrect the retired Scenario generator policy.
     assert "appVersion: 'v8.0.1'" in meta
     assert "displayVersion:'v8.8.7'" in meta
     assert "currentUiArchitecture:'v8.8.7-checkpoint-quality-lock'" in meta
     assert "symphonyVersion:'v2.1'" in meta
     assert "generatorPolicyVersion" not in meta
 
-    # Compatibility bridge delegates visible branding to central metadata.
     assert "function applyV88Brand()" in upgrade
     assert "window.TENIS_AI_APPLY_META?.()" in upgrade
