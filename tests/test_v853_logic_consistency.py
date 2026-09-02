@@ -47,9 +47,8 @@ def test_ui_reads_shadow_and_backend_consensus():
 
 
 def test_refresh_and_joint_pipeline_are_consistent():
-    runtime = (ROOT / "frontend" / "runtime-fetch-v853.js").read_text(encoding="utf-8")
+    runtime = (ROOT / "frontend" / "runtime-fetch.js").read_text(encoding="utf-8")
     workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
     assert "`${url.pathname}${url.search}`" in runtime
     assert "mode === 'no-store'" in runtime
     assert workflow.index("python backend/pbp_enrich.py") < workflow.index("python backend/apply_joint_to_results_v78b.py")
-

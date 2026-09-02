@@ -1,4 +1,4 @@
-/* Tenis AI v8.5.3 — runtime data dedupe
+/* Tenis AI · runtime data dedupe
    Short-lived in-memory cache for same-origin /data/*.json GETs.
    Prevents repeated downloads/parses triggered by layered UI modules.
 */

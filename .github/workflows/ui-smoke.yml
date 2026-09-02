@@ -49,8 +49,8 @@ jobs:
       - name: Python syntax
         run: python -m compileall -q backend scripts
 
-      - name: Prune publication-only results payload v8.5.4
-        run: python scripts/prune_results_payload_v854.py
+      - name: Prune publication-only results payload
+        run: python scripts/prune_results_payload.py
 
       - name: Full test suite
         run: python -m pytest -q

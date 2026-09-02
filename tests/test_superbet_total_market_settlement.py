@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from backend.signal_settlement import settle_signal, settle_signal_live
-from backend.superbet_candidate_settlement_v925 import capture_candidates
+from backend.superbet_candidate_settlement import capture_candidates
 
 
 def _final():

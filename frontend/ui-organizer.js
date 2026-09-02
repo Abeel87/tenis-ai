@@ -131,8 +131,6 @@
   }
 
   function ensureReadabilityControls(){
-    // App/version branding belongs to app-meta. This legacy organizer must not
-    // overwrite a newer release label after the page has already rendered.
     const pi=document.querySelector('#pi85-stats');
     if(pi && pi.dataset.v853cReady!=='1'){
       pi.dataset.v853cReady='1';

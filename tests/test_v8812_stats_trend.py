@@ -8,7 +8,7 @@ def read(path):
 
 
 def test_stats_trend_is_promoted_to_main_view():
-    js = read("frontend/stats-ranking-v886.js")
+    js = read("frontend/stats-ranking.js")
     assert "VERSION='v8.8.16'" in js
     assert "promoteMainTrend" in js
     assert "pc12-summary" in js
@@ -18,7 +18,7 @@ def test_stats_trend_is_promoted_to_main_view():
 
 
 def test_stats_ranking_is_event_driven_without_observer():
-    js = read("frontend/stats-ranking-v886.js")
+    js = read("frontend/stats-ranking.js")
     assert "DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready'" in js
     assert "tenis-ai:stats-ready" in js
     assert "document.addEventListener(DASHBOARD_READY_EVENT" in js

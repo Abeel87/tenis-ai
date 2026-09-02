@@ -1,4 +1,4 @@
-/* Tenis AI v7.0.2 — community count clarity */
+/* Tenis AI v7.0.2 — community member count */
 (() => {
   const $ = s => document.querySelector(s);
 

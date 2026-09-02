@@ -1,8 +1,6 @@
-/* Tenis AI v8.8 · compatibility bridge.
-   v8.8.2+ owns the performance dashboard; this file keeps only the
-   Adaptive PROD bridge. Old v8.8 stats rendering is intentionally disabled
-   to avoid duplicate dashboards/fetches.
-   v8.8.21 runtime cleanup: explicit stats events replace polling.
+/* Tenis AI · Adaptive PROD compatibility bridge.
+   Performance dashboard is owned by the dedicated performance module; this file
+   keeps only the Adaptive PROD bridge and explicit stats-event compatibility.
 */
 (()=>{
 'use strict';
@@ -99,12 +97,12 @@ function wrapAutoLearn(){
 
   api.__v88Wrapped=true;
   api.v88AdaptiveProd=true;
-  console.info('[Tenis AI] v8.8 Adaptive PROD bridge active');
+  console.info('[Tenis AI] Adaptive PROD bridge active');
   return true;
 }
 
 /* Compatibility symbols retained for guards/tests. The real dashboard lives in
-   v882-cleanup.js. These functions are intentionally not wired to renderStats. */
+   the performance dashboard module. These functions are intentionally not wired to renderStats. */
 function confidenceRows(){return[]}
 function renderMarkets(){return''}
 function segmentRows(){return{best:[],weak:[]}}
