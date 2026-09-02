@@ -13,7 +13,8 @@ def test_v883_assets_and_brand_are_wired():
     assert "Tenis AI v8.8.7" in h
     assert "ui-cleanup.css" in h
     assert "ui-cleanup.js" in h
-    assert h.index("v882-cleanup.js?v=882") < h.index("ui-cleanup.js")
+    assert h.index("performance-dashboard.js") < h.index("ui-cleanup.js")
+    assert "v882-cleanup.js" not in h
     assert "v883-final.js" not in h
     assert "v883-final.css" not in h
 
@@ -100,7 +101,7 @@ def test_single_stats_owner_and_legacy_ui_hidden_before_cleanup():
     final=t("frontend/ui-cleanup.js")
     css=t("frontend/ui-cleanup.css")
     assert "function wrapStats(){\n  return false;" in old
-    assert "v882-cleanup.js" in old
+    assert "performance dashboard module" in old
     assert "pc88-dashboard" in final
     assert "#pc88-dashboard," in css
     assert "#model-switcher," in css
