@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "superbet-market-refresh.yml"
 BACKEND = ROOT / "backend"
@@ -31,74 +30,30 @@ RETIRED_COMPATIBILITY_SHIMS = {
     "superbet_fixture_matching_v927.py",
 }
 STABLE_FRONTEND_RUNTIME = {
-    "playable-ui.js",
-    "playable-freshness.js",
-    "match-browser.js",
-    "match-visibility.js",
-    "superbet-model-coverage.js",
-    "market-segregation.js",
-    "match-detail.js",
-    "player-intelligence-human.js",
-    "app-coherence.js",
-    "symphony2-live-ui.js",
-    "runtime-fetch.js",
-    "match-loading.js",
-    "data-runtime.js",
-    "fixture-history-freshness.js",
-    "history-ui.js",
-    "history-ui.css",
-    "project-ui.js",
-    "project-ui.css",
-    "navigation-tools.js",
-    "navigation-tools.css",
-    "adaptive-prod-bridge.js",
-    "adaptive-prod-bridge.css",
-    "performance-dashboard.js",
-    "performance-dashboard.css",
-    "ui-cleanup.js",
-    "ui-cleanup.css",
-    "ui-organizer.js",
-    "ui-organizer.css",
-    "superbet-playable-stats.js",
-    "superbet-playable-stats.css",
-    "stats-ranking.js",
-    "market-quality.js",
-    "project-ui-quality.js",
+    "playable-ui.js", "playable-freshness.js", "match-browser.js", "match-visibility.js",
+    "superbet-model-coverage.js", "market-segregation.js", "match-detail.js",
+    "player-intelligence-human.js", "app-coherence.js", "symphony2-live-ui.js",
+    "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
+    "registration-handler.js", "registration-ux.js", "registration-ux.css",
+    "history-ui.js", "history-ui.css", "project-ui.js", "project-ui.css", "project-readability.css",
+    "navigation-tools.js", "navigation-tools.css", "adaptive-prod-bridge.js", "adaptive-prod-bridge.css",
+    "performance-dashboard.js", "performance-dashboard.css", "ui-cleanup.js", "ui-cleanup.css",
+    "ui-organizer.js", "ui-organizer.css", "superbet-playable-stats.js", "superbet-playable-stats.css",
+    "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
 }
 RETIRED_FRONTEND_RUNTIME = {
-    "playable-ui-coherence-v917.js",
-    "playable-line-freshness-v925.js",
-    "match-browser-v945.js",
-    "match-list-visibility-v916.js",
-    "superbet-model-coverage-v922.js",
-    "market-segregation-v93g.js",
-    "match-detail-architecture-v950.js",
-    "player-intelligence-v888-human.js",
-    "app-coherence-v892.js",
-    "symphony2-live-ui-v201.js",
-    "runtime-fetch-v853.js",
-    "loading-fix-v889.js",
-    "runtime-health-v84e0.js",
-    "hotfix-v84e01.js",
-    "restore-v762.js",
-    "restore-v762.css",
-    "ui-v75.js",
-    "ui-v75.css",
-    "ui-v751.js",
-    "ui-v751.css",
-    "v88-upgrade.js",
-    "v88-upgrade.css",
-    "v882-cleanup.js",
-    "v882-cleanup.css",
-    "v883-final.js",
-    "v883-final.css",
-    "ui-organizer-v853.js",
-    "ui-organizer-v853.css",
-    "superbet-playable-v912.js",
-    "superbet-playable-v912.css",
-    "stats-ranking-v886.js",
-    "checkpoint-quality-v887.js",
-    "project-ui-quality-v8815.js",
+    "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
+    "match-list-visibility-v916.js", "superbet-model-coverage-v922.js", "market-segregation-v93g.js",
+    "match-detail-architecture-v950.js", "player-intelligence-v888-human.js", "app-coherence-v892.js",
+    "symphony2-live-ui-v201.js", "runtime-fetch-v853.js", "loading-fix-v889.js",
+    "runtime-health-v84e0.js", "hotfix-v84e01.js", "restore-v762.js", "restore-v762.css",
+    "ui-v75.js", "ui-v75.css", "ui-v751.js", "ui-v751.css",
+    "registration-fix-v741.js", "registration-ux-v752.js", "registration-ux-v752.css",
+    "readability-v753.js", "readability-v753.css",
+    "v88-upgrade.js", "v88-upgrade.css", "v882-cleanup.js", "v882-cleanup.css",
+    "v883-final.js", "v883-final.css", "ui-organizer-v853.js", "ui-organizer-v853.css",
+    "superbet-playable-v912.js", "superbet-playable-v912.css", "stats-ranking-v886.js",
+    "checkpoint-quality-v887.js", "project-ui-quality-v8815.js",
 }
 
 
@@ -147,11 +102,7 @@ def test_match_visibility_owns_stable_detail_chain_only():
     assert "superbet-model-coverage.js" in text
     assert "market-segregation.js" in text
     assert "match-detail.js" in text
-    for retired in (
-        "superbet-model-coverage-v922.js",
-        "market-segregation-v93g.js",
-        "match-detail-architecture-v950.js",
-    ):
+    for retired in ("superbet-model-coverage-v922.js", "market-segregation-v93g.js", "match-detail-architecture-v950.js"):
         assert retired not in text
 
 
@@ -168,34 +119,20 @@ def test_project_ui_has_single_match_list_owner():
 def test_index_boots_stable_production_runtime_chain():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
     for name in (
-        "runtime-fetch.js",
-        "match-loading.js",
-        "data-runtime.js",
-        "fixture-history-freshness.js",
-        "history-ui.js",
-        "project-ui.js",
-        "navigation-tools.js",
-        "ui-organizer.js",
-        "adaptive-prod-bridge.js",
-        "performance-dashboard.js",
-        "ui-cleanup.js",
-        "stats-ranking.js",
-        "market-quality.js",
-        "project-ui-quality.js",
-        "match-visibility.js",
+        "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
+        "registration-handler.js", "registration-ux.js", "history-ui.js", "project-ui.js",
+        "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
+        "ui-cleanup.js", "stats-ranking.js", "market-quality.js", "project-ui-quality.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
     for name in (
-        "history-ui.css",
-        "project-ui.css",
-        "navigation-tools.css",
-        "ui-organizer.css",
-        "adaptive-prod-bridge.css",
-        "performance-dashboard.css",
-        "ui-cleanup.css",
+        "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
+        "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css",
+        "performance-dashboard.css", "ui-cleanup.css",
     ):
         assert f'href="{name}"' in text
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
+    assert text.index('src="registration-handler.js"') < text.index('src="registration-ux.js"')
     for retired in RETIRED_FRONTEND_RUNTIME:
         assert retired not in text
 
