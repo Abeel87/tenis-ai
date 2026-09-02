@@ -66,32 +66,32 @@ function refreshVisibleUi(){
   }catch{}
 }
 
-function loadDetailArchitectureV950(){
-  if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail-v950]'))return;
+function loadMatchDetail(){
+  if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail]'))return;
   const script=document.createElement('script');
-  script.src='match-detail-architecture-v950.js?v=950&contract=playable-model-diagnostics';
+  script.src='match-detail.js';
   script.async=false;
-  script.dataset.matchDetailV950='1';
+  script.dataset.matchDetail='1';
   document.head.appendChild(script);
 }
 
-function loadMarketSegregationV93G(){
-  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]')){loadDetailArchitectureV950();return}
+function loadMarketSegregation(){
+  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation]')){loadMatchDetail();return}
   const script=document.createElement('script');
-  script.src='market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only';
+  script.src='market-segregation.js';
   script.async=false;
-  script.dataset.marketSegregationV93g='1';
-  script.addEventListener('load',loadDetailArchitectureV950,{once:true});
+  script.dataset.marketSegregation='1';
+  script.addEventListener('load',loadMatchDetail,{once:true});
   document.head.appendChild(script);
 }
 
-function loadSuperbetModelCoverageV922(){
-  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]')){loadMarketSegregationV93G();return}
+function loadSuperbetModelCoverage(){
+  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage]')){loadMarketSegregation();return}
   const script=document.createElement('script');
-  script.src='superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage';
+  script.src='superbet-model-coverage.js';
   script.async=false;
-  script.dataset.superbetModelCoverageV922='1';
-  script.addEventListener('load',loadMarketSegregationV93G,{once:true});
+  script.dataset.superbetModelCoverage='1';
+  script.addEventListener('load',loadMarketSegregation,{once:true});
   document.head.appendChild(script);
 }
 
@@ -108,5 +108,5 @@ if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 // PLAYABLE has exactly one bootstrap owner: app-meta -> playable-ui.js ->
 // playable-freshness.js -> match-browser.js. This module owns only the
 // operator/model coverage + detail presentation chain.
-setTimeout(loadSuperbetModelCoverageV922,0);
+setTimeout(loadSuperbetModelCoverage,0);
 })();
