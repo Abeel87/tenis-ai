@@ -34,11 +34,19 @@ STABLE_FRONTEND_RUNTIME = {
     "playable-ui.js",
     "playable-freshness.js",
     "match-browser.js",
+    "match-visibility.js",
+    "superbet-model-coverage.js",
+    "market-segregation.js",
+    "match-detail.js",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js",
     "playable-line-freshness-v925.js",
     "match-browser-v945.js",
+    "match-list-visibility-v916.js",
+    "superbet-model-coverage-v922.js",
+    "market-segregation-v93g.js",
+    "match-detail-architecture-v950.js",
 }
 
 
@@ -76,9 +84,28 @@ def test_app_meta_owns_single_canonical_playable_bootstrap():
     text = (FRONTEND / "app-meta.js").read_text(encoding="utf-8")
     assert "load('playable-ui.js','tenis-ai-playable-ui',freshness)" in text
     assert "load('playable-freshness.js','tenis-ai-playable-freshness')" in text
-    visibility = (FRONTEND / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+    visibility = (FRONTEND / "match-visibility.js").read_text(encoding="utf-8")
     assert "playable-ui.js" not in visibility
     assert "playable-freshness.js" not in visibility
+
+
+def test_match_visibility_owns_stable_detail_chain_only():
+    text = (FRONTEND / "match-visibility.js").read_text(encoding="utf-8")
+    assert "superbet-model-coverage.js" in text
+    assert "market-segregation.js" in text
+    assert "match-detail.js" in text
+    for retired in (
+        "superbet-model-coverage-v922.js",
+        "market-segregation-v93g.js",
+        "match-detail-architecture-v950.js",
+    ):
+        assert retired not in text
+
+
+def test_index_boots_stable_match_visibility():
+    text = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    assert '<script src="match-visibility.js"></script>' in text
+    assert "match-list-visibility-v916.js" not in text
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
