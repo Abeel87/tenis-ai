@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
-WORKFLOW = ROOT / ".github" / "workflows" / "symphony2-check.yml"
+WORKFLOWS = ROOT / ".github" / "workflows"
 
 
 def test_pbp_evidence_has_one_canonical_module_path():
@@ -21,9 +21,27 @@ def test_pbp_cache_recovery_has_one_canonical_module_path():
     assert "pbp_cache_recovery_v941" not in test
 
 
-def test_symphony_workflow_uses_canonical_state_and_pbp_paths():
-    text = WORKFLOW.read_text(encoding="utf-8")
-    assert "backend/symphony2_state_core.py" in text
-    assert "backend/symphony2_state_core_v945.py" not in text
-    assert "backend/pbp_market_evidence.py" in text
-    assert "backend/pbp_market_evidence_v940.py" not in text
+def test_joint_builder_publication_has_one_canonical_wrapper_path():
+    assert (BACKEND / "apply_joint_to_results.py").is_file()
+    assert not (BACKEND / "apply_joint_to_results_v78b.py").exists()
+    wrapper = (BACKEND / "apply_joint_to_results.py").read_text(encoding="utf-8")
+    assert "from joint_builder_v78b import add_joint_builder" in wrapper
+    assert "from pbp_cache_recovery import recover_rows_from_cache" in wrapper
+    assert "from pbp_market_evidence import enrich_market_evidence" in wrapper
+    assert "pbp_cache_recovery_v941" not in wrapper
+    assert "pbp_market_evidence_v940" not in wrapper
+
+
+def test_active_workflows_use_canonical_state_pbp_and_publication_paths():
+    symphony = (WORKFLOWS / "symphony2-check.yml").read_text(encoding="utf-8")
+    update = (WORKFLOWS / "update-and-pages.yml").read_text(encoding="utf-8")
+
+    assert "backend/symphony2_state_core.py" in symphony
+    assert "backend/symphony2_state_core_v945.py" not in symphony
+    assert "backend/pbp_market_evidence.py" in symphony
+    assert "backend/pbp_market_evidence_v940.py" not in symphony
+    assert "backend/apply_joint_to_results.py" in symphony
+    assert "backend/apply_joint_to_results_v78b.py" not in symphony
+
+    assert "python backend/apply_joint_to_results.py" in update
+    assert "backend/apply_joint_to_results_v78b.py" not in update
