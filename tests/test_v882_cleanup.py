@@ -2,8 +2,10 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 
+
 def t(path):
     return (ROOT/path).read_text(encoding="utf-8")
+
 
 def test_v882_generator_is_retired_for_symphony2_ranking():
     index=t("frontend/index.html")
@@ -15,19 +17,22 @@ def test_v882_generator_is_retired_for_symphony2_ranking():
     assert "from itertools import combinations" in engine
     assert "joint_probability" in engine
 
-def test_v882_stats_feed_selection_only():
-    s=t("frontend/v882-cleanup.js")
+
+def test_performance_dashboard_feed_selection_only():
+    s=t("frontend/performance-dashboard.js")
     assert "TENIS_AI_PERFORMANCE_V882" in s
     assert "priorFor" in s
     assert "Nie zmieniają oceny FINAL" in s
 
-def test_v882_stats_tabs_and_charts():
-    s=t("frontend/v882-cleanup.js")
+
+def test_performance_dashboard_tabs_and_charts():
+    s=t("frontend/performance-dashboard.js")
     for token in ["Przegląd","Wykresy","pc882-trend-monitor","Rynki","Modele","Adaptive","trend(","calibration(","heatmap(","segments("]:
         assert token in s
 
-def test_v882_runtime_refresh_is_targeted():
-    s=t("frontend/v882-cleanup.js")
+
+def test_performance_dashboard_runtime_refresh_is_targeted():
+    s=t("frontend/performance-dashboard.js")
     assert "RUNTIME_FIX='v8.8.13'" in s
     assert "tenis-ai:stats-dashboard-ready" in s
     assert "relevantPolishClick" in s
@@ -35,12 +40,16 @@ def test_v882_runtime_refresh_is_targeted():
     assert "document.addEventListener('click',()=>setTimeout(polish,60),true)" not in s
     assert "setTimeout(()=>{\n    wrapStats();\n    polish();" in s
 
-def test_v882_adaptive_compact():
-    css=t("frontend/v882-cleanup.css")
+
+def test_performance_dashboard_adaptive_compact():
+    css=t("frontend/performance-dashboard.css")
     assert "#v79-health:not(.expanded)" in css
 
-def test_v882_assets_loaded_after_v88():
+
+def test_performance_dashboard_assets_use_stable_paths():
     h=t("frontend/index.html")
-    assert "v882-cleanup.css?v=882" in h
-    assert "v882-cleanup.js?v=882" in h
-    assert h.index("v88-upgrade.js?v=88") < h.index("v882-cleanup.js?v=882")
+    assert "performance-dashboard.css" in h
+    assert "performance-dashboard.js" in h
+    assert h.index("adaptive-prod-bridge.js") < h.index("performance-dashboard.js")
+    assert "v882-cleanup.js" not in h
+    assert "v882-cleanup.css" not in h
