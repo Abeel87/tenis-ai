@@ -1,8 +1,8 @@
-/* Tenis AI v9.4.5 — Match Browser mobile rebuild.
+/* Tenis AI v9.4.7 — Match Browser mobile rebuild.
    Presentation/navigation only. Never changes model math, Symphony, Superbet eligibility or PLAYABLE decisions. */
 (()=>{
 'use strict';
-const VERSION='v9.4.5';
+const VERSION='v9.4.7';
 const STORE='tenis-ai-match-browser-v945';
 const state={mode:'all',qualityOnly:true,sort:'quality',surface:'all',openGroups:[],groupStateSaved:false,returnScroll:null};
 try{Object.assign(state,JSON.parse(sessionStorage.getItem(STORE)||'{}'))}catch{}
@@ -25,8 +25,12 @@ function refreshReadyKeys(){
 function hasAnalysis(m){
   if(!m)return false;
   if(!readyKeys)refreshReadyKeys();
-  if(readyKeys.size)return readyKeys.has(key(m));
-  return strength(m)>=55 || (num(m?.model_confidence)||0)>0;
+  // Legacy readiness is only one positive source. It must never be a hard
+  // whitelist because modern model outputs (including every PLAYABLE signal)
+  // can exist without the old model_ready + first_set_win marker pair.
+  if(readyKeys.has(key(m)))return true;
+  if(modelSignals(m).some(x=>num(x?.v)!=null))return true;
+  return (num(m?.model_confidence)||0)>0;
 }
 const playableSignals=m=>{try{return window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,10)||[]}catch{return []}};
 const isPlayable=m=>playableSignals(m).length>0;
