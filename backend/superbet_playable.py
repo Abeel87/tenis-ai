@@ -9,8 +9,9 @@ used only *after* the core/AutoLearn prediction work:
   signal stream before Player Intelligence / SHADOW current scoring, so those
   models can score the same real operator lines;
 - ``project`` runs after model guards and turns frontend-facing result ladders
-  into a PLAYABLE view, filters SHADOW feeds, freezes separate operator-aware
-  history layers, and publishes separate PLAYABLE statistics.
+  into a PLAYABLE view, derives operator-filtered SHADOW evidence in memory,
+  freezes separate operator-aware history layers, and publishes separate
+  PLAYABLE statistics without rewriting the RAW SHADOW feeds.
 
 Bookmaker prices are never read here and operator availability never becomes a
 training target.
@@ -741,10 +742,11 @@ def project() -> dict:
     _write(RESULTS, projected)
 
     rindex = _result_index(projected)
-    shadow_current = _filter_shadow_feed(_read(SHADOW_CURRENT, []), rindex)
-    shadow_center = _filter_shadow_feed(_read(SHADOW_CENTER, {}), rindex)
-    _write(SHADOW_CURRENT, shadow_current)
-    _write(SHADOW_CENTER, shadow_center)
+    # RAW/SHADOW is an independent model surface. Derive an operator-filtered
+    # projection for PLAYABLE history/statistics, but never rewrite those source
+    # feeds based on bookmaker availability.
+    raw_shadow_center = _read(SHADOW_CENTER, {})
+    shadow_center = _filter_shadow_feed(raw_shadow_center, rindex)
 
     history = _read(HISTORY, [])
     history = history if isinstance(history, list) else []
