@@ -13,7 +13,8 @@ def load(name,path):
     return mod
 
 def test_frontend_bridge_and_ui():
-    mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8');ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
+    mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8')
+    ui=(ROOT/'frontend/project-ui.js').read_text(encoding='utf-8')
     assert 'window.TENIS_AI_MODEL_API' in mm
     assert 'modelApi()?.active' in ui
     assert 'Si\u0142a sygna\u0142u' in ui
@@ -23,10 +24,10 @@ def test_frontend_bridge_and_ui():
     assert 'tracker rozlicza te\u017c liczb\u0119 tie-break\u00f3w' in ui
 
 def test_player_analytics_formula_parity():
-    ui=(ROOT/'frontend/ui-v751.js').read_text(encoding='utf-8')
-    for t in ["[pro76Range(av(g,'hold_rate'),60,90),.38]","[metric(g,'match_win'),.45]","[metric(p,'hold1'),.42]","[metric(surf,'match_win'),.40]","[metric(surf,'set1_win'),.15]"]:
+    ui=(ROOT/'frontend/player-analytics.js').read_text(encoding='utf-8')
+    for t in ["[scoreRange(av(g,'hold_rate'),60,90),.38]","[metric(g,'match_win'),.45]","[metric(p,'hold1'),.42]","[metric(surf,'match_win'),.40]","[metric(surf,'set1_win'),.15]"]:
         assert t in ui
-    assert "pbp_tendencies?.all?.['10']" in ui
+    assert "pbp_tendencies?.[ui.scope]?.[ui.window]" in ui
 
 def test_pbp_directional_summary_low_probability():
     mod=load('pbp_tracker_test',ROOT/'backend/pbp_tracker.py')
