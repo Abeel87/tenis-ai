@@ -41,6 +41,7 @@ STABLE_FRONTEND_RUNTIME = {
     "performance-dashboard.js", "performance-dashboard.css", "ui-cleanup.js", "ui-cleanup.css",
     "ui-organizer.js", "ui-organizer.css", "superbet-playable-stats.js", "superbet-playable-stats.css",
     "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
+    "integrity-status.js", "integrity-status.css", "model-trends.js", "model-trends.css",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
@@ -56,6 +57,7 @@ RETIRED_FRONTEND_RUNTIME = {
     "v883-final.js", "v883-final.css", "ui-organizer-v853.js", "ui-organizer-v853.css",
     "superbet-playable-v912.js", "superbet-playable-v912.css", "stats-ranking-v886.js",
     "checkpoint-quality-v887.js", "project-ui-quality-v8815.js",
+    "integrity-v78a.js", "integrity-v78a.css", "model-trends-v84e2.js", "model-trends-v84e2.css",
 }
 
 
@@ -125,19 +127,33 @@ def test_index_boots_stable_production_runtime_chain():
         "registration-handler.js", "registration-ux.js", "clarity-labels.js", "history-ui.js", "project-ui.js",
         "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
         "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
-        "project-ui-quality.js", "match-visibility.js",
+        "project-ui-quality.js", "integrity-status.js", "model-trends.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
     for name in (
         "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
         "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css",
-        "performance-dashboard.css", "ui-cleanup.css",
+        "performance-dashboard.css", "ui-cleanup.css", "integrity-status.css", "model-trends.css",
     ):
         assert f'href="{name}"' in text
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
     assert text.index('src="registration-handler.js"') < text.index('src="registration-ux.js"')
     for retired in RETIRED_FRONTEND_RUNTIME:
         assert retired not in text
+
+
+def test_model_trend_monitor_stays_read_only():
+    text = (FRONTEND / "model-trends.js").read_text(encoding="utf-8")
+    assert "Read-only monitoring" in text
+    assert "never changes production weights" in text
+    assert "window.TENIS_AI_MODEL_TRENDS_V84E2" in text
+
+
+def test_integrity_status_preserves_shadow_experiment_boundary():
+    text = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
+    assert "integrity_report_v78a.json" in text
+    assert "shadow-lab-v78e6.js" in text
+    assert "shadow-lab-v78e6.css" in text
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
