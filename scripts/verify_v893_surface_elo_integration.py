@@ -8,7 +8,7 @@ BACKEND=ROOT/"backend"/"surface_elo_integration_v893.py"
 REPORT=ROOT/"frontend"/"data"/"surface_elo_integration_v893.json"
 META=ROOT/"frontend"/"data"/"meta.json"
 WORKFLOW=ROOT/".github"/"workflows"/"update-and-pages.yml"
-COHERENCE=ROOT/"frontend"/"app-coherence-v892.js"
+COHERENCE=ROOT/"frontend"/"app-coherence.js"
 
 def load(path,fallback):
     try:return json.loads(path.read_text(encoding="utf-8"))
