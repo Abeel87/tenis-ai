@@ -6,6 +6,11 @@ The proven v9.4.5 state engine is preserved verbatim in
 ``symphony2_state_core_v945``. This module keeps the same probability state and
 adds only predicates that can be derived exactly from that state. Markets that
 need unavailable point-by-point or serve-prop evidence remain unsupported.
+
+For BO5 we intentionally retain only sufficient statistics required by supported
+markets (set1/set2 score, match/set wins, player game totals and any-bagel flag).
+Keeping every later exact set sequence would create an unnecessary combinatorial
+state explosion without adding information used by these markets.
 """
 
 from collections import defaultdict
@@ -52,36 +57,38 @@ def build_outcomes(match: dict) -> list[dict]:
     for path, p0 in first.items():
         c2a, c2b, c4a, c4b, c6a, c6b, s1a, s1b = path
         sa, sb = ((1, 0) if s1a > s1b else (0, 1))
-        scores = ((int(s1a), int(s1b)),)
         p1_games, p2_games = int(s1a), int(s1b)
-        frontier = {(sa, sb, p1_games, p2_games, scores): p0}
+        first_nil = int(s1a) == 0 or int(s1b) == 0
+        # xa, xb, p1 games, p2 games, set2 exact score, any set-to-nil
+        frontier = {(sa, sb, p1_games, p2_games, None, first_nil): p0}
 
         for set_no in range(2, best_of + 1):
             nxt: dict[tuple, float] = defaultdict(float)
-            for (xa, xb, ga_total, gb_total, set_scores), probability in frontier.items():
+            for (xa, xb, ga_total, gb_total, set2_score, any_nil), probability in frontier.items():
                 if xa >= need or xb >= need:
-                    nxt[(xa, xb, ga_total, gb_total, set_scores)] += probability
+                    nxt[(xa, xb, ga_total, gb_total, set2_score, any_nil)] += probability
                     continue
                 for (ga, gb), sp in later[set_no].items():
-                    next_scores = set_scores + ((int(ga), int(gb)),)
+                    exact2 = (int(ga), int(gb)) if set_no == 2 else set2_score
                     nxt[(
                         xa + int(ga > gb),
                         xb + int(gb > ga),
                         ga_total + int(ga),
                         gb_total + int(gb),
-                        next_scores,
+                        exact2,
+                        bool(any_nil or int(ga) == 0 or int(gb) == 0),
                     )] += probability * sp
             frontier = nxt
-            if all(xa >= need or xb >= need for xa, xb, _, _, _ in frontier):
+            if all(xa >= need or xb >= need for xa, xb, _, _, _, _ in frontier):
                 break
 
-        for (xa, xb, ga_total, gb_total, set_scores), probability in frontier.items():
+        for (xa, xb, ga_total, gb_total, set2_score, any_nil), probability in frontier.items():
             if xa < need and xb < need:
                 continue
             key = (
                 c2a, c2b, c4a, c4b, c6a, c6b,
                 int(s1a), int(s1b), int(xa), int(xb),
-                int(ga_total), int(gb_total), set_scores,
+                int(ga_total), int(gb_total), set2_score, bool(any_nil),
             )
             agg[key] += probability
 
@@ -91,15 +98,13 @@ def build_outcomes(match: dict) -> list[dict]:
 
     out = []
     for key, probability in agg.items():
-        set_scores = tuple(key[12])
-        set2 = set_scores[1] if len(set_scores) >= 2 else None
+        set2 = key[12]
         out.append({
             "cp2": (key[0], key[1]),
             "cp4": (key[2], key[3]),
             "cp6": (key[4], key[5]),
             "set1": (key[6], key[7]),
             "set2": set2,
-            "set_scores": set_scores,
             "sets": (key[8], key[9]),
             "p1_games": int(key[10]),
             "p2_games": int(key[11]),
@@ -109,7 +114,7 @@ def build_outcomes(match: dict) -> list[dict]:
             "set1_winner": 1 if key[6] > key[7] else 2,
             "set2_winner": (1 if set2 and set2[0] > set2[1] else 2) if set2 else None,
             "set1_tiebreak": {key[6], key[7]} == {6, 7},
-            "any_set_to_nil": any(a == 0 or b == 0 for a, b in set_scores),
+            "any_set_to_nil": bool(key[13]),
             "prob": probability / total,
         })
     return out
