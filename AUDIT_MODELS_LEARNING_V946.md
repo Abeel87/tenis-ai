@@ -53,9 +53,17 @@ v9.4.6:
 
 ## Naprawa 3 — większe pokrycie Symfonii 2.0 istniejącą dystrybucją
 
-Nie tworzono nowego AI dla rynków, które można policzyć dokładnie z już istniejącego shared state. Symfonia zachowuje jeden wspólny rozkład dla marginal i joint probability.
+Nie tworzono nowego AI dla rynków, które można policzyć dokładnie z istniejących rozkładów. Pierwsza wersja rozszerzenia próbowała trzymać jeden uniwersalny stan również dla BO5; test wydajności wykazał 718 298 stanów, więc została odrzucona przed mergem.
 
-Dodano state support dla:
+Finalne rozwiązanie zachowuje oryginalny shared state dla dotychczasowych rynków i dodaje **oddzielne, ograniczone rodziny stanów**:
+
+- 1. set — dokładny wynik 1. seta i pochodne,
+- 2. set — dokładny wynik 2. seta i pochodne,
+- cały mecz — skompresowany DP po liczbie wygranych setów, gemach obu zawodników i fladze seta do zera.
+
+Każda marginal probability jest liczona dokładnie z odpowiedniej rodziny. Joint probability dla selekcji z tej samej rodziny pozostaje dokładne. Joint łączący różne nowe rodziny celowo zwraca brak wsparcia zamiast mnożyć marginały i udawać niezależność.
+
+Dodano support dla:
 
 - `set2_winner`
 - `set2_total`
@@ -74,7 +82,7 @@ Dodano state support dla:
 - `p2_exactly_1_set`, `p2_exactly_2_sets`
 - `p1_wins_a_set`, `p2_wins_a_set`
 
-Stan meczu przechowuje teraz również dokładny wynik każdego rozegranego seta oraz sumę gemów każdego zawodnika, dlatego handicap i player total nie są sztucznym blendem procentów.
+Handicapy, player totals i rynki setowe nie są sztucznym blendem procentów; wynikają z właściwego rozkładu stanów.
 
 ## Celowo nadal bez sztucznego wsparcia
 
@@ -95,4 +103,6 @@ Dopóki rynek nie ma wystarczającej liczby zweryfikowanych etykiet i nie popraw
 - odzyskiwanie `unverifiable` NEURO ze zweryfikowanej historii,
 - pełna masa i przestrzeń wyników BO3/BO5,
 - state support Symfonii dla set2, handicapów, player totals, exact sets, parity i set props,
+- limit wielkości skompresowanego stanu BO5,
+- same-family joint vs świadomie unsupported cross-family joint,
 - jawny guard, że rynek asów pozostaje unsupported bez odpowiedniego stanu.
