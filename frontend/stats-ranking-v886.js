@@ -1,4 +1,4 @@
-/* Tenis AI v8.8.16 — honest model ranking + PLAYABLE stats */
+/* Tenis AI · honest model ranking + PLAYABLE stats */
 (()=>{
 'use strict';
 
@@ -7,38 +7,19 @@ const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 
 function text(node){return String(node?.textContent||'').trim()}
 
-function loadSymphonyStats(){
-  const hasCss=document.querySelector('link[data-symphony-stats-v90d],link[href*="symphony-stats-v90d.css"]');
-  if(!hasCss){
-    const link=document.createElement('link');
-    link.rel='stylesheet';
-    link.href='symphony-stats-v90d.css?v=90d';
-    link.dataset.symphonyStatsV90d='1';
-    document.head.append(link);
-  }
-  const hasScript=document.querySelector('script[data-symphony-stats-v90d],script[src*="symphony-stats-v90d.js"]');
-  if(!hasScript&&!window.TENIS_AI_SYMPHONY_STATS_V90D){
-    const script=document.createElement('script');
-    script.src='symphony-stats-v90d.js?v=90d';
-    script.defer=true;
-    script.dataset.symphonyStatsV90d='1';
-    document.head.append(script);
-  }
-}
-
 function loadSuperbetPlayableStats(){
-  if(!document.querySelector('link[data-superbet-playable-v912]')){
+  if(!document.querySelector('link[data-superbet-playable-stats]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='superbet-playable-v912.css?v=912';
-    link.dataset.superbetPlayableV912='1';
+    link.href='superbet-playable-stats.css';
+    link.dataset.superbetPlayableStats='1';
     document.head.append(link);
   }
-  if(!document.querySelector('script[data-superbet-playable-v912]')&&!window.TENIS_AI_SUPERBET_PLAYABLE_V912){
+  if(!document.querySelector('script[data-superbet-playable-stats]')&&!window.TENIS_AI_SUPERBET_PLAYABLE_V912){
     const script=document.createElement('script');
-    script.src='superbet-playable-v912.js?v=912&audit=919';
+    script.src='superbet-playable-stats.js';
     script.defer=true;
-    script.dataset.superbetPlayableV912='1';
+    script.dataset.superbetPlayableStats='1';
     document.head.append(script);
   }
 }
@@ -134,7 +115,6 @@ function patch(){
 }
 
 function boot(){
-  loadSymphonyStats();
   loadSuperbetPlayableStats();
   patch();
 
@@ -155,7 +135,6 @@ window.TENIS_AI_STATS_RANKING_V886=Object.freeze({
   patch:patchModelRanking,
   promoteTrend:promoteMainTrend,
   patchTrendSampleContext,
-  loadSymphonyStats,
   loadSuperbetPlayableStats
 });
 })();
