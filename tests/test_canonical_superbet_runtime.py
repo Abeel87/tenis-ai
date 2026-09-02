@@ -13,7 +13,6 @@ CANONICAL_ENTRYPOINTS = {
     "superbet_line_coverage.py",
     "superbet_playable.py",
 }
-LEGACY_BOUNDARIES = {"superbet_market_context.py"}
 
 
 def test_canonical_superbet_entrypoints_exist():
@@ -30,14 +29,6 @@ def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
     )
 
 
-def test_remaining_canonical_runtime_declares_compatibility_boundary():
-    for name in LEGACY_BOUNDARIES:
-        text = (BACKEND / name).read_text(encoding="utf-8")
-        assert "CANONICAL_ENTRYPOINT = True" in text
-        assert "LEGACY_IMPLEMENTATION =" in text
-        assert re.search(r'LEGACY_IMPLEMENTATION\s*=\s*"superbet_[A-Za-z0-9_]+_v\d+[A-Za-z0-9_]*"', text), name
-
-
 def test_playable_is_real_canonical_implementation():
     text = (BACKEND / "superbet_playable.py").read_text(encoding="utf-8")
     assert "def inject(" in text
@@ -51,6 +42,14 @@ def test_line_coverage_is_real_canonical_implementation():
     assert "def enrich_match(" in text
     assert "def enrich_results(" in text
     assert "superbet_line_coverage_v924 import" not in text
+    assert "LEGACY_IMPLEMENTATION =" not in text
+
+
+def test_market_context_is_real_canonical_implementation():
+    text = (BACKEND / "superbet_market_context.py").read_text(encoding="utf-8")
+    assert "def prepare(" in text
+    assert "def finalize(" in text
+    assert "superbet_market_context_v924 import" not in text
     assert "LEGACY_IMPLEMENTATION =" not in text
 
 
