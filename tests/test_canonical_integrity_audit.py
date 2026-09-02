@@ -5,7 +5,8 @@ from pathlib import Path
 
 from backend.history_tracker import is_current_match
 from backend.model import _match_distribution_conditional
-from backend.superbet_playable import _filter_shadow_feed, _history_signal
+from backend.superbet_market_context import mapped_sanitize
+from backend.superbet_playable import _filter_shadow_feed, _history_signal, operator_availability
 from backend.symphony2_engine import _is_current_pre_match_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,3 +85,52 @@ def test_current_engine_bo3_bo5_distributions_are_normalized_and_only_terminal_s
         assert abs(sum(total_games.values()) - 1.0) < 1e-9
         assert abs(sum(winner.values()) - 1.0) < 1e-9
         assert abs(sum(total_sets.values()) - 1.0) < 1e-9
+
+
+def test_inactive_superbet_bookmaker_is_fail_closed_at_fixture_context_boundary():
+    meta = {
+        "1229": {
+            "marketName": "Total Games Over Under",
+            "outcomes": {"o": {"outcomeName": "Over"}},
+        }
+    }
+    raw = {
+        "fixtureId": "inactive-1",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-09-02T12:00:00Z",
+        "bookmakerOdds": {
+            "superbet.pl": {
+                "bookmakerIsActive": False,
+                "suspended": False,
+                "markets": {
+                    "1229": {
+                        "marketActive": True,
+                        "outcomes": {
+                            "o": {"players": {"0": {"active": True, "bookmakerOutcomeId": "20.5/over"}}}
+                        },
+                    }
+                },
+            }
+        },
+    }
+    fixture = mapped_sanitize(raw, meta)
+    assert fixture is not None
+    assert fixture["bookmaker_active"] is False
+    assert fixture["suspended"] is True
+
+
+def test_playable_line_market_requires_explicit_operator_line_verification():
+    match = {
+        "superbet_market_v91": {
+            "status": "VERIFIED",
+            "operator_verified": True,
+            "canonical_selections": [
+                {"market": "set1_total", "pick": "over", "line": 9.5, "operator_available": True},
+                {"market": "match_winner", "pick": "Alpha", "operator_available": True},
+            ],
+        }
+    }
+    available = operator_availability(match)
+    assert ("set1_total", "over", 9.5, 0, "") not in available
+    assert any(sig[0] == "match_winner" for sig in available)
