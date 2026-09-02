@@ -12,7 +12,7 @@ import math
 import re
 import unicodedata
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 VERSION = "v9.2.5"
 LAYER = "superbet_candidate_signals_v925"
@@ -22,6 +22,7 @@ PROMOTION_MIN_SETTLED = 40
 PROMOTION_MIN_ACCURACY = 62.0
 PROMOTION_MIN_WILSON = 0.50
 PROMOTION_MAX_BRIER = 0.24
+CAPTURE_CUTOFF_MINUTES = 5
 
 SETTLEMENT_SUPPORTED_MARKETS = {
     "any_set_to_nil",
@@ -65,6 +66,14 @@ def _num(value, default=None):
         return x if math.isfinite(x) else default
     except (TypeError, ValueError):
         return default
+
+
+def _dt(value):
+    try:
+        d = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
 
 
 def _key(value) -> str:
@@ -112,8 +121,8 @@ def _candidate_signal(row: dict, now: datetime, source_model: str) -> dict:
         "result": "pending",
         "source_model": source_model,
         "operator": "superbet.pl",
-        "operator_available": True,
-        "operator_line_verified": True,
+        "operator_available": row.get("operator_available") is not False,
+        "operator_line_verified": row.get("operator_line_verified") is True,
         "operator_playable": False,
         "candidate_for_playable": True,
         "candidate_version": VERSION,
@@ -144,6 +153,10 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
         if entry.get("status") not in ("pending", "upcoming") or entry.get(LAYER):
             out.append(entry)
             continue
+        scheduled = _dt(entry.get("scheduled_time"))
+        if scheduled is None or scheduled <= now + timedelta(minutes=CAPTURE_CUTOFF_MINUTES):
+            out.append(entry)
+            continue
         match = index.get(_match_key(entry))
         ctx = (match or {}).get("superbet_market_v91") or {}
         if not (
@@ -169,6 +182,12 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
                     excluded_pbp += 1
                     continue
                 if market not in SETTLEMENT_SUPPORTED_MARKETS:
+                    continue
+                if signal.get("operator_available") is False:
+                    continue
+                # Any candidate carrying a numeric operator line must preserve
+                # explicit line provenance from the source snapshot.
+                if _num(signal.get("line")) is not None and signal.get("operator_line_verified") is not True:
                     continue
                 if source_model == "superbet_operator_line_model" and market not in ACTIONABLE_EVIDENCE_MARKETS:
                     continue
@@ -295,6 +314,8 @@ def build_candidate_stats(history: list[dict]) -> dict:
         "pbp_only_markets": sorted(PBP_ONLY_MARKETS),
         "contract": {
             "operator_verified_snapshots_only": True,
+            "pre_match_capture_only": True,
+            "verified_numeric_lines_only": True,
             "prices_used": False,
             "playable_accuracy_unchanged": True,
             "production_influence": False,
