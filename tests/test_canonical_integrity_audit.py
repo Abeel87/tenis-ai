@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from backend.history_tracker import is_current_match
 from backend.model import _match_distribution_conditional
+from backend.superbet_candidate_settlement import LAYER as CANDIDATE_LAYER, capture_candidates
 from backend.superbet_market_context import mapped_sanitize
 from backend.superbet_playable import _filter_shadow_feed, _history_signal, operator_availability
 from backend.symphony2_engine import _is_current_pre_match_fixture
@@ -134,3 +135,40 @@ def test_playable_line_market_requires_explicit_operator_line_verification():
     available = operator_availability(match)
     assert ("set1_total", "over", 9.5, 0, "") not in available
     assert any(sig[0] == "match_winner" for sig in available)
+
+
+def test_candidate_evidence_requires_future_snapshot_and_verified_numeric_line():
+    now = datetime(2026, 9, 2, 10, 0, tzinfo=timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_key": "id:501", "match_id": 501, "id": 501,
+        "scheduled_time": future, "status": "pending", "p1": "A", "p2": "B",
+    }]
+    base_ctx = {
+        "status": "VERIFIED", "operator_verified": True,
+        "coverage_shadow_signals": [
+            {"market": "set_handicap", "pick": "A", "line": -1.5, "score": 72,
+             "operator_available": True, "operator_line_verified": False},
+        ],
+        "model_signals": [],
+    }
+    results = [{"id": 501, "scheduled_time": future, "p1": "A", "p2": "B", "superbet_market_v91": base_ctx}]
+    captured, stats = capture_candidates(history, results, now=now)
+    assert stats["captured"] == 0
+    assert CANDIDATE_LAYER not in captured[0]
+
+    verified = dict(base_ctx)
+    verified["coverage_shadow_signals"] = [
+        {"market": "set_handicap", "pick": "A", "line": -1.5, "score": 72,
+         "operator_available": True, "operator_line_verified": True},
+    ]
+    results[0] = {**results[0], "superbet_market_v91": verified}
+    captured, stats = capture_candidates(history, results, now=now)
+    assert stats["captured"] == 1
+    assert captured[0][CANDIDATE_LAYER][0]["operator_line_verified"] is True
+
+    late_history = [{**history[0], "scheduled_time": (now + timedelta(minutes=3)).isoformat()}]
+    late_results = [{**results[0], "scheduled_time": late_history[0]["scheduled_time"]}]
+    captured, stats = capture_candidates(late_history, late_results, now=now)
+    assert stats["captured"] == 0
+    assert CANDIDATE_LAYER not in captured[0]
