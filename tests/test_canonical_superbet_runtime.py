@@ -29,8 +29,9 @@ def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
     )
 
 
-def test_canonical_runtime_policy_is_documented_in_entrypoints():
+def test_canonical_runtime_entrypoints_declare_compatibility_boundary():
     for name in CANONICAL_ENTRYPOINTS:
         text = (BACKEND / name).read_text(encoding="utf-8")
         assert "CANONICAL_ENTRYPOINT = True" in text
-        assert "Do not" in text and "version" in text
+        assert "LEGACY_IMPLEMENTATION =" in text
+        assert re.search(r'LEGACY_IMPLEMENTATION\s*=\s*"superbet_[A-Za-z0-9_]+_v\d+[A-Za-z0-9_]*"', text), name
