@@ -46,7 +46,10 @@ STABLE_FRONTEND_RUNTIME = {
     "data-runtime.js",
     "fixture-history-freshness.js",
     "adaptive-prod-bridge.js",
+    "performance-dashboard.js",
+    "performance-dashboard.css",
     "ui-cleanup.js",
+    "ui-cleanup.css",
     "ui-organizer.js",
     "ui-organizer.css",
     "superbet-playable-stats.js",
@@ -71,7 +74,10 @@ RETIRED_FRONTEND_RUNTIME = {
     "runtime-health-v84e0.js",
     "hotfix-v84e01.js",
     "v88-upgrade.js",
+    "v882-cleanup.js",
+    "v882-cleanup.css",
     "v883-final.js",
+    "v883-final.css",
     "ui-organizer-v853.js",
     "ui-organizer-v853.css",
     "superbet-playable-v912.js",
@@ -144,6 +150,7 @@ def test_index_boots_stable_production_runtime_chain():
         "fixture-history-freshness.js",
         "ui-organizer.js",
         "adaptive-prod-bridge.js",
+        "performance-dashboard.js",
         "ui-cleanup.js",
         "stats-ranking.js",
         "market-quality.js",
@@ -151,7 +158,8 @@ def test_index_boots_stable_production_runtime_chain():
         "match-visibility.js",
     ):
         assert f'src="{name}"' in text
-    assert 'href="ui-organizer.css"' in text
+    for name in ("ui-organizer.css", "performance-dashboard.css", "ui-cleanup.css"):
+        assert f'href="{name}"' in text
     for retired in RETIRED_FRONTEND_RUNTIME:
         assert retired not in text
 
