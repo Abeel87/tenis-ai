@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.runtime_health_v84e0 import audit
+from scripts.runtime_health import audit
 
 
 def test_v84e0_runtime_health_contract():
