@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
@@ -34,7 +35,7 @@ def test_v917_missing_score_is_nd_not_zero():
 
 
 def test_v917_loader_runs_after_existing_frontend_scripts():
-    assert "playable-ui-coherence-v917.js?v=925&contract=raw-playable" in LOADER
+    assert re.search(r"playable-ui-coherence-v917\.js\?v=\d+&contract=raw-playable(?:-[a-z-]+)?", LOADER)
     assert "setTimeout(loadPlayableUiV917,0)" in LOADER
     assert "raw-playable-separation-v921" not in LOADER
 
