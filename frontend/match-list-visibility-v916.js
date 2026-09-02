@@ -89,7 +89,7 @@ function loadPlayableUiV917(){
   const existing=document.querySelector('script[data-playable-ui-v917]');
   if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
   const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=925&contract=raw-playable';
+  script.src='playable-ui-coherence-v917.js?v=948&contract=raw-playable-filter-coherence';
   script.async=false;
   script.dataset.playableUiV917='1';
   script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
