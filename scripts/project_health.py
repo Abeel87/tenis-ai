@@ -18,8 +18,8 @@ def read(path):
 if not frontend.exists():failures.append('Brak katalogu frontend/')
 js_files=list(frontend.glob('*.js')) if frontend.exists() else []
 css_files=list(frontend.glob('*.css')) if frontend.exists() else []
-if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać w v8.x.')
-if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać w v8.x.')
+if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać.')
+if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać.')
 
 def b64url_decode(s):
     s += '=' * (-len(s)%4)
@@ -48,13 +48,13 @@ if frontend.exists():
 
 index=read(frontend/'index.html')
 meta=read(frontend/'app-meta.js')
-ui=read(frontend/'ui-v751.js')
-clean=read(frontend/'clean-core-v80.js')
+ui=read(frontend/'ui-detail.js')
+clean=read(frontend/'clean-core.js')
 sw=read(frontend/'sw.js')
 
 required=[
-    ('clean-core-v80.css?v=801' in index,'Brak Clean Core CSS v8.0.1 w index.html.'),
-    ('clean-core-v80.js?v=801' in index,'Brak Clean Core JS v8.0.1 w index.html.'),
+    ('clean-core.css?v=801' in index,'Brak canonical Clean Core CSS w index.html.'),
+    ('clean-core.js?v=801' in index,'Brak canonical Clean Core JS w index.html.'),
     ("appVersion: 'v8.0.1'" in meta,'app-meta.js nie wskazuje v8.0.1.'),
     ('Post-Match Center' in clean or 'RAPORT PO MECZU' in clean,'Brak Post-Match Center w Clean Core.'),
     ('learning_signals_v79b' in clean,'Clean Core nie pokazuje specialist learning.'),
@@ -68,7 +68,7 @@ if 'history-days-v732.js' in index or 'history-days-v732.css' in index:
 if (frontend/'history-days-v732.js').exists() or (frontend/'history-days-v732.css').exists():
     failures.append('Stare pliki History v7.3.2 nadal istnieją po migracji v8.0.')
 if "Tenis AI v7.8D · Calibration Guard" in ui:
-    failures.append('ui-v751 nadal nadpisuje nagłówek starą wersją v7.8D.')
+    failures.append('ui-detail nadal nadpisuje nagłówek starą wersją v7.8D.')
 if 'readability-v753.js' in index:
     failures.append('Obsolete readability-v753.js nadal jest ładowany.')
 if 'cache.addAll(ASSETS)' in sw:
@@ -91,20 +91,17 @@ for name in ['PREDEPLOY_TESTS.txt','TESTS.txt','TESTS_PREUPDATE.txt','v7.4-admin
 if legacy_root:
     failures.append('Legacy śmieci w root: '+', '.join(sorted(p.name for p in legacy_root)))
 
-analytics=read(frontend/'player-analytics-v76.js')
+analytics=read(frontend/'player-analytics.js')
 adaptive=read(frontend/'adaptive-learning-v79.js')
-clean_core=read(frontend/'clean-core-v80.js')
+clean_core=read(frontend/'clean-core.js')
+restore=read(frontend/'restore-ui.js')
 
-restore=read(frontend/'restore-v762.js')
 if 'setInterval(refresh,1200)' in restore:
     failures.append('Stary polling UI co 1.2 s nadal istnieje.')
-
 if 'setInterval(inject,700)' in analytics:
     failures.append('Player Analytics nadal ma stary polling co 700 ms.')
-
 if re.search(r'observer\.observe\(document\.documentElement', adaptive):
     failures.append('Adaptive nadal obserwuje cały dokument.')
-
 if re.search(r'observer\.observe\(document\.documentElement', clean_core):
     failures.append('Clean Core nadal obserwuje cały dokument.')
 
