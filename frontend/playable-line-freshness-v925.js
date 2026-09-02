@@ -67,4 +67,15 @@
   window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925=Object.freeze({
     version:VERSION,sourceFresh,sourceAgeMs,startAligned,maxOperatorAgeMinutes:MAX_OPERATOR_AGE_MS/60000
   });
+
+  // Match Browser is a stable presentation runtime. Load it only after the
+  // strict PLAYABLE gate has replaced the base API so Top SUPERBET and the
+  // main list evaluate the exact same final predicates.
+  if(typeof document!=='undefined'&&document.body&&!document.getElementById('tenis-ai-match-browser')){
+    const script=document.createElement('script');
+    script.id='tenis-ai-match-browser';
+    script.src='match-browser.js';
+    script.async=false;
+    document.body.appendChild(script);
+  }
 })();

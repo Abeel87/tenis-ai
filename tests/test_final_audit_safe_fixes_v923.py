@@ -1,4 +1,4 @@
-from backend import superbet_playable_v912 as playable
+from backend import superbet_playable as playable
 
 
 def _verified_match(*, model_ready: bool):

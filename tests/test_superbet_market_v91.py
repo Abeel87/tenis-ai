@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 
 from backend import market_lab_v741 as lab
-from backend.superbet_market_context_v91 import (
+from backend.superbet_market_core import (
     _sanitize_fixture,
     canonical_market,
     finalize_results,
@@ -137,7 +137,7 @@ def test_finalize_builds_verified_model_signal_from_real_line():
 
 
 def test_prepare_expiry_metadata_and_future_timestamp_fail_closed(monkeypatch):
-    from backend import superbet_market_context_v91 as market
+    from backend import superbet_market_core as market
     from datetime import timedelta
 
     monkeypatch.setattr(market, 'REFRESH_HOURS', 1)

@@ -7,7 +7,7 @@ BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-import superbet_line_coverage_v924 as cov
+import superbet_line_coverage as cov
 
 
 def _match():
@@ -96,7 +96,7 @@ def test_bo5_guard_keeps_new_full_match_families_uncovered_instead_of_fabricated
 
 
 def test_adapter_source_has_no_network_path():
-    source = (BACKEND / "superbet_line_coverage_v924.py").read_text(encoding="utf-8").lower()
+    source = (BACKEND / "superbet_line_coverage.py").read_text(encoding="utf-8").lower()
     for token in ("urlopen", "requests.get", "urllib.request", "httpx", "aiohttp"):
         assert token not in source
-    assert '"external_requests": 0' in source
+    assert '"external_requests":0' in source.replace(" ", "")

@@ -10,14 +10,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'backend/superbet_fixture_matching_v927.py'
-      - 'backend/superbet_market_context_v913.py'
-      - 'backend/superbet_market_context_v923.py'
-      - 'backend/superbet_market_context_v924.py'
-      - 'backend/superbet_line_coverage_v922.py'
-      - 'backend/superbet_line_coverage_v924.py'
+      - 'backend/superbet_market_context.py'
+      - 'backend/superbet_market_core.py'
+      - 'backend/superbet_market_mapping.py'
+      - 'backend/superbet_market_audit.py'
+      - 'backend/superbet_fixture_matching.py'
+      - 'backend/superbet_line_coverage.py'
+      - 'backend/superbet_playable.py'
       - 'backend/market_lab_v741.py'
-      - 'backend/superbet_playable_v912.py'
       - 'backend/player_intelligence_v85.py'
       - 'backend/player_model_shadow_v89.py'
       - 'backend/ensemble_player_learning_v891.py'
@@ -39,8 +39,12 @@ on:
       - 'frontend/symphony2.css'
       - 'frontend/superbet-model-coverage-v922.js'
       - 'frontend/match-list-visibility-v916.js'
+      - 'frontend/match-browser.js'
+      - 'frontend/playable-ui-coherence-v917.js'
       - 'scripts/compact_frontend_data_v853.py'
       - 'scripts/verify_superbet_market_semantics.py'
+      - 'tests/test_canonical_superbet_runtime.py'
+      - 'tests/test_match_browser_filter_coherence.py'
       - 'tests/test_superbet_fixture_matching_v927.py'
       - 'tests/test_superbet_market_v913.py'
       - 'tests/test_superbet_market_v923.py'
@@ -89,14 +93,14 @@ jobs:
 
       - name: Syntax guard
         run: |
-          python -m py_compile backend/superbet_fixture_matching_v927.py
-          python -m py_compile backend/superbet_market_context_v913.py
-          python -m py_compile backend/superbet_market_context_v923.py
-          python -m py_compile backend/superbet_market_context_v924.py
-          python -m py_compile backend/superbet_line_coverage_v922.py
-          python -m py_compile backend/superbet_line_coverage_v924.py
+          python -m py_compile backend/superbet_market_context.py
+          python -m py_compile backend/superbet_market_core.py
+          python -m py_compile backend/superbet_market_mapping.py
+          python -m py_compile backend/superbet_market_audit.py
+          python -m py_compile backend/superbet_fixture_matching.py
+          python -m py_compile backend/superbet_line_coverage.py
+          python -m py_compile backend/superbet_playable.py
           python -m py_compile backend/market_lab_v741.py
-          python -m py_compile backend/superbet_playable_v912.py
           python -m py_compile backend/player_intelligence_v85.py
           python -m py_compile backend/player_model_shadow_v89.py
           python -m py_compile backend/ensemble_player_learning_v891.py
@@ -117,12 +121,12 @@ jobs:
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
-        run: python -m pytest -q tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
-        run: python backend/superbet_market_context_v924.py prepare
+        run: python backend/superbet_market_context.py prepare
 
       - name: Verify real Superbet market semantics
         run: python scripts/verify_superbet_market_semantics.py
@@ -130,9 +134,9 @@ jobs:
       - name: Re-evaluate current models on real operator lines
         run: |
           python backend/market_lab_v741.py
-          python backend/superbet_market_context_v924.py finalize
-          python backend/superbet_line_coverage_v924.py
-          python backend/superbet_playable_v912.py inject
+          python backend/superbet_market_context.py finalize
+          python backend/superbet_line_coverage.py
+          python backend/superbet_playable.py inject
           python backend/player_intelligence_v85.py post
 
       - name: Refresh current SHADOW scores on playable lines
@@ -143,7 +147,7 @@ jobs:
 
       - name: Build and track Symphony 2 from exact current Superbet offer
         run: |
-          python backend/superbet_playable_v912.py project
+          python backend/superbet_playable.py project
           python backend/symphony2_engine.py
           python backend/symphony2_tracker.py
           python scripts/compact_frontend_data_v853.py

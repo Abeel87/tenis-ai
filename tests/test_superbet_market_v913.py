@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.superbet_market_context_v913 import (
+from backend.superbet_market_mapping import (
     MAX_TOURNAMENT_IDS_PER_REQUEST,
     MONTHLY_REQUEST_CAP,
     REFRESH_HOURS,
@@ -28,7 +28,7 @@ def test_odds_by_tournaments_is_split_into_max_five_ids(monkeypatch):
         ids = str(params.get("tournamentIds") or "").split(",")
         return [{"fixtureId": f"fixture-{x}"} for x in ids if x]
 
-    monkeypatch.setattr("backend.superbet_market_context_v913.time.sleep", lambda _seconds: None)
+    monkeypatch.setattr("backend.superbet_market_mapping.time.sleep", lambda _seconds: None)
     quota = {"requests_used_by_v91": 0, "monthly_cap": MONTHLY_REQUEST_CAP}
     out = batched_request(
         fake_request,

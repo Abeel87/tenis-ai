@@ -8,7 +8,7 @@ from backend.superbet_candidate_settlement_v925 import (
     build_candidate_stats,
     capture_candidates,
 )
-from backend.superbet_playable_v912 import (
+from backend.superbet_playable import (
     inject_match,
     is_operator_playable_signal,
     project_match_for_display,
@@ -97,7 +97,6 @@ def test_inject_adds_real_operator_line_and_marks_raw_line_analysis_only():
     assert raw18["operator_playable"] is False
     assert real20["operator_playable"] is True
     assert is_operator_playable_signal(match, real20) is True
-    # Real set-total selection was absent from AutoLearn raw candidates and is injected.
     assert any(x.get("market") == "set1_total" and x.get("line") == 8.5 for x in signals)
 
 
@@ -158,7 +157,6 @@ def test_v925_candidate_market_families_settle_only_from_valid_final_evidence():
         ({"market": "p1_wins_a_set", "pick": "yes"}, "hit"),
         ({"market": "p2_wins_a_set", "pick": "yes"}, "hit"),
         ({"market": "set_handicap", "pick": "Player A", "line": -0.5}, "hit"),
-        # Final set scores never recreate a checkpoint path.
         ({"market": "set2_game_state", "pick": "2:2", "checkpoint": 4}, "unverifiable"),
     ]
     for signal, expected in cases:

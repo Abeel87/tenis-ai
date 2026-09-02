@@ -11,18 +11,18 @@ const num=x=>x==null||!Number.isFinite(Number(x))?null:Number(x);
 const key=m=>String(m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|'));
 const rowsAll=()=>Array.isArray(window.all)?window.all:(typeof all!=='undefined'&&Array.isArray(all)?all:[]);
 const byKey=k=>rowsAll().find(m=>key(m)===k)||null;
-const modelSignals=m=>{try{return window.TENIS_AI_MODEL_API?.allSignals?.(m)||[]}catch{return []}};
-const strength=m=>{const vals=modelSignals(m).map(x=>num(x?.v)).filter(x=>x!=null&&x>=55);if(vals.length)return Math.max(...vals);return Math.max(0,num(m?.model_confidence)||0)};
+const modelSignals=m=>{try{const api=window.TENIS_AI_MODEL_API;const allRows=api?.allSignals?.(m);if(Array.isArray(allRows)&&allRows.length)return allRows;const rows=api?.signals?.(m,100);return Array.isArray(rows)?rows:[]}catch{return []}};
+const strength=m=>{const vals=modelSignals(m).map(x=>num(x?.v??x?.final_score??x?.score??x?.current)).filter(x=>x!=null&&x>=55);if(vals.length)return Math.max(...vals);return Math.max(0,num(m?.model_confidence)||0)};
 let readyKeys=null;
 function refreshReadyKeys(){try{readyKeys=new Set((window.TENIS_AI_MATCH_VISIBILITY_V916?.analysisReadyMatches?.()||[]).map(key))}catch{readyKeys=new Set()}}
-function hasAnalysis(m){if(!m)return false;if(!readyKeys)refreshReadyKeys();if(readyKeys.has(key(m)))return true;if(modelSignals(m).some(x=>num(x?.v)!=null))return true;return (num(m?.model_confidence)||0)>0}
-const playableSignals=m=>{try{return window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,10)||[]}catch{return []}};
+const playableSignals=m=>{try{return window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,100)||[]}catch{return []}};
+function hasAnalysis(m){if(!m)return false;if(!readyKeys)refreshReadyKeys();if(readyKeys.has(key(m)))return true;if(modelSignals(m).some(x=>num(x?.v??x?.final_score??x?.score??x?.current)!=null))return true;if(playableSignals(m).some(x=>num(x?.v??x?.final_score??x?.score??x?.current)!=null))return true;return (num(m?.model_confidence)||0)>0}
 const isPlayable=m=>playableSignals(m).length>0;
 const pbp=m=>!!m?.early_hold_v7?.ready;
 const timeMs=m=>new Date(m?.scheduled_time||'').getTime();
 const within2h=m=>{const t=timeMs(m),d=t-Date.now();return Number.isFinite(t)&&d>=0&&d<=7200000&&hasAnalysis(m)};
 const surface=m=>String(m?.surface||'').trim()||'—';
-function topSignal(m){const s=modelSignals(m).filter(x=>num(x?.v)!=null).sort((a,b)=>Number(b.v)-Number(a.v))[0];return s?{label:String(s.label||s.key||'Sygnał'),value:Number(s.v)}:null}
+function topSignal(m){const s=modelSignals(m).map(x=>({...x,v:num(x?.v??x?.final_score??x?.score??x?.current)})).filter(x=>x.v!=null).sort((a,b)=>Number(b.v)-Number(a.v))[0];return s?{label:String(s.label||s.key||'Sygnał'),value:Number(s.v)}:null}
 function qualityScore(m){return (isPlayable(m)?1200:0)+(pbp(m)?180:0)+strength(m)}
 function cardMatch(card){let k=card?.dataset?.p751Open||'';try{k=decodeURIComponent(k)}catch{}return byKey(k)}
 function groupKey(group){const m=cardMatch(group.querySelector('.p751-match-card'));return m?`${String(m.tour||'')}|${String(m.tournament||'Turniej')}`:(group.querySelector('summary b')?.textContent||'group')}
@@ -70,6 +70,7 @@ function decorateAndFilter(){
     if(!empty){empty=document.createElement('div');empty.className='p751-empty v945-empty';groupsWrap.appendChild(empty)}
     empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr lub wyłącz „Z danymi”.</span>';
   }else empty?.remove();
+  queueMicrotask(()=>window.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.());
 }
 function enhance(){injectStyle();ensureTools();decorateAndFilter()}
 function captureOpenGroups(){const groups=[...document.querySelectorAll('#app .p751-group')];if(!groups.length)return;state.openGroups=groups.filter(g=>g.open&&!g.hidden).map(groupKey);state.groupStateSaved=true;save()}
@@ -80,5 +81,5 @@ document.addEventListener('change',e=>{if(e.target.matches('[data-v945-surface]'
 document.addEventListener('toggle',e=>{if(e.target.matches?.('#app .p751-group'))captureOpenGroups()},true);
 const oldRender=window.renderMatches;if(typeof oldRender==='function')window.renderMatches=function(){captureOpenGroups();const r=oldRender.apply(this,arguments);setTimeout(enhance,0);return r};
 window.addEventListener('pagehide',()=>{captureOpenGroups();save()});window.addEventListener('pageshow',()=>setTimeout(()=>{enhance();restoreReturnScroll()},0));setTimeout(enhance,0);
-window.TENIS_AI_MATCH_BROWSER_V945=Object.freeze({version:VERSION,hasAnalysis,within2h,qualityScore,enhance});
+window.TENIS_AI_MATCH_BROWSER_V945=Object.freeze({version:VERSION,hasAnalysis,within2h,qualityScore,visibleByState,enhance});
 })();
