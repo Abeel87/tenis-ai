@@ -1,8 +1,8 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-UI = (ROOT / "frontend" / "market-segregation-v93g.js").read_text(encoding="utf-8")
-LOADER = (ROOT / "frontend" / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+UI = (ROOT / "frontend" / "market-segregation.js").read_text(encoding="utf-8")
+LOADER = (ROOT / "frontend" / "match-list-visibility.js").read_text(encoding="utf-8")
 
 
 def test_market_segregation_keeps_readable_filters():
@@ -39,7 +39,7 @@ def test_market_groups_cover_current_large_lists():
 
 
 def test_segregation_is_presentation_only_and_loaded_after_coverage():
-    assert "market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only" in LOADER
+    assert "market-segregation.js?v=933&contract=superbet-coverage-ui-only" in LOADER
     assert "loadMarketSegregationV93G" in LOADER
     assert "script.addEventListener('load',loadMarketSegregationV93G,{once:true})" in LOADER
     assert "loadSuperbetModelCoverageV922" in LOADER
