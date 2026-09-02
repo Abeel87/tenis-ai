@@ -37,11 +37,12 @@ def test_playable_is_real_canonical_implementation():
     assert "LEGACY_IMPLEMENTATION =" not in text
 
 
-def test_line_coverage_is_real_canonical_implementation():
+def test_line_coverage_is_fully_canonical_implementation():
     text = (BACKEND / "superbet_line_coverage.py").read_text(encoding="utf-8")
     assert "def enrich_match(" in text
     assert "def enrich_results(" in text
-    assert "superbet_line_coverage_v924 import" not in text
+    assert "superbet_line_coverage_v924" not in text
+    assert "superbet_line_coverage_v922" not in text
     assert "LEGACY_IMPLEMENTATION =" not in text
 
 
