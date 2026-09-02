@@ -30,3 +30,13 @@ def test_index_boots_canonical_community_runtime_only():
         assert name in text
     for name in RETIRED:
         assert name not in text
+
+
+def test_active_frontend_has_no_retired_community_loader_references():
+    offenders = []
+    for path in FRONTEND.glob("*.js"):
+        text = path.read_text(encoding="utf-8")
+        for retired in RETIRED:
+            if retired in text:
+                offenders.append(f"{path.name}:{retired}")
+    assert not offenders, f"Active frontend still references retired community hotfixes: {offenders}"
