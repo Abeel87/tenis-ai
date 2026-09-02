@@ -3,8 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 def test_performance_center_simple_first():
-    js = (ROOT / "frontend/performance-center-v77.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend/performance-center-v77.css").read_text(encoding="utf-8")
+    js = (ROOT / "frontend/performance-center.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend/performance-center.css").read_text(encoding="utf-8")
 
     assert "Czy modelowi można dziś ufać?" in js
     assert "Najlepiej działające rynki" in js
