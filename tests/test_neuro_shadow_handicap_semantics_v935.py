@@ -2,7 +2,7 @@ import math
 
 from backend.neuro_shadow_market_adapter_v935 import adapt_canonical_selection
 from backend.signal_settlement import settle_signal_live
-from backend.superbet_market_context_v924 import _orient_line
+from backend.superbet_market_context import _orient_line
 
 
 def _match():
@@ -31,7 +31,7 @@ def _selection(pick, line, outcome_id):
     }
 
 
-def test_v924_orients_same_catalogue_handicap_to_selected_side_once():
+def test_market_context_orients_same_catalogue_handicap_to_selected_side_once():
     raw_p1_line = -2.5
     p1 = _orient_line(
         "match_game_handicap", raw_p1_line, "1", "1", "Alpha", "Alpha", "Beta"
