@@ -1,15 +1,16 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ADDON = (ROOT / "frontend" / "superbet-model-coverage-v922.js").read_text(encoding="utf-8")
-LOADER = (ROOT / "frontend" / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+ADDON = (ROOT / "frontend" / "superbet-model-coverage.js").read_text(encoding="utf-8")
+LOADER = (ROOT / "frontend" / "match-visibility.js").read_text(encoding="utf-8")
 
 
 def test_coverage_bridge_loads_after_playable_without_legacy_raw_panel():
-    assert "function loadSuperbetModelCoverageV922()" in LOADER
-    assert "superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage" in LOADER
-    assert "script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true})" in LOADER
-    assert "script.addEventListener('load',loadMarketSegregationV93G,{once:true})" in LOADER
+    assert "function loadSuperbetModelCoverage()" in LOADER
+    assert "script.src='superbet-model-coverage.js'" in LOADER
+    assert "script.addEventListener('load',loadMarketSegregation,{once:true})" in LOADER
+    assert "setTimeout(loadSuperbetModelCoverage,0)" in LOADER
+    assert "superbet-model-coverage-v922.js" not in LOADER
     assert "raw-playable-separation-v921" not in LOADER
 
 

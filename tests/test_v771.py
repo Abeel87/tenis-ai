@@ -2,7 +2,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 
 def test_frontend_scope_and_paths():
-    s=(ROOT/"frontend/early-hold-paths-v771.js").read_text(encoding="utf-8")
+    s=(ROOT/"frontend/early-hold-paths.js").read_text(encoding="utf-8")
     for x in [
         "DANE ZAWODNIKA",
         "PORÓWNANIE MECZU",

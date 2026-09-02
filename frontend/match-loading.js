@@ -1,4 +1,4 @@
-/* Tenis AI v8.8.9 — Match Loading Race Guard
+/* Tenis AI · Match Loading Race Guard
    Prevents a false "no matches" state while results.json is still loading.
    It primes match data independently from the much heavier history/statistics load.
 */
@@ -31,7 +31,6 @@
 
   async function primeMatches(){
     try {
-      // Shared runtime already owns freshness/deduplication for data JSON.
       const r = await fetch('data/results.json', {cache:'no-store'});
       if (!r.ok) throw new Error(`results ${r.status}`);
       const rows = await r.json();
@@ -65,9 +64,7 @@
   });
 })();
 
-/* v8.9.4 — lightweight feature bootstrap.
-   Kept outside the protected index/runtime contract: it only loads the read-only
-   SHADOW Signal Center assets and has no access to PROD scoring paths. */
+/* Read-only SHADOW Signal Center bootstrap. */
 (() => {
   if (document.querySelector('script[data-shadow-signals-v894]')) return;
   const css = document.createElement('link');
@@ -83,7 +80,7 @@
   document.head.appendChild(js);
 })();
 
-/* v8.9.5 — read-only charts for Player + Surface Elo SHADOW cards. */
+/* Read-only charts for Player + Surface Elo SHADOW cards. */
 (() => {
   if (document.querySelector('script[data-shadow-charts-v895]')) return;
   const js = document.createElement('script');

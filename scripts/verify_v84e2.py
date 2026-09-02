@@ -9,7 +9,7 @@ def read(rel):
 def req(text,needle,msg):
     if needle not in text: ERR.append(msg)
 def main():
-    back=read("backend/model_telemetry_v84c.py"); js=read("frontend/model-trends-v84e2.js"); css=read("frontend/model-trends-v84e2.css"); idx=read("frontend/index.html"); ui=read(".github/workflows/ui-smoke.yml"); pages=read(".github/workflows/update-and-pages.yml")
+    back=read("backend/model_telemetry_v84c.py"); js=read("frontend/model-trends.js"); css=read("frontend/model-trends.css"); idx=read("frontend/index.html"); ui=read(".github/workflows/ui-smoke.yml"); pages=read(".github/workflows/update-and-pages.yml")
     req(back,'TREND_VERSION = "v8.4E2"','backend nie ma wersji trendu E2')
     req(back,'"trends_v84e2": trends','raport nie eksportuje trendów')
     req(back,'"game_state_progress_v84e2": game_state','raport nie eksportuje Po2/4/6')
@@ -20,7 +20,7 @@ def main():
     if 'fetch(' in js or 'XMLHttpRequest' in js: ERR.append('Trend Monitor nie może wykonywać własnych requestów')
     if 'new MutationObserver(' in js: ERR.append('Trend Monitor nie może dodawać MutationObservera')
     if 'setInterval(' in js: ERR.append('Trend Monitor nie może dodawać interwału')
-    req(css,'.mt84e2','brak CSS E2'); req(idx,'model-trends-v84e2.css?v=84e2','index nie ładuje CSS E2'); req(idx,'model-trends-v84e2.js?v=84e2','index nie ładuje JS E2')
+    req(css,'.mt84e2','brak CSS E2'); req(idx,'model-trends.css','index nie ładuje kanonicznego CSS Trend Monitor'); req(idx,'model-trends.js','index nie ładuje kanonicznego JS Trend Monitor')
     req(idx,'autolearn-v84.css?v=84a1&hf=84a3','naruszono chroniony AutoLearn CSS pin'); req(idx,'autolearn-v84.js?v=84a1&hf=84b1','naruszono chroniony AutoLearn JS pin')
     if 'scenario-studio-v82a.js' in idx:
         ERR.append('legacy Scenario Studio nie może wrócić do aktywnego indexu')

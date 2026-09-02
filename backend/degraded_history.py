@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from history_tracker import archive_predictions, history_stats, load_history, save_history
-from superbet_candidate_settlement_v925 import build_candidate_stats, capture_candidates
+from superbet_candidate_settlement import build_candidate_stats, capture_candidates
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"

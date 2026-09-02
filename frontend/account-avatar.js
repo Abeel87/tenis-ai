@@ -1,6 +1,4 @@
-/* Tenis AI v6.5.3 — persistent avatar without profile freeze
-   v8.8.23 runtime cleanup: account/auth events replace body observer and retries.
-*/
+/* Tenis AI v6.5.3 — persistent account avatar */
 (() => {
   const RUNTIME_FIX='v8.8.23';
   const $ = s => document.querySelector(s);

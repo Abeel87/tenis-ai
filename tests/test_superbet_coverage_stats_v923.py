@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_superbet_stats_show_real_line_coverage_without_mixing_shadow_accuracy():
-    js = (ROOT / "frontend/superbet-playable-v912.js").read_text(encoding="utf-8")
+    js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
 
     assert "superbet_line_coverage_v922" in js
     assert "Pokrycie realnych linii Superbet" in js
@@ -21,7 +21,7 @@ def test_superbet_stats_show_real_line_coverage_without_mixing_shadow_accuracy()
 
 
 def test_superbet_stats_keep_existing_playable_accuracy_panel_separate():
-    js = (ROOT / "frontend/superbet-playable-v912.js").read_text(encoding="utf-8")
+    js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
 
     assert "Skuteczność modeli PLAYABLE" in js
     assert "To jest statystyka pokrycia realnej oferty, nie skuteczność typów" in js

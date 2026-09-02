@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "frontend" / "data" / "shadow_experiment_trends_v895.json"
 BACKEND = ROOT / "backend" / "shadow_experiment_trends_v895.py"
 UI = ROOT / "frontend" / "shadow-experiment-charts-v895.js"
-BOOT = ROOT / "frontend" / "loading-fix-v889.js"
+BOOT = ROOT / "frontend" / "match-loading.js"
 
 EXPECTED = {
     "catboost_player",

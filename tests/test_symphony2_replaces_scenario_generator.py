@@ -41,7 +41,7 @@ def test_index_loads_only_symphony2_composer_assets():
 
 
 def test_project_ui_owns_symphony2_slot_without_legacy_scenario_bridge():
-    ui = text("frontend/ui-v751.js")
+    ui = text("frontend/project-ui.js")
     assert 'data-p751-nav="symphony2"' in ui
     assert "<span>🎼</span><b>Symfonia 2.0</b>" in ui
     assert "TENIS_AI_SYMPHONY2" in ui

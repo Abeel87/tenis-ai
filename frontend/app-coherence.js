@@ -111,7 +111,6 @@
     const host=document.querySelector('#pc77');
     if(!host)return false;
     const telemetry=await loadTelemetry();
-    // Navigation may replace #pc77 while telemetry is loading.
     if(document.querySelector('#pc77')!==host)return false;
     const player=telemetry?.player_model_shadow_v89||null;
     const learning=telemetry?.ensemble_player_learning_v891||null;
@@ -124,12 +123,10 @@
     section.className='coh892-shadow';
     const eloCards=elo?`${eloCard('catboost',elo)}${eloCard('ensemble',elo)}${eloCard('tabpfn',elo)}`:'';
     const html=`<div class="coh892-head"><div><b>🧪 EKSPERYMENTY PLAYER + SURFACE ELO · SHADOW</b><small>Nowe warstwy uczące są porównywane na holdoucie. Nie mieszamy ich z rankingiem modeli produkcyjnych.</small></div><span>0% wpływu na PROD</span></div><div class="coh892-grid">${experimentCard('player',player)}${experimentCard('learning',learning)}${eloCards}</div>`;
-    // Preserve chart DOM and avoid layout jumps on unchanged telemetry.
     if(section.__coherenceHtml!==html){
       section.innerHTML=html;
       section.__coherenceHtml=html;
     }
-    // Production summary comes first; experiments remain directly accessible below.
     const anchor=host.querySelector('#pc882-dashboard');
     if(anchor?.parentNode===host){
       if(anchor.nextElementSibling!==section)anchor.insertAdjacentElement('afterend',section);

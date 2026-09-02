@@ -16,8 +16,8 @@ def req(text,needle,msg):
         ERR.append(msg)
 
 def main():
-    js=read("frontend/match-time-v84e11.js")
-    css=read("frontend/match-time-v84e11.css")
+    js=read("frontend/match-time.js")
+    css=read("frontend/match-time.css")
     idx=read("frontend/index.html")
     ui=read(".github/workflows/ui-smoke.yml")
     pages=read(".github/workflows/update-and-pages.yml")
@@ -39,8 +39,8 @@ def main():
         ERR.append("Global Match Time ma mieć dokładnie jeden setInterval")
 
     req(css,".tai-match-time","brak stylu czasu")
-    req(idx,'match-time-v84e11.css?v=84e11',"index nie ładuje CSS E1.1")
-    req(idx,'match-time-v84e11.js?v=84e11',"index nie ładuje JS E1.1")
+    req(idx,'match-time.css',"index nie ładuje kanonicznego CSS Match Time")
+    req(idx,'match-time.js',"index nie ładuje kanonicznego JS Match Time")
     req(idx,'app.js?v=84b1',"naruszono chroniony app.js pin")
     if 'scenario-studio-v82a.js' in idx:
         ERR.append("wycofany Scenario Studio nadal jest ładowany w index.html")

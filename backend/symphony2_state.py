@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """Symfonia 2.0 state facade with bounded exact market-family distributions.
 
-The proven v9.4.5 engine remains verbatim in ``symphony2_state_core_v945``.
+The proven state engine lives in ``symphony2_state_core``.
 New coverage is derived from exact bounded sufficient statistics instead of one
 huge universal cross-product. Existing/base markets keep the original shared
 state. New same-family joints stay exact; cross-family joints are deliberately
@@ -12,9 +12,9 @@ unsupported rather than approximated as independent.
 from collections import defaultdict
 
 try:
-    from . import symphony2_state_core_v945 as _core
+    from . import symphony2_state_core as _core
 except ImportError:
-    import symphony2_state_core_v945 as _core
+    import symphony2_state_core as _core
 
 for _name in dir(_core):
     if not _name.startswith("__"):

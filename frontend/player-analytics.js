@@ -199,7 +199,6 @@
     return `<div class="pa801-source-list">${take.map(one).join('')}</div><p class="pa801-source-note">To są mecze źródłowe użyte do statystyk 5/10/20. Nie oznaczają, że Tenis AI wystawił wtedy typ.</p>`;
   }
 
-
   function surfaceBlock(d,ix,ui){
     const s=ix.surf||{};
     const n=Number(s?.sample_matches||0);

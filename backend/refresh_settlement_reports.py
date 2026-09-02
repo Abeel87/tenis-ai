@@ -16,7 +16,7 @@ from model_telemetry_v84c import build_report
 from player_intelligence_v85 import _telemetry as build_player_intelligence_telemetry
 from shadow_lab_v78e6 import build_shadow_stats
 from signal_settlement import reconcile_settled, SIGNAL_LAYERS
-from superbet_candidate_settlement_v925 import build_candidate_stats
+from superbet_candidate_settlement import build_candidate_stats
 
 
 def refresh(directory):

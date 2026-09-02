@@ -18,8 +18,8 @@ def read(path):
 if not frontend.exists():failures.append('Brak katalogu frontend/')
 js_files=list(frontend.glob('*.js')) if frontend.exists() else []
 css_files=list(frontend.glob('*.css')) if frontend.exists() else []
-if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać w v8.x.')
-if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać w v8.x.')
+if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać.')
+if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać.')
 
 def b64url_decode(s):
     s += '=' * (-len(s)%4)
@@ -48,7 +48,7 @@ if frontend.exists():
 
 index=read(frontend/'index.html')
 meta=read(frontend/'app-meta.js')
-ui=read(frontend/'ui-v751.js')
+ui=read(frontend/'project-ui.js')
 clean=read(frontend/'clean-core-v80.js')
 sw=read(frontend/'sw.js')
 
@@ -68,7 +68,7 @@ if 'history-days-v732.js' in index or 'history-days-v732.css' in index:
 if (frontend/'history-days-v732.js').exists() or (frontend/'history-days-v732.css').exists():
     failures.append('Stare pliki History v7.3.2 nadal istnieją po migracji v8.0.')
 if "Tenis AI v7.8D · Calibration Guard" in ui:
-    failures.append('ui-v751 nadal nadpisuje nagłówek starą wersją v7.8D.')
+    failures.append('project-ui nadal nadpisuje nagłówek starą wersją v7.8D.')
 if 'readability-v753.js' in index:
     failures.append('Obsolete readability-v753.js nadal jest ładowany.')
 if 'cache.addAll(ASSETS)' in sw:
@@ -91,11 +91,11 @@ for name in ['PREDEPLOY_TESTS.txt','TESTS.txt','TESTS_PREUPDATE.txt','v7.4-admin
 if legacy_root:
     failures.append('Legacy śmieci w root: '+', '.join(sorted(p.name for p in legacy_root)))
 
-analytics=read(frontend/'player-analytics-v76.js')
+analytics=read(frontend/'player-analytics.js')
 adaptive=read(frontend/'adaptive-learning-v79.js')
 clean_core=read(frontend/'clean-core-v80.js')
 
-restore=read(frontend/'restore-v762.js')
+restore=read(frontend/'navigation-tools.js')
 if 'setInterval(refresh,1200)' in restore:
     failures.append('Stary polling UI co 1.2 s nadal istnieje.')
 
