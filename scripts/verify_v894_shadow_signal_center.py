@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 BACKEND = ROOT / "backend" / "shadow_signal_center_v894.py"
 UI = ROOT / "frontend" / "shadow-signals-v894.js"
 CSS = ROOT / "frontend" / "shadow-signals-v894.css"
-BOOT = ROOT / "frontend" / "loading-fix-v889.js"
+BOOT = ROOT / "frontend" / "match-loading.js"
 REPORT = ROOT / "frontend" / "data" / "shadow_signals_v894.json"
 TREND_UI = ROOT / "frontend" / "shadow-experiment-charts-v895.js"
 TREND_REPORT = ROOT / "frontend" / "data" / "shadow_experiment_trends_v895.json"
