@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 
 from backend.signal_settlement import SIGNAL_LAYERS, settle_signal
@@ -88,36 +89,54 @@ def test_signature_ignores_irrelevant_line_for_game_state():
     assert signal_signature(a) == signal_signature(b)
 
 
-def test_inject_adds_real_operator_line_and_marks_raw_line_analysis_only():
-    match, info = inject_match(_match())
+def test_inject_builds_separate_operator_projection_without_mutating_raw_autolearn():
+    original = _match()
+    raw_auto = deepcopy(original["autolearn_v84"])
+    match, info = inject_match(original)
     assert info["active"] is True
-    signals = match["autolearn_v84"]["signals"]
-    raw18 = next(x for x in signals if x.get("line") == 18.5)
-    real20 = next(x for x in signals if x.get("line") == 20.5 and x.get("market") == "match_total")
-    assert raw18["operator_playable"] is False
-    assert real20["operator_playable"] is True
-    assert is_operator_playable_signal(match, real20) is True
-    assert any(x.get("market") == "set1_total" and x.get("line") == 8.5 for x in signals)
+    assert match["autolearn_v84"] == raw_auto
+    projection = match["superbet_playable_v912"]
+    assert projection["raw_model_fields_preserved"] is True
+    assert projection["playable"] is True
+    assert any(x.get("market") == "set1_total" and x.get("line") == 8.5 for x in projection["signals"])
+    raw18 = next(x for x in match["autolearn_v84"]["signals"] if x.get("line") == 18.5)
+    assert "operator_playable" not in raw18
 
 
-def test_normal_match_view_uses_only_real_superbet_lines():
-    injected, _ = inject_match(_match())
-    view, info = project_match_for_display(injected)
+def test_normal_match_view_preserves_raw_ladders_and_exposes_playable_separately():
+    original = _match()
+    raw_ou = deepcopy(original["match_over_under"])
+    raw_set1_ou = deepcopy(original["over_under"])
+    raw_auto = deepcopy(original["autolearn_v84"])
+    view, info = project_match_for_display(original)
     assert info["active"] is True
-    assert set(view["match_over_under"]) == {"20.5"}
-    assert "18.5" not in view["match_over_under"]
-    assert set(view["over_under"]) == {"8.5"}
-    assert "7.5" not in view["over_under"]
-    assert {x.get("line") for x in view["autolearn_v84"]["signals"] if x.get("market") == "match_total"} == {20.5}
+    assert view["match_over_under"] == raw_ou
+    assert view["over_under"] == raw_set1_ou
+    assert view["autolearn_v84"] == raw_auto
+    lines = {x.get("line") for x in view["superbet_playable_v912"]["signals"] if x.get("market") == "match_total"}
+    assert 20.5 in lines
+    assert 18.5 not in lines
 
 
-def test_model_generated_individual_aces_and_df_are_hidden_from_playable_view():
-    injected, _ = inject_match(_match())
-    view, _ = project_match_for_display(injected)
-    p1 = view["serve_props_v72"]["p1"]
-    assert p1["aces"]["lines"] == {}
-    assert "1.5" in p1["aces"]["analysis_lines"]
-    assert p1["double_faults"]["lines"] == {}
+def test_model_generated_individual_aces_and_df_remain_raw_analysis_only():
+    original = _match()
+    raw_props = deepcopy(original["serve_props_v72"])
+    view, _ = project_match_for_display(original)
+    assert view["serve_props_v72"] == raw_props
+    assert "1.5" in view["serve_props_v72"]["p1"]["aces"]["lines"]
+    assert not any(x.get("market") in {"player_aces", "player_double_faults"} for x in view["superbet_playable_v912"]["signals"])
+
+
+def test_unverified_operator_context_is_fail_closed_but_raw_stays_available():
+    original = _match()
+    original["superbet_market_v91"]["operator_verified"] = False
+    raw = deepcopy(original["autolearn_v84"])
+    view, info = project_match_for_display(original)
+    assert info["active"] is False
+    assert view["autolearn_v84"] == raw
+    assert view["superbet_playable_v912"]["playable"] is False
+    assert view["superbet_playable_v912"]["signals"] == []
+    assert is_operator_playable_signal(view, raw["signals"][1]) is False
 
 
 def test_playable_history_layers_are_settled_and_total_sets_ou_is_supported():
