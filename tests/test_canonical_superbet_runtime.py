@@ -13,10 +13,7 @@ CANONICAL_ENTRYPOINTS = {
     "superbet_line_coverage.py",
     "superbet_playable.py",
 }
-LEGACY_BOUNDARIES = {
-    "superbet_market_context.py",
-    "superbet_line_coverage.py",
-}
+LEGACY_BOUNDARIES = {"superbet_market_context.py"}
 
 
 def test_canonical_superbet_entrypoints_exist():
@@ -46,6 +43,14 @@ def test_playable_is_real_canonical_implementation():
     assert "def inject(" in text
     assert "def project(" in text
     assert "superbet_playable_v912 import" not in text
+    assert "LEGACY_IMPLEMENTATION =" not in text
+
+
+def test_line_coverage_is_real_canonical_implementation():
+    text = (BACKEND / "superbet_line_coverage.py").read_text(encoding="utf-8")
+    assert "def enrich_match(" in text
+    assert "def enrich_results(" in text
+    assert "superbet_line_coverage_v924 import" not in text
     assert "LEGACY_IMPLEMENTATION =" not in text
 
 
