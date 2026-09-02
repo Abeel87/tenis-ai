@@ -114,8 +114,8 @@ def test_current_symphony_time_filter_does_not_mutate_model_raw_payload():
 def test_current_symphony_time_parser_handles_naive_utc_and_unknown_time_conservatively():
     now = datetime(2026, 8, 31, 18, 30, tzinfo=timezone.utc)
     assert engine._is_current_pre_match_fixture({"scheduled_time": "2026-08-31T19:00:00"}, now) is True
-    assert engine._is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is True
-    assert engine._is_current_pre_match_fixture({}, now) is True
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is False
+    assert engine._is_current_pre_match_fixture({}, now) is False
 
 
 def test_supported_market_scores_verified_current_line_even_if_exact_number_was_not_repeated_in_history():
