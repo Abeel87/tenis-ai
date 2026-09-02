@@ -18,6 +18,14 @@ def test_results_publication_pruner_has_one_canonical_runtime_path():
     assert "prune_results_payload_v854" not in compactor
 
 
+def test_runtime_health_has_one_canonical_utility_path():
+    assert (SCRIPTS / "runtime_health.py").is_file()
+    assert not (SCRIPTS / "runtime_health_v84e0.py").exists()
+    health_test = (ROOT / "tests" / "test_v84e0_runtime_health.py").read_text(encoding="utf-8")
+    assert "from scripts.runtime_health import audit" in health_test
+    assert "runtime_health_v84e0" not in health_test
+
+
 def test_active_workflows_use_canonical_publication_build_utilities():
     update = (WORKFLOWS / "update-and-pages.yml").read_text(encoding="utf-8")
     refresh = (WORKFLOWS / "superbet-market-refresh.yml").read_text(encoding="utf-8")
