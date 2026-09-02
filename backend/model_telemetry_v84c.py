@@ -30,7 +30,6 @@ TREND_COMPARE_MAX = 20
 TREND_SERIES_WINDOW = 8
 TREND_SERIES_POINTS = 24
 
-
 MODEL_LABELS = {
     "adaptive": "Adaptive",
     "early": "Early Hold",
@@ -47,6 +46,7 @@ MODEL_LABELS = {
     "generator": "Ensemble selector proxy",
 }
 MODEL_ORDER = list(MODEL_LABELS)
+PROD_DYNAMIC_MODELS = {"current", "catboost", "tabpfn"}
 
 
 def _read(path: Path, fallback):
@@ -358,9 +358,7 @@ def build_quality_lock_v852(rows: list[dict]) -> dict:
     for r in rows or []:
         grouped[str(r.get("model") or "")].append(r)
 
-    out = {
-        "cutover": "2026-08-25T09:55:27Z",
-    }
+    out = {"cutover": "2026-08-25T09:55:27Z"}
     for model in QUALITY_LOCK_MODELS:
         m_rows = grouped.get(model, [])
         if model == "generator":
@@ -371,7 +369,6 @@ def build_quality_lock_v852(rows: list[dict]) -> dict:
         before = []
         since = []
         unknown_n = 0
-
         for r in sel_rows:
             cap = r.get("autolearn_captured_at")
             d = _dt(cap) if cap else None
@@ -498,6 +495,20 @@ def _scope_rows(rows: list[dict], now: datetime, days=None):
         d = _dt(r.get("scheduled_time"))
         if d is not None and cutoff <= d <= now + timedelta(days=1):
             out.append(r)
+    return out
+
+
+def _prod_safe_dynamic_rows(rows: list[dict]) -> list[dict]:
+    """Only prediction-time-verifiable ML rows may influence PROD dynamic weights."""
+    out = []
+    for row in rows or []:
+        if str(row.get("model") or "") not in PROD_DYNAMIC_MODELS:
+            continue
+        scheduled = _dt(row.get("scheduled_time"))
+        captured = _dt(row.get("autolearn_captured_at"))
+        if scheduled is None or captured is None or captured >= scheduled:
+            continue
+        out.append(row)
     return out
 
 
@@ -628,6 +639,8 @@ def build_report(history: list[dict], now=None) -> dict:
     rows30 = _scope_rows(rows, now, 30)
     rows7 = _scope_rows(rows, now, 7)
     segments30 = segment_metrics(rows30)
+    prod_safe_rows30 = _prod_safe_dynamic_rows(rows30)
+    prod_safe_segments30 = segment_metrics(prod_safe_rows30)
     trends = model_trends(all_rows)
     game_state = game_state_progress(history)
     return {
@@ -642,6 +655,9 @@ def build_report(history: list[dict], now=None) -> dict:
             "all": {"rows": len(all_rows), "by_model": model_metrics(all_rows)},
         },
         "segments_30d": segments30,
+        "prod_safe_rows_30d": len(prod_safe_rows30),
+        "prod_safe_segments_30d": prod_safe_segments30,
+        "prod_safe_policy": "current_catboost_tabpfn_only_with_capture_before_scheduled_time",
         "top_segments_30d": top_segments(segments30),
         "agreement": agreement_stats(history),
         "trends_v84e2": trends,
@@ -651,7 +667,7 @@ def build_report(history: list[dict], now=None) -> dict:
             "Brier/log-loss używa score/100 jako proxy confidence. FINAL to ocena kandydata, nie znormalizowany rozkład przeciwstawnych zdarzeń.",
             "Generator to proxy selektora dla generator_selected, nie trafność zapisanych par. Rzeczywiste pary są liczone w Moje scenariusze.",
             "ROI jest liczone wyłącznie tam, gdzie historia zawiera rzeczywisty kurs dziesiętny; brak kursu pozostaje N/D.",
-            "Segmenty ATP/WTA/CH/ITF, nawierzchnia i rynek są raportowane osobno i nie zmieniają jeszcze wag produkcyjnych.",
+            "Pełne segmenty 30d pozostają diagnostyczne; PROD Dynamic Weights używa wyłącznie prod_safe_segments_30d z potwierdzonym capture przed startem meczu.",
         ],
     }
 
@@ -670,6 +686,7 @@ def run(now=None):
         "model_telemetry_status": report["status"],
         "model_telemetry_updated_at": report["generated_at"],
         "model_telemetry_rows_30d": report["scopes"]["30d"]["rows"],
+        "model_telemetry_prod_safe_rows_30d": report["prod_safe_rows_30d"],
         "model_trend_version": TREND_VERSION,
         "model_trend_status": "ACTIVE",
         "model_trend_game_state_settled": report["game_state_progress_v84e2"]["total_settled"],
@@ -682,6 +699,7 @@ def self_check():
     now = datetime(2026, 8, 24, 8, 0, tzinfo=timezone.utc)
     history = [{
         "match_key": "id:1", "status": "settled", "scheduled_time": "2026-08-23T10:00:00+00:00",
+        "autolearn_captured_at": "2026-08-23T08:00:00+00:00",
         "tour": "ATP", "surface": "HARD",
         "signals": [{"key": "set1_total|8.5|over", "market": "set1_total", "pick": "over", "score": 72, "result": "hit", "source_model": "adaptive"}],
         "learning_signals_v79b": [
@@ -699,6 +717,7 @@ def self_check():
     assert report["scopes"]["30d"]["by_model"]["adaptive"]["accuracy"] == 100.0
     assert report["scopes"]["30d"]["by_model"]["generator"]["selected_n"] == 1
     assert report["segments_30d"]["tour"]["ATP"]["early"]["selected_n"] == 1
+    assert report["prod_safe_segments_30d"]["tour"]["ATP"]["current"]["selected_n"] == 1
     assert report["agreement"]["specialists"]["strong_consensus"]["n"] == 1
     assert report["agreement"]["ml"]["strong_consensus"]["n"] == 1
     print(json.dumps({"version": VERSION, "self_check": "PASS"}, indent=2))
