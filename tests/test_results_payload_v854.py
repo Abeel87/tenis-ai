@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.prune_results_payload_v854 import prune_results, prune_rows
+from scripts.prune_results_payload import prune_results, prune_rows
 
 
 def _profile(name: str):
