@@ -13,9 +13,6 @@ try:  # package import in tests
 except ImportError:  # top-level import used by backend/update.py
     import model_core as _core
 
-# Preserve the complete existing module API, including private helpers used by
-# tests and specialist code. The overrides below intentionally replace only the
-# full-match distribution and analyse_match.
 for _name in dir(_core):
     if not _name.startswith("__"):
         globals()[_name] = getattr(_core, _name)
@@ -44,19 +41,18 @@ def _dated_history(long_df):
 def _naive_cutoff(as_of):
     """Normalize fixture timestamps to the tz-naive date domain used by normalized history."""
     if as_of is None or as_of == "":
-        return as_of
+        return _core._fixture_date(as_of)
     cut = _core.pd.to_datetime(as_of, errors="coerce", utc=True)
     if _core.pd.isna(cut):
-        return as_of
+        return _core._fixture_date(as_of)
     return _core.pd.Timestamp(cut.date())
 
 
 def player_profile(long_df, player: str, surface: str = '', as_of=None, priors=None):
-    """Public Current Engine profile with the same fail-closed temporal guard as analyse_match."""
     history_df = _dated_history(long_df)
-    cutoff = _naive_cutoff(as_of)
-    safe_priors = priors if priors is not None else _core._surface_priors(history_df, surface, cutoff)
-    return _core.player_profile(history_df, player, surface, cutoff, safe_priors)
+    cut = _naive_cutoff(as_of)
+    safe_priors = priors if priors is not None else _core._surface_priors(history_df, surface, cut)
+    return _core.player_profile(history_df, player, surface, cut, safe_priors)
 
 
 def _match_distribution_conditional(
@@ -68,14 +64,6 @@ def _match_distribution_conditional(
     *,
     best_of: int = 3,
 ):
-    """Aggregate set-score distributions for BO3 or BO5 without truncation.
-
-    Set 1 keeps the calibrated first-set target. Set 2 keeps the existing
-    conditional response to the first-set result. Set 3+ use the existing
-    deciding/later-set target; we do not invent unsupported fourth/fifth-set
-    features. The match stops immediately when either player reaches the
-    required number of sets.
-    """
     best_of = best_of if best_of in {3, 5} else 3
     required = best_of // 2 + 1
 
@@ -86,8 +74,6 @@ def _match_distribution_conditional(
 
     total_games: dict[int, float] = {}
     exact: dict[str, float] = {}
-
-    # state = (sets_played, p1_sets, p2_sets, games_so_far, p1_won_first)
     live = [(0, 0, 0, 0, None, 1.0)]
     while live:
         set_no, w1, w2, games, p1_won_first, path_prob = live.pop()
@@ -111,85 +97,150 @@ def _match_distribution_conditional(
             next_first = p1_won if set_no == 0 else p1_won_first
             live.append((
                 set_no + 1,
-                w1 + int(p1_won),
-                w2 + int(not p1_won),
+                w1 + (1 if p1_won else 0),
+                w2 + (0 if p1_won else 1),
                 games + int(a) + int(b),
                 next_first,
-                path_prob * float(set_prob),
+                path_prob * set_prob,
             ))
 
-    mass = sum(exact.values())
-    if mass > 0:
-        exact = {k: v / mass for k, v in exact.items()}
-        total_games = {k: v / mass for k, v in total_games.items()}
+    z = sum(exact.values()) or 1.0
+    exact = {k: v / z for k, v in exact.items()}
+    games_z = sum(total_games.values()) or 1.0
+    total_games = {k: v / games_z for k, v in total_games.items()}
 
-    winner = {"p1": 0.0, "p2": 0.0}
-    total_sets: dict[int, float] = {}
+    p1_win = sum(v for k, v in exact.items() if int(k.split(":")[0]) == required)
+    p2_win = sum(v for k, v in exact.items() if int(k.split(":")[1]) == required)
+    winner = {1: p1_win, 2: p2_win}
+
+    total_sets: dict[str, float] = {}
     for score, prob in exact.items():
         a, b = (int(x) for x in score.split(":"))
-        winner["p1" if a > b else "p2"] += prob
-        total_sets[a + b] = total_sets.get(a + b, 0.0) + prob
+        n = a + b
+        total_sets[f"{n} sety"] = total_sets.get(f"{n} sety", 0.0) + prob
     return total_games, winner, total_sets, exact
+
+
+def _match_distribution_bo3_conditional(
+    base_dist: dict,
+    first_target: float,
+    second_if_win: float,
+    second_if_loss: float,
+    third_target: float,
+):
+    return _match_distribution_conditional(
+        base_dist,
+        first_target,
+        second_if_win,
+        second_if_loss,
+        third_target,
+        best_of=3,
+    )
 
 
 def analyse_match(long_df, match: dict) -> dict:
     history_df = _dated_history(long_df)
-    p1, p2 = match['p1'], match['p2']
-    surface = str(match.get('surface') or '').lower()
-    as_of = match.get('scheduled_time') or match.get('date')
-    priors = _core._surface_priors(history_df, surface, as_of)
-    s1 = _core.player_profile(history_df, p1, surface, as_of, priors)
-    s2 = _core.player_profile(history_df, p2, surface, as_of, priors)
+    surface = (match.get('surface') or '').lower()
+    as_of = match.get('scheduled_time') or None
+    cut = _naive_cutoff(as_of)
+    priors = _core._surface_priors(history_df, surface, cut)
+    p1 = _core.player_profile(history_df, match['p1'], surface, cut, priors)
+    p2 = _core.player_profile(history_df, match['p2'], surface, cut, priors)
 
-    quality = 'HIGH' if s1.get('quality') == 'HIGH' and s2.get('quality') == 'HIGH' else 'MEDIUM' if s1.get('quality') != 'LOW' and s2.get('quality') != 'LOW' else 'LOW'
-    note = None if quality == 'HIGH' else 'Część estymacji ma mniejszą próbę i używa shrinkage do średniej touru/nawierzchni.'
-
-    p1_first = _core._logistic_probability(s1, s2, 'first_set_won', 1.9)
-    p1_second_base = _core._logistic_probability(s1, s2, 'second_set_won', 1.7)
-    p1_third = _core._logistic_probability(s1, s2, 'third_set_won', 1.6)
-    p1_second_if_win = _core._conditional_second_probability(s1, s2, True, p1_second_base)
-    p1_second_if_loss = _core._conditional_second_probability(s1, s2, False, p1_second_base)
-
-    total_probs = _core._first_set_total_probabilities(s1, s2)
-    avg_games = _core._clamp(_core._avg([s1.get('first_set_games'), s2.get('first_set_games')], 9.5), 6.0, 13.0)
-    tie_prob = _core._clamp(0.03 + max(0.0, avg_games - 9.0) * 0.035 + max(0.0, total_probs.get(10.5, 0.0) - 0.25) * 0.12, 0.03, 0.24)
-    base_dist = _core._set_score_distribution(p1_first, avg_games, tie_prob)
-    total_games_dist, match_winner_dist, total_sets_dist, exact_match_dist = _match_distribution_conditional(
-        base_dist, p1_first, p1_second_if_win, p1_second_if_loss, p1_third, best_of=_best_of(match)
+    h1 = _core._service_hold_probability(p1, p2, priors.get('hold_rate', .72))
+    h2 = _core._service_hold_probability(p2, p1, priors.get('hold_rate', .72))
+    model_ready = (
+        p1['matches'] >= 5 and p2['matches'] >= 5 and
+        p1['quality'] != 'LOW' and p2['quality'] != 'LOW' and
+        h1 is not None and h2 is not None
     )
 
     best_of = _best_of(match)
-    total_lines = _core.MATCH_TOTAL_LINES if best_of == 3 else [x + 0.5 for x in range(27, 51)]
-    match_over_under = {}
-    for line in total_lines:
-        over = sum(prob for games, prob in total_games_dist.items() if games > line)
-        match_over_under[str(line)] = {'over': _core._pct(over), 'under': _core._pct(1.0 - over)}
+    game_states = first_set_win = second_set_win = third_set_win = None
+    over_under = exact_first_set = match_over_under = None
+    expected_match_games = match_win = total_sets = exact_match_score = None
+    second_set_context = None
+    pick = first_score = over85 = None
+    model_confidence = round(min(float(p1.get('data_confidence') or 0), float(p2.get('data_confidence') or 0)), 0)
 
-    exact_match_score = {score: _core._pct(prob) for score, prob in exact_match_dist.items()}
-    match_win = {p1: _core._pct(match_winner_dist.get('p1', 0.0)), p2: _core._pct(match_winner_dist.get('p2', 0.0))}
-    total_sets = {str(k): _core._pct(v) for k, v in sorted(total_sets_dist.items())}
+    if model_ready:
+        game_states = {str(n): _core._state_probs(h1, h2, n) for n in (1, 2, 4, 6)}
+        raw_dist = _core._set_distribution(h1, h2)
+        raw_first = _core._p1_win(raw_dist)
+        hist_first = _core._historical_set_probability(p1, p2, 1)
+        first_target = _core._blend_set_target(raw_first, hist_first, model_confidence)
+        first_dist = _core._reweight_set_distribution(raw_dist, first_target)
+
+        markets = _core._markets_from_distribution(first_dist, match['p1'], match['p2'])
+        first_set_win = markets['first_set_win']
+        over_under = markets['over_under']
+        exact_first_set = markets['exact_first_set']
+
+        q_win, q_loss, q2 = _core._second_set_context(p1, p2, first_target, model_confidence)
+        q3 = _core._third_set_target(p1, p2, first_target, model_confidence)
+        second_set_context = {
+            'p1_if_p1_wins_set1': round(q_win * 100, 1),
+            'p1_if_p1_loses_set1': round(q_loss * 100, 1),
+            'p1_unconditional': round(q2 * 100, 1),
+        }
+        second_set_win = {match['p1']: round(q2 * 100, 1), match['p2']: round((1 - q2) * 100, 1)}
+        third_set_win = {match['p1']: round(q3 * 100, 1), match['p2']: round((1 - q3) * 100, 1)}
+
+        total_dist, match_winner_raw, total_sets_raw, exact_raw = _match_distribution_conditional(
+            raw_dist, first_target, q_win, q_loss, q3, best_of=best_of
+        )
+        total_lines = (
+            (18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5, 25.5, 26.5)
+            if best_of == 3
+            else tuple(x + 0.5 for x in range(27, 51))
+        )
+        total_markets = _core._total_games_markets(total_dist, total_lines)
+        if total_markets:
+            match_over_under = total_markets['lines']
+            expected_match_games = total_markets['expected']
+        match_win = {
+            match['p1']: round(match_winner_raw[1] * 100, 1),
+            match['p2']: round(match_winner_raw[2] * 100, 1),
+        }
+        total_sets = {k: round(v * 100, 1) for k, v in total_sets_raw.items()}
+        exact_match_score = {k: round(v * 100, 1) for k, v in exact_raw.items()}
+
+        pick = max(first_set_win, key=first_set_win.get)
+        first_score = first_set_win[pick]
+        over85 = over_under['8.5']['over']
+
+    quality = 'HIGH' if p1['quality'] == 'HIGH' and p2['quality'] == 'HIGH' else (
+        'MEDIUM' if p1['quality'] != 'LOW' and p2['quality'] != 'LOW' else 'LOW'
+    )
 
     return {
-        'version': VERSION,
-        'p1': p1,
-        'p2': p2,
-        'surface': surface,
+        **match,
         'best_of': best_of,
+        'pick_first_set': pick,
+        'score_first_set': first_score,
+        'score_over85': over85,
+        'score_lead_after6': None,
+        'score_joint_builder': None,
         'quality': quality,
-        'note': note,
-        'p1_stats': s1,
-        'p2_stats': s2,
-        'first_set_win': {p1: _core._pct(p1_first), p2: _core._pct(1.0 - p1_first)},
-        'match_win': match_win,
-        'over_under': {str(line): {'over': _core._pct(prob), 'under': _core._pct(1.0 - prob)} for line, prob in total_probs.items()},
+        'model_confidence': model_confidence if model_ready else None,
+        'p1_stats': p1,
+        'p2_stats': p2,
+        'model_ready': model_ready,
+        'service_model': {'p1_hold': round(h1 * 100, 1), 'p2_hold': round(h2 * 100, 1)} if model_ready else None,
+        'game_states': game_states,
+        'first_set_win': first_set_win,
+        'second_set_win': second_set_win,
+        'second_set_context': second_set_context,
+        'third_set_win': third_set_win,
+        'over_under': over_under,
+        'exact_first_set': exact_first_set,
         'match_over_under': match_over_under,
-        'exact_match_score': exact_match_score,
+        'expected_match_games': expected_match_games,
+        'match_win': match_win,
         'total_sets': total_sets,
-        'game_states': _core._game_state_probabilities(p1_first, s1, s2),
-        'first_set_exact_score': {f'{a}:{b}': _core._pct(prob) for (a, b), prob in base_dist.items()},
-        'conditional_sets': {
-            'p1_second_if_first_win': _core._pct(p1_second_if_win),
-            'p1_second_if_first_loss': _core._pct(p1_second_if_loss),
-            'p1_later_set': _core._pct(p1_third),
-        },
+        'exact_match_score': exact_match_score,
+        'note': (
+            'v0.6: recency + nawierzchnia + wygładzanie małej próbki + model punkt→hold + forma/ranking + zmęczenie + kontekst 2./3. seta. '
+            f'Po gemach nadal jest estymacją bez historycznego point-by-point; pełny mecz liczony jako BO{best_of} z metadanych fixture.'
+        ) if model_ready else None,
     }
