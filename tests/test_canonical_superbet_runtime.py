@@ -38,12 +38,16 @@ STABLE_FRONTEND_RUNTIME = {
     "registration-handler.js", "registration-ux.js", "registration-ux.css",
     "history-ui.js", "history-ui.css", "project-ui.js", "project-ui.css", "project-readability.css",
     "navigation-tools.js", "navigation-tools.css", "adaptive-prod-bridge.js", "adaptive-prod-bridge.css",
-    "performance-dashboard.js", "performance-dashboard.css", "ui-cleanup.js", "ui-cleanup.css",
-    "ui-organizer.js", "ui-organizer.css", "superbet-playable-stats.js", "superbet-playable-stats.css",
+    "performance-dashboard.js", "performance-dashboard.css", "performance-center.js", "performance-center.css",
+    "ui-cleanup.js", "ui-cleanup.css", "ui-organizer.js", "ui-organizer.css",
+    "superbet-playable-stats.js", "superbet-playable-stats.css",
     "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
     "integrity-status.js", "integrity-status.css", "model-trends.js", "model-trends.css",
     "match-time.js", "match-time.css", "pbp-validation.js", "pbp-validation.css", "market-lab.js", "market-lab.css",
-    "project-analysis.css", "calibration-status.css",
+    "project-analysis.css", "calibration-status.css", "early-hold-paths.js", "early-hold-paths.css",
+    "player-trends.js", "player-trends.css", "player-analytics.js", "player-analytics.css",
+    "match-tendencies.js", "match-tendencies.css", "community-admin.js", "community-admin.css",
+    "admin-delete.js", "admin-delete.css",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
@@ -54,7 +58,11 @@ RETIRED_FRONTEND_RUNTIME = {
     "runtime-health-v84e0.js", "hotfix-v84e01.js", "restore-v762.js", "restore-v762.css",
     "ui-v75.js", "ui-v75.css", "ui-v751.js", "ui-v751.css",
     "registration-fix-v741.js", "registration-ux-v752.js", "registration-ux-v752.css",
-    "readability-v753.js", "readability-v753.css",
+    "readability-v753.js", "readability-v753.css", "community-admin-v75.js", "community-admin-v75.css",
+    "admin-delete-v754.js", "admin-delete-v754.css", "performance-center-v77.js", "performance-center-v77.css",
+    "early-hold-paths-v771.js", "early-hold-paths-v771.css",
+    "player-trends-v71.js", "player-trends-v71.css", "player-analytics-v76.js", "player-analytics-v76.css",
+    "match-tendencies-v712.js", "match-tendencies-v712.css",
     "v88-upgrade.js", "v88-upgrade.css", "v882-cleanup.js", "v882-cleanup.css",
     "v883-final.js", "v883-final.css", "ui-organizer-v853.js", "ui-organizer-v853.css",
     "superbet-playable-v912.js", "superbet-playable-v912.css", "stats-ranking-v886.js",
@@ -130,16 +138,19 @@ def test_index_boots_stable_production_runtime_chain():
         "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
         "registration-handler.js", "registration-ux.js", "clarity-labels.js", "history-ui.js", "project-ui.js",
         "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
-        "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
+        "performance-center.js", "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
         "project-ui-quality.js", "integrity-status.js", "match-time.js", "model-trends.js",
-        "pbp-validation.js", "market-lab.js", "match-visibility.js",
+        "pbp-validation.js", "market-lab.js", "early-hold-paths.js", "player-trends.js", "player-analytics.js",
+        "match-tendencies.js", "community-admin.js", "admin-delete.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
     for name in (
         "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
-        "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css",
-        "performance-dashboard.css", "ui-cleanup.css", "integrity-status.css", "match-time.css", "model-trends.css",
+        "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css", "performance-dashboard.css",
+        "performance-center.css", "ui-cleanup.css", "integrity-status.css", "match-time.css", "model-trends.css",
         "pbp-validation.css", "market-lab.css", "project-analysis.css", "calibration-status.css",
+        "early-hold-paths.css", "player-trends.css", "player-analytics.css", "match-tendencies.css",
+        "community-admin.css", "admin-delete.css",
     ):
         assert f'href="{name}"' in text
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
