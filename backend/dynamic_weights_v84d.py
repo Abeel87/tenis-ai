@@ -51,8 +51,10 @@ def _segment_value(row: dict, dimension: str) -> str:
 
 
 def _segment_models(telemetry: dict, dimension: str, value: str) -> dict:
+    # PROD may only learn segment weights from rows with verified prediction-time
+    # provenance. The broader segments_30d surface stays diagnostic only.
     return (
-        ((telemetry or {}).get("segments_30d") or {})
+        ((telemetry or {}).get("prod_safe_segments_30d") or {})
         .get(dimension, {})
         .get(value, {})
     ) or {}
@@ -197,6 +199,8 @@ def resolve_weights(base_weights: dict, row: dict, telemetry: dict):
         return base, {**fallback, "reason": "fewer_than_two_enabled_models"}
     if not isinstance(telemetry, dict) or telemetry.get("version") != "v8.4C":
         return base, {**fallback, "reason": "telemetry_unavailable"}
+    if not isinstance(telemetry.get("prod_safe_segments_30d"), dict):
+        return base, {**fallback, "reason": "prediction_provenance_unavailable"}
 
     factors = {model: 1.0 for model in base}
     evidence = []
@@ -262,7 +266,7 @@ def weighted_probability(probabilities: dict, weights: dict) -> float:
 def self_check():
     telemetry = {
         "version": "v8.4C",
-        "segments_30d": {
+        "prod_safe_segments_30d": {
             "tour": {
                 "ATP": {
                     "current": {"selected_n": 60, "brier": 0.12},
@@ -294,7 +298,7 @@ def self_check():
 
     tiny = {
         "version": "v8.4C",
-        "segments_30d": {
+        "prod_safe_segments_30d": {
             "tour": {
                 "ATP": {
                     "current": {"selected_n": 5, "brier": 0.05},
