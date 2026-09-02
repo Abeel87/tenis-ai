@@ -105,8 +105,7 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// PLAYABLE has exactly one bootstrap owner: app-meta -> playable-ui.js ->
-// playable-freshness.js -> match-browser.js. This module owns only the
-// operator/model coverage + detail presentation chain.
+// PLAYABLE bootstrap belongs exclusively to app-meta. This module owns only
+// the operator/model coverage + detail presentation chain.
 setTimeout(loadSuperbetModelCoverage,0);
 })();
