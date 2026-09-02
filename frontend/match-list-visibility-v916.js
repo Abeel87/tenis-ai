@@ -95,18 +95,6 @@ function loadSuperbetModelCoverageV922(){
   document.head.appendChild(script);
 }
 
-function loadPlayableUiV917(){
-  if(window.TENIS_AI_PLAYABLE_UI_V917){loadSuperbetModelCoverageV922();return}
-  const existing=document.querySelector('script[data-playable-ui-v917]');
-  if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
-  const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=948&contract=raw-playable-filter-coherence';
-  script.async=false;
-  script.dataset.playableUiV917='1';
-  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
-  document.head.appendChild(script);
-}
-
 window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
   version:VERSION,
   visibleMatches,
@@ -117,8 +105,8 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// Ownership chain: strict PLAYABLE gate -> operator/model coverage -> market grouping
-// -> one canonical detail information architecture. The stable Match Browser is
-// owned by the final PLAYABLE freshness bootstrap and must not be loaded here.
-setTimeout(loadPlayableUiV917,0);
+// PLAYABLE has exactly one bootstrap owner: app-meta -> playable-ui.js ->
+// playable-freshness.js -> match-browser.js. This module owns only the
+// operator/model coverage + detail presentation chain.
+setTimeout(loadSuperbetModelCoverageV922,0);
 })();
