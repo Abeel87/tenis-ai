@@ -13,10 +13,10 @@ def test_v84e0_runtime_health_contract():
 def test_v84e0_runtime_is_loaded_before_heavy_consumers():
     index = Path('frontend/index.html').read_text(encoding='utf-8')
     assert index.index('app.js') < index.index('runtime-health.js')
-    assert index.index('runtime-health.js') < index.index('dynamic-weights-v84d1.js')
+    assert index.index('runtime-health.js') < index.index('dynamic-weights.js')
     assert index.index('runtime-health.js') < index.index('symphony2.js?v=210')
     assert 'scenario-dynamic-v84d3.js' not in index
 
 def test_v84e0_removes_minute_full_pool_scan():
-    dynamic = Path('frontend/dynamic-weights-v84d1.js').read_text(encoding='utf-8')
+    dynamic = Path('frontend/dynamic-weights.js').read_text(encoding='utf-8')
     assert 'setInterval(()=>schedule(0),60000)' not in dynamic
