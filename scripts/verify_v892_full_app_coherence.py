@@ -14,7 +14,7 @@ def read(path: Path) -> str:
 def main() -> None:
     app_meta = read(FRONTEND / "app-meta.js")
     index = read(FRONTEND / "index.html")
-    coherence = read(FRONTEND / "app-coherence-v892.js")
+    coherence = read(FRONTEND / "app-coherence.js")
     sw = read(FRONTEND / "sw.js")
     symphony = read(FRONTEND / "symphony2.js")
     telemetry = json.loads(read(FRONTEND / "data" / "model_telemetry_v84c.json"))
@@ -29,7 +29,7 @@ def main() -> None:
         "player_model_meta": "playerModelShadowVersion:'v8.9'" in app_meta,
         "player_learning_meta": "ensemblePlayerLearningVersion:'v8.9.1'" in app_meta,
         "symphony_meta": "symphonyVersion:'v2.1'" in app_meta,
-        "coherence_addon_loaded": "app-coherence-v892.js?v=892" in app_meta,
+        "coherence_addon_loaded": "app-coherence.js?v=892" in app_meta,
         "human_pi_addon_loaded": "player-intelligence-v888-human.js?v=888" in app_meta,
         "legacy_scenario_removed": "scenario-studio-v82a.js" not in index and "scenario-runtime-v202.js" not in index,
         "legacy_generator_quality_removed": "generator-quality-v888.js" not in index and not (FRONTEND / "generator-quality-v888.js").exists(),
