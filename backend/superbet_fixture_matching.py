@@ -111,10 +111,16 @@ def _select(match: dict, fixtures: list[dict], *, cached: bool):
         else:scope["unmatched"]+=1;_sample(scope,match,"NO_SAFE_NAME_MATCH")
         return None
     ranked.sort(key=lambda item:item[:4]); best=ranked[0]
-    if not best[5] and len(ranked)>1:
+    if len(ranked)>1:
         second=ranked[1]; best_score,second_score=-best[1],-second[1]
-        if not second[5] and abs(best_score-second_score)<AMBIGUOUS_SCORE_GAP and abs(best[2]-second[2])<AMBIGUOUS_TIME_GAP_HOURS and best[3]!=second[3]:
-            scope["ambiguous_rejected"]+=1;_sample(scope,match,"AMBIGUOUS_ALIAS");return None
+        same_match_kind = bool(best[5]) == bool(second[5])
+        close_score = abs(best_score-second_score)<AMBIGUOUS_SCORE_GAP
+        close_time = abs(best[2]-second[2])<AMBIGUOUS_TIME_GAP_HOURS
+        distinct_fixture = best[3] != second[3]
+        # Never guess between two distinct nearly-equivalent fixtures. This also
+        # covers duplicate exact-pair rows, not only relaxed aliases.
+        if same_match_kind and close_score and close_time and distinct_fixture:
+            scope["ambiguous_rejected"]+=1;_sample(scope,match,"AMBIGUOUS_EXACT" if best[5] else "AMBIGUOUS_ALIAS");return None
     if best[5]:scope["exact"]+=1
     else:scope["relaxed"]+=1
     return best[4]
@@ -149,7 +155,7 @@ def report(previous: dict | None = None) -> dict:
     if int(live.get("checked") or 0)==0 and isinstance(previous_report,dict):
         old_live=previous_report.get("live")
         if isinstance(old_live,dict):live=dict(old_live);live_reused=True
-    return {"version":VERSION,"mode":"SAFE_ALIAS_LOCAL_ONLY","live":live,"cached":cached,"live_telemetry_reused_from_previous_refresh":live_reused,"additional_external_requests":0,"prices_used":False,"contract":{"exact_pair_preferred":True,"both_players_must_match":True,"relaxed_match_requires_time_guard":True,"ambiguous_relaxed_match_is_rejected":True,"model_math_unchanged":True,"operator_prices_unused":True}}
+    return {"version":VERSION,"mode":"SAFE_ALIAS_LOCAL_ONLY","live":live,"cached":cached,"live_telemetry_reused_from_previous_refresh":live_reused,"additional_external_requests":0,"prices_used":False,"contract":{"exact_pair_preferred":True,"both_players_must_match":True,"relaxed_match_requires_time_guard":True,"ambiguous_relaxed_match_is_rejected":True,"ambiguous_exact_match_is_rejected":True,"model_math_unchanged":True,"operator_prices_unused":True}}
 
 
 def stamp_availability() -> dict:
