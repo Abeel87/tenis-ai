@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from backend import superbet_market_context_v913 as v913
-from backend.superbet_market_context_v923 import (
+from backend import superbet_market_mapping as mapping
+from backend.superbet_market_audit import (
     VERSION,
     _raw_families,
-    _sanitize_with_audit,
+    sanitize_with_audit,
     build_audit,
 )
 
@@ -89,7 +89,7 @@ def test_raw_family_audit_collapses_line_variants_without_storing_prices():
 
 
 def test_existing_sanitizer_output_is_preserved_and_only_compact_audit_is_added():
-    out = _sanitize_with_audit(_fixture(), _meta(), v913._sanitize_fixture)
+    out = sanitize_with_audit(_fixture(), _meta(), mapping._sanitize_fixture)
     assert out is not None
     assert {(row["market"], row["pick"]) for row in out["canonical_selections"]} == {
         ("match_winner", "Alpha"),
@@ -102,7 +102,7 @@ def test_existing_sanitizer_output_is_preserved_and_only_compact_audit_is_added(
 
 
 def test_global_audit_aggregates_same_unknown_family_across_fixtures():
-    one = _sanitize_with_audit(_fixture(), _meta(), v913._sanitize_fixture)
+    one = sanitize_with_audit(_fixture(), _meta(), mapping._sanitize_fixture)
     two = dict(one)
     two["fixture_id"] = "f-audit-2"
     report = build_audit([one, two])
@@ -122,7 +122,7 @@ def test_global_audit_aggregates_same_unknown_family_across_fixtures():
 def test_audit_module_has_no_network_client_or_direct_request_call():
     from pathlib import Path
 
-    source = (Path(__file__).resolve().parents[1] / "backend" / "superbet_market_context_v923.py").read_text(encoding="utf-8").casefold()
+    source = (Path(__file__).resolve().parents[1] / "backend" / "superbet_market_audit.py").read_text(encoding="utf-8").casefold()
     for token in ("urlopen", "requests.get", "httpx", "aiohttp", "urllib.request"):
         assert token not in source
-    assert "additional_external_requests\": 0" in source
+    assert '"additional_external_requests": 0' in source
