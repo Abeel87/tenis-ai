@@ -5,7 +5,7 @@ on:
     branches: [main, ci/symphony2-clean-base]
     paths:
       - 'backend/symphony2_*.py'
-      - 'backend/pbp_market_evidence_v940.py'
+      - 'backend/pbp_market_evidence.py'
       - 'backend/apply_joint_to_results_v78b.py'
       - 'scripts/compact_frontend_data.py'
       - 'frontend/symphony2.*'
@@ -32,11 +32,11 @@ jobs:
       - name: Syntax
         run: |
           python -m py_compile backend/symphony2_learning.py
-          python -m py_compile backend/symphony2_state_core_v945.py
+          python -m py_compile backend/symphony2_state_core.py
           python -m py_compile backend/symphony2_state.py
           python -m py_compile backend/symphony2_engine.py
           python -m py_compile backend/symphony2_tracker.py
-          python -m py_compile backend/pbp_market_evidence_v940.py
+          python -m py_compile backend/pbp_market_evidence.py
           python -m py_compile backend/apply_joint_to_results_v78b.py
           python -m py_compile scripts/compact_frontend_data.py
       - name: Operator-first contract + audit fixes
