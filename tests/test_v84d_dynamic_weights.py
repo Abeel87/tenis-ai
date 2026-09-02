@@ -8,7 +8,7 @@ from backend.dynamic_weights_v84d import (
 def telemetry(n=60):
     return {
         "version": "v8.4C",
-        "segments_30d": {
+        "prod_safe_segments_30d": {
             "tour": {
                 "ATP": {
                     "current": {"selected_n": n, "brier": 0.12},
@@ -65,6 +65,23 @@ def test_missing_telemetry_is_safe_fallback():
     out, policy = resolve_weights(base, ROW, {})
     assert out == base
     assert policy["status"] == "SAFE_FALLBACK"
+
+
+def test_legacy_segments_without_prediction_provenance_cannot_move_prod_weights():
+    base = {"current": 0.40, "catboost": 0.60}
+    legacy = {
+        "version": "v8.4C",
+        "segments_30d": {
+            "tour": {"ATP": {
+                "current": {"selected_n": 500, "brier": 0.05},
+                "catboost": {"selected_n": 500, "brier": 0.40},
+            }}
+        },
+    }
+    out, policy = resolve_weights(base, ROW, legacy)
+    assert out == base
+    assert policy["active"] is False
+    assert policy["reason"] == "prediction_provenance_unavailable"
 
 
 def test_weighted_probability_renormalizes_available_models():
