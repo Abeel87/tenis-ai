@@ -1,0 +1,44 @@
+name: Shadow promotion audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/shadow_promotion_gate_v942.py'
+      - 'tests/test_shadow_promotion_gate_v942.py'
+      - '.github/workflows/shadow-promotion-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit guard
+        run: python -m pytest -q tests/test_shadow_promotion_gate_v942.py
+      - name: Frozen operator-history audit
+        run: python backend/shadow_promotion_gate_v942.py
+      - name: Isolation guard
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('frontend/data/shadow_promotion_gate_v942.json')
+          r = json.loads(p.read_text(encoding='utf-8'))
+          assert r['production_influence'] is False
+          assert r['playable_influence'] is False
+          assert r['symphony_prod_influence'] is False
+          assert r['auto_promote'] is False
+          print('candidate=', r['candidate'])
+          print('status=', r['status'])
+          print('checks=', json.dumps(r['promotion_checks'], sort_keys=True))
+          print('comparisons=', json.dumps(r['same_universe_comparisons'], sort_keys=True))
+          PY
