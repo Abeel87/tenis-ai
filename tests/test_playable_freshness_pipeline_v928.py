@@ -7,7 +7,7 @@ from backend.symphony2_engine import build as build_symphony2
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRESHNESS_JS = ROOT / "frontend" / "playable-line-freshness-v925.js"
+FRESHNESS_JS = ROOT / "frontend" / "playable-freshness.js"
 WORKFLOW = ROOT / ".github" / "workflows" / "superbet-market-refresh.yml"
 
 
