@@ -1,4 +1,4 @@
-/* Tenis AI v9.5.0 — canonical Match Detail information architecture.
+/* Tenis AI v9.5.0.1 — canonical Match Detail information architecture.
    Presentation only. It does not calculate model scores, Symphony decisions,
    Superbet availability, PLAYABLE status, calibration or Player Intelligence.
    Order contract: Superbet PLAYABLE -> model context -> diagnostics.
@@ -6,7 +6,7 @@
 (()=>{
 'use strict';
 if(window.TENIS_AI_MATCH_DETAIL_V950)return;
-const VERSION='v9.5.0';
+const VERSION='v9.5.0.1';
 const ROOT='#p751-match-overlay:not([hidden]) .p751-detail-screen';
 
 function label(text,kind){
@@ -33,7 +33,6 @@ function organize(){
   const verdict=root.querySelector('.p751-verdict');
   const list=root.querySelector('.p751-acc-list');
 
-  // Actionable operator offer always owns the first decision slot.
   if(decision&&matchup){
     matchup.after(decision);
     decision.before(label('1 · SUPERBET PLAYABLE — realna, zweryfikowana oferta operatora','playable'));
@@ -41,8 +40,6 @@ function organize(){
     matchup.after(label('1 · SUPERBET PLAYABLE — brak świeżo zweryfikowanej oferty; nie zastępujemy jej typem modelowym','playable'));
   }
 
-  // The old quick verdict is useful model context, but it must never look like
-  // a verified bookmaker recommendation.
   if(verdict){
     const head=verdict.querySelector('header b');
     if(head)head.textContent='Kontekst MODEL / RAW';
@@ -56,12 +53,14 @@ function organize(){
 
   if(list){
     list.before(label('3 · PEŁNA ANALIZA — rozwiń tylko gdy potrzebujesz szczegółów','diagnostics'));
-    // Mobile detail should open compactly. PLAYABLE remains visible above;
-    // analytical accordions stay available on demand without a kilometre-long screen.
-    list.querySelectorAll(':scope > details[open]').forEach(details=>{details.open=false});
+    // Compact only once for this rendered detail. Later organizer passes are caused
+    // by async panels/observers and must never override a user's open/closed choice.
+    if(list.dataset.v950InitialCompact!=='1'){
+      list.querySelectorAll(':scope > details[open]').forEach(details=>{details.open=false});
+      list.dataset.v950InitialCompact='1';
+    }
   }
 
-  // Player Intelligence is SHADOW/context, never a betting verdict.
   root.querySelectorAll('#pi85-detail,.pi851-detail,[data-pi85-detail]').forEach(pi=>{
     pi.dataset.v950Role='player-context';
     const header=pi.querySelector('header b, h3, h4');
