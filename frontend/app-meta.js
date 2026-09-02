@@ -112,14 +112,14 @@
     if(document.getElementById(id))return;
     const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l);
   }
-  function loadUxHotfixes(){
-    loadAddon('player-intelligence-v888-human.js?v=888','pi888-human-addon');
-    loadAddon('app-coherence-v892.js?v=892&audit=919','app892-coherence-addon');
-    loadAddon('symphony2-live-ui-v201.js?v=201','symphony2-live-ui-v201');
+  function loadUxAddons(){
+    loadAddon('player-intelligence-human.js','player-intelligence-human-addon');
+    loadAddon('app-coherence.js','app-coherence-addon');
+    loadAddon('symphony2-live-ui.js','symphony2-live-ui');
     loadStyle('neuro-shadow-v936.css?v=936','neuro-shadow-v936-css');
     loadAddon('neuro-shadow-v936.js?v=936','neuro-shadow-v936-js');
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxHotfixes,{once:true});else loadUxHotfixes();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxAddons,{once:true});else loadUxAddons();
   window.TENIS_AI_FAST_BOOT_V888=Object.freeze({version:'v8.8.8',clear:clearDataCache,snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})});
 })();
 
