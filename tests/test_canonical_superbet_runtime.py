@@ -19,11 +19,26 @@ STABLE_RUNTIME_MODULES = CANONICAL_ENTRYPOINTS | {
     "superbet_market_audit.py",
     "superbet_fixture_matching.py",
 }
+RETIRED_COMPATIBILITY_SHIMS = {
+    "superbet_market_context_v91.py",
+    "superbet_market_context_v913.py",
+    "superbet_market_context_v923.py",
+    "superbet_market_context_v924.py",
+    "superbet_line_coverage_v922.py",
+    "superbet_line_coverage_v924.py",
+    "superbet_playable_v912.py",
+    "superbet_fixture_matching_v927.py",
+}
 
 
 def test_canonical_superbet_entrypoints_exist():
     missing = sorted(name for name in STABLE_RUNTIME_MODULES if not (BACKEND / name).is_file())
     assert not missing, f"Missing stable Superbet runtime modules: {missing}"
+
+
+def test_retired_superbet_compatibility_shims_stay_deleted():
+    present = sorted(name for name in RETIRED_COMPATIBILITY_SHIMS if (BACKEND / name).exists())
+    assert not present, f"Retired Superbet compatibility shims returned: {present}"
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
