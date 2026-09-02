@@ -8,7 +8,7 @@ def read(path):
 
 
 def test_stats_organizer_is_event_driven_without_delayed_layout_passes():
-    js = read("frontend/ui-organizer-v853.js")
+    js = read("frontend/ui-organizer.js")
     assert "RUNTIME_FIX = 'v8.8.19'" in js
     assert "tenis-ai:stats-ready" in js
     assert "tenis-ai:stats-dashboard-ready" in js
@@ -23,13 +23,16 @@ def test_stats_organizer_is_event_driven_without_delayed_layout_passes():
 
 
 def test_stats_organizer_does_one_complete_pass():
-    js = read("frontend/ui-organizer-v853.js")
+    js = read("frontend/ui-organizer.js")
     assert "visualPolish();\n    ensureReadabilityControls();" in js
     assert "timer = setTimeout(organize, delay)" in js
     assert "runtimeFix: RUNTIME_FIX" in js
 
 
-def test_legacy_organizer_does_not_overwrite_app_version_branding():
-    js = read("frontend/ui-organizer-v853.js")
+def test_canonical_organizer_does_not_overwrite_app_version_branding():
+    js = read("frontend/ui-organizer.js")
+    index = read("frontend/index.html")
     assert "brand.textContent='Tenis AI v8.5.3" not in js
-    assert "branding belongs to app-meta" in js
+    assert "ui-organizer.js" in index
+    assert "ui-organizer-v853.js" not in index
+    assert "ui-organizer-v853.css" not in index
