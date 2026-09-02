@@ -5,8 +5,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER = ROOT / "frontend" / "match-browser.js"
-PLAYABLE = ROOT / "frontend" / "playable-ui-coherence-v917.js"
-FRESHNESS = ROOT / "frontend" / "playable-line-freshness-v925.js"
+PLAYABLE = ROOT / "frontend" / "playable-ui.js"
+FRESHNESS = ROOT / "frontend" / "playable-freshness.js"
 
 
 def test_playable_signal_is_analysis_evidence_for_z_danymi_filter():
