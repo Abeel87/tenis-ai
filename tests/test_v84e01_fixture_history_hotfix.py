@@ -9,12 +9,12 @@ def read(path):
 
 def test_hotfix_loaded_after_runtime_before_symphony2():
     h=read("frontend/index.html")
-    assert h.index("app.js") < h.index("runtime-health-v84e0.js?v=84e0")
-    assert h.index("runtime-health-v84e0.js?v=84e0") < h.index("hotfix-v84e01.js?v=84e01")
-    assert h.index("hotfix-v84e01.js?v=84e01") < h.index("symphony2.js?v=210")
+    assert h.index("app.js") < h.index("runtime-health.js?v=84e0")
+    assert h.index("runtime-health.js?v=84e0") < h.index("runtime-compat.js?v=84e01")
+    assert h.index("runtime-compat.js?v=84e01") < h.index("symphony2.js?v=210")
 
 def test_history_refresh_is_lightweight():
-    s=read("frontend/hotfix-v84e01.js")
+    s=read("frontend/runtime-compat.js")
     assert "data/history.json" in s
     assert "data/history_stats.json" in s
     assert "data/results.json" not in s
@@ -26,7 +26,7 @@ def test_status_filter_contract_with_node_when_available():
     if not node:
         return
     script=r'''
-const h=require("./frontend/hotfix-v84e01.js");
+const h=require("./frontend/runtime-compat.js");
 const bad=[
   {event_status:"Cancelled"},
   {event_status:"Canceled"},
@@ -48,6 +48,6 @@ for(const m of good){if(h.isUnavailableFixture(m))process.exit(12);}
     subprocess.run([node,"-e",script],cwd=ROOT,check=True)
 
 def test_hotfix_does_not_modify_model_math_files():
-    s=read("frontend/hotfix-v84e01.js")
+    s=read("frontend/runtime-compat.js")
     forbidden=["catboost","tabpfn","ensemble_single_model_cap","dynamic_weighting"]
     assert not any(x in s.lower() for x in forbidden)
