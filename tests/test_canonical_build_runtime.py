@@ -21,9 +21,10 @@ def test_results_publication_pruner_has_one_canonical_runtime_path():
 def test_active_workflows_use_canonical_publication_build_utilities():
     update = (WORKFLOWS / "update-and-pages.yml").read_text(encoding="utf-8")
     refresh = (WORKFLOWS / "superbet-market-refresh.yml").read_text(encoding="utf-8")
+    symphony = (WORKFLOWS / "symphony2-check.yml").read_text(encoding="utf-8")
     ui = (WORKFLOWS / "ui-smoke.yml").read_text(encoding="utf-8")
 
-    for text in (update, refresh):
+    for text in (update, refresh, symphony):
         assert "scripts/compact_frontend_data.py" in text
         assert "scripts/compact_frontend_data_v853.py" not in text
 
