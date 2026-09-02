@@ -11,10 +11,11 @@ def t(path):
 def test_v883_assets_and_brand_are_wired():
     h=t("frontend/index.html")
     assert "Tenis AI v8.8.7" in h
-    assert "v883-final.css?v=883" in h
+    assert "ui-cleanup.css" in h
     assert "ui-cleanup.js" in h
     assert h.index("v882-cleanup.js?v=882") < h.index("ui-cleanup.js")
     assert "v883-final.js" not in h
+    assert "v883-final.css" not in h
 
 
 def test_stats_ranking_is_wired_after_stats_owners():
@@ -97,13 +98,15 @@ def test_ui_cleanup_no_longer_decorates_retired_scenario_scores():
 def test_single_stats_owner_and_legacy_ui_hidden_before_cleanup():
     old=t("frontend/adaptive-prod-bridge.js")
     final=t("frontend/ui-cleanup.js")
-    css=t("frontend/v883-final.css")
+    css=t("frontend/ui-cleanup.css")
     assert "function wrapStats(){\n  return false;" in old
     assert "v882-cleanup.js" in old
     assert "pc88-dashboard" in final
     assert "#pc88-dashboard," in css
     assert "#model-switcher," in css
     assert "[data-p751-models]{display:none!important}" in css
+    assert ".sc883-pairbar" not in css
+    assert ".sc883-score-note" not in css
 
 
 def test_v883_pwa_name_is_clean():
