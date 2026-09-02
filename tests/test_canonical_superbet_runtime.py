@@ -30,6 +30,16 @@ RETIRED_COMPATIBILITY_SHIMS = {
     "superbet_playable_v912.py",
     "superbet_fixture_matching_v927.py",
 }
+STABLE_FRONTEND_RUNTIME = {
+    "playable-ui.js",
+    "playable-freshness.js",
+    "match-browser.js",
+}
+RETIRED_FRONTEND_RUNTIME = {
+    "playable-ui-coherence-v917.js",
+    "playable-line-freshness-v925.js",
+    "match-browser-v945.js",
+}
 
 
 def test_canonical_superbet_entrypoints_exist():
@@ -42,18 +52,33 @@ def test_retired_superbet_compatibility_shims_stay_deleted():
     assert not present, f"Retired Superbet compatibility shims returned: {present}"
 
 
-def test_match_browser_uses_stable_production_filename():
-    assert (FRONTEND / "match-browser.js").is_file()
-    assert not (FRONTEND / "match-browser-v945.js").exists()
+def test_canonical_playable_frontend_runtime_exists():
+    missing = sorted(name for name in STABLE_FRONTEND_RUNTIME if not (FRONTEND / name).is_file())
+    assert not missing, f"Missing stable PLAYABLE frontend runtime: {missing}"
 
 
-def test_active_frontend_does_not_boot_retired_match_browser_filename():
+def test_retired_playable_frontend_runtime_stays_deleted():
+    present = sorted(name for name in RETIRED_FRONTEND_RUNTIME if (FRONTEND / name).exists())
+    assert not present, f"Retired PLAYABLE frontend runtime returned: {present}"
+
+
+def test_active_frontend_does_not_boot_retired_runtime_filenames():
     offenders = []
     for path in FRONTEND.glob("*.js"):
         text = path.read_text(encoding="utf-8")
-        if "match-browser-v945.js" in text:
-            offenders.append(path.name)
-    assert not offenders, f"Active frontend still boots retired Match Browser path: {offenders}"
+        for retired in RETIRED_FRONTEND_RUNTIME:
+            if retired in text:
+                offenders.append(f"{path.name}:{retired}")
+    assert not offenders, f"Active frontend still boots retired runtime paths: {offenders}"
+
+
+def test_app_meta_owns_single_canonical_playable_bootstrap():
+    text = (FRONTEND / "app-meta.js").read_text(encoding="utf-8")
+    assert "load('playable-ui.js','tenis-ai-playable-ui',freshness)" in text
+    assert "load('playable-freshness.js','tenis-ai-playable-freshness')" in text
+    visibility = (FRONTEND / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+    assert "playable-ui.js" not in visibility
+    assert "playable-freshness.js" not in visibility
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
@@ -76,9 +101,6 @@ def test_line_coverage_is_fully_canonical_implementation():
     text = (BACKEND / "superbet_line_coverage.py").read_text(encoding="utf-8")
     assert "def enrich_match(" in text
     assert "def enrich_results(" in text
-    # Versioned JSON/meta keys are persisted data contracts and may remain during
-    # code-path consolidation. What must disappear are imports/delegation to old
-    # version-suffixed Python implementations.
     import_pattern = re.compile(r"(?:from\s+\.?|import\s+)(superbet_line_coverage_v\d+[A-Za-z0-9_]*)")
     assert not import_pattern.search(text)
     assert "LEGACY_IMPLEMENTATION =" not in text
