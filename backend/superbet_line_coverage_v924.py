@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-"""Temporary compatibility shim for the canonical Superbet line coverage module."""
+"""Temporary compatibility shim for canonical Superbet line coverage.
+
+Production imports :mod:`superbet_line_coverage`. This module contains no
+business logic; it only exposes canonical symbols while legacy imports are
+being removed.
+"""
 
 try:
-    from .superbet_line_coverage import enrich_match, enrich_results, main
+    from . import superbet_line_coverage as _impl
 except ImportError:
-    from superbet_line_coverage import enrich_match, enrich_results, main
+    import superbet_line_coverage as _impl
 
-__all__ = ["enrich_match", "enrich_results", "main"]
+for _name in dir(_impl):
+    if not _name.startswith("__"):
+        globals()[_name] = getattr(_impl, _name)
+
+__all__ = [name for name in dir(_impl) if not name.startswith("_")]
 
 if __name__ == "__main__":
-    main()
+    _impl.main()
