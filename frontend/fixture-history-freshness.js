@@ -1,4 +1,4 @@
-/* Tenis AI v8.4E0.1 — Fixture + History Freshness Hotfix
+/* Tenis AI · Fixture + History Freshness Guard
    - terminal/unavailable fixtures never reach active match lists / Scenario Generator
    - entering History refreshes only history.json + history_stats.json
    - never re-downloads results.json for a History-tab refresh
@@ -28,7 +28,6 @@
     );
   }
 
-  // CommonJS support for the small pure-status unit test.
   if(typeof module!=='undefined' && module.exports){
     module.exports={VERSION,lifecycleStatus,isUnavailableFixture};
     return;
@@ -95,7 +94,7 @@
         }catch{}
         return true;
       }catch(error){
-        console.warn('[Tenis AI v8.4E0.1] History refresh failed:',error);
+        console.warn('[Tenis AI] History refresh failed:',error);
         return false;
       }finally{
         historyRefreshPromise=null;

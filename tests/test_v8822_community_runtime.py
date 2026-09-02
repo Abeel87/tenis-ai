@@ -7,8 +7,8 @@ def read(path):
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_community_profile_fix_has_no_global_mutation_observer():
-    js = read("frontend/community-fix.js")
+def test_community_profile_runtime_has_no_global_mutation_observer():
+    js = read("frontend/community-profile-ux.js")
     assert "RUNTIME_FIX='v8.8.22'" in js
     assert "new MutationObserver(" not in js
     assert "observer.observe(document.body" not in js

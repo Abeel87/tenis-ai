@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 const read=p=>fs.readFileSync(p,'utf8');
-const ui=read('frontend/ui-v751.js');
+const ui=read('frontend/project-ui.js');
 const shadow=read('frontend/shadow-lab-v78e6.js');
-const restore=read('frontend/restore-v762.js');
-const css=read('frontend/ui-v751.css');
+const restore=read('frontend/navigation-tools.js');
+const css=read('frontend/project-ui.css');
 const index=read('frontend/index.html');
 const sw=read('frontend/sw.js');
 const meta=read('frontend/app-meta.js');
@@ -11,8 +11,8 @@ const clean=read('frontend/clean-core-v80.js');
 const app=read('frontend/app.js');
 
 const checks=[
- ['Clean Core v8 is loaded last',/adaptive-learning-v79\.js[\s\S]{0,500}clean-core-v80\.js\?v=80/.test(index)],
- ['Clean Core CSS v8 is loaded',index.includes('clean-core-v80.css?v=80')],
+ ['Clean Core v8 is loaded after Adaptive Learning',/adaptive-learning-v79\.js[\s\S]{0,700}clean-core-v80\.js/.test(index)],
+ ['Clean Core CSS v8 is loaded',index.includes('clean-core-v80.css')],
  ['Old History v7.3.2 is not loaded',!index.includes('history-days-v732.js')&&!index.includes('history-days-v732.css')],
  ['Post-Match Center exists',clean.includes('RAPORT PO MECZU')&&clean.includes('Co nie weszło')&&clean.includes('Modele — wynik tego meczu')],
  ['Adaptive review is rendered directly',clean.includes('adaptive_review_v79')&&clean.includes('Dlaczego model się pomylił')],

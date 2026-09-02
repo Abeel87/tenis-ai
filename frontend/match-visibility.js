@@ -66,44 +66,32 @@ function refreshVisibleUi(){
   }catch{}
 }
 
-function loadDetailArchitectureV950(){
-  if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail-v950]'))return;
+function loadMatchDetail(){
+  if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail]'))return;
   const script=document.createElement('script');
-  script.src='match-detail-architecture-v950.js?v=950&contract=playable-model-diagnostics';
+  script.src='match-detail.js';
   script.async=false;
-  script.dataset.matchDetailV950='1';
+  script.dataset.matchDetail='1';
   document.head.appendChild(script);
 }
 
-function loadMarketSegregationV93G(){
-  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]')){loadDetailArchitectureV950();return}
+function loadMarketSegregation(){
+  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation]')){loadMatchDetail();return}
   const script=document.createElement('script');
-  script.src='market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only';
+  script.src='market-segregation.js';
   script.async=false;
-  script.dataset.marketSegregationV93g='1';
-  script.addEventListener('load',loadDetailArchitectureV950,{once:true});
+  script.dataset.marketSegregation='1';
+  script.addEventListener('load',loadMatchDetail,{once:true});
   document.head.appendChild(script);
 }
 
-function loadSuperbetModelCoverageV922(){
-  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage-v922]')){loadMarketSegregationV93G();return}
+function loadSuperbetModelCoverage(){
+  if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922||document.querySelector('script[data-superbet-model-coverage]')){loadMarketSegregation();return}
   const script=document.createElement('script');
-  script.src='superbet-model-coverage-v922.js?v=933&contract=operator-model-coverage';
+  script.src='superbet-model-coverage.js';
   script.async=false;
-  script.dataset.superbetModelCoverageV922='1';
-  script.addEventListener('load',loadMarketSegregationV93G,{once:true});
-  document.head.appendChild(script);
-}
-
-function loadPlayableUiV917(){
-  if(window.TENIS_AI_PLAYABLE_UI_V917){loadSuperbetModelCoverageV922();return}
-  const existing=document.querySelector('script[data-playable-ui-v917]');
-  if(existing){existing.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});return}
-  const script=document.createElement('script');
-  script.src='playable-ui-coherence-v917.js?v=948&contract=raw-playable-filter-coherence';
-  script.async=false;
-  script.dataset.playableUiV917='1';
-  script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true});
+  script.dataset.superbetModelCoverage='1';
+  script.addEventListener('load',loadMarketSegregation,{once:true});
   document.head.appendChild(script);
 }
 
@@ -117,8 +105,7 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// Ownership chain: strict PLAYABLE gate -> operator/model coverage -> market grouping
-// -> one canonical detail information architecture. The stable Match Browser is
-// owned by the final PLAYABLE freshness bootstrap and must not be loaded here.
-setTimeout(loadPlayableUiV917,0);
+// PLAYABLE bootstrap belongs exclusively to app-meta. This module owns only
+// the operator/model coverage + detail presentation chain.
+setTimeout(loadSuperbetModelCoverage,0);
 })();

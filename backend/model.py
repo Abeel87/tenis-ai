@@ -2,16 +2,16 @@ from __future__ import annotations
 
 """Current Engine facade with best-of aware match distribution (v9.4.6).
 
-The proven player/set model from v9.4.5 is preserved verbatim in
-``model_core_v945``. This facade re-exports its public/private helpers and only
-replaces full-match aggregation so BO5 fixtures are never evaluated as BO3.
+The proven player/set model is preserved verbatim in ``model_core``. This
+facade re-exports its public/private helpers and only replaces full-match
+aggregation so BO5 fixtures are never evaluated as BO3.
 No Superbet/PLAYABLE logic lives here.
 """
 
 try:  # package import in tests
-    from . import model_core_v945 as _core
+    from . import model_core as _core
 except ImportError:  # top-level import used by backend/update.py
-    import model_core_v945 as _core
+    import model_core as _core
 
 # Preserve the complete existing module API, including private helpers used by
 # tests and specialist code. The overrides below intentionally replace only the

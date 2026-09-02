@@ -5,7 +5,7 @@ JS = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
 CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
-PLAYABLE_UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
+PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
@@ -83,6 +83,7 @@ def test_no_runtime_reads_legacy_compact_card_feed():
 
 
 def test_metadata_boots_symphony_live_ui_without_generator_bootstrap():
-    assert "symphony2-live-ui-v201.js?v=201" in APP_META
+    assert "symphony2-live-ui.js" in APP_META
+    assert "symphony2-live-ui-v201.js" not in APP_META
     assert "generator-quality-v888.js" not in APP_META
     assert "scenario-studio-v82a.js" not in APP_META

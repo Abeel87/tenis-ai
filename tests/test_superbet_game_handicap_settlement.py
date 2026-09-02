@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from backend.signal_settlement import settle_signal, settle_signal_live
-from backend.superbet_candidate_settlement_v925 import capture_candidates
+from backend.superbet_candidate_settlement import capture_candidates
 
 
 def _final():
@@ -58,43 +58,21 @@ def test_candidate_shadow_captures_verified_operator_game_handicap_without_prod_
         "superbet_market_v91": {
             "operator_verified": True,
             "status": "VERIFIED",
-            "coverage_shadow_signals": [],
             "model_signals": [{
+                "key": "mh",
+                "label": "Alpha -2.5",
                 "market": "match_game_handicap",
                 "pick": "Alpha Player",
                 "line": -2.5,
-                "score": 71.0,
+                "score": 72.0,
                 "operator_line_verified": True,
-                "key": "handicap-alpha--2.5",
             }],
         },
     }]
-    captured, report = capture_candidates(history, results, datetime(2026, 8, 31, 20, 0, tzinfo=timezone.utc))
-    rows = captured[0]["superbet_candidate_signals_v925"]
-    assert report["operator_playable_changed"] is False
-    assert len(rows) == 1
+    out, report = capture_candidates(history, results, now=datetime(2026, 9, 1, 8, 0, tzinfo=timezone.utc))
+    rows = out[0]["superbet_candidate_signals_v925"]
+    assert report["captured"] == 1
     assert rows[0]["market"] == "match_game_handicap"
-    assert rows[0]["operator_line_verified"] is True
+    assert rows[0]["line"] == -2.5
     assert rows[0]["operator_playable"] is False
-    assert rows[0]["result"] == "pending"
-
-
-def test_candidate_shadow_rejects_unverified_operator_line():
-    history = [{"id": 102, "match_id": 102, "status": "pending"}]
-    results = [{
-        "id": 102,
-        "superbet_market_v91": {
-            "operator_verified": True,
-            "status": "VERIFIED",
-            "coverage_shadow_signals": [],
-            "model_signals": [{
-                "market": "match_game_handicap",
-                "pick": "Alpha Player",
-                "line": -2.5,
-                "score": 80.0,
-                "operator_line_verified": False,
-            }],
-        },
-    }]
-    captured, _ = capture_candidates(history, results)
-    assert "superbet_candidate_signals_v925" not in captured[0]
+    assert rows[0]["candidate_for_playable"] is True

@@ -29,7 +29,7 @@ def test_postmatch_explains_models_and_learning():
         assert model in clean
 
 def test_old_header_override_is_gone():
-    ui=read('frontend/ui-v751.js')
+    ui=read('frontend/project-ui.js')
     assert 'Tenis AI v7.8D · Calibration Guard' not in ui
     assert 'TENIS_AI_APPLY_META' in ui
 
@@ -45,9 +45,9 @@ def test_learning_backend_is_preserved():
         assert (ROOT/path).exists(), path
 
 def test_active_legacy_bridges_keep_required_features():
-    ui=read('frontend/ui-v751.js')
-    restore=read('frontend/restore-v762.js')
-    analytics=read('frontend/player-analytics-v76.js')
+    ui=read('frontend/project-ui.js')
+    restore=read('frontend/navigation-tools.js')
+    analytics=read('frontend/player-analytics.js')
     assert 'matchGamesPreview' in ui and 'matchGamesLines' in ui
     assert 'Siła sygnału' in ui and 'data-p751-nav="shadow"' in ui
     assert 'data-shadow-open' not in ui  # duplicate focus shortcut removed; nav preserved

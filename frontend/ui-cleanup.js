@@ -1,7 +1,6 @@
-/* Tenis AI v8.8.3 · final UI cleanup.
+/* Tenis AI · canonical UI cleanup.
    No model math changes. This layer only unifies visible versioning
-   and removes legacy stats clutter.
-   v8.8.20 runtime cleanup: explicit events replace delayed global polish loops.
+   and removes legacy stats clutter using explicit events.
 */
 (()=>{
 'use strict';
@@ -46,8 +45,6 @@ function cleanupStats(){
 function brand(){
   window.TENIS_AI_APPLY_META?.();
   document.documentElement.dataset.tenisAiFeatureVersion=window.TENIS_AI_META?.displayVersion||VERSION;
-
-  // Visible release labels belong to app-meta; feature versions stay internal.
 }
 
 function compactAdaptive(){

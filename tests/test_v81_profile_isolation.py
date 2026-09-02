@@ -13,7 +13,7 @@ def test_v81_profile_mode_is_isolated():
     assert "TENIS_AI_PLAYER_ANALYTICS_V801?.mount" in p
 
 def test_early_hold_paths_is_event_driven_outside_profile():
-    s = read("frontend/early-hold-paths-v771.js")
+    s = read("frontend/early-hold-paths.js")
     assert "version:'v8.8.16'" in s
     assert "decorateOverlay()" in s
     assert "if(profileActive())return" in s
@@ -34,7 +34,7 @@ def test_serve_props_uses_targeted_refresh_without_body_observer():
     assert "mountProfile" in s
 
 def test_player_trends_has_explicit_mount_without_subtree_observer():
-    s = read("frontend/player-trends-v71.js")
+    s = read("frontend/player-trends.js")
     assert "TENIS_AI_PLAYER_TRENDS_V81" in s
     assert "obs.observe(panel,{childList:true,subtree:true})" not in s
 

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.compact_frontend_data_v853 import prune_symphony2_publication
+from scripts.compact_frontend_data import prune_symphony2_publication
 
 
 def test_prune_removes_only_zero_support_rows(tmp_path: Path):

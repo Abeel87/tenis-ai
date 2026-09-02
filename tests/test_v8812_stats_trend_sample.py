@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def test_latest_trend_sample_is_visible_without_changing_math():
-    src = Path("frontend/stats-ranking-v886.js").read_text(encoding="utf-8")
+    src = Path("frontend/stats-ranking.js").read_text(encoding="utf-8")
 
     assert "patchTrendSampleContext" in src
     assert "circle title" in src

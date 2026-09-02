@@ -1,4 +1,4 @@
-/* Tenis AI v8.4E0 — shared heavy-data runtime.
+/* Tenis AI · shared heavy-data runtime.
    Keeps the main app as the single network owner of large JSON payloads.
    Later modules receive the already parsed global data instead of downloading
    and JSON-parsing results/history again. Model calculations are untouched. */
@@ -62,7 +62,6 @@
     try{url=new URL(input instanceof Request?input.url:String(input),location.href)}catch{return null}
     if(url.origin!==location.origin)return null;
 
-    // app.js owns authoritative refreshes and adds ?ts=... . Never intercept them.
     if(url.searchParams.has('ts')){
       diag.bypassed_main++;
       return null;
@@ -79,7 +78,6 @@
     const state=await waitShared(info.kind);
     if(state.ready)return state.value;
 
-    // Safety fallback only when the main load did not settle within MAX_WAIT_MS.
     diag.fallbacks++;
     try{
       const response=await nativeFetch(input,init);

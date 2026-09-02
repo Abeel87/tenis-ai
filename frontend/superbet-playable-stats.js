@@ -1,4 +1,4 @@
-/* Tenis AI v9.2.3 — Superbet PLAYABLE statistics + real-line coverage */
+/* Tenis AI · Superbet PLAYABLE statistics + real-line coverage */
 (()=>{
 'use strict';
 const VERSION='v9.2.3-ui';

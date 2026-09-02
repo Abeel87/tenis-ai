@@ -5,8 +5,8 @@ from collections import Counter
 from pathlib import Path
 
 from joint_builder_v78b import add_joint_builder
-from pbp_cache_recovery_v941 import recover_rows_from_cache
-from pbp_market_evidence_v940 import enrich_market_evidence
+from pbp_cache_recovery import recover_rows_from_cache
+from pbp_market_evidence import enrich_market_evidence
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "frontend" / "data" / "results.json"
