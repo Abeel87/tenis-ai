@@ -35,3 +35,13 @@ def test_canonical_runtime_entrypoints_declare_compatibility_boundary():
         assert "CANONICAL_ENTRYPOINT = True" in text
         assert "LEGACY_IMPLEMENTATION =" in text
         assert re.search(r'LEGACY_IMPLEMENTATION\s*=\s*"superbet_[A-Za-z0-9_]+_v\d+[A-Za-z0-9_]*"', text), name
+
+
+def test_canonical_runtime_has_no_wildcard_imports():
+    offenders = []
+    for name in CANONICAL_ENTRYPOINTS:
+        text = (BACKEND / name).read_text(encoding="utf-8")
+        if re.search(r"\bimport\s+\*", text):
+            offenders.append(name)
+        assert "__all__ =" in text, f"{name} must declare an explicit public API"
+    assert not offenders, f"Canonical runtime must not leak legacy namespaces through import *: {offenders}"
