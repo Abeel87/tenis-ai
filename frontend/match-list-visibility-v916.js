@@ -5,7 +5,7 @@
 (()=>{
 'use strict';
 
-const VERSION='v9.3.3';
+const VERSION='v9.5.0';
 const previousFilteredReady=typeof filteredReady==='function'?filteredReady:null;
 
 function visibleMatches(now=Date.now()){
@@ -66,12 +66,22 @@ function refreshVisibleUi(){
   }catch{}
 }
 
+function loadDetailArchitectureV950(){
+  if(window.TENIS_AI_MATCH_DETAIL_V950||document.querySelector('script[data-match-detail-v950]'))return;
+  const script=document.createElement('script');
+  script.src='match-detail-architecture-v950.js?v=950&contract=playable-model-diagnostics';
+  script.async=false;
+  script.dataset.matchDetailV950='1';
+  document.head.appendChild(script);
+}
+
 function loadMarketSegregationV93G(){
-  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]'))return;
+  if(window.TENIS_AI_MARKET_SEGREGATION_V93G||document.querySelector('script[data-market-segregation-v93g]')){loadDetailArchitectureV950();return}
   const script=document.createElement('script');
   script.src='market-segregation-v93g.js?v=933&contract=superbet-coverage-ui-only';
   script.async=false;
   script.dataset.marketSegregationV93g='1';
+  script.addEventListener('load',loadDetailArchitectureV950,{once:true});
   document.head.appendChild(script);
 }
 
@@ -116,8 +126,8 @@ window.TENIS_AI_MATCH_VISIBILITY_V916=Object.freeze({
 
 if(Array.isArray(all)&&all.length){queueMicrotask(refreshVisibleUi)}
 
-// Current ownership chain: strict PLAYABLE gate -> complete operator/model coverage
-// -> presentation-only market grouping. Legacy v921 RAW/Symphony panel is gone.
+// Ownership chain: strict PLAYABLE gate -> operator/model coverage -> market grouping
+// -> one canonical detail information architecture. MODEL/RAW calculations stay untouched.
 setTimeout(loadPlayableUiV917,0);
 setTimeout(loadMatchBrowserV945,0);
 })();
