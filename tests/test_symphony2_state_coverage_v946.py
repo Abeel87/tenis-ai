@@ -1,15 +1,17 @@
 from backend.symphony2_state import build_outcomes, marginal_probability
 
 
-def _match():
+def _match(best_of=3):
     return {
         "p1": "Alpha",
         "p2": "Beta",
-        "best_of": 3,
+        "best_of": best_of,
         "service_model": {"p1_hold": 0.78, "p2_hold": 0.74},
         "first_set_win": {"Alpha": 0.58, "Beta": 0.42},
         "second_set_win": {"Alpha": 0.56, "Beta": 0.44},
         "third_set_win": {"Alpha": 0.54, "Beta": 0.46},
+        "fourth_set_win": {"Alpha": 0.54, "Beta": 0.46},
+        "fifth_set_win": {"Alpha": 0.53, "Beta": 0.47},
     }
 
 
@@ -17,13 +19,20 @@ def _p(match, outcomes, market, pick, **extra):
     return marginal_probability(match, {"market": market, "pick": pick, **extra}, outcomes)
 
 
-def test_expanded_state_keeps_exact_set_and_player_game_totals():
+def test_expanded_state_keeps_set2_and_player_game_totals():
     match = _match()
     outcomes = build_outcomes(match)
     assert outcomes
     assert all(o.get("set2") is not None for o in outcomes)
-    assert all(len(o.get("set_scores") or ()) in {2, 3} for o in outcomes)
     assert all(o["p1_games"] + o["p2_games"] == o["total_games"] for o in outcomes)
+
+
+def test_bo5_state_is_bounded_to_sufficient_statistics():
+    outcomes = build_outcomes(_match(best_of=5))
+    assert outcomes
+    assert all(o["set_count"] in {3, 4, 5} for o in outcomes)
+    # Guard against retaining every exact later-set sequence (combinatorial explosion).
+    assert len(outcomes) < 50000
 
 
 def test_set2_winner_and_total_are_true_complements_on_half_lines():
