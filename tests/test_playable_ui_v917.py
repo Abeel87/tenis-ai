@@ -2,8 +2,8 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
-LOADER = (ROOT / "frontend" / "match-list-visibility-v916.js").read_text(encoding="utf-8")
+UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
+LOADER = (ROOT / "frontend" / "match-list-visibility.js").read_text(encoding="utf-8")
 
 
 def test_v917_requires_fresh_verified_superbet_context():
@@ -35,7 +35,7 @@ def test_v917_missing_score_is_nd_not_zero():
 
 
 def test_v917_loader_runs_after_existing_frontend_scripts():
-    assert re.search(r"playable-ui-coherence-v917\.js\?v=\d+&contract=raw-playable(?:-[a-z-]+)?", LOADER)
+    assert re.search(r"playable-ui\.js\?v=\d+&contract=raw-playable(?:-[a-z-]+)?", LOADER)
     assert "setTimeout(loadPlayableUiV917,0)" in LOADER
     assert "raw-playable-separation-v921" not in LOADER
 
@@ -59,12 +59,12 @@ const match={id:1,scheduled_time:'2026-08-28T14:00:00Z',feed_status:'upcoming',
   superbet_market_v91:{operator_verified:true,status:'VERIFIED',suspended:false,
     source_generated_at:'2026-08-28T11:00:00Z',canonical_selections:selections}};
 const rows=new Map([['1',match]]);
-const win={TENIS_AI_MATCH_TIME:require('./frontend/match-time-v84e11.js'),
+const win={TENIS_AI_MATCH_TIME:require('./frontend/match-time.js'),
   TENIS_AI_PROJECT_UI:{findMatch:key=>rows.get(key)},
   TENIS_AI_MODEL_API:{signals:()=>[{...selections[0],v:80},{...selections[1],v:null}]}};
 const ctx=vm.createContext({window:win,Date:Clock,console,setTimeout:()=>0,
   document:{readyState:'loading',addEventListener(){}}});
-vm.runInContext(fs.readFileSync('frontend/playable-ui-coherence-v917.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('frontend/playable-ui.js','utf8'),ctx);
 const api=win.TENIS_AI_PLAYABLE_UI_V917;
 assert.equal(api.active(match),true);
 assert.equal(api.findMatch('id:1'),match);
