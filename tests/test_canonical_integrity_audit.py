@@ -53,6 +53,20 @@ def test_playable_projection_never_overwrites_raw_shadow_sources():
     assert "shadow_center = _filter_shadow_feed(raw_shadow_center" in PLAYABLE_BACKEND
 
 
+def test_playable_projection_is_additive_and_never_rewrites_model_raw_fields():
+    assert "Build PLAYABLE without mutating RAW AutoLearn/model ladders" in PLAYABLE_BACKEND
+    assert '"raw_model_fields_preserved": True' in PLAYABLE_BACKEND
+    assert '"raw_autolearn_preserved": True' in PLAYABLE_BACKEND
+    for forbidden in (
+        'm["match_win"] = _project_ladder',
+        'm["first_set_win"] = _project_ladder',
+        'm["over_under"] = _project_ladder',
+        'm["match_over_under"] = _project_ladder',
+        'auto["signals"] = signals',
+    ):
+        assert forbidden not in PLAYABLE_BACKEND
+
+
 def test_playable_history_does_not_invent_zero_score_when_score_is_missing():
     row = _history_signal({"market": "match_winner", "pick": "A"}, "test")
     assert "score" not in row
