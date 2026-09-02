@@ -17,11 +17,11 @@ from pathlib import Path
 try:
     from .symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
     from .symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
-    from .superbet_playable_v912 import signal_signature
+    from .superbet_playable import signal_signature
 except ImportError:
     from symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
     from symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
-    from superbet_playable_v912 import signal_signature
+    from superbet_playable import signal_signature
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "frontend" / "data"
