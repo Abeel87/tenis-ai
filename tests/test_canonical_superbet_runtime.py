@@ -42,7 +42,7 @@ STABLE_FRONTEND_RUNTIME = {
     "ui-organizer.js", "ui-organizer.css", "superbet-playable-stats.js", "superbet-playable-stats.css",
     "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
     "integrity-status.js", "integrity-status.css", "model-trends.js", "model-trends.css",
-    "match-time.js", "match-time.css",
+    "match-time.js", "match-time.css", "pbp-validation.js", "pbp-validation.css", "market-lab.js", "market-lab.css",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
@@ -59,7 +59,8 @@ RETIRED_FRONTEND_RUNTIME = {
     "superbet-playable-v912.js", "superbet-playable-v912.css", "stats-ranking-v886.js",
     "checkpoint-quality-v887.js", "project-ui-quality-v8815.js",
     "integrity-v78a.js", "integrity-v78a.css", "model-trends-v84e2.js", "model-trends-v84e2.css",
-    "match-time-v84e11.js", "match-time-v84e11.css",
+    "match-time-v84e11.js", "match-time-v84e11.css", "pbp-validation-v73.js", "pbp-validation-v73.css",
+    "market-lab-v741.js", "market-lab-v741.css",
 }
 
 
@@ -129,13 +130,15 @@ def test_index_boots_stable_production_runtime_chain():
         "registration-handler.js", "registration-ux.js", "clarity-labels.js", "history-ui.js", "project-ui.js",
         "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
         "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
-        "project-ui-quality.js", "integrity-status.js", "match-time.js", "model-trends.js", "match-visibility.js",
+        "project-ui-quality.js", "integrity-status.js", "match-time.js", "model-trends.js",
+        "pbp-validation.js", "market-lab.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
     for name in (
         "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
         "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css",
         "performance-dashboard.css", "ui-cleanup.css", "integrity-status.css", "match-time.css", "model-trends.css",
+        "pbp-validation.css", "market-lab.css",
     ):
         assert f'href="{name}"' in text
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
@@ -163,6 +166,18 @@ def test_match_time_runtime_preserves_single_formatter_contract():
     assert "One formatter + one lightweight clock" in text
     assert "TENIS_AI_MATCH_TIME" in text
     assert "A passed scheduled time never implies LIVE" in text
+
+
+def test_market_lab_stays_lab_only():
+    text = (FRONTEND / "market-lab.js").read_text(encoding="utf-8")
+    assert "Market Lab v7.4.1" in text
+    assert "Na razie nie podbijają wyniku 72/80+" in text
+
+
+def test_pbp_validation_stays_reporting_only():
+    text = (FRONTEND / "pbp-validation.js").read_text(encoding="utf-8")
+    assert "PBP Result Tracker + walk-forward validation" in text
+    assert "diagnostyka stabilności tendencji" in text
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
