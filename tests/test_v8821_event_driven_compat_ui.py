@@ -8,7 +8,7 @@ def read(path):
 
 
 def test_v883_final_cleanup_has_no_delayed_global_polish_loop_or_scenario_bridge():
-    js = read("frontend/v883-final.js")
+    js = read("frontend/ui-cleanup.js")
     assert "RUNTIME_FIX='v8.8.20'" in js
     assert "tenis-ai:stats-ready" in js
     assert "tenis-ai:stats-dashboard-ready" in js
@@ -20,7 +20,7 @@ def test_v883_final_cleanup_has_no_delayed_global_polish_loop_or_scenario_bridge
 
 
 def test_v88_compat_bridge_keeps_adaptive_logic_without_scenario_runtime_or_polling():
-    js = read("frontend/v88-upgrade.js")
+    js = read("frontend/adaptive-prod-bridge.js")
     assert "RUNTIME_FIX='v8.8.21'" in js
     assert "adaptive_prod_score:final" in js
     assert "v88AdaptiveProd=true" in js
@@ -32,7 +32,7 @@ def test_v88_compat_bridge_keeps_adaptive_logic_without_scenario_runtime_or_poll
 
 
 def test_v88_layers_do_not_use_mutation_or_interval_polling():
-    for path in ["frontend/v88-upgrade.js", "frontend/v883-final.js"]:
+    for path in ["frontend/adaptive-prod-bridge.js", "frontend/ui-cleanup.js"]:
         js = read(path)
         assert "new MutationObserver(" not in js
         assert "setInterval(" not in js
