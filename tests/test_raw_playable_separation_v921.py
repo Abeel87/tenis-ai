@@ -3,7 +3,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 LOADER = (FRONTEND / "match-list-visibility-v916.js").read_text(encoding="utf-8")
-PLAYABLE = (FRONTEND / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
+APP_META = (FRONTEND / "app-meta.js").read_text(encoding="utf-8")
+PLAYABLE = (FRONTEND / "playable-ui.js").read_text(encoding="utf-8")
 COVERAGE = (FRONTEND / "superbet-model-coverage-v922.js").read_text(encoding="utf-8")
 SEGREGATION = (FRONTEND / "market-segregation-v93g.js").read_text(encoding="utf-8")
 
@@ -16,10 +17,12 @@ def test_legacy_raw_playable_runtime_is_gone():
 
 
 def test_current_loader_chain_has_single_owners():
-    assert "loadPlayableUiV917" in LOADER
+    assert "playable-ui.js" in APP_META
+    assert "playable-freshness.js" in APP_META
+    assert "loadPlayableUiV917" not in LOADER
     assert "loadSuperbetModelCoverageV922" in LOADER
     assert "loadMarketSegregationV93G" in LOADER
-    assert "script.addEventListener('load',loadSuperbetModelCoverageV922,{once:true})" in LOADER
+    assert "setTimeout(loadSuperbetModelCoverageV922,0)" in LOADER
     assert "script.addEventListener('load',loadMarketSegregationV93G,{once:true})" in LOADER
 
 
