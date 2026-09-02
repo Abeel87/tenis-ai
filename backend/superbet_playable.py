@@ -170,7 +170,7 @@ def operator_model_signals(match: dict) -> dict:
 
 def is_operator_playable_signal(match: dict, signal: dict) -> bool:
     if not operator_context_active(match):
-        return True
+        return False
     market = _market(signal.get("market"))
     if market not in STRICT_MARKETS:
         return False
@@ -459,10 +459,13 @@ def _filter_shadow_feed(data, results_index: dict):
                 continue
             row = dict(raw)
             match = results_index.get(_match_key(row))
-            if match and operator_context_active(match):
-                sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
-                row["signals"] = sigs
-                row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
+            if not match or not operator_context_active(match):
+                continue
+            sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
+            if not sigs:
+                continue
+            row["signals"] = sigs
+            row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
             rows.append(row)
         return rows
     if isinstance(data, dict) and isinstance(data.get("matches"), list):
@@ -474,19 +477,20 @@ def _filter_shadow_feed(data, results_index: dict):
                 continue
             row = dict(raw)
             match = results_index.get(_match_key(row))
-            if match and operator_context_active(match):
-                sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
-                row["signals"] = sigs
-                row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
-            for signal in row.get("signals") or []:
+            if not match or not operator_context_active(match):
+                continue
+            sigs = [dict(x) for x in (row.get("signals") or []) if isinstance(x, dict) and is_operator_playable_signal(match, x)]
+            if not sigs:
+                continue
+            row["signals"] = sigs
+            row["operator_view"] = "PLAYABLE_SUPERBET_ONLY"
+            for signal in row["signals"]:
                 for model_id in (signal.get("scores") or {}):
                     counts[str(model_id)] += 1
-            if row.get("signals"):
-                matches.append(row)
+            matches.append(row)
         out["matches"] = matches
         out["matches_count"] = len(matches)
-        if counts:
-            out["model_signal_counts"] = dict(sorted(counts.items()))
+        out["model_signal_counts"] = dict(sorted(counts.items()))
         out["operator_projection"] = {
             "version": VERSION, "view": "PLAYABLE_SUPERBET_ONLY", "prices_used": False,
         }
@@ -495,6 +499,7 @@ def _filter_shadow_feed(data, results_index: dict):
 
 
 def _history_signal(row: dict, source_model: str, score=None) -> dict:
+    resolved_score = _num(score if score is not None else row.get("score"))
     out = {
         "id": str(row.get("key") or "|".join(map(str, signal_signature(row)))),
         "key": row.get("key"),
@@ -504,7 +509,7 @@ def _history_signal(row: dict, source_model: str, score=None) -> dict:
         "line": row.get("line"),
         "checkpoint": row.get("checkpoint"),
         "player": row.get("player"),
-        "score": round(float(score if score is not None else _num(row.get("score"), 0.0)), 1),
+        "score": round(resolved_score, 1) if resolved_score is not None else None,
         "result": "pending",
         "source_model": source_model,
         "operator": OPERATOR,
@@ -566,7 +571,10 @@ def _freeze_history_layers(history: list[dict], results: list[dict], shadow_cent
                     continue
                 ensemble = _num(signal.get("ensemble"))
                 current = _num(signal.get("current"), _num(signal.get("score")))
-                row = _history_signal(signal, "ensemble_v84", ensemble if ensemble is not None else current)
+                selected_score = ensemble if ensemble is not None else current
+                if selected_score is None:
+                    continue
+                row = _history_signal(signal, "ensemble_v84", selected_score)
                 row["model_scores"] = {
                     "current": current,
                     "catboost": _num(signal.get("catboost")),
