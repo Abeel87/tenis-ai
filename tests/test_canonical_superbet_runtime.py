@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "superbet-market-refresh.yml"
 BACKEND = ROOT / "backend"
+FRONTEND = ROOT / "frontend"
 
 CANONICAL_ENTRYPOINTS = {
     "superbet_market_context.py",
@@ -39,6 +40,11 @@ def test_canonical_superbet_entrypoints_exist():
 def test_retired_superbet_compatibility_shims_stay_deleted():
     present = sorted(name for name in RETIRED_COMPATIBILITY_SHIMS if (BACKEND / name).exists())
     assert not present, f"Retired Superbet compatibility shims returned: {present}"
+
+
+def test_match_browser_uses_stable_production_filename():
+    assert (FRONTEND / "match-browser.js").is_file()
+    assert not (FRONTEND / "match-browser-v945.js").exists()
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():
