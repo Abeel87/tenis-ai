@@ -16,18 +16,18 @@ def test_v882_generator_is_retired_for_symphony2_ranking():
     assert "joint_probability" in engine
 
 def test_v882_stats_feed_selection_only():
-    s=t("frontend/v882-cleanup.js")
+    s=t("frontend/performance-dashboard.js")
     assert "TENIS_AI_PERFORMANCE_V882" in s
     assert "priorFor" in s
     assert "Nie zmieniają oceny FINAL" in s
 
 def test_v882_stats_tabs_and_charts():
-    s=t("frontend/v882-cleanup.js")
+    s=t("frontend/performance-dashboard.js")
     for token in ["Przegląd","Wykresy","pc882-trend-monitor","Rynki","Modele","Adaptive","trend(","calibration(","heatmap(","segments("]:
         assert token in s
 
 def test_v882_runtime_refresh_is_targeted():
-    s=t("frontend/v882-cleanup.js")
+    s=t("frontend/performance-dashboard.js")
     assert "RUNTIME_FIX='v8.8.13'" in s
     assert "tenis-ai:stats-dashboard-ready" in s
     assert "relevantPolishClick" in s
@@ -36,11 +36,11 @@ def test_v882_runtime_refresh_is_targeted():
     assert "setTimeout(()=>{\n    wrapStats();\n    polish();" in s
 
 def test_v882_adaptive_compact():
-    css=t("frontend/v882-cleanup.css")
+    css=t("frontend/performance-dashboard.css")
     assert "#v79-health:not(.expanded)" in css
 
 def test_v882_assets_loaded_after_v88():
     h=t("frontend/index.html")
-    assert "v882-cleanup.css?v=882" in h
-    assert "v882-cleanup.js?v=882" in h
-    assert h.index("v88-upgrade.js?v=88") < h.index("v882-cleanup.js?v=882")
+    assert "performance-dashboard.css?v=882" in h
+    assert "performance-dashboard.js?v=882" in h
+    assert h.index("adaptive-prod-bridge.js?v=88") < h.index("performance-dashboard.js?v=882")
