@@ -5,7 +5,7 @@ JS = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
 CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
-PLAYABLE_UI = (ROOT / "frontend" / "playable-ui-coherence-v917.js").read_text(encoding="utf-8")
+PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
