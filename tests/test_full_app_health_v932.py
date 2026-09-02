@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_registration_script_query_is_valid():
     html = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "registration-ux-v752.js&amp;review=" not in html
-    assert "registration-ux-v752.js?v=752&amp;review=932" in html
+    assert "registration-ux-v752.js" not in html
+    assert 'src="registration-ux.js"' in html
 
 
 def test_primary_boot_does_not_fetch_heavy_history_payload():
