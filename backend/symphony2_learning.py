@@ -16,6 +16,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 import math
+import re
+import unicodedata
 from typing import Any, Iterable
 
 try:
@@ -32,6 +34,14 @@ MIN_MARKET_CALIBRATION_ROWS = 60
 FULL_SUPPORT_ROWS = 120
 EPS = 1e-6
 CANDIDATE_LAYER = "superbet_candidate_signals_v925"
+SIDE_MARKETS = {
+    "p1_exactly_1_set": "p1",
+    "p1_exactly_2_sets": "p1",
+    "p1_wins_a_set": "p1",
+    "p2_exactly_1_set": "p2",
+    "p2_exactly_2_sets": "p2",
+    "p2_wins_a_set": "p2",
+}
 
 CAT_FEATURES = ["market", "pick", "surface", "tour", "player_scope"]
 NUM_FEATURES = [
@@ -53,6 +63,21 @@ def _norm(value: Any) -> str:
     return " ".join(str(value or "").strip().casefold().split())
 
 
+def _name_key(value: Any) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+    return " ".join(sorted(re.sub(r"[^a-z0-9]+", " ", text).split()))
+
+
+def _history_orientation_valid(match: dict, signal: dict) -> bool:
+    side = SIDE_MARKETS.get(_norm(signal.get("market")))
+    if side is None:
+        return True
+    player = _name_key(signal.get("player"))
+    expected = _name_key(match.get(side))
+    return bool(player and expected and player == expected)
+
+
 def _date_key(value: Any) -> float:
     try:
         return datetime.fromisoformat(str(value or "").replace("Z", "+00:00")).timestamp()
@@ -70,12 +95,12 @@ def _pick(value: Any) -> str:
 
 
 def _player_scope(signal: dict, match: dict) -> str:
-    player = _norm(signal.get("player"))
+    player = _name_key(signal.get("player"))
     if not player:
         return "none"
-    if player == _norm(match.get("p1")):
+    if player == _name_key(match.get("p1")):
         return "p1"
-    if player == _norm(match.get("p2")):
+    if player == _name_key(match.get("p2")):
         return "p2"
     return "named"
 
@@ -211,6 +236,8 @@ def build_training_rows(history: Iterable[dict]) -> list[dict]:
         match_id = entry.get("match_id") if entry.get("match_id") is not None else entry.get("id")
         outcomes = build_outcomes(entry)
         for signal in _history_layer(entry, candidate_markets):
+            if not _history_orientation_valid(entry, signal):
+                continue
             result = _norm(signal.get("result"))
             if result not in {"hit", "miss"}:
                 continue
