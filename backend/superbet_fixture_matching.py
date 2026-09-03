@@ -20,6 +20,10 @@ AMBIGUOUS_SCORE_GAP = 0.02
 AMBIGUOUS_TIME_GAP_HOURS = 1.0 / 6.0
 MAX_SAMPLE_ROWS = 12
 IGNORED_NAME_TOKENS = {"jr", "sr", "ii", "iii", "iv"}
+SCORE_ORIENTED_MARKETS = {
+    "exact_match_score", "set1_exact_score", "set2_exact_score",
+    "game_state", "set2_game_state",
+}
 
 
 def _empty_scope() -> dict:
@@ -117,8 +121,6 @@ def _select(match: dict, fixtures: list[dict], *, cached: bool):
         close_score = abs(best_score-second_score)<AMBIGUOUS_SCORE_GAP
         close_time = abs(best[2]-second[2])<AMBIGUOUS_TIME_GAP_HOURS
         distinct_fixture = best[3] != second[3]
-        # Never guess between two distinct nearly-equivalent fixtures. This also
-        # covers duplicate exact-pair rows, not only relaxed aliases.
         if same_match_kind and close_score and close_time and distinct_fixture:
             scope["ambiguous_rejected"]+=1;_sample(scope,match,"AMBIGUOUS_EXACT" if best[5] else "AMBIGUOUS_ALIAS");return None
     if best[5]:scope["exact"]+=1
@@ -137,13 +139,22 @@ def _swap_side_market(market) -> str:
     return value
 
 
-def _orient_cached_fixture(match: dict, row: dict | None):
-    """Project fixture-side p1/p2 semantics onto the app match ordering.
+def _swap_score_pick(value):
+    text=str(value or "").strip()
+    for sep in (":", "-"):
+        parts=text.split(sep)
+        if len(parts)==2 and all(part.strip().isdigit() for part in parts):
+            return f"{int(parts[1])}:{int(parts[0])}"
+    return value
 
-    OddsPapi may list the same two players in the reverse order. Pair matching is
-    intentionally order-insensitive, but canonical markets such as p1_wins_a_set
-    and p2_exactly_1_set are side-sensitive. Return an oriented copy so downstream
-    Superbet/Symphony state semantics always use the app's p1/p2 contract.
+
+def _orient_cached_fixture(match: dict, row: dict | None):
+    """Project fixture-side semantics onto the app match ordering.
+
+    OddsPapi may list the same two players in reverse order. Pair matching is
+    intentionally order-insensitive, but p1/p2 markets and score picks are not.
+    Return an oriented copy so downstream Superbet, Symphony and Neuro always
+    consume the app's p1/p2 contract without mutating the cached operator feed.
     """
     if not isinstance(row,dict):return row
     app_p1,app_p2=match.get("p1"),match.get("p2"); fixture_p1,fixture_p2=row.get("p1"),row.get("p2")
@@ -154,7 +165,11 @@ def _orient_cached_fixture(match: dict, row: dict | None):
     oriented=[]
     for raw in row.get("canonical_selections") or []:
         if not isinstance(raw,dict):continue
-        selection=dict(raw);selection["market"]=_swap_side_market(selection.get("market"));oriented.append(selection)
+        selection=dict(raw)
+        selection["market"]=_swap_side_market(selection.get("market"))
+        if str(selection.get("market") or "") in SCORE_ORIENTED_MARKETS:
+            selection["pick"]=_swap_score_pick(selection.get("pick"))
+        oriented.append(selection)
     out["canonical_selections"]=oriented
     out["participant_order_reoriented"]=True
     return out
