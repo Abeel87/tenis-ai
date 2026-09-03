@@ -54,10 +54,10 @@ jobs:
           if not p.exists():
               raise SystemExit('point_tape_schema_audit.json was not generated')
           report = json.loads(p.read_text(encoding='utf-8'))
-          tapes = int(report.get('tapes_scanned') or 0)
-          rows = int(report.get('rows_scanned') or 0)
-          print(f'tapes_scanned={tapes} rows_scanned={rows}')
-          if tapes <= 0 or rows <= 0:
+          matches = int(report.get('matches') or 0)
+          rows = int(report.get('rows') or 0)
+          print(f'matches={matches} rows={rows}')
+          if matches <= 0 or rows <= 0:
               raise SystemExit('No real cached PBP tapes were available on this runner')
           PY
 
