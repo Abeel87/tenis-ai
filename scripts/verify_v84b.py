@@ -56,7 +56,9 @@ def main():
     req(index, 'autolearn-v84.js?v=84a1&hf=84b1', "brak cache-bust AutoLearn v8.4B")
     if 'scenario-studio-v82a.js' in index:
         ERRORS.append("wycofany Scenario Studio nadal jest aktywny")
-    req(index, 'symphony2.js?v=210', "brak aktywnej Symfonii 2.0")
+    req(index, 'symphony2.js', "brak aktywnej Symfonii 2.0")
+    if 'symphony2.js?v=210' in index or 'symphony2.js?v=220' in index:
+        ERRORS.append("stary pin Symfonii nadal aktywny")
     req(ui, "🤖 AUTOLEARN v8.4B", "UI nie pokazuje v8.4B")
     req(project_health, "cache_v84b", "Project Health nie akceptuje aktywnego cache v8.4B")
     req(project_health, "legacy_v801_marker", "Project Health nie pilnuje kompatybilności v801")
