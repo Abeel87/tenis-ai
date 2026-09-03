@@ -37,8 +37,8 @@ def test_v88_preserves_protected_runtime_contract():
     html=text("frontend/index.html")
     meta=text("frontend/app-meta.js")
     upgrade=text("frontend/adaptive-prod-bridge.js")
-    assert "symphony2.js?v=220" in html
-    assert "symphony2.css?v=220" in html
+    assert 'src="symphony2.js"' in html
+    assert 'href="symphony2.css"' in html
     assert "scenario-studio-v82a.js" not in html
     assert "scenario-studio-v82a.css" not in html
     assert "model-guide.js?v=87dc1" in html
@@ -49,7 +49,7 @@ def test_v88_preserves_protected_runtime_contract():
     assert "appVersion: 'v8.0.1'" in meta
     assert "displayVersion:'v8.8.7'" in meta
     assert "currentUiArchitecture:'v8.8.7-checkpoint-quality-lock'" in meta
-    assert "symphonyVersion:'v2.1'" in meta
+    assert "symphonyVersion:'canonical'" in meta
     assert "generatorPolicyVersion" not in meta
     assert "function applyV88Brand()" in upgrade
     assert "window.TENIS_AI_APPLY_META?.()" in upgrade
