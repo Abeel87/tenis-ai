@@ -1,1 +1,1 @@
-from backend.neuro_shadow_training import *
+from backend.neuro_shadow_training_v936 import *
