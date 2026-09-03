@@ -1,6 +1,6 @@
 import math
 
-from backend.neuro_shadow_market_adapter_v935 import adapt_canonical_selection
+from backend.neuro_shadow_market_adapter import adapt_canonical_selection
 from backend.signal_settlement import settle_signal_live
 from backend.superbet_market_context import _orient_line
 
