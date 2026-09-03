@@ -12,6 +12,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
 }[c]));
 const norm=s=>String(s??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
+const nameKey=s=>norm(s).replace(/[^a-z0-9]+/g,' ').split(' ').filter(Boolean).sort().join(' ');
 const pct=x=>num(x)==null?'N/D':`${Number(x).toFixed(1).replace('.0','')}%`;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,Number(x)||0));
 
@@ -58,7 +59,8 @@ function eventKey(match,signal){
   const cp=market==='game_state'?num(signal.checkpoint??rawMarket.match(/^state([246])$/)?.[1]??parts[1]):null;
   let pick=norm(signal.pick);
   if(['match_win','set1_win','set2_win','set3_win'].includes(market)){
-    pick=pick===norm(match.p1)?'p1':pick===norm(match.p2)?'p2':pick;
+    const player=nameKey(signal.pick),p1=nameKey(match.p1),p2=nameKey(match.p2);
+    pick=player&&player===p1?'p1':player&&player===p2?'p2':pick;
   }
   return [market,line??'',cp??'',pick].join('|');
 }
@@ -362,7 +364,7 @@ async function renderStats882(){
         <article><span>Wzorce błędów</span><b>${repeated.length}</b><small>${esc(adaptive?.mode||'N/D')} · eff ${Number(adaptive?.training?.effective_rows||0).toFixed(0)}</small></article>
       </div>
       <article class="pc882-card"><header><b>Największe powtarzalne błędy</b><small>Adaptive wykorzystuje je do ograniczonej korekty</small></header>
-      <div class="pc882-errors">${repeated.map(x=>`<div><span><b>${esc(String(x.key||'').split('|').slice(1).join(' · '))}</b><small>${esc(String(x.key||'').split('|')[0]||'model')} · n≈${Number(x.effective_n||0).toFixed(0)} · ${esc(x.evidence||'')}</small></span><em>RAW ${pct(x.raw_mean)} → ${pct(x.accuracy)}</em><strong class="${Number(x.gap_pp||0)<0?'bad':'good'}">${Number(x.gap_pp||0)>=0?'+':''}${Number(x.gap_pp||0).toFixed(1)} pp</strong></div>`).join('')||'<div class="pc882-empty">Brak powtarzalnych błędów.</div>'}</div></article>
+      <div class="pc882-errors">${repeated.map(x=>`<div><span><b>${esc(String(x.key||'').split('|').slice(1).join(' · '))}</b><small>${esc(String(x.key||'').split('|')[0]||'model')} · n≈${Number(x.effective_n||0).toFixed(0)} · ${esc(x.evidence||'')}</small></span><em>RAW ${pct(x.raw_mean)} → ${pct(x.accuracy)}</em><strong class="${Number(x.gap_pp||0)<0?'bad':'good'}">${Number(x.gap_pp||0)>=0?'+':''}${Number(x.gap_pp||0).toFixed(1)} pp</strong></div>`).join('')||'<div class="pc882-empty">Brak powtarzalnych błędów.</div>'}</article>
     </section>
     <p class="pc882-note">Statystyki wpływają na <b>ranking par Generatora</b> dopiero przy sensownej próbce. Nie zmieniają oceny FINAL. n liczy unikalne zdarzenia na model i mecz; równoważne linie 10.5/11.5 są scalone. Zdarzenia jednego meczu są skorelowane. Proxy selektora nie jest skutecznością zapisanych par. Modele mogą mieć różne próbki. Player Intelligence i Accuracy Lab zostają SHADOW.</p>`;
 
