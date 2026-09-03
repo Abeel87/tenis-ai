@@ -9,6 +9,8 @@ COLLECTING_DATA until the strict trainer gates are satisfied.
 
 import hashlib
 import json
+import re
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -22,6 +24,15 @@ PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False
 AUTO_PROMOTION = False
+ORIENTATION_POLICY = "SIDE_MARKET_PLAYER_MUST_MATCH_APP_ORDER"
+SIDE_MARKETS = {
+    "p1_exactly_1_set": "p1",
+    "p1_exactly_2_sets": "p1",
+    "p1_wins_a_set": "p1",
+    "p2_exactly_1_set": "p2",
+    "p2_exactly_2_sets": "p2",
+    "p2_wins_a_set": "p2",
+}
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TRAINING_PATH = ROOT / "frontend" / "data" / "neuro_shadow_neural_v936.json"
@@ -42,6 +53,31 @@ def _read_json(path: Path) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
+def _name_key(value: Any) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+    return " ".join(sorted(re.sub(r"[^a-z0-9]+", " ", text).split()))
+
+
+def _orientation_valid(row: dict[str, Any]) -> bool:
+    """Fail closed for historical side-sensitive rows captured before fixture orientation.
+
+    Dedicated history remains append-only. This guard only decides whether a row
+    is trustworthy enough to train the neural SHADOW model.
+    """
+    market = str(row.get("market") or "")
+    side = SIDE_MARKETS.get(market)
+    if side is None:
+        return True
+    player = _name_key(row.get("player"))
+    expected = _name_key(row.get(side))
+    return bool(player and expected and player == expected)
+
+
+def _eligible_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [row for row in rows or [] if isinstance(row, dict) and _orientation_valid(row)]
+
+
 def _group_by_market(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows or []:
@@ -54,14 +90,17 @@ def _group_by_market(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any
 
 
 def training_fingerprint(rows: list[dict[str, Any]]) -> str:
-    """Hash every settled field that can affect neural training or its split.
+    """Hash every trusted settled field that can affect neural training or its split.
 
     Pending/VOID rows do not trigger an expensive retrain. HIT/MISS evidence,
     immutable features, match grouping identity and chronological split time do.
+    Historical side-market rows with inconsistent player orientation are
+    quarantined before fingerprinting so they can never preserve a contaminated
+    cached model artifact.
     """
     evidence = []
-    for row in rows or []:
-        if not isinstance(row, dict) or row.get("settlement") not in {"hit", "miss"}:
+    for row in _eligible_training_rows(rows):
+        if row.get("settlement") not in {"hit", "miss"}:
             continue
         evidence.append({
             "prediction_key": row.get("prediction_key"),
@@ -83,7 +122,12 @@ def training_fingerprint(rows: list[dict[str, Any]]) -> str:
         str(row.get("settlement") or ""),
     ))
     raw = json.dumps(
-        {"trainer": VERSION, "neural": NEURAL_VERSION, "evidence": evidence},
+        {
+            "trainer": VERSION,
+            "neural": NEURAL_VERSION,
+            "orientation_policy": ORIENTATION_POLICY,
+            "evidence": evidence,
+        },
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
@@ -92,7 +136,10 @@ def training_fingerprint(rows: list[dict[str, Any]]) -> str:
 
 
 def build_training_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    grouped = _group_by_market(rows)
+    raw_rows = [row for row in rows or [] if isinstance(row, dict)]
+    eligible = _eligible_training_rows(raw_rows)
+    quarantined = len(raw_rows) - len(eligible)
+    grouped = _group_by_market(eligible)
     reports = {
         market: train_market(grouped[market], market)
         for market in sorted(grouped)
@@ -108,7 +155,10 @@ def build_training_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "neural_version": NEURAL_VERSION,
         "mode": MODE,
         "status": "SHADOW_READY" if ready else "COLLECTING_DATA",
-        "history_rows": len(rows or []),
+        "history_rows_total": len(raw_rows),
+        "history_rows": len(eligible),
+        "orientation_quarantined_rows": quarantined,
+        "orientation_policy": ORIENTATION_POLICY,
         "markets_seen": len(reports),
         "markets_ready": ready,
         "ready_markets": ready_markets,
@@ -133,6 +183,7 @@ def refresh_training_artifact(
         existing.get("training_fingerprint") == fingerprint
         and existing.get("version") == VERSION
         and existing.get("neural_version") == NEURAL_VERSION
+        and existing.get("orientation_policy") == ORIENTATION_POLICY
         and isinstance(existing.get("markets"), dict)
     ):
         return {**existing, "training_reused": True}
