@@ -8,8 +8,18 @@ function check(ok, message) {
   console.log(`PASS  ${message}`);
 }
 
-check(index.includes('symphony2.js?v=210'), 'Symphony 2 runtime is bootstrapped');
-check(index.includes('symphony2.css?v=210'), 'Symphony 2 styles are bootstrapped');
+check(index.includes('src="symphony2.js"'), 'Symphony 2 runtime is bootstrapped');
+check(index.includes('href="symphony2.css"'), 'Symphony 2 styles are bootstrapped');
+for (const stale of [
+  'symphony2.js?v=210',
+  'symphony2.js?v=220',
+  'symphony2.css?v=210',
+  'symphony2.css?v=220',
+  'symphony2-v210',
+  'symphony2-v220',
+]) {
+  check(!index.includes(stale), `stale Symphony pin is absent: ${stale}`);
+}
 check(!index.includes('scenario-studio-v82a.js'), 'retired Scenario Studio is not bootstrapped');
 check(!index.includes('scenario-runtime-v202.js'), 'retired Scenario runtime is not bootstrapped');
 check(!index.includes('generator-quality-v888.js'), 'retired generator quality layer is not bootstrapped');
