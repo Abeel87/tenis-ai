@@ -29,7 +29,7 @@ def test_v917_actionable_surfaces_share_one_gate_without_erasing_raw_detail():
     assert "legs.every(leg=>isPlayable(match,leg))" in UI
     assert "Brak Superbet PLAYABLE" in UI
     assert "Brak świeżej oferty Superbet" in UI
-    assert "MODEL / RAW pozostaje widoczny bez zmian" in UI
+    assert "MODEL / RAW oraz modelowy FINAL pozostają widoczne bez zmian" in UI
     assert "built=api.buildRows(match)||[]" in UI
     assert "if(!operatorRow)return {...row,operator_playable:false}" in UI
     assert "operator_playable:true" in UI
