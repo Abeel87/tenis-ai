@@ -23,7 +23,9 @@ def main():
     req(idx,'autolearn-v84.css?v=84a1&hf=84a3',"naruszono chroniony pin AutoLearn CSS")
     req(idx,'dynamic-weights-v84d1.css?v=84d1',"brak CSS v8.4D.1 w index.html")
     req(idx,'dynamic-weights-v84d1.js?v=84e0',"brak aktywnego JS Dynamic Weights")
-    req(idx,'symphony2.js?v=210',"brak aktywnej Symfonii 2.0")
+    req(idx,'symphony2.js',"brak aktywnej Symfonii 2.0")
+    if 'symphony2.js?v=210' in idx or 'symphony2.js?v=220' in idx:
+        ERR.append("stary pin Symfonii nadal aktywny")
     if 'scenario-studio-v82a.js' in idx:
         ERR.append("wycofany Scenario Studio nadal aktywny")
 
