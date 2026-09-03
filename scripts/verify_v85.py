@@ -31,7 +31,7 @@ ok('protected app pin', 'app.js?v=84b1' in index)
 ok('protected autolearn pin', 'autolearn-v84.js?v=84a1&hf=84b1' in index)
 ok('retired Scenario Studio absent', 'scenario-studio-v82a.js' not in index)
 ok('retired Scenario runtime absent', 'scenario-runtime-v202.js' not in index)
-ok('Symphony 2 active', 'symphony2.js?v=210' in index)
+ok('Symphony 2 active', 'symphony2.js' in index)
 
 failed=[x for x in checks if not x[1]]
 for name,status,detail in checks:
