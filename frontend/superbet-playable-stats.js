@@ -59,7 +59,7 @@ function cardHtml(){
   const subtitle=`Ostatni raport: ${timestamp} · nie jest to stan oferty na żywo`;
   const note=feedActive
     ? 'Liczby opisują ofertę w chwili wygenerowania raportu. Aktualna dostępność jest sprawdzana osobno przy meczu. Skuteczność obejmuje wyłącznie rozliczone sygnały z zamrożoną ofertą operatora; RAW nie jest do niej dopisywany.'
-    : 'Brak PLAYABLE w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%.';
+    : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%. MODEL / RAW pozostaje niezależny i widoczny.';
   return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
     <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?`${matches} MECZÓW`:'FEED N/D'}</strong></div>
     <div class="sp912-grid">
