@@ -35,7 +35,9 @@ def main():
     req(auto, 'VERSION = "v8.4B"', "v8.4C naruszyło chroniony core AutoLearn v8.4B")
     if 'scenario-studio-v82a.js' in index:
         ERRORS.append("wycofany Scenario Studio nadal jest aktywny")
-    req(index, 'symphony2.js?v=210', "Symfonia 2.0 nie jest aktywna")
+    req(index, 'symphony2.js', "Symfonia 2.0 nie jest aktywna")
+    if 'symphony2.js?v=210' in index or 'symphony2.js?v=220' in index:
+        ERRORS.append("stary pin Symfonii nadal aktywny")
 
     req(ui, "🤖 AUTOLEARN v8.4B", "zniknął kompatybilny nagłówek AutoLearn v8.4B")
     req(ui, "📡 TELEMETRIA v8.4C", "UI nie pokazuje telemetrii v8.4C")
