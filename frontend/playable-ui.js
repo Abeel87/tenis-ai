@@ -268,7 +268,7 @@ function patchDecisionHeader(root,match,rows){
   const p=root.querySelector('.dc87-head p');
   if(p)p.textContent=active(match)
     ?'MODEL / RAW pozostaje pełny. Sygnały dostępne na dokładnej linii bieżącej oferty są dodatkowo oznaczane jako SUPERBET PLAYABLE.'
-    :'Brak świeżej oferty Superbet. MODEL / RAW pozostaje widoczny bez zmian; nic nie jest oznaczane jako FINAL ani PLAYABLE.';
+    :'Brak świeżej oferty Superbet. MODEL / RAW oraz modelowy FINAL pozostają widoczne bez zmian; żaden sygnał nie jest oznaczany jako SUPERBET PLAYABLE.';
   const health=root.querySelector('.dc87-health');
   if(health){
     let badge=health.querySelector('[data-v917-book]');
