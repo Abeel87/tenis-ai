@@ -16,7 +16,7 @@ def test_shared_data_runtime_is_loaded_before_heavy_consumers():
     index = Path('frontend/index.html').read_text(encoding='utf-8')
     assert index.index('app.js') < index.index('data-runtime.js')
     assert index.index('data-runtime.js') < index.index('dynamic-weights-v84d1.js')
-    assert index.index('data-runtime.js') < index.index('symphony2.js?v=210')
+    assert index.index('data-runtime.js') < index.index('src="symphony2.js"')
     assert 'runtime-health-v84e0.js' not in index
     assert 'scenario-dynamic-v84d3.js' not in index
 

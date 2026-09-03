@@ -1,6 +1,6 @@
 import json
 
-from backend.neuro_shadow_history_v935 import (
+from backend.neuro_shadow_history import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,

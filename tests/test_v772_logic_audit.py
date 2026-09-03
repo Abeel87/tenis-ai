@@ -63,10 +63,11 @@ def test_history_source_and_pwa():
 
     assert "source_model='early_hold_pbp'" in h
 
-    # Verify the live PWA/cache and central metadata contracts without freezing
-    # whitespace formatting around object properties.
+    # Verify the live PWA/cache and central metadata contracts without pinning
+    # Symphony to a historical cache version.
     assert "const CACHE='tenis-ai-" in sw
-    assert "symphony2-v210" in sw
+    assert "'symphony2.js'" in sw
+    assert "'symphony2.css'" in sw
     assert "appVersion: 'v8.0.1'" in meta
     assert "modelVersion:'v7.8D'" in meta
     assert "modelName:'AutoLearn Ensemble + Adaptive Learning'" in meta

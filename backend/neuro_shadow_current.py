@@ -11,9 +11,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from backend.neuro_shadow_history_v935 import DEFAULT_HISTORY_PATH, load_history
-from backend.neuro_shadow_neural_v936 import VERSION as NEURAL_VERSION, predict
-from backend.neuro_shadow_training_v936 import DEFAULT_TRAINING_PATH
+from backend.neuro_shadow_history import DEFAULT_HISTORY_PATH, load_history
+from backend.neuro_shadow_neural import VERSION as NEURAL_VERSION, predict
+from backend.neuro_shadow_training import DEFAULT_TRAINING_PATH
 
 VERSION = "neuro-shadow-current-v9.3.8"
 MODE = "SHADOW"

@@ -1,6 +1,6 @@
 import math
 
-from backend.neuro_shadow_neural_v936 import (
+from backend.neuro_shadow_neural import (
     AUTO_PROMOTE,
     MIN_DISTINCT_MATCHES,
     MIN_SETTLED,

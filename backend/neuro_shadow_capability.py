@@ -8,9 +8,9 @@ the current isolated SHADOW state can actually capture, without implying any
 production readiness.
 """
 
-from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
+from backend.neuro_shadow_state import CANDIDATE_CAPTURE_READY_MARKETS
 
-VERSION = "neuro-shadow-capability-v9.3.8"
+VERSION = "neuro-shadow-capability"
 PRODUCTION_INFLUENCE = False
 PLAYABLE_INFLUENCE = False
 SYMPHONY_PROD_INFLUENCE = False

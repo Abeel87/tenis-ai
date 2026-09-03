@@ -1,8 +1,8 @@
-/* Tenis AI v9.3.6 — isolated NEURO SHADOW dashboard.
+/* Tenis AI — isolated NEURO SHADOW dashboard.
    Read-only UI: never modifies MODEL/RAW, Symphony or PLAYABLE. */
 (()=>{
 'use strict';
-if(window.TENIS_AI_NEURO_SHADOW_V936)return;
+if(window.TENIS_AI_NEURO_SHADOW)return;
 const VERSION='v9.3.15';
 const PATHS={stats:'data/neuro_shadow_stats_v935.json',training:'data/neuro_shadow_neural_v936.json',current:'data/neuro_shadow_current_v936.json'};
 let cache=null,promise=null,navTimer=null;
@@ -28,6 +28,6 @@ function neuroLine(row){const label=[row.player,row.pick,row.line].filter(v=>v!=
 async function toggleMatchPanel(button){const panel=button.closest('.sbmc922-panel'),overlay=button.closest('#p751-match-overlay');if(!panel||!overlay)return;let box=panel.querySelector('.neuro936-match-panel');if(box){box.remove();button.classList.remove('active');return}button.classList.add('active');const data=await load(),match=currentMatch(data.current,overlay);box=document.createElement('div');box.className='neuro936-match-panel';box.innerHTML=match&&match.rows?.length?`<div class="neuro936-match-title"><b>🧠 NEURO SHADOW</b><span>${match.rows.length} selekcji</span></div>${match.rows.map(neuroLine).join('')}`:'<div class="neuro936-empty">NEURO: brak aktualnie przechwyconych selekcji dla tego meczu.</div>';panel.querySelector('.sbmc922-head')?.after(box)}
 function injectBrain(){document.querySelectorAll('.sbmc922-panel .sbmc922-head').forEach(head=>{if(head.querySelector('.neuro936-brain'))return;const b=document.createElement('button');b.type='button';b.className='neuro936-brain';b.title='NEURO SHADOW';b.setAttribute('aria-label','Pokaż NEURO SHADOW');b.textContent='🧠';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleMatchPanel(b)});head.appendChild(b)})}
 function boot(){scheduleNav();const observer=new MutationObserver(()=>{scheduleNav();injectBrain()});observer.observe(document.documentElement,{subtree:true,childList:true});injectBrain()}
-window.TENIS_AI_NEURO_SHADOW_V936=Object.freeze({version:VERSION,load,open,close,dashboard,injectBrain,bindNav});
+window.TENIS_AI_NEURO_SHADOW=Object.freeze({version:VERSION,load,open,close,dashboard,injectBrain,bindNav});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

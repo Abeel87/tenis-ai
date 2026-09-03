@@ -15,8 +15,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from backend.neuro_shadow_history_v935 import DEFAULT_HISTORY_PATH, load_history
-from backend.neuro_shadow_neural_v936 import VERSION as NEURAL_VERSION, train_market
+from backend.neuro_shadow_history import DEFAULT_HISTORY_PATH, load_history
+from backend.neuro_shadow_neural import VERSION as NEURAL_VERSION, train_market
 
 VERSION = "neuro-shadow-training-v9.3.11"
 MODE = "SHADOW"

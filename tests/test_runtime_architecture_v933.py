@@ -25,7 +25,7 @@ def test_current_runtime_uses_symphony2_and_exact_superbet_layer_only():
     assert "raw-playable-separation-v921" not in text
     assert "symphony_match_cards_v90" not in text
     assert "loadRawPlayableV921" not in loader
-    assert "symphony2.js?v=210" in index
+    assert 'src="symphony2.js"' in index
     assert "symphony2-live-ui.js" in meta
     assert "playable-ui.js" in meta
     assert "playable-freshness.js" in meta

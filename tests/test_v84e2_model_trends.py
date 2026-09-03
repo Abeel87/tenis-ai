@@ -124,5 +124,5 @@ def test_frontend_is_additive_and_no_new_polling():
     assert 'src="model-trends.js"' in idx
     assert "model-trends-v84e2.js" not in idx
     assert "autolearn-v84.js?v=84a1&hf=84b1" in idx
-    assert "symphony2.js?v=210" in idx
+    assert 'src="symphony2.js"' in idx
     assert "scenario-studio-v82a.js" not in idx

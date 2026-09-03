@@ -27,14 +27,14 @@ on:
       - 'backend/symphony2_state.py'
       - 'backend/symphony2_engine.py'
       - 'backend/symphony2_tracker.py'
-      - 'backend/neuro_shadow_state_v935.py'
-      - 'backend/neuro_shadow_market_adapter_v935.py'
-      - 'backend/neuro_shadow_features_v935.py'
-      - 'backend/neuro_shadow_tracker_v935.py'
-      - 'backend/neuro_shadow_history_v935.py'
-      - 'backend/neuro_shadow_neural_v936.py'
-      - 'backend/neuro_shadow_neural_artifact_v936.py'
-      - 'backend/neuro_shadow_runner_v935.py'
+      - 'backend/neuro_shadow_state.py'
+      - 'backend/neuro_shadow_market_adapter.py'
+      - 'backend/neuro_shadow_features.py'
+      - 'backend/neuro_shadow_tracker.py'
+      - 'backend/neuro_shadow_history.py'
+      - 'backend/neuro_shadow_neural.py'
+      - 'backend/neuro_shadow_training.py'
+      - 'backend/neuro_shadow_runner.py'
       - 'frontend/symphony2.js'
       - 'frontend/symphony2.css'
       - 'frontend/superbet-model-coverage.js'
@@ -113,14 +113,14 @@ jobs:
           python -m py_compile backend/symphony2_state.py
           python -m py_compile backend/symphony2_engine.py
           python -m py_compile backend/symphony2_tracker.py
-          python -m py_compile backend/neuro_shadow_state_v935.py
-          python -m py_compile backend/neuro_shadow_market_adapter_v935.py
-          python -m py_compile backend/neuro_shadow_features_v935.py
-          python -m py_compile backend/neuro_shadow_tracker_v935.py
-          python -m py_compile backend/neuro_shadow_history_v935.py
-          python -m py_compile backend/neuro_shadow_neural_v936.py
-          python -m py_compile backend/neuro_shadow_neural_artifact_v936.py
-          python -m py_compile backend/neuro_shadow_runner_v935.py
+          python -m py_compile backend/neuro_shadow_state.py
+          python -m py_compile backend/neuro_shadow_market_adapter.py
+          python -m py_compile backend/neuro_shadow_features.py
+          python -m py_compile backend/neuro_shadow_tracker.py
+          python -m py_compile backend/neuro_shadow_history.py
+          python -m py_compile backend/neuro_shadow_neural.py
+          python -m py_compile backend/neuro_shadow_training.py
+          python -m py_compile backend/neuro_shadow_runner.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
@@ -157,9 +157,9 @@ jobs:
 
       - name: Capture isolated NEURO SHADOW evidence and refresh current feed
         run: |
-          python -m backend.neuro_shadow_runner_v935 settle
-          python -m backend.neuro_shadow_runner_v935 capture
-          python -m backend.neuro_shadow_runner_v935 run
+          python -m backend.neuro_shadow_runner settle
+          python -m backend.neuro_shadow_runner capture
+          python -m backend.neuro_shadow_runner run
 
       - name: Runtime sanity guard
         run: |

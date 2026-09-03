@@ -1,4 +1,4 @@
-from backend.neuro_shadow_neural_v936 import _fit
+from backend.neuro_shadow_neural import _fit
 
 
 def test_zero_weight_sample_has_zero_optimizer_effect_including_l2():

@@ -12,18 +12,18 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from backend.neuro_shadow_current_v936 import DEFAULT_CURRENT_PATH, refresh_current_feed
-from backend.neuro_shadow_history_v935 import (
+from backend.neuro_shadow_current import DEFAULT_CURRENT_PATH, refresh_current_feed
+from backend.neuro_shadow_history import (
     DEFAULT_HISTORY_PATH,
     DEFAULT_STATS_PATH,
     append_prediction_batches,
     load_history,
     settle_history,
 )
-from backend.neuro_shadow_market_adapter_v935 import adapt_market_context
-from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
-from backend.neuro_shadow_tracker_v935 import prediction_key
-from backend.neuro_shadow_training_v936 import (
+from backend.neuro_shadow_market_adapter import adapt_market_context
+from backend.neuro_shadow_state import CANDIDATE_CAPTURE_READY_MARKETS
+from backend.neuro_shadow_tracker import prediction_key
+from backend.neuro_shadow_training import (
     DEFAULT_TRAINING_PATH,
     build_training_report,
     refresh_training_artifact,

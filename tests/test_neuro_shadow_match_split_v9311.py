@@ -1,4 +1,4 @@
-from backend.neuro_shadow_neural_v936 import VALIDATION_FRACTION, _chronological_match_split
+from backend.neuro_shadow_neural import VALIDATION_FRACTION, _chronological_match_split
 
 
 def test_row_rich_fixture_cannot_distort_match_based_validation_fraction():

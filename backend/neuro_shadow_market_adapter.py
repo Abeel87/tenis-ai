@@ -8,13 +8,13 @@ never changes PLAYABLE/Symphony PROD and never invents a line or probability.
 
 from typing import Any
 
-from backend.neuro_shadow_features_v935 import (
+from backend.neuro_shadow_features import (
     _name_key,
     extract_feature_snapshot,
     model_signal_index,
     selection_signature,
 )
-from backend.neuro_shadow_state_v935 import (
+from backend.neuro_shadow_state import (
     CANDIDATE_CAPTURE_READY_MARKETS,
     build_shadow_outcomes,
     shadow_probability,

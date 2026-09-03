@@ -1,4 +1,4 @@
-from backend.neuro_shadow_capability_v937 import (
+from backend.neuro_shadow_capability import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     READY,

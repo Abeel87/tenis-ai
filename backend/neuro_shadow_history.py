@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from backend.neuro_shadow_tracker_v935 import register_predictions, settle_prediction, summarize
+from backend.neuro_shadow_tracker import register_predictions, settle_prediction, summarize
 
 VERSION = "neuro-shadow-history-v9.3.6"
 MODE = "SHADOW"

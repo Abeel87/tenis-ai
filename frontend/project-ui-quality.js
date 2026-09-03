@@ -6,7 +6,7 @@
 'use strict';
 
 const VERSION='v8.8.15';
-const RUNTIME_FIX='v8.8.18';
+const RUNTIME_FIX='v8.8.19';
 const WRAP_KEY='__projectUiQualityV8815';
 const STARTUP_SUPPRESS_MS=1250;
 const bootClock=performance.now();
@@ -218,6 +218,40 @@ function patchDiagnosticCoreRows(){
   return true;
 }
 
+function hasCompleteOuPair(row){
+  return !!row&&num(row.over)!=null&&num(row.under)!=null;
+}
+
+function patchIncompleteMarketLines(){
+  const overlay=document.querySelector('#p751-match-overlay');
+  if(!overlay||overlay.hidden)return false;
+  const key=String(overlay.dataset.matchKey||'');
+  let match=null;
+  try{match=bridge()?.findMatch?.(key)||null}catch{}
+  if(!match)return false;
+
+  let changed=false;
+  overlay.querySelectorAll('.p751-lines').forEach(group=>{
+    const label=String(group.querySelector('label')?.textContent||'');
+    const isSet1=/1\. set/i.test(label);
+    const isMatch=/cały mecz/i.test(label);
+    if(!isSet1&&!isMatch)return;
+    const source=isSet1?(match.market_lab_v741?.set1_total||match.over_under||{}):(match.match_over_under||{});
+    group.querySelectorAll('span').forEach(cell=>{
+      const line=String(cell.querySelector('b')?.textContent||'').trim();
+      if(!line)return;
+      const raw=source?.[line];
+      if(hasCompleteOuPair(raw))return;
+      cell.classList.remove('strong','hot','lean');
+      const value=cell.querySelector('small');
+      if(value)value.textContent='N/D';
+      cell.dataset.v8819IncompleteOu='1';
+      changed=true;
+    });
+  });
+  return changed;
+}
+
 function patchServePropsHonesty(){
   const overlay=document.querySelector('#p751-match-overlay');
   if(!overlay||overlay.hidden)return false;
@@ -273,6 +307,7 @@ function patchProjectHome(){
 function patchProjectDetail(){
   patchVerdict();
   patchDiagnosticCoreRows();
+  patchIncompleteMarketLines();
   patchServePropsHonesty();
   patchExactScoreHonesty();
 }

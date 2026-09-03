@@ -167,7 +167,7 @@ def test_pwa_uses_one_canonical_cache_key_per_data_json():
 
 def test_symphony2_replaces_previous_scenario_pin():
     index = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert "symphony2.js?v=210" in index
+    assert 'src="symphony2.js"' in index
     assert "scenario-studio-v82a.js" not in index
     assert "scenario-runtime-v202.js" not in index
 

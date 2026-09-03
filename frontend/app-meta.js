@@ -14,7 +14,7 @@
     playerModelShadowVersion:'v8.9',
     ensemblePlayerLearningVersion:'v8.9.1',
     appCoherenceVersion:'v8.9.2',
-    symphonyVersion:'v2.1',
+    symphonyVersion:'canonical',
     modelName:'AutoLearn Ensemble + Adaptive Learning',
     productionModelName:'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion:'v7.9B-bayesian-meta',
@@ -116,8 +116,8 @@
     loadAddon('player-intelligence-human.js','player-intelligence-human-addon');
     loadAddon('app-coherence.js','app-coherence-addon');
     loadAddon('symphony2-live-ui.js','symphony2-live-ui');
-    loadStyle('neuro-shadow-v936.css?v=936','neuro-shadow-v936-css');
-    loadAddon('neuro-shadow-v936.js?v=936','neuro-shadow-v936-js');
+    loadStyle('neuro-shadow.css','neuro-shadow-css');
+    loadAddon('neuro-shadow.js','neuro-shadow-js');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxAddons,{once:true});else loadUxAddons();
   window.TENIS_AI_FAST_BOOT_V888=Object.freeze({version:'v8.8.8',clear:clearDataCache,snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})});

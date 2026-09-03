@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION='2.1';
+  const VERSION='2.2';
   const DATA_URL='./data/symphony2_current.json';
   const STATS_URL='./data/symphony2_stats.json';
   const NAV_SELECTOR='#p751-bottom-nav [data-p751-nav="symphony2"]';
@@ -12,6 +12,8 @@
   const pct=v=>num(v)==null?'N/D':`${Number(v).toFixed(1)}%`;
   const nfmt=v=>num(v)==null?'N/D':Number(v).toLocaleString('pl-PL');
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ');
+  const yes=v=>['yes','tak','true','1'].includes(String(v??'').trim().toLowerCase());
+  const no=v=>['no','nie','false','0'].includes(String(v??'').trim().toLowerCase());
 
   const MARKET_LABELS={
     match_winner:'Wygra mecz',match_win:'Wygra mecz',
@@ -21,6 +23,10 @@
     match_total:'Suma gemów · mecz',set1_total:'Suma gemów · 1. set',
     total_sets:'Liczba setów',exact_match_score:'Dokładny wynik meczu',
     set1_exact_score:'Dokładny wynik 1. seta',set1_tiebreak:'Tie-break w 1. secie',
+    p1_exactly_1set:'Zawodnik 1 · dokładnie 1 wygrany set',
+    p2_exactly_1set:'Zawodnik 2 · dokładnie 1 wygrany set',
+    any_set_to_nil:'Set do zera w meczu',
+    match_handicap:'Handicap gemów · mecz',game_handicap:'Handicap gemów · mecz',
     game_state:'Stan po gemach'
   };
 
@@ -62,22 +68,67 @@
   function status(data){
     return `<div class="s2-status"><div class="s2-stat"><small>Model linii</small><strong>${esc(data?.model_status||'N/D')}</strong></div><div class="s2-stat"><small>Mecze z ofertą</small><strong>${nfmt(data?.matches_count)}</strong></div><div class="s2-stat"><small>Wygenerowano</small><strong>${esc((data?.generated_at||'').replace('T',' ').slice(0,16)||'N/D')}</strong></div></div>`;
   }
-  function marketLabel(x){
-    const base=MARKET_LABELS[String(x?.market||'').toLowerCase()]||String(x?.label||x?.market||'Rynek');
-    const cp=num(x?.checkpoint);
-    return cp!=null&&String(x?.market||'').toLowerCase()==='game_state'?`${base} ${cp} gemach`:base;
+  function playerFor(x,m){
+    const direct=x?.player_name||x?.player||x?.participant||x?.competitor||x?.selection_player;
+    if(direct)return String(direct);
+    const market=String(x?.market||'').toLowerCase();
+    if(market.startsWith('p1_'))return String(m?.p1||'Zawodnik 1');
+    if(market.startsWith('p2_'))return String(m?.p2||'Zawodnik 2');
+    return '';
   }
-  function selectionLabel(x){
-    const line=num(x?.line),pick=String(x?.pick||'').trim(),core=pick||x?.label||x?.selection_id||'Selekcja';
+  function marketLabel(x,m){
+    const market=String(x?.market||'').toLowerCase();
+    const player=playerFor(x,m);
+    let base=MARKET_LABELS[market]||String(x?.label||x?.market||'Rynek');
+    if(market==='p1_exactly_1set'||market==='p2_exactly_1set')base=`${player||base} · dokładnie 1 wygrany set`;
+    const cp=num(x?.checkpoint);
+    return cp!=null&&market==='game_state'?`${base} ${cp} gemach`:base;
+  }
+  function selectionLabel(x,m){
+    const market=String(x?.market||'').toLowerCase(),line=num(x?.line),pick=String(x?.pick||'').trim(),player=playerFor(x,m);
+    if(market==='p1_exactly_1set'||market==='p2_exactly_1set'){
+      if(no(pick))return `${player||'Zawodnik'} nie wygra dokładnie 1 seta`;
+      if(yes(pick))return `${player||'Zawodnik'} wygra dokładnie 1 set`;
+    }
+    if(market==='any_set_to_nil'){
+      if(no(pick))return 'W meczu nie będzie seta do zera';
+      if(yes(pick))return 'W meczu będzie set do zera';
+    }
+    const core=pick||x?.label||x?.selection_id||'Selekcja';
     return line==null?core:`${core} ${Number(line).toFixed(1).replace('.0','')}`;
   }
-  function leg(x){
+  function operatorSource(x){
+    const raw=String(x?.operator_line_source||'').trim();
+    if(!raw)return '';
+    if(/^oddspapi[_-]/i.test(raw)||/market_id/i.test(raw))return ' · zweryfikowana linia Superbet';
+    return ` · ${esc(raw)}`;
+  }
+  function leg(x,m){
     const state=num(x?.state_probability)==null?'':` · STATE ${pct(x.state_probability)}`;
     const support=nfmt(x?.learning_support_rows);
-    return `<div class="s2-leg"><div><strong>${esc(selectionLabel(x))}</strong><small>${esc(marketLabel(x))} · dokładna linia Superbet${x?.operator_line_source?` · ${esc(x.operator_line_source)}`:''}${state} · historia n=${support}</small></div><div class="s2-prob">${pct(x?.operator_model_probability)}</div></div>`;
+    return `<div class="s2-leg"><div><strong>${esc(selectionLabel(x,m))}</strong><small>${esc(marketLabel(x,m))} · dokładna linia Superbet${operatorSource(x)}${state} · historia n=${support}</small></div><div class="s2-prob">${pct(x?.operator_model_probability)}</div></div>`;
   }
   function compositionCard(m,c){
-    return `<article class="s2-card"><div class="s2-head"><div><small>${esc(m?.tour||'')} ${m?.surface?`· ${esc(m.surface)}`:''}</small><h3>${esc(m?.p1)} <span>vs</span> ${esc(m?.p2)}</h3><div class="s2-muted">${Number(c?.legs||0)} zdarzenia · wszystkie z bieżącej oferty Superbet</div></div><div class="s2-score"><small>quality</small><strong>${Number(c?.score||0).toFixed(1)}</strong></div></div><div>${(c?.selection||[]).map(leg).join('')}</div><div class="s2-joint"><span>Wspólne P kompozycji</span><strong>${pct(c?.joint_probability)}</strong><small>${esc(c?.joint_status||'')} · policzone na tej samej dystrybucji stanów meczu</small></div></article>`;
+    return `<article class="s2-card"><div class="s2-head"><div><small>${esc(m?.tour||'')} ${m?.surface?`· ${esc(m.surface)}`:''}</small><h3>${esc(m?.p1)} <span>vs</span> ${esc(m?.p2)}</h3><div class="s2-muted">${Number(c?.legs||0)} zdarzenia · wszystkie z bieżącej oferty Superbet</div></div><div class="s2-score"><small>quality</small><strong>${Number(c?.score||0).toFixed(1)}</strong></div></div><div>${(c?.selection||[]).map(x=>leg(x,m)).join('')}</div><div class="s2-joint"><span>Wspólne P kompozycji</span><strong>${pct(c?.joint_probability)}</strong><small>${esc(c?.joint_status||'')} · policzone na tej samej dystrybucji stanów meczu</small></div></article>`;
+  }
+  function availableLegCounts(data){
+    const counts=new Set();
+    (data?.matches||[]).forEach(m=>Object.keys(m?.compositions||{}).forEach(k=>{const n=Number(k);if(Number.isInteger(n)&&n>0)counts.add(n)}));
+    return [...counts].sort((a,b)=>a-b);
+  }
+  function eligibleMatchCount(data){
+    return (data?.matches||[]).filter(m=>Object.keys(m?.compositions||{}).some(k=>m.compositions?.[k])).length;
+  }
+  function countOptions(data){
+    const max=Math.max(1,eligibleMatchCount(data));
+    const selected=Math.min(4,max);
+    return Array.from({length:max},(_,i)=>i+1).map(n=>`<option${n===selected?' selected':''}>${n}</option>`).join('');
+  }
+  function legOptions(data){
+    const counts=availableLegCounts(data);
+    if(!counts.length)return '<option value="auto" selected>AUTO</option>';
+    const range=counts.length===1?String(counts[0]):`${counts[0]}–${counts[counts.length-1]}`;
+    return `<option value="auto" selected>AUTO ${range}</option>${counts.map(n=>`<option value="${n}">${n}</option>`).join('')}`;
   }
   function renderCompositions(data,count,legs){
     const rows=(data?.matches||[]).map(m=>{
@@ -88,7 +139,8 @@
     return rows.map(x=>compositionCard(x.m,x.c)).join('');
   }
   function hubShell(data){
-    return `<section class="s2-shell" data-symphony2-version="${VERSION}"><div class="s2-hero"><div class="s2-kicker">TENIS AI · SYMFONIA 2.0</div><h2>Symfonia 2.0</h2><p>Jedno miejsce dla PLAYABLE. Biorę dokładną aktualną ofertę Superbet, oceniam każdą selekcję modelem uczonym na historycznych realnych liniach i składam tylko spójne kombinacje z prawdziwym joint probability.</p></div>${status(data)}<div class="s2-controls"><label>Mecze<select id="s2-count"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label><label>Zdarzenia / mecz<select id="s2-legs"><option value="auto" selected>AUTO 2–6</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label><button class="s2-generate" id="s2-compose" type="button">🎼 Ułóż Symfonię 2.0</button></div><div id="s2-results" class="s2-grid">${renderCompositions(data,4,'auto')}</div></section>`;
+    const defaultCount=Math.min(4,Math.max(1,eligibleMatchCount(data)));
+    return `<section class="s2-shell" data-symphony2-version="${VERSION}"><div class="s2-hero"><div class="s2-kicker">TENIS AI · SYMFONIA 2.0</div><h2>Symfonia 2.0</h2><p>Jedno miejsce dla PLAYABLE. Biorę dokładną aktualną ofertę Superbet, oceniam każdą selekcję modelem uczonym na historycznych realnych liniach i składam tylko spójne kombinacje z prawdziwym joint probability.</p></div>${status(data)}<div class="s2-controls"><label>Mecze<select id="s2-count">${countOptions(data)}</select></label><label>Zdarzenia / mecz<select id="s2-legs">${legOptions(data)}</select></label><button class="s2-generate" id="s2-compose" type="button">🎼 Ułóż Symfonię 2.0</button></div><div id="s2-results" class="s2-grid">${renderCompositions(data,defaultCount,'auto')}</div></section>`;
   }
   async function open(){
     const hub=ensureHub(),b=hubBody();
@@ -97,7 +149,7 @@
     try{
       const data=await load(true);b.innerHTML=hubShell(data);
       b.querySelector('#s2-compose')?.addEventListener('click',()=>{
-        const c=Number(b.querySelector('#s2-count')?.value||4),l=b.querySelector('#s2-legs')?.value||'auto';
+        const fallback=Math.min(4,Math.max(1,eligibleMatchCount(data))),c=Number(b.querySelector('#s2-count')?.value||fallback),l=b.querySelector('#s2-legs')?.value||'auto';
         b.querySelector('#s2-results').innerHTML=renderCompositions(data,c,l);
       });
       return true;
@@ -131,7 +183,11 @@
     const globalMode=global.production_applied===true?'UŻYWANA':global.accepted?'DIAGNOSTYKA':'RAW';
     return `<div class="s2stats-cal"><span>Time split <b>${training?.time_split?'TAK':'NIE'}</b></span><span>Kalibracja globalna <b>${globalMode}</b></span><span>Brier globalny <b>${raw==null?'N/D':raw.toFixed(4)}${cal==null?'':` → ${cal.toFixed(4)}`}</b></span><span>Aktywne kalibracje rynków <b>${accepted}</b></span></div>`;
   }
-  function byLegHtml(perf){return `<div class="s2stats-legs">${[2,3,4,5,6].map(n=>{const r=perf?.by_leg_count?.[String(n)]||{};return `<div><span>${n} zd.</span><b>${pct(r.accuracy)}</b><small>${nfmt(r.hits)}/${nfmt(r.settled)} trafionych kompozycji</small></div>`}).join('')}</div>`}
+  function byLegHtml(perf){
+    const keys=Object.keys(perf?.by_leg_count||{}).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+    const counts=keys.length?keys:[2,3,4,5,6];
+    return `<div class="s2stats-legs">${counts.map(n=>{const r=perf?.by_leg_count?.[String(n)]||{};return `<div><span>${n} zd.</span><b>${pct(r.accuracy)}</b><small>${nfmt(r.hits)}/${nfmt(r.settled)} trafionych kompozycji</small></div>`}).join('')}</div>`;
+  }
   function statsCard(stats){
     const train=stats?.training||{},offer=stats?.current_offer||{},perf=stats?.performance||{};
     return `<section id="symphony2-performance" class="s2stats-card" data-version="${VERSION}"><header class="s2stats-head"><div><span>🎼 SYMFONIA 2.0 · STATYSTYKI</span><h3>Realne linie Superbet</h3><p>Nowa historia od zera. Wyniki starej Symfonii i starego generatora nie są importowane ani mieszane z tym panelem.</p></div><div class="s2stats-state"><small>model</small><b>${esc(stats?.model_status||'N/D')}</b></div></header><div class="s2stats-kpis"><div><span>Trening exact-line</span><b>${nfmt(train.training_rows)}</b><small>walidacja ${nfmt(train.validation_rows)}</small></div><div><span>Oferta teraz</span><b>${nfmt(offer.exact_operator_selections)}</b><small>${nfmt(offer.verified_fixtures)} fixture · state ${nfmt(offer.state_supported_selections)}</small></div><div><span>Kompozycje rozliczone</span><b>${nfmt(perf.compositions_settled)}</b><small>${pct(perf.composition_accuracy)} skuteczności</small></div><div><span>Nogi rozliczone</span><b>${nfmt(perf.legs_settled)}</b><small>${pct(perf.leg_accuracy)} skuteczności</small></div></div>${calibrationHtml(train)}<div class="s2stats-section"><div class="s2stats-title"><b>Skuteczność wg liczby zdarzeń</b><small>wyłącznie Symfonia 2.0</small></div>${byLegHtml(perf)}</div><div class="s2stats-note">Akcyjne teraz: <b>${nfmt(offer.selections_above_actionable_threshold)}</b> selekcji przy progu ${pct(offer.threshold)}. Oczekujące kompozycje 2.0: <b>${nfmt(perf.predictions_pending)}</b>. Joint: <b>${esc(stats?.joint_probability_policy||'EXACT_SHARED_STATE_ONLY')}</b>. Stare statystyki użyte: <b>NIE</b>.</div></section>`;
@@ -162,13 +218,14 @@
   }
   function compositionFor(row){
     if(!row)return null;const n=row.recommended_leg_count;if(n&&row.compositions?.[String(n)])return row.compositions[String(n)];
-    for(const k of ['2','3','4','5','6'])if(row.compositions?.[k])return row.compositions[k];return null;
+    const keys=Object.keys(row.compositions||{}).map(Number).filter(Number.isFinite).sort((a,b)=>b-a);
+    for(const k of keys)if(row.compositions?.[String(k)])return row.compositions[String(k)];return null;
   }
   function matchSymphonyHtml(row,data){
     const comp=compositionFor(row),offer=Number(row?.offer_selections||0),scored=(row?.scored_selections||[]).filter(x=>num(x?.operator_model_probability)!=null);
     const best=scored.sort((a,b)=>num(b.operator_model_probability)-num(a.operator_model_probability)).slice(0,3);
-    if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Wyłącznie dokładne, aktualne selekcje Superbet. RAW nie jest źródłem linii PLAYABLE.</p></div><strong>${pct(comp.joint_probability)}</strong></header><div class="s2-match-legs">${(comp.selection||[]).map(leg).join('')}</div><footer>Exact shared-state joint · ${comp.legs} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;
-    return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji spełniającej próg</h3><p>Oferta Superbet jest oceniona, ale Symfonia 2.0 nie pokazuje słabszego układu jako gotowego typu.</p></div><strong>—</strong></header><div class="s2-match-summary"><span><small>Realne selekcje Superbet</small><b>${offer}</b></span><span><small>Najwyższe P(hit)</small><b>${best.length?pct(best[0].operator_model_probability):'N/D'}</b></span><span><small>Model</small><b>${esc(data?.model_status||'N/D')}</b></span></div>${best.length?`<details class="s2-match-candidates"><summary>Najmocniejsze ocenione linie · nie są PLAYABLE poniżej progu</summary>${best.map(leg).join('')}</details>`:''}</section>`;
+    if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Wyłącznie dokładne, aktualne selekcje Superbet. RAW nie jest źródłem linii PLAYABLE.</p></div><strong>${pct(comp.joint_probability)}</strong></header><div class="s2-match-legs">${(comp.selection||[]).map(x=>leg(x,row)).join('')}</div><footer>Exact shared-state joint · ${comp.legs} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;
+    return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji spełniającej próg</h3><p>Oferta Superbet jest oceniona, ale Symfonia 2.0 nie pokazuje słabszego układu jako gotowego typu.</p></div><strong>—</strong></header><div class="s2-match-summary"><span><small>Realne selekcje Superbet</small><b>${offer}</b></span><span><small>Najwyższe P(hit)</small><b>${best.length?pct(best[0].operator_model_probability):'N/D'}</b></span><span><small>Model</small><b>${esc(data?.model_status||'N/D')}</b></span></div>${best.length?`<details class="s2-match-candidates"><summary>Najmocniejsze ocenione linie · nie są PLAYABLE poniżej progu</summary>${best.map(x=>leg(x,row)).join('')}</details>`:''}</section>`;
   }
   function cleanupLegacySymphony(scope){
     if(!scope)return;scope.querySelectorAll('[data-symphony-match-mini],.symmatch-mini').forEach(x=>x.remove());

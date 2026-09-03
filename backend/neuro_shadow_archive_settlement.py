@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from backend.neuro_shadow_history_v935 import (
+from backend.neuro_shadow_history import (
     DEFAULT_HISTORY_PATH as DEFAULT_NEURO_HISTORY_PATH,
     DEFAULT_STATS_PATH,
     settle_history,

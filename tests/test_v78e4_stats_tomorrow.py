@@ -18,7 +18,9 @@ def test_v78e4_keeps_current_and_legacy_separate():
 def test_v78e4_bumps_pwa_cache():
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
 
-    # Verify the current cache contract without freezing whitespace formatting.
+    # Verify the current cache contract and canonical Symphony assets without
+    # freezing the test to a historical Symphony cache version.
     assert "const CACHE='tenis-ai-" in sw
-    assert "symphony2-v210" in sw
+    assert "'symphony2.js'" in sw
+    assert "'symphony2.css'" in sw
     assert "cache.addAll(ASSETS)" not in sw

@@ -1,11 +1,11 @@
-/* Tenis AI — Symphony 2.0 live UI recovery v2.0.2
+/* Tenis AI — Symphony 2.0 live UI recovery v2.0.3
    UI-only layer: exposes current Symphony 2.0 on match cards/details.
    Scenario runtime is intentionally NOT intercepted or bootstrapped here. */
 (() => {
   'use strict';
   if (window.TENIS_AI_SYMPHONY2_LIVE_V201) return;
 
-  const VERSION='2.0.2-live-ui';
+  const VERSION='2.0.3-live-ui';
   const DATA_URL='data/symphony2_current.json';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const num=v=>v==null||!Number.isFinite(Number(v))?null:Number(v);
@@ -27,7 +27,14 @@
   function decodeKey(card){let k=card?.dataset?.p751Open||'';try{k=decodeURIComponent(k)}catch{}return String(k)}
   function rowForKey(data,key){if(!data||!key)return null;return (data.matches||[]).find(r=>[r.id,r.match_id,r.match_key].some(v=>v!=null&&String(v)===String(key)))||null}
   function rowForDetail(data){const overlay=document.querySelector('#p751-match-overlay:not([hidden])');const key=overlay?.dataset?.matchKey||'';let row=rowForKey(data,key);if(row)return row;const names=[...overlay?.querySelectorAll?.('.p751-matchup b')||[]].map(x=>norm(x.textContent));if(names.length>=2)row=(data.matches||[]).find(r=>{const a=norm(r.p1),b=norm(r.p2);return(a===names[0]&&b===names[1])||(a===names[1]&&b===names[0])});return row||null}
-  function composition(row){if(!row)return null;const n=row.recommended_leg_count;if(n&&row.compositions?.[String(n)])return row.compositions[String(n)];for(const k of ['2','3','4','5','6'])if(row.compositions?.[k])return row.compositions[k];return null}
+  function composition(row){
+    if(!row)return null;
+    const recommended=Number(row.recommended_leg_count);
+    if(Number.isInteger(recommended)&&recommended>0&&row.compositions?.[String(recommended)])return row.compositions[String(recommended)];
+    const keys=Object.keys(row.compositions||{}).map(Number).filter(n=>Number.isInteger(n)&&n>0).sort((a,b)=>a-b);
+    for(const n of keys){const c=row.compositions?.[String(n)];if(c)return c}
+    return null;
+  }
   function bestProbability(row){return Math.max(-Infinity,...(row?.scored_selections||[]).map(x=>num(x.operator_model_probability)).filter(x=>x!=null))}
   function badgeHtml(row){const comp=composition(row),best=bestProbability(row),ready=!!comp;return `<div class="s2-live-card-badge ${ready?'ready':'scored'}" data-s2-live-card="1"><span>🎼 <b>SYMFONIA 2.0</b></span><strong>${ready?`PLAYABLE · joint ${pct(comp.joint_probability)}`:(Number.isFinite(best)?`ocenione · max P(hit) ${pct(best)}`:'oferta oceniana')}</strong></div>`}
   async function decorateCards(force=false){

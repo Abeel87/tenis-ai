@@ -1,7 +1,7 @@
 import json
 
-import backend.neuro_shadow_training_v936 as training
-from backend.neuro_shadow_training_v936 import (
+import backend.neuro_shadow_training as training
+from backend.neuro_shadow_training import (
     AUTO_PROMOTION,
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,

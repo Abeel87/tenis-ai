@@ -1,7 +1,7 @@
 import math
 
-from backend.neuro_shadow_market_adapter_v935 import adapt_canonical_selection
-from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS, shadow_probability
+from backend.neuro_shadow_market_adapter import adapt_canonical_selection
+from backend.neuro_shadow_state import CANDIDATE_CAPTURE_READY_MARKETS, shadow_probability
 
 
 def _match(best_of=3):
