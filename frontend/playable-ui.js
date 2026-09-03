@@ -136,11 +136,23 @@ function modelSignals(match,limit=100){
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0))
     .slice(0,Math.max(1,Number(limit)||100));
 }
+function projectionSignals(match){
+  const layer=match?.superbet_playable_v912;
+  if(!layer||typeof layer!=='object'||!Array.isArray(layer.signals))return null;
+  return layer.signals
+    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null)
+    .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0));
+}
 function playableSignals(match,limit=100){
   if(!active(match))return[];
-  return modelSignals(match,Math.max(100,Number(limit)||100))
+  const max=Math.max(1,Number(limit)||100);
+  const projected=projectionSignals(match);
+  if(projected!==null)return projected.slice(0,max);
+  // Backward-compatible fallback only for datasets produced before the additive
+  // backend projection existed. New results use superbet_playable_v912.signals.
+  return modelSignals(match,Math.max(100,max))
     .filter(row=>isPlayable(match,row))
-    .slice(0,Math.max(1,Number(limit)||100));
+    .slice(0,max);
 }
 function scoreText(v){return finite(v)?`${Math.round(Number(v))}/100`:'N/D'}
 function decode(value){try{return decodeURIComponent(String(value||''))}catch{return String(value||'')}}
@@ -268,6 +280,14 @@ function patchDecisionHeader(root,match,rows){
     ?'<b>Brak PLAYABLE z wynikiem modelowym</b>Dla aktualnej oferty Superbet nie ma tu jeszcze pasującej selekcji z danymi.'
     :'<b>Brak świeżego Superbet PLAYABLE</b>Mecz i MODEL / RAW analiza zostają dostępne, ale nie pokazujemy niezweryfikowanych linii jako FINAL.';
 }
+function decisionRows(match,api){
+  if(!active(match))return[];
+  const projected=playableSignals(match,100);
+  let built=[];
+  try{built=api.buildRows(match)||[]}catch{built=[]}
+  const bySignature=new Map(built.filter(row=>row&&typeof row==='object').map(row=>[signature(row),row]));
+  return projected.map(row=>bySignature.get(signature(row))||row);
+}
 function wrapDecisionCenter(){
   const api=window.TENIS_AI_DECISION_CENTER_V87;
   if(!api||api[WRAP]||typeof api.tidy!=='function'||typeof api.buildRows!=='function'||typeof api.install!=='function')return false;
@@ -279,7 +299,7 @@ function wrapDecisionCenter(){
     base(match);
     const old=screen?.querySelector('.dc87');
     if(!old)return false;
-    const rows=active(match)?api.buildRows(match).filter(row=>isPlayable(match,row)):[];
+    const rows=decisionRows(match,api);
     const shell=api.decisionCenter(match)?.html;
     if(!shell)return false;
     const mount=document.createElement('div');mount.innerHTML=shell;

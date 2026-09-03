@@ -23,7 +23,9 @@ def test_v917_matches_exact_operator_selection_not_just_market_family():
 
 def test_v917_actionable_surfaces_share_one_gate():
     assert "playableSignals(match,60)" in UI
-    assert "api.buildRows(match).filter(row=>isPlayable(match,row))" in UI
+    assert "match?.superbet_playable_v912" in UI
+    assert "projectionSignals(match" in UI
+    assert "decisionRows(match,api)" in UI
     assert "legs.every(leg=>isPlayable(match,leg))" in UI
     assert "Brak Superbet PLAYABLE" in UI
     assert "Brak świeżo zweryfikowanej oferty Superbet" in UI
