@@ -10,7 +10,7 @@ def read(p):
 def test_bridge_is_loaded_before_symphony2():
     h=read("frontend/index.html")
     bridge=h.index("signal-mapping-v84d4.js?v=84d4")
-    symphony=h.index("symphony2.js?v=220")
+    symphony=h.index('src="symphony2.js"')
     assert bridge < symphony
 
 def test_bridge_does_not_replace_existing_model_files():
@@ -20,7 +20,7 @@ def test_bridge_does_not_replace_existing_model_files():
         "dynamic-weights-v84d1.js?v=84d2",
         "dynamic-weights-v84d1.js?v=84e0",
     ))
-    assert "symphony2.js?v=220" in h
+    assert 'src="symphony2.js"' in h
     assert "scenario-studio-v82a.js" not in h
 
 def test_retired_scenario_audit_is_not_loaded():
