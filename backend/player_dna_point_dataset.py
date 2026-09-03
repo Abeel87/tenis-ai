@@ -13,7 +13,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
-from canonical_point_event import canonical_point_events
+try:
+    from backend.canonical_point_event import canonical_point_events
+except ModuleNotFoundError:  # direct execution: python backend/player_dna_point_dataset.py
+    from canonical_point_event import canonical_point_events
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
