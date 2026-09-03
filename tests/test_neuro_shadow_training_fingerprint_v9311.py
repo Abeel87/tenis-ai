@@ -1,4 +1,4 @@
-from backend.neuro_shadow_training_v936 import training_fingerprint
+from backend.neuro_shadow_training import training_fingerprint
 
 
 def _row():
