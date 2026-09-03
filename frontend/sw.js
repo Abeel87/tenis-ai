@@ -1,6 +1,6 @@
 /* Tenis AI v8.8.9 — bounded PWA cache */
 const LEGACY_CACHE_CONTRACT='tenis-ai-v801-player-profile';
-const CACHE='tenis-ai-v84b-logic-stability-symphony2-v220';
+const CACHE='tenis-ai-v84b-logic-stability';
 const RUNTIME_CACHE_POLICY='v853-large-json-bypass';
 
 const CORE=[
