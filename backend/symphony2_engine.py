@@ -482,7 +482,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     probability_diagnostics = _probability_diagnostics(all_scored)
     current = {"version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION, "generated_at": generated_at,
         "operator": OPERATOR, "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
-        "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; MONOTONIC_EXACT_OU_LINE_COHERENCE; STATE_AND_EXISTING_MODELS_ARE FEATURES_NOT_FIXED_WEIGHTS",
+        "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS",
         "model_status": model.status, "matches_count": len(matches), "matches": matches}
     stats = {"version": VERSION, "generated_at": generated_at, "operator": OPERATOR, "model_status": model.status,
         "training": model.metrics or {"version": LEARNING_VERSION, "training_rows": model.trained_rows},
