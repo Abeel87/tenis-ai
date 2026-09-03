@@ -30,7 +30,7 @@ const ALIASES={
 
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const num=v=>finite(v)?Number(v):null;
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9:.+\-]+/g,' ').replace(/\s+/g,' ').trim();
 const nameKey=v=>norm(v).replace(/[^a-z0-9]+/g,' ').split(' ').filter(Boolean).sort().join(' ');
 
@@ -136,11 +136,23 @@ function modelSignals(match,limit=100){
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0))
     .slice(0,Math.max(1,Number(limit)||100));
 }
+function projectionSignals(match){
+  const layer=match?.superbet_playable_v912;
+  if(!layer||typeof layer!=='object'||!Array.isArray(layer.signals))return null;
+  return layer.signals
+    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null)
+    .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0));
+}
 function playableSignals(match,limit=100){
   if(!active(match))return[];
-  return modelSignals(match,Math.max(100,Number(limit)||100))
+  const max=Math.max(1,Number(limit)||100);
+  const projected=projectionSignals(match);
+  if(projected!==null)return projected.slice(0,max);
+  // Backward-compatible fallback only for datasets produced before the additive
+  // backend projection existed. New results use superbet_playable_v912.signals.
+  return modelSignals(match,Math.max(100,max))
     .filter(row=>isPlayable(match,row))
-    .slice(0,Math.max(1,Number(limit)||100));
+    .slice(0,max);
 }
 function scoreText(v){return finite(v)?`${Math.round(Number(v))}/100`:'N/D'}
 function decode(value){try{return decodeURIComponent(String(value||''))}catch{return String(value||'')}}
