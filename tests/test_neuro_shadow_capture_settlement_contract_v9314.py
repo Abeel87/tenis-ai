@@ -1,4 +1,4 @@
-from backend.neuro_shadow_state_v935 import CANDIDATE_CAPTURE_READY_MARKETS
+from backend.neuro_shadow_state import CANDIDATE_CAPTURE_READY_MARKETS
 from backend.signal_settlement import settle_signal_live
 
 
