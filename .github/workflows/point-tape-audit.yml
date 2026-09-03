@@ -9,6 +9,7 @@ on:
       - 'backend/point_transition_audit.py'
       - 'backend/canonical_point_event.py'
       - 'backend/player_dna_point_dataset.py'
+      - 'backend/player_identity_audit.py'
       - 'tests/test_point_tape_schema.py'
       - 'tests/test_point_transition_audit.py'
       - 'tests/test_canonical_point_event.py'
@@ -57,6 +58,9 @@ jobs:
       - name: Build shadow Player DNA point dataset (zero network)
         run: python backend/player_dna_point_dataset.py
 
+      - name: Audit stable player identity candidates (zero network)
+        run: python backend/player_identity_audit.py
+
       - name: Require real cached tapes and trainable point rows
         run: |
           python - <<'PY'
@@ -85,6 +89,16 @@ jobs:
               raise SystemExit('Player DNA point dataset is empty or has no trainable basic events')
           if report.get('shadow_only') is not True:
               raise SystemExit('Player DNA point dataset must remain SHADOW-only')
+
+          p = Path('frontend/data/player_identity_audit.json')
+          if not p.exists():
+              raise SystemExit('player_identity_audit.json was not generated')
+          identity = json.loads(p.read_text(encoding='utf-8'))
+          if int(identity.get('matches') or 0) <= 0:
+              raise SystemExit('Player identity audit saw no restored PBP matches')
+          if identity.get('gate') != 'AUDIT_ONLY_NO_IDENTITY_JOIN':
+              raise SystemExit('Identity audit must not silently enable a player join')
+          print(f"Player identity audit: matches={identity['matches']} candidates={list(identity.get('identity_candidates') or {})}")
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -95,6 +109,7 @@ jobs:
             frontend/data/point_tape_schema_audit.json
             frontend/data/point_transition_audit.json
             frontend/data/player_dna_point_dataset_summary.json
+            frontend/data/player_identity_audit.json
             data/derived/player_dna/point_events.jsonl.gz
           if-no-files-found: error
           retention-days: 14
