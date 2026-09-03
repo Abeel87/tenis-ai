@@ -1,6 +1,6 @@
 import math
 
-from backend.neuro_shadow_neural_v936 import _match_balanced_weights, _standardizer
+from backend.neuro_shadow_neural import _match_balanced_weights, _standardizer
 
 
 def test_match_balanced_standardizer_gives_each_fixture_equal_total_influence():
