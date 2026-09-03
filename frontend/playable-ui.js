@@ -351,7 +351,14 @@ function wrapRenderMatches(){
   const current=window.renderMatches;
   if(typeof current!=='function'||current[WRAP])return false;
   const wrapped=function(...args){
-    const result=current.apply(this,args);
+    const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
+    // project-ui's base focus=strong filter is a MODEL/RAW filter. During only
+    // that synchronous base render, expose model rows through the legacy hook;
+    // immediately restore strict PLAYABLE before any Superbet patch runs.
+    if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
+    let result;
+    try{result=current.apply(this,args)}
+    finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}
     queueMicrotask(patchHome);
     return result;
   };
