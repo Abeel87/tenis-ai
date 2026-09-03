@@ -50,7 +50,9 @@ def main():
 
     req(idx, 'autolearn-v84.css?v=84a1&hf=84a3', "naruszono chroniony pin CSS")
     req(idx, 'dynamic-weights-v84d1.js?v=84e0', "brak aktywnego Dynamic Weights UI")
-    req(idx, 'symphony2.js?v=210', "brak aktywnej Symfonii 2.0")
+    req(idx, 'symphony2.js', "brak aktywnej Symfonii 2.0")
+    if 'symphony2.js?v=210' in idx or 'symphony2.js?v=220' in idx:
+        ERRORS.append("stary pin Symfonii nadal aktywny")
     if 'scenario-studio-v82a.js' in idx:
         ERRORS.append("wycofany Scenario Studio nadal aktywny")
     req(wf, "Dynamic Weights Guard v8.4D", "workflow nie uruchamia guarda v8.4D")
