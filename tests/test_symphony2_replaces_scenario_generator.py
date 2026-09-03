@@ -28,8 +28,8 @@ def test_old_scenario_generator_files_are_removed():
 
 def test_index_loads_only_symphony2_composer_assets():
     index = text("frontend/index.html")
-    assert "symphony2.css?v=210" in index
-    assert "symphony2.js?v=210" in index
+    assert "symphony2.css?v=220" in index
+    assert "symphony2.js?v=220" in index
     for retired in (
         "scenario-studio-v82a",
         "scenario-runtime-v202",
@@ -60,7 +60,7 @@ def test_no_active_frontend_javascript_references_retired_scenario_runtime():
 def test_symphony2_has_own_fullscreen_hub_and_nav_ownership():
     js = text("frontend/symphony2.js")
     css = text("frontend/symphony2.css")
-    assert "const VERSION='2.1'" in js
+    assert "const VERSION='2.2'" in js
     assert "#symphony2-hub" in js
     assert "data-p751-nav=\"symphony2\"" in js
     assert 'data-p751-nav="scenarios"' not in js
@@ -87,6 +87,6 @@ def test_service_worker_forgets_scenario_cache_and_pins_symphony2():
     sw = text("frontend/sw.js")
     assert "scenario-runtime" not in sw
     assert "scenario-studio" not in sw
-    assert "symphony2-v210" in sw
+    assert "symphony2-v220" in sw
     assert "symphony2.js" in sw
     assert "symphony2.css" in sw
