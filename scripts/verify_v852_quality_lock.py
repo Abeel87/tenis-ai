@@ -43,7 +43,7 @@ def main() -> int:
     for retired in ("scenario-studio-v82a.js", "scenario-runtime-v202.js", "generator-quality-v888.js"):
         if retired in index:
             ERRORS.append(f"wycofany asset nadal aktywny w index.html: {retired}")
-    req(index, "symphony2.js?v=210", "Symfonia 2.0 nie jest aktywna w index.html")
+    req(index, "symphony2.js", "Symfonia 2.0 nie jest aktywna w index.html")
 
     if ERRORS:
         print("❌ Quality Lock Guard v8.5.2 — FAIL")
