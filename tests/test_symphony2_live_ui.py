@@ -31,3 +31,10 @@ def test_sym2_feed_parser_rejects_empty_or_invalid_payloads():
     assert "Symphony2 empty feed" in js
     assert "Symphony2 invalid feed" in js
     assert "JSON.parse(text)" in js
+
+
+def test_live_ui_accepts_every_composition_size_from_feed():
+    js = (ROOT / "frontend" / "symphony2-live-ui.js").read_text(encoding="utf-8")
+    assert "Object.keys(row.compositions||{})" in js
+    assert "recommended_leg_count" in js
+    assert "['2','3','4','5','6']" not in js
