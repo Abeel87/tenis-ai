@@ -8,9 +8,11 @@ on:
       - 'backend/point_tape_audit.py'
       - 'backend/point_transition_audit.py'
       - 'backend/canonical_point_event.py'
+      - 'backend/player_dna_point_dataset.py'
       - 'tests/test_point_tape_schema.py'
       - 'tests/test_point_transition_audit.py'
       - 'tests/test_canonical_point_event.py'
+      - 'tests/test_player_dna_point_dataset.py'
       - '.github/workflows/point-tape-audit.yml'
 
 permissions:
@@ -43,8 +45,8 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-
 
-      - name: Point tape + canonical event unit tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py
+      - name: Point tape + canonical event + Player DNA dataset tests
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -52,7 +54,10 @@ jobs:
       - name: Audit cached PBP transition semantics (zero network)
         run: python backend/point_transition_audit.py
 
-      - name: Require real cached tapes
+      - name: Build shadow Player DNA point dataset (zero network)
+        run: python backend/player_dna_point_dataset.py
+
+      - name: Require real cached tapes and trainable point rows
         run: |
           python - <<'PY'
           import json
@@ -67,14 +72,29 @@ jobs:
               print(f'{name}: matches={matches} rows={rows}')
               if matches <= 0 or rows <= 0:
                   raise SystemExit(f'No real cached PBP tapes were available for {name}')
+
+          p = Path('frontend/data/player_dna_point_dataset_summary.json')
+          if not p.exists():
+              raise SystemExit('player_dna_point_dataset_summary.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+          matches = int(report.get('matches') or 0)
+          events = int(report.get('events') or 0)
+          trainable = int(report.get('trainable_basic') or 0)
+          print(f'Player DNA point dataset: matches={matches} events={events} trainable_basic={trainable}')
+          if matches <= 0 or events <= 0 or trainable <= 0:
+              raise SystemExit('Player DNA point dataset is empty or has no trainable basic events')
+          if report.get('shadow_only') is not True:
+              raise SystemExit('Player DNA point dataset must remain SHADOW-only')
           PY
 
-      - name: Upload point tape audit reports
+      - name: Upload point audit + Player DNA dataset artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: point-tape-audit
+          name: player-dna-point-foundation
           path: |
             frontend/data/point_tape_schema_audit.json
             frontend/data/point_transition_audit.json
+            frontend/data/player_dna_point_dataset_summary.json
+            data/derived/player_dna/point_events.jsonl.gz
           if-no-files-found: error
           retention-days: 14
