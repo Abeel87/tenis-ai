@@ -7,11 +7,11 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'backend/neuro_shadow_neural_v936.py'
-      - 'backend/neuro_shadow_training_v936.py'
-      - 'backend/neuro_shadow_current_v936.py'
-      - 'backend/neuro_shadow_runner_v935.py'
-      - 'backend/neuro_shadow_archive_settlement_v946.py'
+      - 'backend/neuro_shadow_neural.py'
+      - 'backend/neuro_shadow_training.py'
+      - 'backend/neuro_shadow_current.py'
+      - 'backend/neuro_shadow_runner.py'
+      - 'backend/neuro_shadow_archive_settlement.py'
       - 'tests/test_neuro_shadow_neural_v936.py'
       - 'tests/test_neuro_shadow_training_v936.py'
       - 'tests/test_neuro_shadow_current_v936.py'
@@ -42,30 +42,30 @@ jobs:
       - run: pip install -r requirements.txt
       - name: NEURO heavy-path guards
         run: |
-          python -m py_compile backend/neuro_shadow_neural_v936.py
-          python -m py_compile backend/neuro_shadow_training_v936.py
-          python -m py_compile backend/neuro_shadow_current_v936.py
-          python -m py_compile backend/neuro_shadow_runner_v935.py
-          python -m py_compile backend/neuro_shadow_archive_settlement_v946.py
+          python -m py_compile backend/neuro_shadow_neural.py
+          python -m py_compile backend/neuro_shadow_training.py
+          python -m py_compile backend/neuro_shadow_current.py
+          python -m py_compile backend/neuro_shadow_runner.py
+          python -m py_compile backend/neuro_shadow_archive_settlement.py
           python -m pytest -q tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_training_v936.py tests/test_neuro_shadow_current_v936.py tests/test_neuro_shadow_runner_v935.py tests/test_neuro_shadow_archive_settlement_v946.py
 
       - name: Recover settled SHADOW evidence from verified app history
         if: github.event_name != 'pull_request'
-        run: python -m backend.neuro_shadow_archive_settlement_v946
+        run: python -m backend.neuro_shadow_archive_settlement
 
       - name: Settle and capture newest exact SHADOW evidence
         if: github.event_name != 'pull_request'
         run: |
-          python -m backend.neuro_shadow_runner_v935 settle
-          python -m backend.neuro_shadow_runner_v935 capture
+          python -m backend.neuro_shadow_runner settle
+          python -m backend.neuro_shadow_runner capture
 
       - name: Train neural SHADOW models
         if: github.event_name != 'pull_request'
-        run: python -m backend.neuro_shadow_runner_v935 train
+        run: python -m backend.neuro_shadow_runner train
 
       - name: Rebuild NEURO current feed from trained models
         if: github.event_name != 'pull_request'
-        run: python -m backend.neuro_shadow_runner_v935 current
+        run: python -m backend.neuro_shadow_runner current
 
       - name: Hard isolation guard
         if: github.event_name != 'pull_request'
