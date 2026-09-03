@@ -14,7 +14,7 @@
     playerModelShadowVersion:'v8.9',
     ensemblePlayerLearningVersion:'v8.9.1',
     appCoherenceVersion:'v8.9.2',
-    symphonyVersion:'v2.1',
+    symphonyVersion:'canonical',
     modelName:'AutoLearn Ensemble + Adaptive Learning',
     productionModelName:'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD',
     adaptiveVersion:'v7.9B-bayesian-meta',
