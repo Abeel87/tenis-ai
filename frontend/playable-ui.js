@@ -30,7 +30,7 @@ const ALIASES={
 
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const num=v=>finite(v)?Number(v):null;
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9:.+\-]+/g,' ').replace(/\s+/g,' ').trim();
 const nameKey=v=>norm(v).replace(/[^a-z0-9]+/g,' ').split(' ').filter(Boolean).sort().join(' ');
 
@@ -280,6 +280,14 @@ function patchDecisionHeader(root,match,rows){
     ?'<b>Brak PLAYABLE z wynikiem modelowym</b>Dla aktualnej oferty Superbet nie ma tu jeszcze pasującej selekcji z danymi.'
     :'<b>Brak świeżego Superbet PLAYABLE</b>Mecz i MODEL / RAW analiza zostają dostępne, ale nie pokazujemy niezweryfikowanych linii jako FINAL.';
 }
+function decisionRows(match,api){
+  if(!active(match))return[];
+  const projected=playableSignals(match,100);
+  let built=[];
+  try{built=api.buildRows(match)||[]}catch{built=[]}
+  const bySignature=new Map(built.filter(row=>row&&typeof row==='object').map(row=>[signature(row),row]));
+  return projected.map(row=>bySignature.get(signature(row))||row);
+}
 function wrapDecisionCenter(){
   const api=window.TENIS_AI_DECISION_CENTER_V87;
   if(!api||api[WRAP]||typeof api.tidy!=='function'||typeof api.buildRows!=='function'||typeof api.install!=='function')return false;
@@ -291,7 +299,7 @@ function wrapDecisionCenter(){
     base(match);
     const old=screen?.querySelector('.dc87');
     if(!old)return false;
-    const rows=active(match)?api.buildRows(match).filter(row=>isPlayable(match,row)):[];
+    const rows=decisionRows(match,api);
     const shell=api.decisionCenter(match)?.html;
     if(!shell)return false;
     const mount=document.createElement('div');mount.innerHTML=shell;
