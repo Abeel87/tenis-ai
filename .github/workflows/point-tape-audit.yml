@@ -10,10 +10,12 @@ on:
       - 'backend/canonical_point_event.py'
       - 'backend/player_dna_point_dataset.py'
       - 'backend/player_identity_audit.py'
+      - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
       - 'tests/test_point_transition_audit.py'
       - 'tests/test_canonical_point_event.py'
       - 'tests/test_player_dna_point_dataset.py'
+      - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
 permissions:
@@ -46,8 +48,8 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-
 
-      - name: Point tape + canonical event + Player DNA dataset tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py
+      - name: Point tape + canonical event + Player DNA identity tests
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -97,7 +99,7 @@ jobs:
           if int(identity.get('matches') or 0) <= 0:
               raise SystemExit('Player identity audit saw no restored PBP matches')
           if identity.get('gate') != 'AUDIT_ONLY_NO_IDENTITY_JOIN':
-              raise SystemExit('Identity audit must not silently enable a player join')
+              raise SystemExit('Identity audit must remain an audit; join activation is explicit in player_identity.py')
           print(f"Player identity audit: matches={identity['matches']} candidates={list(identity.get('identity_candidates') or {})}")
           PY
 
