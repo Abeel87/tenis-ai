@@ -30,7 +30,9 @@ def main():
     req(idx,'autolearn-v84.js?v=84a1&hf=84b1',"naruszono chroniony AutoLearn JS")
     req(idx,'dynamic-weights-v84d1.js?v=84e0',"naruszono aktywny Dynamic Weights pin")
     req(idx,'signal-mapping-v84d4.js?v=84d4',"brak Signal Mapping Bridge w index.html")
-    req(idx,'symphony2.js?v=210',"brak aktywnej Symfonii 2.0")
+    req(idx,'symphony2.js',"brak aktywnej Symfonii 2.0")
+    if 'symphony2.js?v=210' in idx or 'symphony2.js?v=220' in idx:
+        ERR.append("stary pin Symfonii nadal aktywny")
     for retired in ('scenario-studio-v82a.js','scenario-dynamic-v84d3.js','scenario-runtime-v202.js'):
         if retired in idx:
             ERR.append(f"wycofany asset nadal aktywny: {retired}")
