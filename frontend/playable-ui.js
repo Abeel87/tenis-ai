@@ -303,7 +303,11 @@ function decisionRows(match,api){
   for(const operatorRow of projected){
     const sig=signature(operatorRow);
     if(seen.has(sig))continue;
-    rows.push({...operatorRow,operator_playable:true,operator_verified:true,operator:'Superbet'});
+    const market=canonicalMarket(operatorRow.market);
+    const category=(WINNER_MARKETS.has(market)||['total_sets','exact_match_score'].includes(market))?'result'
+      :(market==='game_state'?'checkpoints'
+      :(LINE_MARKETS.has(market)||['set1_tiebreak','set1_exact_score'].includes(market)?'games':'special'));
+    rows.push({...operatorRow,category,operator_playable:true,operator_verified:true,operator:'Superbet'});
     seen.add(sig);
   }
   return rows;
