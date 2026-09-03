@@ -1,7 +1,7 @@
 import json
 
-import backend.neuro_shadow_runner_v935 as runner
-from backend.neuro_shadow_runner_v935 import (
+import backend.neuro_shadow_runner as runner
+from backend.neuro_shadow_runner import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
@@ -10,7 +10,7 @@ from backend.neuro_shadow_runner_v935 import (
     run_action,
     train_file,
 )
-from backend.neuro_shadow_history_v935 import load_history
+from backend.neuro_shadow_history import load_history
 
 
 def _match():
