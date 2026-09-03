@@ -50,7 +50,7 @@ def test_project_ui_bridge_has_no_polling_or_mutation_observer():
 
 def test_project_ui_suppresses_only_automatic_startup_rerenders():
     js = read("frontend/project-ui-quality.js")
-    assert "RUNTIME_FIX='v8.8.18'" in js
+    assert "RUNTIME_FIX='v8.8.19'" in js
     assert "STARTUP_SUPPRESS_MS=1250" in js
     assert "startupRenderShouldBeSuppressed" in js
     assert "userRenderPermit" in js
@@ -73,3 +73,12 @@ def test_project_ui_exact_score_is_lab_without_final_telemetry():
     assert "patchExactScoreHonesty" in js
     assert "Dokładny wynik · MODEL LAB · N/D" in js
     assert "Brak osobnej telemetrii FINAL — diagnostyka, nie CORE." in js
+
+
+def test_project_ui_incomplete_ou_pairs_are_shown_as_nd():
+    js = read("frontend/project-ui-quality.js")
+    assert "patchIncompleteMarketLines" in js
+    assert "hasCompleteOuPair" in js
+    assert "num(row.over)!=null&&num(row.under)!=null" in js
+    assert "value.textContent='N/D'" in js
+    assert "patchProjectDetail" in js
