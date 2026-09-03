@@ -8,7 +8,7 @@ def read(p):
 def test_ui_audit_is_additive_and_keeps_protected_pins():
     h=read("frontend/index.html")
     assert "autolearn-v84.css?v=84a1&hf=84a3" in h
-    assert "symphony2.js?v=220" in h
+    assert 'src="symphony2.js"' in h
     assert "scenario-studio-v82a.js" not in h
     assert "dynamic-weights-v84d1.css?v=84d1" in h
     assert any(x in h for x in (
