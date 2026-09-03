@@ -9,8 +9,8 @@ PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
-    assert "symphony2.js?v=210" in INDEX
-    assert "symphony2.css?v=210" in INDEX
+    assert "symphony2.js?v=220" in INDEX
+    assert "symphony2.css?v=220" in INDEX
     for legacy in (
         "symphony-v90.js", "symphony-v90.css", "symphony-stats-v90d.js",
         "symphony-stats-v90d.css", "symphony-surface-v90.js",
@@ -35,6 +35,24 @@ def test_symphony_hub_explains_exact_superbet_probability_contract():
     assert "learning_support_rows" in JS
     assert "#symphony2-hub" in JS
     assert "Ułóż Symfonię 2.0" in JS
+
+
+def test_symphony_controls_follow_actual_published_compositions():
+    assert "function availableLegCounts(data)" in JS
+    assert "function eligibleMatchCount(data)" in JS
+    assert "function countOptions(data)" in JS
+    assert "function legOptions(data)" in JS
+    assert "Object.keys(m?.compositions||{})" in JS
+    assert '<option>6</option>' not in JS
+
+
+def test_symphony_market_labels_are_human_readable():
+    assert "p1_exactly_1set:'Zawodnik 1 · dokładnie 1 wygrany set'" in JS
+    assert "p2_exactly_1set:'Zawodnik 2 · dokładnie 1 wygrany set'" in JS
+    assert "any_set_to_nil:'Set do zera w meczu'" in JS
+    assert "nie wygra dokładnie 1 seta" in JS
+    assert "W meczu nie będzie seta do zera" in JS
+    assert "zweryfikowana linia Superbet" in JS
 
 
 def test_symphony2_owns_native_nav_without_retired_scenario_migration_lookup():
@@ -91,5 +109,5 @@ def test_metadata_boots_symphony_live_ui_without_generator_bootstrap():
 
 def test_nullable_symphony_numbers_are_not_coerced_to_zero():
     assert "const num=v=>v==null||v===''?null:" in JS
-    assert "const line=num(x?.line)" in JS
+    assert "line=num(x?.line)" in JS
     assert "return line==null?core:" in JS
