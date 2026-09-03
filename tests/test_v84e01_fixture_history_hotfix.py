@@ -13,7 +13,7 @@ def test_fixture_history_runtime_loaded_after_data_runtime_before_symphony2():
     h=read("frontend/index.html")
     assert h.index("app.js") < h.index("data-runtime.js")
     assert h.index("data-runtime.js") < h.index("fixture-history-freshness.js")
-    assert h.index("fixture-history-freshness.js") < h.index("symphony2.js?v=210")
+    assert h.index("fixture-history-freshness.js") < h.index("symphony2.js?v=220")
     assert "runtime-health-v84e0.js" not in h
     assert "hotfix-v84e01.js" not in h
 
