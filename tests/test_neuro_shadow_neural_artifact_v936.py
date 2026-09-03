@@ -1,4 +1,4 @@
-from backend.neuro_shadow_neural_artifact_v936 import (
+from backend.neuro_shadow_training import (
     AUTO_PROMOTION,
     MODE,
     PLAYABLE_INFLUENCE,
