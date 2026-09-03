@@ -53,8 +53,8 @@ def test_retired_generator_is_not_bootstrapped_anymore():
 def test_symphony2_is_loaded_from_central_app_bootstrap():
     index = read("frontend/index.html")
     meta = read("frontend/app-meta.js")
-    assert "symphony2.js?v=210" in index
-    assert "symphony2.css?v=210" in index
+    assert "symphony2.js?v=220" in index
+    assert "symphony2.css?v=220" in index
     assert "symphony2-live-ui.js" in meta
     assert "symphony2-live-ui-v201.js" not in meta
     assert "symphonyVersion:'v2.1'" in meta
