@@ -37,7 +37,9 @@ def main():
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS")
     req(index, "autolearn-v84.css?v=84a1&hf=84a3", "brak cache-bust CSS")
-    req(index, "symphony2.js?v=210", "brak aktywnej Symfonii 2.0")
+    req(index, "symphony2.js", "brak aktywnej Symfonii 2.0")
+    if "symphony2.js?v=210" in index or "symphony2.js?v=220" in index:
+        ERRORS.append("stary pin Symfonii nadal aktywny")
     # Scenario Generator/Studio is retired. This guard must only ensure that its
     # assets are not bootstrapped; it must not require legacy Scenario text in an
     # older guard, otherwise removing Scenario correctly breaks the pipeline.
