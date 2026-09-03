@@ -1,4 +1,4 @@
-from backend.neuro_shadow_tracker_v935 import (
+from backend.neuro_shadow_tracker import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
