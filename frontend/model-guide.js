@@ -276,15 +276,16 @@ function card(row,m,sets,mode){
   const score=finalScore(row,m,sets),info=adaptiveInfo(row,m);
   const available=MODEL_DEFS.reduce((sum,def)=>sum+(modelValue(row,def[0],sets,m)?1:0),0);
   const category=CATEGORY_META[row.category]||CATEGORY_META.special;
-  return '<article class="dc87-card '+(mode==='pro'?'pro':'')+'" data-dc-category="'+esc(row.category)+'" data-dc-market="'+esc(row.market)+'">'+
-    '<div class="dc87-card-head"><div class="dc87-market"><span>'+category.icon+' '+esc(category.label)+'</span>'+
+  const book=row.operator_playable===true?'🎯 SUPERBET PLAYABLE ✓':'MODEL / RAW';
+  return '<article class="dc87-card '+(mode==='pro'?'pro':'')+'" data-dc-category="'+esc(row.category)+'" data-dc-market="'+esc(row.market)+'" data-dc-playable="'+(row.operator_playable===true?'1':'0')+'">'+
+    '<div class="dc87-card-head"><div class="dc87-market"><span>'+category.icon+' '+esc(category.label)+'</span><span>'+esc(book)+'</span>'+
     '<h4>'+esc(row.label)+'</h4><strong class="dc87-pick">'+esc(pickText(row))+'</strong></div>'+
     '<div class="dc87-final '+(score==null?'nd':'')+'"><small>FINAL</small><b>'+scoreText(score)+'</b></div></div>'+
     flow(row,m,sets)+proStrip(row,sets,m)+
     '<details class="dc87-details" '+(mode==='pro'?'open':'')+'><summary><span>Pełne szczegóły modeli</span><b>'+available+'/'+MODEL_DEFS.length+
     ' z danymi</b><i aria-hidden="true"></i></summary><div class="dc87-details-body"><div class="dc87-model-grid">'+
     MODEL_DEFS.map(def=>modelCell(row,def,sets,m)).join('')+'</div>'+adaptiveMeta(info)+
-    '<p class="dc87-note">Player SH i Market Lab działają wyłącznie w SHADOW. Nie wpływają na FINAL. Accuracy Lab v8.6 pozostaje osobnym raportem SHADOW bez wyniku live per rynek. RAW oraz wynik po Adaptive pochodzą z backendu — UI niczego nie przelicza.</p></div></details></article>';
+    '<p class="dc87-note">Player SH i Market Lab działają wyłącznie w SHADOW. Nie wpływają na FINAL. Accuracy Lab v8.6 pozostaje osobnym raportem SHADOW bez wyniku live per rynek. RAW oraz wynik po Adaptive pochodzą z backendu — UI niczego nie przelicza. Status SUPERBET PLAYABLE jest wyłącznie dodatkowym pokryciem bieżącej oferty i nie usuwa MODEL / RAW.</p></div></details></article>';
 }
 
 function topRows(rows,m,sets){
@@ -303,7 +304,8 @@ function topRows(rows,m,sets){
 }
 function searchable(row,m,sets){
   const models=MODEL_DEFS.filter(def=>modelValue(row,def[0],sets,m)).map(def=>def[1]).join(' ');
-  return norm([row.label,pickText(row),CATEGORY_META[row.category]?.long,row.market,row.line,row.extra,models,m.p1,m.p2].join(' '));
+  const availability=row.operator_playable===true?'superbet playable':'model raw';
+  return norm([row.label,pickText(row),CATEGORY_META[row.category]?.long,row.market,row.line,row.extra,models,availability,m.p1,m.p2].join(' '));
 }
 function shell(m,rows){
   const declaredMode=String(m?.adaptive_learning_v79?.mode||'PROD').toUpperCase();

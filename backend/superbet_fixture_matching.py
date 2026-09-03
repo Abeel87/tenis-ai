@@ -20,6 +20,10 @@ AMBIGUOUS_SCORE_GAP = 0.02
 AMBIGUOUS_TIME_GAP_HOURS = 1.0 / 6.0
 MAX_SAMPLE_ROWS = 12
 IGNORED_NAME_TOKENS = {"jr", "sr", "ii", "iii", "iv"}
+SCORE_ORIENTED_MARKETS = {
+    "exact_match_score", "set1_exact_score", "set2_exact_score",
+    "game_state", "set2_game_state",
+}
 
 
 def _empty_scope() -> dict:
@@ -117,8 +121,6 @@ def _select(match: dict, fixtures: list[dict], *, cached: bool):
         close_score = abs(best_score-second_score)<AMBIGUOUS_SCORE_GAP
         close_time = abs(best[2]-second[2])<AMBIGUOUS_TIME_GAP_HOURS
         distinct_fixture = best[3] != second[3]
-        # Never guess between two distinct nearly-equivalent fixtures. This also
-        # covers duplicate exact-pair rows, not only relaxed aliases.
         if same_match_kind and close_score and close_time and distinct_fixture:
             scope["ambiguous_rejected"]+=1;_sample(scope,match,"AMBIGUOUS_EXACT" if best[5] else "AMBIGUOUS_ALIAS");return None
     if best[5]:scope["exact"]+=1
@@ -130,10 +132,53 @@ def best_fixture_for_match(match: dict, fixtures: list[dict]):
     return _select(match, fixtures if isinstance(fixtures,list) else [], cached=False)
 
 
+def _swap_side_market(market) -> str:
+    value=str(market or "")
+    if value.startswith("p1_"):return "p2_" + value[3:]
+    if value.startswith("p2_"):return "p1_" + value[3:]
+    return value
+
+
+def _swap_score_pick(value):
+    text=str(value or "").strip()
+    for sep in (":", "-"):
+        parts=text.split(sep)
+        if len(parts)==2 and all(part.strip().isdigit() for part in parts):
+            return f"{int(parts[1])}:{int(parts[0])}"
+    return value
+
+
+def _orient_cached_fixture(match: dict, row: dict | None):
+    """Project fixture-side semantics onto the app match ordering.
+
+    OddsPapi may list the same two players in reverse order. Pair matching is
+    intentionally order-insensitive, but p1/p2 markets and score picks are not.
+    Return an oriented copy so downstream Superbet, Symphony and Neuro always
+    consume the app's p1/p2 contract without mutating the cached operator feed.
+    """
+    if not isinstance(row,dict):return row
+    app_p1,app_p2=match.get("p1"),match.get("p2"); fixture_p1,fixture_p2=row.get("p1"),row.get("p2")
+    direct=min(person_score(app_p1,fixture_p1),person_score(app_p2,fixture_p2))
+    crossed=min(person_score(app_p1,fixture_p2),person_score(app_p2,fixture_p1))
+    if crossed < MIN_PERSON_SCORE or crossed <= direct:return row
+    out=dict(row);out["p1"]=app_p1;out["p2"]=app_p2
+    oriented=[]
+    for raw in row.get("canonical_selections") or []:
+        if not isinstance(raw,dict):continue
+        selection=dict(raw)
+        selection["market"]=_swap_side_market(selection.get("market"))
+        if str(selection.get("market") or "") in SCORE_ORIENTED_MARKETS:
+            selection["pick"]=_swap_score_pick(selection.get("pick"))
+        oriented.append(selection)
+    out["canonical_selections"]=oriented
+    out["participant_order_reoriented"]=True
+    return out
+
+
 def best_cached_fixture(match: dict, index: dict):
     if not isinstance(index,dict):return None
     exact=index.get(base._pair_key(match.get("p1"),match.get("p2"))) or []
-    if exact:return _select(match,list(exact),cached=True)
+    if exact:return _orient_cached_fixture(match,_select(match,list(exact),cached=True))
     rows=[];seen=set()
     for bucket in index.values():
         for row in bucket if isinstance(bucket,list) else []:
@@ -141,7 +186,7 @@ def best_cached_fixture(match: dict, index: dict):
             key=str(row.get("fixture_id") or id(row))
             if key in seen:continue
             seen.add(key);rows.append(row)
-    return _select(match,rows,cached=True)
+    return _orient_cached_fixture(match,_select(match,rows,cached=True))
 
 
 def availability_due(original_due, previous: dict, now) -> bool:

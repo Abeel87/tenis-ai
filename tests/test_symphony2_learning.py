@@ -36,6 +36,39 @@ def test_training_rows_use_exact_frozen_operator_line():
     assert "state_probability" in rows[0]
 
 
+def test_side_market_training_quarantines_wrong_player_and_accepts_reordered_name():
+    entry = {
+        "id": "svrcina-darderi",
+        "p1": "Dalibor Svrcina",
+        "p2": "Luciano Darderi",
+        "surface": "hard",
+        "tour": "atp",
+        "best_of": 3,
+        "captured_at": "2026-09-01T10:00:00+00:00",
+        "playable_signals_v912": [
+            {
+                "market": "p1_exactly_1_set", "pick": "no", "player": "Svrcina, Dalibor",
+                "score": 70.5, "result": "hit", "operator": "superbet.pl",
+                "operator_line_verified": True,
+            },
+            {
+                "market": "p2_exactly_1_set", "pick": "no", "player": "Svrcina, Dalibor",
+                "score": 66.9, "result": "miss", "operator": "superbet.pl",
+                "operator_line_verified": True,
+            },
+        ],
+    }
+    before = deepcopy(entry)
+
+    rows = learning.build_training_rows([entry])
+
+    assert len(rows) == 1
+    assert rows[0]["market"] == "p1_exactly_1_set"
+    assert rows[0]["player_scope"] == "p1"
+    assert rows[0]["target"] == 1
+    assert entry == before
+
+
 def test_history_layer_unions_unique_exact_rows_from_base_and_autolearn():
     entry = _entry(line=21.5)
     entry["playable_signals_v912"] = [{

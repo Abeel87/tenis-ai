@@ -9,6 +9,7 @@ never changes PLAYABLE/Symphony PROD and never invents a line or probability.
 from typing import Any
 
 from backend.neuro_shadow_features_v935 import (
+    _name_key,
     extract_feature_snapshot,
     model_signal_index,
     selection_signature,
@@ -48,9 +49,9 @@ PARITY_MARKETS = frozenset({
 
 
 def _side_for_player(selection: dict[str, Any], match: dict[str, Any]) -> int | None:
-    player = str(selection.get("player") or "").strip().casefold()
-    p1 = str(match.get("p1") or match.get("participant1Name") or "").strip().casefold()
-    p2 = str(match.get("p2") or match.get("participant2Name") or "").strip().casefold()
+    player = _name_key(selection.get("player"))
+    p1 = _name_key(match.get("p1") or match.get("participant1Name"))
+    p2 = _name_key(match.get("p2") or match.get("participant2Name"))
     if player and p1 and player == p1:
         return 1
     if player and p2 and player == p2:
@@ -59,9 +60,9 @@ def _side_for_player(selection: dict[str, Any], match: dict[str, Any]) -> int | 
 
 
 def _side_for_pick(selection: dict[str, Any], match: dict[str, Any]) -> int | None:
-    pick = str(selection.get("pick") or "").strip().casefold()
-    p1 = str(match.get("p1") or match.get("participant1Name") or "").strip().casefold()
-    p2 = str(match.get("p2") or match.get("participant2Name") or "").strip().casefold()
+    pick = _name_key(selection.get("pick"))
+    p1 = _name_key(match.get("p1") or match.get("participant1Name"))
+    p2 = _name_key(match.get("p2") or match.get("participant2Name"))
     if pick and p1 and pick == p1:
         return 1
     if pick and p2 and pick == p2:

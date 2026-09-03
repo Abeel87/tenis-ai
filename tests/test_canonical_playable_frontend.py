@@ -19,7 +19,7 @@ def test_decision_center_uses_same_canonical_playable_projection():
     text = PLAYABLE_UI.read_text(encoding="utf-8")
 
     assert "function decisionRows(match,api)" in text
-    assert "const projected=playableSignals(match,100);" in text
+    assert "const projected=active(match)?playableSignals(match,100):[];" in text
     assert "const rows=decisionRows(match,api);" in text
 
 

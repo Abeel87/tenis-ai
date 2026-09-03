@@ -45,6 +45,23 @@ def test_joint_uses_same_states_not_independence_product():
     assert abs(joint - p1 * p2) > 1e-6
 
 
+def test_reordered_player_names_keep_winner_semantics():
+    match = {
+        "p1": "Dalibor Svrcina",
+        "p2": "Luciano Darderi",
+        "best_of": 3,
+        "service_model": {"p1_hold": 0.78, "p2_hold": 0.74},
+        "first_set_win": {"Svrcina, Dalibor": 0.56, "Darderi, Luciano": 0.44},
+        "second_set_win": {"Svrcina, Dalibor": 0.55, "Darderi, Luciano": 0.45},
+        "third_set_win": {"Svrcina, Dalibor": 0.54, "Darderi, Luciano": 0.46},
+    }
+    outcomes = build_outcomes(match)
+    p1 = marginal_probability(match, {"market": "match_winner", "pick": "Svrcina, Dalibor"}, outcomes)
+    p2 = marginal_probability(match, {"market": "match_winner", "pick": "Darderi, Luciano"}, outcomes)
+    assert p1 is not None and p2 is not None
+    assert abs((p1 + p2) - 1.0) < 1e-9
+
+
 def test_unsupported_market_never_gets_fake_joint():
     match = _match()
     outcomes = build_outcomes(match)

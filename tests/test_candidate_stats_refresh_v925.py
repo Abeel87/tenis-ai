@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from degraded_history import capture_history
+from superbet_candidate_settlement import LAYER, build_candidate_stats
 
 
 def test_capture_history_refreshes_candidate_stats_contract(tmp_path):
@@ -32,3 +33,24 @@ def test_capture_history_refreshes_candidate_stats_contract(tmp_path):
     assert {"set2_total", "player_total_games"} <= supported
     assert report["contract"]["production_influence"] is False
     assert report["promotion_gate"]["auto_promote"] is False
+
+
+def test_candidate_stats_quarantine_misoriented_side_market_without_mutating_history():
+    history = [{
+        "id": "m1",
+        "p1": "Dalibor Svrcina",
+        "p2": "Luciano Darderi",
+        LAYER: [
+            {"market": "p1_exactly_1_set", "player": "Svrcina, Dalibor", "score": 70.0, "result": "hit"},
+            {"market": "p2_exactly_1_set", "player": "Svrcina, Dalibor", "score": 90.0, "result": "hit"},
+        ],
+    }]
+    before = json.loads(json.dumps(history))
+
+    report = build_candidate_stats(history)
+
+    assert report["orientation_quarantined_rows"] == 1
+    assert report["overall"]["captured"] == 1
+    assert report["overall"]["settled"] == 1
+    assert set(report["by_market"]) == {"p1_exactly_1_set"}
+    assert history == before
