@@ -23,6 +23,14 @@ PROMOTION_MIN_ACCURACY = 62.0
 PROMOTION_MIN_WILSON = 0.50
 PROMOTION_MAX_BRIER = 0.24
 CAPTURE_CUTOFF_MINUTES = 5
+SIDE_MARKETS = {
+    "p1_exactly_1_set": "p1",
+    "p1_exactly_2_sets": "p1",
+    "p1_wins_a_set": "p1",
+    "p2_exactly_1_set": "p2",
+    "p2_exactly_2_sets": "p2",
+    "p2_wins_a_set": "p2",
+}
 
 SETTLEMENT_SUPPORTED_MARKETS = {
     "any_set_to_nil",
@@ -80,6 +88,19 @@ def _key(value) -> str:
     text = unicodedata.normalize("NFKD", str(value or ""))
     text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
     return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
+
+
+def _name_key(value) -> str:
+    return " ".join(sorted(_key(value).split()))
+
+
+def _orientation_valid(entry: dict, row: dict) -> bool:
+    side = SIDE_MARKETS.get(str(row.get("market") or ""))
+    if side is None:
+        return True
+    player = _name_key(row.get("player"))
+    expected = _name_key(entry.get(side))
+    return bool(player and expected and player == expected)
 
 
 def _match_key(row: dict) -> str:
@@ -282,11 +303,15 @@ def _summary(rows: list[dict]) -> dict:
 def build_candidate_stats(history: list[dict]) -> dict:
     all_rows = []
     by_market_rows: dict[str, list[dict]] = defaultdict(list)
+    orientation_quarantined = 0
     for entry in history or []:
         if not isinstance(entry, dict):
             continue
         for row in entry.get(LAYER) or []:
             if not isinstance(row, dict):
+                continue
+            if not _orientation_valid(entry, row):
+                orientation_quarantined += 1
                 continue
             all_rows.append(row)
             by_market_rows[str(row.get("market") or "unknown")].append(row)
@@ -298,6 +323,8 @@ def build_candidate_stats(history: list[dict]) -> dict:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "layer": LAYER,
         "mode": "SETTLEMENT_SHADOW_ONLY",
+        "orientation_quarantined_rows": orientation_quarantined,
+        "orientation_policy": "SIDE_MARKET_PLAYER_MUST_MATCH_APP_ORDER",
         "overall": _summary(all_rows),
         "by_market": by_market,
         "review_ready_markets": ready,
@@ -316,6 +343,7 @@ def build_candidate_stats(history: list[dict]) -> dict:
             "operator_verified_snapshots_only": True,
             "pre_match_capture_only": True,
             "verified_numeric_lines_only": True,
+            "orientation_quarantine": True,
             "prices_used": False,
             "playable_accuracy_unchanged": True,
             "production_influence": False,
