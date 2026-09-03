@@ -1,7 +1,7 @@
 import json
 
-from backend.neuro_shadow_archive_settlement_v946 import settle_from_archive, verified_finals
-from backend.neuro_shadow_tracker_v935 import register_predictions
+from backend.neuro_shadow_archive_settlement import settle_from_archive, verified_finals
+from backend.neuro_shadow_tracker import register_predictions
 
 
 def test_verified_finals_accepts_only_explicit_terminal_history_results():
