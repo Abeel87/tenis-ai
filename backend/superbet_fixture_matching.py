@@ -130,10 +130,40 @@ def best_fixture_for_match(match: dict, fixtures: list[dict]):
     return _select(match, fixtures if isinstance(fixtures,list) else [], cached=False)
 
 
+def _swap_side_market(market) -> str:
+    value=str(market or "")
+    if value.startswith("p1_"):return "p2_" + value[3:]
+    if value.startswith("p2_"):return "p1_" + value[3:]
+    return value
+
+
+def _orient_cached_fixture(match: dict, row: dict | None):
+    """Project fixture-side p1/p2 semantics onto the app match ordering.
+
+    OddsPapi may list the same two players in the reverse order. Pair matching is
+    intentionally order-insensitive, but canonical markets such as p1_wins_a_set
+    and p2_exactly_1_set are side-sensitive. Return an oriented copy so downstream
+    Superbet/Symphony state semantics always use the app's p1/p2 contract.
+    """
+    if not isinstance(row,dict):return row
+    app_p1,app_p2=match.get("p1"),match.get("p2"); fixture_p1,fixture_p2=row.get("p1"),row.get("p2")
+    direct=min(person_score(app_p1,fixture_p1),person_score(app_p2,fixture_p2))
+    crossed=min(person_score(app_p1,fixture_p2),person_score(app_p2,fixture_p1))
+    if crossed < MIN_PERSON_SCORE or crossed <= direct:return row
+    out=dict(row);out["p1"]=app_p1;out["p2"]=app_p2
+    oriented=[]
+    for raw in row.get("canonical_selections") or []:
+        if not isinstance(raw,dict):continue
+        selection=dict(raw);selection["market"]=_swap_side_market(selection.get("market"));oriented.append(selection)
+    out["canonical_selections"]=oriented
+    out["participant_order_reoriented"]=True
+    return out
+
+
 def best_cached_fixture(match: dict, index: dict):
     if not isinstance(index,dict):return None
     exact=index.get(base._pair_key(match.get("p1"),match.get("p2"))) or []
-    if exact:return _select(match,list(exact),cached=True)
+    if exact:return _orient_cached_fixture(match,_select(match,list(exact),cached=True))
     rows=[];seen=set()
     for bucket in index.values():
         for row in bucket if isinstance(bucket,list) else []:
@@ -141,7 +171,7 @@ def best_cached_fixture(match: dict, index: dict):
             key=str(row.get("fixture_id") or id(row))
             if key in seen:continue
             seen.add(key);rows.append(row)
-    return _select(match,rows,cached=True)
+    return _orient_cached_fixture(match,_select(match,rows,cached=True))
 
 
 def availability_due(original_due, previous: dict, now) -> bool:
