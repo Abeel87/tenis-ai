@@ -1,6 +1,6 @@
 {
   "version": "v8.6-shadow",
-  "generated_at": "2026-09-03T06:39:34.688310+00:00",
+  "generated_at": "2026-09-03T13:17:34.963918+00:00",
   "status": "ACTIVE",
   "production_mode": "shadow_only",
   "production_changed": false,
@@ -182,77 +182,9 @@
     }
   },
   "tabpfn_native_ab": {
-    "status": "ok",
-    "variants": {
-      "native_300_e1": {
-        "status": "ok",
-        "train_rows": 300,
-        "n_estimators": 1,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 647,
-          "coverage": 1.0,
-          "brier": 0.22416,
-          "log_loss": 0.64382,
-          "selected_n": 405,
-          "selected_coverage": 0.626,
-          "accuracy": 69.6,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 579,
-          "coverage": 1.0,
-          "brier": 0.21569,
-          "log_loss": 0.62328,
-          "selected_n": 370,
-          "selected_coverage": 0.639,
-          "accuracy": 70.5,
-          "threshold": 65.0
-        }
-      },
-      "native_600_e4": {
-        "status": "ok",
-        "train_rows": 600,
-        "n_estimators": 4,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 647,
-          "coverage": 1.0,
-          "brier": 0.20514,
-          "log_loss": 0.59922,
-          "selected_n": 387,
-          "selected_coverage": 0.5981,
-          "accuracy": 73.1,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 579,
-          "coverage": 1.0,
-          "brier": 0.20572,
-          "log_loss": 0.59995,
-          "selected_n": 371,
-          "selected_coverage": 0.6408,
-          "accuracy": 74.4,
-          "threshold": 65.0
-        }
-      }
-    }
+    "status": "unavailable",
+    "reason": "tabpfn_not_installed_this_run",
+    "variants": {}
   },
   "router_shadow": {
     "global_cal_champion": "current",
@@ -283,10 +215,10 @@
             "log_loss": 0.63471
           },
           "match_total|CHALLENGER|GRASS": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 25,
-            "brier": 0.21372,
-            "log_loss": 0.61586
+            "brier": 0.2299,
+            "log_loss": 0.65046
           },
           "set1_total|CHALLENGER|GRASS": {
             "model": "direct_catboost",
@@ -417,17 +349,16 @@
     "validation": {
       "n": 579,
       "coverage": 1.0,
-      "brier": 0.20068,
-      "log_loss": 0.58802,
-      "selected_n": 355,
-      "selected_coverage": 0.6131,
-      "accuracy": 76.6,
+      "brier": 0.19984,
+      "log_loss": 0.58609,
+      "selected_n": 368,
+      "selected_coverage": 0.6356,
+      "accuracy": 76.9,
       "threshold": 65.0
     },
     "validation_model_usage": {
-      "current": 194,
-      "direct_catboost": 368,
-      "native_600_e4": 17
+      "current": 211,
+      "direct_catboost": 368
     },
     "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
   },
@@ -447,9 +378,7 @@
   ],
   "models_available_for_router": [
     "current",
-    "direct_catboost",
-    "native_300_e1",
-    "native_600_e4"
+    "direct_catboost"
   ],
   "promotion_gate": {
     "status": "shadow_only",
