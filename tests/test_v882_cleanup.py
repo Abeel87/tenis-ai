@@ -12,7 +12,7 @@ def test_v882_generator_is_retired_for_symphony2_ranking():
     engine=t("backend/symphony2_engine.py")
     assert not (ROOT/"frontend/scenario-studio-v82a.js").exists()
     assert "scenario-studio-v82a.js" not in index
-    assert "symphony2.js?v=220" in index
+    assert 'src="symphony2.js"' in index
     assert "MIN_ACTIONABLE_P = 0.55" in engine
     assert "from itertools import combinations" in engine
     assert "joint_probability" in engine
