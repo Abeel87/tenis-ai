@@ -14,6 +14,7 @@
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ');
   const yes=v=>['yes','tak','true','1'].includes(String(v??'').trim().toLowerCase());
   const no=v=>['no','nie','false','0'].includes(String(v??'').trim().toLowerCase());
+  const marketKey=v=>String(v??'').trim().toLowerCase().replace(/exactly_1_set/g,'exactly_1set');
 
   const MARKET_LABELS={
     match_winner:'Wygra mecz',match_win:'Wygra mecz',
@@ -71,13 +72,13 @@
   function playerFor(x,m){
     const direct=x?.player_name||x?.player||x?.participant||x?.competitor||x?.selection_player;
     if(direct)return String(direct);
-    const market=String(x?.market||'').toLowerCase();
+    const market=marketKey(x?.market);
     if(market.startsWith('p1_'))return String(m?.p1||'Zawodnik 1');
     if(market.startsWith('p2_'))return String(m?.p2||'Zawodnik 2');
     return '';
   }
   function marketLabel(x,m){
-    const market=String(x?.market||'').toLowerCase();
+    const market=marketKey(x?.market);
     const player=playerFor(x,m);
     let base=MARKET_LABELS[market]||String(x?.label||x?.market||'Rynek');
     if(market==='p1_exactly_1set'||market==='p2_exactly_1set')base=`${player||base} · dokładnie 1 wygrany set`;
@@ -85,7 +86,7 @@
     return cp!=null&&market==='game_state'?`${base} ${cp} gemach`:base;
   }
   function selectionLabel(x,m){
-    const market=String(x?.market||'').toLowerCase(),line=num(x?.line),pick=String(x?.pick||'').trim(),player=playerFor(x,m);
+    const market=marketKey(x?.market),line=num(x?.line),pick=String(x?.pick||'').trim(),player=playerFor(x,m);
     if(market==='p1_exactly_1set'||market==='p2_exactly_1set'){
       if(no(pick))return `${player||'Zawodnik'} nie wygra dokładnie 1 seta`;
       if(yes(pick))return `${player||'Zawodnik'} wygra dokładnie 1 set`;
