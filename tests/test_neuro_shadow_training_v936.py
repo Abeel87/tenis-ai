@@ -87,6 +87,50 @@ def test_training_groups_history_before_calling_each_market_model(monkeypatch):
     ]
 
 
+def test_side_market_history_quarantines_misoriented_player_without_rewriting_history(monkeypatch):
+    calls = []
+
+    def fake_train(rows, market):
+        calls.append((market, list(rows)))
+        return {
+            "market": market,
+            "mode": "SHADOW",
+            "status": "COLLECTING_DATA",
+            "model": None,
+            "production_influence": False,
+            "playable_influence": False,
+        }
+
+    monkeypatch.setattr(training, "train_market", fake_train)
+    correct = {
+        "prediction_key": "good",
+        "match_id": "m1",
+        "p1": "Dalibor Svrcina",
+        "p2": "Luciano Darderi",
+        "market": "p1_exactly_1_set",
+        "player": "Svrcina, Dalibor",
+        "settlement": "hit",
+    }
+    wrong = {
+        "prediction_key": "bad",
+        "match_id": "m1",
+        "p1": "Dalibor Svrcina",
+        "p2": "Luciano Darderi",
+        "market": "p2_exactly_1_set",
+        "player": "Svrcina, Dalibor",
+        "settlement": "miss",
+    }
+    original = json.loads(json.dumps([correct, wrong]))
+
+    report = build_training_report([correct, wrong])
+
+    assert report["history_rows_total"] == 2
+    assert report["history_rows"] == 1
+    assert report["orientation_quarantined_rows"] == 1
+    assert calls == [("p1_exactly_1_set", [correct])]
+    assert [correct, wrong] == original
+
+
 def test_fingerprint_ignores_pending_and_void_but_tracks_scored_evidence():
     base = [{
         "prediction_key": "k1",
