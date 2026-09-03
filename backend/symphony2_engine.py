@@ -251,38 +251,13 @@ def _pav_non_increasing(values: list[float]) -> list[float]:
     return out
 
 
-def _state_shape_flat_runs(values: list[float], states: list[float | None]) -> list[float]:
-    """Use shared-state geometry only when the learned ladder is effectively flat.
-
-    The calibrated model keeps the average probability level. State marginals only
-    restore the within-ladder shape, so distinct verified Superbet lines are not
-    published with an artificial identical P when the state model distinguishes them.
-    """
-    out = list(values)
-    start = 0
-    while start < len(out):
-        end = start
-        while end + 1 < len(out) and abs(out[end + 1] - out[start]) <= 0.01:
-            end += 1
-        if end > start:
-            block_states = states[start:end + 1]
-            if all(s is not None for s in block_states):
-                numeric_states = [float(s) for s in block_states]
-                if all(numeric_states[i] >= numeric_states[i + 1] - 1e-9 for i in range(len(numeric_states) - 1)) and max(numeric_states) - min(numeric_states) > 0.01:
-                    mean_model = sum(out[start:end + 1]) / (end - start + 1)
-                    mean_state = sum(numeric_states) / len(numeric_states)
-                    for offset, state_p in enumerate(numeric_states):
-                        out[start + offset] = max(0.01, min(99.99, mean_model + (state_p - mean_state)))
-        start = end + 1
-    return out
-
-
 def _cohere_ou_line_ladders(rows: list[dict]) -> list[dict]:
-    """Make verified O/U ladders internally coherent across their exact lines.
+    """Project complete exact O/U ladders onto the nearest monotone model ladder.
 
-    OVER must not rise as the line rises; UNDER is its exact complement. The
-    projection is applied only to complete over/under pairs within the same market,
-    player and checkpoint. Unpaired or unsupported selections are left untouched.
+    The supervised/calibrated probabilities remain the only source of the published
+    marginal P. This step corrects only impossible cross-line inversions: OVER may
+    stay flat or decrease as the line rises, and UNDER remains its exact complement.
+    Shared-state probabilities are not blended back into P after prediction.
     """
     ladders: dict[tuple, dict[float, dict[str, dict]]] = {}
     for row in rows or []:
@@ -301,9 +276,7 @@ def _cohere_ou_line_ladders(rows: list[dict]) -> list[dict]:
         if len(complete) < 2:
             continue
         over_values = [float(_num(pair["over"].get("operator_model_probability"), 0.0) or 0.0) for _, pair in complete]
-        state_values = [_num(pair["over"].get("state_probability")) for _, pair in complete]
-        shaped = _state_shape_flat_runs(over_values, state_values)
-        projected = _pav_non_increasing(shaped)
+        projected = _pav_non_increasing(over_values)
         for (_, pair), over_p in zip(complete, projected):
             over_final = round(max(0.01, min(99.99, over_p)), 2)
             under_final = round(100.0 - over_final, 2)
@@ -314,7 +287,7 @@ def _cohere_ou_line_ladders(rows: list[dict]) -> list[dict]:
                     row["operator_model_probability_pre_line_coherence"] = before
                     row["operator_model_probability"] = final
                     row["probability_coherence"] = "MONOTONIC_OU_LADDER"
-                    row["line_coherence_source"] = "CALIBRATED_LEVEL_PLUS_SHARED_STATE_SHAPE"
+                    row["line_coherence_source"] = "SUPERVISED_MONOTONIC_PROJECTION"
     return rows
 
 
@@ -509,7 +482,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     probability_diagnostics = _probability_diagnostics(all_scored)
     current = {"version": VERSION, "learning_version": LEARNING_VERSION, "state_version": STATE_VERSION, "generated_at": generated_at,
         "operator": OPERATOR, "architecture": "CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2",
-        "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; MONOTONIC_EXACT_OU_LINE_COHERENCE; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_GLOBAL_WEIGHTS",
+        "probability_policy": "SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; MONOTONIC_EXACT_OU_LINE_COHERENCE; STATE_AND_EXISTING_MODELS_ARE FEATURES_NOT_FIXED_WEIGHTS",
         "model_status": model.status, "matches_count": len(matches), "matches": matches}
     stats = {"version": VERSION, "generated_at": generated_at, "operator": OPERATOR, "model_status": model.status,
         "training": model.metrics or {"version": LEARNING_VERSION, "training_rows": model.trained_rows},
@@ -517,7 +490,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
-        "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; FLAT_LADDER_SHAPE_FROM_SHARED_STATE",
+        "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
 
