@@ -5,20 +5,13 @@ const VERSION='v9.2.3-ui';
 const DATA='./data/superbet_playable_stats_v912.json';
 const META='./data/meta.json';
 const ID='superbet-playable-stats-v912';
-const LABELS={
-  current_prod:'PROD / bieżący model',
-  shadow_lab_v78e6:'Shadow Lab 55–71',
-  autolearn_current:'AutoLearn · Current',
-  autolearn_catboost:'AutoLearn · CatBoost',
-  autolearn_tabpfn:'AutoLearn · TabPFN',
-  autolearn_ensemble:'AutoLearn · Ensemble',
-  autolearn_adaptive_prod:'Adaptive PROD',
-  shadow_player_intelligence:'Player Intelligence',
-  shadow_catboost_player:'CatBoost + Player',
-  shadow_ensemble_player:'Ensemble + Player',
-  shadow_catboost_player_elo:'CatBoost + Player + Elo',
-  shadow_ensemble_player_elo:'Ensemble + Player + Elo',
-  shadow_tabpfn_elo:'TabPFN + Elo'
+const MARKET_LABELS={
+  match_winner:'Zwycięzca meczu',
+  match_total:'Suma gemów · mecz',
+  set1_total:'Suma gemów · set 1',
+  set1_exact_score:'Dokładny wynik · set 1',
+  exact_match_score:'Dokładny wynik meczu',
+  total_sets:'Liczba setów'
 };
 let data=null;
 let coverage=null;
@@ -51,32 +44,32 @@ function coverageHtml(){
   </details>`;
 }
 function cardHtml(){
-  const cur=data?.current||{};
-  const verified=Number(cur.verified_superbet_matches||0);
-  const matchCoverage=finite(cur.verified_match_coverage)?Number(cur.verified_match_coverage)*100:null;
-  const feedActive=verified>0;
-  const models=Object.entries(data?.models||{});
-  const modelRows=models.map(([id,row])=>{
-    const n=Number(row?.settled||0);
+  const matches=Number(data?.matches||0);
+  const signals=Number(data?.signals||0);
+  const feedActive=matches>0;
+  const history=Object.entries(data?.history||{});
+  const historyRows=history.map(([market,row])=>{
+    const n=Number(row?.n||0);
     const status=n?`${pct(row?.accuracy)} · n=${n}`:'zbieramy próbkę';
-    return `<div class="sp912-model"><span>${esc(LABELS[id]||id)}</span><b>${esc(status)}</b></div>`;
+    return `<div class="sp912-model"><span>${esc(MARKET_LABELS[market]||market)}</span><b>${esc(status)}</b></div>`;
   }).join('');
+  const rawPreserved=data?.contract?.raw_model_fields_preserved===true;
   const stamp=new Date(data?.generated_at||'');
   const timestamp=Number.isFinite(stamp.getTime())?stamp.toLocaleString('pl-PL'):'N/D';
   const subtitle=`Ostatni raport: ${timestamp} · nie jest to stan oferty na żywo`;
   const note=feedActive
     ? 'Liczby opisują ofertę w chwili wygenerowania raportu. Aktualna dostępność jest sprawdzana osobno przy meczu. Skuteczność obejmuje wyłącznie rozliczone sygnały z zamrożoną ofertą operatora; RAW nie jest do niej dopisywany.'
-    : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%.';
+    : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%. MODEL / RAW pozostaje niezależny i widoczny.';
   return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
-    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?pct(matchCoverage):'FEED N/D'}</strong></div>
+    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?`${matches} MECZÓW`:'FEED N/D'}</strong></div>
     <div class="sp912-grid">
-      <div><span>Mecze zweryfikowane w raporcie</span><b>${verified} / ${Number(cur.model_ready_matches||0)}</b></div>
-      <div><span>Zielone sygnały w raporcie</span><b>${Number(cur.playable_green_signals||0)}</b></div>
-      <div><span>Ukryte linie RAW</span><b>${Number(cur.suppressed_raw_display_estimate||0)}</b></div>
+      <div><span>Mecze PLAYABLE w raporcie</span><b>${matches}</b></div>
+      <div><span>Sygnały PLAYABLE w raporcie</span><b>${signals}</b></div>
+      <div><span>MODEL / RAW zachowany</span><b>${rawPreserved?'TAK':'N/D'}</b></div>
     </div>
     <p class="sp912-note">${esc(note)}</p>
     ${coverageHtml()}
-    <details class="sp912-details"><summary>Skuteczność modeli PLAYABLE</summary><div class="sp912-models">${modelRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
+    <details class="sp912-details"><summary>Historyczna skuteczność PLAYABLE</summary><div class="sp912-models">${historyRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
   </section>`;
 }
 function render(){
