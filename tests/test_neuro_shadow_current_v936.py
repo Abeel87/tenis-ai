@@ -1,4 +1,4 @@
-from backend.neuro_shadow_current_v936 import (
+from backend.neuro_shadow_current import (
     MODE,
     NEURAL_VERSION,
     PLAYABLE_INFLUENCE,
@@ -61,7 +61,7 @@ def test_old_history_not_in_current_results_is_excluded():
 
 
 def test_ready_market_can_emit_real_neural_probability(monkeypatch):
-    monkeypatch.setattr("backend.neuro_shadow_current_v936.predict", lambda report, snapshot: 0.71)
+    monkeypatch.setattr("backend.neuro_shadow_current.predict", lambda report, snapshot: 0.71)
     training = {
         "neural_version": NEURAL_VERSION,
         "ready_markets": ["set2_winner"],
@@ -80,7 +80,7 @@ def test_stale_ready_artifact_cannot_emit_neural_probability(monkeypatch):
     def fail_if_called(*args, **kwargs):
         raise AssertionError("stale model must never reach predict")
 
-    monkeypatch.setattr("backend.neuro_shadow_current_v936.predict", fail_if_called)
+    monkeypatch.setattr("backend.neuro_shadow_current.predict", fail_if_called)
     training = {
         "neural_version": "neuro-shadow-neural-vOLD",
         "ready_markets": ["set2_winner"],
