@@ -26,7 +26,9 @@ except Exception:  # pragma: no cover
 VERSION = "symphony2-learning-5"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
-MIN_MARKET_CALIBRATION_ROWS = 40
+MIN_CALIBRATION_FIT_ROWS = 40
+MIN_CALIBRATION_EVAL_ROWS = 20
+MIN_MARKET_CALIBRATION_ROWS = 60
 FULL_SUPPORT_ROWS = 120
 EPS = 1e-6
 CANDIDATE_LAYER = "superbet_candidate_signals_v925"
@@ -262,7 +264,7 @@ class PlattCalibrator:
     fitted: bool = False
 
     def fit(self, probabilities: list[float], targets: list[int]) -> "PlattCalibrator":
-        if len(probabilities) < 40 or len(set(targets)) < 2:
+        if len(probabilities) < MIN_CALIBRATION_FIT_ROWS or len(set(targets)) < 2:
             return self
         a, b = 1.0, 0.0
         xs = [_logit(p) for p in probabilities]
@@ -293,17 +295,34 @@ class PlattCalibrator:
         return _clip(_sigmoid(self.a * _logit(p) + self.b)) if self.fitted else _clip(p)
 
 
-def _accepted_calibrator(raw: list[float], targets: list[int]) -> tuple[PlattCalibrator, dict]:
-    candidate = PlattCalibrator().fit(raw, targets)
-    raw_brier = _brier(raw, targets)
-    if not candidate.fitted:
-        return PlattCalibrator(), {"fitted": False, "raw_brier": raw_brier, "calibrated_brier": None, "accepted": False}
-    calibrated = [candidate.predict(p) for p in raw]
-    calibrated_brier = _brier(calibrated, targets)
+def _accepted_calibrator(
+    fit_raw: list[float], fit_targets: list[int],
+    eval_raw: list[float], eval_targets: list[int],
+) -> tuple[PlattCalibrator, dict]:
+    candidate = PlattCalibrator().fit(fit_raw, fit_targets)
+    raw_brier = _brier(eval_raw, eval_targets)
+    if (
+        not candidate.fitted
+        or len(eval_raw) < MIN_CALIBRATION_EVAL_ROWS
+        or len(set(eval_targets)) < 2
+    ):
+        return PlattCalibrator(), {
+            "fitted": candidate.fitted,
+            "fit_rows": len(fit_raw),
+            "evaluation_rows": len(eval_raw),
+            "raw_brier": round(raw_brier, 6) if raw_brier is not None else None,
+            "calibrated_brier": None,
+            "accepted": False,
+        }
+    calibrated = [candidate.predict(p) for p in eval_raw]
+    calibrated_brier = _brier(calibrated, eval_targets)
     accepted = calibrated_brier is not None and raw_brier is not None and calibrated_brier <= raw_brier + 1e-9
     chosen = candidate if accepted else PlattCalibrator()
     return chosen, {
-        "fitted": candidate.fitted, "accepted": accepted,
+        "fitted": candidate.fitted,
+        "fit_rows": len(fit_raw),
+        "evaluation_rows": len(eval_raw),
+        "accepted": accepted,
         "raw_brier": round(raw_brier, 6) if raw_brier is not None else None,
         "calibrated_brier": round(calibrated_brier, 6) if calibrated_brier is not None else None,
         "a": round(candidate.a, 6), "b": round(candidate.b, 6),
@@ -355,6 +374,18 @@ class OperatorLineModel:
         return diagnostics["final"] if diagnostics is not None else None
 
 
+def _split_calibration_window(rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Chronological fit/evaluation split inside the future holdout window."""
+    if len(rows) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS:
+        return [], []
+    split = max(MIN_CALIBRATION_FIT_ROWS, int(round(len(rows) * 0.67)))
+    split = min(split, len(rows) - MIN_CALIBRATION_EVAL_ROWS)
+    fit_rows, eval_rows = rows[:split], rows[split:]
+    if len({r["target"] for r in fit_rows}) < 2 or len({r["target"] for r in eval_rows}) < 2:
+        return [], []
+    return fit_rows, eval_rows
+
+
 def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     history_rows = [x for x in (history or []) if isinstance(x, dict)]
     candidate_markets = _candidate_review_ready_markets(history_rows)
@@ -371,7 +402,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
 
     split = max(1, min(len(rows) - 1, int(round(len(rows) * (1.0 - VALIDATION_FRACTION)))))
     train, valid = rows[:split], rows[split:]
-    if len(valid) < 40 or len({r["target"] for r in valid}) < 2:
+    if len(valid) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS or len({r["target"] for r in valid}) < 2:
         train, valid = rows, []
 
     x_train = [[r.get(name) for name in FEATURES] for r in train]
@@ -395,7 +426,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "candidate_review_ready_markets": sorted(candidate_markets),
         "history_layer_policy": "UNION_EXACT_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
         "candidate_gate_policy": "REVIEW_READY_ONLY; EXACT_OPERATOR_VERIFIED; NO_PLAYABLE_STATS_MUTATION",
-        "calibration_policy": "PER_MARKET_PLATT_IF_IMPROVES_BRIER_ELSE_RAW; GLOBAL_DIAGNOSTIC_ONLY",
+        "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
 
@@ -403,27 +434,57 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     market_calibrators: dict[str, PlattCalibrator] = {}
     if valid:
         x_valid = [[r.get(name) for name in FEATURES] for r in valid]
-        y_valid = [r["target"] for r in valid]
         raw = [float(x[1]) for x in model.predict_proba(x_valid)]
-        global_calibrator, global_info = _accepted_calibrator(raw, y_valid)
+        fit_rows, eval_rows = _split_calibration_window(valid)
+        if fit_rows and eval_rows:
+            fit_n = len(fit_rows)
+            fit_raw = raw[:fit_n]
+            eval_raw = raw[fit_n:]
+            fit_targets = [r["target"] for r in fit_rows]
+            eval_targets = [r["target"] for r in eval_rows]
+            global_calibrator, global_info = _accepted_calibrator(
+                fit_raw, fit_targets, eval_raw, eval_targets
+            )
+        else:
+            global_info = {
+                "fitted": False,
+                "accepted": False,
+                "fit_rows": 0,
+                "evaluation_rows": 0,
+                "raw_brier": None,
+                "calibrated_brier": None,
+            }
         global_info["production_applied"] = False
         metrics["global_calibration"] = global_info
+
         per_market = {}
         for market in sorted({r["market"] for r in valid}):
             idx = [i for i, r in enumerate(valid) if r["market"] == market]
             if len(idx) < MIN_MARKET_CALIBRATION_ROWS:
                 continue
-            probs = [raw[i] for i in idx]
-            targets = [y_valid[i] for i in idx]
-            if len(set(targets)) < 2:
+            market_rows = [valid[i] for i in idx]
+            fit_market, eval_market = _split_calibration_window(market_rows)
+            if not fit_market or not eval_market:
+                per_market[market] = {
+                    "rows": len(idx), "fit_rows": 0, "evaluation_rows": 0,
+                    "fitted": False, "accepted": False,
+                }
                 continue
-            calibrator, info = _accepted_calibrator(probs, targets)
+            market_probs = [raw[i] for i in idx]
+            fit_n = len(fit_market)
+            calibrator, info = _accepted_calibrator(
+                market_probs[:fit_n], [r["target"] for r in fit_market],
+                market_probs[fit_n:], [r["target"] for r in eval_market],
+            )
             per_market[market] = {"rows": len(idx), **info}
             if calibrator.fitted:
                 market_calibrators[market] = calibrator
         metrics["market_calibration"] = per_market
     else:
-        metrics["global_calibration"] = {"fitted": False, "accepted": False, "production_applied": False}
+        metrics["global_calibration"] = {
+            "fitted": False, "accepted": False, "production_applied": False,
+            "fit_rows": 0, "evaluation_rows": 0,
+        }
         metrics["market_calibration"] = {}
 
     out.model = model

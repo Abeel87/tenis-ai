@@ -13,9 +13,6 @@ try:  # package import in tests
 except ImportError:  # top-level import used by backend/update.py
     import model_core as _core
 
-# Preserve the complete existing module API, including private helpers used by
-# tests and specialist code. The overrides below intentionally replace only the
-# full-match distribution and analyse_match.
 for _name in dir(_core):
     if not _name.startswith("__"):
         globals()[_name] = getattr(_core, _name)
@@ -34,6 +31,30 @@ def _best_of(match: dict) -> int:
     return best_of if best_of in {3, 5} else 3
 
 
+def _dated_history(long_df):
+    """Fail closed for temporal features: undated rows are not pre-match history."""
+    if long_df is None or getattr(long_df, "empty", False) or "date" not in long_df.columns:
+        return long_df
+    return long_df[long_df["date"].notna()].copy()
+
+
+def _naive_cutoff(as_of):
+    """Normalize fixture timestamps to the tz-naive date domain used by normalized history."""
+    if as_of is None or as_of == "":
+        return _core._fixture_date(as_of)
+    cut = _core.pd.to_datetime(as_of, errors="coerce", utc=True)
+    if _core.pd.isna(cut):
+        return _core._fixture_date(as_of)
+    return _core.pd.Timestamp(cut.date())
+
+
+def player_profile(long_df, player: str, surface: str = '', as_of=None, priors=None):
+    history_df = _dated_history(long_df)
+    cut = _naive_cutoff(as_of)
+    safe_priors = priors if priors is not None else _core._surface_priors(history_df, surface, cut)
+    return _core.player_profile(history_df, player, surface, cut, safe_priors)
+
+
 def _match_distribution_conditional(
     base_dist: dict,
     first_target: float,
@@ -43,14 +64,6 @@ def _match_distribution_conditional(
     *,
     best_of: int = 3,
 ):
-    """Aggregate set-score distributions for BO3 or BO5 without truncation.
-
-    Set 1 keeps the calibrated first-set target. Set 2 keeps the existing
-    conditional response to the first-set result. Set 3+ use the existing
-    deciding/later-set target; we do not invent unsupported fourth/fifth-set
-    features. The match stops immediately when either player reaches the
-    required number of sets.
-    """
     best_of = best_of if best_of in {3, 5} else 3
     required = best_of // 2 + 1
 
@@ -61,8 +74,6 @@ def _match_distribution_conditional(
 
     total_games: dict[int, float] = {}
     exact: dict[str, float] = {}
-
-    # state = (sets_played, p1_sets, p2_sets, games_so_far, p1_won_first)
     live = [(0, 0, 0, 0, None, 1.0)]
     while live:
         set_no, w1, w2, games, p1_won_first, path_prob = live.pop()
@@ -117,7 +128,6 @@ def _match_distribution_bo3_conditional(
     second_if_loss: float,
     third_target: float,
 ):
-    """Backward-compatible BO3 entrypoint retained for existing callers/tests."""
     return _match_distribution_conditional(
         base_dist,
         first_target,
@@ -129,12 +139,13 @@ def _match_distribution_bo3_conditional(
 
 
 def analyse_match(long_df, match: dict) -> dict:
+    history_df = _dated_history(long_df)
     surface = (match.get('surface') or '').lower()
     as_of = match.get('scheduled_time') or None
-    cut = _core._fixture_date(as_of)
-    priors = _core._surface_priors(long_df, surface, cut)
-    p1 = _core.player_profile(long_df, match['p1'], surface, cut, priors)
-    p2 = _core.player_profile(long_df, match['p2'], surface, cut, priors)
+    cut = _naive_cutoff(as_of)
+    priors = _core._surface_priors(history_df, surface, cut)
+    p1 = _core.player_profile(history_df, match['p1'], surface, cut, priors)
+    p2 = _core.player_profile(history_df, match['p2'], surface, cut, priors)
 
     h1 = _core._service_hold_probability(p1, p2, priors.get('hold_rate', .72))
     h2 = _core._service_hold_probability(p2, p1, priors.get('hold_rate', .72))

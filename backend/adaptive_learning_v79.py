@@ -23,7 +23,8 @@ VERSION = "v7.9B-bayesian-meta"
 MODE = "PROD"
 CURRENT_MODEL_VERSION = "v7.8D-calibration-guard"
 OFFICIAL_WEIGHT = 1.0
-SHADOW_WEIGHT = 0.60
+# SHADOW remains visible for analysis/review, but never supplies PROD evidence.
+SHADOW_WEIGHT = 0.0
 PBP_WEIGHT = 0.90
 SPECIALIST_WEIGHT = 0.85
 MIN_CELL_SAMPLE = 6.0
@@ -130,6 +131,9 @@ def signal_key(signal: dict) -> str:
 
 
 def _training_row(entry: dict, signal: dict, weight: float, source_model: str | None = None) -> dict | None:
+    # A zero-weight stream is analysis-only and must not enter PROD cell counts.
+    if float(weight) <= 0.0:
+        return None
     result = signal.get("result")
     if result not in ("hit", "miss"):
         return None
@@ -168,6 +172,8 @@ def collect_training_rows(history: list[dict], pbp_history: list[dict]) -> list[
                 row = _training_row(entry, signal, OFFICIAL_WEIGHT)
                 if row:
                     rows.append(row)
+            # SHADOW rows stay in history for diagnostics, but SHADOW_WEIGHT=0
+            # guarantees that no experimental evidence reaches Adaptive PROD.
             for signal in unique_signals(entry, "shadow_signals"):
                 row = _training_row(entry, signal, SHADOW_WEIGHT)
                 if row:
@@ -805,6 +811,7 @@ def build_report(rows: list[dict], cells: dict) -> dict:
         "notes": [
             "Uczenie koryguje pewność istniejących modeli; nie zastępuje ich logiki tenisowej.",
             "Każdy source_model/rynek uczy się osobno z hierarchicznym shrinkage.",
+            "SHADOW pozostaje warstwą analityczną i ma zerowy wpływ na Adaptive PROD.",
             "Serve/Return, Form, Surface, Early i Consensus są śledzone jako learning-only i nie mieszają się z oficjalną skutecznością.",
             "Player Intelligence i Accuracy Lab pozostają SHADOW i nie uczestniczą w korekcie PROD.",
             "COLLECTING nie ma wpływu; EARLY ma limit 4 pp; STRONG ma limit 8 pp.",

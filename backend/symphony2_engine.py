@@ -86,7 +86,7 @@ def _scheduled_utc(match: dict) -> datetime | None:
 def _is_current_pre_match_fixture(match: dict, now: datetime | None = None) -> bool:
     scheduled = _scheduled_utc(match)
     if scheduled is None:
-        return True
+        return False
     reference = now or datetime.now(timezone.utc)
     if reference.tzinfo is None:
         reference = reference.replace(tzinfo=timezone.utc)

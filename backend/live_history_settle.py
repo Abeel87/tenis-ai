@@ -112,6 +112,10 @@ def _winner_index(match: dict):
     return winner if winner in (1, 2) else None
 
 
+def _name_key(value) -> str:
+    return " ".join(str(value or "").strip().casefold().split())
+
+
 def final_from_match(match: dict, entry: dict):
     status = str(match.get("event_status") or "").strip()
     low = status.casefold()
@@ -157,6 +161,10 @@ def final_from_match(match: dict, entry: dict):
     set_wins_p1 = sum(1 for a, b in sets if a > b)
     set_wins_p2 = sum(1 for a, b in sets if b > a)
     if set_wins_p1 == set_wins_p2:
+        return None
+
+    score_winner = p1 if set_wins_p1 > set_wins_p2 else p2
+    if _name_key(actual_winner) != _name_key(score_winner):
         return None
 
     score_text = " ".join(f"{a}-{b}" for a, b in sets)

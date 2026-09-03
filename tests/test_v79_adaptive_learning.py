@@ -52,3 +52,26 @@ def test_pbp_uses_confidence_as_training_score():
     assert len(rows)==1
     assert round(rows[0]["raw"],2)==.72
     assert rows[0]["source_model"]=="early_hold_pbp"
+
+
+def test_shadow_history_never_supplies_adaptive_prod_training_rows():
+    history = [{
+        "model_version": "v7.8D-calibration-guard",
+        "tour": "ATP",
+        "surface": "hard",
+        "signals": [],
+        "shadow_signals": [
+            {
+                "market": "set1_total",
+                "line": 8.5,
+                "pick": "over",
+                "score": 95,
+                "result": "miss",
+                # Deliberately use the production source name: the field itself,
+                # not a convention on source_model, must define the SHADOW boundary.
+                "source_model": "adaptive",
+            }
+        ],
+    }]
+    rows = collect_training_rows(history, [])
+    assert rows == []

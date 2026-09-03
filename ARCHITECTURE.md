@@ -1,43 +1,62 @@
-# Tenis AI — architektura v8.0
+# Tenis AI — kanoniczna architektura
 
 ## 1. Produkcja danych
 
-Workflow `update-and-pages.yml` aktualizuje dane, wykonuje modele, PBP, Integrity Guard, historię, specialist learning, Shadow Lab i settlement. Następnie wylicza AutoLearn Ensemble, a dopiero po nim nakłada Adaptive Learning jako ograniczoną warstwę końcową. Ta kolejność jest częścią kontraktu systemu.
+Główny workflow `update-and-pages.yml` buduje analizę i publikację w jednej kontrolowanej kolejności. Najpierw aktualizowane są dane i modele bazowe, następnie PBP/historia/settlement, AutoLearn Ensemble i Adaptive Learning, później telemetryka oraz warstwy SHADOW. Superbet jest nakładany jako osobna warstwa operatorowa, a Symfonia 2.0 pracuje wyłącznie na bieżącej, zweryfikowanej ofercie operatora.
 
-## 2. Modele
+Kontrakt przepływu:
 
-- Adaptive / model bazowy — oficjalne sygnały.
-- Early Hold PBP — początek 1. seta z game-by-game, gdy dane są dostępne.
-- Consensus, Early, Serve/Return, Form, Surface — dodatkowe modele śledzone learning-only.
-- Calibration Guard — mierzy rzeczywistą skuteczność i nie pozwala mylić score z probability.
-- Adaptive Learning — meta-warstwa Bayesowska ucząca się z rozliczonych błędów; zachowuje surowe Current/CatBoost/TabPFN/Ensemble i dopisuje osobny `final_score`.
-- Player Intelligence i Accuracy Lab v8.6 — warstwy SHADOW bez wpływu na produkcyjny wynik.
+`DANE / MODEL RAW -> uczenie i walidacja -> SYMFONIA 2.0 -> bieżąca oferta Superbet -> PLAYABLE`
 
-## 3. Frontend
+Brak oferty lub linii Superbet nie może usuwać ani zastępować analizy MODEL / RAW.
 
-### Kanoniczne widoki v8
+## 2. Modele i uczenie
 
-- Match Center: obecny `ui-v751.js` + Centrum Decyzji Meczu w `model-guide.js`.
-- History / Post-Match Center: wyłącznie `clean-core-v80.js`.
-- Status Adaptive: `adaptive-learning-v79.js`, wizualnie kompresowany przez Clean Core.
+- **Current Engine** — kanoniczny silnik statystyczny w `backend/model_core.py`; nie jest przedstawiany jako samouczący ML.
+- **AutoLearn** — rzeczywiste uczenie na rozliczonej historii z chronologicznym podziałem całymi meczami na TRAIN/CAL/VAL. Current/CatBoost/TabPFN/Ensemble zachowują osobne wyniki.
+- **Adaptive PROD** — ograniczona meta-warstwa ucząca się z zamrożonych, rozliczonych prognoz. Nie nadpisuje RAW Ensemble.
+- **Dynamic Weights** — używają poprzedniego snapshotu telemetryki i mają twarde limity przesunięć wag.
+- **Early Hold / Serve / Form / Surface / Consensus** — specjalistyczne warstwy statystyczne lub agregujące; nie należy przedstawiać ich jako osobnych retrenowanych modeli ML, jeżeli nimi nie są.
+- **Player / Ensemble learning / Surface Elo / Accuracy Lab / NEURO** — warstwy SHADOW pozostające odseparowane od PROD/PLAYABLE, dopóki ich własne bramki walidacyjne nie zostaną spełnione i świadomie zatwierdzone.
+- **Symfonia 2.0** — supervised operator-line model z własną historią, exact-line probability i joint probability liczoną tylko na wspieranym wspólnym state-space.
 
-### Zasada konsolidacji
+## 3. Superbet i PLAYABLE
 
-Pliki z historycznymi numerami wersji mogą pozostać tylko wtedy, gdy są nadal aktywną częścią runtime. Same stare instalatory, paczki i wersyjne README nie są runtime i zostały usunięte.
+Kanoniczne backendowe wejścia operatora to:
 
-## 4. Historia
+- `backend/superbet_market_context.py`
+- `backend/superbet_line_coverage.py`
+- `backend/superbet_playable.py`
 
-`history.json` jest źródłem prawdy dla rozliczonego meczu. Post-Match Center korzysta bezpośrednio z:
+PLAYABLE jest warstwą fail-closed: brak zweryfikowanego operator context, brak dokładnej linii albo brak dopasowania selekcji oznacza brak PLAYABLE. Nie wolno używać najbliższej linii ani RAW jako operatorowego fallbacku.
 
-- `signals` — oficjalne prognozy;
-- `learning_signals_v79b` — modele specjalistyczne learning-only;
-- `adaptive_review_v79` — przyczyna błędu, korekta score i lekcja modelu;
-- `result` — wynik końcowy i sety.
+`backend/superbet_playable.py` jest projekcją addytywną. Może dopisać osobne `superbet_playable_v912` i dedykowane warstwy historii PLAYABLE, ale nie może nadpisywać `match_win`, `first_set_win`, `over_under`, `match_over_under`, exact score, `autolearn_v84` ani źródłowych feedów SHADOW. MODEL / RAW pozostaje niezależny od tego, czy Superbet ma dany rynek lub dokładną linię.
 
-Adaptive PROD stosuje limity per komórka dowodowa: `COLLECTING = 0 pp`, `EARLY = ±4 pp`, `STRONG = ±8 pp`. Pole `ensemble` jest kontraktem RAW i nie jest nadpisywane.
+Historia PLAYABLE przechowuje wyłącznie zamrożone selekcje operatorowo zweryfikowane. Brak score nie jest interpretowany jako `0`.
 
-Nie dopasowujemy już analizy pomeczowej do kart po indeksach DOM.
+## 4. Frontend
 
-## 5. Dalsza konsolidacja
+Kanoniczne właściciele głównych ścieżek UI:
 
-`ui-v75`, `ui-v751`, `restore-v762` i część starszych aktywnych modułów nadal tworzą most kompatybilności. Nie są usuwane w v8.0 bez migracji funkcji i testów. Kolejne wydania v8.x mogą je scalać stopniowo.
+- lista i szczegół meczu: `frontend/project-ui.js`
+- filtrowanie/sortowanie i zachowanie pozycji listy: `frontend/match-browser.js`
+- jeden gate PLAYABLE: `frontend/playable-ui.js`
+- szczegół architektury meczu: `frontend/match-detail.js`
+- Symfonia 2.0: `frontend/symphony2.js`
+- historia: `frontend/history-ui.js`
+
+Top sygnały SUPERBET i główna lista muszą korzystać z tego samego zbioru widocznych meczów oraz tego samego `playableSignals()`.
+
+Brak wartości numerycznej w UI ma być przedstawiany jako `N/D`/brak danych, a nie jako rzeczywiste zero.
+
+## 5. Historia i settlement
+
+`frontend/data/history.json` jest głównym źródłem rozliczonych predykcji. Prognozy są zamrażane przed startem meczu, a settlement wykorzystuje jednoznaczny, końcowy wynik. Przy niejednoznacznym dopasowaniu wynik pozostaje nierozliczony zamiast być zgadywany.
+
+Osobne warstwy SHADOW i Symfonia 2.0 mogą mieć własne historie, ale nie wolno mieszać ich skuteczności z głównym PROD ani ze starą Symfonią.
+
+## 6. Zasada konsolidacji
+
+Nie tworzymy kolejnych plików/modułów `vXXX` jako łat na aktywny runtime. Naprawa trafia do jednego kanonicznego właściciela funkcji, a stara aktywna ścieżka jest usuwana po migracji i zabezpieczeniu testem.
+
+Historyczne nazwy wersji mogą pozostać wyłącznie tam, gdzie są świadomie utrzymanym kontraktem danych, polityką albo odseparowanym eksperymentem. Nie są pretekstem do uruchamiania równoległych hotfixów.

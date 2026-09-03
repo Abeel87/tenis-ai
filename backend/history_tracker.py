@@ -184,7 +184,7 @@ def is_current_match(match: dict, now: datetime | None = None, grace_minutes: in
     """Client/backend safety net for feeds that keep a past fixture marked upcoming."""
     scheduled = _dt(match.get('scheduled_time'))
     if scheduled is None:
-        return True
+        return False
     now = now or datetime.now(timezone.utc)
     return scheduled >= now - timedelta(minutes=grace_minutes)
 

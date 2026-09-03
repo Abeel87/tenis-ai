@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from backend.autolearn_v84 import (
     _apply_tracking_governor,
     _candidate_key,
+    _capture_frozen,
     _optimize_weights,
     _prob_from_score,
     build_training_rows,
@@ -145,3 +146,45 @@ def test_tracking_governor_cached_two_model_weights_keep_hard_caps_with_eligible
     assert w["current"] >= 0.25 - 1e-9
     assert abs(sum(w.values()) - 1.0) < 1e-9
 
+
+def test_autolearn_snapshot_is_frozen_once_and_never_recomputed_after_settlement():
+    now = datetime(2026, 9, 2, 10, 0, tzinfo=timezone.utc)
+    scheduled = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_key": "id:77", "match_id": 77, "id": 77,
+        "scheduled_time": scheduled, "status": "pending",
+        "p1": "A", "p2": "B", "tournament": "Test", "tour": "ATP", "surface": "hard",
+        "signals": [{"market": "match_winner", "pick": "A", "score": 75, "result": "pending"}],
+    }]
+    first_results = [{
+        "id": 77, "scheduled_time": scheduled, "p1": "A", "p2": "B", "tournament": "Test",
+        "autolearn_v84": {"signals": [{
+            "key": "match_win|a", "label": "A", "market": "match_winner", "pick": "A",
+            "ensemble": 74.0, "current": 71.0, "catboost": 76.0, "tabpfn": 73.0,
+            "local_weights": {"current": .3, "catboost": .5, "tabpfn": .2},
+            "dynamic_weighting": {"version": "v8.4D", "active": True, "max_shift": .04},
+        }]},
+    }]
+    frozen, captured = _capture_frozen(history, first_results, now)
+    assert captured == 1
+    original = frozen[0]["autolearn_signals_v84"][0]
+    assert original["score"] == 74.0
+    assert original["model_scores"]["catboost"] == 76.0
+    assert original["local_weights"]["catboost"] == .5
+    captured_at = frozen[0]["autolearn_captured_at"]
+
+    # A later run may have completely different model outputs. Once captured,
+    # the historical prediction must stay byte-for-byte equivalent in substance.
+    later_results = [{
+        "id": 77, "scheduled_time": scheduled, "p1": "A", "p2": "B", "tournament": "Test",
+        "autolearn_v84": {"signals": [{
+            "key": "match_win|a", "label": "A", "market": "match_winner", "pick": "A",
+            "ensemble": 99.0, "current": 99.0, "catboost": 99.0, "tabpfn": 99.0,
+            "local_weights": {"current": 1.0},
+            "dynamic_weighting": {"version": "v8.4D", "active": False},
+        }]},
+    }]
+    second, captured_again = _capture_frozen(frozen, later_results, now + timedelta(minutes=30))
+    assert captured_again == 0
+    assert second[0]["autolearn_captured_at"] == captured_at
+    assert second[0]["autolearn_signals_v84"] == frozen[0]["autolearn_signals_v84"]

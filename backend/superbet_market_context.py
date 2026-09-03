@@ -145,6 +145,7 @@ def mapped_sanitize(row: dict,meta: dict):
     if not isinstance(book,dict):return None
     raw_markets=book.get("markets") or {}
     if not isinstance(raw_markets,dict):return None
+    bookmaker_active=book.get("bookmakerIsActive") is not False
     p1=str(row.get("participant1Name") or "");p2=str(row.get("participant2Name") or "");selections=[];recognized_markets=set();suppressed_without_fixture_line=0
     for raw_market_id,market_data in raw_markets.items():
         if not isinstance(market_data,dict) or market_data.get("marketActive") is False:continue
@@ -172,7 +173,7 @@ def mapped_sanitize(row: dict,meta: dict):
         sig=(selection.get("market"),base._norm(selection.get("pick")),base._line(selection.get("line")),int(selection.get("checkpoint") or 0),base._name_key(selection.get("player")))
         if sig not in dedup or selection.get("main_line"):dedup[sig]=selection
     selections=sorted(dedup.values(),key=lambda selection:(str(selection.get("market")),float(selection.get("line") if selection.get("line") is not None else -999),str(selection.get("pick"))))
-    return {"fixture_id":row.get("fixtureId"),"p1":p1,"p2":p2,"start_time":row.get("startTime"),"tournament":row.get("tournamentName"),"tournament_id":row.get("tournamentId"),"bookmaker":base.BOOKMAKER,"bookmaker_active":bool(book.get("bookmakerIsActive",True)),"suspended":bool(book.get("suspended",False)),"raw_markets":len(raw_markets),"recognized_markets":sorted(recognized_markets),"canonical_selections":selections,"market_mapping_version":VERSION,"fixture_line_contract_version":STRICT_FIXTURE_LINE_VERSION,"suppressed_line_selections_without_fixture_evidence":suppressed_without_fixture_line}
+    return {"fixture_id":row.get("fixtureId"),"p1":p1,"p2":p2,"start_time":row.get("startTime"),"tournament":row.get("tournamentName"),"tournament_id":row.get("tournamentId"),"bookmaker":base.BOOKMAKER,"bookmaker_active":bookmaker_active,"suspended":bool(book.get("suspended",False) or not bookmaker_active),"raw_markets":len(raw_markets),"recognized_markets":sorted(recognized_markets),"canonical_selections":selections,"market_mapping_version":VERSION,"fixture_line_contract_version":STRICT_FIXTURE_LINE_VERSION,"suppressed_line_selections_without_fixture_evidence":suppressed_without_fixture_line}
 
 
 @contextmanager

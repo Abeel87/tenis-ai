@@ -114,8 +114,8 @@ def test_current_symphony_time_filter_does_not_mutate_model_raw_payload():
 def test_current_symphony_time_parser_handles_naive_utc_and_unknown_time_conservatively():
     now = datetime(2026, 8, 31, 18, 30, tzinfo=timezone.utc)
     assert engine._is_current_pre_match_fixture({"scheduled_time": "2026-08-31T19:00:00"}, now) is True
-    assert engine._is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is True
-    assert engine._is_current_pre_match_fixture({}, now) is True
+    assert engine._is_current_pre_match_fixture({"scheduled_time": "not-a-date"}, now) is False
+    assert engine._is_current_pre_match_fixture({}, now) is False
 
 
 def test_supported_market_scores_verified_current_line_even_if_exact_number_was_not_repeated_in_history():
@@ -192,3 +192,21 @@ def test_zero_market_support_is_unscored_not_fake_fifty_percent():
     assert diagnostics["support"] == 0
     assert diagnostics["final"] is None
     assert model.predict(row) is None
+
+
+def test_calibration_window_is_chronological_and_uses_later_unseen_evaluation():
+    rows = [{"target": i % 2, "captured_ts": float(i)} for i in range(90)]
+    fit_rows, eval_rows = learning._split_calibration_window(rows)
+    assert len(fit_rows) >= learning.MIN_CALIBRATION_FIT_ROWS
+    assert len(eval_rows) >= learning.MIN_CALIBRATION_EVAL_ROWS
+    assert fit_rows[-1]["captured_ts"] < eval_rows[0]["captured_ts"]
+
+
+def test_calibrator_reports_separate_fit_and_evaluation_samples():
+    fit_raw = ([0.75, 0.25] * 20)
+    fit_targets = ([1, 0] * 20)
+    eval_raw = ([0.70, 0.30] * 10)
+    eval_targets = ([1, 0] * 10)
+    _, info = learning._accepted_calibrator(fit_raw, fit_targets, eval_raw, eval_targets)
+    assert info["fit_rows"] == 40
+    assert info["evaluation_rows"] == 20

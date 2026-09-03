@@ -135,8 +135,9 @@ def capture(current: dict, history_doc: dict) -> tuple[dict, int]:
             if not isinstance(raw, dict):
                 valid = False
                 break
-            # Capturing an actionable 2.0 prediction requires operator evidence.
-            if raw.get("fixture_line_verified") is False:
+            # A history row is training/accuracy evidence. Require an explicit
+            # operator-verification bit rather than treating a missing bit as OK.
+            if raw.get("fixture_line_verified") is not True:
                 valid = False
                 break
             legs.append({
