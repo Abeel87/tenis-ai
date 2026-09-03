@@ -7,8 +7,10 @@ on:
       - 'backend/point_tape_schema.py'
       - 'backend/point_tape_audit.py'
       - 'backend/point_transition_audit.py'
+      - 'backend/canonical_point_event.py'
       - 'tests/test_point_tape_schema.py'
       - 'tests/test_point_transition_audit.py'
+      - 'tests/test_canonical_point_event.py'
       - '.github/workflows/point-tape-audit.yml'
 
 permissions:
@@ -41,8 +43,8 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-
 
-      - name: Point tape audit unit tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py
+      - name: Point tape + canonical event unit tests
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
