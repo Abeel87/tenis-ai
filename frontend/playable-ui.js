@@ -260,33 +260,53 @@ function patchHome(){
 function patchDecisionHeader(root,match,rows){
   if(!root)return;
   root.dataset.playableUiV917=active(match)?'verified':'nd';
+  const playable=playableSignals(match,100);
   const kicker=root.querySelector('.dc87-kicker');
-  if(kicker)kicker.textContent='SUPERBET · REALNA OFERTA';
+  if(kicker)kicker.textContent='MODEL / RAW + SUPERBET';
   const title=root.querySelector('#dc87-title');
-  if(title)title.textContent='Dokładne rynki i linie Superbet';
+  if(title)title.textContent='Sygnały modelowe i realna oferta';
   const p=root.querySelector('.dc87-head p');
   if(p)p.textContent=active(match)
-    ?'Pokazujemy wyłącznie rynki i dokładne linie zweryfikowane w bieżącej ofercie Superbet.'
-    :'Brak świeżo zweryfikowanej oferty Superbet dla tego meczu. MODEL / RAW pozostaje niezależny.';
+    ?'MODEL / RAW pozostaje pełny. Sygnały dostępne na dokładnej linii bieżącej oferty są dodatkowo oznaczane jako SUPERBET PLAYABLE.'
+    :'Brak świeżej oferty Superbet. MODEL / RAW pozostaje widoczny bez zmian; nic nie jest oznaczane jako FINAL ani PLAYABLE.';
   const health=root.querySelector('.dc87-health');
   if(health){
     let badge=health.querySelector('[data-v917-book]');
     if(!badge){badge=document.createElement('span');badge.dataset.v917Book='1';health.prepend(badge)}
     badge.className=active(match)?'prod':'shadow';
-    badge.textContent=active(match)?'Superbet ✓ PLAYABLE':'Superbet N/D';
+    badge.textContent=active(match)?`Superbet ✓ ${playable.length} PLAYABLE`:'Superbet N/D · RAW dostępny';
   }
   const empty=root.querySelector('.dc87-empty');
-  if(empty&&rows.length===0)empty.innerHTML=active(match)
-    ?'<b>Brak PLAYABLE z wynikiem modelowym</b>Dla aktualnej oferty Superbet nie ma tu jeszcze pasującej selekcji z danymi.'
-    :'<b>Brak świeżego Superbet PLAYABLE</b>Mecz i MODEL / RAW analiza zostają dostępne, ale nie pokazujemy niezweryfikowanych linii jako FINAL.';
+  if(empty&&rows.length===0)empty.innerHTML='<b>Brak sygnałów modelowych</b>Dla tego meczu MODEL / RAW nie ma jeszcze policzonych selekcji.';
 }
 function decisionRows(match,api){
-  if(!active(match))return[];
-  const projected=playableSignals(match,100);
   let built=[];
   try{built=api.buildRows(match)||[]}catch{built=[]}
-  const bySignature=new Map(built.filter(row=>row&&typeof row==='object').map(row=>[signature(row),row]));
-  return projected.map(row=>bySignature.get(signature(row))||row);
+  built=built.filter(row=>row&&typeof row==='object');
+  const projected=active(match)?playableSignals(match,100):[];
+  const projectedBySignature=new Map(projected.map(row=>[signature(row),row]));
+  const rows=built.map(row=>{
+    const operatorRow=projectedBySignature.get(signature(row));
+    if(!operatorRow)return {...row,operator_playable:false};
+    return {
+      ...row,
+      operator_playable:true,
+      operator_verified:true,
+      operator:'Superbet',
+      operator_market_id:operatorRow.operator_market_id??row.operator_market_id,
+      operator_selection_id:operatorRow.operator_selection_id??row.operator_selection_id,
+      selected_line:operatorRow.selected_line??operatorRow.line??row.selected_line,
+      superbet_playable_projection:operatorRow
+    };
+  });
+  const seen=new Set(rows.map(signature));
+  for(const operatorRow of projected){
+    const sig=signature(operatorRow);
+    if(seen.has(sig))continue;
+    rows.push({...operatorRow,operator_playable:true,operator_verified:true,operator:'Superbet'});
+    seen.add(sig);
+  }
+  return rows;
 }
 function wrapDecisionCenter(){
   const api=window.TENIS_AI_DECISION_CENTER_V87;
@@ -294,7 +314,8 @@ function wrapDecisionCenter(){
   const base=api.tidy.bind(api);
   api.tidy=function(match){
     const screen=document.querySelector('.p751-detail-screen');
-    const gateKey=JSON.stringify([active(match),context(match).source_generated_at,match?.scheduled_time,context(match).canonical_selections]);
+    const modelId=window.TENIS_AI_MODEL_API?.active||'';
+    const gateKey=JSON.stringify([active(match),context(match).source_generated_at,match?.scheduled_time,modelId,context(match).canonical_selections]);
     if(screen?.querySelector('.dc87[data-playable-ui-v917]')?.dataset.playableGateKey===gateKey)return true;
     base(match);
     const old=screen?.querySelector('.dc87');
@@ -326,10 +347,7 @@ function wrapRenderMatches(){
   const current=window.renderMatches;
   if(typeof current!=='function'||current[WRAP])return false;
   const wrapped=function(...args){
-    const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
-    if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
-    let result;
-    try{result=current.apply(this,args)}finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}
+    const result=current.apply(this,args);
     queueMicrotask(patchHome);
     return result;
   };
