@@ -1,7 +1,7 @@
 import math
 from pathlib import Path
 
-from backend.neuro_shadow_state_v935 import (
+from backend.neuro_shadow_state import (
     CANDIDATE_CAPTURE_GAP_MARKETS,
     CANDIDATE_CAPTURE_READY_MARKETS,
     PLAYABLE_INFLUENCE,
@@ -188,7 +188,7 @@ def test_production_runtime_does_not_import_neuro_shadow_state():
         ROOT / "backend" / "update.py",
     )
     for path in production_files:
-        assert "neuro_shadow_state_v935" not in path.read_text(encoding="utf-8")
+        assert "neuro_shadow_state" not in path.read_text(encoding="utf-8")
 
 
 def test_unknown_or_invalid_market_never_gets_fabricated_probability():
