@@ -37,8 +37,8 @@ def test_v88_preserves_protected_runtime_contract():
     html=text("frontend/index.html")
     meta=text("frontend/app-meta.js")
     upgrade=text("frontend/adaptive-prod-bridge.js")
-    assert "symphony2.js?v=210" in html
-    assert "symphony2.css?v=210" in html
+    assert "symphony2.js?v=220" in html
+    assert "symphony2.css?v=220" in html
     assert "scenario-studio-v82a.js" not in html
     assert "scenario-studio-v82a.css" not in html
     assert "model-guide.js?v=87dc1" in html
