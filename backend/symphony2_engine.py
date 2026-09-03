@@ -227,6 +227,70 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
     return rows
 
 
+def _pav_non_increasing(values: list[float]) -> list[float]:
+    """Least-squares monotone projection for an OVER probability ladder."""
+    blocks: list[dict] = []
+    for idx, value in enumerate(values):
+        blocks.append({"start": idx, "end": idx, "sum": float(value), "weight": 1})
+        while len(blocks) >= 2:
+            left, right = blocks[-2], blocks[-1]
+            left_mean = left["sum"] / left["weight"]
+            right_mean = right["sum"] / right["weight"]
+            if left_mean >= right_mean - 1e-12:
+                break
+            blocks[-2:] = [{
+                "start": left["start"], "end": right["end"],
+                "sum": left["sum"] + right["sum"],
+                "weight": left["weight"] + right["weight"],
+            }]
+    out = [0.0] * len(values)
+    for block in blocks:
+        mean = block["sum"] / block["weight"]
+        for idx in range(block["start"], block["end"] + 1):
+            out[idx] = mean
+    return out
+
+
+def _cohere_ou_line_ladders(rows: list[dict]) -> list[dict]:
+    """Project complete exact O/U ladders onto the nearest monotone model ladder.
+
+    The supervised/calibrated probabilities remain the only source of the published
+    marginal P. This step corrects only impossible cross-line inversions: OVER may
+    stay flat or decrease as the line rises, and UNDER remains its exact complement.
+    Shared-state probabilities are not blended back into P after prediction.
+    """
+    ladders: dict[tuple, dict[float, dict[str, dict]]] = {}
+    for row in rows or []:
+        market = _market(row.get("market"))
+        pick = _coherence_pick(row.get("pick"))
+        line = _num(row.get("line"))
+        if market not in COHERENT_OU_MARKETS or pick not in {"over", "under"} or line is None:
+            continue
+        if _num(row.get("operator_model_probability")) is None:
+            continue
+        key = (market, _norm(row.get("player")), int(_num(row.get("checkpoint"), 0) or 0))
+        ladders.setdefault(key, {}).setdefault(round(line, 6), {})[pick] = row
+
+    for line_map in ladders.values():
+        complete = [(line, pair) for line, pair in sorted(line_map.items()) if set(pair) == {"over", "under"}]
+        if len(complete) < 2:
+            continue
+        over_values = [float(_num(pair["over"].get("operator_model_probability"), 0.0) or 0.0) for _, pair in complete]
+        projected = _pav_non_increasing(over_values)
+        for (_, pair), over_p in zip(complete, projected):
+            over_final = round(max(0.01, min(99.99, over_p)), 2)
+            under_final = round(100.0 - over_final, 2)
+            for pick, final in (("over", over_final), ("under", under_final)):
+                row = pair[pick]
+                before = round(float(_num(row.get("operator_model_probability"), 0.0) or 0.0), 2)
+                if abs(before - final) > 0.005:
+                    row["operator_model_probability_pre_line_coherence"] = before
+                    row["operator_model_probability"] = final
+                    row["probability_coherence"] = "MONOTONIC_OU_LADDER"
+                    row["line_coherence_source"] = "SUPERVISED_MONOTONIC_PROJECTION"
+    return rows
+
+
 def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
     models = _model_index(match)
     rows = []
@@ -257,6 +321,7 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "probability_kind": "SUPERVISED_OPERATOR_LINE_P_HIT",
         })
     rows = _cohere_exclusive_probabilities(rows)
+    rows = _cohere_ou_line_ladders(rows)
     rows.sort(key=lambda x: _num(x.get("operator_model_probability"), -1.0), reverse=True)
     return rows
 
@@ -425,6 +490,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
+        "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
 
