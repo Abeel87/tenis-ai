@@ -9,8 +9,8 @@ PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
-    assert "symphony2.js?v=220" in INDEX
-    assert "symphony2.css?v=220" in INDEX
+    assert 'src="symphony2.js"' in INDEX
+    assert 'href="symphony2.css"' in INDEX
     for legacy in (
         "symphony-v90.js", "symphony-v90.css", "symphony-stats-v90d.js",
         "symphony-stats-v90d.css", "symphony-surface-v90.js",
