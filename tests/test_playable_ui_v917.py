@@ -21,14 +21,18 @@ def test_v917_matches_exact_operator_selection_not_just_market_family():
     assert "canonical_selections" in UI
 
 
-def test_v917_actionable_surfaces_share_one_gate():
+def test_v917_actionable_surfaces_share_one_gate_without_erasing_raw_detail():
     assert "playableSignals(match,60)" in UI
     assert "match?.superbet_playable_v912" in UI
     assert "projectionSignals(match" in UI
     assert "decisionRows(match,api)" in UI
     assert "legs.every(leg=>isPlayable(match,leg))" in UI
     assert "Brak Superbet PLAYABLE" in UI
-    assert "Brak świeżo zweryfikowanej oferty Superbet" in UI
+    assert "Brak świeżej oferty Superbet" in UI
+    assert "MODEL / RAW pozostaje widoczny bez zmian" in UI
+    assert "built=api.buildRows(match)||[]" in UI
+    assert "if(!operatorRow)return {...row,operator_playable:false}" in UI
+    assert "operator_playable:true" in UI
 
 
 def test_v917_missing_score_is_nd_not_zero():
