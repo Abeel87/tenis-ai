@@ -43,6 +43,10 @@ def _ascii(value: Any) -> str:
     return unicodedata.normalize("NFKD", str(value or "")).encode("ascii", "ignore").decode().casefold().strip()
 
 
+def _name_key(value: Any) -> str:
+    return " ".join(sorted(re.sub(r"[^a-z0-9]+", " ", _ascii(value)).split()))
+
+
 def _market(value: Any) -> str:
     x = _ascii(value).replace("-", "_").replace(" ", "_")
     aliases = {
@@ -135,9 +139,9 @@ def _reweight_winner(distribution: dict[tuple, float], target: float | None, ind
 def _market_player_prob(obj: Any, player: str):
     if not isinstance(obj, dict):
         return None
-    target = _ascii(player)
+    target = _name_key(player)
     for key, value in obj.items():
-        if _ascii(key) == target:
+        if target and _name_key(key) == target:
             return _prob(value)
     return None
 
@@ -219,10 +223,15 @@ def _score_pair(value: Any):
 
 
 def _side(match: dict, pick: Any):
-    value = _ascii(pick)
-    if value in {_ascii(match.get("p1")), "1", "p1", "player1"}:
+    token = _ascii(pick).replace(" ", "")
+    if token in {"1", "p1", "player1"}:
         return 1
-    if value in {_ascii(match.get("p2")), "2", "p2", "player2"}:
+    if token in {"2", "p2", "player2"}:
+        return 2
+    value = _name_key(pick)
+    if value and value == _name_key(match.get("p1")):
+        return 1
+    if value and value == _name_key(match.get("p2")):
         return 2
     return None
 
