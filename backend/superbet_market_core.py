@@ -641,7 +641,12 @@ def _lookup_score_map(block, score):
     target = str(score).replace("-", ":")
     for key, value in block.items():
         if str(key).replace("-", ":") == target:
-            return _pct(value)
+            # Core exact-score and game-state maps are already expressed in
+            # percentage points (e.g. 0.7 means 0.7%, not probability 0.7).
+            # Do not pass them through _pct(), whose fraction-friendly contract
+            # would incorrectly inflate every value <= 1.0 by 100x.
+            x = _num(value)
+            return max(0.0, min(100.0, x)) if x is not None else None
     return None
 
 
