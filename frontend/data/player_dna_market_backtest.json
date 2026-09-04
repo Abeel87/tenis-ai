@@ -642,6 +642,57 @@
       "status": "EVALUATED"
     }
   },
+  "trajectory_validation": {
+    "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
+    "promotion_gate": false,
+    "claim": "ranked path diagnostics only; no match-level robustness claim",
+    "checkpoint_neutral_start_server": {
+      "after_2_games": {
+        "n": 332,
+        "top1_accuracy": 0.587349,
+        "top3_accuracy": 1.0
+      },
+      "after_4_games": {
+        "n": 332,
+        "top1_accuracy": 0.415663,
+        "top3_accuracy": 0.888554
+      },
+      "after_6_games": {
+        "n": 332,
+        "top1_accuracy": 0.328313,
+        "top3_accuracy": 0.813253
+      }
+    },
+    "first_set_conditioned_on_observed_first_server": {
+      "n": 332,
+      "hit_at_1": 0.036145,
+      "hit_at_3": 0.105422,
+      "hit_at_8": 0.210843,
+      "mean_rank_when_hit": 3.8,
+      "mean_top1_prefix_fraction": 0.247547
+    },
+    "match_set_sequence_conditioned_on_observed_first_server": {
+      "n": 333,
+      "hit_at_1": 0.024024,
+      "hit_at_3": 0.069069,
+      "hit_at_12": 0.183183,
+      "mean_rank_when_hit": 5.262295
+    },
+    "full_match_game_path_conditioned_on_observed_first_server": {
+      "n": 325,
+      "hit_at_1": 0.0,
+      "hit_at_2": 0.0,
+      "hit_at_4": 0.0,
+      "mean_rank_when_hit": null,
+      "mean_top1_prefix_fraction": 0.100034
+    },
+    "coverage": {
+      "settled_predictions": 333,
+      "first_set_complete_paths": 332,
+      "match_set_sequences": 333,
+      "full_match_complete_paths": 325
+    }
+  },
   "summary": {
     "binary_markets_evaluated_ge_100": 11,
     "binary_markets_with_positive_brier_gain": 4,
