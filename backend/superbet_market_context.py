@@ -12,6 +12,8 @@ import json
 import re
 import sys
 from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
 
 try:
     from . import superbet_fixture_matching as fixture_matching
@@ -25,6 +27,9 @@ except ImportError:
     import superbet_market_mapping as mapping
 
 VERSION = "v9.2.4"
+DIRECT_FEED = Path(__file__).resolve().parents[1] / "frontend" / "data" / "superbet_direct_current.json"
+DIRECT_FEED_MAX_AGE_HOURS = 2.0
+DIRECT_SHADOW_STATUS = "DIRECT_SHADOW_VERIFIED"
 STRICT_FIXTURE_LINE_VERSION = "v9.3.4-core"
 NEW_LINE_MARKETS = {"set_handicap"}
 NEW_HANDICAP_MARKETS = {"set_handicap"}
@@ -207,12 +212,219 @@ def finalize() -> dict:
     result["market_mapping_version"]=VERSION;result["fixture_line_contract_version"]=STRICT_FIXTURE_LINE_VERSION;result["raw_family_audit_v924"]=audit;result["additional_external_requests"]=0;return result
 
 
+def _direct_context_selection(row: dict) -> dict | None:
+    """Remove all operator-price fields before a Direct row may resemble context."""
+    if not isinstance(row, dict) or row.get("operator_available") is False:
+        return None
+    market = str(row.get("market") or "").strip()
+    if not market:
+        return None
+    if market in mapping.LINE_MARKETS:
+        if (
+            row.get("line") is None
+            or row.get("fixture_line_verified") is not True
+            or row.get("operator_line_verified") is not True
+        ):
+            return None
+
+    out = {
+        key: value
+        for key, value in row.items()
+        if not str(key).startswith("operator_price")
+    }
+    out["operator"] = "superbet.pl"
+    out["operator_available"] = True
+    out["prices_used"] = False
+    out["direct_context_source"] = "superbet_direct_current_sidecar"
+    return out
+
+
+def _direct_feed_fixtures(feed: dict) -> list[dict]:
+    if not isinstance(feed, dict) or feed.get("status") != "OK":
+        return []
+    fixtures: list[dict] = []
+    for match in feed.get("matches") or []:
+        if not isinstance(match, dict) or match.get("direct_match_verified") is not True:
+            continue
+        selections = []
+        for row in match.get("canonical_selections") or []:
+            sanitized = _direct_context_selection(row)
+            if sanitized is not None:
+                selections.append(sanitized)
+        if not selections:
+            continue
+        fixtures.append({
+            "fixture_id": match.get("event_id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "start_time": match.get("operator_start_time") or match.get("scheduled_time"),
+            "suspended": False,
+            "canonical_selections": selections,
+            "direct_source": "superbet_direct_current_sidecar",
+        })
+    return fixtures
+
+
+def _direct_feed_age_hours(feed: dict, now: datetime) -> float | None:
+    generated = base._parse_dt(feed.get("generated_at") if isinstance(feed, dict) else None)
+    if generated is None:
+        return None
+    return (now - generated).total_seconds() / 3600.0
+
+
+def direct_context_candidate(match: dict, feed: dict, now=None) -> dict | None:
+    """Build a price-free canonical-shaped Direct candidate without applying it."""
+    if not isinstance(match, dict) or not isinstance(feed, dict):
+        return None
+    now = now or datetime.now(timezone.utc)
+    age_hours = _direct_feed_age_hours(feed, now)
+    if age_hours is None or age_hours < 0 or age_hours > DIRECT_FEED_MAX_AGE_HOURS:
+        return None
+
+    fixture = fixture_matching.select_cached_fixture(match, _direct_feed_fixtures(feed))
+    if not isinstance(fixture, dict):
+        return None
+    selections = [
+        dict(row)
+        for row in (fixture.get("canonical_selections") or [])
+        if isinstance(row, dict)
+    ]
+    if not selections:
+        return None
+    if any(
+        any(str(key).startswith("operator_price") for key in row)
+        for row in selections
+    ):
+        raise RuntimeError("Direct context candidate leaked operator price metadata")
+
+    return {
+        "version": VERSION,
+        "status": DIRECT_SHADOW_STATUS,
+        "operator": "superbet.pl",
+        "fixture_id": fixture.get("fixture_id"),
+        "operator_start_time": fixture.get("start_time"),
+        "source": "superbet_direct_current_sidecar",
+        "source_generated_at": feed.get("generated_at"),
+        "source_max_age_hours": DIRECT_FEED_MAX_AGE_HOURS,
+        "source_age_hours": round(float(age_hours), 4),
+        "operator_verified": True,
+        "suspended": False,
+        "prices_used": False,
+        "canonical_markets": base._compact_market_summary(selections),
+        "canonical_selections": selections,
+        "strict_actionable_markets": sorted(base.STRICT_ACTIONABLE_MARKETS),
+        "candidate_only": True,
+        "production_influence": False,
+        "playable_influence": False,
+        "contract": {
+            "market_lines_are_operator_context": True,
+            "exact_fixture_line_required": True,
+            "operator_prices_removed_before_context": True,
+            "market_lines_do_not_modify_core_model_score": True,
+            "prices_are_not_used": True,
+            "not_applied_to_superbet_market_v91": True,
+        },
+    }
+
+
+def direct_shadow_audit(results=None, feed=None, now=None) -> dict:
+    """Measure what Direct could recover without mutating current results."""
+    now = now or datetime.now(timezone.utc)
+    if results is None:
+        results = base._read(base.RESULTS, [])
+    if feed is None:
+        feed = base._read(DIRECT_FEED, {})
+    matches = results if isinstance(results, list) else (
+        results.get("matches") if isinstance(results, dict) and isinstance(results.get("matches"), list) else []
+    )
+    matches = [row for row in matches if isinstance(row, dict)]
+
+    candidate_rows = []
+    would_recover = 0
+    existing_verified = 0
+    price_fields = 0
+    unverified_line_rows = 0
+
+    for match in matches:
+        candidate = direct_context_candidate(match, feed, now=now)
+        if candidate is None:
+            continue
+        existing = match.get("superbet_market_v91")
+        existing = existing if isinstance(existing, dict) else {}
+        existing_active = bool(
+            existing.get("status") == "VERIFIED"
+            and existing.get("operator_verified") is True
+            and existing.get("suspended") is not True
+        )
+        if existing_active:
+            existing_verified += 1
+        else:
+            would_recover += 1
+
+        selections = candidate.get("canonical_selections") or []
+        for row in selections:
+            price_fields += sum(
+                1 for key in row if str(key).startswith("operator_price")
+            )
+            if str(row.get("market") or "") in mapping.LINE_MARKETS and (
+                row.get("line") is None
+                or row.get("fixture_line_verified") is not True
+                or row.get("operator_line_verified") is not True
+            ):
+                unverified_line_rows += 1
+
+        candidate_rows.append({
+            "match_id": match.get("match_id") or match.get("id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"),
+            "existing_context_status": existing.get("status"),
+            "existing_operator_verified": existing.get("operator_verified") is True,
+            "direct_fixture_id": candidate.get("fixture_id"),
+            "direct_context_status": candidate.get("status"),
+            "direct_selections_count": len(selections),
+            "would_recover_missing_context": not existing_active,
+        })
+
+    feed_age = _direct_feed_age_hours(feed if isinstance(feed, dict) else {}, now)
+    status = "OK" if candidate_rows else "NO_CANDIDATES"
+    if price_fields or unverified_line_rows:
+        status = "CONTRACT_VIOLATION"
+
+    return {
+        "mode": "SHADOW_SUPERBET_DIRECT_CONTEXT_AUDIT",
+        "status": status,
+        "feed_status": feed.get("status") if isinstance(feed, dict) else None,
+        "feed_generated_at": feed.get("generated_at") if isinstance(feed, dict) else None,
+        "feed_age_hours": round(float(feed_age), 4) if feed_age is not None else None,
+        "app_matches_seen": len(matches),
+        "direct_context_candidates": len(candidate_rows),
+        "would_recover_missing_context": would_recover,
+        "existing_verified_overlap": existing_verified,
+        "operator_price_fields_after_adapter": price_fields,
+        "unverified_line_rows_after_adapter": unverified_line_rows,
+        "matches": candidate_rows,
+        "writes_results": False,
+        "writes_canonical_context": False,
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+    }
+
+
 def main() -> None:
     mode=str(sys.argv[1] if len(sys.argv)>1 else "prepare").strip().casefold()
     if mode=="prepare":result=prepare()
     elif mode=="finalize":result=finalize()
-    else:raise SystemExit("usage: superbet_market_context.py [prepare|finalize]")
+    elif mode=="direct-shadow-audit":result=direct_shadow_audit()
+    else:raise SystemExit(
+        "usage: superbet_market_context.py [prepare|finalize|direct-shadow-audit]"
+    )
     print(json.dumps(result,ensure_ascii=False,indent=2))
+    if mode=="direct-shadow-audit" and result.get("status") not in {"OK","NO_CANDIDATES"}:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":
