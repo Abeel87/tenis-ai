@@ -2,6 +2,18 @@ name: Player DNA SHADOW refresh
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/canonical_point_event.py'
+      - 'backend/player_dna_point_dataset.py'
+      - 'backend/player_dna_match_context.py'
+      - 'backend/player_dna_shadow_profiles.py'
+      - 'backend/player_dna_profile_readiness.py'
+      - 'backend/player_dna_point_scorer.py'
+      - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_identity.py'
+      - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
     workflows: ["Update tennis data and deploy Pages"]
     types: [completed]
