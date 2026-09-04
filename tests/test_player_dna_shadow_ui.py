@@ -80,7 +80,7 @@ def test_player_dna_match_detail_prefers_storyline_families_and_keeps_exact_path
 
     assert "match_storylines" in js
     assert "probability_scope==='MATCH_SCORE_FAMILY'" in js
-    assert "reprezentatywnym przebiegiem" in js
+    assert "najbardziej prawdopodobnym reprezentantem tej rodziny" in js
     assert "dokładne pełne ścieżki pozostają diagnostyką SHADOW" in js
     assert "full_match_top_game_paths" in js
     assert "match_top_set_paths" in js
