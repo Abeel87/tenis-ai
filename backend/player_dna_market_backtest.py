@@ -107,6 +107,65 @@ def _game_lists(score: Any) -> tuple[list[int], list[int]] | None:
     return p1, p2
 
 
+def _reconstruct_game_paths(
+    ordered: list[dict[str, Any]],
+    total_sets: int,
+    final_games: tuple[list[int], list[int]],
+) -> dict[str, Any]:
+    paths: list[list[str]] = [[] for _ in range(total_sets)]
+    last: list[tuple[int, int] | None] = [None for _ in range(total_sets)]
+    first_server = None
+
+    for row in ordered:
+        if first_server is None and row.get("server") in (1, 2):
+            first_server = int(row["server"])
+
+        score = row.get("score_after")
+        gl = _game_lists(score)
+        if gl is None:
+            continue
+        p1_games, p2_games = gl
+        for set_index in range(min(total_sets, len(p1_games), len(p2_games))):
+            a, b = int(p1_games[set_index]), int(p2_games[set_index])
+            if a < 0 or b < 0 or a + b <= 0:
+                continue
+            pair = (a, b)
+            previous = last[set_index]
+            if previous == pair:
+                continue
+            if previous is not None and a + b <= previous[0] + previous[1]:
+                continue
+            paths[set_index].append(f"{a}:{b}")
+            last[set_index] = pair
+
+    final_p1, final_p2 = final_games
+    complete = []
+    for set_index in range(total_sets):
+        expected = int(final_p1[set_index]) + int(final_p2[set_index])
+        progression = paths[set_index]
+        totals = [sum(int(x) for x in score.split(":")) for score in progression]
+        complete.append(
+            expected > 0
+            and len(progression) == expected
+            and totals == list(range(1, expected + 1))
+            and progression[-1] == f"{final_p1[set_index]}:{final_p2[set_index]}"
+        )
+
+    first_path = paths[0] if paths else []
+    checkpoints = {}
+    for games in (2, 4, 6):
+        checkpoints[str(games)] = first_path[games - 1] if complete and complete[0] and len(first_path) >= games else None
+
+    return {
+        "first_server": first_server,
+        "set_progressions": paths,
+        "set_progression_complete": complete,
+        "first_set_progression": first_path if complete and complete[0] else None,
+        "checkpoint_scores": checkpoints,
+        "full_match_progression_complete": bool(complete) and all(complete),
+    }
+
+
 def reconstruct_match_label(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Reconstruct settled match/first-set/early-game labels from score tape."""
     if not rows:
@@ -161,6 +220,7 @@ def reconstruct_match_label(rows: list[dict[str, Any]]) -> dict[str, Any] | None
             early[total] = bool(a == b)
 
     first_total = first_g1 + first_g2
+    trajectory_actual = _reconstruct_game_paths(ordered, total_sets, games)
     return {
         "best_of": best_of,
         "match_p1_win": bool(s1 == needed),
@@ -178,6 +238,12 @@ def reconstruct_match_label(rows: list[dict[str, Any]]) -> dict[str, Any] | None
         "early_1:1": early[2],
         "early_2:2": early[4],
         "early_3:3": early[6],
+        "trajectory_actual": {
+            **trajectory_actual,
+            "set_score_sequence": [
+                f"{g1[idx]}:{g2[idx]}" for idx in range(total_sets)
+            ],
+        },
     }
 
 
@@ -393,6 +459,189 @@ def categorical_metrics(
     }
 
 
+def _normalized_progression(value: Any) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        return ()
+    out = []
+    for item in value:
+        score = str(item or "").strip()
+        if not score:
+            continue
+        if out and out[-1] == score:
+            continue
+        out.append(score)
+    return tuple(out)
+
+
+def _rank_hit(rows: list[dict[str, Any]], actual: tuple[str, ...], field: str, limits: tuple[int, ...]) -> dict[str, Any]:
+    ranked = []
+    for row in rows:
+        value = row.get(field)
+        candidate = _normalized_progression(value) if field == "progression" else tuple(str(x) for x in (value or []))
+        ranked.append(candidate)
+    hit_rank = None
+    for idx, candidate in enumerate(ranked, start=1):
+        if candidate == actual:
+            hit_rank = idx
+            break
+    return {
+        "rank": hit_rank,
+        **{f"hit_at_{limit}": bool(hit_rank is not None and hit_rank <= limit) for limit in limits},
+    }
+
+
+def _normalized_full_match_path(value: Any) -> tuple[tuple[str, ...], ...]:
+    if not isinstance(value, list):
+        return ()
+    out = []
+    for set_row in value:
+        progression = set_row.get("progression") if isinstance(set_row, dict) else set_row
+        normalized = _normalized_progression(progression)
+        if not normalized:
+            return ()
+        out.append(normalized)
+    return tuple(out)
+
+
+def _full_match_rank_hit(
+    rows: list[dict[str, Any]],
+    actual: tuple[tuple[str, ...], ...],
+    limits: tuple[int, ...],
+) -> dict[str, Any]:
+    ranked = [_normalized_full_match_path(row.get("sets")) for row in rows]
+    hit_rank = None
+    for idx, candidate in enumerate(ranked, start=1):
+        if candidate == actual:
+            hit_rank = idx
+            break
+    return {
+        "rank": hit_rank,
+        **{f"hit_at_{limit}": bool(hit_rank is not None and hit_rank <= limit) for limit in limits},
+    }
+
+
+def _full_match_prefix_fraction(
+    actual: tuple[tuple[str, ...], ...],
+    predicted: tuple[tuple[str, ...], ...],
+) -> float:
+    actual_flat = [(set_index, score) for set_index, progression in enumerate(actual) for score in progression]
+    predicted_flat = [(set_index, score) for set_index, progression in enumerate(predicted) for score in progression]
+    if not actual_flat:
+        return 0.0
+    prefix = 0
+    for expected, candidate in zip(actual_flat, predicted_flat):
+        if expected != candidate:
+            break
+        prefix += 1
+    return prefix / len(actual_flat)
+
+
+def _trajectory_validation(
+    predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    checkpoint_records = {2: [], 4: [], 6: []}
+    first_set_records = []
+    match_set_records = []
+    full_match_records = []
+
+    for match_id, label in labels.items():
+        pred = predictions.get(match_id)
+        if not isinstance(pred, dict):
+            continue
+        sim = pred.get("simulation") or {}
+        trajectory = sim.get("trajectory") or {}
+        actual = label.get("trajectory_actual") or {}
+
+        checkpoints = trajectory.get("checkpoints_neutral_start_server") or {}
+        for games in (2, 4, 6):
+            actual_score = (actual.get("checkpoint_scores") or {}).get(str(games))
+            rows = checkpoints.get(f"after_{games}_games") or []
+            if not actual_score or not rows:
+                continue
+            ranked_scores = [str(row.get("score") or "") for row in rows]
+            checkpoint_records[games].append({
+                "top1": ranked_scores[0] == actual_score,
+                "top3": actual_score in ranked_scores[:3],
+            })
+
+        first_server = actual.get("first_server")
+        branch_key = "p1_serves_first" if first_server == 1 else "p2_serves_first" if first_server == 2 else None
+        branch = (trajectory.get("serve_order_conditioned") or {}).get(branch_key) if branch_key else None
+        if not isinstance(branch, dict):
+            continue
+
+        first_path = _normalized_progression(actual.get("first_set_progression"))
+        if first_path:
+            ranked = branch.get("first_set_top_game_paths") or []
+            hit = _rank_hit(ranked, first_path, "progression", (1, 3, 8))
+            top1 = _normalized_progression((ranked[0] if ranked else {}).get("progression"))
+            prefix = 0
+            for expected, predicted in zip(first_path, top1):
+                if expected != predicted:
+                    break
+                prefix += 1
+            first_set_records.append({
+                **hit,
+                "prefix_fraction_top1": prefix / len(first_path),
+            })
+
+        set_sequence = tuple(str(x) for x in (actual.get("set_score_sequence") or []))
+        if set_sequence:
+            ranked_sets = branch.get("match_top_set_paths") or []
+            match_set_records.append(_rank_hit(ranked_sets, set_sequence, "set_scores", (1, 3, 12)))
+
+        full_match_path = _normalized_full_match_path(actual.get("set_progressions"))
+        if actual.get("full_match_progression_complete") is True and full_match_path:
+            ranked_full = branch.get("full_match_top_game_paths") or []
+            hit = _full_match_rank_hit(ranked_full, full_match_path, (1, 2, 4))
+            top1 = _normalized_full_match_path((ranked_full[0] if ranked_full else {}).get("sets"))
+            full_match_records.append({
+                **hit,
+                "prefix_fraction_top1": _full_match_prefix_fraction(full_match_path, top1),
+            })
+
+    def summarize_checkpoint(rows: list[dict[str, Any]]) -> dict[str, Any]:
+        n = len(rows)
+        return {
+            "n": n,
+            "top1_accuracy": round(sum(int(row["top1"]) for row in rows) / n, 6) if n else None,
+            "top3_accuracy": round(sum(int(row["top3"]) for row in rows) / n, 6) if n else None,
+        }
+
+    def summarize_rank(rows: list[dict[str, Any]], limits: tuple[int, ...], include_prefix: bool = False) -> dict[str, Any]:
+        n = len(rows)
+        out = {"n": n}
+        for limit in limits:
+            out[f"hit_at_{limit}"] = round(sum(int(row[f"hit_at_{limit}"]) for row in rows) / n, 6) if n else None
+        ranks = [int(row["rank"]) for row in rows if row.get("rank") is not None]
+        out["mean_rank_when_hit"] = round(sum(ranks) / len(ranks), 6) if ranks else None
+        if include_prefix:
+            out["mean_top1_prefix_fraction"] = round(
+                sum(float(row.get("prefix_fraction_top1") or 0.0) for row in rows) / n, 6
+            ) if n else None
+        return out
+
+    return {
+        "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
+        "promotion_gate": False,
+        "claim": "ranked path diagnostics only; no match-level robustness claim",
+        "checkpoint_neutral_start_server": {
+            f"after_{games}_games": summarize_checkpoint(checkpoint_records[games])
+            for games in (2, 4, 6)
+        },
+        "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
+        "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
+        "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
+        "coverage": {
+            "settled_predictions": len(labels),
+            "first_set_complete_paths": len(first_set_records),
+            "match_set_sequences": len(match_set_records),
+            "full_match_complete_paths": len(full_match_records),
+        },
+    }
+
+
 def _binary_probability(sim: dict[str, Any], market: str) -> float | None:
     if market == "match_p1_win":
         return float((sim.get("match") or {}).get("p1_win"))
@@ -473,6 +722,8 @@ def evaluate_backtest(
         for mid, label in holdout_settled.items()
     ]
 
+    trajectory_validation = _trajectory_validation(predictions, holdout_settled)
+
     categorical = {
         "first_set_exact_score": categorical_metrics(
             exact_first_records,
@@ -540,6 +791,7 @@ def evaluate_backtest(
         },
         "binary_markets": binary,
         "categorical_markets": categorical,
+        "trajectory_validation": trajectory_validation,
         "summary": {
             "binary_markets_evaluated_ge_100": len(evaluated),
             "binary_markets_with_positive_brier_gain": positive,
@@ -561,6 +813,7 @@ def build() -> dict[str, Any]:
         "signal": report.get("signal"),
         "counts": report.get("counts"),
         "summary": report.get("summary"),
+        "trajectory_validation": report.get("trajectory_validation"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report

@@ -462,6 +462,32 @@ jobs:
               metrics = (backtest.get('binary_markets') or {}).get(market) or {}
               if int(metrics.get('n') or 0) < 100 or metrics.get('brier') is None or metrics.get('ece_10_bin') is None:
                   raise SystemExit(f'Player DNA market backtest missing robust metrics for {market}')
+          trajectory_bt = backtest.get('trajectory_validation') or {}
+          if trajectory_bt.get('status') != 'TRAJECTORY_HISTORICAL_DIAGNOSTIC':
+              raise SystemExit('Player DNA historical trajectory diagnostics missing')
+          if trajectory_bt.get('promotion_gate') is not False:
+              raise SystemExit('Player DNA historical trajectory diagnostics cannot be a promotion gate')
+          if 'no match-level robustness claim' not in str(trajectory_bt.get('claim') or ''):
+              raise SystemExit('Player DNA trajectory diagnostics must not claim robustness')
+          for checkpoint in ('after_2_games', 'after_4_games', 'after_6_games'):
+              cp = (trajectory_bt.get('checkpoint_neutral_start_server') or {}).get(checkpoint) or {}
+              if int(cp.get('n') or 0) <= 0 or cp.get('top1_accuracy') is None or cp.get('top3_accuracy') is None:
+                  raise SystemExit(f'Player DNA trajectory checkpoint metrics missing: {checkpoint}')
+              if float(cp.get('top3_accuracy') or 0) < float(cp.get('top1_accuracy') or 0):
+                  raise SystemExit(f'Player DNA trajectory checkpoint ranking invalid: {checkpoint}')
+          first_path_bt = trajectory_bt.get('first_set_conditioned_on_observed_first_server') or {}
+          match_path_bt = trajectory_bt.get('match_set_sequence_conditioned_on_observed_first_server') or {}
+          full_match_bt = trajectory_bt.get('full_match_game_path_conditioned_on_observed_first_server') or {}
+          if int(first_path_bt.get('n') or 0) <= 0 or first_path_bt.get('hit_at_8') is None:
+              raise SystemExit('Player DNA first-set trajectory diagnostics missing')
+          if first_path_bt.get('mean_top1_prefix_fraction') is None:
+              raise SystemExit('Player DNA first-set prefix metric missing')
+          if int(match_path_bt.get('n') or 0) <= 0 or match_path_bt.get('hit_at_12') is None:
+              raise SystemExit('Player DNA match set-sequence diagnostics missing')
+          if int(full_match_bt.get('n') or 0) <= 0 or full_match_bt.get('hit_at_4') is None:
+              raise SystemExit('Player DNA full-match game-path diagnostics missing')
+          if full_match_bt.get('mean_top1_prefix_fraction') is None:
+              raise SystemExit('Player DNA full-match game-path prefix metric missing')
           print(
               f"Player DNA market backtest: signal={backtest.get('signal')} "
               f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
