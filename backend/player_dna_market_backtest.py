@@ -682,6 +682,14 @@ def _trajectory_validation(
             ) if n else None
         return out
 
+    deciding_set_order_summary = summarize_rank(deciding_set_order_records, (1, 2))
+    deciding_set_order_summary["chance_top1"] = 0.5 if deciding_set_order_records else None
+    deciding_set_order_summary["edge_vs_chance_pp"] = (
+        round((float(deciding_set_order_summary["hit_at_1"]) - 0.5) * 100.0, 3)
+        if deciding_set_order_summary.get("hit_at_1") is not None
+        else None
+    )
+
     return {
         "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
         "promotion_gate": False,
@@ -693,7 +701,7 @@ def _trajectory_validation(
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
         "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
         "set_winner_sequence_conditioned_on_observed_first_server": summarize_rank(set_winner_records, (1, 3, 8)),
-        "deciding_set_order_given_actual_match_score": summarize_rank(deciding_set_order_records, (1, 2)),
+        "deciding_set_order_given_actual_match_score": deciding_set_order_summary,
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
         "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
