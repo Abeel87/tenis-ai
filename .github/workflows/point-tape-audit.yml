@@ -17,6 +17,7 @@ on:
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_point_scorer.py'
+      - 'backend/player_dna_current_shadow.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -31,6 +32,7 @@ on:
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_point_scorer.py'
+      - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -65,7 +67,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -96,6 +98,9 @@ jobs:
 
       - name: Train + evaluate Player DNA point scorer (SHADOW, zero network)
         run: python backend/player_dna_point_scorer.py
+
+      - name: Score current card with Player DNA (SHADOW, zero network)
+        run: python backend/player_dna_current_shadow.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -339,6 +344,63 @@ jobs:
               f"combined_vs_rank_brier={signal.get('combined_brier_gain_vs_rank')} "
               f"combined_vs_rank_match_equal={signal.get('combined_match_equal_brier_gain_vs_rank')}"
           )
+
+          p = Path('frontend/data/player_dna_current_shadow.json')
+          if not p.exists():
+              raise SystemExit('player_dna_current_shadow.json was not generated')
+          current = json.loads(p.read_text(encoding='utf-8'))
+          if current.get('mode') != 'SHADOW_CURRENT_ONLY':
+              raise SystemExit('Player DNA current scorer must remain SHADOW-only')
+          for key in ('production_influence', 'symphony2_influence', 'superbet_playable_influence'):
+              if current.get(key) is not False:
+                  raise SystemExit(f'Player DNA current scorer leaked influence: {key}={current.get(key)}')
+          if current.get('match_winner_probability_enabled') is not False:
+              raise SystemExit('Player DNA current stage must not expose match-winner probability yet')
+          if current.get('point_serve_probability_only') is not True:
+              raise SystemExit('Player DNA current stage must expose serve-point probability only')
+          current_matches = int(current.get('current_matches') or 0)
+          stable_ids = int(current.get('stable_id_matches') or 0)
+          valid_targets = int(current.get('valid_target_matches') or 0)
+          if current_matches <= 0:
+              raise SystemExit('Player DNA current scorer saw no current matches')
+          if stable_ids != current_matches or valid_targets != current_matches:
+              raise SystemExit(
+                  f'Player DNA current stable-ID coverage regressed: '
+                  f'stable={stable_ids} valid={valid_targets} total={current_matches}'
+              )
+          validation = current.get('historical_validation') or {}
+          if validation.get('status') != 'POSITIVE_HOLDOUT_SIGNAL':
+              raise SystemExit(
+                  f"Player DNA current scorer historical validation is not positive: {validation.get('status')}"
+              )
+          if int(current.get('pre_cutoff_training_points') or 0) <= 0:
+              raise SystemExit('Player DNA current scorer has no leakage-safe pre-cutoff training rows')
+          scored = int(current.get('scored_matches') or 0)
+          eligible = int(current.get('eligible_matches') or 0)
+          if scored != eligible:
+              raise SystemExit(f'Player DNA current scoring mismatch: scored={scored} eligible={eligible}')
+          if scored <= 0:
+              raise SystemExit('Player DNA current scorer produced no SHADOW-scored current matches')
+          model_path = Path('data/derived/player_dna/current_point_model_shadow.json')
+          if not model_path.exists():
+              raise SystemExit('Player DNA current SHADOW model artifact was not generated')
+          model = json.loads(model_path.read_text(encoding='utf-8'))
+          if model.get('mode') != 'SHADOW_MODEL_ARTIFACT':
+              raise SystemExit('Player DNA current model artifact mode invalid')
+          if model.get('production_influence') is not False or model.get('prod_runtime_model') is not False:
+              raise SystemExit('Player DNA current model artifact must not be a PROD model')
+          if model.get('shadow_current_scoring_only') is not True:
+              raise SystemExit('Player DNA current model artifact scope is not SHADOW-only')
+          if (model.get('fit') or {}).get('converged') is not True:
+              raise SystemExit('Player DNA current SHADOW model did not converge')
+          if model.get('training_cutoff_exclusive') != current.get('training_cutoff_exclusive'):
+              raise SystemExit('Player DNA current model/report cutoff mismatch')
+          print(
+              f"Player DNA current SHADOW: matches={current_matches} stable_ids={stable_ids} "
+              f"eligible={eligible} scored={scored} collecting={current.get('collecting_history_matches')} "
+              f"cutoff={current.get('training_cutoff_exclusive')} "
+              f"fingerprint={current.get('model_fingerprint_sha256')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -356,7 +418,9 @@ jobs:
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_point_scorer.json
+            frontend/data/player_dna_current_shadow.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
+            data/derived/player_dna/current_point_model_shadow.json
           if-no-files-found: error
           retention-days: 14

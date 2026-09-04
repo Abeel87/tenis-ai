@@ -91,3 +91,62 @@ def test_non_strict_rows_never_enter_profile_history():
     assert target["overall_prior"]["matches"] == 0
     assert summary["strict_matches"] == 1
     assert summary["source_counts"]["non_strict_rows_skipped"] == 1
+
+
+def test_current_profiles_exclude_entire_current_card_from_history():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    point_rows = [
+        _point("old", "2026-09-01T10:00:00Z", 1, 9, 1, 1),
+        # Current-card match already present in PBP must never leak into later target.
+        _point("current-a", "2026-09-04T09:00:00Z", 1, 2, 1, 1),
+    ]
+    targets = [
+        {
+            "id": "current-a",
+            "scheduled_time": "2026-09-04T09:00:00Z",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1": "One",
+            "p2": "Two",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+        {
+            "id": "current-b",
+            "scheduled_time": "2026-09-04T12:00:00Z",
+            "p1_id": 1,
+            "p2_id": 3,
+            "p1": "One",
+            "p2": "Three",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+    ]
+    snapshots, summary = build_current_target_profiles(point_rows, targets)
+    a = _snapshot(snapshots, "current-a", 1)
+    b = _snapshot(snapshots, "current-b", 1)
+    assert a["overall_prior"]["matches"] == 1
+    assert b["overall_prior"]["matches"] == 1
+    assert a["mode"] == "SHADOW_CURRENT_AS_OF_PROFILE"
+    assert b["current_card_excluded_from_history"] is True
+    assert summary["excluded_current_history_matches"] == 1
+
+
+def test_current_profiles_require_stable_provider_ids():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    snapshots, summary = build_current_target_profiles([], [{
+        "id": "bad",
+        "scheduled_time": "2026-09-04T10:00:00Z",
+        "p1_id": None,
+        "p2_id": 2,
+        "surface": "hard",
+        "tour": "atp",
+        "best_of": 3,
+    }])
+    assert snapshots == []
+    assert summary["targets_seen"] == 0
+    assert summary["rejected_targets"]["missing_stable_identity_or_time"] == 1

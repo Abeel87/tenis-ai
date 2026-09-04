@@ -300,6 +300,121 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
     return snapshots, summary
 
 
+
+def build_current_target_profiles(
+    point_rows: Iterable[dict[str, Any]],
+    targets: Iterable[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Build SHADOW as-of profiles for current card using stable provider IDs only."""
+    historical, source_counts = _prepare_matches(point_rows)
+
+    normalized_targets = []
+    rejected = Counter()
+    target_ids = set()
+    for raw in targets:
+        if not isinstance(raw, dict):
+            rejected["not_dict"] += 1
+            continue
+        match_id = str(raw.get("id") or raw.get("match_id") or "").strip()
+        scheduled = _parse_utc(raw.get("scheduled_time"))
+        p1 = raw.get("p1_id")
+        p2 = raw.get("p2_id")
+        if (
+            not match_id or scheduled is None
+            or isinstance(p1, bool) or not isinstance(p1, int)
+            or isinstance(p2, bool) or not isinstance(p2, int)
+            or p1 == p2
+        ):
+            rejected["missing_stable_identity_or_time"] += 1
+            continue
+
+        surface = str(raw.get("surface") or "unknown").strip().lower()
+        tour = str(raw.get("tour") or "unknown").strip().upper()
+        best_of = raw.get("best_of")
+        match_format = f"BO{int(best_of)}" if isinstance(best_of, int) and not isinstance(best_of, bool) else "unknown"
+        normalized_targets.append({
+            "match_id": match_id,
+            "scheduled": scheduled,
+            "surface": surface,
+            "tour": tour,
+            "format": match_format,
+            "p1": p1,
+            "p2": p2,
+            "p1_name": raw.get("p1"),
+            "p2_name": raw.get("p2"),
+        })
+        target_ids.add(match_id)
+
+    # Never allow any match currently on the card to become profile history,
+    # even if PBP cache already contains partial/final observations for it.
+    history = [match for match in historical if match["match_id"] not in target_ids]
+    history.sort(key=lambda m: (m["scheduled"], m["match_id"]))
+    normalized_targets.sort(key=lambda m: (m["scheduled"], m["match_id"]))
+
+    overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
+    by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
+    snapshots: list[dict[str, Any]] = []
+    hist_index = 0
+    excluded_current_history_matches = len(historical) - len(history)
+
+    for scheduled, target_group_iter in groupby(normalized_targets, key=lambda m: m["scheduled"]):
+        while hist_index < len(history) and history[hist_index]["scheduled"] < scheduled:
+            match = history[hist_index]
+            for pid in (match["p1"], match["p2"]):
+                _accumulate(overall[pid], match["contrib"][pid])
+                _accumulate(by_surface[pid][match["surface"]], match["contrib"][pid])
+            hist_index += 1
+
+        target_group = list(target_group_iter)
+        for target in target_group:
+            for side, pid, opponent, name, opponent_name in (
+                ("p1", target["p1"], target["p2"], target.get("p1_name"), target.get("p2_name")),
+                ("p2", target["p2"], target["p1"], target.get("p2_name"), target.get("p1_name")),
+            ):
+                snapshots.append({
+                    "version": VERSION,
+                    "mode": "SHADOW_CURRENT_AS_OF_PROFILE",
+                    "production_influence": False,
+                    "training_join_enabled": False,
+                    "profile_threshold_activation_enabled": False,
+                    "strict_as_of": True,
+                    "current_card_excluded_from_history": True,
+                    "same_time_matches_count_as_prior": False,
+                    "target_match_id": target["match_id"],
+                    "target_scheduled_time": scheduled.isoformat(),
+                    "target_surface": target["surface"],
+                    "target_tour": target["tour"],
+                    "target_format": target["format"],
+                    "player_side": side,
+                    "player_id": pid,
+                    "player_name": name,
+                    "opponent_id": opponent,
+                    "opponent_name": opponent_name,
+                    "player_ranking": None,
+                    "opponent_ranking": None,
+                    "overall_prior": _project(overall.get(pid)),
+                    "same_surface_prior": _project(by_surface.get(pid, {}).get(target["surface"])),
+                })
+
+    players = {row["player_id"] for row in snapshots}
+    summary = {
+        "version": VERSION,
+        "mode": "SHADOW_CURRENT_AS_OF_PROFILE",
+        "production_influence": False,
+        "training_join_enabled": False,
+        "profile_threshold_activation_enabled": False,
+        "strict_as_of_policy": "history_match_scheduled_time < current_target_scheduled_time",
+        "current_card_excluded_from_history": True,
+        "same_time_matches_count_as_prior": False,
+        "targets_seen": len(normalized_targets),
+        "snapshots": len(snapshots),
+        "players": len(players),
+        "excluded_current_history_matches": excluded_current_history_matches,
+        "source_counts": source_counts,
+        "rejected_targets": dict(rejected),
+    }
+    return snapshots, summary
+
 def build() -> dict[str, Any]:
     snapshots, summary = build_snapshots_from_rows(iter_point_rows() or ())
     OUT_DIR.mkdir(parents=True, exist_ok=True)
