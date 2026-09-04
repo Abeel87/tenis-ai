@@ -18,6 +18,7 @@ on:
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -33,6 +34,7 @@ on:
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
+      - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -67,7 +69,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -101,6 +103,9 @@ jobs:
 
       - name: Score current card with Player DNA (SHADOW, zero network)
         run: python backend/player_dna_current_shadow.py
+
+      - name: Simulate tennis markets from Player DNA (SHADOW, zero network)
+        run: python backend/player_dna_tennis_simulator.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -401,6 +406,50 @@ jobs:
               f"cutoff={current.get('training_cutoff_exclusive')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
+
+          p = Path('frontend/data/player_dna_current_simulation.json')
+          if not p.exists():
+              raise SystemExit('player_dna_current_simulation.json was not generated')
+          simulation = json.loads(p.read_text(encoding='utf-8'))
+          if simulation.get('mode') != 'SHADOW_SIMULATION_ONLY':
+              raise SystemExit('Player DNA tennis simulator must remain SHADOW-only')
+          if simulation.get('production_influence') is not False:
+              raise SystemExit('Player DNA tennis simulator must have zero PROD influence')
+          if simulation.get('symphony2_influence') is not False:
+              raise SystemExit('Player DNA tennis simulator must have zero Symfonia 2.0 influence')
+          if simulation.get('superbet_playable_influence') is not False:
+              raise SystemExit('Player DNA tennis simulator must have zero PLAYABLE influence')
+          if simulation.get('match_level_validation_required') is not True:
+              raise SystemExit('Player DNA match-level outputs must remain explicitly unvalidated')
+          if simulation.get('auto_promote') is not False:
+              raise SystemExit('Player DNA simulator cannot auto-promote')
+          if int(simulation.get('source_scored_matches') or 0) != scored:
+              raise SystemExit('Player DNA simulator source/current scored count mismatch')
+          if int(simulation.get('simulated_matches') or 0) != scored:
+              raise SystemExit('Player DNA simulator did not simulate every SHADOW-scored match')
+          for row in simulation.get('matches') or []:
+              if row.get('validation_status') != 'UNVALIDATED_MATCH_LEVEL':
+                  raise SystemExit('Player DNA simulated match lost UNVALIDATED_MATCH_LEVEL status')
+              sim = row.get('simulation') or {}
+              first_set = sim.get('first_set') or {}
+              match = sim.get('match') or {}
+              if abs(float(first_set.get('p1_win') or 0) + float(first_set.get('p2_win') or 0) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA first-set winner probability mass drift')
+              if abs(sum(float(v) for v in (first_set.get('exact_score') or {}).values()) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA first-set exact-score probability mass drift')
+              if abs(sum(float(v) for v in (first_set.get('games_distribution') or {}).values()) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA first-set games probability mass drift')
+              if abs(float(match.get('p1_win') or 0) + float(match.get('p2_win') or 0) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA match winner probability mass drift')
+              if abs(sum(float(v) for v in (match.get('exact_score') or {}).values()) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA exact-match-score probability mass drift')
+              if abs(sum(float(v) for v in (match.get('total_sets') or {}).values()) - 1.0) > 1e-9:
+                  raise SystemExit('Player DNA total-sets probability mass drift')
+          print(
+              f"Player DNA simulator: simulated={simulation.get('simulated_matches')} "
+              f"validation={simulation.get('match_level_validation_required')} "
+              f"mode={simulation.get('mode')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -419,6 +468,7 @@ jobs:
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
+            frontend/data/player_dna_current_simulation.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
             data/derived/player_dna/current_point_model_shadow.json

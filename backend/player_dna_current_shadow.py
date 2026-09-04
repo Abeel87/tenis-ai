@@ -258,6 +258,7 @@ def build_current_scores(
             "scheduled_time": target.get("scheduled_time"),
             "tour": target.get("tour"),
             "surface": target.get("surface"),
+            "best_of": target.get("best_of"),
             "p1": target.get("p1"),
             "p2": target.get("p2"),
             "p1_id": p1_id,

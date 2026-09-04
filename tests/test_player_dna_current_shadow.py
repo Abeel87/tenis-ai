@@ -52,3 +52,18 @@ def test_serve_features_are_directional_for_server_and_receiver():
     assert row["receiver_overall_return_rate"] == 0.42
     assert row["server_overall_matches"] == 5
     assert row["receiver_overall_matches"] == 7
+
+
+def test_current_output_preserves_best_of_for_downstream_simulation():
+    from backend.player_dna_current_shadow import _serve_feature_row
+
+    target = {
+        "id": 11,
+        "surface": "hard",
+        "tour": "atp",
+        "best_of": 5,
+    }
+    server = _profile("11", 1, 2, 5)
+    receiver = _profile("11", 2, 1, 5)
+    features = _serve_feature_row(target, server, receiver)
+    assert features["match_format"] == "BO5"
