@@ -503,6 +503,38 @@ _DIRECT_STAGE_RANK = {
 }
 
 
+def _direct_fixture_offer_priority(row: dict):
+    """Spend bounded direct-offer requests on bookmaker-likely tennis first.
+
+    This is request ordering only, never an availability filter: every matched
+    fixture can still be queried at later milestones. The priority mirrors the
+    proven OddsPapi smoke strategy so late premium fixtures are not starved by
+    a dense block of earlier ITF events.
+    """
+    text = " ".join(
+        str(row.get(key) or "")
+        for key in ("tournamentName", "categoryName", "tournamentSlug", "categorySlug")
+    ).casefold()
+    grand_slam = any(
+        token in text
+        for token in ("grand slam", "us open", "australian open", "roland garros", "french open", "wimbledon")
+    )
+    if grand_slam:
+        competition_rank = 0
+    elif re.search(r"(^|[^a-z])(atp|wta)([^a-z]|$)", text):
+        competition_rank = 1
+    elif "challenger" in text:
+        competition_rank = 2
+    elif "itf" in text:
+        competition_rank = 4
+    else:
+        competition_rank = 3
+
+    has_odds = row.get("hasOdds")
+    odds_rank = 0 if has_odds is True else 1 if has_odds is None else 2
+    return competition_rank, odds_rank, str(row.get("startTime") or "")
+
+
 def _direct_offer_stage(start_time, now: datetime):
     start = _parse_dt(start_time)
     if start is None:
@@ -756,10 +788,7 @@ def refresh_availability(results: list[dict], now=None):
 
         for fixture_id, discovered in sorted(
             discovered_by_id.items(),
-            key=lambda pair: (
-                0 if pair[1].get("hasOdds") is True else 1 if pair[1].get("hasOdds") is None else 2,
-                str(pair[1].get("startTime") or ""),
-            ),
+            key=lambda pair: _direct_fixture_offer_priority(pair[1]),
         ):
             stage = _direct_offer_stage(discovered.get("startTime"), now)
             if stage is None:
