@@ -44,6 +44,266 @@ PROFILE_NUMERIC = [
 RANK_NUMERIC = ["server_rank", "receiver_rank"]
 CATEGORICAL = ["surface", "tour", "match_format"]
 
+STATE_NUMERIC = [
+    "is_tiebreak",
+    "sets_completed_before",
+    "set_diff_server_before",
+    "current_set_games_total_before",
+    "current_set_game_diff_server_before",
+    "server_point_stage_before",
+    "receiver_point_stage_before",
+    "deuce_before",
+    "server_advantage_before",
+    "receiver_advantage_before",
+    "server_game_point_before",
+    "break_point_against_server_before",
+    "late_set_before",
+    "deciding_set_before",
+    "previous_point_won_by_server",
+    "server_point_streak_before",
+    "receiver_point_streak_before",
+    "previous_game_won_by_server",
+    "previous_game_was_break",
+    "previous_game_break_winner_is_server",
+]
+
+
+def _int_pair(value: Any) -> tuple[int, int] | None:
+    if not isinstance(value, list) or len(value) < 2:
+        return None
+    try:
+        a, b = int(value[0]), int(value[1])
+    except (TypeError, ValueError):
+        return None
+    return a, b
+
+
+def _current_set_games(score: dict[str, Any], completed_sets: int) -> tuple[int, int] | None:
+    games = score.get("games")
+    if not isinstance(games, list) or len(games) < 2:
+        return None
+    p1, p2 = games[0], games[1]
+    if not isinstance(p1, list) or not isinstance(p2, list):
+        return None
+    if completed_sets < 0 or completed_sets >= len(p1) or completed_sets >= len(p2):
+        return None
+    try:
+        return int(p1[completed_sets]), int(p2[completed_sets])
+    except (TypeError, ValueError):
+        return None
+
+
+def _point_token(value: Any) -> str | None:
+    if value is None or isinstance(value, bool):
+        return None
+    token = str(value).strip().upper()
+    if token == "AD":
+        token = "A"
+    return token or None
+
+
+def _standard_point_stage(token: str | None) -> int | None:
+    return {"0": 0, "15": 1, "30": 2, "40": 3, "A": 4}.get(token or "")
+
+
+def _game_point_flags(
+    server_token: str | None,
+    receiver_token: str | None,
+    is_tiebreak: bool,
+) -> tuple[int | None, int | None, int | None, int | None, int | None]:
+    if is_tiebreak:
+        try:
+            s = int(server_token) if server_token is not None else None
+            r = int(receiver_token) if receiver_token is not None else None
+        except ValueError:
+            s = r = None
+        if s is None or r is None:
+            return None, None, None, None, None
+        server_gp = int(s >= 6 and s - r >= 1)
+        receiver_gp = int(r >= 6 and r - s >= 1)
+        return server_gp, receiver_gp, 0, 0, 0
+
+    if server_token is None or receiver_token is None:
+        return None, None, None, None, None
+    server_gp = int(
+        (server_token == "40" and receiver_token in {"0", "15", "30"})
+        or (server_token == "A" and receiver_token == "40")
+    )
+    receiver_gp = int(
+        (receiver_token == "40" and server_token in {"0", "15", "30"})
+        or (receiver_token == "A" and server_token == "40")
+    )
+    deuce = int(server_token == "40" and receiver_token == "40")
+    server_adv = int(server_token == "A" and receiver_token == "40")
+    receiver_adv = int(receiver_token == "A" and server_token == "40")
+    return server_gp, receiver_gp, deuce, server_adv, receiver_adv
+
+
+def _score_state_features(point: dict[str, Any], history: dict[str, Any]) -> dict[str, Any]:
+    server_side = point.get("server")
+    receiver_side = point.get("receiver")
+    score = point.get("score_before")
+    is_tiebreak = bool(point.get("is_tiebreak_before"))
+    out = {name: None for name in STATE_NUMERIC}
+    out["is_tiebreak"] = int(is_tiebreak)
+    out["state_score_valid"] = False
+
+    if server_side not in (1, 2) or receiver_side not in (1, 2) or not isinstance(score, dict):
+        return out
+
+    sets = _int_pair(score.get("sets"))
+    points = score.get("points")
+    if sets is None or not isinstance(points, list) or len(points) < 2:
+        return out
+
+    completed_sets = sets[0] + sets[1]
+    games = _current_set_games(score, completed_sets)
+    if games is None:
+        return out
+
+    server_idx = server_side - 1
+    receiver_idx = receiver_side - 1
+    set_pair = (sets[server_idx], sets[receiver_idx])
+    game_pair = (games[server_idx], games[receiver_idx])
+    server_token = _point_token(points[server_idx])
+    receiver_token = _point_token(points[receiver_idx])
+    if server_token is None or receiver_token is None:
+        return out
+
+    if is_tiebreak:
+        try:
+            server_stage = int(server_token)
+            receiver_stage = int(receiver_token)
+        except ValueError:
+            return out
+    else:
+        server_stage = _standard_point_stage(server_token)
+        receiver_stage = _standard_point_stage(receiver_token)
+        if server_stage is None or receiver_stage is None:
+            return out
+
+    server_gp, receiver_gp, deuce, server_adv, receiver_adv = _game_point_flags(
+        server_token,
+        receiver_token,
+        is_tiebreak,
+    )
+    if server_gp is None or receiver_gp is None:
+        return out
+
+    match_format = str(point.get("match_format") or "").upper()
+    needed = 3 if match_format == "BO5" else 2
+    deciding_set = int(set_pair[0] == needed - 1 and set_pair[1] == needed - 1)
+
+    last_winner = history.get("last_winner")
+    streak_winner = history.get("streak_winner")
+    streak_length = int(history.get("streak_length") or 0)
+    last_game_winner = history.get("last_game_winner")
+    last_game_server = history.get("last_game_server")
+    previous_game_was_break = (
+        int(last_game_winner != last_game_server)
+        if last_game_winner in (1, 2) and last_game_server in (1, 2)
+        else None
+    )
+
+    out.update({
+        "sets_completed_before": completed_sets,
+        "set_diff_server_before": set_pair[0] - set_pair[1],
+        "current_set_games_total_before": game_pair[0] + game_pair[1],
+        "current_set_game_diff_server_before": game_pair[0] - game_pair[1],
+        "server_point_stage_before": server_stage,
+        "receiver_point_stage_before": receiver_stage,
+        "deuce_before": deuce,
+        "server_advantage_before": server_adv,
+        "receiver_advantage_before": receiver_adv,
+        "server_game_point_before": server_gp,
+        "break_point_against_server_before": receiver_gp if not is_tiebreak else 0,
+        "late_set_before": int(game_pair[0] + game_pair[1] >= 8),
+        "deciding_set_before": deciding_set,
+        "previous_point_won_by_server": (
+            int(last_winner == server_side) if last_winner in (1, 2) else None
+        ),
+        "server_point_streak_before": streak_length if streak_winner == server_side else 0,
+        "receiver_point_streak_before": streak_length if streak_winner == receiver_side else 0,
+        "previous_game_won_by_server": (
+            int(last_game_winner == server_side) if last_game_winner in (1, 2) else None
+        ),
+        "previous_game_was_break": previous_game_was_break,
+        "previous_game_break_winner_is_server": (
+            int(previous_game_was_break == 1 and last_game_winner == server_side)
+            if previous_game_was_break is not None
+            else None
+        ),
+        "state_score_valid": True,
+    })
+    return out
+
+
+def _state_feature_lookup(point_rows: list[dict[str, Any]]) -> tuple[dict[tuple[str, int], dict[str, Any]], dict[str, int]]:
+    ordered = sorted(
+        [row for row in point_rows if isinstance(row, dict)],
+        key=lambda row: (
+            str(row.get("match_id") or ""),
+            int(row.get("event_index") if isinstance(row.get("event_index"), int) else -1),
+        ),
+    )
+    lookup: dict[tuple[str, int], dict[str, Any]] = {}
+    histories: dict[str, dict[str, Any]] = {}
+    counts = Counter()
+
+    for point in ordered:
+        match_id = str(point.get("match_id") or "").strip()
+        event_index = point.get("event_index")
+        if not match_id or isinstance(event_index, bool) or not isinstance(event_index, int):
+            counts["missing_event_identity"] += 1
+            continue
+
+        history = histories.setdefault(match_id, {})
+        last_index = history.get("last_event_index")
+        last_trainable = history.get("last_event_trainable") is True
+        contiguous = isinstance(last_index, int) and event_index == last_index + 1 and last_trainable
+        if not contiguous:
+            for name in (
+                "last_winner",
+                "streak_winner",
+                "streak_length",
+                "last_game_winner",
+                "last_game_server",
+            ):
+                history.pop(name, None)
+
+        features = _score_state_features(point, history)
+        lookup[(match_id, event_index)] = features
+        counts["state_rows"] += 1
+        counts["state_score_valid"] += int(features.get("state_score_valid") is True)
+
+        trainable = point.get("trainable_point") is True
+        winner = point.get("point_winner")
+        server = point.get("server")
+        if trainable and winner in (1, 2) and server in (1, 2):
+            if history.get("streak_winner") == winner:
+                history["streak_length"] = int(history.get("streak_length") or 0) + 1
+            else:
+                history["streak_winner"] = winner
+                history["streak_length"] = 1
+            history["last_winner"] = winner
+            if point.get("transition_kind") == "game_score_changed":
+                history["last_game_winner"] = winner
+                history["last_game_server"] = server
+        else:
+            for name in (
+                "last_winner",
+                "streak_winner",
+                "streak_length",
+                "last_game_winner",
+                "last_game_server",
+            ):
+                history.pop(name, None)
+
+        history["last_event_index"] = event_index
+        history["last_event_trainable"] = trainable
+
+    return lookup, dict(counts)
+
 
 def _parse_utc(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
@@ -92,12 +352,12 @@ def build_feature_rows(
     profile_rows: Iterable[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     profiles = _profile_index(profile_rows)
+    point_rows = [point for point in point_rows if isinstance(point, dict)]
+    state_lookup, state_counts = _state_feature_lookup(point_rows)
     rows: list[dict[str, Any]] = []
     counts = Counter()
 
     for point in point_rows:
-        if not isinstance(point, dict):
-            continue
         counts["point_rows_seen"] += 1
         if point.get("context_ready_player_point") is not True:
             counts["non_strict_rows_skipped"] += 1
@@ -136,9 +396,16 @@ def build_feature_rows(
         ss = server.get("same_surface_prior") if isinstance(server.get("same_surface_prior"), dict) else {}
         rs = receiver.get("same_surface_prior") if isinstance(receiver.get("same_surface_prior"), dict) else {}
 
+        event_index = point.get("event_index")
+        state = (
+            state_lookup.get((match_id, event_index), {})
+            if isinstance(event_index, int) and not isinstance(event_index, bool)
+            else {}
+        )
         rows.append({
             "match_id": match_id,
             "scheduled_time": scheduled,
+            "event_index": event_index,
             "surface": str(point.get("surface") or "unknown"),
             "tour": str(point.get("tour") or "unknown"),
             "match_format": str(point.get("match_format") or "unknown"),
@@ -154,10 +421,15 @@ def build_feature_rows(
             "receiver_overall_matches": int(ro.get("matches") or 0),
             "server_surface_matches": int(ss.get("matches") or 0),
             "receiver_surface_matches": int(rs.get("matches") or 0),
+            **{name: state.get(name) for name in STATE_NUMERIC},
+            "state_score_valid": state.get("state_score_valid") is True,
         })
         counts["joined_rows"] += 1
+        counts["joined_rows_with_valid_score_state"] += int(state.get("state_score_valid") is True)
 
     counts["profile_snapshots"] = len(profiles)
+    for key, value in state_counts.items():
+        counts[f"state_{key}"] = int(value)
     return rows, dict(counts)
 
 
