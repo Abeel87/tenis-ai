@@ -14,6 +14,7 @@ writes to frontend/data.
 import json
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from html import unescape
 from html.parser import HTMLParser
@@ -1292,6 +1293,255 @@ def build_direct_parity_report(
     }
 
 
+def build_selected_direct_feed(
+    results: object,
+    match_urls: list[str],
+    *,
+    fetcher=None,
+    max_matches: int = 16,
+) -> dict:
+    """Build a full Direct sidecar only for current Tenis AI match overlaps."""
+    if isinstance(results, list):
+        matches = [row for row in results if isinstance(row, dict)]
+    elif isinstance(results, dict) and isinstance(results.get("matches"), list):
+        matches = [row for row in results.get("matches") if isinstance(row, dict)]
+    else:
+        matches = []
+
+    limit = max(1, min(int(max_matches or 1), 32))
+    candidates: list[dict] = []
+    for match in matches:
+        if not match.get("p1") or not match.get("p2") or not match.get("scheduled_time"):
+            continue
+        if candidate_event_urls(match, match_urls, limit=8):
+            candidates.append(match)
+        if len(candidates) >= limit:
+            break
+
+    payload_cache: dict[str, dict] = {}
+    raw_fetcher = fetcher or fetch_event_payload_public
+
+    def cached_fetch(event_id: str) -> dict:
+        key = str(event_id)
+        if key not in payload_cache:
+            payload_cache[key] = raw_fetcher(key)
+        return payload_cache[key]
+
+    feed_matches: list[dict] = []
+    rejected: list[dict] = []
+    for match in candidates:
+        offer = resolve_selected_match_offer(
+            match,
+            match_urls,
+            fetcher=cached_fetch,
+            candidate_limit=8,
+        )
+        if offer.get("status") != "OK":
+            rejected.append({
+                "match_id": match.get("match_id") or match.get("id"),
+                "p1": match.get("p1"),
+                "p2": match.get("p2"),
+                "scheduled_time": match.get("scheduled_time"),
+                "status": offer.get("status"),
+                "candidate_urls_count": offer.get("candidate_urls_count"),
+                "event_payloads_ok": offer.get("event_payloads_ok"),
+            })
+            continue
+
+        selections = [
+            dict(row)
+            for row in (offer.get("canonical_selections") or [])
+            if isinstance(row, dict)
+        ]
+        feed_matches.append({
+            "match_id": match.get("match_id") or match.get("id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"),
+            "event_id": offer.get("event_id"),
+            "event_url": offer.get("url"),
+            "operator_start_time": offer.get("start_time"),
+            "direct_match_verified": offer.get("direct_match_verified") is True,
+            "participant_order_reoriented": offer.get("participant_order_reoriented") is True,
+            "canonical_selections": selections,
+            "canonical_selections_count": len(selections),
+            "verified_line_selections_count": sum(
+                1 for row in selections if row.get("fixture_line_verified") is True
+            ),
+            "verified_price_selections_count": sum(
+                1 for row in selections if row.get("operator_price_verified") is True
+            ),
+            "market_counts": dict(offer.get("market_counts") or {}),
+            "operator_prices_captured": bool(
+                any(row.get("operator_price_verified") is True for row in selections)
+            ),
+            "operator_prices_metadata_only": True,
+            "prices_used": False,
+        })
+
+    status = (
+        "OK"
+        if feed_matches
+        else "NO_SAFE_OVERLAP"
+        if candidates
+        else "NO_CURRENT_OVERLAP"
+    )
+    contains_prices = any(
+        row.get("operator_prices_captured") is True for row in feed_matches
+    )
+    return {
+        "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
+        "status": status,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "operator": "superbet.pl",
+        "source": EVENT_JSON_SOURCE,
+        "scope": "CURRENT_TENIS_AI_MATCHES_INTERSECT_PUBLIC_SUPERBET_LISTING",
+        "app_matches_seen": len(matches),
+        "direct_match_urls_seen": len(match_urls),
+        "candidate_app_matches": len(candidates),
+        "resolved_app_matches": len(feed_matches),
+        "rejected_candidate_matches": len(rejected),
+        "matches": feed_matches,
+        "rejected": rejected,
+        "contains_prices": contains_prices,
+        "operator_prices_metadata_only": True,
+        "prices_used": False,
+        "writes_canonical_context": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+    }
+
+
+def write_selected_direct_sidecar(feed: dict, path: Path | str | None = None) -> Path:
+    """Atomically persist only a validated SHADOW Direct feed."""
+    if not isinstance(feed, dict):
+        raise ValueError("Direct sidecar feed must be a dict")
+    if feed.get("prices_used") is not False:
+        raise ValueError("Direct sidecar must keep prices_used=false")
+    if feed.get("production_influence") is not False or feed.get("playable_influence") is not False:
+        raise ValueError("Direct sidecar must remain isolated from PROD and PLAYABLE")
+    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP"}:
+        raise ValueError("unsafe Direct feed status must not overwrite the sidecar")
+
+    for match in feed.get("matches") or []:
+        if not isinstance(match, dict) or match.get("direct_match_verified") is not True:
+            raise ValueError("all persisted Direct matches must be verified")
+        if match.get("prices_used") is not False:
+            raise ValueError("persisted Direct match must keep prices_used=false")
+        for row in match.get("canonical_selections") or []:
+            if not isinstance(row, dict) or row.get("prices_used") is not False:
+                raise ValueError("persisted Direct selection must keep prices_used=false")
+
+    target = Path(path) if path is not None else (
+        Path(__file__).resolve().parents[1] / "frontend" / "data" / "superbet_direct_current.json"
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(target.name + ".tmp")
+    tmp.write_text(
+        json.dumps(feed, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    tmp.replace(target)
+    return target
+
+
+def browser_selected_direct_feed(timeout: int = 25) -> dict:
+    """Build the current selected-match feed from one verified browser listing probe."""
+    probe_result = browser_probe(timeout=timeout)
+    if probe_result.get("status") != "OK":
+        return {
+            "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
+            "status": "DIRECT_LISTING_UNAVAILABLE",
+            "listing_probe_status": probe_result.get("status"),
+            "contains_prices": False,
+            "operator_prices_metadata_only": True,
+            "prices_used": False,
+            "writes_canonical_context": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+
+    match_urls = [
+        str(url)
+        for url in (probe_result.get("match_urls") or [])
+        if isinstance(url, str) and _allowed_url(url)
+    ]
+    data_dir = Path(__file__).resolve().parents[1] / "frontend" / "data"
+    results_path = data_dir / "results.json"
+    if not results_path.exists():
+        return {
+            "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
+            "status": "INPUTS_UNAVAILABLE",
+            "listing_probe_status": probe_result.get("status"),
+            "contains_prices": False,
+            "operator_prices_metadata_only": True,
+            "prices_used": False,
+            "writes_canonical_context": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+    try:
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {
+            "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
+            "status": "INPUTS_INVALID",
+            "listing_probe_status": probe_result.get("status"),
+            "contains_prices": False,
+            "operator_prices_metadata_only": True,
+            "prices_used": False,
+            "writes_canonical_context": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+
+    feed = build_selected_direct_feed(results, match_urls)
+    feed["listing_probe_status"] = probe_result.get("status")
+    feed["listing_match_urls_found"] = probe_result.get("match_urls_found")
+    return feed
+
+
+def refresh_selected_direct_sidecar(timeout: int = 25) -> dict:
+    """Refresh the isolated selected-match sidecar; never touch canonical context."""
+    feed = browser_selected_direct_feed(timeout=timeout)
+    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP"}:
+        return {
+            "mode": feed.get("mode"),
+            "status": feed.get("status"),
+            "listing_probe_status": feed.get("listing_probe_status"),
+            "written": False,
+            "prices_used": False,
+            "production_influence": False,
+            "playable_influence": False,
+        }
+
+    path = write_selected_direct_sidecar(feed)
+    return {
+        "mode": feed.get("mode"),
+        "status": feed.get("status"),
+        "written": True,
+        "path": str(path),
+        "generated_at": feed.get("generated_at"),
+        "app_matches_seen": feed.get("app_matches_seen"),
+        "candidate_app_matches": feed.get("candidate_app_matches"),
+        "resolved_app_matches": feed.get("resolved_app_matches"),
+        "rejected_candidate_matches": feed.get("rejected_candidate_matches"),
+        "contains_prices": feed.get("contains_prices"),
+        "operator_prices_metadata_only": True,
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": False,
+    }
+
+
 def local_direct_parity_report(match_urls: list[str]) -> dict:
     """Read checked-out runtime JSON and build a live, non-mutating parity report."""
     data_dir = Path(__file__).resolve().parents[1] / "frontend" / "data"
@@ -1482,6 +1732,7 @@ def browser_probe(timeout: int = 25) -> dict:
             "listing_final_url": driver.current_url,
             "listing_title": driver.title,
             "match_urls_found": len(match_urls),
+            "match_urls": match_urls,
             "sample_match_url": match_urls[0] if match_urls else None,
         }
         if not match_urls:
@@ -1594,10 +1845,18 @@ def main() -> None:
         if len(sys.argv) < 3:
             raise SystemExit("usage: superbet_direct.py offer-browser <superbet-match-url>")
         result = browser_offer(sys.argv[2])
+    elif mode == "refresh-selected":
+        result = refresh_selected_direct_sidecar()
     else:
-        raise SystemExit("usage: superbet_direct.py [probe|probe-browser|offer-browser <url>]")
+        raise SystemExit(
+            "usage: superbet_direct.py "
+            "[probe|probe-browser|offer-browser <url>|refresh-selected]"
+        )
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    if result.get("status") != "OK":
+    ok_statuses = {"OK"}
+    if mode == "refresh-selected":
+        ok_statuses.add("NO_CURRENT_OVERLAP")
+    if result.get("status") not in ok_statuses:
         raise SystemExit(2)
 
 

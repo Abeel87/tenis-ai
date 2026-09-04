@@ -15,7 +15,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -39,3 +39,37 @@ jobs:
 
       - name: Probe JS-rendered public Superbet listing and one concrete match
         run: python backend/superbet_direct.py probe-browser
+
+      - name: Build selected-match SHADOW sidecar end-to-end
+        run: |
+          python backend/superbet_direct.py refresh-selected
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('frontend/data/superbet_direct_current.json')
+          assert path.exists(), 'Direct selected-match sidecar was not written'
+          feed = json.loads(path.read_text(encoding='utf-8'))
+          assert feed.get('mode') == 'SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED'
+          assert feed.get('status') in {'OK', 'NO_CURRENT_OVERLAP'}
+          assert feed.get('prices_used') is False
+          assert feed.get('production_influence') is False
+          assert feed.get('playable_influence') is False
+          assert feed.get('writes_canonical_context') is False
+          for match in feed.get('matches') or []:
+              assert match.get('direct_match_verified') is True
+              assert match.get('prices_used') is False
+              assert all(
+                  isinstance(row, dict) and row.get('prices_used') is False
+                  for row in match.get('canonical_selections') or []
+              )
+          print('SUPERBET_DIRECT_SELECTED_FEED_OK ' + json.dumps({
+              'status': feed.get('status'),
+              'app_matches_seen': feed.get('app_matches_seen'),
+              'candidate_app_matches': feed.get('candidate_app_matches'),
+              'resolved_app_matches': feed.get('resolved_app_matches'),
+              'rejected_candidate_matches': feed.get('rejected_candidate_matches'),
+              'contains_prices': feed.get('contains_prices'),
+              'prices_used': feed.get('prices_used'),
+          }, sort_keys=True))
+          PY

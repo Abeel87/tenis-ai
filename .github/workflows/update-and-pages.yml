@@ -64,6 +64,11 @@ jobs:
         run: python backend/serve_props.py
       - name: Superbet Market Context FINALIZE
         run: python backend/superbet_market_context.py finalize
+      - name: Superbet Direct selected-match SHADOW sidecar
+        continue-on-error: true
+        run: |
+          python -m pip install "selenium>=4,<5"
+          python backend/superbet_direct.py refresh-selected
       - name: Superbet line coverage (zero external requests)
         run: python backend/superbet_line_coverage.py
       - name: Enrich Early Hold from BASIC point-by-point
