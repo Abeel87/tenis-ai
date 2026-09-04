@@ -705,6 +705,25 @@ jobs:
               raise SystemExit('Player DNA prospective schedule drift count invalid')
           if 'snapshot is never rewritten' not in str(drift.get('meaning') or ''):
               raise SystemExit('Player DNA prospective schedule drift must preserve frozen snapshot')
+          readiness = prospective.get('evidence_readiness') or {}
+          overall_ready = readiness.get('overall') or {}
+          if int(overall_ready.get('required') or 0) != 150:
+              raise SystemExit('Player DNA prospective overall support threshold drift')
+          readiness_policy = readiness.get('policy') or {}
+          if int(readiness_policy.get('per_supported_segment_minimum_settled') or 0) != 30:
+              raise SystemExit('Player DNA prospective segment support threshold drift')
+          if readiness_policy.get('all_supported_tours_and_surfaces_must_meet_minimum') is not True:
+              raise SystemExit('Player DNA prospective must require all supported segment minima')
+          if readiness_policy.get('performance_verdict_before_support_ready_forbidden') is not True:
+              raise SystemExit('Player DNA prospective cannot issue verdict before support readiness')
+          if prospective.get('signal') in {'PROSPECTIVE_DURATION_ROBUST_SHADOW', 'PROSPECTIVE_DURATION_NOT_YET_PROVEN'}:
+              if readiness.get('ready_for_performance_verdict') is not True:
+                  raise SystemExit('Player DNA prospective verdict emitted without evidence readiness')
+              if overall_ready.get('support_sufficient') is not True or readiness.get('segment_support_ready') is not True:
+                  raise SystemExit('Player DNA prospective verdict emitted below overall/segment support')
+          if readiness.get('ready_for_performance_verdict') is not True:
+              if prospective.get('signal') != 'COLLECTING_PROSPECTIVE_EVIDENCE':
+                  raise SystemExit('Player DNA prospective must stay collecting until all support thresholds are met')
           policy_prospective = prospective.get('eligibility_policy') or {}
           if policy_prospective.get('requires_walk_forward_robust') is not True:
               raise SystemExit('Player DNA prospective gate must require robust walk-forward')
@@ -747,7 +766,8 @@ jobs:
               f"eligible_current={(prospective.get('counts') or {}).get('current_eligible_by_segment')} "
               f"new={integrity.get('new_snapshots')} newly_settled={integrity.get('newly_settled')} "
               f"rewrites={integrity.get('rewritten_predictions')} "
-              f"overdue72={(unsettled_obs.get('buckets') or {}).get('overdue_gt_72h')} drift={drift.get('count')}"
+              f"overdue72={(unsettled_obs.get('buckets') or {}).get('overdue_gt_72h')} drift={drift.get('count')} "
+              f"ready={readiness.get('ready_for_performance_verdict')} segment_ready={readiness.get('segment_support_ready')}"
           )
           PY
 
