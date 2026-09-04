@@ -333,10 +333,11 @@
   }
 
   function conditionedScenario(branch,label,p1,p2){
+    const storylines=Array.isArray(branch?.match_storylines)?branch.match_storylines:[];
     const full=Array.isArray(branch?.full_match_top_game_paths)?branch.full_match_top_game_paths:[];
     const setPaths=Array.isArray(branch?.match_top_set_paths)?branch.match_top_set_paths:[];
     const firstSet=Array.isArray(branch?.first_set_top_game_paths)?branch.first_set_top_game_paths:[];
-    const primary=full.length?full:setPaths;
+    const primary=storylines.length?storylines:(setPaths.length?setPaths:full);
     const top=primary.slice(0,3);
     const firstName=label==='p1'?p1:p2;
 
@@ -356,13 +357,15 @@
             </summary>
             <div>
               <p>${esc(scenarioPathText(path))}</p>
-              ${path.total_games!=null?`<small>Łącznie gemów: ${esc(path.total_games)} · setów: ${esc(path.sets_played)}</small>`:''}
+              ${path.probability_scope==='MATCH_SCORE_FAMILY'
+                ?`<small>${pct(path.probability)} = cała rodzina wyniku ${esc(path.match_score)}. Przebieg gem po gemie jest najbardziej prawdopodobnym reprezentantem tej rodziny.</small>`
+                :(path.total_games!=null?`<small>Łącznie gemów: ${esc(path.total_games)} · setów: ${esc(path.sets_played)}</small>`:'')}
             </div>
           </details>
         `).join(''):`
           <div class="pds-empty">Pełne ścieżki meczu pojawią się po publikacji nowego raportu trajektorii.</div>
         `}
-        ${!full.length&&firstSet[0]?`
+        ${!storylines.length&&!setPaths.length&&!full.length&&firstSet[0]?`
           <p class="pds-trajectory-fallback">
             Najmocniejsza ścieżka 1. seta: <b>${esc(firstSet[0].final_score||'—')}</b>
             · ${pct(firstSet[0].probability)}
@@ -409,7 +412,8 @@
 
       <p class="pds-foot">
         Pierwszy serwujący jest przed meczem nieznany, dlatego pokazujemy oba warunki osobno.
-        Prawdopodobieństwo ścieżki jest warunkowe na wskazany pierwszy serwis.
+        Prawdopodobieństwo głównego scenariusza dotyczy rodziny wyniku meczu przy wskazanym pierwszym serwisie.
+        Przebieg gem po gemie jest reprezentatywną ścieżką tej rodziny; dokładne pełne ścieżki pozostają diagnostyką SHADOW.
         ${row.hold_calibrated_candidate?'Hold-calibrated DNA pozostaje kandydatem i nie zastępuje tej referencyjnej trajektorii. ':''}
         UNVALIDATED_MATCH_LEVEL · zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
       </p>`;
