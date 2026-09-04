@@ -235,11 +235,15 @@ jobs:
               assert float(cp.get('top3_accuracy') or 0) >= float(cp.get('top1_accuracy') or 0)
           first_path_bt = trajectory_bt.get('first_set_conditioned_on_observed_first_server') or {}
           match_path_bt = trajectory_bt.get('match_set_sequence_conditioned_on_observed_first_server') or {}
+          full_match_bt = trajectory_bt.get('full_match_game_path_conditioned_on_observed_first_server') or {}
           assert int(first_path_bt.get('n') or 0) > 0
           assert int(match_path_bt.get('n') or 0) > 0
+          assert int(full_match_bt.get('n') or 0) > 0
           assert first_path_bt.get('hit_at_8') is not None
           assert first_path_bt.get('mean_top1_prefix_fraction') is not None
           assert match_path_bt.get('hit_at_12') is not None
+          assert full_match_bt.get('hit_at_4') is not None
+          assert full_match_bt.get('mean_top1_prefix_fraction') is not None
 
           calibration = json.loads((data / 'player_dna_hold_calibration_audit.json').read_text(encoding='utf-8'))
           assert calibration.get('mode') == 'SHADOW_CALIBRATION_AUDIT_ONLY'
