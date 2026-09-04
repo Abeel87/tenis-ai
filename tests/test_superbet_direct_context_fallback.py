@@ -262,3 +262,8 @@ def test_hourly_workflow_guards_direct_fallback_activation():
     assert "canonical_context_activation" in workflow
     assert "downstream_playable_eligibility" in workflow
     assert "model_math_unchanged" in workflow
+    direct_refresh = workflow.index("Refresh Superbet Direct selected-match sidecar")
+    canonical_refresh = workflow.index("Refresh real Superbet catalogue + map audited families")
+    assert direct_refresh < canonical_refresh
+    assert "backend/superbet_direct.py" in workflow
+    assert "tests/test_superbet_direct.py" in workflow
