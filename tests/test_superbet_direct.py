@@ -595,3 +595,46 @@ def test_fetch_event_payload_public_rejects_non_numeric_event_id():
         assert "numeric" in str(exc)
     else:
         raise AssertionError("non-numeric event id was not rejected")
+
+
+
+def test_resolve_selected_match_offer_requires_scheduled_time():
+    result = direct.resolve_selected_match_offer(
+        {"p1": "Alexander Bublik", "p2": "Tommy Paul"},
+        ["https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"],
+        fetcher=lambda event_id: {},
+    )
+    assert result["status"] == "INVALID_SELECTED_MATCH"
+    assert result["direct_match_verified"] is False
+
+
+def test_resolve_selected_match_offer_rejects_partial_candidate_fetch():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809309",
+    ]
+    good = _direct_event_payload(
+        "14809301", "Alexander Bublik", "Tommy Paul", "2026-09-04T16:10:00Z"
+    )
+
+    def fetcher(event_id):
+        if event_id == "14809301":
+            return good
+        raise RuntimeError("simulated candidate fetch failure")
+
+    result = direct.resolve_selected_match_offer(
+        {
+            "p1": "Alexander Bublik",
+            "p2": "Tommy Paul",
+            "scheduled_time": "2026-09-04T16:10:00Z",
+        },
+        urls,
+        fetcher=fetcher,
+    )
+    assert result["status"] == "NO_SAFE_DIRECT_MATCH"
+    assert result["direct_match_verified"] is False
+    assert result["candidate_urls_count"] == 2
+    assert result["event_payloads_ok"] == 1
+    assert result["event_fetch_errors"] == [
+        {"event_id": "14809309", "error": "RuntimeError"}
+    ]
