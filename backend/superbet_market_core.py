@@ -573,9 +573,41 @@ def refresh_availability(results: list[dict], now=None):
         operator_fixture_candidates = 0
         fixture_id_matches = 0
         pair_time_matches = 0
+        neutral_fixture_ids = {
+            str(row.get("fixtureId")) for row in fixture_rows
+            if isinstance(row, dict) and row.get("fixtureId")
+        }
+        operator_fixture_ids_in_neutral_catalogue = 0
+        operator_rows_in_horizon = 0
+        operator_rows_in_horizon_with_requested_bookmaker = 0
+        operator_rows_with_requested_bookmaker = 0
+        operator_bookmakers_seen = set()
+        operator_start_times = []
         for row in odds_rows:
             if not isinstance(row, dict):
                 continue
+            operator_id = str(row.get("fixtureId") or "")
+            if operator_id and operator_id in neutral_fixture_ids:
+                operator_fixture_ids_in_neutral_catalogue += 1
+
+            bookmaker_odds = row.get("bookmakerOdds")
+            bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
+            operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
+            has_requested_bookmaker = (
+                BOOKMAKER in bookmaker_keys
+                or any("superbet" in str(key).casefold() for key in bookmaker_keys)
+            )
+            if has_requested_bookmaker:
+                operator_rows_with_requested_bookmaker += 1
+
+            operator_start = _parse_dt(row.get("startTime"))
+            if operator_start is not None:
+                operator_start_times.append(operator_start)
+                if date_from <= operator_start.date().isoformat() <= date_to:
+                    operator_rows_in_horizon += 1
+                    if has_requested_bookmaker:
+                        operator_rows_in_horizon_with_requested_bookmaker += 1
+
             match_kind = None
             for discovered in discovered_matches:
                 same, kind = _same_discovered_fixture(discovered, row)
@@ -600,6 +632,13 @@ def refresh_availability(results: list[dict], now=None):
             "operator_fixture_candidates": operator_fixture_candidates,
             "operator_fixture_id_matches": fixture_id_matches,
             "operator_pair_time_matches": pair_time_matches,
+            "operator_fixture_ids_in_neutral_catalogue": operator_fixture_ids_in_neutral_catalogue,
+            "operator_rows_with_requested_bookmaker": operator_rows_with_requested_bookmaker,
+            "operator_rows_in_horizon": operator_rows_in_horizon,
+            "operator_rows_in_horizon_with_requested_bookmaker": operator_rows_in_horizon_with_requested_bookmaker,
+            "operator_bookmakers_seen": sorted(operator_bookmakers_seen),
+            "operator_start_min": min(operator_start_times).isoformat() if operator_start_times else None,
+            "operator_start_max": max(operator_start_times).isoformat() if operator_start_times else None,
             "operator_row_identity_samples": [_identity_debug_snapshot(row) for row in odds_rows[:5]],
             "discovered_fixture_identity_samples": [_identity_debug_snapshot(row) for row in discovered_matches[:5]],
             "fixtures": sanitized,
