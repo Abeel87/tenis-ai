@@ -283,6 +283,16 @@ jobs:
           }, sort_keys=True))
 
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
+              'fixtures_seen': availability.get('fixtures_seen'),
+              'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
+              'tournaments_queried': availability.get('tournaments_queried'),
+              'operator_odds_rows_seen': availability.get('operator_odds_rows_seen'),
+              'operator_fixture_candidates': availability.get('operator_fixture_candidates'),
+              'operator_fixture_id_matches': availability.get('operator_fixture_id_matches'),
+              'operator_pair_time_matches': availability.get('operator_pair_time_matches'),
+              'sanitized_fixtures': len(availability.get('fixtures') or []),
+          }, sort_keys=True))
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
