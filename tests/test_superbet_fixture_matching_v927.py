@@ -161,10 +161,10 @@ def test_lightweight_superbet_refresh_does_not_retrain_surface_elo_without_db():
 
 def test_availability_due_forces_one_refresh_when_operator_contract_fields_are_missing():
     previous = {
-        "fixture_matching_v927": {"version": VERSION},
+        "fixture_matching_v927": {"version": matching.VERSION},
         "generated_at": "2026-09-04T08:00:00+00:00",
     }
-    assert availability_due(lambda _previous, _now: False, previous, None) is True
+    assert matching.availability_due(lambda _previous, _now: False, previous, None) is True
 
     previous.update({
         "operator_rows_in_horizon": 0,
@@ -172,4 +172,4 @@ def test_availability_due_forces_one_refresh_when_operator_contract_fields_are_m
         "operator_rows_with_requested_bookmaker": 0,
         "operator_fixture_ids_in_neutral_catalogue": 0,
     })
-    assert availability_due(lambda _previous, _now: False, previous, None) is False
+    assert matching.availability_due(lambda _previous, _now: False, previous, None) is False
