@@ -200,7 +200,7 @@ jobs:
           assert availability.get('refresh_hours') == 1
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
-          assert availability.get('refresh_status') in {'OK', 'CACHE_FRESH', 'CACHE_STALE'}
+          assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
           matching = availability.get('fixture_matching_v927') or {}
           assert matching.get('version') == 'v9.2.7'
           assert int(matching.get('additional_external_requests', -1)) == 0
