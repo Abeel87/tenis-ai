@@ -12,6 +12,7 @@ on:
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
@@ -35,6 +36,7 @@ on:
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
+      - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
 
@@ -86,7 +88,8 @@ jobs:
           python -m py_compile backend/player_dna_profile_readiness.py
           python -m py_compile backend/player_dna_point_scorer.py
           python -m py_compile backend/player_dna_current_shadow.py
-          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_identity.py
+          python -m py_compile backend/player_dna_tennis_simulator.py
+          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_identity.py
 
       - name: Build strict Player DNA point dataset
         run: python backend/player_dna_point_dataset.py
@@ -102,6 +105,9 @@ jobs:
 
       - name: Score current card in SHADOW
         run: python backend/player_dna_current_shadow.py
+
+      - name: Simulate tennis markets in SHADOW
+        run: python backend/player_dna_tennis_simulator.py
 
       - name: Hard isolation + learning guard
         run: |
@@ -161,6 +167,24 @@ jobs:
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
 
+          simulation = json.loads((data / 'player_dna_current_simulation.json').read_text(encoding='utf-8'))
+          assert simulation.get('mode') == 'SHADOW_SIMULATION_ONLY'
+          assert simulation.get('production_influence') is False
+          assert simulation.get('symphony2_influence') is False
+          assert simulation.get('superbet_playable_influence') is False
+          assert simulation.get('match_level_validation_required') is True
+          assert simulation.get('auto_promote') is False
+          assert int(simulation.get('source_scored_matches') or 0) == int(current.get('scored_matches') or 0)
+          assert int(simulation.get('simulated_matches') or 0) == int(current.get('scored_matches') or 0)
+          for row in simulation.get('matches') or []:
+              assert row.get('validation_status') == 'UNVALIDATED_MATCH_LEVEL'
+              sim = row.get('simulation') or {}
+              fs = sim.get('first_set') or {}
+              mm = sim.get('match') or {}
+              assert abs(float(fs.get('p1_win') or 0) + float(fs.get('p2_win') or 0) - 1.0) <= 1e-9
+              assert abs(sum(float(v) for v in (fs.get('exact_score') or {}).values()) - 1.0) <= 1e-9
+              assert abs(sum(float(v) for v in (mm.get('exact_score') or {}).values()) - 1.0) <= 1e-9
+
           model = json.loads((derived / 'current_point_model_shadow.json').read_text(encoding='utf-8'))
           assert model.get('mode') == 'SHADOW_MODEL_ARTIFACT'
           assert model.get('production_influence') is False
@@ -175,6 +199,7 @@ jobs:
               f"current={current_matches} scored={current.get('scored_matches')} "
               f"collecting={current.get('collecting_history_matches')} "
               f"signal={(scorer.get('signal') or {}).get('status')} "
+              f"simulated={simulation.get('simulated_matches')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
           PY
@@ -189,6 +214,7 @@ jobs:
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
+            frontend/data/player_dna_current_simulation.json
             data/derived/player_dna/current_point_model_shadow.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
@@ -201,7 +227,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
