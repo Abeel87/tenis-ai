@@ -275,6 +275,226 @@ def _top_first_set_game_paths(
     return sorted(out, key=lambda row: float(row["probability"]), reverse=True)[:limit]
 
 
+def _representative_set_progression(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    start_server: int,
+    final_score: str,
+) -> dict[str, Any] | None:
+    """Most likely exact game progression for one already-selected set score.
+
+    The returned progression is representative only. Its probability is the
+    exact path mass for that one game-by-game realization and must never be
+    presented as the probability of the whole set-score family.
+    """
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    try:
+        target_g1, target_g2 = (int(x) for x in str(final_score).split(":"))
+    except (TypeError, ValueError):
+        return None
+
+    p1_hold = hold_probability(p1_serve_point)
+    p2_hold = hold_probability(p2_serve_point)
+    p1_tb = neutral_tiebreak_win_probability(p1_serve_point, p2_serve_point)
+
+    states: dict[
+        tuple[int, int, int],
+        tuple[float, tuple[str, ...]],
+    ] = {(0, 0, start_server): (1.0, ())}
+    best: dict[str, Any] | None = None
+
+    while states:
+        nxt: dict[
+            tuple[int, int, int],
+            tuple[float, tuple[str, ...]],
+        ] = {}
+        for (g1, g2, server), (mass, progression) in states.items():
+            if g1 == 6 and g2 == 6:
+                next_set_server = _other(server)
+                for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
+                    score = "7:6" if winner == 1 else "6:7"
+                    if score != final_score:
+                        continue
+                    candidate_mass = mass * probability
+                    candidate = {
+                        "score": score,
+                        "winner": winner,
+                        "games": 13,
+                        "tiebreak": True,
+                        "start_server": start_server,
+                        "next_set_server": next_set_server,
+                        "progression": [*progression, score],
+                        "representative_path_probability": candidate_mass,
+                        "representative_only": True,
+                    }
+                    if best is None or candidate_mass > float(best["representative_path_probability"]):
+                        best = candidate
+                continue
+
+            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+                score = f"{g1}:{g2}"
+                if score == final_score:
+                    candidate = {
+                        "score": score,
+                        "winner": 1 if g1 > g2 else 2,
+                        "games": g1 + g2,
+                        "tiebreak": False,
+                        "start_server": start_server,
+                        "next_set_server": server,
+                        "progression": list(progression),
+                        "representative_path_probability": mass,
+                        "representative_only": True,
+                    }
+                    if best is None or mass > float(best["representative_path_probability"]):
+                        best = candidate
+                continue
+
+            p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+            next_server = _other(server)
+            for ng1, ng2, probability in (
+                (g1 + 1, g2, p1_game),
+                (g1, g2 + 1, 1.0 - p1_game),
+            ):
+                if ng1 > target_g1 or ng2 > target_g2:
+                    continue
+                child_mass = mass * probability
+                child_state = (ng1, ng2, next_server)
+                child = (child_mass, (*progression, f"{ng1}:{ng2}"))
+                previous = nxt.get(child_state)
+                if previous is None or child_mass > previous[0]:
+                    nxt[child_state] = child
+        states = nxt
+
+    return best
+
+
+def _ranked_match_storylines(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Rank coarse match-score families and attach one representative full path.
+
+    Probability belongs to the exact match-score family (for example 2:0 or
+    2:1). The game-by-game sequence is only the most likely representative
+    realization inside the most likely set-score sequence for that family.
+    """
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    needed = best_of // 2 + 1
+    set_cache = {
+        1: set_outcomes(p1_serve_point, p2_serve_point, 1),
+        2: set_outcomes(p1_serve_point, p2_serve_point, 2),
+    }
+    states: dict[
+        tuple[int, int, int],
+        tuple[float, tuple[tuple[str, int, int, bool], ...]],
+    ] = {(0, 0, start_server): (1.0, ())}
+    representatives: dict[
+        str,
+        tuple[float, tuple[tuple[str, int, int, bool], ...]],
+    ] = {}
+
+    while states:
+        nxt: dict[
+            tuple[int, int, int],
+            tuple[float, tuple[tuple[str, int, int, bool], ...]],
+        ] = {}
+        for (s1, s2, server), (mass, path) in states.items():
+            if s1 >= needed or s2 >= needed:
+                match_score = f"{s1}:{s2}"
+                previous = representatives.get(match_score)
+                if previous is None or mass > previous[0]:
+                    representatives[match_score] = (mass, path)
+                continue
+
+            for row in set_cache[server]:
+                winner = int(row["winner"])
+                ns1 = s1 + (1 if winner == 1 else 0)
+                ns2 = s2 + (1 if winner == 2 else 0)
+                next_server = int(row["next_set_server"])
+                child_mass = mass * float(row["probability"])
+                child_path = (
+                    *path,
+                    (
+                        str(row["score"]),
+                        server,
+                        next_server,
+                        bool(row["tiebreak"]),
+                    ),
+                )
+                child_state = (ns1, ns2, next_server)
+                previous = nxt.get(child_state)
+                if previous is None or child_mass > previous[0]:
+                    nxt[child_state] = (child_mass, child_path)
+        states = nxt
+
+    family_probabilities = match_outcomes(
+        p1_serve_point,
+        p2_serve_point,
+        best_of,
+        start_server,
+    )
+    storylines: list[dict[str, Any]] = []
+    for match_score, family_probability in sorted(
+        family_probabilities.items(),
+        key=lambda item: item[1],
+        reverse=True,
+    ):
+        representative = representatives.get(match_score)
+        if representative is None:
+            continue
+        set_sequence_probability, set_path = representative
+        representative_sets = []
+        representative_exact_path_probability = 1.0
+        for score, set_start_server, next_set_server, tiebreak in set_path:
+            set_row = _representative_set_progression(
+                p1_serve_point,
+                p2_serve_point,
+                set_start_server,
+                score,
+            )
+            if set_row is None:
+                representative_sets = []
+                break
+            if int(set_row["next_set_server"]) != next_set_server:
+                raise AssertionError("representative set serve-order drift")
+            if bool(set_row["tiebreak"]) != tiebreak:
+                raise AssertionError("representative set tiebreak drift")
+            representative_exact_path_probability *= float(
+                set_row["representative_path_probability"]
+            )
+            representative_sets.append(set_row)
+
+        if not representative_sets:
+            continue
+        s1, s2 = (int(x) for x in match_score.split(":"))
+        storylines.append({
+            "winner": 1 if s1 > s2 else 2,
+            "match_score": match_score,
+            "probability": float(family_probability),
+            "probability_scope": "MATCH_SCORE_FAMILY",
+            "representative_only": True,
+            "representative_set_sequence_probability": float(set_sequence_probability),
+            "representative_exact_game_path_probability": representative_exact_path_probability,
+            "set_scores": [str(row["score"]) for row in representative_sets],
+            "sets": representative_sets,
+            "sets_played": len(representative_sets),
+            "total_games": sum(int(row["games"]) for row in representative_sets),
+        })
+
+    total = sum(float(row["probability"]) for row in storylines)
+    if storylines and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"storyline family probability mass drift: {total}")
+    return storylines
+
+
+
 def _top_match_set_paths(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -522,6 +742,12 @@ def trajectory_summary(
                 start_server,
                 limit=12,
             ),
+            "match_storylines": _ranked_match_storylines(
+                p1_serve_point,
+                p2_serve_point,
+                best_of,
+                start_server,
+            ),
             "full_match_top_game_paths": _top_full_match_game_paths(
                 p1_serve_point,
                 p2_serve_point,
@@ -545,6 +771,10 @@ def trajectory_summary(
             "first_set_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_paths_are_exact_for_known_start_server": True,
+            "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
+            "storyline_game_progressions_are_representative": True,
+            "storyline_probability_never_claims_exact_game_path": True,
+            "exact_full_match_game_paths_are_diagnostic_only": True,
             "production_influence": False,
             "symphony2_influence": False,
             "superbet_playable_influence": False,
