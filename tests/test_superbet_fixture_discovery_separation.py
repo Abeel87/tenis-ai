@@ -320,3 +320,92 @@ def test_direct_fixture_cache_avoids_repeating_same_milestone(monkeypatch):
     assert report["direct_fixture_cache_offers_used"] == 1
     assert report["fixtures"][0]["operator_offer_source"] == "odds_by_fixture_cache"
     assert report["quota_guard"]["direct_fixture_requests_used"] == 3
+
+
+
+def test_direct_fixture_priority_does_not_starve_premium_offer(monkeypatch):
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    previous = {
+        "generated_at": "2026-09-03T00:00:00+00:00",
+        "market_meta_generated_at": "2026-09-04T11:00:00+00:00",
+        "market_meta_cache": {"1": {"marketName": "Winner", "outcomes": {}}},
+        "quota_guard": {
+            "month": "2026-09",
+            "monthly_cap": core.MONTHLY_REQUEST_CAP,
+            "requests_used_by_v91": 0,
+            "direct_fixture_request_cap": core.DIRECT_FIXTURE_MONTHLY_CAP,
+            "direct_fixture_requests_used": 0,
+        },
+        "fixtures": [],
+        "direct_fixture_cache": {},
+    }
+    calls = []
+    fixtures = [
+        {
+            "fixtureId": "early-itf",
+            "participant1Name": "ITF A",
+            "participant2Name": "ITF B",
+            "startTime": "2026-09-04T13:00:00+00:00",
+            "tournamentId": "itf-1",
+            "tournamentName": "ITF World Tennis Tour",
+            "categoryName": "ITF Men",
+            "hasOdds": True,
+        },
+        {
+            "fixtureId": "later-premium",
+            "participant1Name": "Major A",
+            "participant2Name": "Major B",
+            "startTime": "2026-09-04T18:00:00+00:00",
+            "tournamentId": "major-1",
+            "tournamentName": "US Open",
+            "categoryName": "ATP",
+            "hasOdds": True,
+        },
+    ]
+
+    def fake_request(path, api_key, quota, **params):
+        calls.append((path, dict(params)))
+        if path == "fixtures":
+            return fixtures
+        if path == "odds-by-tournaments":
+            return []
+        if path == "odds":
+            assert params["fixtureId"] == "later-premium"
+            return {
+                **fixtures[1],
+                "bookmakerOdds": {
+                    "superbet.pl": {
+                        "bookmakerIsActive": True,
+                        "suspended": False,
+                        "markets": {"1": {}},
+                    }
+                },
+            }
+        raise AssertionError(path)
+
+    monkeypatch.setenv("ODDSPAPI_API_KEY", "test-key")
+    monkeypatch.setattr(core, "DIRECT_FIXTURE_MAX_PER_REFRESH", 1)
+    monkeypatch.setattr(core, "_read", lambda path, fallback: previous)
+    monkeypatch.setattr(core, "_write", lambda path, value: None)
+    monkeypatch.setattr(core, "_request", fake_request)
+    monkeypatch.setattr(core, "_sanitize_fixture", lambda row, meta: {
+        "fixture_id": row.get("fixtureId"),
+        "p1": row.get("participant1Name"),
+        "p2": row.get("participant2Name"),
+        "start_time": row.get("startTime"),
+        "canonical_selections": [{"market": "match_winner", "pick": row.get("participant1Name")}],
+    })
+    monkeypatch.setattr(core.time, "sleep", lambda *_: None)
+
+    report = core.refresh_availability([
+        {"p1": "ITF A", "p2": "ITF B", "scheduled_time": "2026-09-04T13:00:00+00:00"},
+        {"p1": "Major A", "p2": "Major B", "scheduled_time": "2026-09-04T18:00:00+00:00"},
+    ], now=now)
+
+    direct_calls = [params for path, params in calls if path == "odds"]
+    assert [params["fixtureId"] for params in direct_calls] == ["later-premium"]
+    assert report["direct_fixture_requests_this_refresh"] == 1
+    assert report["direct_fixture_skipped_budget"] == 1
+    assert report["direct_fixture_rows_with_superbet"] == 1
+    assert report["direct_fixture_matches"] == 1
+    assert [row["fixture_id"] for row in report["fixtures"]] == ["later-premium"]
