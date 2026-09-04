@@ -327,6 +327,28 @@ def _best_fixture_for_match(match: dict, fixtures: list[dict]):
     return best if delta <= MAX_MATCH_TIME_DELTA_HOURS else None
 
 
+def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool, str | None]:
+    """Join neutral discovery to the operator response without assuming shared IDs."""
+    discovered_id = str(discovered.get("fixtureId") or "")
+    operator_id = str(operator_row.get("fixtureId") or "")
+    if discovered_id and operator_id and discovered_id == operator_id:
+        return True, "fixture_id"
+
+    discovered_pair = _pair_key(discovered.get("participant1Name"), discovered.get("participant2Name"))
+    operator_pair = _pair_key(operator_row.get("participant1Name"), operator_row.get("participant2Name"))
+    if not all(discovered_pair) or discovered_pair != operator_pair:
+        return False, None
+
+    discovered_start = _parse_dt(discovered.get("startTime"))
+    operator_start = _parse_dt(operator_row.get("startTime"))
+    if discovered_start is None or operator_start is None:
+        return False, None
+    delta = abs((operator_start - discovered_start).total_seconds()) / 3600.0
+    if delta > MAX_MATCH_TIME_DELTA_HOURS:
+        return False, None
+    return True, "pair_time"
+
+
 def _sanitize_fixture(row: dict, meta: dict):
     bookmaker_odds = row.get("bookmakerOdds") or {}
     book = bookmaker_odds.get(BOOKMAKER)
@@ -467,6 +489,7 @@ def refresh_availability(results: list[dict], now=None):
         )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
         wanted_fixture_ids = set()
+        discovered_matches = []
         tournament_ids = set()
         for match in results:
             if not isinstance(match, dict):
@@ -474,6 +497,7 @@ def refresh_availability(results: list[dict], now=None):
             fixture = _best_fixture_for_match(match, fixture_rows)
             if not fixture:
                 continue
+            discovered_matches.append(fixture)
             if fixture.get("fixtureId"):
                 wanted_fixture_ids.add(str(fixture["fixtureId"]))
             if fixture.get("tournamentId") is not None:
@@ -505,9 +529,25 @@ def refresh_availability(results: list[dict], now=None):
             language="en", verbosity=3, oddsFormat="decimal",
         ))
         sanitized = []
+        operator_fixture_candidates = 0
+        fixture_id_matches = 0
+        pair_time_matches = 0
         for row in odds_rows:
-            if wanted_fixture_ids and str(row.get("fixtureId")) not in wanted_fixture_ids:
+            if not isinstance(row, dict):
                 continue
+            match_kind = None
+            for discovered in discovered_matches:
+                same, kind = _same_discovered_fixture(discovered, row)
+                if same:
+                    match_kind = kind
+                    break
+            if match_kind is None:
+                continue
+            operator_fixture_candidates += 1
+            if match_kind == "fixture_id":
+                fixture_id_matches += 1
+            elif match_kind == "pair_time":
+                pair_time_matches += 1
             item = _sanitize_fixture(row, market_meta)
             if item:
                 sanitized.append(item)
@@ -515,7 +555,11 @@ def refresh_availability(results: list[dict], now=None):
             "version": VERSION, "generated_at": now.isoformat(), "refresh_status": "OK", "bookmaker": BOOKMAKER,
             "sport_id": SPORT_ID_TENNIS, "contains_prices": False, "prices_used": False, "refresh_hours": REFRESH_HOURS,
             "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": len(wanted_fixture_ids),
-            "tournaments_queried": len(tournament_ids), "fixtures": sanitized,
+            "tournaments_queried": len(tournament_ids), "operator_odds_rows_seen": len(odds_rows),
+            "operator_fixture_candidates": operator_fixture_candidates,
+            "operator_fixture_id_matches": fixture_id_matches,
+            "operator_pair_time_matches": pair_time_matches,
+            "fixtures": sanitized,
             "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             "contract": {
                 "bookmaker_prices_discarded": True,
