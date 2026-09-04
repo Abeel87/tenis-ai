@@ -589,13 +589,20 @@ def refresh_availability(results: list[dict], now=None):
             quota,
             sportId=SPORT_ID_TENNIS,
             **{"from": date_from, "to": date_to},
-            statusId=0,
             language="en",
         )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
         wanted_fixture_ids = set()
         discovered_matches = []
         tournament_ids = set()
+        fixtures_has_odds_true = sum(
+            1 for row in fixture_rows
+            if isinstance(row, dict) and row.get("hasOdds") is True
+        )
+        fixtures_has_odds_false = sum(
+            1 for row in fixture_rows
+            if isinstance(row, dict) and row.get("hasOdds") is False
+        )
         for match in results:
             if not isinstance(match, dict):
                 continue
@@ -607,6 +614,14 @@ def refresh_availability(results: list[dict], now=None):
                 wanted_fixture_ids.add(str(fixture["fixtureId"]))
             if fixture.get("tournamentId") is not None:
                 tournament_ids.add(str(fixture["tournamentId"]))
+
+        matched_has_odds_true = sum(
+            1 for row in discovered_matches if row.get("hasOdds") is True
+        )
+        matched_has_odds_false = sum(
+            1 for row in discovered_matches if row.get("hasOdds") is False
+        )
+        matched_has_odds_missing = len(discovered_matches) - matched_has_odds_true - matched_has_odds_false
 
         if not wanted_fixture_ids:
             report = {
@@ -741,7 +756,10 @@ def refresh_availability(results: list[dict], now=None):
 
         for fixture_id, discovered in sorted(
             discovered_by_id.items(),
-            key=lambda pair: str(pair[1].get("startTime") or ""),
+            key=lambda pair: (
+                0 if pair[1].get("hasOdds") is True else 1 if pair[1].get("hasOdds") is None else 2,
+                str(pair[1].get("startTime") or ""),
+            ),
         ):
             stage = _direct_offer_stage(discovered.get("startTime"), now)
             if stage is None:
@@ -845,6 +863,11 @@ def refresh_availability(results: list[dict], now=None):
             "version": VERSION, "generated_at": now.isoformat(), "refresh_status": "OK", "bookmaker": BOOKMAKER,
             "sport_id": SPORT_ID_TENNIS, "contains_prices": False, "prices_used": False, "refresh_hours": REFRESH_HOURS,
             "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": len(wanted_fixture_ids),
+            "fixtures_has_odds_true": fixtures_has_odds_true,
+            "fixtures_has_odds_false": fixtures_has_odds_false,
+            "matched_fixture_candidates_has_odds_true": matched_has_odds_true,
+            "matched_fixture_candidates_has_odds_false": matched_has_odds_false,
+            "matched_fixture_candidates_has_odds_missing": matched_has_odds_missing,
             "tournaments_queried": len(tournament_ids),
             "bulk_operator_odds_rows_seen": len(odds_rows),
             "operator_odds_rows_seen": len(odds_rows) + direct_rows_seen,
