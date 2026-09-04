@@ -536,6 +536,12 @@ def parse_visible_offer_text(
         "p2": p2,
         "canonical_selections": selections,
         "canonical_selections_count": len(selections),
+        "verified_line_selections_count": sum(
+            1 for row in selections if row.get("fixture_line_verified") is True
+        ),
+        "verified_price_selections_count": sum(
+            1 for row in selections if row.get("operator_price_verified") is True
+        ),
         "market_counts": dict(sorted(market_counts.items())),
         "operator_prices_captured": True,
         "prices_used": False,
@@ -1086,15 +1092,21 @@ def browser_probe(timeout: int = 25) -> dict:
             "p1": normalized.get("p1"),
             "p2": normalized.get("p2"),
             "canonical_selections_count": normalized.get("canonical_selections_count"),
+            "verified_line_selections_count": normalized.get("verified_line_selections_count"),
+            "verified_price_selections_count": normalized.get("verified_price_selections_count"),
             "market_counts": normalized.get("market_counts"),
             "combination_rows_skipped": normalized.get("combination_rows_skipped"),
             "prices_used": normalized.get("prices_used"),
         }
+        core_counts = normalized.get("market_counts") or {}
         result["status"] = (
             "OK"
             if summary["has_operator_market_evidence"]
             and normalized_source == "PUBLIC_EVENT_JSON"
-            and int(normalized.get("canonical_selections_count") or 0) >= 4
+            and int(core_counts.get("match_winner") or 0) >= 2
+            and int(core_counts.get("match_total") or 0) >= 2
+            and int(normalized.get("verified_line_selections_count") or 0) >= 2
+            and int(normalized.get("verified_price_selections_count") or 0) >= 4
             and normalized.get("prices_used") is False
             else "INSUFFICIENT_MARKET_EVIDENCE"
         )
