@@ -113,6 +113,17 @@ jobs:
               raise SystemExit('Strict point rows cannot exceed broadly observable rows')
           if report.get('shadow_only') is not True:
               raise SystemExit('Player DNA point dataset must remain SHADOW-only')
+          context_matches = int(report.get('context_matches') or 0)
+          context_ready = int(report.get('context_ready_player_point') or 0)
+          if context_matches != matches:
+              raise SystemExit(f'Player DNA provider-backed context coverage regressed: {context_matches}/{matches}')
+          if context_ready <= 0:
+              raise SystemExit('Player DNA context join produced no context-ready strict player points')
+          if report.get('training_join_enabled') is not False:
+              raise SystemExit('Player DNA training join must remain disabled')
+          if report.get('profile_aggregation_enabled') is not False:
+              raise SystemExit('Player DNA profile aggregation must remain disabled')
+          print(f'Player DNA context join: matches={context_matches}/{matches} context_ready_player_point={context_ready}')
 
           p = Path('frontend/data/player_identity_audit.json')
           if not p.exists():
