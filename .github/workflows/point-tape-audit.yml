@@ -660,6 +660,32 @@ jobs:
               raise SystemExit('Player DNA prospective validation scope must remain duration-only')
           if prospective.get('winner_markets_promoted') is not False:
               raise SystemExit('Player DNA prospective validation cannot promote winner markets')
+          integrity = prospective.get('ledger_integrity') or {}
+          if integrity.get('status') != 'LEDGER_INTEGRITY_OK':
+              raise SystemExit(f"Player DNA prospective ledger integrity failed: {integrity.get('status')}")
+          for key in (
+              'prediction_rewrite_forbidden',
+              'settlement_regression_forbidden',
+              'settled_actual_rewrite_forbidden',
+              'snapshot_drop_forbidden_before_retention_cap',
+          ):
+              if integrity.get(key) is not True:
+                  raise SystemExit(f'Player DNA prospective integrity policy drift: {key}')
+          for key in (
+              'rewritten_predictions',
+              'settlement_regressions',
+              'settled_actual_rewrites',
+              'missing_previous_snapshots',
+              'duplicate_previous_match_ids',
+              'duplicate_current_match_ids',
+          ):
+              if int(integrity.get(key) or 0) != 0:
+                  raise SystemExit(f'Player DNA prospective ledger corruption detected: {key}={integrity.get(key)}')
+          if int(integrity.get('current_snapshot_count_after_retention') or 0) != int((prospective.get('counts') or {}).get('snapshots') or 0):
+              raise SystemExit('Player DNA prospective ledger count drift after retention')
+          if int(integrity.get('pruned_by_retention') or 0) == 0:
+              if int(integrity.get('preserved_snapshots') or 0) != int(integrity.get('previous_snapshot_count') or 0):
+                  raise SystemExit('Player DNA prospective ledger dropped a prior snapshot before retention cap')
           policy_prospective = prospective.get('eligibility_policy') or {}
           if policy_prospective.get('requires_walk_forward_robust') is not True:
               raise SystemExit('Player DNA prospective gate must require robust walk-forward')
@@ -699,7 +725,9 @@ jobs:
               f"Player DNA prospective: signal={prospective.get('signal')} "
               f"snapshots={(prospective.get('counts') or {}).get('snapshots')} "
               f"settled={(prospective.get('counts') or {}).get('settled_snapshots')} "
-              f"eligible_current={(prospective.get('counts') or {}).get('current_eligible_by_segment')}"
+              f"eligible_current={(prospective.get('counts') or {}).get('current_eligible_by_segment')} "
+              f"new={integrity.get('new_snapshots')} newly_settled={integrity.get('newly_settled')} "
+              f"rewrites={integrity.get('rewritten_predictions')}"
           )
           PY
 

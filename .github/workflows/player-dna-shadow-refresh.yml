@@ -328,6 +328,21 @@ jobs:
           assert prospective.get('auto_integrate') is False
           assert prospective.get('market_scope') == 'DURATION_MARKETS_ONLY'
           assert prospective.get('winner_markets_promoted') is False
+          integrity = prospective.get('ledger_integrity') or {}
+          assert integrity.get('status') == 'LEDGER_INTEGRITY_OK'
+          assert integrity.get('prediction_rewrite_forbidden') is True
+          assert integrity.get('settlement_regression_forbidden') is True
+          assert integrity.get('settled_actual_rewrite_forbidden') is True
+          assert integrity.get('snapshot_drop_forbidden_before_retention_cap') is True
+          assert int(integrity.get('rewritten_predictions') or 0) == 0
+          assert int(integrity.get('settlement_regressions') or 0) == 0
+          assert int(integrity.get('settled_actual_rewrites') or 0) == 0
+          assert int(integrity.get('missing_previous_snapshots') or 0) == 0
+          assert int(integrity.get('duplicate_previous_match_ids') or 0) == 0
+          assert int(integrity.get('duplicate_current_match_ids') or 0) == 0
+          assert int(integrity.get('current_snapshot_count_after_retention') or 0) == int((prospective.get('counts') or {}).get('snapshots') or 0)
+          if int(integrity.get('pruned_by_retention') or 0) == 0:
+              assert int(integrity.get('preserved_snapshots') or 0) == int(integrity.get('previous_snapshot_count') or 0)
           policy_prospective = prospective.get('eligibility_policy') or {}
           assert policy_prospective.get('requires_walk_forward_robust') is True
           assert policy_prospective.get('requires_repeatable_tour') is True
@@ -379,6 +394,9 @@ jobs:
               f"hold_calibration={calibration.get('signal')} "
               f"walk_forward={walk_forward.get('signal')} "
               f"prospective={prospective.get('signal')} "
+              f"prospective_new={integrity.get('new_snapshots')} "
+              f"prospective_settled_now={integrity.get('newly_settled')} "
+              f"prospective_rewrites={integrity.get('rewritten_predictions')} "
               f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )

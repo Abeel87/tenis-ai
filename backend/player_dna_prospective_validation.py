@@ -39,6 +39,19 @@ MIN_PREMATCH_LEAD_MINUTES = 5
 MIN_SETTLED_FOR_SIGNAL = 150
 MIN_SEGMENT_SETTLED = 30
 MAX_SNAPSHOTS = 5000
+IMMUTABLE_SNAPSHOT_FIELDS = (
+    "match_id",
+    "scheduled_time",
+    "captured_at",
+    "captured_pre_match",
+    "tour",
+    "surface",
+    "p1",
+    "p2",
+    "source_model_fingerprint_sha256",
+    "raw_probabilities",
+    "calibrated_probabilities",
+)
 
 
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
@@ -263,6 +276,93 @@ def _segment_evaluation(
     return out
 
 
+def _ledger_integrity(
+    previous_snapshots: list[dict[str, Any]],
+    current_snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Audit that prospective evidence can only grow or settle, never be rewritten."""
+
+    def _index(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[str]]:
+        indexed: dict[str, dict[str, Any]] = {}
+        duplicates: list[str] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            match_id = str(row.get("match_id") or "").strip()
+            if not match_id:
+                continue
+            if match_id in indexed:
+                duplicates.append(match_id)
+                continue
+            indexed[match_id] = row
+        return indexed, sorted(set(duplicates))
+
+    previous_by_id, duplicate_previous_ids = _index(previous_snapshots)
+    current_by_id, duplicate_current_ids = _index(current_snapshots)
+
+    missing_previous_ids = sorted(set(previous_by_id) - set(current_by_id))
+    rewritten_prediction_ids = []
+    settlement_regression_ids = []
+    settled_actual_rewrite_ids = []
+    newly_settled_ids = []
+
+    for match_id, old in previous_by_id.items():
+        new = current_by_id.get(match_id)
+        if not isinstance(new, dict):
+            continue
+
+        if any(old.get(field) != new.get(field) for field in IMMUTABLE_SNAPSHOT_FIELDS):
+            rewritten_prediction_ids.append(match_id)
+
+        old_settled = old.get("settled") is True
+        new_settled = new.get("settled") is True
+        if old_settled and not new_settled:
+            settlement_regression_ids.append(match_id)
+        if old_settled and new_settled and old.get("actual") != new.get("actual"):
+            settled_actual_rewrite_ids.append(match_id)
+        if not old_settled and new_settled:
+            newly_settled_ids.append(match_id)
+
+    new_snapshot_ids = sorted(set(current_by_id) - set(previous_by_id))
+    preserved_ids = sorted(set(previous_by_id) & set(current_by_id))
+    problems = (
+        duplicate_previous_ids
+        or duplicate_current_ids
+        or missing_previous_ids
+        or rewritten_prediction_ids
+        or settlement_regression_ids
+        or settled_actual_rewrite_ids
+    )
+
+    return {
+        "status": "LEDGER_INTEGRITY_OK" if not problems else "LEDGER_INTEGRITY_VIOLATION",
+        "prediction_rewrite_forbidden": True,
+        "settlement_regression_forbidden": True,
+        "settled_actual_rewrite_forbidden": True,
+        "snapshot_drop_forbidden_before_retention_cap": True,
+        "retention_cap": MAX_SNAPSHOTS,
+        "previous_snapshot_count": len(previous_by_id),
+        "current_snapshot_count_before_retention": len(current_by_id),
+        "preserved_snapshots": len(preserved_ids),
+        "new_snapshots": len(new_snapshot_ids),
+        "newly_settled": len(newly_settled_ids),
+        "rewritten_predictions": len(rewritten_prediction_ids),
+        "settlement_regressions": len(settlement_regression_ids),
+        "settled_actual_rewrites": len(settled_actual_rewrite_ids),
+        "missing_previous_snapshots": len(missing_previous_ids),
+        "duplicate_previous_match_ids": len(duplicate_previous_ids),
+        "duplicate_current_match_ids": len(duplicate_current_ids),
+        "violation_samples": {
+            "missing_previous": missing_previous_ids[:10],
+            "rewritten_predictions": rewritten_prediction_ids[:10],
+            "settlement_regressions": settlement_regression_ids[:10],
+            "settled_actual_rewrites": settled_actual_rewrite_ids[:10],
+            "duplicate_previous": duplicate_previous_ids[:10],
+            "duplicate_current": duplicate_current_ids[:10],
+        },
+    }
+
+
 def build_report(
     current_simulation: dict[str, Any],
     walk_forward: dict[str, Any],
@@ -275,11 +375,12 @@ def build_report(
     labels, label_counts = _labels_by_match(point_rows)
 
     previous_rows = (previous or {}).get("snapshots") if isinstance(previous, dict) else []
-    snapshots = [
-        dict(row)
+    previous_snapshots = [
+        row
         for row in (previous_rows if isinstance(previous_rows, list) else [])
         if isinstance(row, dict) and row.get("match_id") is not None
     ]
+    snapshots = [dict(row) for row in previous_snapshots]
     by_id = {str(row.get("match_id")): row for row in snapshots}
 
     current_rows = current_simulation.get("matches") if isinstance(current_simulation, dict) else []
@@ -300,9 +401,20 @@ def build_report(
             by_id[match_id] = snapshot
 
     _settle_snapshots(snapshots, labels)
+
+    integrity = _ledger_integrity(previous_snapshots, snapshots)
+    if integrity.get("status") != "LEDGER_INTEGRITY_OK":
+        raise RuntimeError(
+            "Player DNA prospective ledger integrity violation: "
+            + json.dumps(integrity, ensure_ascii=False, sort_keys=True)
+        )
+
     snapshots.sort(key=lambda row: (str(row.get("scheduled_time") or ""), str(row.get("match_id") or "")))
+    before_retention = len(snapshots)
     if len(snapshots) > MAX_SNAPSHOTS:
         snapshots = snapshots[-MAX_SNAPSHOTS:]
+    integrity["pruned_by_retention"] = before_retention - len(snapshots)
+    integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
     evaluation = _evaluation(snapshots)
     settled = int(evaluation.get("settled_matches") or 0)
@@ -331,6 +443,7 @@ def build_report(
         "auto_integrate": False,
         "market_scope": "DURATION_MARKETS_ONLY",
         "winner_markets_promoted": False,
+        "ledger_integrity": integrity,
         "eligibility_policy": {
             "requires_walk_forward_robust": True,
             "requires_repeatable_tour": True,
@@ -387,6 +500,7 @@ def build() -> dict[str, Any]:
         "counts": report.get("counts"),
         "supported_tours": (report.get("eligibility_policy") or {}).get("supported_tours"),
         "supported_surfaces": (report.get("eligibility_policy") or {}).get("supported_surfaces"),
+        "ledger_integrity": report.get("ledger_integrity"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report

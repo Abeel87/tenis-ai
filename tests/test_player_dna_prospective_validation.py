@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from backend.player_dna_prospective_validation import (
     DURATION_MARKETS,
+    _ledger_integrity,
     build_report,
     prospective_eligibility,
 )
@@ -158,6 +161,95 @@ def test_existing_snapshot_settles_later_without_rewriting_prediction():
     assert second["symphony2_influence"] is False
     assert second["superbet_playable_influence"] is False
     assert second["auto_integrate"] is False
+    integrity = second["ledger_integrity"]
+    assert integrity["status"] == "LEDGER_INTEGRITY_OK"
+    assert integrity["previous_snapshot_count"] == 1
+    assert integrity["preserved_snapshots"] == 1
+    assert integrity["new_snapshots"] == 0
+    assert integrity["newly_settled"] == 1
+    assert integrity["rewritten_predictions"] == 0
+    assert integrity["settlement_regressions"] == 0
+    assert integrity["settled_actual_rewrites"] == 0
+
+
+def test_ledger_grows_without_dropping_previous_snapshot():
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    first = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=now + timedelta(hours=2))]},
+        _walk_forward(),
+        [],
+        {},
+        now=now,
+    )
+    second = build_report(
+        {
+            "version": "sim",
+            "matches": [
+                _current_row("1", scheduled=now + timedelta(hours=2)),
+                _current_row("2", scheduled=now + timedelta(hours=3)),
+            ],
+        },
+        _walk_forward(),
+        [],
+        first,
+        now=now + timedelta(minutes=5),
+    )
+    integrity = second["ledger_integrity"]
+    assert integrity["status"] == "LEDGER_INTEGRITY_OK"
+    assert integrity["previous_snapshot_count"] == 1
+    assert integrity["current_snapshot_count_before_retention"] == 2
+    assert integrity["current_snapshot_count_after_retention"] == 2
+    assert integrity["preserved_snapshots"] == 1
+    assert integrity["new_snapshots"] == 1
+    assert integrity["missing_previous_snapshots"] == 0
+    assert integrity["pruned_by_retention"] == 0
+
+
+def test_ledger_integrity_detects_prediction_rewrite_and_settlement_regression():
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    report = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=now + timedelta(hours=2))]},
+        _walk_forward(),
+        [],
+        {},
+        now=now,
+    )
+    old = dict(report["snapshots"][0])
+    old["settled"] = True
+    old["actual"] = {market: False for market in DURATION_MARKETS}
+
+    new = dict(old)
+    new["raw_probabilities"] = dict(old["raw_probabilities"])
+    new["raw_probabilities"]["first_set_over_8.5"] = 0.99
+    new["settled"] = False
+    new["actual"] = None
+
+    integrity = _ledger_integrity([old], [new])
+    assert integrity["status"] == "LEDGER_INTEGRITY_VIOLATION"
+    assert integrity["rewritten_predictions"] == 1
+    assert integrity["settlement_regressions"] == 1
+
+
+def test_duplicate_previous_snapshot_fails_closed():
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    first = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=now + timedelta(hours=2))]},
+        _walk_forward(),
+        [],
+        {},
+        now=now,
+    )
+    corrupted_previous = dict(first)
+    corrupted_previous["snapshots"] = [first["snapshots"][0], dict(first["snapshots"][0])]
+
+    with pytest.raises(RuntimeError, match="ledger integrity violation"):
+        build_report(
+            {"version": "sim", "matches": []},
+            _walk_forward(),
+            [],
+            corrupted_previous,
+            now=now + timedelta(minutes=10),
+        )
 
 
 def test_duration_market_scope_is_exact_and_candidate_only():
