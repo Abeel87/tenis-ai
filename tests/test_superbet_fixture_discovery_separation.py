@@ -86,3 +86,24 @@ def test_context_runtime_does_not_patch_core_request():
     with context._patched_runtime():
         assert context.base._request is original_request
     assert context.base._request is original_request
+
+
+def test_identity_debug_snapshot_excludes_odds_and_exposes_nested_identity_shape():
+    snapshot = core._identity_debug_snapshot({
+        "fixture": {
+            "id": "fx-1",
+            "startTime": "2026-09-04T12:00:00Z",
+            "participant1Name": "Player A",
+            "participant2Name": "Player B",
+        },
+        "eventName": "Player A - Player B",
+        "bookmakerOdds": {"superbet.pl": {"markets": {"1": {"price": 1.91}}}},
+        "markets": {"secret": "must-not-leak"},
+    })
+    assert snapshot["top_level_keys"] == ["bookmakerOdds", "eventName", "fixture", "markets"]
+    assert snapshot["eventName"] == "Player A - Player B"
+    assert snapshot["fixture"]["startTime"] == "2026-09-04T12:00:00Z"
+    assert snapshot["fixture"]["participant1Name"] == "Player A"
+    assert snapshot["fixture"]["participant2Name"] == "Player B"
+    assert "bookmakerOdds" not in snapshot
+    assert "markets" not in snapshot
