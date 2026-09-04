@@ -7,10 +7,12 @@ from backend.player_dna_tennis_simulator import (
     inverse_hold_probability,
     match_outcomes,
     neutral_tiebreak_win_probability,
+    score_distribution_after_games,
     set_outcomes,
     simulate_current_report,
     simulate_match,
     simulate_match_with_hold_calibration,
+    trajectory_summary,
 )
 
 
@@ -35,6 +37,52 @@ def test_early_equal_score_is_valid_probability():
     for games in (2, 4, 6):
         p = early_equal_score_probability(0.63, 0.59, games, 1)
         assert 0.0 <= p <= 1.0
+
+
+def test_checkpoint_score_distributions_cover_all_mass():
+    for games in (2, 4, 6):
+        for server in (1, 2):
+            dist = score_distribution_after_games(0.63, 0.59, games, server)
+            assert math.isclose(sum(dist.values()), 1.0, abs_tol=1e-12)
+            assert all(sum(int(x) for x in score.split(":")) == games for score in dist)
+
+
+def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certainty():
+    trajectory = trajectory_summary(0.63, 0.59, best_of=3)
+    assert trajectory["status"] == "SHADOW_TRAJECTORY_FOUNDATION"
+    assert trajectory["validation_status"] == "UNVALIDATED_MATCH_LEVEL"
+    contract = trajectory["contract"]
+    assert contract["not_a_single_certain_script"] is True
+    assert contract["ranked_paths_are_exact_within_known_start_server_condition"] is True
+    assert contract["production_influence"] is False
+    assert contract["symphony2_influence"] is False
+    assert contract["superbet_playable_influence"] is False
+
+    for checkpoint in ("after_2_games", "after_4_games", "after_6_games"):
+        rows = trajectory["checkpoints_neutral_start_server"][checkpoint]
+        assert rows
+        assert math.isclose(sum(row["probability"] for row in rows), 1.0, abs_tol=1e-12)
+        assert rows == sorted(rows, key=lambda row: row["probability"], reverse=True)
+
+    for key in ("p1_serves_first", "p2_serves_first"):
+        conditioned = trajectory["serve_order_conditioned"][key]
+        first_set = conditioned["first_set_top_game_paths"]
+        match_paths = conditioned["match_top_set_paths"]
+        assert 1 <= len(first_set) <= 8
+        assert 1 <= len(match_paths) <= 12
+        assert first_set == sorted(first_set, key=lambda row: row["probability"], reverse=True)
+        assert match_paths == sorted(match_paths, key=lambda row: row["probability"], reverse=True)
+        assert all(row["progression"][-1] == row["final_score"] for row in first_set)
+        assert all(row["sets_played"] in (2, 3) for row in match_paths)
+        assert all(row["match_score"] in {"2:0", "2:1", "0:2", "1:2"} for row in match_paths)
+
+
+def test_simulate_match_embeds_trajectory_additively():
+    sim = simulate_match(0.63, 0.59, best_of=3)
+    trajectory = sim["trajectory"]
+    assert trajectory["status"] == "SHADOW_TRAJECTORY_FOUNDATION"
+    assert sim["validation_status"] == "UNVALIDATED_MATCH_LEVEL"
+    assert sim["production_influence"] is False
 
 
 def test_symmetric_match_is_half_after_neutral_server_average():
