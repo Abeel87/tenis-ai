@@ -83,6 +83,7 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
         storylines = conditioned["match_storylines"]
         first_set_shapes = conditioned["first_set_shape_families"]
         set_shape_trajectories = conditioned["set_shape_trajectories"]
+        set_index_shape_marginals = conditioned["set_index_shape_marginals"]
         set_winner_trajectories = conditioned["set_winner_trajectories"]
         full_match_paths = conditioned["full_match_top_game_paths"]
         assert 1 <= len(first_set) <= 8
@@ -98,6 +99,14 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
             by_shape_score.setdefault(row["match_score"], []).append(row)
         for rows in by_shape_score.values():
             assert math.isclose(sum(row["conditional_probability_within_match_score"] for row in rows), 1.0, abs_tol=1e-9)
+        assert set(set_index_shape_marginals) == {"2:0", "2:1", "0:2", "1:2"}
+        for match_score, per_set in set_index_shape_marginals.items():
+            expected_sets = sum(int(x) for x in match_score.split(":"))
+            assert set(per_set) == {f"set_{i}" for i in range(1, expected_sets + 1)}
+            for rows in per_set.values():
+                assert rows == sorted(rows, key=lambda row: row["probability"], reverse=True)
+                assert math.isclose(sum(row["probability"] for row in rows), 1.0, abs_tol=1e-9)
+                assert all(row["probability_scope"] == "SET_INDEX_SHAPE_WITHIN_MATCH_SCORE" for row in rows)
         assert len(set_winner_trajectories) == 6
         assert 1 <= len(full_match_paths) <= 4
         assert first_set == sorted(first_set, key=lambda row: row["probability"], reverse=True)
@@ -164,6 +173,7 @@ def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script()
     assert contract["set_shape_taxonomy"] == ["DOMINANT", "NORMAL", "CLOSE", "EXTENDED_7_5", "TIEBREAK"]
     assert contract["set_shape_probability_scope"] == "MATCH_SCORE_SET_SHAPE_SEQUENCE"
     assert contract["set_shape_conditional_scope"] == "WITHIN_MATCH_SCORE_FAMILY"
+    assert contract["set_index_shape_probability_scope"] == "SET_INDEX_SHAPE_WITHIN_MATCH_SCORE"
     assert contract["set_winner_trajectory_probability_scope"] == "SET_WINNER_SEQUENCE"
     assert contract["set_winner_trajectory_conditional_scope"] == "WITHIN_MATCH_SCORE_FAMILY"
     assert contract["set_winner_trajectory_game_progressions_are_representative"] is True

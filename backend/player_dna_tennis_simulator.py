@@ -674,6 +674,47 @@ def _ranked_set_shape_trajectories(
     return rows
 
 
+def _set_index_shape_marginals(
+    shape_trajectories: list[dict[str, Any]],
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    """Marginal set-shape distributions inside each exact match-score family."""
+    by_match_score: dict[str, dict[int, dict[str, float]]] = {}
+    for row in shape_trajectories:
+        match_score = str(row.get("match_score") or "")
+        shapes = row.get("set_shapes") or []
+        conditional = float(row.get("conditional_probability_within_match_score") or 0.0)
+        if not match_score or conditional <= 0.0:
+            continue
+        per_index = by_match_score.setdefault(match_score, {})
+        for index, shape in enumerate(shapes, start=1):
+            bucket = per_index.setdefault(index, defaultdict(float))
+            bucket[str(shape)] += conditional
+
+    out: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for match_score, per_index in by_match_score.items():
+        score_out: dict[str, list[dict[str, Any]]] = {}
+        for index, mass in sorted(per_index.items()):
+            rows = [
+                {
+                    "shape": shape,
+                    "probability": float(probability),
+                    "probability_scope": "SET_INDEX_SHAPE_WITHIN_MATCH_SCORE",
+                    "set_index": index,
+                    "match_score": match_score,
+                }
+                for shape, probability in mass.items()
+            ]
+            rows.sort(key=lambda row: float(row["probability"]), reverse=True)
+            total = sum(float(row["probability"]) for row in rows)
+            if rows and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+                raise AssertionError(
+                    f"set-index shape probability mass drift: {match_score} set {index}: {total}"
+                )
+            score_out[f"set_{index}"] = rows
+        out[match_score] = score_out
+    return out
+
+
 def _ranked_set_winner_trajectories(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -1055,6 +1096,12 @@ def trajectory_summary(
 
     conditioned = {}
     for start_server, label in ((1, "p1_serves_first"), (2, "p2_serves_first")):
+        shape_trajectories = _ranked_set_shape_trajectories(
+            p1_serve_point,
+            p2_serve_point,
+            best_of,
+            start_server,
+        )
         conditioned[label] = {
             "start_server": start_server,
             "first_set_top_game_paths": _top_first_set_game_paths(
@@ -1081,12 +1128,8 @@ def trajectory_summary(
                 p2_serve_point,
                 start_server,
             ),
-            "set_shape_trajectories": _ranked_set_shape_trajectories(
-                p1_serve_point,
-                p2_serve_point,
-                best_of,
-                start_server,
-            ),
+            "set_shape_trajectories": shape_trajectories,
+            "set_index_shape_marginals": _set_index_shape_marginals(shape_trajectories),
             "set_winner_trajectories": _ranked_set_winner_trajectories(
                 p1_serve_point,
                 p2_serve_point,
@@ -1120,6 +1163,7 @@ def trajectory_summary(
             "set_shape_taxonomy": list(SET_SHAPE_FAMILIES),
             "set_shape_probability_scope": "MATCH_SCORE_SET_SHAPE_SEQUENCE",
             "set_shape_conditional_scope": "WITHIN_MATCH_SCORE_FAMILY",
+            "set_index_shape_probability_scope": "SET_INDEX_SHAPE_WITHIN_MATCH_SCORE",
             "set_winner_trajectory_probability_scope": "SET_WINNER_SEQUENCE",
             "set_winner_trajectory_conditional_scope": "WITHIN_MATCH_SCORE_FAMILY",
             "set_winner_trajectory_game_progressions_are_representative": True,
