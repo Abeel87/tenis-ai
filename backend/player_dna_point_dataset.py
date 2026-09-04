@@ -14,10 +14,10 @@ from pathlib import Path
 from typing import Any, Iterable
 
 try:
-    from backend.canonical_point_event import canonical_point_events
+    from backend.canonical_point_event import ORDERING_AUTHORITY, TIMESTAMP_ROLE, canonical_point_events
     from backend.player_identity import player_identity_map
 except ModuleNotFoundError:  # direct execution
-    from canonical_point_event import canonical_point_events
+    from canonical_point_event import ORDERING_AUTHORITY, TIMESTAMP_ROLE, canonical_point_events
     from player_identity import player_identity_map
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +53,9 @@ def compact_observation(event: dict[str, Any], identities: dict[int, dict[str, A
         "schema_version": event.get("schema_version"),
         "match_id": event.get("match_id"),
         "event_index": event.get("event_index"),
+        "ordering_authority": event.get("ordering_authority"),
+        "timestamp_role": event.get("timestamp_role"),
+        "provider_row_order_preserved": event.get("provider_row_order_preserved") is True,
         "transition_kind": event.get("transition_kind"),
         "score_before": event.get("score_before"),
         "score_after": event.get("score_after"),
@@ -150,6 +153,12 @@ def build() -> dict[str, Any]:
         "atomic_reasons": dict(atomic_reasons.most_common()),
         "dataset_path": str(OUT_JSONL.relative_to(ROOT)),
         "identity_status": "PROVIDER_BACKED_P1_P2_IDS; no name/fuzzy fallback",
+        "ordering_contract": {
+            "authority": ORDERING_AUTHORITY,
+            "timestamp_role": TIMESTAMP_ROLE,
+            "provider_row_order_preserved": True,
+            "timestamp_sorting_forbidden": True,
+        },
         "note": "Only trainable_player_point combines proven one-point atomicity with explicit stable provider identity. Still SHADOW-only; no production model consumes it.",
     }
     OUT_SUMMARY.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
