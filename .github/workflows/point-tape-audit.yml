@@ -16,6 +16,7 @@ on:
       - 'backend/player_dna_ordering_authority_audit.py'
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_shadow_profiles.py'
+      - 'backend/player_dna_point_scorer.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -29,6 +30,7 @@ on:
       - 'tests/test_player_dna_ordering_authority_audit.py'
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_shadow_profiles.py'
+      - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -63,7 +65,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -91,6 +93,9 @@ jobs:
 
       - name: Build leakage-safe Player DNA shadow profiles (zero network)
         run: python backend/player_dna_shadow_profiles.py
+
+      - name: Train + evaluate Player DNA point scorer (SHADOW, zero network)
+        run: python backend/player_dna_point_scorer.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -278,6 +283,62 @@ jobs:
               f"readiness_any={profiles.get('readiness_any_surface')} "
               f"readiness_surface={profiles.get('readiness_same_surface')}"
           )
+
+          p = Path('frontend/data/player_dna_point_scorer.json')
+          if not p.exists():
+              raise SystemExit('player_dna_point_scorer.json was not generated')
+          scorer = json.loads(p.read_text(encoding='utf-8'))
+          if scorer.get('mode') != 'SHADOW_EVAL_ONLY':
+              raise SystemExit('Player DNA scorer must remain SHADOW evaluation only')
+          if scorer.get('production_influence') is not False:
+              raise SystemExit('Player DNA scorer must have zero production influence')
+          if scorer.get('runtime_scoring_enabled') is not False:
+              raise SystemExit('Player DNA runtime scoring must remain disabled')
+          if scorer.get('prod_model_write_enabled') is not False:
+              raise SystemExit('Player DNA PROD model writes must remain disabled')
+          if scorer.get('model_artifact_persisted') is not False:
+              raise SystemExit('Player DNA scorer must not persist a runtime model yet')
+          if scorer.get('evaluation_threshold_is_production_gate') is not False:
+              raise SystemExit('Player DNA threshold 3 is SHADOW evaluation only')
+          if scorer.get('real_shadow_training') is not True:
+              raise SystemExit('Player DNA scorer did not perform real SHADOW training')
+          split = scorer.get('split') or {}
+          if split.get('same_timestamp_split') is not False:
+              raise SystemExit('Player DNA train/holdout split leaked a same-timestamp group')
+          if int(scorer.get('all_joined_points') or 0) != context_ready:
+              raise SystemExit(
+                  f"Player DNA scorer join coverage mismatch: "
+                  f"{scorer.get('all_joined_points')}/{context_ready}"
+              )
+          if int(scorer.get('train_points_after_support_gate') or 0) <= 0:
+              raise SystemExit('Player DNA scorer has no SHADOW training points')
+          if int(scorer.get('holdout_points_after_support_gate') or 0) <= 0:
+              raise SystemExit('Player DNA scorer has no untouched holdout points')
+          models = scorer.get('models') or {}
+          for model_name in ('profile_only_logistic', 'rank_only_logistic', 'profile_plus_rank_logistic'):
+              model = models.get(model_name) or {}
+              metrics = model.get('metrics') or {}
+              meta = model.get('model') or {}
+              if int(metrics.get('points') or 0) <= 0 or metrics.get('brier') is None or metrics.get('log_loss') is None:
+                  raise SystemExit(f'Player DNA {model_name} has no valid holdout metrics')
+              if meta.get('fitted') is not True or not meta.get('model_fingerprint_sha256'):
+                  raise SystemExit(f'Player DNA {model_name} was not actually fitted')
+              if meta.get('engine') != 'NUMPY_NEWTON_LOGISTIC_L2' or meta.get('converged') is not True:
+                  raise SystemExit(
+                      f"Player DNA {model_name} did not converge with canonical NumPy logistic engine: "
+                      f"{meta.get('engine')} converged={meta.get('converged')}"
+                  )
+          signal = scorer.get('signal') or {}
+          if signal.get('status') not in {'POSITIVE_HOLDOUT_SIGNAL', 'MIXED_OR_NO_INCREMENTAL_SIGNAL'}:
+              raise SystemExit(f"Player DNA scorer signal status invalid: {signal.get('status')}")
+          print(
+              f"Player DNA scorer: train={scorer.get('train_points_after_support_gate')} "
+              f"holdout={scorer.get('holdout_points_after_support_gate')} "
+              f"status={signal.get('status')} "
+              f"profile_vs_rank_brier={signal.get('profile_only_brier_gain_vs_rank')} "
+              f"combined_vs_rank_brier={signal.get('combined_brier_gain_vs_rank')} "
+              f"combined_vs_rank_match_equal={signal.get('combined_match_equal_brier_gain_vs_rank')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -294,6 +355,7 @@ jobs:
             frontend/data/player_dna_ordering_authority_audit.json
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
+            frontend/data/player_dna_point_scorer.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
           if-no-files-found: error
