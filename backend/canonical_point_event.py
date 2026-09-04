@@ -20,6 +20,8 @@ except ModuleNotFoundError:  # direct execution compatibility
     from atomic_point_transition import classify_atomic_transition
 
 SCHEMA_VERSION = "canonical-point-event-v2"
+ORDERING_AUTHORITY = "provider_sequence_clean"
+TIMESTAMP_ROLE = "metadata_only_no_reordering"
 
 
 def _player(value: Any) -> int | None:
@@ -94,6 +96,9 @@ def canonical_point_events(payload: dict[str, Any] | None, match_id: Any = None)
             "schema_version": SCHEMA_VERSION,
             "match_id": match_id,
             "event_index": len(out),
+            "ordering_authority": ORDERING_AUTHORITY,
+            "timestamp_role": TIMESTAMP_ROLE,
+            "provider_row_order_preserved": True,
             "row_index_before": index - 1,
             "row_index_after": index,
             "state_semantics": "before=previous_row; after=current_row; current_point_winner=completed_point",
