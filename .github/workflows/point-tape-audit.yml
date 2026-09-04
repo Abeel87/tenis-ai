@@ -13,6 +13,7 @@ on:
       - 'backend/player_dna_match_metadata_audit.py'
       - 'backend/player_dna_match_context.py'
       - 'backend/player_dna_context_time_audit.py'
+      - 'backend/player_dna_ordering_authority_audit.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -23,6 +24,7 @@ on:
       - 'tests/test_player_dna_match_metadata_audit.py'
       - 'tests/test_player_dna_match_context.py'
       - 'tests/test_player_dna_context_time_audit.py'
+      - 'tests/test_player_dna_ordering_authority_audit.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -57,7 +59,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -76,6 +78,9 @@ jobs:
 
       - name: Audit Player DNA context distributions + time ordering (zero network)
         run: python backend/player_dna_context_time_audit.py
+
+      - name: Audit Player DNA ordering authority (zero network)
+        run: python backend/player_dna_ordering_authority_audit.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -152,6 +157,28 @@ jobs:
               f"non_monotonic_matches={ordering.get('matches_with_non_monotonic_events')} "
               f"before_scheduled={ordering.get('events_before_scheduled')}"
           )
+
+          p = Path('frontend/data/player_dna_ordering_authority_audit.json')
+          if not p.exists():
+              raise SystemExit('player_dna_ordering_authority_audit.json was not generated')
+          authority = json.loads(p.read_text(encoding='utf-8'))
+          if int(authority.get('matches') or 0) <= 0:
+              raise SystemExit('Player DNA ordering audit saw no restored PBP matches')
+          if authority.get('gate') != 'AUDIT_ONLY_NO_ORDERING_ACTIVATION':
+              raise SystemExit('Ordering audit must remain audit-only')
+          if authority.get('ordering_activation_enabled') is not False:
+              raise SystemExit('Player DNA ordering activation must remain disabled')
+          provider = authority.get('provider_sequence') or {}
+          timestamp = authority.get('timestamp_sorted_sequence') or {}
+          comparison = authority.get('per_match_comparison') or {}
+          if int(provider.get('trainable_point') or 0) <= 0 or int(timestamp.get('events') or 0) <= 0:
+              raise SystemExit('Ordering audit produced no comparable point sequences')
+          print(
+              f"Player DNA ordering audit: candidate={authority.get('ordering_authority_candidate')} "
+              f"provider_atomic={provider.get('trainable_point')} timestamp_atomic={timestamp.get('trainable_point')} "
+              f"provider_better_matches={comparison.get('provider_more_atomic_matches')} "
+              f"timestamp_better_matches={comparison.get('timestamp_more_atomic_matches')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -165,6 +192,7 @@ jobs:
             frontend/data/player_identity_audit.json
             frontend/data/player_dna_match_metadata_audit.json
             frontend/data/player_dna_context_time_audit.json
+            frontend/data/player_dna_ordering_authority_audit.json
             data/derived/player_dna/point_events.jsonl.gz
           if-no-files-found: error
           retention-days: 14
