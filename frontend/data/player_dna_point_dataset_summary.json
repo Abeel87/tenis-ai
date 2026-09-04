@@ -1,0 +1,57 @@
+{
+  "version": "player-dna-point-dataset-v3",
+  "source": "canonical-point-event-v2 + pbp-player-identity-v1 over restored cache",
+  "network_calls": 0,
+  "shadow_only": true,
+  "matches": 3138,
+  "events": 403258,
+  "trainable_basic": 384581,
+  "trainable_point": 371690,
+  "trainable_player_point": 371690,
+  "trainable_player_point_rate": 0.921718,
+  "identity_matches": 3138,
+  "identity_match_rate": 1.0,
+  "context_matches": 3138,
+  "context_match_rate": 1.0,
+  "context_ready_player_point": 371690,
+  "context_ready_player_point_rate": 0.921718,
+  "players_with_trainable_points": 1827,
+  "transition_kinds": {
+    "point_score_changed": 330263,
+    "game_score_changed": 65818,
+    "set_score_changed": 7177
+  },
+  "server_sources": {
+    "previous_row": 400671,
+    "current_row_fallback": 1439,
+    "unknown": 1148
+  },
+  "point_sources": {
+    "observed": 403258
+  },
+  "atomic_reasons": {
+    "atomic_point_step": 315551,
+    "atomic_game_boundary": 56828,
+    "winner_missing_or_invalid": 17747,
+    "set_boundary_not_yet_proven": 6292,
+    "game_boundary_requires_missing_points": 4736,
+    "game_score_jump_or_wrong_winner": 1914,
+    "game_boundary_points_not_reset": 115,
+    "point_score_missing_or_invalid": 67,
+    "game_score_shape_unproven": 6,
+    "compressed_or_wrong_point_step": 1,
+    "transition_should_end_game_or_is_invalid": 1
+  },
+  "dataset_path": "data/derived/player_dna/point_events.jsonl.gz",
+  "identity_status": "PROVIDER_BACKED_P1_P2_IDS; no name/fuzzy fallback",
+  "context_status": "PROVIDER_BACKED_MATCH_CONTEXT_ATTACHED_TO_SHADOW_ROWS",
+  "training_join_enabled": false,
+  "profile_aggregation_enabled": false,
+  "ordering_contract": {
+    "authority": "provider_sequence_clean",
+    "timestamp_role": "metadata_only_no_reordering",
+    "provider_row_order_preserved": true,
+    "timestamp_sorting_forbidden": true
+  },
+  "note": "Provider-backed context is attached only to SHADOW point rows after strict identity agreement. Training joins and profile aggregation remain disabled; no production model consumes it."
+}

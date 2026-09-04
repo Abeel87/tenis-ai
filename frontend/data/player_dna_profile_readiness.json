@@ -1,0 +1,89 @@
+{
+  "version": "player-dna-profile-readiness-audit-v1",
+  "gate": "AUDIT_ONLY_NO_PROFILE_AGGREGATION",
+  "network_calls": 0,
+  "shadow_only": true,
+  "strict_as_of_policy": "prior_match_scheduled_time < target_match_scheduled_time",
+  "same_time_matches_count_as_prior": false,
+  "training_join_enabled": false,
+  "profile_aggregation_enabled": false,
+  "readiness_threshold_activation_enabled": false,
+  "point_rows": 403258,
+  "context_ready_point_rows": 371690,
+  "invalid_match_time_rows": 0,
+  "source_matches_seen": 3138,
+  "context_ready_matches": 3135,
+  "matches_without_context_ready_points": 3,
+  "players": 1827,
+  "player_match_targets": 6270,
+  "surface_match_counts": {
+    "hard": 1722,
+    "clay": 1291,
+    "grass": 99,
+    "unknown": 23
+  },
+  "player_match_depth": {
+    "min": 1,
+    "p50": 2,
+    "p75": 5,
+    "p90": 8,
+    "max": 26,
+    "players_ge_1": 1827,
+    "players_ge_3": 801,
+    "players_ge_5": 495,
+    "players_ge_10": 115,
+    "players_ge_20": 1
+  },
+  "prior_history_depth": {
+    "p50": 2,
+    "p75": 4,
+    "p90": 7,
+    "max": 25
+  },
+  "readiness_any_surface": {
+    "1": {
+      "targets": 4443,
+      "rate": 0.708612
+    },
+    "3": {
+      "targets": 2540,
+      "rate": 0.405104
+    },
+    "5": {
+      "targets": 1420,
+      "rate": 0.226475
+    },
+    "10": {
+      "targets": 189,
+      "rate": 0.030144
+    },
+    "20": {
+      "targets": 6,
+      "rate": 0.000957
+    }
+  },
+  "readiness_same_surface": {
+    "1": {
+      "targets": 4119,
+      "rate": 0.656938
+    },
+    "3": {
+      "targets": 2118,
+      "rate": 0.337799
+    },
+    "5": {
+      "targets": 1081,
+      "rate": 0.172408
+    },
+    "10": {
+      "targets": 121,
+      "rate": 0.019298
+    },
+    "20": {
+      "targets": 6,
+      "rate": 0.000957
+    }
+  },
+  "same_time_player_groups": 0,
+  "note": "Evidence only. No minimum-history threshold is activated here. The next gate must choose any threshold from measured coverage and leakage-safe validation."
+}

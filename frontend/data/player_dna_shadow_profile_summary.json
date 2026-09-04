@@ -1,0 +1,85 @@
+{
+  "version": "player-dna-shadow-profiles-v1",
+  "mode": "SHADOW_AS_OF_PROFILE",
+  "source": "player-dna-point-dataset-v3 strict context-ready rows",
+  "network_calls": 0,
+  "production_influence": false,
+  "training_join_enabled": false,
+  "profile_threshold_activation_enabled": false,
+  "strict_as_of_policy": "prior_match_scheduled_time < target_match_scheduled_time",
+  "same_time_matches_count_as_prior": false,
+  "strict_matches": 3135,
+  "player_match_snapshots": 6270,
+  "players": 1827,
+  "same_time_groups": 489,
+  "source_counts": {
+    "point_rows_seen": 403258,
+    "non_strict_rows_skipped": 31568,
+    "strict_rows_used": 371690,
+    "strict_matches": 3135
+  },
+  "readiness_any_surface": {
+    "1": {
+      "targets": 4443,
+      "rate": 0.708612
+    },
+    "3": {
+      "targets": 2540,
+      "rate": 0.405104
+    },
+    "5": {
+      "targets": 1420,
+      "rate": 0.226475
+    },
+    "10": {
+      "targets": 189,
+      "rate": 0.030144
+    }
+  },
+  "readiness_same_surface": {
+    "1": {
+      "targets": 4119,
+      "rate": 0.656938
+    },
+    "3": {
+      "targets": 2118,
+      "rate": 0.337799
+    },
+    "5": {
+      "targets": 1081,
+      "rate": 0.172408
+    },
+    "10": {
+      "targets": 121,
+      "rate": 0.019298
+    }
+  },
+  "features": {
+    "overall_prior": [
+      "matches",
+      "serve_points",
+      "serve_wins",
+      "serve_win_rate",
+      "return_points",
+      "return_wins",
+      "return_win_rate",
+      "tiebreak_points",
+      "tiebreak_wins",
+      "tiebreak_win_rate"
+    ],
+    "same_surface_prior": [
+      "matches",
+      "serve_points",
+      "serve_wins",
+      "serve_win_rate",
+      "return_points",
+      "return_wins",
+      "return_win_rate",
+      "tiebreak_points",
+      "tiebreak_wins",
+      "tiebreak_win_rate"
+    ]
+  },
+  "note": "SHADOW evidence only. Raw support counts accompany every rate. No minimum-history threshold, training join or production influence is activated.",
+  "dataset_path": "data/derived/player_dna/profile_snapshots.jsonl.gz"
+}
