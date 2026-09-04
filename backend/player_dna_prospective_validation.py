@@ -194,6 +194,7 @@ def _snapshot_from_current(
 def _settle_snapshots(
     snapshots: list[dict[str, Any]],
     labels: dict[str, dict[str, Any]],
+    now: datetime,
 ) -> None:
     for snapshot in snapshots:
         if not isinstance(snapshot, dict) or snapshot.get("settled") is True:
@@ -213,6 +214,103 @@ def _settle_snapshots(
             continue
         snapshot["settled"] = True
         snapshot["actual"] = actual
+        snapshot["settled_at"] = now.isoformat()
+
+
+def _unsettled_diagnostics(
+    snapshots: list[dict[str, Any]],
+    now: datetime,
+) -> dict[str, Any]:
+    buckets = {
+        "upcoming": 0,
+        "due_within_6h": 0,
+        "overdue_6_24h": 0,
+        "overdue_24_72h": 0,
+        "overdue_gt_72h": 0,
+        "unparseable_schedule": 0,
+    }
+    overdue = []
+    for row in snapshots:
+        if not isinstance(row, dict) or row.get("settled") is True:
+            continue
+        scheduled = _parse_utc(row.get("scheduled_time"))
+        if scheduled is None:
+            buckets["unparseable_schedule"] += 1
+            continue
+        delta_hours = (now - scheduled).total_seconds() / 3600.0
+        if delta_hours < 0:
+            buckets["upcoming"] += 1
+            continue
+        if delta_hours <= 6:
+            buckets["due_within_6h"] += 1
+        elif delta_hours <= 24:
+            buckets["overdue_6_24h"] += 1
+        elif delta_hours <= 72:
+            buckets["overdue_24_72h"] += 1
+        else:
+            buckets["overdue_gt_72h"] += 1
+        if delta_hours > 6:
+            overdue.append({
+                "match_id": row.get("match_id"),
+                "scheduled_time": row.get("scheduled_time"),
+                "hours_since_scheduled": round(delta_hours, 2),
+                "p1": row.get("p1"),
+                "p2": row.get("p2"),
+            })
+    overdue.sort(key=lambda row: float(row.get("hours_since_scheduled") or 0), reverse=True)
+    return {
+        "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
+        "buckets": buckets,
+        "overdue_samples": overdue[:10],
+    }
+
+
+def _settlement_latency_summary(
+    snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    latencies = []
+    for row in snapshots:
+        if not isinstance(row, dict) or row.get("settled") is not True:
+            continue
+        scheduled = _parse_utc(row.get("scheduled_time"))
+        settled_at = _parse_utc(row.get("settled_at"))
+        if scheduled is None or settled_at is None:
+            continue
+        latencies.append((settled_at - scheduled).total_seconds() / 3600.0)
+    latencies.sort()
+    if not latencies:
+        return {
+            "n": 0,
+            "median_hours": None,
+            "p90_hours": None,
+            "max_hours": None,
+            "negative_latency_count": 0,
+            "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels",
+        }
+
+    def percentile(values: list[float], p: float) -> float:
+        if len(values) == 1:
+            return values[0]
+        position = (len(values) - 1) * p
+        lower = int(position)
+        upper = min(lower + 1, len(values) - 1)
+        fraction = position - lower
+        return values[lower] + (values[upper] - values[lower]) * fraction
+
+    mid = len(latencies) // 2
+    median = (
+        latencies[mid]
+        if len(latencies) % 2
+        else (latencies[mid - 1] + latencies[mid]) / 2.0
+    )
+    return {
+        "n": len(latencies),
+        "median_hours": round(median, 3),
+        "p90_hours": round(percentile(latencies, 0.9), 3),
+        "max_hours": round(max(latencies), 3),
+        "negative_latency_count": sum(1 for value in latencies if value < 0),
+        "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels",
+    }
 
 
 def _evaluation(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
@@ -304,6 +402,7 @@ def _ledger_integrity(
     rewritten_prediction_ids = []
     settlement_regression_ids = []
     settled_actual_rewrite_ids = []
+    settled_at_rewrite_ids = []
     newly_settled_ids = []
 
     for match_id, old in previous_by_id.items():
@@ -320,6 +419,8 @@ def _ledger_integrity(
             settlement_regression_ids.append(match_id)
         if old_settled and new_settled and old.get("actual") != new.get("actual"):
             settled_actual_rewrite_ids.append(match_id)
+        if old_settled and new_settled and old.get("settled_at") != new.get("settled_at"):
+            settled_at_rewrite_ids.append(match_id)
         if not old_settled and new_settled:
             newly_settled_ids.append(match_id)
 
@@ -332,6 +433,7 @@ def _ledger_integrity(
         or rewritten_prediction_ids
         or settlement_regression_ids
         or settled_actual_rewrite_ids
+        or settled_at_rewrite_ids
     )
 
     return {
@@ -339,6 +441,7 @@ def _ledger_integrity(
         "prediction_rewrite_forbidden": True,
         "settlement_regression_forbidden": True,
         "settled_actual_rewrite_forbidden": True,
+        "settled_at_rewrite_forbidden": True,
         "snapshot_drop_forbidden_before_retention_cap": True,
         "retention_cap": MAX_SNAPSHOTS,
         "previous_snapshot_count": len(previous_by_id),
@@ -349,6 +452,7 @@ def _ledger_integrity(
         "rewritten_predictions": len(rewritten_prediction_ids),
         "settlement_regressions": len(settlement_regression_ids),
         "settled_actual_rewrites": len(settled_actual_rewrite_ids),
+        "settled_at_rewrites": len(settled_at_rewrite_ids),
         "missing_previous_snapshots": len(missing_previous_ids),
         "duplicate_previous_match_ids": len(duplicate_previous_ids),
         "duplicate_current_match_ids": len(duplicate_current_ids),
@@ -357,6 +461,7 @@ def _ledger_integrity(
             "rewritten_predictions": rewritten_prediction_ids[:10],
             "settlement_regressions": settlement_regression_ids[:10],
             "settled_actual_rewrites": settled_actual_rewrite_ids[:10],
+            "settled_at_rewrites": settled_at_rewrite_ids[:10],
             "duplicate_previous": duplicate_previous_ids[:10],
             "duplicate_current": duplicate_current_ids[:10],
         },
@@ -386,6 +491,7 @@ def build_report(
     current_rows = current_simulation.get("matches") if isinstance(current_simulation, dict) else []
     current_rows = current_rows if isinstance(current_rows, list) else []
     eligible_current = 0
+    schedule_drifts = []
     for row in current_rows:
         if not isinstance(row, dict):
             continue
@@ -393,14 +499,27 @@ def build_report(
         if eligibility["eligible"] is True:
             eligible_current += 1
         match_id = str(row.get("match_id") or "").strip()
-        if not match_id or match_id in by_id:
+        if not match_id:
+            continue
+        if match_id in by_id:
+            frozen_time = _parse_utc(by_id[match_id].get("scheduled_time"))
+            current_time = _parse_utc(row.get("scheduled_time"))
+            if frozen_time is not None and current_time is not None:
+                drift_minutes = (current_time - frozen_time).total_seconds() / 60.0
+                if abs(drift_minutes) >= 1.0:
+                    schedule_drifts.append({
+                        "match_id": match_id,
+                        "frozen_scheduled_time": frozen_time.isoformat(),
+                        "current_scheduled_time": current_time.isoformat(),
+                        "drift_minutes": round(drift_minutes, 2),
+                    })
             continue
         snapshot = _snapshot_from_current(row, walk_forward, now, labels)
         if snapshot is not None:
             snapshots.append(snapshot)
             by_id[match_id] = snapshot
 
-    _settle_snapshots(snapshots, labels)
+    _settle_snapshots(snapshots, labels, now)
 
     integrity = _ledger_integrity(previous_snapshots, snapshots)
     if integrity.get("status") != "LEDGER_INTEGRITY_OK":
@@ -417,6 +536,21 @@ def build_report(
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
     evaluation = _evaluation(snapshots)
+    unsettled_diagnostics = _unsettled_diagnostics(snapshots, now)
+    settlement_latency = _settlement_latency_summary(snapshots)
+    settlement_observability = {
+        "unsettled": unsettled_diagnostics,
+        "settlement_latency": settlement_latency,
+        "schedule_drift": {
+            "count": len(schedule_drifts),
+            "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
+            "samples": sorted(
+                schedule_drifts,
+                key=lambda row: abs(float(row.get("drift_minutes") or 0)),
+                reverse=True,
+            )[:10],
+        },
+    }
     settled = int(evaluation.get("settled_matches") or 0)
     if settled < MIN_SETTLED_FOR_SIGNAL:
         signal = "COLLECTING_PROSPECTIVE_EVIDENCE"
@@ -444,6 +578,7 @@ def build_report(
         "market_scope": "DURATION_MARKETS_ONLY",
         "winner_markets_promoted": False,
         "ledger_integrity": integrity,
+        "settlement_observability": settlement_observability,
         "eligibility_policy": {
             "requires_walk_forward_robust": True,
             "requires_repeatable_tour": True,
@@ -501,6 +636,7 @@ def build() -> dict[str, Any]:
         "supported_tours": (report.get("eligibility_policy") or {}).get("supported_tours"),
         "supported_surfaces": (report.get("eligibility_policy") or {}).get("supported_surfaces"),
         "ledger_integrity": report.get("ledger_integrity"),
+        "settlement_observability": report.get("settlement_observability"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report
