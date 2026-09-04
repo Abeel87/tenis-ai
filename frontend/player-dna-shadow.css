@@ -138,6 +138,137 @@
   line-height:1.45;
   font-size:.76rem;
 }
+.pds-trajectory-panel{
+  margin:.8rem 1rem 1rem;
+  padding:14px;
+  border:1px solid rgba(110,168,255,.24);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(14,27,46,.97),rgba(7,16,29,.98));
+  box-shadow:0 12px 28px rgba(0,0,0,.16);
+}
+.pds-trajectory-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.pds-trajectory-head>div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.pds-trajectory-head b{font-size:1rem;color:var(--text,#eef5ff)}
+.pds-trajectory-head small{color:var(--muted,#8fa1b8)}
+.pds-checkpoints{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin:12px 0;
+}
+.pds-checkpoints>span{
+  min-width:0;
+  padding:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.065);
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:2px 7px;
+  align-items:end;
+}
+.pds-checkpoints small{
+  grid-column:1/-1;
+  color:var(--muted,#8fa1b8);
+  font-size:.68rem;
+}
+.pds-checkpoints b{font-size:1.05rem}
+.pds-checkpoints em{
+  font-style:normal;
+  color:#77b9ff;
+  font-size:.76rem;
+  font-weight:800;
+}
+.pds-trajectory-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.pds-trajectory-branch{
+  min-width:0;
+  padding:10px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.025);
+}
+.pds-trajectory-branch>header{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-start;
+  margin-bottom:7px;
+}
+.pds-trajectory-branch>header>div{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.pds-trajectory-branch header span,
+.pds-trajectory-branch header small{
+  color:var(--muted,#8fa1b8);
+  font-size:.68rem;
+}
+.pds-trajectory-branch header b{font-size:.9rem}
+.pds-scenario{
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.pds-scenario:first-of-type{border-top:0}
+.pds-scenario summary{
+  list-style:none;
+  display:grid;
+  grid-template-columns:auto 1fr auto auto;
+  align-items:center;
+  gap:7px;
+  padding:8px 0;
+  cursor:pointer;
+}
+.pds-scenario summary::-webkit-details-marker{display:none}
+.pds-scenario summary span{
+  color:#77b9ff;
+  font-size:.7rem;
+  font-weight:800;
+}
+.pds-scenario summary b{font-size:.82rem}
+.pds-scenario summary em{
+  font-style:normal;
+  color:#5ee0a0;
+  font-size:.72rem;
+  font-weight:800;
+}
+.pds-scenario summary i{
+  font-style:normal;
+  color:var(--muted,#8fa1b8);
+}
+.pds-scenario>div{
+  padding:0 0 9px;
+}
+.pds-scenario p{
+  margin:0;
+  color:#c9d7e9;
+  font-size:.72rem;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.pds-scenario small,
+.pds-trajectory-fallback{
+  color:var(--muted,#8fa1b8);
+  font-size:.68rem;
+}
+.pds-trajectory-fallback{
+  margin:8px 0 0;
+  line-height:1.4;
+}
+.pds-trajectory-fallback b{color:#dcecff}
+
 .pds-empty{
   margin-top:14px;
   padding:12px;
@@ -147,6 +278,10 @@
 }
 @media(max-width:720px){
   .pds-grid,.pds-health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pds-trajectory-panel{margin:.65rem .55rem .9rem;padding:12px}
+  .pds-trajectory-grid{grid-template-columns:1fr}
+  .pds-checkpoints{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .pds-checkpoints>span{padding:8px}
   .pds-head,.pds-segments{align-items:flex-start}
   .pds-segments{flex-direction:column}
   .pds-chips{justify-content:flex-start}

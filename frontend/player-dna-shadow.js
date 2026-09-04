@@ -6,6 +6,7 @@
 
   const PROSPECTIVE_URL='data/player_dna_prospective_validation.json';
   const WALK_FORWARD_URL='data/player_dna_hold_walk_forward.json';
+  const SIMULATION_URL='data/player_dna_current_simulation.json';
   const MIN_SETTLED=150;
   const PANEL_ID='player-dna-shadow-stats';
   const MARKET_LABELS={
@@ -16,6 +17,7 @@
   };
 
   let lastLoad=null;
+  let simulationLoad=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -66,6 +68,14 @@
         .catch(()=>({prospective:null,walkForward:null}));
     }
     return lastLoad;
+  }
+
+  async function loadSimulation(force=false){
+    if(force) simulationLoad=null;
+    if(!simulationLoad){
+      simulationLoad=json(SIMULATION_URL).catch(()=>null);
+    }
+    return simulationLoad;
   }
 
   function statsViewActive(){
@@ -260,6 +270,196 @@
       </p>`;
   }
 
+  function norm(value){
+    return String(value??'')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,' ')
+      .trim();
+  }
+
+  function pct(value){
+    const x=n(value);
+    return x==null?'—':`${(x*100).toFixed(1).replace('.0','')}%`;
+  }
+
+  function activeDetailMatch(){
+    const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
+    if(!overlay)return null;
+    const key=String(overlay.dataset.matchKey||'');
+    try{
+      return window.TENIS_AI_PROJECT_UI?.findMatch?.(key)||null;
+    }catch{
+      return null;
+    }
+  }
+
+  function simulationRow(report,match){
+    const rows=Array.isArray(report?.matches)?report.matches:[];
+    if(!match||!rows.length)return null;
+    const id=match.id??match.match_id;
+    if(id!=null){
+      const direct=rows.find(row=>String(row?.match_id??'')===String(id));
+      if(direct)return direct;
+    }
+    const p1=norm(match.p1),p2=norm(match.p2);
+    const when=Date.parse(match.scheduled_time||'');
+    return rows.find(row=>{
+      if(norm(row?.p1)!==p1||norm(row?.p2)!==p2)return false;
+      const other=Date.parse(row?.scheduled_time||'');
+      return Number.isFinite(when)&&Number.isFinite(other)
+        ?Math.abs(when-other)<=10*60*1000
+        :true;
+    })||null;
+  }
+
+  function topCheckpoint(trajectory,key){
+    const rows=trajectory?.checkpoints_neutral_start_server?.[key];
+    if(!Array.isArray(rows)||!rows.length)return null;
+    return rows[0]||null;
+  }
+
+  function scenarioPathText(path){
+    const sets=Array.isArray(path?.sets)?path.sets:[];
+    if(sets.length){
+      return sets.map((setRow,index)=>{
+        const progression=Array.isArray(setRow?.progression)?setRow.progression:[];
+        return `Set ${index+1}: ${progression.join(' → ')}`;
+      }).join(' · ');
+    }
+    const setScores=Array.isArray(path?.set_scores)?path.set_scores:[];
+    return setScores.length?`Sety: ${setScores.join(' · ')}`:'Brak pełnej ścieżki';
+  }
+
+  function conditionedScenario(branch,label,p1,p2){
+    const full=Array.isArray(branch?.full_match_top_game_paths)?branch.full_match_top_game_paths:[];
+    const setPaths=Array.isArray(branch?.match_top_set_paths)?branch.match_top_set_paths:[];
+    const firstSet=Array.isArray(branch?.first_set_top_game_paths)?branch.first_set_top_game_paths:[];
+    const primary=full.length?full:setPaths;
+    const top=primary.slice(0,3);
+    const firstName=label==='p1'?p1:p2;
+
+    return `
+      <div class="pds-trajectory-branch">
+        <header>
+          <div><span>Pierwszy serwis</span><b>${esc(firstName||'N/D')}</b></div>
+          <small>warunek scenariusza</small>
+        </header>
+        ${top.length?top.map((path,index)=>`
+          <details class="pds-scenario" ${index===0?'open':''}>
+            <summary>
+              <span>#${index+1}</span>
+              <b>${esc(path.match_score||path.final_score||'scenariusz')}</b>
+              <em>${pct(path.probability)}</em>
+              <i>⌄</i>
+            </summary>
+            <div>
+              <p>${esc(scenarioPathText(path))}</p>
+              ${path.total_games!=null?`<small>Łącznie gemów: ${esc(path.total_games)} · setów: ${esc(path.sets_played)}</small>`:''}
+            </div>
+          </details>
+        `).join(''):`
+          <div class="pds-empty">Pełne ścieżki meczu pojawią się po publikacji nowego raportu trajektorii.</div>
+        `}
+        ${!full.length&&firstSet[0]?`
+          <p class="pds-trajectory-fallback">
+            Najmocniejsza ścieżka 1. seta: <b>${esc(firstSet[0].final_score||'—')}</b>
+            · ${pct(firstSet[0].probability)}
+          </p>
+        `:''}
+      </div>`;
+  }
+
+  function trajectoryHTML(row){
+    const sim=row?.simulation||{};
+    const trajectory=sim.trajectory||{};
+    if(trajectory.status!=='SHADOW_TRAJECTORY_FOUNDATION'){
+      return `
+        <header class="pds-trajectory-head">
+          <div><b>🧬 Player DNA · przebieg meczu</b><small>SHADOW trajectory</small></div>
+          <span class="pds-status collecting">CZEKA NA RAPORT</span>
+        </header>
+        <div class="pds-empty">Dla tego meczu nie ma jeszcze opublikowanej trajektorii Player DNA.</div>`;
+    }
+
+    const cp2=topCheckpoint(trajectory,'after_2_games');
+    const cp4=topCheckpoint(trajectory,'after_4_games');
+    const cp6=topCheckpoint(trajectory,'after_6_games');
+    const conditioned=trajectory.serve_order_conditioned||{};
+    return `
+      <header class="pds-trajectory-head">
+        <div>
+          <b>🧬 Player DNA · mapa przebiegu meczu</b>
+          <small>ranking scenariuszy, nie jeden pewny skrypt</small>
+        </div>
+        <span class="pds-status collecting">SHADOW</span>
+      </header>
+
+      <div class="pds-checkpoints">
+        <span><small>Po 2 gemach</small><b>${esc(cp2?.score||'—')}</b><em>${pct(cp2?.probability)}</em></span>
+        <span><small>Po 4 gemach</small><b>${esc(cp4?.score||'—')}</b><em>${pct(cp4?.probability)}</em></span>
+        <span><small>Po 6 gemach</small><b>${esc(cp6?.score||'—')}</b><em>${pct(cp6?.probability)}</em></span>
+      </div>
+
+      <div class="pds-trajectory-grid">
+        ${conditionedScenario(conditioned.p1_serves_first,'p1',row.p1,row.p2)}
+        ${conditionedScenario(conditioned.p2_serves_first,'p2',row.p1,row.p2)}
+      </div>
+
+      <p class="pds-foot">
+        Pierwszy serwujący jest przed meczem nieznany, dlatego pokazujemy oba warunki osobno.
+        Prawdopodobieństwo ścieżki jest warunkowe na wskazany pierwszy serwis.
+        ${row.hold_calibrated_candidate?'Hold-calibrated DNA pozostaje kandydatem i nie zastępuje tej referencyjnej trajektorii. ':''}
+        UNVALIDATED_MATCH_LEVEL · zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
+      </p>`;
+  }
+
+  async function injectTrajectory(force=false){
+    const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
+    if(!overlay)return false;
+    const match=activeDetailMatch();
+    if(!match)return false;
+
+    const report=await loadSimulation(force);
+    if(!document.querySelector('#p751-match-overlay:not([hidden])'))return false;
+    const row=simulationRow(report,match);
+
+    let panel=overlay.querySelector('#player-dna-match-trajectory');
+    if(!panel){
+      panel=document.createElement('section');
+      panel.id='player-dna-match-trajectory';
+      panel.className='pds-trajectory-panel';
+      panel.dataset.playerDnaTrajectory='1';
+    }
+    panel.innerHTML=trajectoryHTML(row);
+
+    const playerContext=overlay.querySelector('[data-pi851-detail],#pi85-detail');
+    const verdict=overlay.querySelector('.p751-verdict');
+    const matchup=overlay.querySelector('.p751-matchup');
+    if(playerContext?.parentNode){
+      playerContext.insertAdjacentElement('afterend',panel);
+    }else if(verdict?.parentNode){
+      verdict.parentNode.insertBefore(panel,verdict);
+    }else if(matchup?.parentNode){
+      matchup.insertAdjacentElement('afterend',panel);
+    }
+    return true;
+  }
+
+  function wrapProjectOpen(){
+    const project=window.TENIS_AI_PROJECT_UI;
+    if(!project||project.__playerDnaTrajectoryWrapped||typeof project.openMatch!=='function')return false;
+    const base=project.openMatch;
+    project.openMatch=function(...args){
+      const result=base.apply(this,args);
+      queueMicrotask(()=>injectTrajectory(false).catch(()=>{}));
+      return result;
+    };
+    Object.defineProperty(project,'__playerDnaTrajectoryWrapped',{value:true});
+    return true;
+  }
+
   async function render(force=false){
     if(!statsViewActive())return false;
     const app=document.querySelector('#app');
@@ -299,19 +499,35 @@
   document.addEventListener('tenis-ai:stats-dashboard-ready',()=>schedule(false));
   document.addEventListener('click',event=>{
     if(event.target?.closest?.('[data-view="stats"]'))schedule(false);
-    if(event.target?.closest?.('#refresh'))schedule(true);
+    if(event.target?.closest?.('#refresh')){
+      schedule(true);
+      simulationLoad=null;
+    }
+    if(event.target?.closest?.('[data-p751-open]')){
+      setTimeout(()=>injectTrajectory(false).catch(()=>{}),60);
+    }
   },true);
 
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',()=>schedule(false),{once:true});
-  }else{
+  function boot(){
+    wrapProjectOpen();
     schedule(false);
+    if(document.querySelector('#p751-match-overlay:not([hidden])')){
+      injectTrajectory(false).catch(()=>{});
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot,{once:true});
+  }else{
+    boot();
   }
 
   window.TENIS_AI_PLAYER_DNA_SHADOW=Object.freeze({
     mode:'SHADOW_UI_ONLY',
     prospectiveUrl:PROSPECTIVE_URL,
     walkForwardUrl:WALK_FORWARD_URL,
-    render:()=>render(true)
+    simulationUrl:SIMULATION_URL,
+    render:()=>render(true),
+    renderTrajectory:()=>injectTrajectory(true)
   });
 })();
