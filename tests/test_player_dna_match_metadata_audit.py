@@ -14,6 +14,10 @@ def test_metadata_audit_reports_provider_paths_without_joining_features():
                 },
             },
             "meta": {"point_source": "observed"},
+            "profiles": [
+                {"input_state": {"score": {"timestamp": "2026-09-04T10:01:00Z"}}},
+                {"input_state": {"score": {"timestamp": "2026-09-04T10:02:00Z"}}},
+            ],
         },
         {
             "match": {
@@ -39,6 +43,14 @@ def test_metadata_audit_reports_provider_paths_without_joining_features():
     assert by_path["match.tournament.id"]["types"] == {"int": 2}
     assert by_path["match.players.p1.ranking"]["nonempty"] == 2
     assert by_path["match.players.p2.ranking"]["nonempty"] == 1
+
+    # Two list items in one payload are observations inside one match, not two
+    # matches. Presence/non-empty rates therefore stay bounded by 1.0.
+    profile_time = by_path["profiles[].input_state.score.timestamp"]
+    assert profile_time["present"] == 1
+    assert profile_time["nonempty"] == 1
+    assert profile_time["present_rate"] == 0.5
+    assert profile_time["nonempty_rate"] == 0.5
 
     likely = {row["path"] for row in report["likely_context_paths"]}
     assert "match.startTime" in likely
