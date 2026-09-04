@@ -280,6 +280,7 @@ def test_direct_fixture_cache_avoids_repeating_same_milestone(monkeypatch):
             "fixture-cache": {
                 "stage": "within_12h",
                 "last_checked_at": "2026-09-04T11:00:00+00:00",
+                "bookmaker_key": "superbet.pl",
                 "offer": cached_offer,
                 "last_error": None,
             }
