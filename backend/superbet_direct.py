@@ -90,6 +90,34 @@ def rendered_text_from_html(html: str) -> str:
     return "\n".join(parse_html(html).get("text_lines") or [])
 
 
+def rendered_dom_text(driver) -> str:
+    """Return ordered rendered DOM text nodes without executing or parsing scripts."""
+    try:
+        nodes = driver.execute_script(
+            """
+            const root = document.body || document.documentElement;
+            if (!root) return [];
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            const out = [];
+            let node;
+            while ((node = walker.nextNode())) {
+              const parent = node.parentElement;
+              if (!parent) continue;
+              const tag = (parent.tagName || '').toUpperCase();
+              if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE'].includes(tag)) continue;
+              const value = (node.nodeValue || '').replace(/\s+/g, ' ').trim();
+              if (value) out.push(value);
+            }
+            return out;
+            """
+        )
+    except Exception:
+        nodes = None
+    if isinstance(nodes, list) and nodes:
+        return "\n".join(str(value).strip() for value in nodes if str(value).strip())
+    return rendered_text_from_html(driver.page_source)
+
+
 def discover_match_urls(html: str) -> list[str]:
     parsed = parse_html(html)
     candidates = list(parsed["links"])
@@ -470,7 +498,7 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
         driver.get(url)
 
         def offer_ready(drv):
-            rendered_text = rendered_text_from_html(drv.page_source)
+            rendered_text = rendered_dom_text(drv)
             normalized = parse_visible_offer_text(rendered_text, url=url, title=drv.title)
             return int(normalized.get("canonical_selections_count") or 0) >= 4
 
@@ -479,7 +507,7 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
         except Exception:
             pass
 
-        rendered_text = rendered_text_from_html(driver.page_source)
+        rendered_text = rendered_dom_text(driver)
         result = parse_visible_offer_text(rendered_text, url=url, title=driver.title)
         result["final_url"] = driver.current_url
         result["title"] = driver.title
@@ -582,8 +610,18 @@ def browser_probe(timeout: int = 25) -> dict:
         summary["final_url"] = driver.current_url
         summary["title"] = driver.title
         result["sample"] = summary
-        rendered_text = rendered_text_from_html(driver.page_source)
+        rendered_text = rendered_dom_text(driver)
         normalized = parse_visible_offer_text(rendered_text, url=sample_url, title=driver.title)
+        candidate_lines = [
+            line for line in rendered_text.splitlines()
+            if any(token in _norm(line) for token in (
+                "gemow w meczu",
+                "handicapu gemow",
+                "mecz zakonczy sie wynikiem",
+                "zdobedzie ponizej",
+                "zdobedzie powyzej",
+            ))
+        ][:12]
         result["normalized_offer"] = {
             "event_id": normalized.get("event_id"),
             "p1": normalized.get("p1"),
@@ -591,6 +629,8 @@ def browser_probe(timeout: int = 25) -> dict:
             "canonical_selections_count": normalized.get("canonical_selections_count"),
             "market_counts": normalized.get("market_counts"),
             "prices_used": normalized.get("prices_used"),
+            "dom_text_lines": len(rendered_text.splitlines()),
+            "candidate_line_samples": candidate_lines,
         }
         result["status"] = (
             "OK"
