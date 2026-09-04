@@ -240,3 +240,20 @@ def test_stable_runtime_has_no_versioned_superbet_imports_or_wildcards():
             wildcards.append(name)
     assert not versioned, f"Stable Superbet runtime imports legacy versioned modules: {versioned}"
     assert not wildcards, f"Stable Superbet runtime leaks namespaces through import *: {wildcards}"
+
+
+
+def test_superbet_core_owns_refresh_and_quota_constants():
+    from backend import superbet_market_core as core
+    from backend import superbet_market_mapping as mapping
+
+    assert core.REFRESH_HOURS == 1
+    assert core.MONTHLY_REQUEST_CAP == 4000
+    assert core.DIRECT_FIXTURE_MONTHLY_CAP == 1700
+    assert mapping.REFRESH_HOURS == core.REFRESH_HOURS
+    assert mapping.MONTHLY_REQUEST_CAP == core.MONTHLY_REQUEST_CAP
+
+    source = (BACKEND / "superbet_market_mapping.py").read_text(encoding="utf-8")
+    compact = source.replace(" ", "")
+    assert "base.REFRESH_HOURS=" not in compact
+    assert "base.MONTHLY_REQUEST_CAP=" not in compact
