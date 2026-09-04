@@ -62,7 +62,7 @@ def test_fixture_discovery_is_bookmaker_neutral_and_operator_query_is_filtered(m
     fixture_path, fixture_params = calls[0]
     assert fixture_path == "fixtures"
     assert fixture_params["sportId"] == core.SPORT_ID_TENNIS
-    assert fixture_params["statusId"] == 0
+    assert "statusId" not in fixture_params
     assert fixture_params["language"] == "en"
     assert "hasOdds" not in fixture_params
     assert "bookmakers" not in fixture_params
