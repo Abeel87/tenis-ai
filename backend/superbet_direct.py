@@ -1,0 +1,185 @@
+from __future__ import annotations
+
+"""Read-only Superbet PL public tennis source probe.
+
+This module is intentionally isolated from MODEL/RAW, Player DNA, Symphony and
+PLAYABLE. It only verifies that public Superbet tennis pages are reachable and
+that concrete match pages expose enough server-rendered information to support
+later operator-offer normalization.
+
+No login, no cookies, no bet placement, no model probability changes and no
+writes to frontend/data.
+"""
+
+import json
+import re
+import sys
+from html.parser import HTMLParser
+from urllib.parse import urljoin, urlparse
+from urllib.request import Request, urlopen
+
+BASE = "https://superbet.pl"
+TENNIS_LISTING_URL = f"{BASE}/zaklady-bukmacherskie/tenis"
+MAX_HTML_BYTES = 5_000_000
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+)
+MARKET_MARKERS = (
+    "liczba gemow",
+    "handicap",
+    "dokladny wynik",
+    "zwyciezca",
+    "liczba setow",
+    "tiebreak",
+    "set zwyciezca",
+)
+
+
+def _norm(value: object) -> str:
+    text = str(value or "").casefold()
+    replacements = str.maketrans({
+        "ą": "a", "ć": "c", "ę": "e", "ł": "l",
+        "ń": "n", "ó": "o", "ś": "s", "ż": "z", "ź": "z",
+    })
+    text = text.translate(replacements)
+    return " ".join(re.sub(r"[^a-z0-9:+.\-/]+", " ", text).split())
+
+
+def _allowed_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "superbet.pl":
+        return False
+    return (
+        parsed.path.startswith("/zaklady-bukmacherskie/tenis")
+        or parsed.path.startswith("/kursy/tenis/")
+    )
+
+
+class _PageParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.links: list[str] = []
+        self.text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag.casefold() != "a":
+            return
+        href = next((v for k, v in attrs if k.casefold() == "href"), None)
+        if href:
+            self.links.append(str(href))
+
+    def handle_data(self, data: str) -> None:
+        value = " ".join(str(data or "").split())
+        if value:
+            self.text.append(value)
+
+
+def parse_html(html: str) -> dict:
+    parser = _PageParser()
+    parser.feed(html or "")
+    return {
+        "links": parser.links,
+        "text": " ".join(parser.text),
+    }
+
+
+def discover_match_urls(html: str) -> list[str]:
+    parsed = parse_html(html)
+    out: list[str] = []
+    seen: set[str] = set()
+    for href in parsed["links"]:
+        absolute = urljoin(BASE, href)
+        if not _allowed_url(absolute):
+            continue
+        path = urlparse(absolute).path
+        if not re.fullmatch(r"/kursy/tenis/.+-\d+", path):
+            continue
+        canonical = f"{BASE}{path}"
+        if canonical not in seen:
+            seen.add(canonical)
+            out.append(canonical)
+    return out
+
+
+def summarize_match_page(html: str, url: str | None = None) -> dict:
+    parsed = parse_html(html)
+    text = str(parsed["text"])
+    norm = _norm(text)
+    markers = [marker for marker in MARKET_MARKERS if marker in norm]
+    decimal_tokens = re.findall(r"(?<!\d)\d{1,3}[.,]\d{1,3}(?!\d)", text)
+    signed_line_tokens = re.findall(r"(?<!\d)[+-]?\d+(?:[.,]\d+)?(?!\d)", text)
+    return {
+        "url": url,
+        "text_length": len(text),
+        "market_markers": markers,
+        "market_marker_count": len(markers),
+        "decimal_token_count": len(decimal_tokens),
+        "numeric_token_count": len(signed_line_tokens),
+        "has_operator_market_evidence": (
+            len(text) >= 1000
+            and len(markers) >= 2
+            and len(decimal_tokens) >= 4
+        ),
+    }
+
+
+def fetch_html(url: str, timeout: int = 25) -> str:
+    if not _allowed_url(url):
+        raise ValueError("only public Superbet PL tennis URLs are allowed")
+    request = Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml",
+            "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.7",
+            "Cache-Control": "no-cache",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        content_type = str(response.headers.get("Content-Type") or "")
+        if "text/html" not in content_type.casefold():
+            raise RuntimeError(f"unexpected content type: {content_type}")
+        raw = response.read(MAX_HTML_BYTES + 1)
+        if len(raw) > MAX_HTML_BYTES:
+            raise RuntimeError("Superbet HTML exceeds safety limit")
+        charset = response.headers.get_content_charset() or "utf-8"
+        return raw.decode(charset, errors="replace")
+
+
+def probe() -> dict:
+    listing_html = fetch_html(TENNIS_LISTING_URL)
+    match_urls = discover_match_urls(listing_html)
+    result = {
+        "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_PROBE",
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+        "listing_url": TENNIS_LISTING_URL,
+        "match_urls_found": len(match_urls),
+        "sample_match_url": match_urls[0] if match_urls else None,
+    }
+    if not match_urls:
+        result["status"] = "NO_MATCH_URLS"
+        return result
+
+    sample_url = match_urls[0]
+    summary = summarize_match_page(fetch_html(sample_url), sample_url)
+    result["sample"] = summary
+    result["status"] = "OK" if summary["has_operator_market_evidence"] else "INSUFFICIENT_MARKET_EVIDENCE"
+    return result
+
+
+def main() -> None:
+    mode = str(sys.argv[1] if len(sys.argv) > 1 else "probe").strip().casefold()
+    if mode != "probe":
+        raise SystemExit("usage: superbet_direct.py [probe]")
+    result = probe()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result.get("status") != "OK":
+        raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()
