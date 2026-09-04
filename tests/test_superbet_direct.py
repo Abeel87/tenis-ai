@@ -791,3 +791,160 @@ def test_build_direct_parity_report_reports_no_overlap_without_fetching():
     assert report["candidate_app_matches"] == 0
     assert report["resolved_app_matches"] == 0
     assert called == []
+
+
+
+def test_build_selected_direct_feed_keeps_only_verified_app_overlaps():
+    results = [
+        {
+            "id": "app-paul-bublik",
+            "p1": "Tommy Paul",
+            "p2": "Alexander Bublik",
+            "scheduled_time": "2026-09-04T16:30:00Z",
+        },
+        {
+            "id": "not-on-superbet",
+            "p1": "Different Player",
+            "p2": "Someone Else",
+            "scheduled_time": "2026-09-04T16:30:00Z",
+        },
+    ]
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+    ]
+    payload = _direct_event_payload(
+        "14809301",
+        "Alexander Bublik",
+        "Tommy Paul",
+        "2026-09-04T16:30:00Z",
+        score="3:1",
+    )
+
+    feed = direct.build_selected_direct_feed(
+        results,
+        urls,
+        fetcher=lambda event_id: payload,
+    )
+
+    assert feed["status"] == "OK"
+    assert feed["app_matches_seen"] == 2
+    assert feed["candidate_app_matches"] == 1
+    assert feed["resolved_app_matches"] == 1
+    assert feed["rejected_candidate_matches"] == 0
+    assert feed["contains_prices"] is True
+    assert feed["operator_prices_metadata_only"] is True
+    assert feed["prices_used"] is False
+    assert feed["writes_canonical_context"] is False
+    assert feed["production_influence"] is False
+    assert feed["playable_influence"] is False
+
+    match = feed["matches"][0]
+    assert match["match_id"] == "app-paul-bublik"
+    assert match["p1"] == "Tommy Paul"
+    assert match["p2"] == "Alexander Bublik"
+    assert match["event_id"] == "14809301"
+    assert match["direct_match_verified"] is True
+    assert match["participant_order_reoriented"] is True
+    assert match["canonical_selections_count"] == 3
+    assert match["verified_price_selections_count"] == 3
+    assert match["operator_prices_captured"] is True
+    assert match["operator_prices_metadata_only"] is True
+    assert match["prices_used"] is False
+
+    score_rows = [
+        row for row in match["canonical_selections"]
+        if row["market"] == "exact_match_score"
+    ]
+    assert len(score_rows) == 1
+    assert score_rows[0]["pick"] == "1:3"
+    assert all(row["prices_used"] is False for row in match["canonical_selections"])
+
+
+def test_build_selected_direct_feed_no_overlap_makes_no_requests():
+    called = []
+
+    def fetcher(event_id):
+        called.append(event_id)
+        raise AssertionError("no event should be fetched without an app/listing overlap")
+
+    feed = direct.build_selected_direct_feed(
+        [{
+            "p1": "Different Player",
+            "p2": "Someone Else",
+            "scheduled_time": "2026-09-04T16:30:00Z",
+        }],
+        ["https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"],
+        fetcher=fetcher,
+    )
+
+    assert feed["status"] == "NO_CURRENT_OVERLAP"
+    assert feed["matches"] == []
+    assert feed["contains_prices"] is False
+    assert feed["prices_used"] is False
+    assert called == []
+
+
+def test_write_selected_direct_sidecar_is_atomic_and_keeps_prices_metadata_only(tmp_path):
+    feed = direct.build_selected_direct_feed(
+        [{
+            "id": "app-paul-bublik",
+            "p1": "Tommy Paul",
+            "p2": "Alexander Bublik",
+            "scheduled_time": "2026-09-04T16:30:00Z",
+        }],
+        ["https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"],
+        fetcher=lambda event_id: _direct_event_payload(
+            "14809301",
+            "Alexander Bublik",
+            "Tommy Paul",
+            "2026-09-04T16:30:00Z",
+        ),
+    )
+    path = tmp_path / "superbet_direct_current.json"
+
+    written = direct.write_selected_direct_sidecar(feed, path)
+    loaded = __import__("json").loads(written.read_text(encoding="utf-8"))
+
+    assert written == path
+    assert not (tmp_path / "superbet_direct_current.json.tmp").exists()
+    assert loaded["status"] == "OK"
+    assert loaded["contains_prices"] is True
+    assert loaded["operator_prices_metadata_only"] is True
+    assert loaded["prices_used"] is False
+    assert loaded["production_influence"] is False
+    assert loaded["playable_influence"] is False
+    assert loaded["matches"][0]["direct_match_verified"] is True
+    assert all(
+        row["prices_used"] is False
+        for row in loaded["matches"][0]["canonical_selections"]
+    )
+
+
+def test_write_selected_direct_sidecar_refuses_unsafe_or_playable_feed(tmp_path):
+    unsafe = {
+        "status": "NO_SAFE_OVERLAP",
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "matches": [],
+    }
+    try:
+        direct.write_selected_direct_sidecar(unsafe, tmp_path / "unsafe.json")
+    except ValueError as exc:
+        assert "unsafe Direct feed status" in str(exc)
+    else:
+        raise AssertionError("unsafe feed must not be persisted")
+
+    playable = {
+        "status": "OK",
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": True,
+        "matches": [],
+    }
+    try:
+        direct.write_selected_direct_sidecar(playable, tmp_path / "playable.json")
+    except ValueError as exc:
+        assert "isolated" in str(exc)
+    else:
+        raise AssertionError("PLAYABLE-influencing feed must not be persisted")
