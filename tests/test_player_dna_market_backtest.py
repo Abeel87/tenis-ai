@@ -188,14 +188,11 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     }
 
     train_labels = {
-        "train-a": {
+        f"train-{index}": {
             "match_exact_score": "2:0",
             "trajectory_actual": {"first_server": 1, "set_score_sequence": ["6:1", "6:2"]},
-        },
-        "train-b": {
-            "match_exact_score": "2:0",
-            "trajectory_actual": {"first_server": 1, "set_score_sequence": ["6:0", "6:1"]},
-        },
+        }
+        for index in range(20)
     }
 
     metrics = _trajectory_validation(predictions, labels, train_labels)
@@ -232,7 +229,8 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert per_set_prob["all_sets"]["records_skipped_no_segment_baseline"] == 0
     assert per_set_prob["all_sets"]["coverage_fraction"] == 1.0
     assert per_set_prob["all_sets"]["baseline_smoothing_alpha"] == 0.5
-    assert per_set_prob["all_sets"]["baseline_train_n_min"] == 2
+    assert per_set_prob["all_sets"]["baseline_min_support_required"] == 20
+    assert per_set_prob["all_sets"]["baseline_train_n_min"] == 20
     assert per_set_prob["all_sets"]["brier_gain_vs_segment_train_distribution"] > 0
     assert per_set_prob["all_sets"]["top1_accuracy_delta_pp"] > 0
     storyline = metrics["primary_storyline_match_score_conditioned_on_observed_first_server"]
