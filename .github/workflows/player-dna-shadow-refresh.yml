@@ -312,6 +312,20 @@ jobs:
                   branch = conditioned.get(key) or {}
                   assert branch.get('first_set_top_game_paths')
                   assert branch.get('match_top_set_paths')
+                  full_paths = branch.get('full_match_top_game_paths') or []
+                  assert full_paths
+                  assert len(full_paths) <= 4
+                  assert full_paths == sorted(full_paths, key=lambda item: float(item.get('probability') or 0), reverse=True)
+                  for full_path in full_paths:
+                      sets = full_path.get('sets') or []
+                      assert int(full_path.get('sets_played') or 0) == len(sets)
+                      assert int(full_path.get('total_games') or 0) == sum(len(item.get('progression') or []) for item in sets)
+                      for set_path in sets:
+                          progression = set_path.get('progression') or []
+                          assert progression
+                          assert progression[-1] == set_path.get('score')
+                          if set_path.get('tiebreak') is True:
+                              assert progression.count('6:6') == 1
               assert abs(float(fs.get('p1_win') or 0) + float(fs.get('p2_win') or 0) - 1.0) <= 1e-9
               assert abs(sum(float(v) for v in (fs.get('exact_score') or {}).values()) - 1.0) <= 1e-9
               assert abs(sum(float(v) for v in (mm.get('exact_score') or {}).values()) - 1.0) <= 1e-9
@@ -329,7 +343,11 @@ jobs:
                   ctraj = candidate.get('trajectory') or {}
                   assert ctraj.get('status') == 'SHADOW_TRAJECTORY_FOUNDATION'
                   assert ctraj.get('validation_status') == 'UNVALIDATED_MATCH_LEVEL'
-                  assert (ctraj.get('contract') or {}).get('production_influence') is False
+                  ccontract = ctraj.get('contract') or {}
+                  assert ccontract.get('production_influence') is False
+                  assert ccontract.get('full_match_game_paths_are_exact_for_known_start_server') is True
+                  for cbranch in (ctraj.get('serve_order_conditioned') or {}).values():
+                      assert cbranch.get('full_match_top_game_paths')
                   assert abs(float(cfs.get('p1_win') or 0) + float(cfs.get('p2_win') or 0) - 1.0) <= 1e-9
                   assert abs(sum(float(v) for v in (cfs.get('exact_score') or {}).values()) - 1.0) <= 1e-9
                   assert abs(sum(float(v) for v in (cmm.get('exact_score') or {}).values()) - 1.0) <= 1e-9
