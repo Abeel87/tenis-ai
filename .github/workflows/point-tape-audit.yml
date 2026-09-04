@@ -15,6 +15,7 @@ on:
       - 'backend/player_dna_context_time_audit.py'
       - 'backend/player_dna_ordering_authority_audit.py'
       - 'backend/player_dna_profile_readiness.py'
+      - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -27,6 +28,7 @@ on:
       - 'tests/test_player_dna_context_time_audit.py'
       - 'tests/test_player_dna_ordering_authority_audit.py'
       - 'tests/test_player_dna_profile_readiness.py'
+      - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -61,7 +63,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -86,6 +88,9 @@ jobs:
 
       - name: Audit Player DNA historical profile readiness (zero network)
         run: python backend/player_dna_profile_readiness.py
+
+      - name: Build leakage-safe Player DNA shadow profiles (zero network)
+        run: python backend/player_dna_shadow_profiles.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -233,6 +238,46 @@ jobs:
               f"same_surface={readiness.get('readiness_same_surface')} "
               f"same_time_groups={readiness.get('same_time_player_groups')}"
           )
+
+          p = Path('frontend/data/player_dna_shadow_profile_summary.json')
+          if not p.exists():
+              raise SystemExit('player_dna_shadow_profile_summary.json was not generated')
+          profiles = json.loads(p.read_text(encoding='utf-8'))
+          if profiles.get('mode') != 'SHADOW_AS_OF_PROFILE':
+              raise SystemExit('Player DNA profiles must remain SHADOW as-of snapshots')
+          if profiles.get('production_influence') is not False:
+              raise SystemExit('Player DNA shadow profiles must have zero production influence')
+          if profiles.get('training_join_enabled') is not False:
+              raise SystemExit('Player DNA shadow profile training join must remain disabled')
+          if profiles.get('profile_threshold_activation_enabled') is not False:
+              raise SystemExit('Player DNA profile threshold activation must remain disabled')
+          if profiles.get('same_time_matches_count_as_prior') is not False:
+              raise SystemExit('Same-time matches must never count as Player DNA prior history')
+          if int(profiles.get('strict_matches') or 0) != context_ready_matches:
+              raise SystemExit(
+                  f"Player DNA profile strict-match mismatch: "
+                  f"{profiles.get('strict_matches')}/{context_ready_matches}"
+              )
+          if int(profiles.get('player_match_snapshots') or 0) != int(readiness.get('player_match_targets') or 0):
+              raise SystemExit(
+                  f"Player DNA snapshot target mismatch: "
+                  f"{profiles.get('player_match_snapshots')}/{readiness.get('player_match_targets')}"
+              )
+          for threshold in ('1', '3', '5', '10'):
+              for key in ('readiness_any_surface', 'readiness_same_surface'):
+                  expected = ((readiness.get(key) or {}).get(threshold) or {}).get('targets')
+                  observed = ((profiles.get(key) or {}).get(threshold) or {}).get('targets')
+                  if int(observed or 0) != int(expected or 0):
+                      raise SystemExit(
+                          f"Player DNA readiness drift {key} threshold={threshold}: "
+                          f"profile={observed} audit={expected}"
+                      )
+          print(
+              f"Player DNA shadow profiles: matches={profiles.get('strict_matches')} "
+              f"snapshots={profiles.get('player_match_snapshots')} players={profiles.get('players')} "
+              f"readiness_any={profiles.get('readiness_any_surface')} "
+              f"readiness_surface={profiles.get('readiness_same_surface')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -248,6 +293,8 @@ jobs:
             frontend/data/player_dna_context_time_audit.json
             frontend/data/player_dna_ordering_authority_audit.json
             frontend/data/player_dna_profile_readiness.json
+            frontend/data/player_dna_shadow_profile_summary.json
             data/derived/player_dna/point_events.jsonl.gz
+            data/derived/player_dna/profile_snapshots.jsonl.gz
           if-no-files-found: error
           retention-days: 14
