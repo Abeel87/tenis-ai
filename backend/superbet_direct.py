@@ -471,6 +471,82 @@ def parse_visible_offer_text(
     }
 
 
+def _safe_network_endpoint(url: str) -> dict:
+    parsed = urlparse(str(url or ""))
+    query_keys = []
+    if parsed.query:
+        for item in parsed.query.split("&"):
+            key = item.split("=", 1)[0].strip()
+            if key and key not in query_keys:
+                query_keys.append(key)
+    return {
+        "host": parsed.netloc,
+        "path": parsed.path,
+        "query_keys": sorted(query_keys),
+    }
+
+
+def network_offer_diagnostics(driver, *, event_id: str | None = None, max_rows: int = 20) -> list[dict]:
+    """Inspect public browser XHR/fetch responses without exposing query values."""
+    try:
+        entries = driver.get_log("performance")
+    except Exception:
+        return []
+
+    rows = []
+    seen = set()
+    for entry in entries:
+        try:
+            envelope = json.loads(entry.get("message") or "{}")
+            message = envelope.get("message") or {}
+            if message.get("method") != "Network.responseReceived":
+                continue
+            params = message.get("params") or {}
+            response = params.get("response") or {}
+            request_id = params.get("requestId")
+            resource_type = str(params.get("type") or "")
+            mime = str(response.get("mimeType") or "")
+            url = str(response.get("url") or "")
+            if resource_type not in {"XHR", "Fetch"} and "json" not in mime.casefold():
+                continue
+            safe = _safe_network_endpoint(url)
+            signature = (safe["host"], safe["path"], tuple(safe["query_keys"]))
+            if signature in seen:
+                continue
+            seen.add(signature)
+
+            body = ""
+            try:
+                payload = driver.execute_cdp_cmd("Network.getResponseBody", {"requestId": request_id})
+                body = str((payload or {}).get("body") or "")
+            except Exception:
+                body = ""
+
+            norm_body = _norm(body[:250000])
+            body_flags = {
+                "contains_event_id": bool(event_id and str(event_id) in body),
+                "contains_markets_token": "market" in norm_body,
+                "contains_odds_token": "odds" in norm_body or "kurs" in norm_body,
+                "contains_participant_token": "participant" in norm_body or "bublik" in norm_body,
+                "contains_36_5": "36.5" in body,
+            }
+            if not any(body_flags.values()) and len(rows) >= 8:
+                continue
+            rows.append({
+                **safe,
+                "resource_type": resource_type,
+                "mime_type": mime,
+                "status": int(response.get("status") or 0),
+                "body_length": len(body),
+                **body_flags,
+            })
+            if len(rows) >= max_rows:
+                break
+        except Exception:
+            continue
+    return rows
+
+
 def browser_offer(url: str, timeout: int = 25) -> dict:
     """Fetch and normalize one explicitly selected public Superbet tennis match."""
     if not _allowed_url(url) or not re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(url).path):
@@ -491,6 +567,7 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
     options.add_argument("--window-size=1440,1200")
     options.add_argument("--lang=pl-PL")
     options.add_argument(f"--user-agent={USER_AGENT}")
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
     driver = webdriver.Chrome(options=options)
     try:
@@ -535,6 +612,7 @@ def browser_probe(timeout: int = 25) -> dict:
     options.add_argument("--window-size=1440,1200")
     options.add_argument("--lang=pl-PL")
     options.add_argument(f"--user-agent={USER_AGENT}")
+    options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
 
     driver = webdriver.Chrome(options=options)
     try:
@@ -679,6 +757,11 @@ def browser_probe(timeout: int = 25) -> dict:
             "candidate_line_samples": candidate_lines,
             "market_text_windows": market_windows,
             "raw_market_snippets": raw_snippets,
+            "network_diagnostics": (
+                network_offer_diagnostics(driver, event_id=normalized.get("event_id"))
+                if int(normalized.get("canonical_selections_count") or 0) == 0
+                else []
+            ),
         }
         result["status"] = (
             "OK"
