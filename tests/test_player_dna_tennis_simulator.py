@@ -9,6 +9,7 @@ from backend.player_dna_tennis_simulator import (
     neutral_tiebreak_win_probability,
     score_distribution_after_games,
     set_outcomes,
+    set_shape_family,
     simulate_current_report,
     simulate_match,
     simulate_match_with_hold_calibration,
@@ -47,6 +48,17 @@ def test_checkpoint_score_distributions_cover_all_mass():
             assert all(sum(int(x) for x in score.split(":")) == games for score in dist)
 
 
+
+def test_set_shape_family_taxonomy_is_coarse_and_complete_for_legal_set_scores():
+    assert set_shape_family("6:0") == "DOMINANT"
+    assert set_shape_family("2:6") == "DOMINANT"
+    assert set_shape_family("6:3") == "NORMAL"
+    assert set_shape_family("4:6") == "CLOSE"
+    assert set_shape_family("7:5") == "EXTENDED_7_5"
+    assert set_shape_family("6:7") == "TIEBREAK"
+    assert set_shape_family("5:5") is None
+
+
 def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certainty():
     trajectory = trajectory_summary(0.63, 0.59, best_of=3)
     assert trajectory["status"] == "SHADOW_TRAJECTORY_FOUNDATION"
@@ -69,11 +81,23 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
         first_set = conditioned["first_set_top_game_paths"]
         match_paths = conditioned["match_top_set_paths"]
         storylines = conditioned["match_storylines"]
+        first_set_shapes = conditioned["first_set_shape_families"]
+        set_shape_trajectories = conditioned["set_shape_trajectories"]
         set_winner_trajectories = conditioned["set_winner_trajectories"]
         full_match_paths = conditioned["full_match_top_game_paths"]
         assert 1 <= len(first_set) <= 8
         assert 1 <= len(match_paths) <= 12
         assert len(storylines) == 4
+        assert len(first_set_shapes) == 5
+        assert set(row["shape"] for row in first_set_shapes) == {"DOMINANT", "NORMAL", "CLOSE", "EXTENDED_7_5", "TIEBREAK"}
+        assert math.isclose(sum(row["probability"] for row in first_set_shapes), 1.0, abs_tol=1e-9)
+        assert set_shape_trajectories
+        assert math.isclose(sum(row["probability"] for row in set_shape_trajectories), 1.0, abs_tol=1e-9)
+        by_shape_score = {}
+        for row in set_shape_trajectories:
+            by_shape_score.setdefault(row["match_score"], []).append(row)
+        for rows in by_shape_score.values():
+            assert math.isclose(sum(row["conditional_probability_within_match_score"] for row in rows), 1.0, abs_tol=1e-9)
         assert len(set_winner_trajectories) == 6
         assert 1 <= len(full_match_paths) <= 4
         assert first_set == sorted(first_set, key=lambda row: row["probability"], reverse=True)
@@ -137,6 +161,9 @@ def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script()
     assert contract["full_match_game_paths_are_exact_for_known_start_server"] is True
     assert contract["primary_storyline_probability_scope"] == "MATCH_SCORE_FAMILY"
     assert contract["storyline_game_progressions_are_representative"] is True
+    assert contract["set_shape_taxonomy"] == ["DOMINANT", "NORMAL", "CLOSE", "EXTENDED_7_5", "TIEBREAK"]
+    assert contract["set_shape_probability_scope"] == "MATCH_SCORE_SET_SHAPE_SEQUENCE"
+    assert contract["set_shape_conditional_scope"] == "WITHIN_MATCH_SCORE_FAMILY"
     assert contract["set_winner_trajectory_probability_scope"] == "SET_WINNER_SEQUENCE"
     assert contract["set_winner_trajectory_conditional_scope"] == "WITHIN_MATCH_SCORE_FAMILY"
     assert contract["set_winner_trajectory_game_progressions_are_representative"] is True
