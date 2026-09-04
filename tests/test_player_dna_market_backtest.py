@@ -95,6 +95,7 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     actual_second = ["1:0", "2:0", "2:1", "3:1", "4:1", "4:2", "5:2", "5:3", "6:3"]
     labels = {
         "1": {
+            "match_exact_score": "2:0",
             "trajectory_actual": {
                 "first_server": 1,
                 "checkpoint_scores": {"2": "1:1", "4": "2:2", "6": "3:3"},
@@ -123,6 +124,11 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
                             "match_top_set_paths": [
                                 {"set_scores": ["6:4", "6:3"]},
                                 {"set_scores": ["6:4", "4:6", "6:3"]},
+                            ],
+                            "match_storylines": [
+                                {"match_score": "2:1"},
+                                {"match_score": "2:0"},
+                                {"match_score": "0:2"},
                             ],
                             "full_match_top_game_paths": [
                                 {
@@ -156,6 +162,11 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert first["hit_at_1"] == 0.0
     assert first["hit_at_3"] == 1.0
     assert first["hit_at_8"] == 1.0
+    storyline = metrics["primary_storyline_match_score_conditioned_on_observed_first_server"]
+    assert storyline["n"] == 1
+    assert storyline["hit_at_1"] == 0.0
+    assert storyline["hit_at_2"] == 1.0
+    assert storyline["hit_at_3"] == 1.0
     match = metrics["match_set_sequence_conditioned_on_observed_first_server"]
     assert match["hit_at_1"] == 1.0
     assert match["hit_at_12"] == 1.0

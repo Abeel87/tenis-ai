@@ -68,14 +68,29 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
         conditioned = trajectory["serve_order_conditioned"][key]
         first_set = conditioned["first_set_top_game_paths"]
         match_paths = conditioned["match_top_set_paths"]
+        storylines = conditioned["match_storylines"]
         full_match_paths = conditioned["full_match_top_game_paths"]
         assert 1 <= len(first_set) <= 8
         assert 1 <= len(match_paths) <= 12
+        assert len(storylines) == 4
         assert 1 <= len(full_match_paths) <= 4
         assert first_set == sorted(first_set, key=lambda row: row["probability"], reverse=True)
         assert match_paths == sorted(match_paths, key=lambda row: row["probability"], reverse=True)
+        assert storylines == sorted(storylines, key=lambda row: row["probability"], reverse=True)
+        assert math.isclose(sum(row["probability"] for row in storylines), 1.0, abs_tol=1e-9)
         assert full_match_paths == sorted(full_match_paths, key=lambda row: row["probability"], reverse=True)
         assert all(row["progression"][-1] == row["final_score"] for row in first_set)
+        assert all(row["probability_scope"] == "MATCH_SCORE_FAMILY" for row in storylines)
+        assert all(row["representative_only"] is True for row in storylines)
+        for storyline in storylines:
+            assert storyline["sets"]
+            assert storyline["set_scores"] == [row["score"] for row in storyline["sets"]]
+            assert storyline["total_games"] == sum(row["games"] for row in storyline["sets"])
+            assert storyline["representative_set_sequence_probability"] <= storyline["probability"] + 1e-12
+            assert storyline["representative_exact_game_path_probability"] <= storyline["representative_set_sequence_probability"] + 1e-12
+            for set_row in storyline["sets"]:
+                assert set_row["representative_only"] is True
+                assert set_row["progression"][-1] == set_row["score"]
         assert all(row["sets_played"] in (2, 3) for row in match_paths)
         assert all(row["match_score"] in {"2:0", "2:1", "0:2", "1:2"} for row in match_paths)
         for path in full_match_paths:
@@ -97,8 +112,15 @@ def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script()
     contract = trajectory["contract"]
     assert contract["full_match_game_progression_is_ranked_not_guaranteed"] is True
     assert contract["full_match_game_paths_are_exact_for_known_start_server"] is True
+    assert contract["primary_storyline_probability_scope"] == "MATCH_SCORE_FAMILY"
+    assert contract["storyline_game_progressions_are_representative"] is True
+    assert contract["exact_full_match_game_paths_are_diagnostic_only"] is True
     for key in ("p1_serves_first", "p2_serves_first"):
-        paths = trajectory["serve_order_conditioned"][key]["full_match_top_game_paths"]
+        branch = trajectory["serve_order_conditioned"][key]
+        storylines = branch["match_storylines"]
+        assert len(storylines) == 6
+        assert math.isclose(sum(row["probability"] for row in storylines), 1.0, abs_tol=1e-9)
+        paths = branch["full_match_top_game_paths"]
         assert paths
         assert all(row["sets_played"] in (3, 4, 5) for row in paths)
         assert all(row["match_score"] in {"3:0", "3:1", "3:2", "0:3", "1:3", "2:3"} for row in paths)
