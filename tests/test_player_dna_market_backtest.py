@@ -188,3 +188,58 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert 0.0 < full["mean_top1_prefix_fraction"] < 1.0
     assert metrics["coverage"]["set_winner_sequences"] == 1
     assert metrics["coverage"]["full_match_complete_paths"] == 1
+
+def test_deciding_set_order_is_ranked_inside_actual_match_score_family():
+    labels = {
+        "decider": {
+            "match_exact_score": "2:1",
+            "trajectory_actual": {
+                "first_server": 1,
+                "set_score_sequence": ["6:4", "4:6", "6:3"],
+                "full_match_progression_complete": False,
+            },
+        }
+    }
+    predictions = {
+        "decider": {
+            "simulation": {
+                "trajectory": {
+                    "serve_order_conditioned": {
+                        "p1_serves_first": {
+                            "set_winner_trajectories": [
+                                {
+                                    "match_score": "2:1",
+                                    "set_winners": [2, 1, 1],
+                                    "probability": 0.18,
+                                    "conditional_probability_within_match_score": 0.60,
+                                },
+                                {
+                                    "match_score": "2:1",
+                                    "set_winners": [1, 2, 1],
+                                    "probability": 0.12,
+                                    "conditional_probability_within_match_score": 0.40,
+                                },
+                                {
+                                    "match_score": "2:0",
+                                    "set_winners": [1, 1],
+                                    "probability": 0.35,
+                                    "conditional_probability_within_match_score": 1.0,
+                                },
+                            ],
+                            "match_top_set_paths": [
+                                {"set_scores": ["6:4", "4:6", "6:3"]},
+                            ],
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    metrics = _trajectory_validation(predictions, labels)
+    conditional = metrics["deciding_set_order_given_actual_match_score"]
+    assert conditional["n"] == 1
+    assert conditional["hit_at_1"] == 0.0
+    assert conditional["hit_at_2"] == 1.0
+    assert metrics["coverage"]["deciding_set_order_sequences"] == 1
+
