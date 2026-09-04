@@ -199,6 +199,13 @@ jobs:
           assert availability.get('contains_prices') is False
           assert availability.get('prices_used') is False
           assert availability.get('refresh_hours') == 1
+          direct_fallback = availability.get('direct_fallback') or {}
+          assert direct_fallback.get('prices_used') is False
+          assert direct_fallback.get('prices_in_canonical_availability') is False
+          assert direct_fallback.get('model_math_unchanged') is True
+          if int(direct_fallback.get('fallback_fixtures_added') or 0) > 0:
+              assert direct_fallback.get('canonical_context_activation') is True
+              assert direct_fallback.get('downstream_playable_eligibility') is True
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
@@ -283,6 +290,18 @@ jobs:
           }, sort_keys=True))
 
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          print('SUPERBET_DIRECT_FALLBACK_DIAGNOSTIC ' + json.dumps({
+              'sidecar_status': direct_fallback.get('sidecar_status'),
+              'sidecar_generated_at': direct_fallback.get('sidecar_generated_at'),
+              'sidecar_age_hours': direct_fallback.get('sidecar_age_hours'),
+              'sidecar_matches_seen': direct_fallback.get('sidecar_matches_seen'),
+              'fallback_fixtures_added': direct_fallback.get('fallback_fixtures_added'),
+              'existing_provider_preferred': direct_fallback.get('existing_provider_preferred'),
+              'unsafe_sidecar_matches_rejected': direct_fallback.get('unsafe_sidecar_matches_rejected'),
+              'canonical_context_activation': direct_fallback.get('canonical_context_activation'),
+              'downstream_playable_eligibility': direct_fallback.get('downstream_playable_eligibility'),
+              'prices_used': direct_fallback.get('prices_used'),
+          }, sort_keys=True))
           print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
               'fixtures_seen': availability.get('fixtures_seen'),
               'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
