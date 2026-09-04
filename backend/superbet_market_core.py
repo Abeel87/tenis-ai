@@ -327,6 +327,69 @@ def _best_fixture_for_match(match: dict, fixtures: list[dict]):
     return best if delta <= MAX_MATCH_TIME_DELTA_HOURS else None
 
 
+def _identity_debug_snapshot(row: dict) -> dict:
+    """Expose only non-odds identity metadata for diagnosing provider response shape."""
+    if not isinstance(row, dict):
+        return {}
+
+    sensitive_tokens = ("odds", "price", "market", "outcome")
+    identity_tokens = (
+        "fixture", "participant", "player", "competitor", "home", "away",
+        "start", "time", "tournament", "event", "match",
+    )
+
+    def keep_scalar(key: str, value):
+        name = str(key).casefold()
+        if any(token in name for token in sensitive_tokens):
+            return False
+        return any(token in name for token in identity_tokens) and isinstance(value, (str, int, float, bool))
+
+    out = {"top_level_keys": sorted(str(k) for k in row.keys())}
+    for key, value in row.items():
+        if keep_scalar(key, value):
+            out[str(key)] = value
+        elif isinstance(value, dict) and not any(token in str(key).casefold() for token in sensitive_tokens):
+            nested = {}
+            for child_key, child_value in value.items():
+                if keep_scalar(child_key, child_value):
+                    nested[str(child_key)] = child_value
+            if nested:
+                out[str(key)] = nested
+        elif isinstance(value, list) and len(value) <= 4 and not any(token in str(key).casefold() for token in sensitive_tokens):
+            nested_rows = []
+            for child in value:
+                if not isinstance(child, dict):
+                    continue
+                slim = {str(k): v for k, v in child.items() if keep_scalar(k, v)}
+                if slim:
+                    nested_rows.append(slim)
+            if nested_rows:
+                out[str(key)] = nested_rows
+    return out
+
+
+def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool, str | None]:
+    """Join neutral discovery to the operator response without assuming shared IDs."""
+    discovered_id = str(discovered.get("fixtureId") or "")
+    operator_id = str(operator_row.get("fixtureId") or "")
+    if discovered_id and operator_id and discovered_id == operator_id:
+        return True, "fixture_id"
+
+    discovered_pair = _pair_key(discovered.get("participant1Name"), discovered.get("participant2Name"))
+    operator_pair = _pair_key(operator_row.get("participant1Name"), operator_row.get("participant2Name"))
+    if not all(discovered_pair) or discovered_pair != operator_pair:
+        return False, None
+
+    discovered_start = _parse_dt(discovered.get("startTime"))
+    operator_start = _parse_dt(operator_row.get("startTime"))
+    if discovered_start is None or operator_start is None:
+        return False, None
+    delta = abs((operator_start - discovered_start).total_seconds()) / 3600.0
+    if delta > MAX_MATCH_TIME_DELTA_HOURS:
+        return False, None
+    return True, "pair_time"
+
+
 def _sanitize_fixture(row: dict, meta: dict):
     bookmaker_odds = row.get("bookmakerOdds") or {}
     book = bookmaker_odds.get(BOOKMAKER)
@@ -454,9 +517,20 @@ def refresh_availability(results: list[dict], now=None):
     try:
         date_from = now.date().isoformat()
         date_to = (now + timedelta(days=FIXTURE_HORIZON_DAYS)).date().isoformat()
-        fixture_rows = _request("fixtures", api_key, quota, sportId=SPORT_ID_TENNIS, **{"from": date_from, "to": date_to}, statusId=0, hasOdds="true", bookmakers=BOOKMAKER, language="en")
+        # Fixture discovery is bookmaker-neutral. The Superbet filter belongs only
+        # to the later operator-offer query, after app matches are matched to fixtures.
+        fixture_rows = _request(
+            "fixtures",
+            api_key,
+            quota,
+            sportId=SPORT_ID_TENNIS,
+            **{"from": date_from, "to": date_to},
+            statusId=0,
+            language="en",
+        )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
         wanted_fixture_ids = set()
+        discovered_matches = []
         tournament_ids = set()
         for match in results:
             if not isinstance(match, dict):
@@ -464,6 +538,7 @@ def refresh_availability(results: list[dict], now=None):
             fixture = _best_fixture_for_match(match, fixture_rows)
             if not fixture:
                 continue
+            discovered_matches.append(fixture)
             if fixture.get("fixtureId"):
                 wanted_fixture_ids.add(str(fixture["fixtureId"]))
             if fixture.get("tournamentId") is not None:
@@ -495,9 +570,65 @@ def refresh_availability(results: list[dict], now=None):
             language="en", verbosity=3, oddsFormat="decimal",
         ))
         sanitized = []
+        operator_fixture_candidates = 0
+        fixture_id_matches = 0
+        pair_time_matches = 0
+        neutral_fixture_ids = {
+            str(row.get("fixtureId")) for row in fixture_rows
+            if isinstance(row, dict) and row.get("fixtureId")
+        }
+        operator_fixture_ids_in_neutral_catalogue = 0
+        operator_rows_in_horizon = 0
+        operator_rows_in_horizon_with_requested_bookmaker = 0
+        operator_rows_with_requested_bookmaker = 0
+        operator_bookmakers_seen = set()
+        operator_start_times = []
         for row in odds_rows:
-            if wanted_fixture_ids and str(row.get("fixtureId")) not in wanted_fixture_ids:
+            if not isinstance(row, dict):
                 continue
+            operator_id = str(row.get("fixtureId") or "")
+            if operator_id and operator_id in neutral_fixture_ids:
+                operator_fixture_ids_in_neutral_catalogue += 1
+
+            bookmaker_odds = row.get("bookmakerOdds")
+            bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
+            operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
+            has_requested_bookmaker = (
+                BOOKMAKER in bookmaker_keys
+                or any("superbet" in str(key).casefold() for key in bookmaker_keys)
+            )
+            if has_requested_bookmaker:
+                operator_rows_with_requested_bookmaker += 1
+
+            operator_start = _parse_dt(row.get("startTime"))
+            in_current_horizon = False
+            if operator_start is not None:
+                operator_start_times.append(operator_start)
+                in_current_horizon = date_from <= operator_start.date().isoformat() <= date_to
+                if in_current_horizon:
+                    operator_rows_in_horizon += 1
+                    if has_requested_bookmaker:
+                        operator_rows_in_horizon_with_requested_bookmaker += 1
+
+            # odds-by-tournaments can return historical fixtures from the same
+            # tournament. They are not current operator offer and must never
+            # reach identity matching, even if an ID/name happens to collide.
+            if not in_current_horizon or not has_requested_bookmaker:
+                continue
+
+            match_kind = None
+            for discovered in discovered_matches:
+                same, kind = _same_discovered_fixture(discovered, row)
+                if same:
+                    match_kind = kind
+                    break
+            if match_kind is None:
+                continue
+            operator_fixture_candidates += 1
+            if match_kind == "fixture_id":
+                fixture_id_matches += 1
+            elif match_kind == "pair_time":
+                pair_time_matches += 1
             item = _sanitize_fixture(row, market_meta)
             if item:
                 sanitized.append(item)
@@ -505,13 +636,26 @@ def refresh_availability(results: list[dict], now=None):
             "version": VERSION, "generated_at": now.isoformat(), "refresh_status": "OK", "bookmaker": BOOKMAKER,
             "sport_id": SPORT_ID_TENNIS, "contains_prices": False, "prices_used": False, "refresh_hours": REFRESH_HOURS,
             "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": len(wanted_fixture_ids),
-            "tournaments_queried": len(tournament_ids), "fixtures": sanitized,
+            "tournaments_queried": len(tournament_ids), "operator_odds_rows_seen": len(odds_rows),
+            "operator_fixture_candidates": operator_fixture_candidates,
+            "operator_fixture_id_matches": fixture_id_matches,
+            "operator_pair_time_matches": pair_time_matches,
+            "operator_fixture_ids_in_neutral_catalogue": operator_fixture_ids_in_neutral_catalogue,
+            "operator_rows_with_requested_bookmaker": operator_rows_with_requested_bookmaker,
+            "operator_rows_in_horizon": operator_rows_in_horizon,
+            "operator_rows_in_horizon_with_requested_bookmaker": operator_rows_in_horizon_with_requested_bookmaker,
+            "operator_bookmakers_seen": sorted(operator_bookmakers_seen),
+            "operator_start_min": min(operator_start_times).isoformat() if operator_start_times else None,
+            "operator_start_max": max(operator_start_times).isoformat() if operator_start_times else None,
+            "fixtures": sanitized,
             "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             "contract": {
                 "bookmaker_prices_discarded": True,
                 "market_availability_only": True,
                 "bookmaker_data_never_trains_prod_models": True,
                 "monthly_request_safety_cap": MONTHLY_REQUEST_CAP,
+                "current_operator_horizon_required": True,
+                "requested_bookmaker_required_before_join": True,
             },
         }
         _write(AVAILABILITY, report)

@@ -48,6 +48,7 @@ on:
       - 'scripts/verify_superbet_market_semantics.py'
       - 'tests/test_canonical_superbet_runtime.py'
       - 'tests/test_match_browser_filter_coherence.py'
+      - 'tests/test_superbet_fixture_discovery_separation.py'
       - 'tests/test_superbet_fixture_matching_v927.py'
       - 'tests/test_superbet_market_v913.py'
       - 'tests/test_superbet_market_v923.py'
@@ -124,7 +125,7 @@ jobs:
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
-        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -201,6 +202,11 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
+          discovery = availability.get('fixture_discovery_contract') or {}
+          assert discovery.get('bookmaker_neutral') is True
+          assert discovery.get('has_odds_filter') is False
+          assert discovery.get('bookmaker_filter') is False
+          assert discovery.get('operator_offer_checked_later') is True
           matching = availability.get('fixture_matching_v927') or {}
           assert matching.get('version') == 'v9.2.7'
           assert int(matching.get('additional_external_requests', -1)) == 0
@@ -277,6 +283,23 @@ jobs:
           }, sort_keys=True))
 
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
+              'fixtures_seen': availability.get('fixtures_seen'),
+              'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
+              'tournaments_queried': availability.get('tournaments_queried'),
+              'operator_odds_rows_seen': availability.get('operator_odds_rows_seen'),
+              'operator_fixture_candidates': availability.get('operator_fixture_candidates'),
+              'operator_fixture_id_matches': availability.get('operator_fixture_id_matches'),
+              'operator_pair_time_matches': availability.get('operator_pair_time_matches'),
+              'operator_fixture_ids_in_neutral_catalogue': availability.get('operator_fixture_ids_in_neutral_catalogue'),
+              'operator_rows_with_requested_bookmaker': availability.get('operator_rows_with_requested_bookmaker'),
+              'operator_rows_in_horizon': availability.get('operator_rows_in_horizon'),
+              'operator_rows_in_horizon_with_requested_bookmaker': availability.get('operator_rows_in_horizon_with_requested_bookmaker'),
+              'operator_bookmakers_seen': availability.get('operator_bookmakers_seen'),
+              'operator_start_min': availability.get('operator_start_min'),
+              'operator_start_max': availability.get('operator_start_max'),
+              'sanitized_fixtures': len(availability.get('fixtures') or []),
+          }, sort_keys=True))
           print(
               f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
               f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '

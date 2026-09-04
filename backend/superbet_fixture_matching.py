@@ -192,6 +192,17 @@ def best_cached_fixture(match: dict, index: dict):
 def availability_due(original_due, previous: dict, now) -> bool:
     matching=previous.get("fixture_matching_v927") if isinstance(previous,dict) else None
     if not isinstance(matching,dict) or matching.get("version")!=VERSION:return True
+    # A schema/diagnostic contract change must refresh once even when the hourly
+    # catalogue cache is still fresh; otherwise a PR can silently reuse an old
+    # operator response and never exercise the new canonical join diagnostics.
+    required_operator_fields = (
+        "operator_rows_in_horizon",
+        "operator_rows_in_horizon_with_requested_bookmaker",
+        "operator_rows_with_requested_bookmaker",
+        "operator_fixture_ids_in_neutral_catalogue",
+    )
+    if any(field not in previous for field in required_operator_fields):
+        return True
     return bool(original_due(previous,now))
 
 
