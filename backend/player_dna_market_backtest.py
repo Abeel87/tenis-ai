@@ -33,7 +33,7 @@ try:
         build_feature_rows,
         split_chronological_by_match,
     )
-    from backend.player_dna_tennis_simulator import simulate_match
+    from backend.player_dna_tennis_simulator import set_shape_family, simulate_match
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
         PROFILE_NUMERIC,
@@ -43,7 +43,7 @@ except ModuleNotFoundError:  # direct execution
         build_feature_rows,
         split_chronological_by_match,
     )
-    from player_dna_tennis_simulator import simulate_match
+    from player_dna_tennis_simulator import set_shape_family, simulate_match
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -542,6 +542,8 @@ def _trajectory_validation(
 ) -> dict[str, Any]:
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
+    first_set_shape_records = []
+    set_shape_records = []
     set_winner_records = []
     deciding_set_order_records = []
     match_set_records = []
@@ -607,6 +609,48 @@ def _trajectory_validation(
 
         set_sequence = tuple(str(x) for x in (actual.get("set_score_sequence") or []))
         if set_sequence:
+            first_shape = set_shape_family(set_sequence[0])
+            ranked_first_shapes = branch.get("first_set_shape_families") or []
+            if first_shape and ranked_first_shapes:
+                ranked_values = [str(row.get("shape") or "") for row in ranked_first_shapes]
+                hit_rank = next(
+                    (idx for idx, candidate in enumerate(ranked_values, start=1) if candidate == first_shape),
+                    None,
+                )
+                first_set_shape_records.append({
+                    "rank": hit_rank,
+                    "hit_at_1": bool(hit_rank is not None and hit_rank <= 1),
+                    "hit_at_3": bool(hit_rank is not None and hit_rank <= 3),
+                    "hit_at_5": bool(hit_rank is not None and hit_rank <= 5),
+                })
+
+            actual_shapes = tuple(
+                shape for shape in (set_shape_family(score) for score in set_sequence)
+                if shape is not None
+            )
+            ranked_shapes = branch.get("set_shape_trajectories") or []
+            if len(actual_shapes) == len(set_sequence) and ranked_shapes and actual_match_score:
+                within_shape_family = [
+                    row for row in ranked_shapes
+                    if str(row.get("match_score") or "") == actual_match_score
+                ]
+                within_shape_family.sort(
+                    key=lambda row: float(
+                        row.get("conditional_probability_within_match_score")
+                        or row.get("probability")
+                        or 0.0
+                    ),
+                    reverse=True,
+                )
+                set_shape_records.append(
+                    _rank_hit(
+                        within_shape_family,
+                        actual_shapes,
+                        "set_shapes",
+                        (1, 3, 8, 20),
+                    )
+                )
+
             actual_set_winners = []
             for score in set_sequence:
                 try:
@@ -699,7 +743,9 @@ def _trajectory_validation(
             for games in (2, 4, 6)
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
+        "first_set_shape_conditioned_on_observed_first_server": summarize_rank(first_set_shape_records, (1, 3, 5)),
         "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
+        "set_shape_sequence_given_actual_match_score": summarize_rank(set_shape_records, (1, 3, 8, 20)),
         "set_winner_sequence_conditioned_on_observed_first_server": summarize_rank(set_winner_records, (1, 3, 8)),
         "deciding_set_order_given_actual_match_score": deciding_set_order_summary,
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
@@ -707,6 +753,8 @@ def _trajectory_validation(
         "coverage": {
             "settled_predictions": len(labels),
             "first_set_complete_paths": len(first_set_records),
+            "first_set_shapes": len(first_set_shape_records),
+            "set_shape_sequences": len(set_shape_records),
             "set_winner_sequences": len(set_winner_records),
             "deciding_set_order_sequences": len(deciding_set_order_records),
             "match_set_sequences": len(match_set_records),
