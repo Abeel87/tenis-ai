@@ -208,15 +208,26 @@ jobs:
               raise SystemExit('Player DNA profile aggregation must remain disabled')
           if readiness.get('readiness_threshold_activation_enabled') is not False:
               raise SystemExit('Player DNA readiness threshold must remain unactivated')
-          if int(readiness.get('context_ready_matches') or 0) != matches:
+          source_matches = int(readiness.get('source_matches_seen') or 0)
+          context_ready_matches = int(readiness.get('context_ready_matches') or 0)
+          missing_strict = int(readiness.get('matches_without_context_ready_points') or 0)
+          if source_matches != matches:
               raise SystemExit(
-                  f"Player DNA readiness lost context-ready matches: "
-                  f"{readiness.get('context_ready_matches')}/{matches}"
+                  f"Player DNA readiness lost source matches before strict filtering: "
+                  f"{source_matches}/{matches}"
               )
+          if context_ready_matches <= 0 or context_ready_matches > source_matches:
+              raise SystemExit(
+                  f"Player DNA readiness invalid strict-history coverage: "
+                  f"{context_ready_matches}/{source_matches}"
+              )
+          if missing_strict != source_matches - context_ready_matches:
+              raise SystemExit('Player DNA readiness strict-history accounting is inconsistent')
           if int(readiness.get('player_match_targets') or 0) <= 0:
               raise SystemExit('Player DNA readiness audit produced no player-match targets')
           print(
-              f"Player DNA profile readiness: players={readiness.get('players')} "
+              f"Player DNA profile readiness: source_matches={source_matches} strict_history_matches={context_ready_matches} "
+              f"without_strict_points={missing_strict} players={readiness.get('players')} "
               f"targets={readiness.get('player_match_targets')} "
               f"any_surface={readiness.get('readiness_any_surface')} "
               f"same_surface={readiness.get('readiness_same_surface')} "
