@@ -19,12 +19,6 @@ from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, brier_score_loss, log_loss
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -226,19 +220,104 @@ def _frame(rows: list[dict[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _pipeline(numeric: list[str]) -> Pipeline:
-    numeric_pipe = Pipeline([
-        ("impute", SimpleImputer(strategy="median")),
-        ("scale", StandardScaler()),
-    ])
-    pre = ColumnTransformer([
-        ("numeric", numeric_pipe, numeric),
-        ("categorical", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
-    ])
-    return Pipeline([
-        ("pre", pre),
-        ("model", LogisticRegression(max_iter=1000, solver="lbfgs")),
-    ])
+def _fit_schema(train: pd.DataFrame, numeric: list[str]) -> dict[str, Any]:
+    schema: dict[str, Any] = {
+        "numeric": list(numeric),
+        "medians": {},
+        "means": {},
+        "stds": {},
+        "categorical_levels": {},
+    }
+    for name in numeric:
+        series = pd.to_numeric(train[name], errors="coerce")
+        median = float(series.median()) if bool(series.notna().any()) else 0.0
+        values = series.fillna(median).to_numpy(dtype=float)
+        mean = float(values.mean()) if len(values) else 0.0
+        std = float(values.std()) if len(values) else 1.0
+        if not math.isfinite(std) or std < 1e-12:
+            std = 1.0
+        schema["medians"][name] = median
+        schema["means"][name] = mean
+        schema["stds"][name] = std
+
+    for name in CATEGORICAL:
+        values = train[name].fillna("__MISSING__").astype(str)
+        schema["categorical_levels"][name] = sorted(set(values.tolist()))
+    return schema
+
+
+def _design(frame: pd.DataFrame, schema: dict[str, Any]) -> tuple[np.ndarray, list[str]]:
+    columns: list[np.ndarray] = [np.ones(len(frame), dtype=float)]
+    names = ["intercept"]
+
+    for name in schema["numeric"]:
+        series = pd.to_numeric(frame[name], errors="coerce")
+        values = series.fillna(float(schema["medians"][name])).to_numpy(dtype=float)
+        values = (values - float(schema["means"][name])) / float(schema["stds"][name])
+        columns.append(values)
+        names.append(name)
+
+    for name in CATEGORICAL:
+        values = frame[name].fillna("__MISSING__").astype(str).to_numpy()
+        for level in schema["categorical_levels"][name]:
+            columns.append((values == level).astype(float))
+            names.append(f"{name}={level}")
+
+    return np.column_stack(columns), names
+
+
+def _sigmoid(values: np.ndarray) -> np.ndarray:
+    z = np.clip(np.asarray(values, dtype=float), -30.0, 30.0)
+    return 1.0 / (1.0 + np.exp(-z))
+
+
+def _fit_logistic_newton(
+    train: pd.DataFrame,
+    numeric: list[str],
+    *,
+    l2: float = 0.01,
+    max_iter: int = 40,
+    tolerance: float = 1e-8,
+) -> dict[str, Any]:
+    schema = _fit_schema(train, numeric)
+    x, feature_names = _design(train, schema)
+    y = train["server_won"].astype(int).to_numpy(dtype=float)
+    beta = np.zeros(x.shape[1], dtype=float)
+    converged = False
+
+    for iteration in range(1, max_iter + 1):
+        p = _sigmoid(x @ beta)
+        gradient = (x.T @ (p - y)) / len(y)
+        gradient[1:] += l2 * beta[1:]
+
+        weights = p * (1.0 - p)
+        hessian = ((x.T * weights) @ x) / len(y)
+        regularizer = np.diag(np.concatenate(([1e-9], np.full(x.shape[1] - 1, l2))))
+        hessian = hessian + regularizer
+
+        try:
+            step = np.linalg.solve(hessian, gradient)
+        except np.linalg.LinAlgError:
+            step = np.linalg.pinv(hessian) @ gradient
+
+        beta -= step
+        if float(np.max(np.abs(step))) < tolerance:
+            converged = True
+            break
+
+    return {
+        "schema": schema,
+        "beta": beta,
+        "feature_names": feature_names,
+        "iterations": iteration,
+        "converged": converged,
+        "l2": l2,
+    }
+
+
+def _predict_logistic(model: dict[str, Any], frame: pd.DataFrame) -> np.ndarray:
+    x, _ = _design(frame, model["schema"])
+    return _sigmoid(x @ model["beta"])
 
 
 def _match_equal_brier(match_ids: pd.Series, y: np.ndarray, p: np.ndarray) -> float:
@@ -250,42 +329,47 @@ def _match_equal_brier(match_ids: pd.Series, y: np.ndarray, p: np.ndarray) -> fl
 
 
 def _metrics(frame: pd.DataFrame, probs: np.ndarray) -> dict[str, Any]:
-    y = frame["server_won"].astype(int).to_numpy()
+    y = frame["server_won"].astype(int).to_numpy(dtype=float)
     p = np.clip(np.asarray(probs, dtype=float), 1e-6, 1 - 1e-6)
+    brier = float(np.mean(np.square(y - p))) if len(y) else None
+    loss = float(np.mean(-(y * np.log(p) + (1.0 - y) * np.log(1.0 - p)))) if len(y) else None
+    accuracy = float(np.mean((p >= 0.5) == (y >= 0.5))) if len(y) else None
     return {
         "points": int(len(frame)),
         "matches": int(frame["match_id"].astype(str).nunique()),
         "server_win_rate": round(float(y.mean()), 6) if len(y) else None,
-        "brier": round(float(brier_score_loss(y, p)), 6) if len(y) else None,
+        "brier": round(brier, 6) if brier is not None else None,
         "match_equal_brier": round(_match_equal_brier(frame["match_id"], y, p), 6) if len(y) else None,
-        "log_loss": round(float(log_loss(y, p, labels=[0, 1])), 6) if len(y) else None,
-        "accuracy": round(float(accuracy_score(y, p >= 0.5)), 6) if len(y) else None,
+        "log_loss": round(loss, 6) if loss is not None else None,
+        "accuracy": round(accuracy, 6) if accuracy is not None else None,
     }
 
 
-def _model_meta(pipe: Pipeline) -> dict[str, Any]:
-    pre = pipe.named_steps["pre"]
-    model = pipe.named_steps["model"]
-    feature_names = [str(v) for v in pre.get_feature_names_out()]
-    coefs = model.coef_[0].astype(float)
+def _model_meta(model: dict[str, Any]) -> dict[str, Any]:
+    beta = np.asarray(model["beta"], dtype=float)
+    feature_names = [str(v) for v in model["feature_names"]]
     pairs = sorted(
-        zip(feature_names, coefs),
+        zip(feature_names[1:], beta[1:]),
         key=lambda item: abs(item[1]),
         reverse=True,
     )
     payload = {
         "features": feature_names,
-        "coef": [round(float(v), 10) for v in coefs],
-        "intercept": [round(float(v), 10) for v in model.intercept_],
+        "coef": [round(float(v), 10) for v in beta],
+        "l2": float(model["l2"]),
     }
     fingerprint = hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     return {
         "fitted": True,
-        "feature_count": len(feature_names),
-        "coefficient_l2": round(float(math.sqrt(float(np.square(coefs).sum()))), 6),
-        "intercept": round(float(model.intercept_[0]), 6),
+        "engine": "NUMPY_NEWTON_LOGISTIC_L2",
+        "converged": bool(model["converged"]),
+        "iterations": int(model["iterations"]),
+        "l2": float(model["l2"]),
+        "feature_count": len(feature_names) - 1,
+        "coefficient_l2": round(float(math.sqrt(float(np.square(beta[1:]).sum()))), 6),
+        "intercept": round(float(beta[0]), 6),
         "model_fingerprint_sha256": fingerprint,
         "top_coefficients": [
             {"feature": feature, "coefficient": round(float(coef), 6)}
@@ -299,13 +383,11 @@ def _fit_candidate(
     holdout: pd.DataFrame,
     numeric: list[str],
 ) -> tuple[dict[str, Any], np.ndarray]:
-    pipe = _pipeline(numeric)
-    columns = numeric + CATEGORICAL
-    pipe.fit(train[columns], train["server_won"].astype(int))
-    probs = pipe.predict_proba(holdout[columns])[:, 1]
+    model = _fit_logistic_newton(train, numeric)
+    probs = _predict_logistic(model, holdout)
     return {
         "metrics": _metrics(holdout, probs),
-        "model": _model_meta(pipe),
+        "model": _model_meta(model),
     }, probs
 
 
