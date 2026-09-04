@@ -464,8 +464,14 @@ def conditional_categorical_metrics(
     train_labels_by_segment: dict[str, list[str]],
 ) -> dict[str, Any]:
     """Multiclass proper scoring against a same-information train-only baseline."""
+    requested = len(records)
     if not records or not train_labels_by_segment:
-        return {"n": 0, "status": "NO_DATA"}
+        return {
+            "n": 0,
+            "records_requested": requested,
+            "records_skipped_no_segment_baseline": requested,
+            "status": "NO_DATA",
+        }
 
     keys = list(SET_SHAPE_FAMILIES)
     model_brier = []
@@ -478,10 +484,12 @@ def conditional_categorical_metrics(
     segments = set()
     baseline_train_sizes = []
     smoothing_alpha = 0.5
+    skipped_no_segment_baseline = 0
 
     for probs, actual, segment in records:
         train_labels = train_labels_by_segment.get(segment) or []
         if not train_labels:
+            skipped_no_segment_baseline += 1
             continue
         counts = Counter(train_labels)
         total_train = sum(counts.values())
@@ -517,7 +525,12 @@ def conditional_categorical_metrics(
 
     n = len(model_brier)
     if n == 0:
-        return {"n": 0, "status": "NO_SEGMENT_BASELINE"}
+        return {
+            "n": 0,
+            "records_requested": requested,
+            "records_skipped_no_segment_baseline": skipped_no_segment_baseline,
+            "status": "NO_SEGMENT_BASELINE",
+        }
 
     mb = sum(model_brier) / n
     bb = sum(base_brier) / n
@@ -525,6 +538,9 @@ def conditional_categorical_metrics(
     base_acc = base_top1 / n
     return {
         "n": n,
+        "records_requested": requested,
+        "records_skipped_no_segment_baseline": skipped_no_segment_baseline,
+        "coverage_fraction": round(n / requested, 6) if requested else None,
         "classes": keys,
         "segments_evaluated": len(segments),
         "baseline_smoothing_alpha": smoothing_alpha,
