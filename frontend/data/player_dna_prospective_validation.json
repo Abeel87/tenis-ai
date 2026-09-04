@@ -19,9 +19,9 @@
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
     "previous_snapshot_count": 20,
-    "current_snapshot_count_before_retention": 20,
+    "current_snapshot_count_before_retention": 24,
     "preserved_snapshots": 20,
-    "new_snapshots": 0,
+    "new_snapshots": 4,
     "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
@@ -40,20 +40,35 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 20
+    "current_snapshot_count_after_retention": 24
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 14,
-        "due_within_6h": 6,
-        "overdue_6_24h": 0,
+        "upcoming": 18,
+        "due_within_6h": 4,
+        "overdue_6_24h": 2,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
       },
-      "overdue_samples": []
+      "overdue_samples": [
+        {
+          "match_id": "185869",
+          "scheduled_time": "2026-09-04T12:30:00+00:00",
+          "hours_since_scheduled": 6.4,
+          "p1": "Facundo Mena",
+          "p2": "Oriol Roca Batalla"
+        },
+        {
+          "match_id": "186496",
+          "scheduled_time": "2026-09-04T12:30:00+00:00",
+          "hours_since_scheduled": 6.4,
+          "p1": "Duje Ajdukovic",
+          "p2": "Jay Clarke"
+        }
+      ]
     },
     "settlement_latency": {
       "n": 0,
@@ -64,14 +79,20 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 1,
+      "count": 2,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
           "match_id": "186080",
           "frozen_scheduled_time": "2026-09-04T19:30:00+00:00",
-          "current_scheduled_time": "2026-09-04T19:45:00+00:00",
-          "drift_minutes": 15.0
+          "current_scheduled_time": "2026-09-04T20:30:00+00:00",
+          "drift_minutes": 60.0
+        },
+        {
+          "match_id": "186313",
+          "frozen_scheduled_time": "2026-09-04T20:00:00+00:00",
+          "current_scheduled_time": "2026-09-04T20:55:00+00:00",
+          "drift_minutes": 55.0
         }
       ]
     }
@@ -119,7 +140,7 @@
           "support_sufficient": false
         },
         "challenger": {
-          "snapshots": 5,
+          "snapshots": 9,
           "settled": 0,
           "required": 30,
           "remaining": 30,
@@ -128,7 +149,7 @@
       },
       "surface": {
         "clay": {
-          "snapshots": 4,
+          "snapshots": 8,
           "settled": 0,
           "required": 30,
           "remaining": 30,
@@ -173,11 +194,11 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 32,
-    "current_eligible_by_segment": 14,
-    "snapshots": 20,
+    "current_simulated_matches": 37,
+    "current_eligible_by_segment": 18,
+    "snapshots": 24,
     "settled_snapshots": 0,
-    "unsettled_snapshots": 20,
+    "unsettled_snapshots": 24,
     "label_counts": {
       "matches_seen": 3178,
       "settled_labels": 2903,
@@ -505,6 +526,106 @@
         "first_set_over_8.5": 0.7815372935394994,
         "first_set_over_9.5": 0.549962618418155,
         "first_set_over_10.5": 0.2847817940662831
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186711",
+      "scheduled_time": "2026-09-05T08:00:00+00:00",
+      "captured_at": "2026-09-04T18:53:46.256397+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Juan Pablo Varillas",
+      "p2": "Jay Clarke",
+      "source_model_fingerprint_sha256": "f1b9d43f417d125683f2fc860d878235dd59b6366a28c112293f37c62851c5cb",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16837311775773592,
+        "first_set_over_8.5": 0.7665501580704446,
+        "first_set_over_9.5": 0.532435868529262,
+        "first_set_over_10.5": 0.2729177970939187
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1655973324026011,
+        "first_set_over_8.5": 0.7675370407612541,
+        "first_set_over_9.5": 0.5362693571413557,
+        "first_set_over_10.5": 0.2752559802314145
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186715",
+      "scheduled_time": "2026-09-05T08:00:00+00:00",
+      "captured_at": "2026-09-04T18:53:46.256397+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Valerio Aboian",
+      "p2": "Yanaki Milev",
+      "source_model_fingerprint_sha256": "f1b9d43f417d125683f2fc860d878235dd59b6366a28c112293f37c62851c5cb",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1840386173475043,
+        "first_set_over_8.5": 0.7899888188034305,
+        "first_set_over_9.5": 0.5556040993364959,
+        "first_set_over_10.5": 0.28938699071770757
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17231375356141454,
+        "first_set_over_8.5": 0.7776068405495846,
+        "first_set_over_9.5": 0.5458428047569426,
+        "first_set_over_10.5": 0.2819330566574966
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186714",
+      "scheduled_time": "2026-09-05T09:55:00+00:00",
+      "captured_at": "2026-09-04T18:53:46.256397+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Hugo Dellien",
+      "p2": "Pedro Vives Marcos",
+      "source_model_fingerprint_sha256": "f1b9d43f417d125683f2fc860d878235dd59b6366a28c112293f37c62851c5cb",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1636502889649474,
+        "first_set_over_8.5": 0.7670383274365838,
+        "first_set_over_9.5": 0.537108284455601,
+        "first_set_over_10.5": 0.2756885304728472
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16082691765778984,
+        "first_set_over_8.5": 0.7637526914071577,
+        "first_set_over_9.5": 0.5345906516833131,
+        "first_set_over_10.5": 0.2739076527813894
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186713",
+      "scheduled_time": "2026-09-05T11:25:00+00:00",
+      "captured_at": "2026-09-04T18:53:46.256397+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Gustavo Heide",
+      "p2": "Facundo Mena",
+      "source_model_fingerprint_sha256": "f1b9d43f417d125683f2fc860d878235dd59b6366a28c112293f37c62851c5cb",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21266260689640906,
+        "first_set_over_8.5": 0.8225351279803587,
+        "first_set_over_9.5": 0.587036260255102,
+        "first_set_over_10.5": 0.31410837649665424
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18566009934843763,
+        "first_set_over_8.5": 0.7942400328390632,
+        "first_set_over_9.5": 0.5608290801476105,
+        "first_set_over_10.5": 0.2929360183126779
       },
       "settled": false,
       "actual": null
