@@ -15,6 +15,8 @@ on:
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
       - 'backend/player_dna_hold_calibration.py'
+      - 'backend/player_dna_hold_walk_forward.py'
+      - 'backend/player_dna_prospective_validation.py'
       - 'backend/player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
@@ -41,6 +43,8 @@ on:
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
       - 'tests/test_player_dna_hold_calibration.py'
+      - 'tests/test_player_dna_hold_walk_forward.py'
+      - 'tests/test_player_dna_prospective_validation.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
 
@@ -96,7 +100,8 @@ jobs:
           python -m py_compile backend/player_dna_market_backtest.py
           python -m py_compile backend/player_dna_hold_calibration.py
           python -m py_compile backend/player_dna_hold_walk_forward.py
-          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_identity.py
+          python -m py_compile backend/player_dna_prospective_validation.py
+          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_dna_prospective_validation.py             tests/test_player_identity.py
 
       - name: Build strict Player DNA point dataset
         run: python backend/player_dna_point_dataset.py
@@ -124,6 +129,9 @@ jobs:
 
       - name: Simulate raw + hold-calibrated tennis markets in SHADOW
         run: python backend/player_dna_tennis_simulator.py
+
+      - name: Collect prospective calibrated-candidate evidence
+        run: python backend/player_dna_prospective_validation.py
 
       - name: Hard isolation + learning guard
         run: |
@@ -300,6 +308,53 @@ jobs:
               else:
                   assert candidate is None
 
+          prospective = json.loads((data / 'player_dna_prospective_validation.json').read_text(encoding='utf-8'))
+          assert prospective.get('mode') == 'SHADOW_PROSPECTIVE_VALIDATION_ONLY'
+          assert prospective.get('status') == 'PROSPECTIVE_COLLECTION_ACTIVE'
+          assert prospective.get('signal') in {
+              'COLLECTING_PROSPECTIVE_EVIDENCE',
+              'PROSPECTIVE_DURATION_ROBUST_SHADOW',
+              'PROSPECTIVE_DURATION_NOT_YET_PROVEN',
+          }
+          assert prospective.get('production_influence') is False
+          assert prospective.get('symphony2_influence') is False
+          assert prospective.get('superbet_playable_influence') is False
+          assert prospective.get('current_simulator_modified') is False
+          assert prospective.get('auto_integrate') is False
+          assert prospective.get('market_scope') == 'DURATION_MARKETS_ONLY'
+          assert prospective.get('winner_markets_promoted') is False
+          policy_prospective = prospective.get('eligibility_policy') or {}
+          assert policy_prospective.get('requires_walk_forward_robust') is True
+          assert policy_prospective.get('requires_repeatable_tour') is True
+          assert policy_prospective.get('requires_repeatable_surface') is True
+          assert policy_prospective.get('post_result_snapshot_forbidden') is True
+          if walk_forward.get('signal') == 'HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW':
+              repeatable_tours = sorted(
+                  name for name, row in ((walk_forward.get('segment_aggregate') or {}).get('tour') or {}).items()
+                  if isinstance(row, dict) and row.get('repeatable_duration_signal') is True
+              )
+              repeatable_surfaces = sorted(
+                  name for name, row in ((walk_forward.get('segment_aggregate') or {}).get('surface') or {}).items()
+                  if isinstance(row, dict) and row.get('repeatable_duration_signal') is True
+              )
+              assert policy_prospective.get('supported_tours') == repeatable_tours
+              assert policy_prospective.get('supported_surfaces') == repeatable_surfaces
+          for snap in prospective.get('snapshots') or []:
+              assert snap.get('captured_pre_match') is True
+              assert set((snap.get('raw_probabilities') or {}).keys()) == {
+                  'first_set_tiebreak', 'first_set_over_8.5',
+                  'first_set_over_9.5', 'first_set_over_10.5',
+              }
+              assert set((snap.get('calibrated_probabilities') or {}).keys()) == {
+                  'first_set_tiebreak', 'first_set_over_8.5',
+                  'first_set_over_9.5', 'first_set_over_10.5',
+              }
+              if snap.get('settled') is True:
+                  assert set((snap.get('actual') or {}).keys()) == {
+                      'first_set_tiebreak', 'first_set_over_8.5',
+                      'first_set_over_9.5', 'first_set_over_10.5',
+                  }
+
           model = json.loads((derived / 'current_point_model_shadow.json').read_text(encoding='utf-8'))
           assert model.get('mode') == 'SHADOW_MODEL_ARTIFACT'
           assert model.get('production_influence') is False
@@ -318,6 +373,7 @@ jobs:
               f"backtest={backtest.get('signal')} "
               f"hold_calibration={calibration.get('signal')} "
               f"walk_forward={walk_forward.get('signal')} "
+              f"prospective={prospective.get('signal')} "
               f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
@@ -337,6 +393,7 @@ jobs:
             frontend/data/player_dna_market_backtest.json
             frontend/data/player_dna_hold_calibration_audit.json
             frontend/data/player_dna_hold_walk_forward.json
+            frontend/data/player_dna_prospective_validation.json
             data/derived/player_dna/current_point_model_shadow.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
@@ -349,7 +406,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
