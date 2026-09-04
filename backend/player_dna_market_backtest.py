@@ -681,11 +681,14 @@ def _full_match_prefix_fraction(
 def _trajectory_validation(
     predictions: dict[str, dict[str, Any]],
     labels: dict[str, dict[str, Any]],
+    train_labels: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
     first_set_shape_records = []
     set_shape_records = []
+    set_index_shape_records: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    all_set_index_shape_records = []
     set_winner_records = []
     deciding_set_order_records = []
     match_set_records = []
@@ -770,6 +773,25 @@ def _trajectory_validation(
                 shape for shape in (set_shape_family(score) for score in set_sequence)
                 if shape is not None
             )
+
+            score_marginals = (branch.get("set_index_shape_marginals") or {}).get(actual_match_score) or {}
+            if len(actual_shapes) == len(set_sequence) and isinstance(score_marginals, dict):
+                for index, actual_shape in enumerate(actual_shapes, start=1):
+                    rows = score_marginals.get(f"set_{index}") or []
+                    ranked_values = [str(row.get("shape") or "") for row in rows]
+                    hit_rank = next(
+                        (rank for rank, candidate in enumerate(ranked_values, start=1) if candidate == actual_shape),
+                        None,
+                    )
+                    record = {
+                        "rank": hit_rank,
+                        "hit_at_1": bool(hit_rank is not None and hit_rank <= 1),
+                        "hit_at_3": bool(hit_rank is not None and hit_rank <= 3),
+                        "hit_at_5": bool(hit_rank is not None and hit_rank <= 5),
+                    }
+                    set_index_shape_records[index].append(record)
+                    all_set_index_shape_records.append(record)
+
             ranked_shapes = branch.get("set_shape_trajectories") or []
             if len(actual_shapes) == len(set_sequence) and ranked_shapes and actual_match_score:
                 within_shape_family = [
@@ -869,6 +891,19 @@ def _trajectory_validation(
         return out
 
     deciding_set_order_summary = summarize_rank(deciding_set_order_records, (1, 2))
+    set_index_shape_rank_summary = {
+        f"set_{index}": summarize_rank(records, (1, 3, 5))
+        for index, records in sorted(set_index_shape_records.items())
+    }
+    set_index_shape_rank_summary["all_sets"] = summarize_rank(
+        all_set_index_shape_records,
+        (1, 3, 5),
+    )
+    set_index_shape_probability_summary = _set_index_shape_probability_validation(
+        predictions,
+        labels,
+        train_labels or {},
+    )
     deciding_set_order_summary["chance_top1"] = 0.5 if deciding_set_order_records else None
     deciding_set_order_summary["edge_vs_chance_pp"] = (
         round((float(deciding_set_order_summary["hit_at_1"]) - 0.5) * 100.0, 3)
@@ -888,6 +923,8 @@ def _trajectory_validation(
         "first_set_shape_conditioned_on_observed_first_server": summarize_rank(first_set_shape_records, (1, 3, 5)),
         "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
         "set_shape_sequence_given_actual_match_score": summarize_rank(set_shape_records, (1, 3, 8, 20)),
+        "set_index_shape_rank_given_actual_match_score": set_index_shape_rank_summary,
+        "set_index_shape_probability_given_actual_match_score": set_index_shape_probability_summary,
         "set_winner_sequence_conditioned_on_observed_first_server": summarize_rank(set_winner_records, (1, 3, 8)),
         "deciding_set_order_given_actual_match_score": deciding_set_order_summary,
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
@@ -897,6 +934,7 @@ def _trajectory_validation(
             "first_set_complete_paths": len(first_set_records),
             "first_set_shapes": len(first_set_shape_records),
             "set_shape_sequences": len(set_shape_records),
+            "set_index_shapes": len(all_set_index_shape_records),
             "set_winner_sequences": len(set_winner_records),
             "deciding_set_order_sequences": len(deciding_set_order_records),
             "match_set_sequences": len(match_set_records),
@@ -985,7 +1023,11 @@ def evaluate_backtest(
         for mid, label in holdout_settled.items()
     ]
 
-    trajectory_validation = _trajectory_validation(predictions, holdout_settled)
+    trajectory_validation = _trajectory_validation(
+        predictions,
+        holdout_settled,
+        train_settled,
+    )
 
     categorical = {
         "first_set_exact_score": categorical_metrics(
