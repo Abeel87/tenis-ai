@@ -831,6 +831,18 @@ def _line_from_odd(odd: dict) -> float | None:
     return None
 
 
+
+def _handicap_line_from_odd(odd: dict) -> float | None:
+    """Use the outcome-facing handicap, not the shared market specifier perspective."""
+    for value in (odd.get("info"), odd.get("name")):
+        text = str(value or "")
+        matches = re.findall(r"\(([+-]?\d+(?:[.,]\d+)?)\)", text)
+        if matches:
+            line = _float_token(matches[-1])
+            if line is not None:
+                return line
+    return _line_from_odd(odd)
+
 def _market_key(value: object) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", _norm(value)).split())
 
@@ -966,6 +978,7 @@ def parse_event_payload(
         set_no = _set_no_from_odd(odd)
         player = _player_from_odd(odd, p1, p2)
         line = _line_from_odd(odd)
+        handicap_line = _handicap_line_from_odd(odd)
         pick_ou = _ou_pick(info, name, market_name)
         row = None
 
@@ -1040,13 +1053,13 @@ def parse_event_payload(
                 p1=p1,
                 p2=p2,
             )
-        elif "handicap" in combined and "gem" in combined and player and line is not None:
+        elif "handicap" in combined and "gem" in combined and player and handicap_line is not None:
             market = f"set{set_no}_game_handicap" if set_no else "match_game_handicap"
             row = _structured_selection(
                 odd,
                 market=market,
                 pick=player,
-                line=line,
+                line=handicap_line,
                 player=player,
                 set_no=set_no,
                 p1=p1,
