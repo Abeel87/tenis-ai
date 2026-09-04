@@ -53,14 +53,15 @@ OUT = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 VERSION = "player-dna-hold-walk-forward-v1"
 MODE = "SHADOW_WALK_FORWARD_AUDIT_ONLY"
 FOLDS = (
-    ("wf1", 0.50, 0.65, 0.75),
-    ("wf2", 0.60, 0.75, 0.85),
-    ("wf3", 0.70, 0.85, 1.00),
+    ("wf1", 0.60, 0.70, 0.80),
+    ("wf2", 0.70, 0.80, 0.90),
+    ("wf3", 0.80, 0.90, 1.00),
 )
 MIN_CALIBRATION_GAMES = 300
 MIN_TEST_GAMES = 300
 MIN_SETTLED_TEST_MATCHES = 50
 MIN_SEGMENT_SETTLED_MATCHES = 20
+WALK_FORWARD_POLICY = "mature-history expanding fit; adjacent calibration; disjoint 10% test windows"
 
 
 def _match_times(rows: list[dict[str, Any]]) -> dict[str, datetime]:
@@ -133,7 +134,7 @@ def partition_feature_rows(
         "calibration_matches": len(calibration_ids),
         "test_matches": len(test_ids),
         "same_timestamp_split": same_timestamp_split,
-        "policy": "expanding fit; rolling calibration; disjoint chronological test windows",
+        "policy": WALK_FORWARD_POLICY,
     }
 
 
@@ -296,6 +297,45 @@ def evaluate_fold(
     }
 
 
+def aggregate_segments(folds: list[dict[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for dimension in ("surface", "tour"):
+        values: dict[str, dict[str, Any]] = {}
+        names = sorted({
+            name
+            for fold in folds
+            for name in (((fold.get("segments") or {}).get(dimension) or {}).keys())
+        })
+        for name in names:
+            seen = []
+            for fold in folds:
+                row = (((fold.get("segments") or {}).get(dimension) or {}).get(name))
+                if isinstance(row, dict):
+                    seen.append(row)
+            if not seen:
+                continue
+            positive_duration_folds = sum(
+                1 for row in seen
+                if int(row.get("duration_markets_improved") or 0) >= 3
+            )
+            primary_safe_folds = sum(
+                1 for row in seen
+                if float(row.get("match_winner_brier_gain") or 0.0) >= -0.01
+                and float(row.get("first_set_winner_brier_gain") or 0.0) >= -0.01
+            )
+            values[name] = {
+                "folds_with_sample": len(seen),
+                "settled_matches_total": sum(int(row.get("settled_matches") or 0) for row in seen),
+                "duration_positive_folds": positive_duration_folds,
+                "primary_safe_folds": primary_safe_folds,
+                "repeatable_duration_signal": bool(
+                    len(seen) >= 2 and positive_duration_folds >= 2
+                ),
+            }
+        out[dimension] = values
+    return out
+
+
 def aggregate_folds(folds: list[dict[str, Any]]) -> dict[str, Any]:
     complete = [fold for fold in folds if fold.get("status") == "FOLD_COMPLETE"]
     promising = sum(1 for fold in complete if fold.get("signal") == "PROMISING")
@@ -344,6 +384,7 @@ def evaluate(point_rows: list[dict[str, Any]], profile_rows: list[dict[str, Any]
         for name, fit_end, calibration_end, test_end in FOLDS
     ]
     aggregate = aggregate_folds(folds)
+    segment_aggregate = aggregate_segments(folds)
     status = (
         "WALK_FORWARD_COMPLETE_NO_INTEGRATION"
         if aggregate["completed_folds"] == aggregate["required_folds"]
@@ -369,6 +410,8 @@ def evaluate(point_rows: list[dict[str, Any]], profile_rows: list[dict[str, Any]
             "expanding_fit": True,
             "rolling_calibration": True,
             "test_windows_disjoint": True,
+            "mature_history_windows": True,
+            "fold_policy": WALK_FORWARD_POLICY,
             "same_timestamp_groups_not_split": all(
                 (fold.get("split") or {}).get("same_timestamp_split") is False for fold in folds
             ),
@@ -381,6 +424,7 @@ def evaluate(point_rows: list[dict[str, Any]], profile_rows: list[dict[str, Any]
         },
         "folds": folds,
         "aggregate": aggregate,
+        "segment_aggregate": segment_aggregate,
         "note": (
             "Evidence gate only. A robust result does not promote Player DNA or change the "
             "current hold-calibrated SHADOW candidate."
