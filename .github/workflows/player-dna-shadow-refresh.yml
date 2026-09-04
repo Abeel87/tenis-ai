@@ -112,14 +112,14 @@ jobs:
       - name: Score current card in SHADOW
         run: python backend/player_dna_current_shadow.py
 
-      - name: Simulate tennis markets in SHADOW
-        run: python backend/player_dna_tennis_simulator.py
-
       - name: Backtest simulated markets on historical holdout
         run: python backend/player_dna_market_backtest.py
 
       - name: Audit hold calibration on untouched third partition
         run: python backend/player_dna_hold_calibration.py
+
+      - name: Simulate raw + hold-calibrated tennis markets in SHADOW
+        run: python backend/player_dna_tennis_simulator.py
 
       - name: Hard isolation + learning guard
         run: |
@@ -236,6 +236,16 @@ jobs:
           assert simulation.get('auto_promote') is False
           assert int(simulation.get('source_scored_matches') or 0) == int(current.get('scored_matches') or 0)
           assert int(simulation.get('simulated_matches') or 0) == int(current.get('scored_matches') or 0)
+          expected_candidate = calibration.get('signal') == 'HOLD_CALIBRATION_PROMISING_SHADOW'
+          assert simulation.get('hold_calibration_candidate_enabled') is expected_candidate
+          expected_candidate_count = int(current.get('scored_matches') or 0) if expected_candidate else 0
+          assert int(simulation.get('calibrated_candidate_matches') or 0) == expected_candidate_count
+          source_cal = simulation.get('hold_calibration_source') or {}
+          assert source_cal.get('signal') == calibration.get('signal')
+          policy = simulation.get('market_policy') or {}
+          assert policy.get('raw_iid_remains_reference') is True
+          assert policy.get('hold_calibrated_is_candidate_only') is True
+          assert policy.get('winner_markets') == 'NO_AUTOMATIC_SWITCH'
           for row in simulation.get('matches') or []:
               assert row.get('validation_status') == 'UNVALIDATED_MATCH_LEVEL'
               sim = row.get('simulation') or {}
@@ -244,6 +254,22 @@ jobs:
               assert abs(float(fs.get('p1_win') or 0) + float(fs.get('p2_win') or 0) - 1.0) <= 1e-9
               assert abs(sum(float(v) for v in (fs.get('exact_score') or {}).values()) - 1.0) <= 1e-9
               assert abs(sum(float(v) for v in (mm.get('exact_score') or {}).values()) - 1.0) <= 1e-9
+              candidate = row.get('hold_calibrated_candidate')
+              if expected_candidate:
+                  assert isinstance(candidate, dict)
+                  assert candidate.get('mode') == 'SHADOW_HOLD_CALIBRATED_CANDIDATE'
+                  assert candidate.get('validation_status') == 'BACKTESTED_HOLD_CALIBRATION_CANDIDATE'
+                  assert candidate.get('production_influence') is False
+                  assert candidate.get('symphony2_influence') is False
+                  assert candidate.get('superbet_playable_influence') is False
+                  assert candidate.get('auto_promote') is False
+                  cfs = candidate.get('first_set') or {}
+                  cmm = candidate.get('match') or {}
+                  assert abs(float(cfs.get('p1_win') or 0) + float(cfs.get('p2_win') or 0) - 1.0) <= 1e-9
+                  assert abs(sum(float(v) for v in (cfs.get('exact_score') or {}).values()) - 1.0) <= 1e-9
+                  assert abs(sum(float(v) for v in (cmm.get('exact_score') or {}).values()) - 1.0) <= 1e-9
+              else:
+                  assert candidate is None
 
           model = json.loads((derived / 'current_point_model_shadow.json').read_text(encoding='utf-8'))
           assert model.get('mode') == 'SHADOW_MODEL_ARTIFACT'
