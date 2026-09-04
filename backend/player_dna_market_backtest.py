@@ -542,6 +542,8 @@ def _trajectory_validation(
 ) -> dict[str, Any]:
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
+    set_winner_records = []
+    deciding_set_order_records = []
     match_set_records = []
     storyline_records = []
     full_match_records = []
@@ -605,6 +607,47 @@ def _trajectory_validation(
 
         set_sequence = tuple(str(x) for x in (actual.get("set_score_sequence") or []))
         if set_sequence:
+            actual_set_winners = []
+            for score in set_sequence:
+                try:
+                    a, b = (int(x) for x in score.split(":"))
+                except (TypeError, ValueError):
+                    actual_set_winners = []
+                    break
+                actual_set_winners.append("1" if a > b else "2")
+            ranked_winners = branch.get("set_winner_trajectories") or []
+            if actual_set_winners and ranked_winners:
+                actual_winner_tuple = tuple(actual_set_winners)
+                set_winner_records.append(
+                    _rank_hit(
+                        ranked_winners,
+                        actual_winner_tuple,
+                        "set_winners",
+                        (1, 3, 8),
+                    )
+                )
+                if actual_match_score in {"2:1", "1:2"} and len(actual_winner_tuple) == 3:
+                    within_family = [
+                        row for row in ranked_winners
+                        if str(row.get("match_score") or "") == actual_match_score
+                    ]
+                    within_family.sort(
+                        key=lambda row: float(
+                            row.get("conditional_probability_within_match_score")
+                            or row.get("probability")
+                            or 0.0
+                        ),
+                        reverse=True,
+                    )
+                    deciding_set_order_records.append(
+                        _rank_hit(
+                            within_family,
+                            actual_winner_tuple,
+                            "set_winners",
+                            (1, 2),
+                        )
+                    )
+
             ranked_sets = branch.get("match_top_set_paths") or []
             match_set_records.append(_rank_hit(ranked_sets, set_sequence, "set_scores", (1, 3, 12)))
 
@@ -639,6 +682,14 @@ def _trajectory_validation(
             ) if n else None
         return out
 
+    deciding_set_order_summary = summarize_rank(deciding_set_order_records, (1, 2))
+    deciding_set_order_summary["chance_top1"] = 0.5 if deciding_set_order_records else None
+    deciding_set_order_summary["edge_vs_chance_pp"] = (
+        round((float(deciding_set_order_summary["hit_at_1"]) - 0.5) * 100.0, 3)
+        if deciding_set_order_summary.get("hit_at_1") is not None
+        else None
+    )
+
     return {
         "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
         "promotion_gate": False,
@@ -649,11 +700,15 @@ def _trajectory_validation(
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
         "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
+        "set_winner_sequence_conditioned_on_observed_first_server": summarize_rank(set_winner_records, (1, 3, 8)),
+        "deciding_set_order_given_actual_match_score": deciding_set_order_summary,
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
         "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
             "settled_predictions": len(labels),
             "first_set_complete_paths": len(first_set_records),
+            "set_winner_sequences": len(set_winner_records),
+            "deciding_set_order_sequences": len(deciding_set_order_records),
             "match_set_sequences": len(match_set_records),
             "full_match_complete_paths": len(full_match_records),
         },
