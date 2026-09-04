@@ -121,7 +121,12 @@ def _promising_calibration(report: dict[str, Any] | None) -> dict[str, Any] | No
         return None
     if report.get("signal") != "HOLD_CALIBRATION_PROMISING_SHADOW":
         return None
-    if report.get("production_influence") is not False or report.get("auto_integrate") is not False:
+    if (
+        report.get("production_influence") is not False
+        or report.get("symphony2_influence") is not False
+        or report.get("superbet_playable_influence") is not False
+        or report.get("auto_integrate") is not False
+    ):
         return None
     calibrator = report.get("hold_calibrator")
     if not isinstance(calibrator, dict) or calibrator.get("converged") is not True:
