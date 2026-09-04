@@ -93,6 +93,8 @@ def _promising_calibration():
         "status": "CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION",
         "signal": "HOLD_CALIBRATION_PROMISING_SHADOW",
         "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
         "auto_integrate": False,
         "hold_calibrator": {
             "intercept": 0.42,
@@ -162,3 +164,20 @@ def test_non_promising_calibration_cannot_enable_candidate():
     result = simulate_current_report(current, calibration_report=report)
     assert result["hold_calibration_candidate_enabled"] is False
     assert result["matches"][0]["hold_calibrated_candidate"] is None
+
+def test_calibration_with_any_external_influence_cannot_enable_candidate():
+    current = {
+        "matches": [{
+            "match_id": 1,
+            "status": "SHADOW_SCORED",
+            "p1_serve_point_win_probability": 0.63,
+            "p2_serve_point_win_probability": 0.59,
+        }]
+    }
+    for field in ("production_influence", "symphony2_influence", "superbet_playable_influence"):
+        report = _promising_calibration()
+        report[field] = True
+        result = simulate_current_report(current, calibration_report=report)
+        assert result["hold_calibration_candidate_enabled"] is False
+        assert result["matches"][0]["hold_calibrated_candidate"] is None
+
