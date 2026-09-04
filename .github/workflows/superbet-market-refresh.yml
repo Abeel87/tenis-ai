@@ -292,7 +292,12 @@ jobs:
           verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
           print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
               'fixtures_seen': availability.get('fixtures_seen'),
+              'fixtures_has_odds_true': availability.get('fixtures_has_odds_true'),
+              'fixtures_has_odds_false': availability.get('fixtures_has_odds_false'),
               'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
+              'matched_fixture_candidates_has_odds_true': availability.get('matched_fixture_candidates_has_odds_true'),
+              'matched_fixture_candidates_has_odds_false': availability.get('matched_fixture_candidates_has_odds_false'),
+              'matched_fixture_candidates_has_odds_missing': availability.get('matched_fixture_candidates_has_odds_missing'),
               'tournaments_queried': availability.get('tournaments_queried'),
               'bulk_operator_odds_rows_seen': availability.get('bulk_operator_odds_rows_seen'),
               'operator_odds_rows_seen': availability.get('operator_odds_rows_seen'),
