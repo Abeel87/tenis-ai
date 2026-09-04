@@ -285,6 +285,78 @@ def _price_after(lines: list[str], index: int, max_steps: int = 4) -> float | No
     return None
 
 
+
+def _semantic_match_total_table(lines: list[str]) -> list[dict]:
+    """Parse the explicit Superbet match-total table.
+
+    The table itself names all three columns (Gemy / PONIŻEJ / POWYŻEJ), so
+    mapping successive numeric triples is structural parsing, not inference.
+    """
+    out: list[dict] = []
+    header = ["liczba gemow", "gemy", "ponizej", "powyzej"]
+    for index in range(0, max(0, len(lines) - 3)):
+        if [_norm(value) for value in lines[index:index + 4]] != header:
+            continue
+        cursor = index + 4
+        while cursor + 2 < len(lines):
+            line_value = _float_token(lines[cursor])
+            under_price = _float_token(lines[cursor + 1])
+            over_price = _float_token(lines[cursor + 2])
+            if line_value is None or under_price is None or over_price is None:
+                break
+            if not (1.0 <= line_value <= 100.0):
+                break
+            if not (1.0 <= under_price <= 1000.0 and 1.0 <= over_price <= 1000.0):
+                break
+            # Tennis total-game lines are half/integer game thresholds; requiring
+            # a sensible threshold also prevents unrelated price triples from
+            # being consumed after the table.
+            if line_value < 5.0:
+                break
+            raw_base = f"Liczba gemów | {lines[cursor]}"
+            out.append(_direct_selection(
+                market="match_total",
+                pick="under",
+                line=line_value,
+                odds=under_price,
+                raw_label=f"{raw_base} | PONIŻEJ",
+            ))
+            out.append(_direct_selection(
+                market="match_total",
+                pick="over",
+                line=line_value,
+                odds=over_price,
+                raw_label=f"{raw_base} | POWYŻEJ",
+            ))
+            cursor += 3
+        break
+    return out
+
+
+def _semantic_inline_offer(lines: list[str]) -> list[dict]:
+    """Parse self-describing rendered offer cards whose label contains semantics."""
+    out: list[dict] = []
+    total_sets_re = re.compile(
+        rf"^Liczba setów\s*-\s*(Poniżej|Powyżej)\s+{_LINE_TOKEN}$",
+        re.IGNORECASE,
+    )
+    for index, label in enumerate(lines):
+        odds = _price_after(lines, index, max_steps=2)
+        if odds is None:
+            continue
+        match = total_sets_re.fullmatch(label)
+        if match:
+            pick = "under" if _norm(match.group(1)) == "ponizej" else "over"
+            out.append(_direct_selection(
+                market="total_sets",
+                pick=pick,
+                line=float(match.group(2).replace(",", ".")),
+                odds=odds,
+                raw_label=label,
+            ))
+    return out
+
+
 def _direct_selection(
     *,
     market: str,
@@ -334,6 +406,8 @@ def parse_visible_offer_text(
     lines = [line.strip() for line in str(visible_text or "").splitlines() if line.strip()]
     p1, p2 = _players_from_title(title)
     selections: list[dict] = []
+    selections.extend(_semantic_match_total_table(lines))
+    selections.extend(_semantic_inline_offer(lines))
 
     match_total_re = re.compile(
         rf"^(Poniżej|Powyżej) {_LINE_TOKEN} gemów w meczu$",
