@@ -14,6 +14,7 @@ writes to frontend/data.
 import json
 import re
 import sys
+from html import unescape
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
@@ -86,9 +87,24 @@ def parse_html(html: str) -> dict:
 
 def discover_match_urls(html: str) -> list[str]:
     parsed = parse_html(html)
+    candidates = list(parsed["links"])
+
+    # Superbet may render event anchors client-side while embedding their paths
+    # in hydration JSON. Normalize common HTML/JSON escaping and scan that
+    # payload too; this still consumes only the public page already fetched.
+    decoded = unescape(html or "")
+    decoded = decoded.replace("\\u002F", "/").replace("\\u002f", "/").replace("\/", "/")
+    candidates.extend(
+        match.group(1)
+        for match in re.finditer(
+            r"(?:https://superbet\.pl)?(/kursy/tenis/[a-zA-Z0-9%._~+\-]+-\d+)",
+            decoded,
+        )
+    )
+
     out: list[str] = []
     seen: set[str] = set()
-    for href in parsed["links"]:
+    for href in candidates:
         absolute = urljoin(BASE, href)
         if not _allowed_url(absolute):
             continue
@@ -161,6 +177,14 @@ def probe() -> dict:
         "sample_match_url": match_urls[0] if match_urls else None,
     }
     if not match_urls:
+        parsed_listing = parse_html(listing_html)
+        normalized_raw = (listing_html or "").replace("\/", "/")
+        result["listing_diagnostic"] = {
+            "html_length": len(listing_html),
+            "text_length": len(str(parsed_listing.get("text") or "")),
+            "anchor_href_count": len(parsed_listing.get("links") or []),
+            "contains_tennis_match_path": "/kursy/tenis/" in normalized_raw,
+        }
         result["status"] = "NO_MATCH_URLS"
         return result
 
