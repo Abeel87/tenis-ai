@@ -533,6 +533,10 @@ jobs:
               raise SystemExit('Player DNA walk-forward test windows must be disjoint')
           if chronology.get('same_timestamp_groups_not_split') is not True:
               raise SystemExit('Player DNA walk-forward split leaked same-timestamp matches')
+          if chronology.get('mature_history_windows') is not True:
+              raise SystemExit('Player DNA walk-forward must use mature-history windows')
+          if not isinstance(walk_forward.get('segment_aggregate'), dict):
+              raise SystemExit('Player DNA walk-forward segment aggregate missing')
           aggregate = walk_forward.get('aggregate') or {}
           if int(aggregate.get('required_folds') or 0) != 3:
               raise SystemExit('Player DNA walk-forward must define exactly three folds')
