@@ -638,3 +638,156 @@ def test_resolve_selected_match_offer_rejects_partial_candidate_fetch():
     assert result["event_fetch_errors"] == [
         {"event_id": "14809309", "error": "RuntimeError"}
     ]
+
+
+
+def test_direct_parity_signature_ignores_operator_price_but_requires_exact_line():
+    match = {
+        "match_id": 9001,
+        "p1": "Tommy Paul",
+        "p2": "Alexander Bublik",
+        "scheduled_time": "2026-09-04T16:30:00Z",
+        "superbet_market_v91": {
+            "status": "VERIFIED",
+            "operator_verified": True,
+            "fixture_id": "old-1",
+            "canonical_selections": [
+                {
+                    "market": "match_total",
+                    "pick": "over",
+                    "line": 38.5,
+                    "player": None,
+                    "set_no": None,
+                    "operator_price": 1.80,
+                }
+            ],
+        },
+    }
+    direct_offer = {
+        "event_id": "14809301",
+        "direct_match_verified": True,
+        "canonical_selections": [
+            {
+                "market": "match_total",
+                "pick": "over",
+                "line": 38.5,
+                "player": None,
+                "set_no": None,
+                "operator_price": 1.95,
+            },
+            {
+                "market": "match_total",
+                "pick": "over",
+                "line": 39.5,
+                "player": None,
+                "set_no": None,
+                "operator_price": 2.10,
+            },
+        ],
+    }
+
+    report = direct.compare_direct_with_existing_context(match, direct_offer)
+
+    assert report["exact_signature_overlap_count"] == 1
+    assert report["direct_only_count"] == 1
+    assert report["existing_only_count"] == 0
+    assert report["comparison_uses_operator_prices"] is False
+    assert report["prices_used"] is False
+    assert report["direct_only_market_counts"] == {"match_total": 1}
+
+
+def test_build_direct_parity_report_exposes_direct_recovery_when_existing_context_is_empty():
+    match = {
+        "match_id": 9002,
+        "p1": "Tommy Paul",
+        "p2": "Alexander Bublik",
+        "scheduled_time": "2026-09-04T16:30:00Z",
+        "superbet_market_v91": {
+            "status": "NOT_FOUND",
+            "operator_verified": False,
+            "canonical_selections": [],
+        },
+    }
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+    ]
+    payload = _direct_event_payload(
+        "14809301",
+        "Alexander Bublik",
+        "Tommy Paul",
+        "2026-09-04T16:30:00Z",
+        score="3:1",
+    )
+    availability = {
+        "refresh_status": "OK",
+        "generated_at": "2026-09-04T16:04:04Z",
+        "fixtures_seen": 167,
+        "matched_fixture_candidates": 31,
+        "operator_odds_rows_seen": 4,
+        "operator_rows_with_requested_bookmaker": 1,
+        "operator_rows_in_horizon": 0,
+        "operator_rows_in_horizon_with_requested_bookmaker": 0,
+        "operator_start_min": "2026-08-31T15:00:00Z",
+        "operator_start_max": "2026-09-01T18:20:00Z",
+        "fixtures": [],
+        "contains_prices": False,
+        "prices_used": False,
+    }
+
+    report = direct.build_direct_parity_report(
+        [match],
+        availability,
+        urls,
+        fetcher=lambda event_id: payload,
+    )
+
+    assert report["status"] == "OK"
+    assert report["candidate_app_matches"] == 1
+    assert report["resolved_app_matches"] == 1
+    assert report["rejected_candidate_matches"] == 0
+    assert report["prices_used"] is False
+    assert report["writes_frontend_data"] is False
+    assert report["playable_influence"] is False
+
+    row = report["matches"][0]
+    assert row["match_id"] == 9002
+    assert row["existing_context_status"] == "NOT_FOUND"
+    assert row["existing_operator_verified"] is False
+    assert row["direct_event_id"] == "14809301"
+    assert row["direct_match_verified"] is True
+    assert row["existing_selections_count"] == 0
+    assert row["direct_selections_count"] == 3
+    assert row["exact_signature_overlap_count"] == 0
+    assert row["direct_only_count"] == 3
+    assert row["comparison_uses_operator_prices"] is False
+
+    old = report["existing_context_source"]
+    assert old["fixtures_seen"] == 167
+    assert old["operator_rows_in_horizon"] == 0
+    assert old["operator_rows_in_horizon_with_requested_bookmaker"] == 0
+    assert old["sanitized_fixtures_count"] == 0
+
+
+def test_build_direct_parity_report_reports_no_overlap_without_fetching():
+    called = []
+
+    def fetcher(event_id):
+        called.append(event_id)
+        raise AssertionError("fetcher must not be called without a name candidate")
+
+    report = direct.build_direct_parity_report(
+        [{
+            "match_id": 9003,
+            "p1": "Completely Different",
+            "p2": "Another Player",
+            "scheduled_time": "2026-09-04T16:30:00Z",
+        }],
+        {"fixtures": [], "prices_used": False},
+        ["https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"],
+        fetcher=fetcher,
+    )
+
+    assert report["status"] == "NO_CURRENT_OVERLAP"
+    assert report["candidate_app_matches"] == 0
+    assert report["resolved_app_matches"] == 0
+    assert called == []
