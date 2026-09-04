@@ -75,6 +75,28 @@ def _current_row(match_id="1", tour="atp", surface="hard", scheduled=None):
     }
 
 
+def _settled_snapshot(match_id, tour="atp", surface="hard"):
+    actual = {market: True for market in DURATION_MARKETS}
+    raw = {market: 0.60 for market in DURATION_MARKETS}
+    calibrated = {market: 0.90 for market in DURATION_MARKETS}
+    return {
+        "match_id": str(match_id),
+        "scheduled_time": "2026-09-04T10:00:00+00:00",
+        "captured_at": "2026-09-04T09:00:00+00:00",
+        "captured_pre_match": True,
+        "tour": tour,
+        "surface": surface,
+        "p1": f"A{match_id}",
+        "p2": f"B{match_id}",
+        "source_model_fingerprint_sha256": "abc",
+        "raw_probabilities": raw,
+        "calibrated_probabilities": calibrated,
+        "settled": True,
+        "actual": actual,
+        "settled_at": "2026-09-04T12:00:00+00:00",
+    }
+
+
 def _point_rows_for_settled(match_id="1"):
     # _labels_by_match reconstructs from a final BO3 score plus early tape.
     return [
@@ -308,6 +330,56 @@ def test_duplicate_previous_snapshot_fails_closed():
             corrupted_previous,
             now=now + timedelta(minutes=10),
         )
+
+
+def test_performance_verdict_waits_for_every_supported_segment_minimum():
+    now = datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc)
+    snapshots = [
+        *[_settled_snapshot(i, "atp", "hard") for i in range(1, 122)],
+        *[_settled_snapshot(i, "challenger", "clay") for i in range(122, 151)],
+    ]
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"snapshots": snapshots},
+        now=now,
+    )
+
+    readiness = report["evidence_readiness"]
+    assert readiness["overall"]["settled"] == 150
+    assert readiness["overall"]["support_sufficient"] is True
+    assert readiness["segments"]["tour"]["challenger"]["settled"] == 29
+    assert readiness["segments"]["tour"]["challenger"]["remaining"] == 1
+    assert readiness["segments"]["surface"]["clay"]["settled"] == 29
+    assert readiness["segment_support_ready"] is False
+    assert readiness["ready_for_performance_verdict"] is False
+    assert report["signal"] == "COLLECTING_PROSPECTIVE_EVIDENCE"
+
+
+def test_performance_verdict_unlocks_only_after_overall_and_segment_support():
+    now = datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc)
+    snapshots = [
+        *[_settled_snapshot(i, "atp", "hard") for i in range(1, 122)],
+        *[_settled_snapshot(i, "challenger", "clay") for i in range(122, 152)],
+    ]
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"snapshots": snapshots},
+        now=now,
+    )
+
+    readiness = report["evidence_readiness"]
+    assert readiness["overall"]["settled"] == 151
+    assert readiness["segments"]["tour"]["challenger"]["settled"] == 30
+    assert readiness["segments"]["surface"]["clay"]["settled"] == 30
+    assert readiness["segment_support_ready"] is True
+    assert readiness["ready_for_performance_verdict"] is True
+    assert all(row["support_sufficient"] is True for row in readiness["markets"].values())
+    assert report["evaluation"]["duration_markets_improved"] == 4
+    assert report["signal"] == "PROSPECTIVE_DURATION_ROBUST_SHADOW"
 
 
 def test_duration_market_scope_is_exact_and_candidate_only():
