@@ -374,6 +374,74 @@ def _segment_evaluation(
     return out
 
 
+def _evidence_readiness(
+    snapshots: list[dict[str, Any]],
+    evaluation: dict[str, Any],
+    supported_tours: list[str],
+    supported_surfaces: list[str],
+) -> dict[str, Any]:
+    settled = int(evaluation.get("settled_matches") or 0)
+
+    def segment_rows(dimension: str, supported: list[str]) -> dict[str, Any]:
+        out = {}
+        for name in supported:
+            all_rows = [
+                row for row in snapshots
+                if isinstance(row, dict) and str(row.get(dimension) or "").strip().lower() == name
+            ]
+            settled_rows = [row for row in all_rows if row.get("settled") is True]
+            count = len(settled_rows)
+            out[name] = {
+                "snapshots": len(all_rows),
+                "settled": count,
+                "required": MIN_SEGMENT_SETTLED,
+                "remaining": max(0, MIN_SEGMENT_SETTLED - count),
+                "support_sufficient": count >= MIN_SEGMENT_SETTLED,
+            }
+        return out
+
+    tour = segment_rows("tour", supported_tours)
+    surface = segment_rows("surface", supported_surfaces)
+    all_segments = [*tour.values(), *surface.values()]
+    segment_support_ready = bool(all_segments) and all(
+        row.get("support_sufficient") is True for row in all_segments
+    )
+
+    markets = {}
+    for market in DURATION_MARKETS:
+        row = (evaluation.get("markets") or {}).get(market) or {}
+        n = int(row.get("n") or 0)
+        markets[market] = {
+            "settled": n,
+            "required": MIN_SETTLED_FOR_SIGNAL,
+            "remaining": max(0, MIN_SETTLED_FOR_SIGNAL - n),
+            "support_sufficient": n >= MIN_SETTLED_FOR_SIGNAL,
+        }
+
+    overall_ready = settled >= MIN_SETTLED_FOR_SIGNAL
+    return {
+        "overall": {
+            "settled": settled,
+            "required": MIN_SETTLED_FOR_SIGNAL,
+            "remaining": max(0, MIN_SETTLED_FOR_SIGNAL - settled),
+            "support_sufficient": overall_ready,
+        },
+        "markets": markets,
+        "segments": {
+            "tour": tour,
+            "surface": surface,
+        },
+        "segment_support_ready": segment_support_ready,
+        "ready_for_performance_verdict": bool(overall_ready and segment_support_ready),
+        "policy": {
+            "overall_minimum_settled": MIN_SETTLED_FOR_SIGNAL,
+            "per_supported_segment_minimum_settled": MIN_SEGMENT_SETTLED,
+            "all_supported_tours_and_surfaces_must_meet_minimum": True,
+            "performance_verdict_before_support_ready_forbidden": True,
+        },
+    }
+
+
 def _ledger_integrity(
     previous_snapshots: list[dict[str, Any]],
     current_snapshots: list[dict[str, Any]],
@@ -536,6 +604,14 @@ def build_report(
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
     evaluation = _evaluation(snapshots)
+    supported_tours = sorted(_repeatable_segments(walk_forward, "tour"))
+    supported_surfaces = sorted(_repeatable_segments(walk_forward, "surface"))
+    evidence_readiness = _evidence_readiness(
+        snapshots,
+        evaluation,
+        supported_tours,
+        supported_surfaces,
+    )
     unsettled_diagnostics = _unsettled_diagnostics(snapshots, now)
     settlement_latency = _settlement_latency_summary(snapshots)
     settlement_observability = {
@@ -552,7 +628,7 @@ def build_report(
         },
     }
     settled = int(evaluation.get("settled_matches") or 0)
-    if settled < MIN_SETTLED_FOR_SIGNAL:
+    if evidence_readiness.get("ready_for_performance_verdict") is not True:
         signal = "COLLECTING_PROSPECTIVE_EVIDENCE"
     else:
         positive = int(evaluation.get("duration_markets_improved") or 0)
@@ -563,8 +639,6 @@ def build_report(
             else "PROSPECTIVE_DURATION_NOT_YET_PROVEN"
         )
 
-    supported_tours = sorted(_repeatable_segments(walk_forward, "tour"))
-    supported_surfaces = sorted(_repeatable_segments(walk_forward, "surface"))
     return {
         "version": VERSION,
         "mode": MODE,
@@ -579,6 +653,7 @@ def build_report(
         "winner_markets_promoted": False,
         "ledger_integrity": integrity,
         "settlement_observability": settlement_observability,
+        "evidence_readiness": evidence_readiness,
         "eligibility_policy": {
             "requires_walk_forward_robust": True,
             "requires_repeatable_tour": True,
@@ -637,6 +712,7 @@ def build() -> dict[str, Any]:
         "supported_surfaces": (report.get("eligibility_policy") or {}).get("supported_surfaces"),
         "ledger_integrity": report.get("ledger_integrity"),
         "settlement_observability": report.get("settlement_observability"),
+        "evidence_readiness": report.get("evidence_readiness"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report
