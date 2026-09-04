@@ -149,6 +149,18 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
                                     "conditional_probability_within_match_score": 0.40,
                                 },
                             ],
+                            "set_index_shape_marginals": {
+                                "2:0": {
+                                    "set_1": [
+                                        {"shape": "NORMAL", "probability": 0.60},
+                                        {"shape": "CLOSE", "probability": 0.40},
+                                    ],
+                                    "set_2": [
+                                        {"shape": "NORMAL", "probability": 0.80},
+                                        {"shape": "DOMINANT", "probability": 0.20},
+                                    ],
+                                }
+                            },
                             "set_winner_trajectories": [
                                 {"set_winners": [1, 2, 1]},
                                 {"set_winners": [1, 1]},
@@ -175,7 +187,18 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
         }
     }
 
-    metrics = _trajectory_validation(predictions, labels)
+    train_labels = {
+        "train-a": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": {"set_score_sequence": ["6:1", "6:2"]},
+        },
+        "train-b": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": {"set_score_sequence": ["6:0", "6:1"]},
+        },
+    }
+
+    metrics = _trajectory_validation(predictions, labels, train_labels)
     assert metrics["status"] == "TRAJECTORY_HISTORICAL_DIAGNOSTIC"
     assert metrics["promotion_gate"] is False
     assert metrics["checkpoint_neutral_start_server"]["after_2_games"]["top1_accuracy"] == 1.0
@@ -194,6 +217,19 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert set_shapes["n"] == 1
     assert set_shapes["hit_at_1"] == 0.0
     assert set_shapes["hit_at_3"] == 1.0
+    per_set_rank = metrics["set_index_shape_rank_given_actual_match_score"]
+    assert per_set_rank["set_1"]["n"] == 1
+    assert per_set_rank["set_1"]["hit_at_1"] == 0.0
+    assert per_set_rank["set_1"]["hit_at_3"] == 1.0
+    assert per_set_rank["set_2"]["hit_at_1"] == 1.0
+    assert per_set_rank["all_sets"]["n"] == 2
+    assert per_set_rank["all_sets"]["hit_at_1"] == 0.5
+    per_set_prob = metrics["set_index_shape_probability_given_actual_match_score"]
+    assert per_set_prob["set_1"]["n"] == 1
+    assert per_set_prob["set_2"]["n"] == 1
+    assert per_set_prob["all_sets"]["n"] == 2
+    assert per_set_prob["all_sets"]["brier_gain_vs_segment_train_distribution"] > 0
+    assert per_set_prob["all_sets"]["top1_accuracy_delta_pp"] > 0
     storyline = metrics["primary_storyline_match_score_conditioned_on_observed_first_server"]
     assert storyline["n"] == 1
     assert storyline["hit_at_1"] == 0.0
@@ -215,6 +251,7 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert 0.0 < full["mean_top1_prefix_fraction"] < 1.0
     assert metrics["coverage"]["first_set_shapes"] == 1
     assert metrics["coverage"]["set_shape_sequences"] == 1
+    assert metrics["coverage"]["set_index_shapes"] == 2
     assert metrics["coverage"]["set_winner_sequences"] == 1
     assert metrics["coverage"]["full_match_complete_paths"] == 1
 
