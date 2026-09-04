@@ -1,3 +1,4 @@
+import json
 from backend import superbet_direct as direct
 
 
@@ -405,4 +406,120 @@ def test_parse_event_payload_fails_closed_for_wrong_event():
     result = direct.parse_event_payload(payload, event_id="999")
     assert result["status"] == "EVENT_NOT_FOUND"
     assert result["canonical_selections"] == []
+    assert result["prices_used"] is False
+
+
+
+def test_event_api_url_is_strict_and_numeric():
+    assert direct._event_api_url("14809301") == (
+        "https://production-superbet-offer-pl.freetls.fastly.net"
+        "/v2/pl-PL/events/14809301"
+    )
+    assert direct._allowed_event_api_url(direct._event_api_url("14809301")) is True
+    assert direct._allowed_event_api_url(
+        "https://example.com/v2/pl-PL/events/14809301"
+    ) is False
+    for invalid in ("", "../1", "14809301?x=1", "abc"):
+        try:
+            direct._event_api_url(invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid event id accepted: {invalid!r}")
+
+
+def test_fetch_event_payload_uses_public_json_endpoint_without_browser(monkeypatch):
+    payload = {
+        "dataIn": {"eventId": 14809301, "lang": "pl-PL"},
+        "data": [{"eventId": 14809301, "matchName": "A·B", "odds": []}],
+        "error": None,
+    }
+    calls = []
+
+    class Headers:
+        def get(self, name):
+            return "application/json; charset=utf-8" if name == "Content-Type" else None
+
+        def get_content_charset(self):
+            return "utf-8"
+
+    class Response:
+        headers = Headers()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self, size=-1):
+            return json.dumps(payload).encode("utf-8")
+
+    def fake_urlopen(request, timeout=25):
+        calls.append((request.full_url, dict(request.header_items()), timeout))
+        return Response()
+
+    monkeypatch.setattr(direct, "urlopen", fake_urlopen)
+    result = direct.fetch_event_payload("14809301", timeout=7)
+
+    assert result == payload
+    assert calls[0][0].endswith("/v2/pl-PL/events/14809301")
+    assert calls[0][2] == 7
+    headers = {key.casefold(): value for key, value in calls[0][1].items()}
+    assert headers["accept"] == "application/json"
+
+
+def test_direct_event_offer_marks_browserless_transport(monkeypatch):
+    payload = {
+        "dataIn": {"eventId": 14809301, "lang": "pl-PL"},
+        "data": [{
+            "eventId": 14809301,
+            "matchName": "Alexander Bublik·Tommy Paul",
+            "utcDate": "2026-09-04T16:10:00Z",
+            "odds": [
+                {
+                    "uuid": "winner-p1",
+                    "marketId": 521,
+                    "outcomeId": 1329,
+                    "price": 2.37,
+                    "status": "active",
+                    "code": "1",
+                    "name": "1",
+                    "marketName": "Zwycięzca",
+                    "info": "Alexander Bublik wygra",
+                },
+                {
+                    "uuid": "total-over",
+                    "marketId": 1002,
+                    "outcomeId": 4263,
+                    "price": 1.55,
+                    "specialBetValue": "36.5",
+                    "status": "active",
+                    "code": "+",
+                    "name": "Powyżej 36.5",
+                    "marketName": "Liczba gemów",
+                    "info": "Powyżej 36.5 gemów w meczu",
+                    "specifiers": {"total": "36.5"},
+                },
+            ],
+        }],
+        "error": None,
+    }
+    monkeypatch.setattr(direct, "fetch_event_payload", lambda event_id, timeout=25: payload)
+
+    result = direct.direct_event_offer(
+        "14809301",
+        match_url=(
+            "https://superbet.pl/kursy/tenis/"
+            "alexander-bublik-vs-tommy-paul-14809301"
+        ),
+    )
+
+    assert result["status"] == "OK"
+    assert result["source"] == "PUBLIC_EVENT_JSON"
+    assert result["transport"] == "DIRECT_PUBLIC_EVENT_HTTP"
+    assert result["event_id"] == "14809301"
+    assert result["canonical_selections_count"] == 2
+    assert result["verified_line_selections_count"] == 1
+    assert result["verified_price_selections_count"] == 2
     assert result["prices_used"] is False
