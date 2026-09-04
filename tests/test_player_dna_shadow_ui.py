@@ -55,3 +55,31 @@ def test_player_dna_shadow_ui_exposes_settlement_health_without_guessing_cancell
     assert "To nie jest automatycznie anulowany mecz" in js
     assert "snapshot pozostaje zamrożony" in js
     assert ".pds-health-grid" in css
+
+
+def test_player_dna_match_detail_reads_published_trajectory_lazily_and_stays_shadow_only():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+
+    assert "data/player_dna_current_simulation.json" in js
+    assert "loadSimulation(force=false)" in js
+    assert "player-dna-match-trajectory" in js
+    assert "SHADOW_TRAJECTORY_FOUNDATION" in js
+    assert "UNVALIDATED_MATCH_LEVEL" in js
+    assert "ranking scenariuszy, nie jeden pewny skrypt" in js
+    assert "p1_serves_first" in js
+    assert "p2_serves_first" in js
+    assert "Pierwszy serwujący jest przed meczem nieznany" in js
+    assert "zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE" in js
+    assert ".pds-trajectory-panel" in css
+    assert ".pds-trajectory-grid" in css
+
+
+def test_player_dna_match_detail_uses_full_game_paths_when_available_and_safe_fallback_before_publish():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "full_match_top_game_paths" in js
+    assert "match_top_set_paths" in js
+    assert "first_set_top_game_paths" in js
+    assert "Pełne ścieżki meczu pojawią się po publikacji nowego raportu trajektorii" in js
+    assert "Hold-calibrated DNA pozostaje kandydatem" in js
