@@ -703,6 +703,9 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
             "profile_only_brier_gain_vs_rank": None,
             "combined_brier_gain_vs_rank": None,
             "combined_match_equal_brier_gain_vs_rank": None,
+            "stateful_brier_gain_vs_profile_plus_rank": None,
+            "stateful_match_equal_brier_gain_vs_profile_plus_rank": None,
+            "stateful_log_loss_gain_vs_profile_plus_rank": None,
         },
     }
 
@@ -712,11 +715,15 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
 
     profile_numeric = list(PROFILE_NUMERIC)
     rank_numeric = list(RANK_NUMERIC)
+    state_numeric = list(STATE_NUMERIC)
     combined_numeric = profile_numeric + rank_numeric
+    stateful_numeric = combined_numeric + state_numeric
 
     profile_result, profile_probs = _fit_candidate(train, holdout, profile_numeric)
     rank_result, rank_probs = _fit_candidate(train, holdout, rank_numeric)
     combined_result, combined_probs = _fit_candidate(train, holdout, combined_numeric)
+    state_only_result, state_only_probs = _fit_candidate(train, holdout, state_numeric)
+    stateful_result, stateful_probs = _fit_candidate(train, holdout, stateful_numeric)
 
     base_probability = float(train["server_won"].mean())
     baseline_probs = np.full(len(holdout), base_probability, dtype=float)
@@ -730,19 +737,33 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
         "profile_only_logistic": profile_result,
         "rank_only_logistic": rank_result,
         "profile_plus_rank_logistic": combined_result,
+        "score_state_only_logistic": state_only_result,
+        "profile_rank_plus_score_state_logistic": stateful_result,
     }
 
     pm = profile_result["metrics"]
     rm = rank_result["metrics"]
     cm = combined_result["metrics"]
+    sm = stateful_result["metrics"]
 
     profile_gain = float(rm["brier"] - pm["brier"])
     combined_gain = float(rm["brier"] - cm["brier"])
     match_equal_gain = float(rm["match_equal_brier"] - cm["match_equal_brier"])
+    stateful_gain = float(cm["brier"] - sm["brier"])
+    stateful_match_equal_gain = float(cm["match_equal_brier"] - sm["match_equal_brier"])
+    stateful_log_loss_gain = float(cm["log_loss"] - sm["log_loss"])
 
-    signal_status = "POSITIVE_HOLDOUT_SIGNAL" if (
-        profile_gain > 0 and combined_gain > 0 and match_equal_gain > 0
-    ) else "MIXED_OR_NO_INCREMENTAL_SIGNAL"
+    profile_signal_positive = profile_gain > 0 and combined_gain > 0 and match_equal_gain > 0
+    stateful_signal_positive = (
+        stateful_gain > 0
+        and stateful_match_equal_gain > 0
+        and stateful_log_loss_gain > 0
+    )
+    signal_status = (
+        "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL"
+        if stateful_signal_positive
+        else "STATEFUL_CONTEXT_MIXED_OR_NO_INCREMENTAL_SIGNAL"
+    )
 
     same_surface_mask = (
         (holdout["server_surface_matches"].fillna(0).astype(int) >= EVAL_MIN_PRIOR_MATCHES)
@@ -761,6 +782,12 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
         "combined_improves_rank_on_point_and_match_equal_brier": bool(
             combined_gain > 0 and match_equal_gain > 0
         ),
+        "legacy_profile_signal_positive": bool(profile_signal_positive),
+        "stateful_brier_gain_vs_profile_plus_rank": round(stateful_gain, 6),
+        "stateful_match_equal_brier_gain_vs_profile_plus_rank": round(stateful_match_equal_gain, 6),
+        "stateful_log_loss_gain_vs_profile_plus_rank": round(stateful_log_loss_gain, 6),
+        "stateful_improves_all_primary_proper_scores": bool(stateful_signal_positive),
+        "promotion_gate": False,
     }
     report["segments"] = {
         "holdout_with_both_same_surface_history_ge_3": (
@@ -768,12 +795,68 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
             if len(same_surface_holdout) else None
         ),
         "holdout_tiebreak": (
-            _metrics(
-                holdout.loc[holdout["is_tiebreak"] == True].copy(),
-                combined_probs[np.asarray(holdout["is_tiebreak"] == True, dtype=bool)],
-            )
+            {
+                "profile_plus_rank": _metrics(
+                    holdout.loc[holdout["is_tiebreak"] == True].copy(),
+                    combined_probs[np.asarray(holdout["is_tiebreak"] == True, dtype=bool)],
+                ),
+                "stateful": _metrics(
+                    holdout.loc[holdout["is_tiebreak"] == True].copy(),
+                    stateful_probs[np.asarray(holdout["is_tiebreak"] == True, dtype=bool)],
+                ),
+            }
             if bool((holdout["is_tiebreak"] == True).any()) else None
         ),
+        "holdout_break_point_against_server": (
+            {
+                "profile_plus_rank": _metrics(
+                    holdout.loc[holdout["break_point_against_server_before"].fillna(0).astype(int) == 1].copy(),
+                    combined_probs[np.asarray(holdout["break_point_against_server_before"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+                "stateful": _metrics(
+                    holdout.loc[holdout["break_point_against_server_before"].fillna(0).astype(int) == 1].copy(),
+                    stateful_probs[np.asarray(holdout["break_point_against_server_before"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+            }
+            if bool((holdout["break_point_against_server_before"].fillna(0).astype(int) == 1).any()) else None
+        ),
+        "holdout_late_set": (
+            {
+                "profile_plus_rank": _metrics(
+                    holdout.loc[holdout["late_set_before"].fillna(0).astype(int) == 1].copy(),
+                    combined_probs[np.asarray(holdout["late_set_before"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+                "stateful": _metrics(
+                    holdout.loc[holdout["late_set_before"].fillna(0).astype(int) == 1].copy(),
+                    stateful_probs[np.asarray(holdout["late_set_before"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+            }
+            if bool((holdout["late_set_before"].fillna(0).astype(int) == 1).any()) else None
+        ),
+        "holdout_after_break": (
+            {
+                "profile_plus_rank": _metrics(
+                    holdout.loc[holdout["previous_game_was_break"].fillna(0).astype(int) == 1].copy(),
+                    combined_probs[np.asarray(holdout["previous_game_was_break"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+                "stateful": _metrics(
+                    holdout.loc[holdout["previous_game_was_break"].fillna(0).astype(int) == 1].copy(),
+                    stateful_probs[np.asarray(holdout["previous_game_was_break"].fillna(0).astype(int) == 1, dtype=bool)],
+                ),
+            }
+            if bool((holdout["previous_game_was_break"].fillna(0).astype(int) == 1).any()) else None
+        ),
+    }
+    report["stateful_context_contract"] = {
+        "features_use_score_before_only": True,
+        "score_after_used_as_feature": False,
+        "current_point_winner_used_as_feature": False,
+        "momentum_uses_only_proven_contiguous_prior_atomic_points": True,
+        "state_numeric_features": state_numeric,
+        "runtime_scoring_enabled": False,
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
     }
     return report
 
