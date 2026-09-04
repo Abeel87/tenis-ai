@@ -356,6 +356,19 @@ jobs:
           drift = observability.get('schedule_drift') or {}
           assert int(drift.get('count') or 0) >= 0
           assert 'snapshot is never rewritten' in str(drift.get('meaning') or '')
+          readiness = prospective.get('evidence_readiness') or {}
+          overall_ready = readiness.get('overall') or {}
+          assert int(overall_ready.get('required') or 0) == 150
+          readiness_policy = readiness.get('policy') or {}
+          assert int(readiness_policy.get('per_supported_segment_minimum_settled') or 0) == 30
+          assert readiness_policy.get('all_supported_tours_and_surfaces_must_meet_minimum') is True
+          assert readiness_policy.get('performance_verdict_before_support_ready_forbidden') is True
+          if prospective.get('signal') in {'PROSPECTIVE_DURATION_ROBUST_SHADOW', 'PROSPECTIVE_DURATION_NOT_YET_PROVEN'}:
+              assert readiness.get('ready_for_performance_verdict') is True
+              assert overall_ready.get('support_sufficient') is True
+              assert readiness.get('segment_support_ready') is True
+          if readiness.get('ready_for_performance_verdict') is not True:
+              assert prospective.get('signal') == 'COLLECTING_PROSPECTIVE_EVIDENCE'
           policy_prospective = prospective.get('eligibility_policy') or {}
           assert policy_prospective.get('requires_walk_forward_robust') is True
           assert policy_prospective.get('requires_repeatable_tour') is True
@@ -412,6 +425,8 @@ jobs:
               f"prospective_rewrites={integrity.get('rewritten_predictions')} "
               f"prospective_overdue={(unsettled_obs.get('buckets') or {}).get('overdue_gt_72h')} "
               f"schedule_drift={drift.get('count')} "
+              f"prospective_ready={readiness.get('ready_for_performance_verdict')} "
+              f"segment_ready={readiness.get('segment_support_ready')} "
               f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
