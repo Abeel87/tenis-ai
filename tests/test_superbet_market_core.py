@@ -17,7 +17,7 @@ def test_fixture_not_found_means_valid_empty_fixture_catalogue(monkeypatch):
         raise _http_error(
             "fixtures",
             404,
-            {"code": "FIXTURE_NOT_FOUND", "message": "No fixtures found for the specified criteria"},
+            {"error": {"code": "FIXTURE_NOT_FOUND", "message": "No fixtures found for the specified criteria"}},
         )
 
     monkeypatch.setattr(core, "urlopen", fake_urlopen)
@@ -30,11 +30,12 @@ def test_fixture_not_found_means_valid_empty_fixture_catalogue(monkeypatch):
 @pytest.mark.parametrize(
     ("path", "status", "payload"),
     [
-        ("markets", 404, {"code": "FIXTURE_NOT_FOUND", "message": "No fixtures found"}),
-        ("fixtures", 404, {"code": "OTHER_NOT_FOUND", "message": "not found"}),
-        ("fixtures", 401, {"code": "UNAUTHORIZED"}),
-        ("fixtures", 429, {"code": "RATE_LIMITED"}),
-        ("fixtures", 500, {"code": "SERVER_ERROR"}),
+        ("markets", 404, {"error": {"code": "FIXTURE_NOT_FOUND", "message": "No fixtures found"}}),
+        ("fixtures", 404, {"error": {"code": "OTHER_NOT_FOUND", "message": "not found"}}),
+        ("fixtures", 404, {"code": "FIXTURE_NOT_FOUND", "message": "wrong shape"}),
+        ("fixtures", 401, {"error": {"code": "UNAUTHORIZED"}}),
+        ("fixtures", 429, {"error": {"code": "RATE_LIMITED"}}),
+        ("fixtures", 500, {"error": {"code": "SERVER_ERROR"}}),
     ],
 )
 def test_other_http_errors_remain_hard_failures(monkeypatch, path, status, payload):
