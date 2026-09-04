@@ -46,8 +46,8 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 18,
-        "due_within_6h": 2,
+        "upcoming": 17,
+        "due_within_6h": 3,
         "overdue_6_24h": 0,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
@@ -64,22 +64,104 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 2,
+      "count": 3,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
           "match_id": "185869",
           "frozen_scheduled_time": "2026-09-04T12:30:00+00:00",
-          "current_scheduled_time": "2026-09-04T13:30:00+00:00",
-          "drift_minutes": 60.0
+          "current_scheduled_time": "2026-09-04T14:00:00+00:00",
+          "drift_minutes": 90.0
         },
         {
-          "match_id": "186496",
-          "frozen_scheduled_time": "2026-09-04T12:30:00+00:00",
-          "current_scheduled_time": "2026-09-04T13:30:00+00:00",
-          "drift_minutes": 60.0
+          "match_id": "186411",
+          "frozen_scheduled_time": "2026-09-04T13:30:00+00:00",
+          "current_scheduled_time": "2026-09-04T14:00:00+00:00",
+          "drift_minutes": 30.0
+        },
+        {
+          "match_id": "185957",
+          "frozen_scheduled_time": "2026-09-04T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-04T15:10:00+00:00",
+          "drift_minutes": 10.0
         }
       ]
+    }
+  },
+  "evidence_readiness": {
+    "overall": {
+      "settled": 0,
+      "required": 150,
+      "remaining": 150,
+      "support_sufficient": false
+    },
+    "markets": {
+      "first_set_tiebreak": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      },
+      "first_set_over_8.5": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      },
+      "first_set_over_9.5": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      },
+      "first_set_over_10.5": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      }
+    },
+    "segments": {
+      "tour": {
+        "atp": {
+          "snapshots": 15,
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "challenger": {
+          "snapshots": 5,
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        }
+      },
+      "surface": {
+        "clay": {
+          "snapshots": 4,
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "hard": {
+          "snapshots": 16,
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        }
+      }
+    },
+    "segment_support_ready": false,
+    "ready_for_performance_verdict": false,
+    "policy": {
+      "overall_minimum_settled": 150,
+      "per_supported_segment_minimum_settled": 30,
+      "all_supported_tours_and_surfaces_must_meet_minimum": true,
+      "performance_verdict_before_support_ready_forbidden": true
     }
   },
   "eligibility_policy": {
@@ -103,8 +185,8 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 47,
-    "current_eligible_by_segment": 20,
+    "current_simulated_matches": 44,
+    "current_eligible_by_segment": 19,
     "snapshots": 20,
     "settled_snapshots": 0,
     "unsettled_snapshots": 20,
