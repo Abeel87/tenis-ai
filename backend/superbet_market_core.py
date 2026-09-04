@@ -745,6 +745,7 @@ def prepare_results(results: list[dict], availability: dict, now=None):
                 "source_age_hours": round(float(age_hours or 0.0), 2) if age_hours is not None else None,
                 "operator_verified": bool(fresh and not fixture.get("suspended")),
                 "suspended": bool(fixture.get("suspended")),
+                "operator_offer_source": fixture.get("operator_offer_source") or "oddspapi_superbet_pl",
                 "prices_used": False,
                 "canonical_markets": _compact_market_summary(selections),
                 "canonical_selections": selections,
@@ -928,7 +929,8 @@ def finalize_results(results: list[dict]):
                 "symphony_raw_probability": round(float(probability), 4), "symphony_market_adapter": VERSION,
                 "symphony_source": f"superbet_market_v91+{source}", "symphony_actionable": True,
                 "operator": BOOKMAKER, "operator_available": True, "operator_line_verified": True,
-                "operator_line_source": "oddspapi_superbet_pl",
+                "operator_line_source": selection.get("operator_line_source") or ctx.get("operator_offer_source") or "oddspapi_superbet_pl",
+                "operator_offer_source": selection.get("operator_offer_source") or ctx.get("operator_offer_source") or "oddspapi_superbet_pl",
                 "exact_path_supported": selection.get("market") in {
                     "match_winner", "set1_winner", "set2_winner", "set3_winner", "match_total", "set1_total",
                     "total_sets", "set1_exact_score", "exact_match_score", "game_state",
