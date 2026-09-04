@@ -178,12 +178,12 @@ def mapped_sanitize(row: dict,meta: dict):
 
 @contextmanager
 def _patched_runtime():
-    old_line=set(mapping.LINE_MARKETS);old_handicap=set(mapping.HANDICAP_MARKETS);old_winner=set(mapping.WINNER_MARKETS);old_canonical=base.canonical_market;old_pick=mapping._selection_pick;old_sanitize=mapping._sanitize_fixture;old_best_fixture=base._best_fixture_for_match;old_best_cached=base._best_cached_fixture;old_availability_due=base._availability_due
+    old_line=set(mapping.LINE_MARKETS);old_handicap=set(mapping.HANDICAP_MARKETS);old_winner=set(mapping.WINNER_MARKETS);old_canonical=base.canonical_market;old_pick=mapping._selection_pick;old_sanitize=mapping._sanitize_fixture;old_best_fixture=base._best_fixture_for_match;old_best_cached=base._best_cached_fixture;old_availability_due=base._availability_due;old_fixture_horizon_days=base.FIXTURE_HORIZON_DAYS
     fixture_matching.reset_telemetry()
     try:
-        base.canonical_market=canonical_market;mapping._selection_pick=selection_pick;mapping._sanitize_fixture=mapped_sanitize;base._best_fixture_for_match=fixture_matching.best_fixture_for_match;base._best_cached_fixture=fixture_matching.best_cached_fixture;base._availability_due=lambda previous,now:fixture_matching.availability_due(old_availability_due,previous,now);mapping.LINE_MARKETS.update(NEW_LINE_MARKETS);mapping.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS);mapping.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS);yield
+        base.canonical_market=canonical_market;mapping._selection_pick=selection_pick;mapping._sanitize_fixture=mapped_sanitize;base._best_fixture_for_match=fixture_matching.best_fixture_for_match;base._best_cached_fixture=fixture_matching.best_cached_fixture;base._availability_due=lambda previous,now:fixture_matching.availability_due(old_availability_due,previous,now);base.FIXTURE_HORIZON_DAYS=1;mapping.LINE_MARKETS.update(NEW_LINE_MARKETS);mapping.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS);mapping.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS);yield
     finally:
-        base.canonical_market=old_canonical;mapping._selection_pick=old_pick;mapping._sanitize_fixture=old_sanitize;base._best_fixture_for_match=old_best_fixture;base._best_cached_fixture=old_best_cached;base._availability_due=old_availability_due;mapping.LINE_MARKETS.clear();mapping.LINE_MARKETS.update(old_line);mapping.HANDICAP_MARKETS.clear();mapping.HANDICAP_MARKETS.update(old_handicap);mapping.WINNER_MARKETS.clear();mapping.WINNER_MARKETS.update(old_winner)
+        base.canonical_market=old_canonical;mapping._selection_pick=old_pick;mapping._sanitize_fixture=old_sanitize;base._best_fixture_for_match=old_best_fixture;base._best_cached_fixture=old_best_cached;base._availability_due=old_availability_due;base.FIXTURE_HORIZON_DAYS=old_fixture_horizon_days;mapping.LINE_MARKETS.clear();mapping.LINE_MARKETS.update(old_line);mapping.HANDICAP_MARKETS.clear();mapping.HANDICAP_MARKETS.update(old_handicap);mapping.WINNER_MARKETS.clear();mapping.WINNER_MARKETS.update(old_winner)
 
 
 def _stamp_alias() -> dict:
