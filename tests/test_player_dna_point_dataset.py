@@ -57,3 +57,23 @@ def test_game_boundary_maps_previous_server_to_stable_id():
     assert row["server_player_id"] == 921
     assert row["receiver_player_id"] == 4808
     assert row["trainable_player_point"] is True
+
+
+def test_dataset_carries_provider_ordering_contract_without_timestamp_reorder():
+    payload = {
+        "match": {"players": _players()},
+        "tape": [
+            {**_row((0, 0), server=1), "timestamp": "2026-09-04T10:00:00Z"},
+            {**_row((15, 0), server=1, winner=1), "timestamp": "2026-09-04T10:00:30Z"},
+            {**_row((30, 0), server=1, winner=1), "timestamp": "2026-09-04T10:00:10Z"},
+        ],
+    }
+    rows = observations_from_payload(payload, "ordering")
+    assert [row["event_index"] for row in rows] == [0, 1]
+    assert [row["timestamp_after"] for row in rows] == [
+        "2026-09-04T10:00:30Z",
+        "2026-09-04T10:00:10Z",
+    ]
+    assert all(row["ordering_authority"] == "provider_sequence_clean" for row in rows)
+    assert all(row["timestamp_role"] == "metadata_only_no_reordering" for row in rows)
+    assert all(row["provider_row_order_preserved"] is True for row in rows)
