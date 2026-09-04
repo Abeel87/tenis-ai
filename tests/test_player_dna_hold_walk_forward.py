@@ -4,6 +4,7 @@ from backend.player_dna_hold_walk_forward import (
     FOLDS,
     UNIQUE_DURATION_MARKETS,
     aggregate_folds,
+    aggregate_segments,
     partition_feature_rows,
 )
 
@@ -73,3 +74,59 @@ def test_aggregate_rejects_catastrophic_primary_collapse():
     summary = aggregate_folds(folds)
     assert summary["no_catastrophic_primary_collapse"] is False
     assert summary["robust"] is False
+
+
+def test_mature_walk_forward_windows_are_adjacent_and_disjoint():
+    assert FOLDS == (
+        ("wf1", 0.60, 0.70, 0.80),
+        ("wf2", 0.70, 0.80, 0.90),
+        ("wf3", 0.80, 0.90, 1.00),
+    )
+    assert FOLDS[0][3] == FOLDS[1][2]
+    assert FOLDS[1][3] == FOLDS[2][2]
+
+
+def test_segment_aggregate_requires_repeatability():
+    folds = [
+        {
+            "segments": {
+                "tour": {
+                    "atp": {
+                        "settled_matches": 40,
+                        "duration_markets_improved": 4,
+                        "match_winner_brier_gain": 0.01,
+                        "first_set_winner_brier_gain": 0.00,
+                    },
+                    "wta": {
+                        "settled_matches": 35,
+                        "duration_markets_improved": 1,
+                        "match_winner_brier_gain": 0.00,
+                        "first_set_winner_brier_gain": -0.002,
+                    },
+                },
+                "surface": {},
+            }
+        },
+        {
+            "segments": {
+                "tour": {
+                    "atp": {
+                        "settled_matches": 50,
+                        "duration_markets_improved": 3,
+                        "match_winner_brier_gain": 0.00,
+                        "first_set_winner_brier_gain": 0.001,
+                    },
+                    "wta": {
+                        "settled_matches": 45,
+                        "duration_markets_improved": 0,
+                        "match_winner_brier_gain": 0.00,
+                        "first_set_winner_brier_gain": -0.003,
+                    },
+                },
+                "surface": {},
+            }
+        },
+    ]
+    summary = aggregate_segments(folds)
+    assert summary["tour"]["atp"]["repeatable_duration_signal"] is True
+    assert summary["tour"]["wta"]["repeatable_duration_signal"] is False
