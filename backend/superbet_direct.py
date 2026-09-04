@@ -560,6 +560,60 @@ def _safe_network_endpoint(url: str) -> dict:
     }
 
 
+def _compact_json_record(value: dict, max_fields: int = 24) -> dict:
+    out = {}
+    for key, raw in value.items():
+        if isinstance(raw, (str, int, float, bool)) or raw is None:
+            text = raw
+            if isinstance(raw, str) and len(raw) > 180:
+                text = raw[:180] + "…"
+            out[str(key)] = text
+            if len(out) >= max_fields:
+                break
+    return out
+
+
+def _json_shape_samples(payload, *, event_id: str | None = None, max_samples: int = 8) -> dict:
+    top_keys = sorted(str(key) for key in payload.keys()) if isinstance(payload, dict) else []
+    samples = []
+    marketish = []
+    stack = [("$", payload)]
+    visited = 0
+    while stack and visited < 50000 and (len(samples) < max_samples or len(marketish) < 5):
+        path, value = stack.pop()
+        visited += 1
+        if isinstance(value, dict):
+            shallow = _compact_json_record(value)
+            shallow_blob = json.dumps(shallow, ensure_ascii=False).casefold()
+            hit = (
+                "36.5" in shallow_blob
+                or bool(event_id and str(event_id) in shallow_blob)
+                or "alexander bublik" in shallow_blob
+            )
+            if hit and shallow and len(samples) < max_samples:
+                samples.append({"path": path, "record": shallow})
+            if any("market" in str(key).casefold() or "odd" in str(key).casefold() for key in value.keys()):
+                if shallow and len(marketish) < 5:
+                    marketish.append({
+                        "path": path,
+                        "keys": sorted(str(key) for key in value.keys())[:30],
+                        "record": shallow,
+                    })
+            for key, child in reversed(list(value.items())):
+                if isinstance(child, (dict, list)):
+                    stack.append((f"{path}.{key}", child))
+        elif isinstance(value, list):
+            for index, child in reversed(list(enumerate(value[:500]))):
+                if isinstance(child, (dict, list)):
+                    stack.append((f"{path}[{index}]", child))
+    return {
+        "top_level_type": type(payload).__name__,
+        "top_level_keys": top_keys[:50],
+        "candidate_records": samples,
+        "marketish_records": marketish,
+    }
+
+
 def network_offer_diagnostics(driver, *, event_id: str | None = None, max_rows: int = 20) -> list[dict]:
     """Inspect public browser XHR/fetch responses without exposing query values."""
     try:
@@ -606,14 +660,20 @@ def network_offer_diagnostics(driver, *, event_id: str | None = None, max_rows: 
             }
             if not any(body_flags.values()) and len(rows) >= 8:
                 continue
-            rows.append({
+            row = {
                 **safe,
                 "resource_type": resource_type,
                 "mime_type": mime,
                 "status": int(response.get("status") or 0),
                 "body_length": len(body),
                 **body_flags,
-            })
+            }
+            if body_flags["contains_event_id"] and "json" in mime.casefold() and body:
+                try:
+                    row["json_shape"] = _json_shape_samples(json.loads(body), event_id=event_id)
+                except Exception:
+                    row["json_shape"] = {"parse_error": True}
+            rows.append(row)
             if len(rows) >= max_rows:
                 break
         except Exception:
