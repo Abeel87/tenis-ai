@@ -80,6 +80,36 @@
   font-weight:750;
 }
 .pds-chip.muted{opacity:.7}
+.pds-health{
+  margin-top:13px;
+  padding-top:2px;
+}
+.pds-health-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+.pds-health-item{
+  min-width:0;
+  padding:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.065);
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.pds-health-item span,.pds-health-item small,.pds-health-note{
+  color:var(--muted,#8fa1b8);
+}
+.pds-health-item b{font-size:1.05rem}
+.pds-health-item.good b{color:#5ee0a0}
+.pds-health-item.warn b{color:#ffc76b}
+.pds-health-note{
+  margin:8px 0 0;
+  font-size:.73rem;
+  line-height:1.45;
+}
 .pds-markets{margin-top:13px}
 .pds-subhead{margin-bottom:8px}
 .pds-market-row{
@@ -116,7 +146,7 @@
   color:var(--muted,#8fa1b8);
 }
 @media(max-width:720px){
-  .pds-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pds-grid,.pds-health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pds-head,.pds-segments{align-items:flex-start}
   .pds-segments{flex-direction:column}
   .pds-chips{justify-content:flex-start}

@@ -104,6 +104,37 @@
     }).join('');
   }
 
+  function settlementHealth(prospective){
+    const integrity=prospective?.ledger_integrity||{};
+    const observability=prospective?.settlement_observability||{};
+    const unsettled=observability.unsettled||{};
+    const buckets=unsettled.buckets||{};
+    const latency=observability.settlement_latency||{};
+    const drift=observability.schedule_drift||{};
+    const overdue6=n(buckets.overdue_6_24h)||0;
+    const overdue24=n(buckets.overdue_24_72h)||0;
+    const overdue72=n(buckets.overdue_gt_72h)||0;
+    const overdue=overdue6+overdue24+overdue72;
+    const ledgerOk=integrity.status==='LEDGER_INTEGRITY_OK';
+    const latencyN=n(latency.n)||0;
+    const median=n(latency.median_hours);
+    const driftCount=n(drift.count)||0;
+
+    return {
+      ledgerLabel:ledgerOk?'OK':'BRAK / BŁĄD',
+      ledgerTone:ledgerOk?'good':'warn',
+      rewrites:n(integrity.rewritten_predictions)||0,
+      overdue,
+      overdue72,
+      upcoming:n(buckets.upcoming)||0,
+      due:n(buckets.due_within_6h)||0,
+      latencyN,
+      latencyMedian:median==null?'—':`${median.toFixed(1)} h`,
+      driftCount,
+      ready:Object.keys(observability).length>0
+    };
+  }
+
   function renderHTML(prospective,walkForward){
     if(!prospective){
       return `
@@ -133,6 +164,7 @@
     const scope=prospective.market_scope==='DURATION_MARKETS_ONLY'
       ?'Tylko duration markets'
       :'Zakres diagnostyczny';
+    const health=settlementHealth(prospective);
 
     return `
       <header class="pds-head">
@@ -174,6 +206,43 @@
         <div><b>Segmenty dopuszczone przez walk-forward</b><small>tour AND surface muszą być powtarzalne</small></div>
         <div class="pds-chips">${supportedChips(policy)}</div>
       </div>
+
+      <section class="pds-health">
+        <div class="pds-subhead">
+          <b>Integralność i rozliczanie</b>
+          <small>Kontrola, czy forward-test nie przepisuje historii i czy wyniki dochodzą do canonical tape.</small>
+        </div>
+        ${health.ready?`
+          <div class="pds-health-grid">
+            <div class="pds-health-item ${health.ledgerTone}">
+              <span>Ledger</span>
+              <b>${esc(health.ledgerLabel)}</b>
+              <small>rewrite: ${health.rewrites}</small>
+            </div>
+            <div class="pds-health-item ${health.overdue72?'warn':'good'}">
+              <span>Czekają &gt;6 h</span>
+              <b>${health.overdue}</b>
+              <small>&gt;72 h: ${health.overdue72}</small>
+            </div>
+            <div class="pds-health-item">
+              <span>Latency median</span>
+              <b>${esc(health.latencyMedian)}</b>
+              <small>n=${health.latencyN} rozliczonych</small>
+            </div>
+            <div class="pds-health-item ${health.driftCount?'warn':'good'}">
+              <span>Zmiany godziny</span>
+              <b>${health.driftCount}</b>
+              <small>snapshot pozostaje zamrożony</small>
+            </div>
+          </div>
+          <p class="pds-health-note">
+            Nierozliczony / overdue oznacza tylko, że workflow nie ma jeszcze kompletnych canonical labeli.
+            To nie jest automatycznie anulowany mecz. Przed startem: ${health.upcoming}, do 6 h po planowanym starcie: ${health.due}.
+          </p>
+        `:`
+          <div class="pds-empty">Diagnostyka rozliczania pojawi się po pierwszym refreshu raportu z nowym kontraktem.</div>
+        `}
+      </section>
 
       <section class="pds-markets">
         <div class="pds-subhead">

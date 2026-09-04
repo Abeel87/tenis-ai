@@ -41,3 +41,17 @@ def test_player_dna_shadow_ui_is_event_driven_not_polling():
     assert "setInterval(" not in js
     assert "tenis-ai:stats-ready" in js
     assert "tenis-ai:stats-dashboard-ready" in js
+
+
+def test_player_dna_shadow_ui_exposes_settlement_health_without_guessing_cancellation():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+
+    assert "settlement_observability" in js
+    assert "LEDGER_INTEGRITY_OK" in js
+    assert "Czekają &gt;6 h" in js
+    assert "Latency median" in js
+    assert "Zmiany godziny" in js
+    assert "To nie jest automatycznie anulowany mecz" in js
+    assert "snapshot pozostaje zamrożony" in js
+    assert ".pds-health-grid" in css
