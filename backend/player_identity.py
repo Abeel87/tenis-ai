@@ -3,8 +3,8 @@ from __future__ import annotations
 """Canonical, provider-backed player identity mapping for cached PBP payloads.
 
 The identity gate proved that restored payloads expose match.players.p1/p2 with
-stable provider IDs. This module only accepts that explicit structure; it never
-falls back to names, ordering heuristics, or fuzzy matching.
+stable provider integer IDs. This module only accepts that explicit structure;
+it never falls back to names, ordering heuristics, coercion, or fuzzy matching.
 """
 
 from typing import Any
@@ -17,7 +17,9 @@ def _player_record(value: Any) -> dict[str, Any] | None:
         return None
     player_id = value.get("id")
     name = value.get("name")
-    if player_id is None:
+    # bool is an int subclass in Python, so reject it explicitly.  Do not coerce
+    # strings/floats: stable identity must be the provider's audited integer ID.
+    if isinstance(player_id, bool) or not isinstance(player_id, int):
         return None
     return {"id": player_id, "name": name if isinstance(name, str) and name.strip() else None}
 
