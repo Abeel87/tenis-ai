@@ -628,6 +628,16 @@ def _ranked_set_winner_trajectories(
         })
 
     rows.sort(key=lambda row: float(row["probability"]), reverse=True)
+
+    match_score_mass: dict[str, float] = defaultdict(float)
+    for row in rows:
+        match_score_mass[str(row["match_score"])] += float(row["probability"])
+    for row in rows:
+        family_mass = match_score_mass.get(str(row["match_score"]), 0.0)
+        row["conditional_probability_within_match_score"] = (
+            float(row["probability"]) / family_mass if family_mass > 0.0 else 0.0
+        )
+
     total = sum(float(row["probability"]) for row in rows)
     if rows and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
         raise AssertionError(f"set-winner trajectory probability mass drift: {total}")
@@ -918,6 +928,7 @@ def trajectory_summary(
             "full_match_game_paths_are_exact_for_known_start_server": True,
             "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
             "set_winner_trajectory_probability_scope": "SET_WINNER_SEQUENCE",
+            "set_winner_trajectory_conditional_scope": "WITHIN_MATCH_SCORE_FAMILY",
             "set_winner_trajectory_game_progressions_are_representative": True,
             "storyline_game_progressions_are_representative": True,
             "storyline_probability_never_claims_exact_game_path": True,
