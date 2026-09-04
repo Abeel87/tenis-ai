@@ -233,8 +233,6 @@ def _direct_selection_without_price(row: dict) -> dict | None:
         "operator_line_source": DIRECT_SOURCE,
         "operator_offer_source": DIRECT_SOURCE,
         "direct_source": True,
-        "direct_handicap_semantics_guard": True,
-        "suppressed_direct_handicap_variants": suppressed_handicap_variants,
         "prices_used": False,
     }
     if not out["operator_available"]:
@@ -350,6 +348,8 @@ def _direct_fixture_from_sidecar(row: dict) -> dict | None:
         "canonical_selections": selections,
         "operator_offer_source": DIRECT_SOURCE,
         "direct_source": True,
+        "direct_handicap_semantics_guard": True,
+        "suppressed_direct_handicap_variants": suppressed_handicap_variants,
         "prices_used": False,
     }
 
