@@ -38,7 +38,7 @@ on:
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
-      - 'tests/test_player_dna_hold_calibration.py'
+      - 'tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -113,6 +113,9 @@ jobs:
 
       - name: Audit Player DNA hold calibration (SHADOW, zero network)
         run: python backend/player_dna_hold_calibration.py
+
+      - name: Audit Player DNA hold walk-forward robustness (SHADOW, zero network)
+        run: python backend/player_dna_hold_walk_forward.py
 
       - name: Simulate raw + hold-calibrated Player DNA markets (SHADOW, zero network)
         run: python backend/player_dna_tennis_simulator.py
@@ -500,6 +503,48 @@ jobs:
               f"{(calibration.get('summary') or {}).get('duration_markets_total')}"
           )
 
+          p = Path('frontend/data/player_dna_hold_walk_forward.json')
+          if not p.exists():
+              raise SystemExit('player_dna_hold_walk_forward.json was not generated')
+          walk_forward = json.loads(p.read_text(encoding='utf-8'))
+          if walk_forward.get('mode') != 'SHADOW_WALK_FORWARD_AUDIT_ONLY':
+              raise SystemExit('Player DNA walk-forward audit must remain SHADOW-only')
+          if walk_forward.get('status') not in {
+              'WALK_FORWARD_COMPLETE_NO_INTEGRATION',
+              'WALK_FORWARD_INCOMPLETE_NO_INTEGRATION',
+          }:
+              raise SystemExit(f"Player DNA walk-forward status invalid: {walk_forward.get('status')}")
+          if walk_forward.get('signal') not in {
+              'HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW',
+              'HOLD_CALIBRATION_WALK_FORWARD_NOT_YET_ROBUST',
+          }:
+              raise SystemExit(f"Player DNA walk-forward signal invalid: {walk_forward.get('signal')}")
+          for key in ('production_influence', 'symphony2_influence', 'superbet_playable_influence'):
+              if walk_forward.get(key) is not False:
+                  raise SystemExit(f'Player DNA walk-forward crossed isolation boundary: {key}')
+          if walk_forward.get('current_simulator_modified') is not False:
+              raise SystemExit('Player DNA walk-forward cannot mutate current simulator')
+          if walk_forward.get('candidate_gate_modified') is not False:
+              raise SystemExit('Player DNA walk-forward cannot silently change candidate gate')
+          if walk_forward.get('auto_integrate') is not False:
+              raise SystemExit('Player DNA walk-forward cannot auto-integrate')
+          chronology = walk_forward.get('chronology_policy') or {}
+          if chronology.get('test_windows_disjoint') is not True:
+              raise SystemExit('Player DNA walk-forward test windows must be disjoint')
+          if chronology.get('same_timestamp_groups_not_split') is not True:
+              raise SystemExit('Player DNA walk-forward split leaked same-timestamp matches')
+          aggregate = walk_forward.get('aggregate') or {}
+          if int(aggregate.get('required_folds') or 0) != 3:
+              raise SystemExit('Player DNA walk-forward must define exactly three folds')
+          if int(aggregate.get('completed_folds') or 0) < 2:
+              raise SystemExit('Player DNA walk-forward completed too few folds')
+          print(
+              f"Player DNA walk-forward: signal={walk_forward.get('signal')} "
+              f"completed={aggregate.get('completed_folds')}/{aggregate.get('required_folds')} "
+              f"promising={aggregate.get('promising_folds')} "
+              f"game_improved={aggregate.get('game_hold_improved_folds')}"
+          )
+
           p = Path('frontend/data/player_dna_current_simulation.json')
           if not p.exists():
               raise SystemExit('player_dna_current_simulation.json was not generated')
@@ -599,6 +644,7 @@ jobs:
             frontend/data/player_dna_current_simulation.json
             frontend/data/player_dna_market_backtest.json
             frontend/data/player_dna_hold_calibration_audit.json
+            frontend/data/player_dna_hold_walk_forward.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
             data/derived/player_dna/current_point_model_shadow.json
