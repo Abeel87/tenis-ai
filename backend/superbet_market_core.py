@@ -654,6 +654,7 @@ def refresh_availability(results: list[dict], now=None):
         operator_rows_with_requested_bookmaker = 0
         operator_bookmakers_seen = set()
         operator_start_times = []
+        bulk_covered_discovered_ids = set()
         for row in odds_rows:
             if not isinstance(row, dict):
                 continue
@@ -688,10 +689,12 @@ def refresh_availability(results: list[dict], now=None):
                 continue
 
             match_kind = None
+            matched_discovered = None
             for discovered in discovered_matches:
                 same, kind = _same_discovered_fixture(discovered, row)
                 if same:
                     match_kind = kind
+                    matched_discovered = discovered
                     break
             if match_kind is None:
                 continue
@@ -703,6 +706,9 @@ def refresh_availability(results: list[dict], now=None):
             item = _sanitize_fixture(row, market_meta)
             if item:
                 sanitized.append(item)
+                discovered_id = str((matched_discovered or {}).get("fixtureId") or "")
+                if discovered_id:
+                    bulk_covered_discovered_ids.add(discovered_id)
 
         # Current-offer fallback: query the exact matched fixture directly.
         # Historical proof from the repository smoke test showed /v4/odds by
@@ -738,6 +744,10 @@ def refresh_availability(results: list[dict], now=None):
         ):
             stage = _direct_offer_stage(discovered.get("startTime"), now)
             if stage is None:
+                continue
+            if fixture_id in bulk_covered_discovered_ids:
+                # Bulk happened to return a real current Superbet row this hour,
+                # so the direct request would only waste quota.
                 continue
 
             cached = previous_direct_cache.get(fixture_id)
