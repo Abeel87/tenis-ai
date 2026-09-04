@@ -58,7 +58,9 @@ permissions:
   actions: write
 
 concurrency:
-  group: player-dna-shadow-refresh
+  # Keep main refreshes mutually exclusive, but never let a main/data refresh
+  # cancel the validation run of an open PR.
+  group: player-dna-shadow-refresh-${{ github.event.pull_request.number || 'main' }}
   cancel-in-progress: true
 
 env:
