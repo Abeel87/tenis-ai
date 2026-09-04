@@ -53,3 +53,22 @@ def test_same_score_rows_do_not_create_fake_point_events():
         ]
     }
     assert canonical_point_events(payload) == []
+
+
+def test_provider_sequence_is_canonical_even_when_timestamps_move_backward():
+    payload = {
+        "tape": [
+            {"sets": [0, 0], "games": [[0], [0]], "points": ["0", "0"], "server": 1, "timestamp": "2026-09-04T10:00:00Z"},
+            {"sets": [0, 0], "games": [[0], [0]], "points": ["15", "0"], "server": 1, "point_winner": 1, "timestamp": "2026-09-04T10:00:30Z"},
+            {"sets": [0, 0], "games": [[0], [0]], "points": ["30", "0"], "server": 1, "point_winner": 1, "timestamp": "2026-09-04T10:00:10Z"},
+        ]
+    }
+    events = canonical_point_events(payload, match_id="ordering")
+    assert [event["score_after"]["points"] for event in events] == [["15", "0"], ["30", "0"]]
+    assert [event["timestamp_after"] for event in events] == [
+        "2026-09-04T10:00:30Z",
+        "2026-09-04T10:00:10Z",
+    ]
+    assert all(event["ordering_authority"] == "provider_sequence_clean" for event in events)
+    assert all(event["timestamp_role"] == "metadata_only_no_reordering" for event in events)
+    assert all(event["provider_row_order_preserved"] is True for event in events)
