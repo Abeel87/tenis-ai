@@ -40,7 +40,12 @@ try:
         _predict_match_simulations,
         _snapshot_pairs,
     )
-    from backend.player_dna_tennis_simulator import hold_probability, simulate_match
+    from backend.player_dna_tennis_simulator import (
+        calibrated_hold_probability,
+        hold_probability,
+        inverse_hold_probability,
+        simulate_match,
+    )
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
         PROFILE_NUMERIC,
@@ -56,7 +61,12 @@ except ModuleNotFoundError:  # direct execution
         _predict_match_simulations,
         _snapshot_pairs,
     )
-    from player_dna_tennis_simulator import hold_probability, simulate_match
+    from player_dna_tennis_simulator import (
+        calibrated_hold_probability,
+        hold_probability,
+        inverse_hold_probability,
+        simulate_match,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -140,25 +150,6 @@ def fit_hold_platt(
         "iterations": int(iteration),
         "converged": bool(converged),
     }
-
-
-def calibrated_hold_probability(iid_hold_probability: float, calibrator: dict[str, Any]) -> float:
-    value = float(calibrator["intercept"]) + float(calibrator["slope"]) * _logit(iid_hold_probability)
-    return float(_sigmoid([value])[0])
-
-
-def inverse_hold_probability(target_hold: float) -> float:
-    """Invert the exact advantage-game hold function by monotone bisection."""
-    target = min(1.0 - 1e-10, max(1e-10, float(target_hold)))
-    lo, hi = 1e-6, 1.0 - 1e-6
-    for _ in range(80):
-        mid = 0.5 * (lo + hi)
-        current = hold_probability(mid)
-        if current < target:
-            lo = mid
-        else:
-            hi = mid
-    return 0.5 * (lo + hi)
 
 
 def _game_observations(
