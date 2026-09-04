@@ -303,6 +303,9 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         "unsafe_sidecar_matches_rejected": 0,
         "prices_in_canonical_availability": False,
         "prices_used": False,
+        "canonical_context_activation": False,
+        "downstream_playable_eligibility": False,
+        "model_math_unchanged": True,
         "policy": "CURRENT_ODDSPAPI_FIXTURE_FIRST; DIRECT_ONLY_WHEN_NO_SAFE_CURRENT_FIXTURE",
     }
 
@@ -384,6 +387,9 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         fixtures.append(dict(oriented))
         diagnostic["fallback_fixtures_added"] += 1
 
+    if diagnostic["fallback_fixtures_added"] > 0:
+        diagnostic["canonical_context_activation"] = True
+        diagnostic["downstream_playable_eligibility"] = True
     availability["fixtures"] = fixtures
     availability["direct_fallback"] = diagnostic
     availability["operator_source_policy"] = (
