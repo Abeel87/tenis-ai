@@ -622,6 +622,20 @@ def browser_probe(timeout: int = 25) -> dict:
                 "zdobedzie powyzej",
             ))
         ][:12]
+        raw_html = driver.page_source or ""
+        raw_snippets = []
+        for needle in (
+            "Poniżej 36.5 gemów w meczu",
+            "Mecz zakończy się wynikiem",
+            "Handicapu gemów",
+            "Powyżej 8.5 gemów w 1. secie",
+        ):
+            pos = raw_html.find(needle)
+            if pos < 0:
+                continue
+            snippet = raw_html[max(0, pos - 350):pos + 850]
+            snippet = re.sub(r"\\s+", " ", snippet)
+            raw_snippets.append({"needle": needle, "snippet": snippet[:1200]})
         result["normalized_offer"] = {
             "event_id": normalized.get("event_id"),
             "p1": normalized.get("p1"),
@@ -631,6 +645,7 @@ def browser_probe(timeout: int = 25) -> dict:
             "prices_used": normalized.get("prices_used"),
             "dom_text_lines": len(rendered_text.splitlines()),
             "candidate_line_samples": candidate_lines,
+            "raw_market_snippets": raw_snippets,
         }
         result["status"] = (
             "OK"
