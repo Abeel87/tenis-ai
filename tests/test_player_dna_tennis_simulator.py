@@ -88,6 +88,15 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
         assert all(row["representative_only"] is True for row in storylines)
         assert all(row["probability_scope"] == "SET_WINNER_SEQUENCE" for row in set_winner_trajectories)
         assert all(row["representative_only"] is True for row in set_winner_trajectories)
+        by_match_score = {}
+        for row in set_winner_trajectories:
+            by_match_score.setdefault(row["match_score"], []).append(row)
+        for rows in by_match_score.values():
+            assert math.isclose(
+                sum(row["conditional_probability_within_match_score"] for row in rows),
+                1.0,
+                abs_tol=1e-9,
+            )
         for trajectory_row in set_winner_trajectories:
             p1_sets = trajectory_row["set_winners"].count(1)
             p2_sets = trajectory_row["set_winners"].count(2)
@@ -129,6 +138,7 @@ def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script()
     assert contract["primary_storyline_probability_scope"] == "MATCH_SCORE_FAMILY"
     assert contract["storyline_game_progressions_are_representative"] is True
     assert contract["set_winner_trajectory_probability_scope"] == "SET_WINNER_SEQUENCE"
+    assert contract["set_winner_trajectory_conditional_scope"] == "WITHIN_MATCH_SCORE_FAMILY"
     assert contract["set_winner_trajectory_game_progressions_are_representative"] is True
     assert contract["exact_full_match_game_paths_are_diagnostic_only"] is True
     for key in ("p1_serves_first", "p2_serves_first"):
