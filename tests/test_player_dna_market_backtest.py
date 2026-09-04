@@ -241,5 +241,7 @@ def test_deciding_set_order_is_ranked_inside_actual_match_score_family():
     assert conditional["n"] == 1
     assert conditional["hit_at_1"] == 0.0
     assert conditional["hit_at_2"] == 1.0
+    assert conditional["chance_top1"] == 0.5
+    assert conditional["edge_vs_chance_pp"] == -50.0
     assert metrics["coverage"]["deciding_set_order_sequences"] == 1
 
