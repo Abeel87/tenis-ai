@@ -13,6 +13,7 @@ on:
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
+      - 'backend/player_dna_market_backtest.py'
       - 'backend/player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
@@ -37,6 +38,7 @@ on:
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
+      - 'tests/test_player_dna_market_backtest.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
 
@@ -89,7 +91,8 @@ jobs:
           python -m py_compile backend/player_dna_point_scorer.py
           python -m py_compile backend/player_dna_current_shadow.py
           python -m py_compile backend/player_dna_tennis_simulator.py
-          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_identity.py
+          python -m py_compile backend/player_dna_market_backtest.py
+          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_market_backtest.py             tests/test_player_identity.py
 
       - name: Build strict Player DNA point dataset
         run: python backend/player_dna_point_dataset.py
@@ -108,6 +111,9 @@ jobs:
 
       - name: Simulate tennis markets in SHADOW
         run: python backend/player_dna_tennis_simulator.py
+
+      - name: Backtest simulated markets on historical holdout
+        run: python backend/player_dna_market_backtest.py
 
       - name: Hard isolation + learning guard
         run: |
@@ -167,6 +173,31 @@ jobs:
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
 
+          backtest = json.loads((data / 'player_dna_market_backtest.json').read_text(encoding='utf-8'))
+          assert backtest.get('mode') == 'SHADOW_BACKTEST_ONLY'
+          assert backtest.get('status') == 'BACKTEST_COMPLETE_NO_PROMOTION'
+          assert backtest.get('production_influence') is False
+          assert backtest.get('symphony2_influence') is False
+          assert backtest.get('superbet_playable_influence') is False
+          assert backtest.get('auto_promote') is False
+          assert backtest.get('current_simulation_status_unchanged') == 'UNVALIDATED_MATCH_LEVEL'
+          assert backtest.get('model_features') == 'PROFILE_ONLY_CURRENT_COMPATIBLE'
+          assert backtest.get('model_converged') is True
+          assert (backtest.get('signal') in {
+              'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
+              'MIXED_OR_NO_MATCH_LEVEL_SIGNAL',
+          })
+          bt_counts = backtest.get('counts') or {}
+          assert int(bt_counts.get('settled_simulated_holdout_matches') or 0) >= 200
+          bt_summary = backtest.get('summary') or {}
+          assert int(bt_summary.get('binary_markets_evaluated_ge_100') or 0) >= 6
+          for market in ('match_p1_win', 'first_set_p1_win', 'first_set_tiebreak'):
+              metrics = (backtest.get('binary_markets') or {}).get(market) or {}
+              assert int(metrics.get('n') or 0) >= 100
+              assert metrics.get('brier') is not None
+              assert metrics.get('baseline_brier') is not None
+              assert metrics.get('ece_10_bin') is not None
+
           simulation = json.loads((data / 'player_dna_current_simulation.json').read_text(encoding='utf-8'))
           assert simulation.get('mode') == 'SHADOW_SIMULATION_ONLY'
           assert simulation.get('production_influence') is False
@@ -200,6 +231,8 @@ jobs:
               f"collecting={current.get('collecting_history_matches')} "
               f"signal={(scorer.get('signal') or {}).get('status')} "
               f"simulated={simulation.get('simulated_matches')} "
+              f"backtest={backtest.get('signal')} "
+              f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
           PY
@@ -215,6 +248,7 @@ jobs:
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_simulation.json
+            frontend/data/player_dna_market_backtest.json
             data/derived/player_dna/current_point_model_shadow.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
@@ -227,7 +261,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
