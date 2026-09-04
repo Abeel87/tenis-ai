@@ -75,9 +75,13 @@ def test_player_dna_match_detail_reads_published_trajectory_lazily_and_stays_sha
     assert ".pds-trajectory-grid" in css
 
 
-def test_player_dna_match_detail_uses_full_game_paths_when_available_and_safe_fallback_before_publish():
+def test_player_dna_match_detail_prefers_storyline_families_and_keeps_exact_paths_diagnostic():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
 
+    assert "match_storylines" in js
+    assert "probability_scope==='MATCH_SCORE_FAMILY'" in js
+    assert "reprezentatywnym przebiegiem" in js
+    assert "dokładne pełne ścieżki pozostają diagnostyką SHADOW" in js
     assert "full_match_top_game_paths" in js
     assert "match_top_set_paths" in js
     assert "first_set_top_game_paths" in js
