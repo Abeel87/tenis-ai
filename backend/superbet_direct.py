@@ -14,6 +14,7 @@ writes to frontend/data.
 import json
 import re
 import sys
+from pathlib import Path
 from html import unescape
 from html.parser import HTMLParser
 from urllib.parse import unquote, urljoin, urlparse
@@ -1106,6 +1107,224 @@ def parse_event_payload(
     }
 
 
+
+def _selection_signature(row: dict) -> tuple:
+    """Exact canonical offer signature; operator price is intentionally excluded."""
+    line = _float_token(row.get("line"))
+    if line is not None:
+        line = round(line, 6)
+    try:
+        set_no = int(row.get("set_no")) if row.get("set_no") is not None else None
+    except (TypeError, ValueError):
+        set_no = None
+    return (
+        str(row.get("market") or "").strip(),
+        _norm(row.get("pick")),
+        line,
+        _norm(row.get("player")),
+        set_no,
+    )
+
+
+def compare_direct_with_existing_context(match: dict, direct_offer: dict) -> dict:
+    """Compare exact market/pick/line signatures without feeding prices into math."""
+    ctx = match.get("superbet_market_v91") if isinstance(match, dict) else {}
+    ctx = ctx if isinstance(ctx, dict) else {}
+    existing_rows = [
+        row for row in (ctx.get("canonical_selections") or [])
+        if isinstance(row, dict)
+    ]
+    direct_rows = [
+        row for row in (direct_offer.get("canonical_selections") or [])
+        if isinstance(row, dict)
+    ]
+
+    existing = {_selection_signature(row): row for row in existing_rows}
+    direct = {_selection_signature(row): row for row in direct_rows}
+    common = set(existing).intersection(direct)
+    direct_only = set(direct).difference(existing)
+    existing_only = set(existing).difference(direct)
+
+    def market_counts(signatures: set[tuple]) -> dict:
+        counts: dict[str, int] = {}
+        for signature in signatures:
+            market = str(signature[0] or "unknown")
+            counts[market] = counts.get(market, 0) + 1
+        return dict(sorted(counts.items()))
+
+    return {
+        "match_id": match.get("match_id"),
+        "p1": match.get("p1"),
+        "p2": match.get("p2"),
+        "scheduled_time": match.get("scheduled_time"),
+        "existing_context_status": ctx.get("status"),
+        "existing_operator_verified": ctx.get("operator_verified") is True,
+        "existing_fixture_id": ctx.get("fixture_id"),
+        "direct_event_id": direct_offer.get("event_id"),
+        "direct_match_verified": direct_offer.get("direct_match_verified") is True,
+        "existing_selections_count": len(existing),
+        "direct_selections_count": len(direct),
+        "exact_signature_overlap_count": len(common),
+        "direct_only_count": len(direct_only),
+        "existing_only_count": len(existing_only),
+        "exact_signature_overlap_ratio_vs_existing": (
+            round(len(common) / len(existing), 6) if existing else None
+        ),
+        "exact_signature_overlap_ratio_vs_direct": (
+            round(len(common) / len(direct), 6) if direct else None
+        ),
+        "overlap_market_counts": market_counts(common),
+        "direct_only_market_counts": market_counts(direct_only),
+        "existing_only_market_counts": market_counts(existing_only),
+        "comparison_uses_operator_prices": False,
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+    }
+
+
+def build_direct_parity_report(
+    results: object,
+    availability: object,
+    match_urls: list[str],
+    *,
+    fetcher=None,
+    max_matches: int = 8,
+) -> dict:
+    """Resolve real app matches against Direct and compare with current context.
+
+    This is diagnostic-only. It neither writes availability nor changes the
+    canonical operator context consumed by PLAYABLE.
+    """
+    if isinstance(results, list):
+        matches = [row for row in results if isinstance(row, dict)]
+    elif isinstance(results, dict) and isinstance(results.get("matches"), list):
+        matches = [row for row in results.get("matches") if isinstance(row, dict)]
+    else:
+        matches = []
+
+    availability = availability if isinstance(availability, dict) else {}
+    limit = max(1, min(int(max_matches or 1), 16))
+    candidates: list[dict] = []
+    for match in matches:
+        if not match.get("p1") or not match.get("p2") or not match.get("scheduled_time"):
+            continue
+        if candidate_event_urls(match, match_urls, limit=8):
+            candidates.append(match)
+        if len(candidates) >= limit:
+            break
+
+    payload_cache: dict[str, dict] = {}
+    raw_fetcher = fetcher or fetch_event_payload_public
+
+    def cached_fetch(event_id: str) -> dict:
+        key = str(event_id)
+        if key not in payload_cache:
+            payload_cache[key] = raw_fetcher(key)
+        return payload_cache[key]
+
+    resolved_reports: list[dict] = []
+    rejected: list[dict] = []
+    for match in candidates:
+        offer = resolve_selected_match_offer(
+            match,
+            match_urls,
+            fetcher=cached_fetch,
+            candidate_limit=8,
+        )
+        if offer.get("status") != "OK":
+            rejected.append({
+                "match_id": match.get("match_id"),
+                "p1": match.get("p1"),
+                "p2": match.get("p2"),
+                "scheduled_time": match.get("scheduled_time"),
+                "status": offer.get("status"),
+                "candidate_urls_count": offer.get("candidate_urls_count"),
+                "event_payloads_ok": offer.get("event_payloads_ok"),
+            })
+            continue
+        resolved_reports.append(compare_direct_with_existing_context(match, offer))
+
+    availability_diag = {
+        "refresh_status": availability.get("refresh_status"),
+        "generated_at": availability.get("generated_at"),
+        "fixtures_seen": availability.get("fixtures_seen"),
+        "matched_fixture_candidates": availability.get("matched_fixture_candidates"),
+        "operator_odds_rows_seen": availability.get("operator_odds_rows_seen"),
+        "operator_rows_with_requested_bookmaker": availability.get("operator_rows_with_requested_bookmaker"),
+        "operator_rows_in_horizon": availability.get("operator_rows_in_horizon"),
+        "operator_rows_in_horizon_with_requested_bookmaker": availability.get(
+            "operator_rows_in_horizon_with_requested_bookmaker"
+        ),
+        "operator_start_min": availability.get("operator_start_min"),
+        "operator_start_max": availability.get("operator_start_max"),
+        "sanitized_fixtures_count": len(availability.get("fixtures") or []),
+        "contains_prices": availability.get("contains_prices"),
+        "prices_used": availability.get("prices_used"),
+    }
+
+    return {
+        "mode": "READ_ONLY_SUPERBET_DIRECT_APP_PARITY_DIAGNOSTIC",
+        "status": (
+            "OK"
+            if resolved_reports
+            else "NO_SAFE_OVERLAP"
+            if candidates
+            else "NO_CURRENT_OVERLAP"
+        ),
+        "app_matches_seen": len(matches),
+        "direct_match_urls_seen": len(match_urls),
+        "candidate_app_matches": len(candidates),
+        "resolved_app_matches": len(resolved_reports),
+        "rejected_candidate_matches": len(rejected),
+        "matches": resolved_reports,
+        "rejected": rejected,
+        "existing_context_source": availability_diag,
+        "comparison_uses_operator_prices": False,
+        "prices_used": False,
+        "writes_frontend_data": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+    }
+
+
+def local_direct_parity_report(match_urls: list[str]) -> dict:
+    """Read checked-out runtime JSON and build a live, non-mutating parity report."""
+    data_dir = Path(__file__).resolve().parents[1] / "frontend" / "data"
+    results_path = data_dir / "results.json"
+    availability_path = data_dir / "superbet_market_availability_v91.json"
+    if not results_path.exists() or not availability_path.exists():
+        return {
+            "mode": "READ_ONLY_SUPERBET_DIRECT_APP_PARITY_DIAGNOSTIC",
+            "status": "INPUTS_UNAVAILABLE",
+            "prices_used": False,
+            "writes_frontend_data": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+    try:
+        results = json.loads(results_path.read_text(encoding="utf-8"))
+        availability = json.loads(availability_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {
+            "mode": "READ_ONLY_SUPERBET_DIRECT_APP_PARITY_DIAGNOSTIC",
+            "status": "INPUTS_INVALID",
+            "prices_used": False,
+            "writes_frontend_data": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+    return build_direct_parity_report(results, availability, match_urls)
+
+
 def capture_event_payload(driver, event_id: str) -> dict | None:
     """Capture the exact public event JSON already requested by the page."""
     try:
@@ -1342,6 +1561,8 @@ def browser_probe(timeout: int = 25) -> dict:
             "verified_price_selections_count": selected_resolution.get("verified_price_selections_count"),
             "prices_used": selected_resolution.get("prices_used"),
         }
+
+        result["app_parity"] = local_direct_parity_report(match_urls)
 
         core_counts = normalized.get("market_counts") or {}
         result["status"] = (
