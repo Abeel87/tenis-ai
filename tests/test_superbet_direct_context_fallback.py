@@ -252,3 +252,13 @@ def test_main_workflow_refreshes_direct_before_superbet_prepare():
     finalize_pos = workflow.index("Superbet Market Context FINALIZE")
     assert direct_pos < prepare_pos < finalize_pos
     assert workflow.count("Superbet Direct selected-match SHADOW sidecar") == 1
+
+
+
+def test_hourly_workflow_guards_direct_fallback_activation():
+    workflow = Path(".github/workflows/superbet-market-refresh.yml").read_text(encoding="utf-8")
+    assert "SUPERBET_DIRECT_FALLBACK_DIAGNOSTIC" in workflow
+    assert "prices_in_canonical_availability" in workflow
+    assert "canonical_context_activation" in workflow
+    assert "downstream_playable_eligibility" in workflow
+    assert "model_math_unchanged" in workflow
