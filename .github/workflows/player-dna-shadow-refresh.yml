@@ -250,6 +250,8 @@ jobs:
           chronology = walk_forward.get('chronology_policy') or {}
           assert chronology.get('test_windows_disjoint') is True
           assert chronology.get('same_timestamp_groups_not_split') is True
+          assert chronology.get('mature_history_windows') is True
+          assert isinstance(walk_forward.get('segment_aggregate'), dict)
           aggregate = walk_forward.get('aggregate') or {}
           assert int(aggregate.get('required_folds') or 0) == 3
           assert int(aggregate.get('completed_folds') or 0) >= 2
