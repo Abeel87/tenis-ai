@@ -612,7 +612,7 @@ def candidate_event_urls(match: dict, urls: list[str], limit: int = 4) -> list[d
             continue
         seen.add(event_id)
 
-        score = fixture_matching._pair_score(
+        score = fixture_matching.pair_score(
             app_p1, app_p2, stub.get("p1"), stub.get("p2")
         )
         if score < fixture_matching.MIN_PERSON_SCORE:
@@ -662,7 +662,7 @@ def resolve_selected_match_offer(
     match_urls: list[str],
     *,
     fetcher=None,
-    candidate_limit: int = 4,
+    candidate_limit: int = 8,
 ) -> dict:
     """Resolve one Tenis AI match to one exact Superbet event, fail closed.
 
@@ -670,7 +670,12 @@ def resolve_selected_match_offer(
     made by the canonical fixture matcher against structured event metadata,
     including the scheduled-time guard and ambiguity rejection.
     """
-    if not isinstance(match, dict) or not match.get("p1") or not match.get("p2"):
+    if (
+        not isinstance(match, dict)
+        or not match.get("p1")
+        or not match.get("p2")
+        or not match.get("scheduled_time")
+    ):
         return {
             "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
             "status": "INVALID_SELECTED_MATCH",
@@ -705,6 +710,26 @@ def resolve_selected_match_offer(
         row = dict(offer)
         row["fixture_id"] = offer.get("event_id")
         offers.append(row)
+
+    if fetch_errors and len(candidates) > 1:
+        return {
+            "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
+            "status": "NO_SAFE_DIRECT_MATCH",
+            "selected_match_id": match.get("match_id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"),
+            "candidate_urls_count": len(candidates),
+            "event_payloads_ok": len(offers),
+            "event_fetch_errors": fetch_errors,
+            "direct_match_verified": False,
+            "canonical_selections": [],
+            "prices_used": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
 
     selected = fixture_matching.select_cached_fixture(match, offers)
     if not isinstance(selected, dict):
@@ -1304,7 +1329,7 @@ def browser_probe(timeout: int = 25) -> dict:
         selected_resolution = resolve_selected_match_offer(
             selected_probe_match,
             match_urls,
-            candidate_limit=4,
+            candidate_limit=8,
         )
         result["selected_match_resolution"] = {
             "status": selected_resolution.get("status"),
