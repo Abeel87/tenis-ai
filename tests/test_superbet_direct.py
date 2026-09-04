@@ -193,3 +193,60 @@ def test_browser_offer_rejects_listing_and_external_urls():
             pass
         else:
             raise AssertionError(f"URL should be rejected: {url}")
+
+
+
+def test_parse_visible_offer_text_reads_explicit_superbet_match_total_table():
+    text = """
+    Liczba gemów
+    Gemy
+    PONIŻEJ
+    POWYŻEJ
+    38.5
+    2.10
+    1.67
+    39.5
+    1.97
+    1.76
+    40.5
+    1.83
+    1.91
+    Dokładny wynik
+    """
+    result = direct.parse_visible_offer_text(
+        text,
+        url="https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        title="Alexander Bublik vs Tommy Paul: Kursy i Zakłady | Superbet",
+    )
+    rows = {
+        (row["market"], row["pick"], row.get("line")): row
+        for row in result["canonical_selections"]
+    }
+    assert result["canonical_selections_count"] == 6
+    assert rows[("match_total", "under", 38.5)]["operator_price"] == 2.10
+    assert rows[("match_total", "over", 38.5)]["operator_price"] == 1.67
+    assert rows[("match_total", "under", 39.5)]["operator_price"] == 1.97
+    assert rows[("match_total", "over", 40.5)]["operator_price"] == 1.91
+    assert all(row["operator_line_verified"] is True for row in rows.values())
+    assert all(row["prices_used"] is False for row in rows.values())
+
+
+def test_parse_visible_offer_text_reads_self_describing_total_sets_card():
+    text = """
+    150+ postawiło ten zakład
+    Liczba setów - Powyżej 3.5
+    1.47
+    przejdź na początek
+    """
+    result = direct.parse_visible_offer_text(
+        text,
+        url="https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        title="Alexander Bublik vs Tommy Paul: Kursy i Zakłady | Superbet",
+    )
+    assert result["canonical_selections_count"] == 1
+    row = result["canonical_selections"][0]
+    assert row["market"] == "total_sets"
+    assert row["pick"] == "over"
+    assert row["line"] == 3.5
+    assert row["operator_price"] == 1.47
+    assert row["prices_used"] is False
