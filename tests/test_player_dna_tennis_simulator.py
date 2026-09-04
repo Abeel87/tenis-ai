@@ -8,6 +8,8 @@ from backend.player_dna_tennis_simulator import (
     match_outcomes,
     neutral_tiebreak_win_probability,
     score_distribution_after_games,
+    scenario_family_distribution,
+    scenario_first_set_shape,
     set_outcomes,
     simulate_current_report,
     simulate_match,
@@ -102,6 +104,48 @@ def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script()
         assert paths
         assert all(row["sets_played"] in (3, 4, 5) for row in paths)
         assert all(row["match_score"] in {"3:0", "3:1", "3:2", "0:3", "1:3", "2:3"} for row in paths)
+
+
+def test_scenario_first_set_shape_is_stable_and_directional():
+    assert scenario_first_set_shape("6:1") == "P1_DOMINANT"
+    assert scenario_first_set_shape("6:4") == "P1_CONTROLLED"
+    assert scenario_first_set_shape("7:5") == "P1_TIGHT"
+    assert scenario_first_set_shape("2:6") == "P2_DOMINANT"
+    assert scenario_first_set_shape("4:6") == "P2_CONTROLLED"
+    assert scenario_first_set_shape("6:7") == "P2_TIGHT"
+
+
+def test_scenario_families_preserve_all_probability_mass_and_aggregate_paths():
+    rows = scenario_family_distribution(0.63, 0.59, best_of=3, start_server=1)
+    assert rows
+    assert math.isclose(sum(row["probability"] for row in rows), 1.0, abs_tol=1e-9)
+    assert len({row["family_id"] for row in rows}) == len(rows)
+    assert rows == sorted(rows, key=lambda row: row["probability"], reverse=True)
+    for row in rows:
+        assert row["score_after_6_games"]
+        assert row["first_set_shape"] in {
+            "P1_DOMINANT", "P1_CONTROLLED", "P1_TIGHT",
+            "P2_DOMINANT", "P2_CONTROLLED", "P2_TIGHT",
+        }
+        assert row["match_score"] in {"2:0", "2:1", "0:2", "1:2"}
+        assert row["probability"] > 0.0
+        assert row["expected_total_games"] > 0.0
+        assert row["total_games_range"][0] <= row["expected_total_games"] <= row["total_games_range"][1]
+        assert 0.0 <= row["any_tiebreak_probability"] <= 1.0
+        assert row["top_first_set_scores"]
+
+
+def test_scenario_families_are_less_fragmented_than_exact_full_game_paths():
+    trajectory = trajectory_summary(0.63, 0.59, best_of=3)
+    branch = trajectory["serve_order_conditioned"]["p1_serves_first"]
+    families = branch["scenario_families"]
+    exact = branch["full_match_top_game_paths"]
+    assert families
+    assert exact
+    assert families[0]["probability"] > exact[0]["probability"]
+    assert branch["scenario_family_top16_mass"] > 0.0
+    assert branch["scenario_family_top16_mass"] <= 1.0
+    assert trajectory["contract"]["scenario_families_aggregate_many_exact_paths"] is True
 
 
 def test_simulate_match_embeds_trajectory_additively():
