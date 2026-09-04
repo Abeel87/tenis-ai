@@ -92,13 +92,16 @@ def test_reconstruct_complete_game_progression_for_trajectory_validation():
 
 def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     actual_first = ["1:0", "1:1", "2:1", "2:2", "3:2", "3:3", "4:3", "4:4", "5:4", "6:4"]
+    actual_second = ["1:0", "2:0", "2:1", "3:1", "4:1", "4:2", "5:2", "5:3", "6:3"]
     labels = {
         "1": {
             "trajectory_actual": {
                 "first_server": 1,
                 "checkpoint_scores": {"2": "1:1", "4": "2:2", "6": "3:3"},
                 "first_set_progression": actual_first,
+                "set_progressions": [actual_first, actual_second],
                 "set_score_sequence": ["6:4", "6:3"],
+                "full_match_progression_complete": True,
             }
         }
     }
@@ -121,6 +124,20 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
                                 {"set_scores": ["6:4", "6:3"]},
                                 {"set_scores": ["6:4", "4:6", "6:3"]},
                             ],
+                            "full_match_top_game_paths": [
+                                {
+                                    "sets": [
+                                        {"progression": ["1:0", "2:0", "3:0", "4:0", "5:0", "6:0"]},
+                                        {"progression": ["0:1", "0:2", "0:3", "0:4", "0:5", "0:6"]},
+                                    ]
+                                },
+                                {
+                                    "sets": [
+                                        {"progression": actual_first},
+                                        {"progression": actual_second},
+                                    ]
+                                },
+                            ],
                         }
                     },
                 }
@@ -142,3 +159,10 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     match = metrics["match_set_sequence_conditioned_on_observed_first_server"]
     assert match["hit_at_1"] == 1.0
     assert match["hit_at_12"] == 1.0
+    full = metrics["full_match_game_path_conditioned_on_observed_first_server"]
+    assert full["n"] == 1
+    assert full["hit_at_1"] == 0.0
+    assert full["hit_at_2"] == 1.0
+    assert full["hit_at_4"] == 1.0
+    assert 0.0 < full["mean_top1_prefix_fraction"] < 1.0
+    assert metrics["coverage"]["full_match_complete_paths"] == 1
