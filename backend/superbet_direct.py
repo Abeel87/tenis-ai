@@ -82,7 +82,12 @@ def parse_html(html: str) -> dict:
     return {
         "links": parser.links,
         "text": " ".join(parser.text),
+        "text_lines": list(parser.text),
     }
+
+
+def rendered_text_from_html(html: str) -> str:
+    return "\n".join(parse_html(html).get("text_lines") or [])
 
 
 def discover_match_urls(html: str) -> list[str]:
@@ -465,11 +470,8 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
         driver.get(url)
 
         def offer_ready(drv):
-            try:
-                body_text = drv.find_element(By.TAG_NAME, "body").text
-            except Exception:
-                return False
-            normalized = parse_visible_offer_text(body_text, url=url, title=drv.title)
+            rendered_text = rendered_text_from_html(drv.page_source)
+            normalized = parse_visible_offer_text(rendered_text, url=url, title=drv.title)
             return int(normalized.get("canonical_selections_count") or 0) >= 4
 
         try:
@@ -477,11 +479,11 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
         except Exception:
             pass
 
-        body_text = driver.find_element(By.TAG_NAME, "body").text
-        result = parse_visible_offer_text(body_text, url=url, title=driver.title)
+        rendered_text = rendered_text_from_html(driver.page_source)
+        result = parse_visible_offer_text(rendered_text, url=url, title=driver.title)
         result["final_url"] = driver.current_url
         result["title"] = driver.title
-        result["rendered_text_length"] = len(body_text)
+        result["rendered_text_length"] = len(rendered_text)
         result["status"] = "OK" if int(result.get("canonical_selections_count") or 0) >= 4 else "INSUFFICIENT_NORMALIZED_OFFER"
         return result
     finally:
@@ -580,11 +582,8 @@ def browser_probe(timeout: int = 25) -> dict:
         summary["final_url"] = driver.current_url
         summary["title"] = driver.title
         result["sample"] = summary
-        try:
-            body_text = driver.find_element(By.TAG_NAME, "body").text
-        except Exception:
-            body_text = ""
-        normalized = parse_visible_offer_text(body_text, url=sample_url, title=driver.title)
+        rendered_text = rendered_text_from_html(driver.page_source)
+        normalized = parse_visible_offer_text(rendered_text, url=sample_url, title=driver.title)
         result["normalized_offer"] = {
             "event_id": normalized.get("event_id"),
             "p1": normalized.get("p1"),
