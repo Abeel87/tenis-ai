@@ -48,6 +48,7 @@ on:
       - 'scripts/verify_superbet_market_semantics.py'
       - 'tests/test_canonical_superbet_runtime.py'
       - 'tests/test_match_browser_filter_coherence.py'
+      - 'tests/test_superbet_fixture_discovery_separation.py'
       - 'tests/test_superbet_fixture_matching_v927.py'
       - 'tests/test_superbet_market_v913.py'
       - 'tests/test_superbet_market_v923.py'
@@ -124,7 +125,7 @@ jobs:
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
-        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -201,6 +202,11 @@ jobs:
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
           assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
+          discovery = availability.get('fixture_discovery_contract') or {}
+          assert discovery.get('bookmaker_neutral') is True
+          assert discovery.get('has_odds_filter') is False
+          assert discovery.get('bookmaker_filter') is False
+          assert discovery.get('operator_offer_checked_later') is True
           matching = availability.get('fixture_matching_v927') or {}
           assert matching.get('version') == 'v9.2.7'
           assert int(matching.get('additional_external_requests', -1)) == 0
