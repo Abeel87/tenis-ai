@@ -543,6 +543,7 @@ def _trajectory_validation(
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
     match_set_records = []
+    storyline_records = []
     full_match_records = []
 
     for match_id, label in labels.items():
@@ -570,6 +571,22 @@ def _trajectory_validation(
         branch = (trajectory.get("serve_order_conditioned") or {}).get(branch_key) if branch_key else None
         if not isinstance(branch, dict):
             continue
+
+        actual_match_score = str(label.get("match_exact_score") or "").strip()
+        storylines = branch.get("match_storylines") or []
+        if actual_match_score and storylines:
+            ranked_scores = [str(row.get("match_score") or "") for row in storylines]
+            hit_rank = None
+            for idx, candidate in enumerate(ranked_scores, start=1):
+                if candidate == actual_match_score:
+                    hit_rank = idx
+                    break
+            storyline_records.append({
+                "rank": hit_rank,
+                "hit_at_1": bool(hit_rank is not None and hit_rank <= 1),
+                "hit_at_2": bool(hit_rank is not None and hit_rank <= 2),
+                "hit_at_3": bool(hit_rank is not None and hit_rank <= 3),
+            })
 
         first_path = _normalized_progression(actual.get("first_set_progression"))
         if first_path:
@@ -625,12 +642,13 @@ def _trajectory_validation(
     return {
         "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
         "promotion_gate": False,
-        "claim": "ranked path diagnostics only; no match-level robustness claim",
+        "claim": "ranked storyline families plus exact-path diagnostics only; no match-level robustness claim",
         "checkpoint_neutral_start_server": {
             f"after_{games}_games": summarize_checkpoint(checkpoint_records[games])
             for games in (2, 4, 6)
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
+        "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
         "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
