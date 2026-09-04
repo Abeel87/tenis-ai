@@ -83,6 +83,11 @@ def _pair_score(app_p1, app_p2, fixture_p1, fixture_p2) -> float:
     best=max(valid,key=lambda pair:(min(pair),sum(pair))); return min(best)
 
 
+
+def pair_score(app_p1, app_p2, fixture_p1, fixture_p2) -> float:
+    """Public read-only access to the canonical two-player similarity score."""
+    return _pair_score(app_p1, app_p2, fixture_p1, fixture_p2)
+
 def _fixture_fields(row: dict, cached: bool):
     if cached:return row.get("p1"),row.get("p2"),row.get("start_time"),row.get("fixture_id")
     return row.get("participant1Name"),row.get("participant2Name"),row.get("startTime"),row.get("fixtureId")
@@ -94,8 +99,8 @@ def _sample(scope: dict, match: dict, reason: str) -> None:
     samples.append({"p1":str(match.get("p1") or ""),"p2":str(match.get("p2") or ""),"scheduled_time":match.get("scheduled_time"),"reason":reason})
 
 
-def _select(match: dict, fixtures: list[dict], *, cached: bool):
-    scope_name="cached" if cached else "live"; scope=_TELEMETRY[scope_name]; scope["checked"]+=1
+def _select(match: dict, fixtures: list[dict], *, cached: bool, record_telemetry: bool = True):
+    scope_name="cached" if cached else "live"; scope=_TELEMETRY[scope_name] if record_telemetry else _empty_scope(); scope["checked"]+=1
     app_p1,app_p2=match.get("p1"),match.get("p2"); scheduled=base._parse_dt(match.get("scheduled_time")); ranked=[]; had_name_candidate=False; had_time_rejection=False
     for row in fixtures:
         if not isinstance(row,dict):continue
@@ -173,6 +178,21 @@ def _orient_cached_fixture(match: dict, row: dict | None):
     out["canonical_selections"]=oriented
     out["participant_order_reoriented"]=True
     return out
+
+
+def select_cached_fixture(match: dict, fixtures: list[dict]):
+    """Pure cached-fixture selection using the canonical name/time contract.
+
+    Used by isolated callers that need identical matching semantics without
+    mutating production fixture-matching telemetry.
+    """
+    selected = _select(
+        match,
+        fixtures if isinstance(fixtures, list) else [],
+        cached=True,
+        record_telemetry=False,
+    )
+    return _orient_cached_fixture(match, selected)
 
 
 def best_cached_fixture(match: dict, index: dict):

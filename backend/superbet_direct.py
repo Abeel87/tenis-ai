@@ -16,12 +16,18 @@ import re
 import sys
 from html import unescape
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 from urllib.request import Request, urlopen
+
+try:
+    from . import superbet_fixture_matching as fixture_matching
+except ImportError:
+    import superbet_fixture_matching as fixture_matching
 
 BASE = "https://superbet.pl"
 TENNIS_LISTING_URL = f"{BASE}/zaklady-bukmacherskie/tenis"
 MAX_HTML_BYTES = 5_000_000
+MAX_EVENT_JSON_BYTES = 12_000_000
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/128.0 Safari/537.36"
@@ -555,6 +561,214 @@ def parse_visible_offer_text(
 EVENT_API_HOST = "production-superbet-offer-pl.freetls.fastly.net"
 COMBINATION_MARKET_ID = 238733
 EVENT_JSON_SOURCE = "superbet_direct_public_event_json"
+
+
+def _event_stub_from_url(url: str) -> dict | None:
+    """Extract a cheap player-pair candidate from a concrete Superbet event URL."""
+    if not _allowed_url(url):
+        return None
+    path = urlparse(url).path
+    match = re.fullmatch(r"/kursy/tenis/(.+)-(\d+)", path)
+    if not match:
+        return None
+    slug, event_id = match.groups()
+    pair = slug.split("-vs-", 1)
+    if len(pair) != 2:
+        return None
+
+    def slug_name(value: str) -> str:
+        return " ".join(
+            token
+            for token in unquote(value).replace("_", "-").split("-")
+            if token
+        )
+
+    p1, p2 = slug_name(pair[0]), slug_name(pair[1])
+    if not p1 or not p2:
+        return None
+    return {
+        "fixture_id": event_id,
+        "event_id": event_id,
+        "url": f"{BASE}{path}",
+        "p1": p1,
+        "p2": p2,
+        "start_time": None,
+    }
+
+
+def candidate_event_urls(match: dict, urls: list[str], limit: int = 4) -> list[dict]:
+    """Name-only shortlist; final acceptance always requires event JSON + time."""
+    app_p1 = match.get("p1") if isinstance(match, dict) else None
+    app_p2 = match.get("p2") if isinstance(match, dict) else None
+    ranked: list[tuple[float, str, dict]] = []
+    seen: set[str] = set()
+
+    for url in urls if isinstance(urls, list) else []:
+        stub = _event_stub_from_url(str(url))
+        if not stub:
+            continue
+        event_id = str(stub.get("event_id") or "")
+        if not event_id or event_id in seen:
+            continue
+        seen.add(event_id)
+
+        score = fixture_matching.pair_score(
+            app_p1, app_p2, stub.get("p1"), stub.get("p2")
+        )
+        if score < fixture_matching.MIN_PERSON_SCORE:
+            continue
+        ranked.append((-score, event_id, stub))
+
+    ranked.sort(key=lambda item: item[:2])
+    safe_limit = max(1, min(int(limit or 1), 8))
+    return [item[2] for item in ranked[:safe_limit]]
+
+
+def fetch_event_payload_public(event_id: str, timeout: int = 20) -> dict:
+    """Fetch one exact public Superbet event JSON without login or cookies."""
+    event_id = str(event_id or "").strip()
+    if not re.fullmatch(r"\d{5,20}", event_id):
+        raise ValueError("event_id must be numeric")
+
+    url = f"https://{EVENT_API_HOST}/v2/pl-PL/events/{event_id}"
+    request = Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.7",
+            "Origin": BASE,
+            "Referer": TENNIS_LISTING_URL,
+            "Cache-Control": "no-cache",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        content_type = str(response.headers.get("Content-Type") or "")
+        if "json" not in content_type.casefold():
+            raise RuntimeError(f"unexpected event content type: {content_type}")
+        raw = response.read(MAX_EVENT_JSON_BYTES + 1)
+        if len(raw) > MAX_EVENT_JSON_BYTES:
+            raise RuntimeError("Superbet event JSON exceeds safety limit")
+        charset = response.headers.get_content_charset() or "utf-8"
+        payload = json.loads(raw.decode(charset, errors="strict"))
+
+    if not isinstance(payload, dict) or _event_record(payload, event_id) is None:
+        raise RuntimeError("public event JSON did not contain requested event")
+    return payload
+
+
+def resolve_selected_match_offer(
+    match: dict,
+    match_urls: list[str],
+    *,
+    fetcher=None,
+    candidate_limit: int = 8,
+) -> dict:
+    """Resolve one Tenis AI match to one exact Superbet event, fail closed.
+
+    URL slugs are used only to shortlist by player names. The final decision is
+    made by the canonical fixture matcher against structured event metadata,
+    including the scheduled-time guard and ambiguity rejection.
+    """
+    if (
+        not isinstance(match, dict)
+        or not match.get("p1")
+        or not match.get("p2")
+        or not match.get("scheduled_time")
+    ):
+        return {
+            "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
+            "status": "INVALID_SELECTED_MATCH",
+            "direct_match_verified": False,
+            "canonical_selections": [],
+            "prices_used": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+
+    candidates = candidate_event_urls(match, match_urls, limit=candidate_limit)
+    event_fetch = fetcher or fetch_event_payload_public
+    offers: list[dict] = []
+    fetch_errors: list[dict] = []
+
+    for candidate in candidates:
+        event_id = str(candidate.get("event_id") or "")
+        url = str(candidate.get("url") or "")
+        try:
+            payload = event_fetch(event_id)
+            offer = parse_event_payload(payload, event_id=event_id, url=url)
+        except Exception as exc:
+            fetch_errors.append({
+                "event_id": event_id,
+                "error": type(exc).__name__,
+            })
+            continue
+        if offer.get("status") != "OK":
+            continue
+        row = dict(offer)
+        row["fixture_id"] = offer.get("event_id")
+        offers.append(row)
+
+    if fetch_errors and len(candidates) > 1:
+        return {
+            "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
+            "status": "NO_SAFE_DIRECT_MATCH",
+            "selected_match_id": match.get("match_id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"),
+            "candidate_urls_count": len(candidates),
+            "event_payloads_ok": len(offers),
+            "event_fetch_errors": fetch_errors,
+            "direct_match_verified": False,
+            "canonical_selections": [],
+            "prices_used": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+
+    selected = fixture_matching.select_cached_fixture(match, offers)
+    if not isinstance(selected, dict):
+        return {
+            "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
+            "status": "NO_SAFE_DIRECT_MATCH",
+            "selected_match_id": match.get("match_id"),
+            "p1": match.get("p1"),
+            "p2": match.get("p2"),
+            "scheduled_time": match.get("scheduled_time"),
+            "candidate_urls_count": len(candidates),
+            "event_payloads_ok": len(offers),
+            "event_fetch_errors": fetch_errors,
+            "direct_match_verified": False,
+            "canonical_selections": [],
+            "prices_used": False,
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+        }
+
+    selected = dict(selected)
+    selected["mode"] = "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH"
+    selected["status"] = "OK"
+    selected["selected_match_id"] = match.get("match_id")
+    selected["selected_match_p1"] = match.get("p1")
+    selected["selected_match_p2"] = match.get("p2")
+    selected["selected_match_scheduled_time"] = match.get("scheduled_time")
+    selected["candidate_urls_count"] = len(candidates)
+    selected["event_payloads_ok"] = len(offers)
+    selected["event_fetch_errors"] = fetch_errors
+    selected["direct_match_verified"] = True
+    selected["prices_used"] = False
+    selected["production_influence"] = False
+    selected["playable_influence"] = False
+    selected["player_dna_influence"] = False
+    selected["symphony_influence"] = False
+    return selected
 
 
 def _event_record(payload: object, event_id: str | None = None) -> dict | None:
@@ -1097,6 +1311,7 @@ def browser_probe(timeout: int = 25) -> dict:
             "event_id": normalized.get("event_id"),
             "p1": normalized.get("p1"),
             "p2": normalized.get("p2"),
+            "start_time": normalized.get("start_time"),
             "canonical_selections_count": normalized.get("canonical_selections_count"),
             "verified_line_selections_count": normalized.get("verified_line_selections_count"),
             "verified_price_selections_count": normalized.get("verified_price_selections_count"),
@@ -1104,6 +1319,30 @@ def browser_probe(timeout: int = 25) -> dict:
             "combination_rows_skipped": normalized.get("combination_rows_skipped"),
             "prices_used": normalized.get("prices_used"),
         }
+
+        selected_probe_match = {
+            "match_id": "direct-live-probe",
+            "p1": normalized.get("p1"),
+            "p2": normalized.get("p2"),
+            "scheduled_time": normalized.get("start_time"),
+        }
+        selected_resolution = resolve_selected_match_offer(
+            selected_probe_match,
+            match_urls,
+            candidate_limit=8,
+        )
+        result["selected_match_resolution"] = {
+            "status": selected_resolution.get("status"),
+            "event_id": selected_resolution.get("event_id"),
+            "direct_match_verified": selected_resolution.get("direct_match_verified"),
+            "candidate_urls_count": selected_resolution.get("candidate_urls_count"),
+            "event_payloads_ok": selected_resolution.get("event_payloads_ok"),
+            "canonical_selections_count": selected_resolution.get("canonical_selections_count"),
+            "verified_line_selections_count": selected_resolution.get("verified_line_selections_count"),
+            "verified_price_selections_count": selected_resolution.get("verified_price_selections_count"),
+            "prices_used": selected_resolution.get("prices_used"),
+        }
+
         core_counts = normalized.get("market_counts") or {}
         result["status"] = (
             "OK"
@@ -1114,6 +1353,10 @@ def browser_probe(timeout: int = 25) -> dict:
             and int(normalized.get("verified_line_selections_count") or 0) >= 2
             and int(normalized.get("verified_price_selections_count") or 0) >= 4
             and normalized.get("prices_used") is False
+            and selected_resolution.get("status") == "OK"
+            and selected_resolution.get("direct_match_verified") is True
+            and str(selected_resolution.get("event_id") or "") == str(normalized.get("event_id") or "")
+            and selected_resolution.get("prices_used") is False
             else "INSUFFICIENT_MARKET_EVIDENCE"
         )
         return result

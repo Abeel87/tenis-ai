@@ -406,3 +406,235 @@ def test_parse_event_payload_fails_closed_for_wrong_event():
     assert result["status"] == "EVENT_NOT_FOUND"
     assert result["canonical_selections"] == []
     assert result["prices_used"] is False
+
+
+
+def _direct_event_payload(event_id, p1, p2, start_time, score="2:0"):
+    return {
+        "data": [{
+            "eventId": int(event_id),
+            "matchName": f"{p1}·{p2}",
+            "utcDate": start_time,
+            "marketCount": 2,
+            "odds": [
+                {
+                    "uuid": f"{event_id}-w1",
+                    "marketId": 521,
+                    "outcomeId": 1329,
+                    "price": 1.80,
+                    "status": "active",
+                    "code": "1",
+                    "name": "1",
+                    "marketName": "Zwycięzca",
+                    "info": f"{p1} wygra",
+                },
+                {
+                    "uuid": f"{event_id}-w2",
+                    "marketId": 521,
+                    "outcomeId": 1330,
+                    "price": 2.00,
+                    "status": "active",
+                    "code": "2",
+                    "name": "2",
+                    "marketName": "Zwycięzca",
+                    "info": f"{p2} wygra",
+                },
+                {
+                    "uuid": f"{event_id}-score",
+                    "marketId": 3001,
+                    "outcomeId": 6001,
+                    "price": 4.20,
+                    "status": "active",
+                    "name": score,
+                    "marketName": "Dokładny wynik",
+                    "info": f"Mecz zakończy się wynikiem {score}",
+                },
+            ],
+        }]
+    }
+
+
+def test_candidate_event_urls_shortlists_by_canonical_player_matcher():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        "https://superbet.pl/kursy/tenis/jiri-lehecka-vs-stefanos-tsitsipas-14809302",
+        "https://superbet.pl/kursy/tenis/tommy-paul-vs-alexander-bublik-14809303",
+    ]
+    match = {
+        "p1": "A. Bublik",
+        "p2": "Tommy Paul",
+        "scheduled_time": "2026-09-04T16:10:00Z",
+    }
+    candidates = direct.candidate_event_urls(match, urls)
+    assert [row["event_id"] for row in candidates] == ["14809301", "14809303"]
+
+
+def test_resolve_selected_match_offer_requires_names_and_time_and_orients_scores():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        "https://superbet.pl/kursy/tenis/jiri-lehecka-vs-stefanos-tsitsipas-14809302",
+    ]
+    payloads = {
+        "14809301": _direct_event_payload(
+            "14809301",
+            "Alexander Bublik",
+            "Tommy Paul",
+            "2026-09-04T16:10:00Z",
+            score="3:1",
+        ),
+    }
+
+    match = {
+        "match_id": 777,
+        "p1": "Tommy Paul",
+        "p2": "Alexander Bublik",
+        "scheduled_time": "2026-09-04T16:10:00Z",
+    }
+    result = direct.resolve_selected_match_offer(
+        match,
+        urls,
+        fetcher=lambda event_id: payloads[event_id],
+    )
+
+    assert result["status"] == "OK"
+    assert result["direct_match_verified"] is True
+    assert result["event_id"] == "14809301"
+    assert result["p1"] == "Tommy Paul"
+    assert result["p2"] == "Alexander Bublik"
+    assert result["participant_order_reoriented"] is True
+    assert result["prices_used"] is False
+    assert result["production_influence"] is False
+    assert result["playable_influence"] is False
+
+    score_rows = [
+        row for row in result["canonical_selections"]
+        if row["market"] == "exact_match_score"
+    ]
+    assert len(score_rows) == 1
+    assert score_rows[0]["pick"] == "1:3"
+
+
+def test_resolve_selected_match_offer_rejects_ambiguous_nearby_events():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809309",
+    ]
+    payloads = {
+        "14809301": _direct_event_payload(
+            "14809301", "Alexander Bublik", "Tommy Paul", "2026-09-04T16:10:00Z"
+        ),
+        "14809309": _direct_event_payload(
+            "14809309", "Alexander Bublik", "Tommy Paul", "2026-09-04T16:15:00Z"
+        ),
+    }
+    match = {
+        "match_id": 778,
+        "p1": "Alexander Bublik",
+        "p2": "Tommy Paul",
+        "scheduled_time": "2026-09-04T16:12:00Z",
+    }
+    result = direct.resolve_selected_match_offer(
+        match,
+        urls,
+        fetcher=lambda event_id: payloads[event_id],
+    )
+    assert result["status"] == "NO_SAFE_DIRECT_MATCH"
+    assert result["direct_match_verified"] is False
+    assert result["canonical_selections"] == []
+    assert result["event_payloads_ok"] == 2
+
+
+def test_resolve_selected_match_offer_rejects_wrong_time():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+    ]
+    payload = _direct_event_payload(
+        "14809301", "Alexander Bublik", "Tommy Paul", "2026-09-05T16:10:00Z"
+    )
+    match = {
+        "p1": "Alexander Bublik",
+        "p2": "Tommy Paul",
+        "scheduled_time": "2026-09-04T16:10:00Z",
+    }
+    result = direct.resolve_selected_match_offer(
+        match,
+        urls,
+        fetcher=lambda event_id: payload,
+    )
+    assert result["status"] == "NO_SAFE_DIRECT_MATCH"
+    assert result["direct_match_verified"] is False
+
+
+def test_pure_direct_matching_does_not_mutate_fixture_matching_telemetry():
+    import copy
+
+    before = copy.deepcopy(direct.fixture_matching._TELEMETRY)
+    row = {
+        "fixture_id": "14809301",
+        "p1": "Alexander Bublik",
+        "p2": "Tommy Paul",
+        "start_time": "2026-09-04T16:10:00Z",
+        "canonical_selections": [],
+    }
+    selected = direct.fixture_matching.select_cached_fixture(
+        {
+            "p1": "Alexander Bublik",
+            "p2": "Tommy Paul",
+            "scheduled_time": "2026-09-04T16:10:00Z",
+        },
+        [row],
+    )
+    assert selected["fixture_id"] == "14809301"
+    assert direct.fixture_matching._TELEMETRY == before
+
+
+def test_fetch_event_payload_public_rejects_non_numeric_event_id():
+    try:
+        direct.fetch_event_payload_public("../secret")
+    except ValueError as exc:
+        assert "numeric" in str(exc)
+    else:
+        raise AssertionError("non-numeric event id was not rejected")
+
+
+
+def test_resolve_selected_match_offer_requires_scheduled_time():
+    result = direct.resolve_selected_match_offer(
+        {"p1": "Alexander Bublik", "p2": "Tommy Paul"},
+        ["https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"],
+        fetcher=lambda event_id: {},
+    )
+    assert result["status"] == "INVALID_SELECTED_MATCH"
+    assert result["direct_match_verified"] is False
+
+
+def test_resolve_selected_match_offer_rejects_partial_candidate_fetch():
+    urls = [
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+        "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809309",
+    ]
+    good = _direct_event_payload(
+        "14809301", "Alexander Bublik", "Tommy Paul", "2026-09-04T16:10:00Z"
+    )
+
+    def fetcher(event_id):
+        if event_id == "14809301":
+            return good
+        raise RuntimeError("simulated candidate fetch failure")
+
+    result = direct.resolve_selected_match_offer(
+        {
+            "p1": "Alexander Bublik",
+            "p2": "Tommy Paul",
+            "scheduled_time": "2026-09-04T16:10:00Z",
+        },
+        urls,
+        fetcher=fetcher,
+    )
+    assert result["status"] == "NO_SAFE_DIRECT_MATCH"
+    assert result["direct_match_verified"] is False
+    assert result["candidate_urls_count"] == 2
+    assert result["event_payloads_ok"] == 1
+    assert result["event_fetch_errors"] == [
+        {"event_id": "14809309", "error": "RuntimeError"}
+    ]
