@@ -1,0 +1,216 @@
+name: Player DNA SHADOW refresh
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Update tennis data and deploy Pages"]
+    types: [completed]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/canonical_point_event.py'
+      - 'backend/player_dna_point_dataset.py'
+      - 'backend/player_dna_match_context.py'
+      - 'backend/player_dna_shadow_profiles.py'
+      - 'backend/player_dna_profile_readiness.py'
+      - 'backend/player_dna_point_scorer.py'
+      - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_identity.py'
+      - 'tests/test_canonical_point_event.py'
+      - 'tests/test_player_dna_point_dataset.py'
+      - 'tests/test_player_dna_match_context.py'
+      - 'tests/test_player_dna_shadow_profiles.py'
+      - 'tests/test_player_dna_profile_readiness.py'
+      - 'tests/test_player_dna_point_scorer.py'
+      - 'tests/test_player_dna_current_shadow.py'
+      - 'tests/test_player_identity.py'
+      - '.github/workflows/player-dna-shadow-refresh.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: player-dna-shadow-refresh
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  refresh:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Restore tennis history + PBP cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-player-dna-shadow-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Player DNA canonical guards
+        run: |
+          python -m py_compile backend/canonical_point_event.py
+          python -m py_compile backend/player_dna_point_dataset.py
+          python -m py_compile backend/player_dna_match_context.py
+          python -m py_compile backend/player_dna_shadow_profiles.py
+          python -m py_compile backend/player_dna_profile_readiness.py
+          python -m py_compile backend/player_dna_point_scorer.py
+          python -m py_compile backend/player_dna_current_shadow.py
+          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_identity.py
+
+      - name: Build strict Player DNA point dataset
+        run: python backend/player_dna_point_dataset.py
+
+      - name: Audit Player DNA profile readiness
+        run: python backend/player_dna_profile_readiness.py
+
+      - name: Build leakage-safe Player DNA profiles
+        run: python backend/player_dna_shadow_profiles.py
+
+      - name: Train + evaluate Player DNA scorer
+        run: python backend/player_dna_point_scorer.py
+
+      - name: Score current card in SHADOW
+        run: python backend/player_dna_current_shadow.py
+
+      - name: Hard isolation + learning guard
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = Path('frontend/data')
+          derived = Path('data/derived/player_dna')
+
+          dataset = json.loads((data / 'player_dna_point_dataset_summary.json').read_text(encoding='utf-8'))
+          assert dataset.get('shadow_only') is True
+          assert dataset.get('training_join_enabled') is False
+          assert dataset.get('profile_aggregation_enabled') is False
+          matches = int(dataset.get('matches') or 0)
+          context_matches = int(dataset.get('context_matches') or 0)
+          strict_points = int(dataset.get('context_ready_player_point') or 0)
+          assert matches > 0 and context_matches == matches and strict_points > 0
+
+          readiness = json.loads((data / 'player_dna_profile_readiness.json').read_text(encoding='utf-8'))
+          assert readiness.get('gate') == 'AUDIT_ONLY_NO_PROFILE_AGGREGATION'
+          assert readiness.get('training_join_enabled') is False
+          assert readiness.get('profile_aggregation_enabled') is False
+          assert readiness.get('readiness_threshold_activation_enabled') is False
+          assert int(readiness.get('source_matches_seen') or 0) == matches
+
+          profiles = json.loads((data / 'player_dna_shadow_profile_summary.json').read_text(encoding='utf-8'))
+          assert profiles.get('mode') == 'SHADOW_AS_OF_PROFILE'
+          assert profiles.get('production_influence') is False
+          assert profiles.get('training_join_enabled') is False
+          assert profiles.get('profile_threshold_activation_enabled') is False
+          assert profiles.get('same_time_matches_count_as_prior') is False
+          assert int(profiles.get('player_match_snapshots') or 0) > 0
+
+          scorer = json.loads((data / 'player_dna_point_scorer.json').read_text(encoding='utf-8'))
+          assert scorer.get('mode') == 'SHADOW_EVAL_ONLY'
+          assert scorer.get('production_influence') is False
+          assert scorer.get('runtime_scoring_enabled') is False
+          assert scorer.get('prod_model_write_enabled') is False
+          assert scorer.get('real_shadow_training') is True
+          assert (scorer.get('split') or {}).get('same_timestamp_split') is False
+          assert float(scorer.get('join_coverage') or 0) == 1.0
+          assert (scorer.get('signal') or {}).get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+
+          current = json.loads((data / 'player_dna_current_shadow.json').read_text(encoding='utf-8'))
+          assert current.get('mode') == 'SHADOW_CURRENT_ONLY'
+          assert current.get('production_influence') is False
+          assert current.get('symphony2_influence') is False
+          assert current.get('superbet_playable_influence') is False
+          assert current.get('match_winner_probability_enabled') is False
+          assert current.get('point_serve_probability_only') is True
+          current_matches = int(current.get('current_matches') or 0)
+          assert current_matches > 0
+          assert int(current.get('stable_id_matches') or 0) == current_matches
+          assert int(current.get('valid_target_matches') or 0) == current_matches
+          assert (current.get('historical_validation') or {}).get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+          assert int(current.get('scored_matches') or 0) > 0
+          assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
+
+          model = json.loads((derived / 'current_point_model_shadow.json').read_text(encoding='utf-8'))
+          assert model.get('mode') == 'SHADOW_MODEL_ARTIFACT'
+          assert model.get('production_influence') is False
+          assert model.get('prod_runtime_model') is False
+          assert model.get('shadow_current_scoring_only') is True
+          assert (model.get('fit') or {}).get('converged') is True
+          assert model.get('training_cutoff_exclusive') == current.get('training_cutoff_exclusive')
+
+          print(
+              'PLAYER_DNA_SHADOW_OK '
+              f"matches={matches} strict_points={strict_points} "
+              f"current={current_matches} scored={current.get('scored_matches')} "
+              f"collecting={current.get('collecting_history_matches')} "
+              f"signal={(scorer.get('signal') or {}).get('status')} "
+              f"fingerprint={current.get('model_fingerprint_sha256')}"
+          )
+          PY
+
+      - name: Upload Player DNA SHADOW artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-dna-shadow-refresh
+          path: |
+            frontend/data/player_dna_point_dataset_summary.json
+            frontend/data/player_dna_profile_readiness.json
+            frontend/data/player_dna_shadow_profile_summary.json
+            frontend/data/player_dna_point_scorer.json
+            frontend/data/player_dna_current_shadow.json
+            data/derived/player_dna/current_point_model_shadow.json
+            data/derived/player_dna/point_events.jsonl.gz
+            data/derived/player_dna/profile_snapshots.jsonl.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish Player DNA SHADOW reports
+        if: github.event_name != 'pull_request'
+        id: commit
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "data: refresh Player DNA SHADOW"
+          for attempt in 1 2 3; do
+            git fetch origin
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git rebase --abort || true
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to publish Player DNA SHADOW after 3 attempts"
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Dispatch FAST Pages deploy
+        if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages-fast.yml --ref main
