@@ -15,6 +15,7 @@
     "prediction_rewrite_forbidden": true,
     "settlement_regression_forbidden": true,
     "settled_actual_rewrite_forbidden": true,
+    "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
     "previous_snapshot_count": 20,
@@ -25,6 +26,7 @@
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
+    "settled_at_rewrites": 0,
     "missing_previous_snapshots": 0,
     "duplicate_previous_match_ids": 0,
     "duplicate_current_match_ids": 0,
@@ -33,11 +35,52 @@
       "rewritten_predictions": [],
       "settlement_regressions": [],
       "settled_actual_rewrites": [],
+      "settled_at_rewrites": [],
       "duplicate_previous": [],
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
     "current_snapshot_count_after_retention": 20
+  },
+  "settlement_observability": {
+    "unsettled": {
+      "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
+      "buckets": {
+        "upcoming": 18,
+        "due_within_6h": 2,
+        "overdue_6_24h": 0,
+        "overdue_24_72h": 0,
+        "overdue_gt_72h": 0,
+        "unparseable_schedule": 0
+      },
+      "overdue_samples": []
+    },
+    "settlement_latency": {
+      "n": 0,
+      "median_hours": null,
+      "p90_hours": null,
+      "max_hours": null,
+      "negative_latency_count": 0,
+      "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
+    },
+    "schedule_drift": {
+      "count": 2,
+      "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
+      "samples": [
+        {
+          "match_id": "185869",
+          "frozen_scheduled_time": "2026-09-04T12:30:00+00:00",
+          "current_scheduled_time": "2026-09-04T13:30:00+00:00",
+          "drift_minutes": 60.0
+        },
+        {
+          "match_id": "186496",
+          "frozen_scheduled_time": "2026-09-04T12:30:00+00:00",
+          "current_scheduled_time": "2026-09-04T13:30:00+00:00",
+          "drift_minutes": 60.0
+        }
+      ]
+    }
   },
   "eligibility_policy": {
     "requires_walk_forward_robust": true,
