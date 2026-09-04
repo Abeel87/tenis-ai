@@ -875,6 +875,12 @@ def parse_event_payload(
         "unsupported_active_rows": unsupported_active,
         "canonical_selections": selections,
         "canonical_selections_count": len(selections),
+        "verified_line_selections_count": sum(
+            1 for row in selections if row.get("fixture_line_verified") is True
+        ),
+        "verified_price_selections_count": sum(
+            1 for row in selections if row.get("operator_price_verified") is True
+        ),
         "market_counts": dict(sorted(market_counts.items())),
         "operator_prices_captured": True,
         "prices_used": False,
