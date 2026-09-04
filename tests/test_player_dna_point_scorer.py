@@ -3,8 +3,10 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from backend.player_dna_point_scorer import (
+    STATE_NUMERIC,
     _fit_logistic_newton,
     _predict_logistic,
+    _state_feature_lookup,
     build_feature_rows,
     split_chronological_by_match,
 )
@@ -127,3 +129,112 @@ def test_numpy_logistic_performs_real_converged_fit():
     assert len(probs) == 80
     assert all(0.0 < float(p) < 1.0 for p in probs)
     assert float(probs[70]) > float(probs[10])
+
+
+def _state_point(
+    event_index,
+    score_before,
+    *,
+    server=1,
+    winner=1,
+    transition_kind="point_score_changed",
+    score_after=None,
+):
+    return {
+        "match_id": "m1",
+        "event_index": event_index,
+        "match_scheduled_time": "2026-09-04T10:00:00Z",
+        "surface": "hard",
+        "tour": "ATP",
+        "match_format": "BO3",
+        "context_ready_player_point": True,
+        "trainable_point": True,
+        "server": server,
+        "receiver": 3 - server,
+        "server_player_id": server,
+        "receiver_player_id": 3 - server,
+        "point_winner": winner,
+        "server_won": winner == server,
+        "server_ranking": 20,
+        "receiver_ranking": 40,
+        "is_tiebreak_before": False,
+        "transition_kind": transition_kind,
+        "score_before": score_before,
+        "score_after": score_after or score_before,
+    }
+
+
+def test_stateful_features_use_only_pre_point_score_and_prior_atomic_history():
+    profiles = [
+        _profile("m1", "2026-09-04T10:00:00Z", 1, 2, matches=8, surface_matches=6),
+        _profile("m1", "2026-09-04T10:00:00Z", 2, 1, matches=8, surface_matches=6),
+    ]
+    p0 = _state_point(
+        0,
+        {"sets": [0, 0], "games": [[0], [0]], "points": ["30", "40"]},
+        server=1,
+        winner=1,
+        score_after={"sets": [0, 0], "games": [[0], [0]], "points": ["40", "40"]},
+    )
+    p1 = _state_point(
+        1,
+        {"sets": [0, 0], "games": [[0], [0]], "points": ["40", "40"]},
+        server=1,
+        winner=2,
+        score_after={"sets": [0, 0], "games": [[0], [0]], "points": ["40", "A"]},
+    )
+    rows, counts = build_feature_rows([p0, p1], profiles)
+    assert len(rows) == 2
+    first, second = rows
+    assert first["break_point_against_server_before"] == 1
+    assert first["server_game_point_before"] == 0
+    assert first["server_point_stage_before"] == 2
+    assert first["receiver_point_stage_before"] == 3
+    assert second["deuce_before"] == 1
+    assert second["previous_point_won_by_server"] == 1
+    assert second["server_point_streak_before"] == 1
+    assert second["receiver_point_streak_before"] == 0
+    assert second["state_score_valid"] is True
+    assert all(name in second for name in STATE_NUMERIC)
+    assert counts["joined_rows_with_valid_score_state"] == 2
+
+
+def test_state_lookup_does_not_read_score_after_or_current_winner_as_feature():
+    base = _state_point(
+        0,
+        {"sets": [1, 1], "games": [[6, 4], [4, 5]], "points": ["15", "30"]},
+        server=1,
+        winner=1,
+        score_after={"sets": [9, 9], "games": [[99], [0]], "points": ["A", "0"]},
+    )
+    changed = dict(base)
+    changed["point_winner"] = 2
+    changed["server_won"] = False
+    changed["score_after"] = {"sets": [0, 2], "games": [[0], [6]], "points": ["0", "0"]}
+
+    lookup_a, _ = _state_feature_lookup([base])
+    lookup_b, _ = _state_feature_lookup([changed])
+    features_a = lookup_a[("m1", 0)]
+    features_b = lookup_b[("m1", 0)]
+    assert {name: features_a[name] for name in STATE_NUMERIC} == {
+        name: features_b[name] for name in STATE_NUMERIC
+    }
+    assert features_a["deciding_set_before"] == 1
+
+
+def test_momentum_resets_when_atomic_event_sequence_has_a_gap():
+    p0 = _state_point(
+        0,
+        {"sets": [0, 0], "games": [[1], [1]], "points": ["15", "0"]},
+        server=1,
+        winner=1,
+    )
+    p2 = _state_point(
+        2,
+        {"sets": [0, 0], "games": [[1], [1]], "points": ["30", "0"]},
+        server=1,
+        winner=1,
+    )
+    lookup, _ = _state_feature_lookup([p0, p2])
+    assert lookup[("m1", 2)]["previous_point_won_by_server"] is None
+    assert lookup[("m1", 2)]["server_point_streak_before"] == 0
