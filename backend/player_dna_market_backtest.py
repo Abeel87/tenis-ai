@@ -490,6 +490,52 @@ def _rank_hit(rows: list[dict[str, Any]], actual: tuple[str, ...], field: str, l
     }
 
 
+def _normalized_full_match_path(value: Any) -> tuple[tuple[str, ...], ...]:
+    if not isinstance(value, list):
+        return ()
+    out = []
+    for set_row in value:
+        progression = set_row.get("progression") if isinstance(set_row, dict) else set_row
+        normalized = _normalized_progression(progression)
+        if not normalized:
+            return ()
+        out.append(normalized)
+    return tuple(out)
+
+
+def _full_match_rank_hit(
+    rows: list[dict[str, Any]],
+    actual: tuple[tuple[str, ...], ...],
+    limits: tuple[int, ...],
+) -> dict[str, Any]:
+    ranked = [_normalized_full_match_path(row.get("sets")) for row in rows]
+    hit_rank = None
+    for idx, candidate in enumerate(ranked, start=1):
+        if candidate == actual:
+            hit_rank = idx
+            break
+    return {
+        "rank": hit_rank,
+        **{f"hit_at_{limit}": bool(hit_rank is not None and hit_rank <= limit) for limit in limits},
+    }
+
+
+def _full_match_prefix_fraction(
+    actual: tuple[tuple[str, ...], ...],
+    predicted: tuple[tuple[str, ...], ...],
+) -> float:
+    actual_flat = [(set_index, score) for set_index, progression in enumerate(actual) for score in progression]
+    predicted_flat = [(set_index, score) for set_index, progression in enumerate(predicted) for score in progression]
+    if not actual_flat:
+        return 0.0
+    prefix = 0
+    for expected, candidate in zip(actual_flat, predicted_flat):
+        if expected != candidate:
+            break
+        prefix += 1
+    return prefix / len(actual_flat)
+
+
 def _trajectory_validation(
     predictions: dict[str, dict[str, Any]],
     labels: dict[str, dict[str, Any]],
@@ -497,6 +543,7 @@ def _trajectory_validation(
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
     match_set_records = []
+    full_match_records = []
 
     for match_id, label in labels.items():
         pred = predictions.get(match_id)
@@ -544,6 +591,16 @@ def _trajectory_validation(
             ranked_sets = branch.get("match_top_set_paths") or []
             match_set_records.append(_rank_hit(ranked_sets, set_sequence, "set_scores", (1, 3, 12)))
 
+        full_match_path = _normalized_full_match_path(actual.get("set_progressions"))
+        if actual.get("full_match_progression_complete") is True and full_match_path:
+            ranked_full = branch.get("full_match_top_game_paths") or []
+            hit = _full_match_rank_hit(ranked_full, full_match_path, (1, 2, 4))
+            top1 = _normalized_full_match_path((ranked_full[0] if ranked_full else {}).get("sets"))
+            full_match_records.append({
+                **hit,
+                "prefix_fraction_top1": _full_match_prefix_fraction(full_match_path, top1),
+            })
+
     def summarize_checkpoint(rows: list[dict[str, Any]]) -> dict[str, Any]:
         n = len(rows)
         return {
@@ -575,10 +632,12 @@ def _trajectory_validation(
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
+        "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
             "settled_predictions": len(labels),
             "first_set_complete_paths": len(first_set_records),
             "match_set_sequences": len(match_set_records),
+            "full_match_complete_paths": len(full_match_records),
         },
     }
 
