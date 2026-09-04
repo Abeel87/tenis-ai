@@ -948,3 +948,68 @@ def test_write_selected_direct_sidecar_refuses_unsafe_or_playable_feed(tmp_path)
         assert "isolated" in str(exc)
     else:
         raise AssertionError("PLAYABLE-influencing feed must not be persisted")
+
+
+
+def test_parse_event_payload_orients_handicap_from_outcome_text_not_shared_specifier():
+    payload = {
+        "data": [{
+            "eventId": 14809295,
+            "matchName": "Frances Tiafoe·Valentin Vacherot",
+            "utcDate": "2026-09-04T23:00:00Z",
+            "marketCount": 1,
+            "odds": [
+                {
+                    "uuid": "hcp-vacherot",
+                    "marketId": 520,
+                    "outcomeId": 1327,
+                    "price": 1.91,
+                    "status": "active",
+                    "name": "Valentin Vacherot (-7.5)",
+                    "marketName": "Handicap gemów",
+                    "info": "Valentin Vacherot wygra mecz przy uwzględnieniu podanego handicapu gemów (-7.5)",
+                    "specialBetValue": "7.5",
+                    "specifiers": {"hcp": "7.5"},
+                },
+                {
+                    "uuid": "hcp-tiafoe",
+                    "marketId": 520,
+                    "outcomeId": 1328,
+                    "price": 1.91,
+                    "status": "active",
+                    "name": "Frances Tiafoe (7.5)",
+                    "marketName": "Handicap gemów",
+                    "info": "Frances Tiafoe wygra mecz przy uwzględnieniu podanego handicapu gemów (7.5)",
+                    "specialBetValue": "7.5",
+                    "specifiers": {"hcp": "7.5"},
+                },
+            ],
+        }]
+    }
+
+    result = direct.parse_event_payload(payload, event_id="14809295")
+
+    rows = [
+        row for row in result["canonical_selections"]
+        if row["market"] == "match_game_handicap"
+    ]
+    assert len(rows) == 2
+    lines = {row["player"]: row["line"] for row in rows}
+    assert lines == {
+        "Valentin Vacherot": -7.5,
+        "Frances Tiafoe": 7.5,
+    }
+    assert lines["Valentin Vacherot"] == -lines["Frances Tiafoe"]
+    assert all(row["operator_line_verified"] is True for row in rows)
+    assert all(row["fixture_line_verified"] is True for row in rows)
+
+
+def test_handicap_line_parser_prefers_outcome_parenthesis_over_shared_hcp():
+    odd = {
+        "name": "Frances Tiafoe (-3.5)",
+        "info": "Frances Tiafoe handicap gemów (-3.5)",
+        "specialBetValue": "3.5",
+        "specifiers": {"hcp": "3.5"},
+    }
+    assert direct._line_from_odd(odd) == 3.5
+    assert direct._handicap_line_from_odd(odd) == -3.5
