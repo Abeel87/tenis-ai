@@ -228,6 +228,9 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert per_set_prob["set_1"]["n"] == 1
     assert per_set_prob["set_2"]["n"] == 1
     assert per_set_prob["all_sets"]["n"] == 2
+    assert per_set_prob["all_sets"]["records_requested"] == 2
+    assert per_set_prob["all_sets"]["records_skipped_no_segment_baseline"] == 0
+    assert per_set_prob["all_sets"]["coverage_fraction"] == 1.0
     assert per_set_prob["all_sets"]["baseline_smoothing_alpha"] == 0.5
     assert per_set_prob["all_sets"]["baseline_train_n_min"] == 2
     assert per_set_prob["all_sets"]["brier_gain_vs_segment_train_distribution"] > 0
