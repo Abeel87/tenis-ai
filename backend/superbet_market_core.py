@@ -729,6 +729,7 @@ def refresh_availability(results: list[dict], now=None):
 
         direct_cache = {}
         direct_requests_this_refresh = 0
+        direct_checked_this_refresh = set()
         direct_rows_seen = 0
         direct_rows_with_superbet = 0
         direct_fixture_matches = 0
@@ -761,6 +762,7 @@ def refresh_availability(results: list[dict], now=None):
                 if total_budget_left and direct_budget_left and refresh_budget_left:
                     time.sleep(DIRECT_FIXTURE_DELAY_SECONDS)
                     direct_requests_this_refresh += 1
+                    direct_checked_this_refresh.add(fixture_id)
                     quota["direct_fixture_requests_used"] = int(quota.get("direct_fixture_requests_used") or 0) + 1
                     try:
                         payload = _request(
@@ -827,7 +829,11 @@ def refresh_availability(results: list[dict], now=None):
                 if isinstance(offer, dict):
                     item = dict(offer)
                     item["offer_checked_at"] = cached.get("last_checked_at")
-                    item["operator_offer_source"] = "odds_by_fixture_cache"
+                    item["operator_offer_source"] = (
+                        "odds_by_fixture"
+                        if fixture_id in direct_checked_this_refresh
+                        else "odds_by_fixture_cache"
+                    )
                     sanitized_by_fixture[fixture_id] = item
                     direct_cache_offers_used += 1
 
