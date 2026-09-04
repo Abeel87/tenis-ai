@@ -32,6 +32,13 @@ NEW_HANDICAP_MARKETS = {"set_handicap"}
 DIRECT_SIDECAR = base.OUT / "superbet_direct_current.json"
 DIRECT_MAX_AGE_HOURS = mapping.REFRESH_HOURS * 1.8
 DIRECT_SOURCE = "superbet_direct_public_event_json"
+DIRECT_HANDICAP_MARKETS = {
+    "match_game_handicap",
+    "set1_game_handicap",
+    "set2_game_handicap",
+    "set3_game_handicap",
+    "set_handicap",
+}
 
 NEW_MARKETS = {
     "any_set_to_nil", "set2_exact_score", "set2_game_state", "exact_sets",
@@ -226,11 +233,69 @@ def _direct_selection_without_price(row: dict) -> dict | None:
         "operator_line_source": DIRECT_SOURCE,
         "operator_offer_source": DIRECT_SOURCE,
         "direct_source": True,
+        "direct_handicap_semantics_guard": True,
+        "suppressed_direct_handicap_variants": suppressed_handicap_variants,
         "prices_used": False,
     }
     if not out["operator_available"]:
         return None
     return out
+
+
+def _safe_direct_source_rows(row: dict) -> tuple[list[dict], int]:
+    """Suppress malformed Direct handicap variants before canonical projection."""
+    raw_rows = [
+        item for item in (row.get("canonical_selections") or [])
+        if isinstance(item, dict)
+    ]
+    safe = [
+        item for item in raw_rows
+        if str(item.get("market") or "") not in DIRECT_HANDICAP_MARKETS
+    ]
+    groups: dict[tuple, list[dict]] = {}
+    for item in raw_rows:
+        market = str(item.get("market") or "")
+        if market not in DIRECT_HANDICAP_MARKETS:
+            continue
+        specifiers = (
+            item.get("operator_specifiers")
+            if isinstance(item.get("operator_specifiers"), dict)
+            else {}
+        )
+        variant = item.get("operator_special_bet_value")
+        if variant in {None, ""}:
+            variant = specifiers.get("hcp")
+        key = (
+            market,
+            str(item.get("operator_market_id") or ""),
+            str(variant or ""),
+            int(item.get("set_no") or 0),
+        )
+        groups.setdefault(key, []).append(item)
+
+    p1_key = base._name_key(row.get("p1"))
+    p2_key = base._name_key(row.get("p2"))
+    suppressed = 0
+    for items in groups.values():
+        by_player = {}
+        for item in items:
+            player_key = base._name_key(item.get("player") or item.get("pick"))
+            if player_key:
+                by_player[player_key] = item
+        p1_row = by_player.get(p1_key)
+        p2_row = by_player.get(p2_key)
+        p1_line = base._line(p1_row.get("line")) if p1_row else None
+        p2_line = base._line(p2_row.get("line")) if p2_row else None
+        mirrored = (
+            p1_line is not None
+            and p2_line is not None
+            and abs(float(p1_line) + float(p2_line)) <= 1e-9
+        )
+        if not mirrored:
+            suppressed += 1
+            continue
+        safe.extend(items)
+    return safe, suppressed
 
 
 def _direct_fixture_from_sidecar(row: dict) -> dict | None:
@@ -245,8 +310,9 @@ def _direct_fixture_from_sidecar(row: dict) -> dict | None:
     if not event_id or not p1 or not p2 or not start_time:
         return None
 
+    source_rows, suppressed_handicap_variants = _safe_direct_source_rows(row)
     selections = []
-    for raw in row.get("canonical_selections") or []:
+    for raw in source_rows:
         item = _direct_selection_without_price(raw)
         if item is not None:
             selections.append(item)
@@ -301,6 +367,7 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         "fallback_fixtures_added": 0,
         "existing_provider_preferred": 0,
         "unsafe_sidecar_matches_rejected": 0,
+        "suppressed_direct_handicap_variants": 0,
         "prices_in_canonical_availability": False,
         "prices_used": False,
         "canonical_context_activation": False,
@@ -386,6 +453,9 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
             continue
         fixtures.append(dict(oriented))
         diagnostic["fallback_fixtures_added"] += 1
+        diagnostic["suppressed_direct_handicap_variants"] += int(
+            oriented.get("suppressed_direct_handicap_variants") or 0
+        )
 
     if diagnostic["fallback_fixtures_added"] > 0:
         diagnostic["canonical_context_activation"] = True
