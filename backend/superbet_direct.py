@@ -93,11 +93,11 @@ def discover_match_urls(html: str) -> list[str]:
     # in hydration JSON. Normalize common HTML/JSON escaping and scan that
     # payload too; this still consumes only the public page already fetched.
     decoded = unescape(html or "")
-    decoded = decoded.replace("\\u002F", "/").replace("\\u002f", "/").replace("\/", "/")
+    decoded = decoded.replace("\\u002F", "/").replace("\\u002f", "/").replace("\\/", "/")
     candidates.extend(
         match.group(1)
         for match in re.finditer(
-            r"(?:https://superbet\.pl)?(/kursy/tenis/[a-zA-Z0-9%._~+\-]+-\d+)",
+            r"(?<![a-zA-Z0-9.-])(?:https://superbet\.pl)?(/kursy/tenis/[a-zA-Z0-9%._~+\-]+-\d+)",
             decoded,
         )
     )
@@ -178,7 +178,7 @@ def probe() -> dict:
     }
     if not match_urls:
         parsed_listing = parse_html(listing_html)
-        normalized_raw = (listing_html or "").replace("\/", "/")
+        normalized_raw = (listing_html or "").replace("\\/", "/")
         result["listing_diagnostic"] = {
             "html_length": len(listing_html),
             "text_length": len(str(parsed_listing.get("text") or "")),
