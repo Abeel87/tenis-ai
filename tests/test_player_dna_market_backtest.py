@@ -130,6 +130,25 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
                                 {"match_score": "2:0"},
                                 {"match_score": "0:2"},
                             ],
+                            "first_set_shape_families": [
+                                {"shape": "NORMAL"},
+                                {"shape": "CLOSE"},
+                                {"shape": "TIEBREAK"},
+                                {"shape": "DOMINANT"},
+                                {"shape": "EXTENDED_7_5"},
+                            ],
+                            "set_shape_trajectories": [
+                                {
+                                    "match_score": "2:0",
+                                    "set_shapes": ["NORMAL", "NORMAL"],
+                                    "conditional_probability_within_match_score": 0.60,
+                                },
+                                {
+                                    "match_score": "2:0",
+                                    "set_shapes": ["CLOSE", "NORMAL"],
+                                    "conditional_probability_within_match_score": 0.40,
+                                },
+                            ],
                             "set_winner_trajectories": [
                                 {"set_winners": [1, 2, 1]},
                                 {"set_winners": [1, 1]},
@@ -167,6 +186,14 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert first["hit_at_1"] == 0.0
     assert first["hit_at_3"] == 1.0
     assert first["hit_at_8"] == 1.0
+    first_shape = metrics["first_set_shape_conditioned_on_observed_first_server"]
+    assert first_shape["n"] == 1
+    assert first_shape["hit_at_1"] == 0.0
+    assert first_shape["hit_at_3"] == 1.0
+    set_shapes = metrics["set_shape_sequence_given_actual_match_score"]
+    assert set_shapes["n"] == 1
+    assert set_shapes["hit_at_1"] == 0.0
+    assert set_shapes["hit_at_3"] == 1.0
     storyline = metrics["primary_storyline_match_score_conditioned_on_observed_first_server"]
     assert storyline["n"] == 1
     assert storyline["hit_at_1"] == 0.0
@@ -186,6 +213,8 @@ def test_trajectory_validation_reports_rank_hits_without_promotion_claim():
     assert full["hit_at_2"] == 1.0
     assert full["hit_at_4"] == 1.0
     assert 0.0 < full["mean_top1_prefix_fraction"] < 1.0
+    assert metrics["coverage"]["first_set_shapes"] == 1
+    assert metrics["coverage"]["set_shape_sequences"] == 1
     assert metrics["coverage"]["set_winner_sequences"] == 1
     assert metrics["coverage"]["full_match_complete_paths"] == 1
 

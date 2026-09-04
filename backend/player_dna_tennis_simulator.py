@@ -495,6 +495,185 @@ def _ranked_match_storylines(
 
 
 
+SET_SHAPE_FAMILIES = (
+    "DOMINANT",
+    "NORMAL",
+    "CLOSE",
+    "EXTENDED_7_5",
+    "TIEBREAK",
+)
+
+
+def set_shape_family(score: str) -> str | None:
+    """Map one completed tennis set score to a coarse structural family."""
+    try:
+        a, b = (int(x) for x in str(score).split(":"))
+    except (TypeError, ValueError):
+        return None
+    hi, lo = max(a, b), min(a, b)
+    if hi == 6 and 0 <= lo <= 2:
+        return "DOMINANT"
+    if hi == 6 and lo == 3:
+        return "NORMAL"
+    if hi == 6 and lo == 4:
+        return "CLOSE"
+    if hi == 7 and lo == 5:
+        return "EXTENDED_7_5"
+    if hi == 7 and lo == 6:
+        return "TIEBREAK"
+    return None
+
+
+def _ranked_first_set_shapes(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Exact first-set probability aggregated into five shape families."""
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    mass: dict[str, float] = defaultdict(float)
+    representative: dict[str, dict[str, Any]] = {}
+    for row in set_outcomes(p1_serve_point, p2_serve_point, start_server):
+        shape = set_shape_family(str(row["score"]))
+        if shape is None:
+            continue
+        probability = float(row["probability"])
+        mass[shape] += probability
+        previous = representative.get(shape)
+        if previous is None or probability > float(previous["probability"]):
+            representative[shape] = row
+
+    rows = [
+        {
+            "shape": shape,
+            "probability": float(probability),
+            "probability_scope": "FIRST_SET_SHAPE_FAMILY",
+            "representative_score": str(representative[shape]["score"]),
+        }
+        for shape, probability in mass.items()
+    ]
+    rows.sort(key=lambda row: float(row["probability"]), reverse=True)
+    total = sum(float(row["probability"]) for row in rows)
+    if rows and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"first-set shape probability mass drift: {total}")
+    return rows
+
+
+def _ranked_set_shape_trajectories(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Exact match distribution aggregated by match score + set-shape sequence.
+
+    Winner order is used internally only to terminate the match correctly.
+    The reported probability belongs to the coarse shape sequence, not to the
+    representative exact set scores.
+    """
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    needed = best_of // 2 + 1
+    grouped: dict[int, dict[tuple[int, int, str], dict[str, Any]]] = {1: {}, 2: {}}
+    for server in (1, 2):
+        for row in set_outcomes(p1_serve_point, p2_serve_point, server):
+            shape = set_shape_family(str(row["score"]))
+            if shape is None:
+                continue
+            key = (int(row["winner"]), int(row["next_set_server"]), shape)
+            bucket = grouped[server].setdefault(
+                key,
+                {"probability": 0.0, "representative": None},
+            )
+            bucket["probability"] += float(row["probability"])
+            rep = bucket["representative"]
+            if rep is None or float(row["probability"]) > float(rep["probability"]):
+                bucket["representative"] = row
+
+    states: dict[
+        tuple[int, int, int, tuple[str, ...]],
+        tuple[float, float, tuple[str, ...]],
+    ] = {(0, 0, start_server, ()): (1.0, 1.0, ())}
+    terminal: dict[
+        tuple[str, tuple[str, ...]],
+        tuple[float, float, tuple[str, ...]],
+    ] = {}
+
+    while states:
+        nxt: dict[
+            tuple[int, int, int, tuple[str, ...]],
+            tuple[float, float, tuple[str, ...]],
+        ] = {}
+        for (s1, s2, server, shapes), (mass, rep_mass, rep_scores) in states.items():
+            if s1 >= needed or s2 >= needed:
+                key = (f"{s1}:{s2}", shapes)
+                previous = terminal.get(key)
+                if previous is None:
+                    terminal[key] = (mass, rep_mass, rep_scores)
+                else:
+                    total_mass = previous[0] + mass
+                    if rep_mass > previous[1]:
+                        terminal[key] = (total_mass, rep_mass, rep_scores)
+                    else:
+                        terminal[key] = (total_mass, previous[1], previous[2])
+                continue
+
+            for (winner, next_server, shape), transition in grouped[server].items():
+                probability = float(transition["probability"])
+                representative = transition["representative"]
+                if probability <= 0.0 or not isinstance(representative, dict):
+                    continue
+                ns1 = s1 + (1 if winner == 1 else 0)
+                ns2 = s2 + (1 if winner == 2 else 0)
+                child_shapes = (*shapes, shape)
+                child_mass = mass * probability
+                child_rep_mass = rep_mass * float(representative["probability"])
+                child_rep_scores = (*rep_scores, str(representative["score"]))
+                state_key = (ns1, ns2, next_server, child_shapes)
+                previous = nxt.get(state_key)
+                if previous is None:
+                    nxt[state_key] = (child_mass, child_rep_mass, child_rep_scores)
+                else:
+                    total_mass = previous[0] + child_mass
+                    if child_rep_mass > previous[1]:
+                        nxt[state_key] = (total_mass, child_rep_mass, child_rep_scores)
+                    else:
+                        nxt[state_key] = (total_mass, previous[1], previous[2])
+        states = nxt
+
+    rows = []
+    for (match_score, shapes), (probability, rep_mass, rep_scores) in terminal.items():
+        rows.append({
+            "match_score": match_score,
+            "set_shapes": list(shapes),
+            "probability": float(probability),
+            "probability_scope": "MATCH_SCORE_SET_SHAPE_SEQUENCE",
+            "representative_only": True,
+            "representative_set_score_sequence_probability": float(rep_mass),
+            "representative_set_scores": list(rep_scores),
+            "sets_played": len(shapes),
+        })
+
+    rows.sort(key=lambda row: float(row["probability"]), reverse=True)
+    match_score_mass: dict[str, float] = defaultdict(float)
+    for row in rows:
+        match_score_mass[str(row["match_score"])] += float(row["probability"])
+    for row in rows:
+        family_mass = match_score_mass.get(str(row["match_score"]), 0.0)
+        row["conditional_probability_within_match_score"] = (
+            float(row["probability"]) / family_mass if family_mass > 0.0 else 0.0
+        )
+
+    total = sum(float(row["probability"]) for row in rows)
+    if rows and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"set-shape trajectory probability mass drift: {total}")
+    return rows
+
+
 def _ranked_set_winner_trajectories(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -897,6 +1076,17 @@ def trajectory_summary(
                 best_of,
                 start_server,
             ),
+            "first_set_shape_families": _ranked_first_set_shapes(
+                p1_serve_point,
+                p2_serve_point,
+                start_server,
+            ),
+            "set_shape_trajectories": _ranked_set_shape_trajectories(
+                p1_serve_point,
+                p2_serve_point,
+                best_of,
+                start_server,
+            ),
             "set_winner_trajectories": _ranked_set_winner_trajectories(
                 p1_serve_point,
                 p2_serve_point,
@@ -927,6 +1117,9 @@ def trajectory_summary(
             "full_match_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_paths_are_exact_for_known_start_server": True,
             "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
+            "set_shape_taxonomy": list(SET_SHAPE_FAMILIES),
+            "set_shape_probability_scope": "MATCH_SCORE_SET_SHAPE_SEQUENCE",
+            "set_shape_conditional_scope": "WITHIN_MATCH_SCORE_FAMILY",
             "set_winner_trajectory_probability_scope": "SET_WINNER_SEQUENCE",
             "set_winner_trajectory_conditional_scope": "WITHIN_MATCH_SCORE_FAMILY",
             "set_winner_trajectory_game_progressions_are_representative": True,
