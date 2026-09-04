@@ -53,6 +53,7 @@ OUT = ROOT / "frontend" / "data" / "player_dna_market_backtest.json"
 VERSION = "player-dna-market-backtest-v1"
 MODE = "SHADOW_BACKTEST_ONLY"
 MIN_PRIOR_MATCHES = 3
+MIN_SET_SHAPE_BASELINE_MATCHES = 20
 BINARY_MARKETS = (
     "match_p1_win",
     "first_set_p1_win",
@@ -488,7 +489,7 @@ def conditional_categorical_metrics(
 
     for probs, actual, segment in records:
         train_labels = train_labels_by_segment.get(segment) or []
-        if not train_labels:
+        if len(train_labels) < MIN_SET_SHAPE_BASELINE_MATCHES:
             skipped_no_segment_baseline += 1
             continue
         counts = Counter(train_labels)
@@ -544,6 +545,7 @@ def conditional_categorical_metrics(
         "classes": keys,
         "segments_evaluated": len(segments),
         "baseline_smoothing_alpha": smoothing_alpha,
+        "baseline_min_support_required": MIN_SET_SHAPE_BASELINE_MATCHES,
         "baseline_train_n_min": min(baseline_train_sizes) if baseline_train_sizes else None,
         "baseline_train_n_median": (
             sorted(baseline_train_sizes)[len(baseline_train_sizes) // 2]
@@ -631,6 +633,7 @@ def _set_index_shape_probability_validation(
     out["conditioning"] = "ACTUAL_MATCH_SCORE_AND_OBSERVED_FIRST_SERVER_DIAGNOSTIC_ONLY"
     out["baseline"] = "TRAIN_ONLY_SHAPE_DISTRIBUTION_FOR_SAME_MATCH_SCORE_SET_INDEX_AND_FIRST_SERVER"
     out["baseline_smoothing"] = "JEFFREYS_ALPHA_0_5_PER_SHAPE"
+    out["baseline_min_support_required"] = MIN_SET_SHAPE_BASELINE_MATCHES
     return out
 
 
