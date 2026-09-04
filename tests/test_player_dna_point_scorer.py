@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 
+import pandas as pd
+
 from backend.player_dna_point_scorer import (
+    _fit_logistic_newton,
+    _predict_logistic,
     build_feature_rows,
     split_chronological_by_match,
 )
@@ -103,3 +107,23 @@ def test_non_strict_point_never_enters_training_join():
     rows, counts = build_feature_rows([point], profiles)
     assert rows == []
     assert counts["non_strict_rows_skipped"] == 1
+
+
+def test_numpy_logistic_performs_real_converged_fit():
+    frame = pd.DataFrame([
+        {
+            "x": float(i - 40) / 10.0,
+            "surface": "hard" if i % 2 else "clay",
+            "tour": "ATP",
+            "match_format": "BO3",
+            "server_won": 1 if i >= 40 else 0,
+        }
+        for i in range(80)
+    ])
+    model = _fit_logistic_newton(frame, ["x"], l2=0.05)
+    probs = _predict_logistic(model, frame)
+    assert model["converged"] is True
+    assert model["iterations"] > 0
+    assert len(probs) == 80
+    assert all(0.0 < float(p) < 1.0 for p in probs)
+    assert float(probs[70]) > float(probs[10])
