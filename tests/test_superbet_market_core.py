@@ -47,3 +47,29 @@ def test_other_http_errors_remain_hard_failures(monkeypatch, path, status, paylo
 
     with pytest.raises(RuntimeError, match=rf"OddsPapi {path}: HTTP {status}"):
         core._request(path, "secret", quota)
+
+
+
+def test_requested_bookmaker_payload_is_exact_superbet_pl_only():
+    generic = {"markets": {"x": {}}}
+    exact = {"markets": {"y": {}}}
+    assert core._requested_bookmaker_payload({
+        "bookmakerOdds": {"superbet": generic}
+    }) is None
+    assert core._requested_bookmaker_payload({
+        "bookmakerOdds": {"superbet": generic, "superbet.pl": exact}
+    }) == exact
+
+
+def test_direct_offer_cache_without_exact_bookmaker_identity_is_rechecked():
+    now = core.datetime(2026, 9, 4, 12, 0, tzinfo=core.timezone.utc)
+    legacy = {
+        "stage": "within_4h",
+        "last_checked_at": now.isoformat(),
+        "offer": {"fixture_id": "f1", "bookmaker": "superbet.pl"},
+        "last_error": None,
+    }
+    assert core._direct_offer_due(legacy, "within_4h", now) is True
+
+    exact = dict(legacy, bookmaker_key="superbet.pl")
+    assert core._direct_offer_due(exact, "within_4h", now) is False
