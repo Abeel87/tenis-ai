@@ -24,20 +24,33 @@ def test_fixture_discovery_is_bookmaker_neutral_and_operator_query_is_filtered(m
         calls.append((path, params))
         if path == "fixtures":
             return [{
-                "fixtureId": "fixture-1",
+                "fixtureId": "neutral-fixture-1",
                 "participant1Name": "Player A",
                 "participant2Name": "Player B",
                 "startTime": "2026-09-04T12:00:00+00:00",
                 "tournamentId": "tournament-1",
             }]
         if path == "odds-by-tournaments":
-            return []
+            return [{
+                "fixtureId": "operator-fixture-99",
+                "participant1Name": "Player A",
+                "participant2Name": "Player B",
+                "startTime": "2026-09-04T12:00:00+00:00",
+                "tournamentId": "tournament-1",
+                "bookmakerOdds": {"superbet.pl": {"markets": {}}},
+            }]
         raise AssertionError(f"unexpected request path: {path}")
 
     monkeypatch.setenv("ODDSPAPI_API_KEY", "test-key")
     monkeypatch.setattr(core, "_read", lambda path, fallback: previous)
     monkeypatch.setattr(core, "_write", lambda path, value: writes.append((path, value)))
     monkeypatch.setattr(core, "_request", fake_request)
+    monkeypatch.setattr(core, "_sanitize_fixture", lambda row, meta: {
+        "fixture_id": row.get("fixtureId"),
+        "p1": row.get("participant1Name"),
+        "p2": row.get("participant2Name"),
+        "canonical_selections": [],
+    })
     monkeypatch.setattr(core.time, "sleep", lambda *_: None)
 
     report = core.refresh_availability([{
@@ -59,6 +72,12 @@ def test_fixture_discovery_is_bookmaker_neutral_and_operator_query_is_filtered(m
     assert odds_params["bookmakers"] == core.BOOKMAKER
     assert odds_params["tournamentIds"] == "tournament-1"
     assert report["refresh_status"] == "OK"
+    assert report["operator_odds_rows_seen"] == 1
+    assert report["operator_fixture_candidates"] == 1
+    assert report["operator_fixture_id_matches"] == 0
+    assert report["operator_pair_time_matches"] == 1
+    assert len(report["fixtures"]) == 1
+    assert report["fixtures"][0]["fixture_id"] == "operator-fixture-99"
     assert writes
 
 
