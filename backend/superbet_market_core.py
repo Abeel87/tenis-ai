@@ -327,6 +327,47 @@ def _best_fixture_for_match(match: dict, fixtures: list[dict]):
     return best if delta <= MAX_MATCH_TIME_DELTA_HOURS else None
 
 
+def _identity_debug_snapshot(row: dict) -> dict:
+    """Expose only non-odds identity metadata for diagnosing provider response shape."""
+    if not isinstance(row, dict):
+        return {}
+
+    sensitive_tokens = ("odds", "price", "market", "outcome")
+    identity_tokens = (
+        "fixture", "participant", "player", "competitor", "home", "away",
+        "start", "time", "tournament", "event", "match",
+    )
+
+    def keep_scalar(key: str, value):
+        name = str(key).casefold()
+        if any(token in name for token in sensitive_tokens):
+            return False
+        return any(token in name for token in identity_tokens) and isinstance(value, (str, int, float, bool))
+
+    out = {"top_level_keys": sorted(str(k) for k in row.keys())}
+    for key, value in row.items():
+        if keep_scalar(key, value):
+            out[str(key)] = value
+        elif isinstance(value, dict) and not any(token in str(key).casefold() for token in sensitive_tokens):
+            nested = {}
+            for child_key, child_value in value.items():
+                if keep_scalar(child_key, child_value):
+                    nested[str(child_key)] = child_value
+            if nested:
+                out[str(key)] = nested
+        elif isinstance(value, list) and len(value) <= 4 and not any(token in str(key).casefold() for token in sensitive_tokens):
+            nested_rows = []
+            for child in value:
+                if not isinstance(child, dict):
+                    continue
+                slim = {str(k): v for k, v in child.items() if keep_scalar(k, v)}
+                if slim:
+                    nested_rows.append(slim)
+            if nested_rows:
+                out[str(key)] = nested_rows
+    return out
+
+
 def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool, str | None]:
     """Join neutral discovery to the operator response without assuming shared IDs."""
     discovered_id = str(discovered.get("fixtureId") or "")
@@ -559,6 +600,8 @@ def refresh_availability(results: list[dict], now=None):
             "operator_fixture_candidates": operator_fixture_candidates,
             "operator_fixture_id_matches": fixture_id_matches,
             "operator_pair_time_matches": pair_time_matches,
+            "operator_row_identity_samples": [_identity_debug_snapshot(row) for row in odds_rows[:5]],
+            "discovered_fixture_identity_samples": [_identity_debug_snapshot(row) for row in discovered_matches[:5]],
             "fixtures": sanitized,
             "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             "contract": {
