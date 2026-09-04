@@ -12,6 +12,7 @@ import json
 import re
 import sys
 from contextlib import contextmanager
+from datetime import datetime, timezone
 
 try:
     from . import superbet_fixture_matching as fixture_matching
@@ -28,6 +29,10 @@ VERSION = "v9.2.4"
 STRICT_FIXTURE_LINE_VERSION = "v9.3.4-core"
 NEW_LINE_MARKETS = {"set_handicap"}
 NEW_HANDICAP_MARKETS = {"set_handicap"}
+DIRECT_SIDECAR = base.OUT / "superbet_direct_current.json"
+DIRECT_MAX_AGE_HOURS = mapping.REFRESH_HOURS * 1.8
+DIRECT_SOURCE = "superbet_direct_public_event_json"
+
 NEW_MARKETS = {
     "any_set_to_nil", "set2_exact_score", "set2_game_state", "exact_sets",
     "match_games_parity", "set1_games_parity", "set2_games_parity",
@@ -176,14 +181,235 @@ def mapped_sanitize(row: dict,meta: dict):
     return {"fixture_id":row.get("fixtureId"),"p1":p1,"p2":p2,"start_time":row.get("startTime"),"tournament":row.get("tournamentName"),"tournament_id":row.get("tournamentId"),"bookmaker":base.BOOKMAKER,"bookmaker_active":bookmaker_active,"suspended":bool(book.get("suspended",False) or not bookmaker_active),"raw_markets":len(raw_markets),"recognized_markets":sorted(recognized_markets),"canonical_selections":selections,"market_mapping_version":VERSION,"fixture_line_contract_version":STRICT_FIXTURE_LINE_VERSION,"suppressed_line_selections_without_fixture_evidence":suppressed_without_fixture_line}
 
 
+
+def _direct_selection_without_price(row: dict) -> dict | None:
+    """Project a Direct sidecar selection into the canonical price-free contract."""
+    if not isinstance(row, dict) or row.get("prices_used") is not False:
+        return None
+    market = str(row.get("market") or "").strip()
+    pick = row.get("pick")
+    if not market or pick in {None, ""}:
+        return None
+
+    line_markets = set(mapping.LINE_MARKETS) | set(NEW_LINE_MARKETS)
+    line = row.get("line")
+    if market in line_markets:
+        if (
+            line is None
+            or row.get("operator_line_verified") is not True
+            or row.get("fixture_line_verified") is not True
+        ):
+            return None
+
+    out = {
+        "market": market,
+        "pick": pick,
+        "line": line,
+        "checkpoint": row.get("checkpoint"),
+        "player": row.get("player"),
+        "set_no": row.get("set_no"),
+        "market_name": row.get("operator_market_name") or row.get("raw_label"),
+        "market_id": (
+            str(row.get("operator_market_id"))
+            if row.get("operator_market_id") is not None
+            else None
+        ),
+        "outcome_id": (
+            str(row.get("operator_outcome_id"))
+            if row.get("operator_outcome_id") is not None
+            else None
+        ),
+        "main_line": False,
+        "operator_available": row.get("operator_available") is not False,
+        "operator_line_verified": row.get("operator_line_verified") is True,
+        "fixture_line_verified": row.get("fixture_line_verified") is True,
+        "operator_line_source": DIRECT_SOURCE,
+        "operator_offer_source": DIRECT_SOURCE,
+        "direct_source": True,
+        "prices_used": False,
+    }
+    if not out["operator_available"]:
+        return None
+    return out
+
+
+def _direct_fixture_from_sidecar(row: dict) -> dict | None:
+    if not isinstance(row, dict):
+        return None
+    if row.get("direct_match_verified") is not True or row.get("prices_used") is not False:
+        return None
+    event_id = str(row.get("event_id") or "").strip()
+    p1 = str(row.get("p1") or "").strip()
+    p2 = str(row.get("p2") or "").strip()
+    start_time = row.get("operator_start_time") or row.get("scheduled_time")
+    if not event_id or not p1 or not p2 or not start_time:
+        return None
+
+    selections = []
+    for raw in row.get("canonical_selections") or []:
+        item = _direct_selection_without_price(raw)
+        if item is not None:
+            selections.append(item)
+    if not selections:
+        return None
+
+    dedup = {}
+    for selection in selections:
+        sig = (
+            selection.get("market"),
+            base._norm(selection.get("pick")),
+            base._line(selection.get("line")),
+            int(selection.get("checkpoint") or 0),
+            base._name_key(selection.get("player")),
+            int(selection.get("set_no") or 0),
+        )
+        dedup.setdefault(sig, selection)
+    selections = list(dedup.values())
+    return {
+        "fixture_id": event_id,
+        "p1": p1,
+        "p2": p2,
+        "start_time": start_time,
+        "tournament": None,
+        "tournament_id": None,
+        "bookmaker": base.BOOKMAKER,
+        "bookmaker_active": True,
+        "suspended": False,
+        "raw_markets": len(row.get("market_counts") or {}),
+        "recognized_markets": sorted({
+            str(selection.get("market") or "")
+            for selection in selections
+            if selection.get("market")
+        }),
+        "canonical_selections": selections,
+        "operator_offer_source": DIRECT_SOURCE,
+        "direct_source": True,
+        "prices_used": False,
+    }
+
+
+def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) -> dict:
+    """Add fresh Direct fixtures only where current canonical provider has no safe match."""
+    now = now or datetime.now(timezone.utc)
+    availability = dict(availability) if isinstance(availability, dict) else {}
+    diagnostic = {
+        "mode": "CURRENT_PROVIDER_FIRST_DIRECT_FALLBACK",
+        "sidecar_status": "UNAVAILABLE",
+        "sidecar_generated_at": None,
+        "sidecar_age_hours": None,
+        "sidecar_matches_seen": 0,
+        "fallback_fixtures_added": 0,
+        "existing_provider_preferred": 0,
+        "unsafe_sidecar_matches_rejected": 0,
+        "prices_in_canonical_availability": False,
+        "prices_used": False,
+        "policy": "CURRENT_ODDSPAPI_FIXTURE_FIRST; DIRECT_ONLY_WHEN_NO_SAFE_CURRENT_FIXTURE",
+    }
+
+    sidecar = base._read(DIRECT_SIDECAR, {})
+    if not isinstance(sidecar, dict):
+        availability["direct_fallback"] = diagnostic
+        return availability
+    diagnostic["sidecar_status"] = sidecar.get("status")
+    diagnostic["sidecar_generated_at"] = sidecar.get("generated_at")
+
+    generated = base._parse_dt(sidecar.get("generated_at"))
+    age_hours = (
+        (now - generated).total_seconds() / 3600
+        if generated is not None
+        else None
+    )
+    diagnostic["sidecar_age_hours"] = (
+        round(float(age_hours), 3) if age_hours is not None else None
+    )
+    if (
+        sidecar.get("status") != "OK"
+        or sidecar.get("prices_used") is not False
+        or sidecar.get("production_influence") is not False
+        or sidecar.get("playable_influence") is not False
+        or sidecar.get("writes_canonical_context") is not False
+        or age_hours is None
+        or age_hours < 0
+        or age_hours > DIRECT_MAX_AGE_HOURS
+    ):
+        availability["direct_fallback"] = diagnostic
+        return availability
+
+    fixtures = [
+        dict(row)
+        for row in (availability.get("fixtures") or [])
+        if isinstance(row, dict)
+    ]
+    app_matches = [
+        row for row in results
+        if isinstance(row, dict)
+        and row.get("p1")
+        and row.get("p2")
+        and row.get("scheduled_time")
+    ]
+    sidecar_matches = [
+        row for row in (sidecar.get("matches") or [])
+        if isinstance(row, dict)
+    ]
+    diagnostic["sidecar_matches_seen"] = len(sidecar_matches)
+
+    for sidecar_match in sidecar_matches:
+        direct_fixture = _direct_fixture_from_sidecar(sidecar_match)
+        if direct_fixture is None:
+            diagnostic["unsafe_sidecar_matches_rejected"] += 1
+            continue
+
+        app_match = next(
+            (
+                match
+                for match in app_matches
+                if fixture_matching.select_cached_fixture(match, [direct_fixture])
+                is not None
+            ),
+            None,
+        )
+        if app_match is None:
+            diagnostic["unsafe_sidecar_matches_rejected"] += 1
+            continue
+
+        existing = fixture_matching.select_cached_fixture(app_match, fixtures)
+        if existing is not None:
+            diagnostic["existing_provider_preferred"] += 1
+            continue
+
+        oriented = fixture_matching.select_cached_fixture(app_match, [direct_fixture])
+        if oriented is None:
+            diagnostic["unsafe_sidecar_matches_rejected"] += 1
+            continue
+        fixtures.append(dict(oriented))
+        diagnostic["fallback_fixtures_added"] += 1
+
+    availability["fixtures"] = fixtures
+    availability["direct_fallback"] = diagnostic
+    availability["operator_source_policy"] = (
+        "CURRENT_ODDSPAPI_FIXTURE_FIRST_DIRECT_FALLBACK"
+    )
+    availability["contains_prices"] = False
+    availability["prices_used"] = False
+    return availability
+
+
 @contextmanager
 def _patched_runtime():
-    old_line=set(mapping.LINE_MARKETS);old_handicap=set(mapping.HANDICAP_MARKETS);old_winner=set(mapping.WINNER_MARKETS);old_canonical=base.canonical_market;old_pick=mapping._selection_pick;old_sanitize=mapping._sanitize_fixture;old_best_fixture=base._best_fixture_for_match;old_best_cached=base._best_cached_fixture;old_availability_due=base._availability_due
+    old_line=set(mapping.LINE_MARKETS);old_handicap=set(mapping.HANDICAP_MARKETS);old_winner=set(mapping.WINNER_MARKETS);old_canonical=base.canonical_market;old_pick=mapping._selection_pick;old_sanitize=mapping._sanitize_fixture;old_best_fixture=base._best_fixture_for_match;old_best_cached=base._best_cached_fixture;old_availability_due=base._availability_due;old_refresh=base.refresh_availability
     fixture_matching.reset_telemetry()
+
+    def refresh_with_direct(results, now=None):
+        availability = old_refresh(results, now)
+        merged = _overlay_direct_fallback(results, availability, now=now)
+        if merged != availability:
+            base._write(base.AVAILABILITY, merged)
+        return merged
+
     try:
-        base.canonical_market=canonical_market;mapping._selection_pick=selection_pick;mapping._sanitize_fixture=mapped_sanitize;base._best_fixture_for_match=fixture_matching.best_fixture_for_match;base._best_cached_fixture=fixture_matching.best_cached_fixture;base._availability_due=lambda previous,now:fixture_matching.availability_due(old_availability_due,previous,now);mapping.LINE_MARKETS.update(NEW_LINE_MARKETS);mapping.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS);mapping.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS);yield
+        base.canonical_market=canonical_market;mapping._selection_pick=selection_pick;mapping._sanitize_fixture=mapped_sanitize;base._best_fixture_for_match=fixture_matching.best_fixture_for_match;base._best_cached_fixture=fixture_matching.best_cached_fixture;base._availability_due=lambda previous,now:fixture_matching.availability_due(old_availability_due,previous,now);base.refresh_availability=refresh_with_direct;mapping.LINE_MARKETS.update(NEW_LINE_MARKETS);mapping.HANDICAP_MARKETS.update(NEW_HANDICAP_MARKETS);mapping.WINNER_MARKETS.update(NEW_HANDICAP_MARKETS);yield
     finally:
-        base.canonical_market=old_canonical;mapping._selection_pick=old_pick;mapping._sanitize_fixture=old_sanitize;base._best_fixture_for_match=old_best_fixture;base._best_cached_fixture=old_best_cached;base._availability_due=old_availability_due;mapping.LINE_MARKETS.clear();mapping.LINE_MARKETS.update(old_line);mapping.HANDICAP_MARKETS.clear();mapping.HANDICAP_MARKETS.update(old_handicap);mapping.WINNER_MARKETS.clear();mapping.WINNER_MARKETS.update(old_winner)
+        base.canonical_market=old_canonical;mapping._selection_pick=old_pick;mapping._sanitize_fixture=old_sanitize;base._best_fixture_for_match=old_best_fixture;base._best_cached_fixture=old_best_cached;base._availability_due=old_availability_due;base.refresh_availability=old_refresh;mapping.LINE_MARKETS.clear();mapping.LINE_MARKETS.update(old_line);mapping.HANDICAP_MARKETS.clear();mapping.HANDICAP_MARKETS.update(old_handicap);mapping.WINNER_MARKETS.clear();mapping.WINNER_MARKETS.update(old_winner)
 
 
 def _stamp_alias() -> dict:
