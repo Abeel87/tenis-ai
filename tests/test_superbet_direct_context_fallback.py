@@ -135,6 +135,9 @@ def test_direct_fallback_adds_price_free_fixture_only_when_current_provider_miss
     assert diag["unsafe_sidecar_matches_rejected"] == 0
     assert diag["prices_in_canonical_availability"] is False
     assert diag["prices_used"] is False
+    assert diag["canonical_context_activation"] is True
+    assert diag["downstream_playable_eligibility"] is True
+    assert diag["model_math_unchanged"] is True
     assert merged["contains_prices"] is False
     assert merged["prices_used"] is False
 
@@ -173,6 +176,8 @@ def test_existing_current_provider_fixture_wins_over_direct(monkeypatch, tmp_pat
     assert merged["fixtures"][0]["fixture_id"] == "oddspapi-current"
     assert merged["direct_fallback"]["fallback_fixtures_added"] == 0
     assert merged["direct_fallback"]["existing_provider_preferred"] == 1
+    assert merged["direct_fallback"]["canonical_context_activation"] is False
+    assert merged["direct_fallback"]["downstream_playable_eligibility"] is False
 
 
 def test_stale_or_unsafe_direct_sidecar_never_enters_canonical_availability(monkeypatch, tmp_path):
