@@ -33,7 +33,7 @@ try:
         build_feature_rows,
         split_chronological_by_match,
     )
-    from backend.player_dna_tennis_simulator import set_shape_family, simulate_match
+    from backend.player_dna_tennis_simulator import SET_SHAPE_FAMILIES, set_shape_family, simulate_match
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
         PROFILE_NUMERIC,
@@ -43,7 +43,7 @@ except ModuleNotFoundError:  # direct execution
         build_feature_rows,
         split_chronological_by_match,
     )
-    from player_dna_tennis_simulator import set_shape_family, simulate_match
+    from player_dna_tennis_simulator import SET_SHAPE_FAMILIES, set_shape_family, simulate_match
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -457,6 +457,148 @@ def categorical_metrics(
         "mean_probability_assigned_to_actual": round(sum(actual_prob) / n, 6),
         "status": "EVALUATED",
     }
+
+
+def conditional_categorical_metrics(
+    records: list[tuple[dict[str, float], str, str]],
+    train_labels_by_segment: dict[str, list[str]],
+) -> dict[str, Any]:
+    """Multiclass proper scoring against a train-only baseline for each segment."""
+    if not records or not train_labels_by_segment:
+        return {"n": 0, "status": "NO_DATA"}
+
+    keys = list(SET_SHAPE_FAMILIES)
+    model_brier = []
+    base_brier = []
+    model_nll = []
+    base_nll = []
+    model_top1 = 0
+    base_top1 = 0
+    actual_prob = []
+    segments = set()
+
+    for probs, actual, segment in records:
+        train_labels = train_labels_by_segment.get(segment) or []
+        if not train_labels:
+            continue
+        counts = Counter(train_labels)
+        total_train = sum(counts.values())
+        if total_train <= 0:
+            continue
+        baseline = {key: counts.get(key, 0) / total_train for key in keys}
+
+        normalized = {key: max(0.0, float(probs.get(key, 0.0))) for key in keys}
+        mass = sum(normalized.values())
+        if mass <= 0.0:
+            continue
+        normalized = {key: value / mass for key, value in normalized.items()}
+
+        model_brier.append(
+            sum((normalized[key] - (1.0 if key == actual else 0.0)) ** 2 for key in keys)
+        )
+        base_brier.append(
+            sum((baseline[key] - (1.0 if key == actual else 0.0)) ** 2 for key in keys)
+        )
+        pa = _clip(normalized.get(actual, 0.0))
+        ba = _clip(baseline.get(actual, 0.0))
+        model_nll.append(-math.log(pa))
+        base_nll.append(-math.log(ba))
+        actual_prob.append(pa)
+        model_top1 += int(max(normalized, key=normalized.get) == actual)
+        base_top1 += int(max(baseline, key=baseline.get) == actual)
+        segments.add(segment)
+
+    n = len(model_brier)
+    if n == 0:
+        return {"n": 0, "status": "NO_SEGMENT_BASELINE"}
+
+    mb = sum(model_brier) / n
+    bb = sum(base_brier) / n
+    model_acc = model_top1 / n
+    base_acc = base_top1 / n
+    return {
+        "n": n,
+        "classes": keys,
+        "segments_evaluated": len(segments),
+        "multiclass_brier": round(mb, 6),
+        "baseline_multiclass_brier": round(bb, 6),
+        "brier_gain_vs_segment_train_distribution": round(bb - mb, 6),
+        "brier_skill_vs_segment_train_distribution": round(1.0 - mb / bb, 6) if bb > 0 else None,
+        "negative_log_likelihood": round(sum(model_nll) / n, 6),
+        "baseline_negative_log_likelihood": round(sum(base_nll) / n, 6),
+        "nll_gain_vs_segment_train_distribution": round((sum(base_nll) - sum(model_nll)) / n, 6),
+        "top1_accuracy": round(model_acc, 6),
+        "baseline_top1_accuracy": round(base_acc, 6),
+        "top1_accuracy_delta_pp": round((model_acc - base_acc) * 100.0, 3),
+        "mean_probability_assigned_to_actual": round(sum(actual_prob) / n, 6),
+        "status": "EVALUATED",
+    }
+
+
+def _set_index_shape_probability_validation(
+    predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    train_labels: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Evaluate per-set shape marginals using train-only match-score/index baselines."""
+    train_by_segment: dict[str, list[str]] = defaultdict(list)
+    for label in train_labels.values():
+        match_score = str(label.get("match_exact_score") or "").strip()
+        sequence = tuple(
+            str(value) for value in ((label.get("trajectory_actual") or {}).get("set_score_sequence") or [])
+        )
+        if not match_score or not sequence:
+            continue
+        for index, score in enumerate(sequence, start=1):
+            shape = set_shape_family(score)
+            if shape:
+                train_by_segment[f"{match_score}|set_{index}"].append(shape)
+
+    records_by_index: dict[int, list[tuple[dict[str, float], str, str]]] = defaultdict(list)
+    all_records: list[tuple[dict[str, float], str, str]] = []
+    for match_id, label in labels.items():
+        pred = predictions.get(match_id)
+        if not isinstance(pred, dict):
+            continue
+        actual = label.get("trajectory_actual") or {}
+        first_server = actual.get("first_server")
+        branch_key = "p1_serves_first" if first_server == 1 else "p2_serves_first" if first_server == 2 else None
+        if branch_key is None:
+            continue
+        trajectory = ((pred.get("simulation") or {}).get("trajectory") or {})
+        branch = (trajectory.get("serve_order_conditioned") or {}).get(branch_key)
+        if not isinstance(branch, dict):
+            continue
+
+        match_score = str(label.get("match_exact_score") or "").strip()
+        sequence = tuple(str(value) for value in (actual.get("set_score_sequence") or []))
+        score_marginals = (branch.get("set_index_shape_marginals") or {}).get(match_score) or {}
+        if not match_score or not sequence or not isinstance(score_marginals, dict):
+            continue
+
+        for index, score in enumerate(sequence, start=1):
+            actual_shape = set_shape_family(score)
+            rows = score_marginals.get(f"set_{index}") or []
+            if not actual_shape or not rows:
+                continue
+            probs = {
+                str(row.get("shape") or ""): float(row.get("probability") or 0.0)
+                for row in rows
+                if row.get("shape")
+            }
+            segment = f"{match_score}|set_{index}"
+            record = (probs, actual_shape, segment)
+            records_by_index[index].append(record)
+            all_records.append(record)
+
+    out = {
+        f"set_{index}": conditional_categorical_metrics(records_by_index[index], train_by_segment)
+        for index in sorted(records_by_index)
+    }
+    out["all_sets"] = conditional_categorical_metrics(all_records, train_by_segment)
+    out["conditioning"] = "ACTUAL_MATCH_SCORE_AND_OBSERVED_FIRST_SERVER_DIAGNOSTIC_ONLY"
+    out["baseline"] = "TRAIN_ONLY_SHAPE_DISTRIBUTION_FOR_SAME_MATCH_SCORE_AND_SET_INDEX"
+    return out
 
 
 def _normalized_progression(value: Any) -> tuple[str, ...]:
