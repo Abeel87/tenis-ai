@@ -915,6 +915,7 @@ def refresh_availability(results: list[dict], now=None):
             "direct_fixture_requests_due": direct_due,
             "direct_fixture_requests_this_refresh": direct_requests_this_refresh,
             "direct_fixture_rows_seen": direct_rows_seen,
+            "direct_fixture_rows_with_superbet": direct_rows_with_superbet,
             "direct_fixture_rows_with_requested_bookmaker": direct_rows_with_superbet,
             "direct_fixture_matches": direct_fixture_matches,
             "direct_fixture_cache_offers_used": direct_cache_offers_used,
