@@ -95,22 +95,62 @@ def test_context_runtime_does_not_patch_core_request():
     assert context.base._request is original_request
 
 
-def test_identity_debug_snapshot_excludes_odds_and_exposes_nested_identity_shape():
-    snapshot = core._identity_debug_snapshot({
-        "fixture": {
-            "id": "fx-1",
-            "startTime": "2026-09-04T12:00:00Z",
-            "participant1Name": "Player A",
-            "participant2Name": "Player B",
+
+
+def test_stale_operator_row_is_rejected_before_fixture_join(monkeypatch):
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    previous = {
+        "generated_at": "2026-09-03T00:00:00+00:00",
+        "market_meta_generated_at": "2026-09-04T11:00:00+00:00",
+        "market_meta_cache": {"1": {"marketName": "Winner", "outcomes": {}}},
+        "quota_guard": {
+            "month": "2026-09",
+            "monthly_cap": core.MONTHLY_REQUEST_CAP,
+            "requests_used_by_v91": 0,
         },
-        "eventName": "Player A - Player B",
-        "bookmakerOdds": {"superbet.pl": {"markets": {"1": {"price": 1.91}}}},
-        "markets": {"secret": "must-not-leak"},
-    })
-    assert snapshot["top_level_keys"] == ["bookmakerOdds", "eventName", "fixture", "markets"]
-    assert snapshot["eventName"] == "Player A - Player B"
-    assert snapshot["fixture"]["startTime"] == "2026-09-04T12:00:00Z"
-    assert snapshot["fixture"]["participant1Name"] == "Player A"
-    assert snapshot["fixture"]["participant2Name"] == "Player B"
-    assert "bookmakerOdds" not in snapshot
-    assert "markets" not in snapshot
+        "fixtures": [],
+    }
+
+    def fake_request(path, api_key, quota, **params):
+        if path == "fixtures":
+            return [{
+                "fixtureId": "shared-fixture-id",
+                "participant1Name": "Player A",
+                "participant2Name": "Player B",
+                "startTime": "2026-09-04T12:00:00+00:00",
+                "tournamentId": "tournament-1",
+            }]
+        if path == "odds-by-tournaments":
+            # Same provider fixture ID, but historical tournament row.
+            # It must be rejected before fixture identity matching.
+            return [{
+                "fixtureId": "shared-fixture-id",
+                "participant1Name": "Player A",
+                "participant2Name": "Player B",
+                "startTime": "2026-08-31T12:00:00+00:00",
+                "tournamentId": "tournament-1",
+                "bookmakerOdds": {"superbet.pl": {"markets": {}}},
+            }]
+        raise AssertionError(path)
+
+    monkeypatch.setenv("ODDSPAPI_API_KEY", "test-key")
+    monkeypatch.setattr(core, "_read", lambda path, fallback: previous)
+    monkeypatch.setattr(core, "_write", lambda path, value: None)
+    monkeypatch.setattr(core, "_request", fake_request)
+    monkeypatch.setattr(core.time, "sleep", lambda *_: None)
+
+    report = core.refresh_availability([{
+        "p1": "Player A",
+        "p2": "Player B",
+        "scheduled_time": "2026-09-04T12:00:00+00:00",
+    }], now=now)
+
+    assert report["operator_odds_rows_seen"] == 1
+    assert report["operator_rows_with_requested_bookmaker"] == 1
+    assert report["operator_rows_in_horizon"] == 0
+    assert report["operator_rows_in_horizon_with_requested_bookmaker"] == 0
+    assert report["operator_fixture_candidates"] == 0
+    assert report["operator_fixture_id_matches"] == 0
+    assert report["fixtures"] == []
+    assert report["contract"]["current_operator_horizon_required"] is True
+    assert report["contract"]["requested_bookmaker_required_before_join"] is True
