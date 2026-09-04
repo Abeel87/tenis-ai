@@ -33,7 +33,7 @@ try:
         build_feature_rows,
         split_chronological_by_match,
     )
-    from backend.player_dna_tennis_simulator import simulate_match
+    from backend.player_dna_tennis_simulator import scenario_first_set_shape, simulate_match
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
         PROFILE_NUMERIC,
@@ -43,7 +43,7 @@ except ModuleNotFoundError:  # direct execution
         build_feature_rows,
         split_chronological_by_match,
     )
-    from player_dna_tennis_simulator import simulate_match
+    from player_dna_tennis_simulator import scenario_first_set_shape, simulate_match
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -544,6 +544,7 @@ def _trajectory_validation(
     first_set_records = []
     match_set_records = []
     full_match_records = []
+    scenario_family_records = []
 
     for match_id, label in labels.items():
         pred = predictions.get(match_id)
@@ -570,6 +571,34 @@ def _trajectory_validation(
         branch = (trajectory.get("serve_order_conditioned") or {}).get(branch_key) if branch_key else None
         if not isinstance(branch, dict):
             continue
+
+        checkpoint6 = (actual.get("checkpoint_scores") or {}).get("6")
+        first_set_score = label.get("first_set_exact_score")
+        match_score = label.get("match_exact_score")
+        if checkpoint6 and first_set_score and match_score:
+            try:
+                first_shape = scenario_first_set_shape(str(first_set_score))
+            except ValueError:
+                first_shape = None
+            if first_shape:
+                actual_family = f"{checkpoint6}|{first_shape}|{match_score}"
+                ranked_families = branch.get("scenario_families") or []
+                family_ids = [str(row.get("family_id") or "") for row in ranked_families]
+                hit_rank = None
+                for idx, family_id in enumerate(family_ids, start=1):
+                    if family_id == actual_family:
+                        hit_rank = idx
+                        break
+                scenario_family_records.append({
+                    "rank": hit_rank,
+                    "hit_at_1": bool(hit_rank is not None and hit_rank <= 1),
+                    "hit_at_3": bool(hit_rank is not None and hit_rank <= 3),
+                    "hit_at_8": bool(hit_rank is not None and hit_rank <= 8),
+                    "hit_at_16": bool(hit_rank is not None and hit_rank <= 16),
+                    "top16_probability_mass": float(
+                        branch.get("scenario_family_top16_mass") or 0.0
+                    ),
+                })
 
         first_path = _normalized_progression(actual.get("first_set_progression"))
         if first_path:
@@ -622,6 +651,15 @@ def _trajectory_validation(
             ) if n else None
         return out
 
+    def summarize_scenario_families(rows: list[dict[str, Any]]) -> dict[str, Any]:
+        out = summarize_rank(rows, (1, 3, 8, 16))
+        n = len(rows)
+        out["mean_top16_probability_mass"] = round(
+            sum(float(row.get("top16_probability_mass") or 0.0) for row in rows) / n,
+            6,
+        ) if n else None
+        return out
+
     return {
         "status": "TRAJECTORY_HISTORICAL_DIAGNOSTIC",
         "promotion_gate": False,
@@ -632,11 +670,13 @@ def _trajectory_validation(
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
+        "scenario_family_conditioned_on_observed_first_server": summarize_scenario_families(scenario_family_records),
         "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
             "settled_predictions": len(labels),
             "first_set_complete_paths": len(first_set_records),
             "match_set_sequences": len(match_set_records),
+            "scenario_families": len(scenario_family_records),
             "full_match_complete_paths": len(full_match_records),
         },
     }
