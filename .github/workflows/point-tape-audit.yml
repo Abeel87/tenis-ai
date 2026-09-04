@@ -20,6 +20,7 @@ on:
       - 'backend/player_dna_current_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
+      - 'backend/player_dna_hold_calibration.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -37,6 +38,7 @@ on:
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
+      - 'tests/test_player_dna_hold_calibration.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -71,7 +73,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_hold_calibration.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -111,6 +113,9 @@ jobs:
 
       - name: Backtest Player DNA simulated markets (SHADOW, zero network)
         run: python backend/player_dna_market_backtest.py
+
+      - name: Audit Player DNA hold calibration (SHADOW, zero network)
+        run: python backend/player_dna_hold_calibration.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -454,6 +459,47 @@ jobs:
               f"{bt_summary.get('binary_markets_evaluated_ge_100')}"
           )
 
+          p = Path('frontend/data/player_dna_hold_calibration_audit.json')
+          if not p.exists():
+              raise SystemExit('player_dna_hold_calibration_audit.json was not generated')
+          calibration = json.loads(p.read_text(encoding='utf-8'))
+          if calibration.get('mode') != 'SHADOW_CALIBRATION_AUDIT_ONLY':
+              raise SystemExit('Player DNA hold calibration must remain audit-only')
+          if calibration.get('status') != 'CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION':
+              raise SystemExit(f"Player DNA hold calibration incomplete: {calibration.get('status')}")
+          if calibration.get('production_influence') is not False:
+              raise SystemExit('Player DNA hold calibration crossed PROD boundary')
+          if calibration.get('symphony2_influence') is not False or calibration.get('superbet_playable_influence') is not False:
+              raise SystemExit('Player DNA hold calibration crossed downstream isolation')
+          if calibration.get('current_simulator_modified') is not False or calibration.get('auto_integrate') is not False:
+              raise SystemExit('Player DNA hold calibration cannot mutate/integrate current simulator')
+          if calibration.get('signal') not in {
+              'HOLD_CALIBRATION_PROMISING_SHADOW',
+              'HOLD_CALIBRATION_NOT_YET_PROVEN',
+          }:
+              raise SystemExit(f"Player DNA hold calibration signal invalid: {calibration.get('signal')}")
+          split_cal = calibration.get('split') or {}
+          if split_cal.get('same_timestamp_groups_not_split') is not True:
+              raise SystemExit('Player DNA hold calibration split leaked same-timestamp matches')
+          counts_cal = calibration.get('counts') or {}
+          if int(counts_cal.get('calibration_games') or 0) < 500 or int(counts_cal.get('test_games') or 0) < 500:
+              raise SystemExit('Player DNA hold calibration game sample too small')
+          if int(counts_cal.get('settled_test_matches') or 0) < 100:
+              raise SystemExit('Player DNA hold calibration settled final-test sample too small')
+          hold_cal = calibration.get('hold_calibrator') or {}
+          if hold_cal.get('converged') is not True:
+              raise SystemExit('Player DNA hold calibrator did not converge')
+          game_test = calibration.get('game_hold_test') or {}
+          if (game_test.get('iid_raw') or {}).get('brier') is None or (game_test.get('calibrated') or {}).get('brier') is None:
+              raise SystemExit('Player DNA hold calibration game metrics missing')
+          print(
+              f"Player DNA hold calibration: signal={calibration.get('signal')} "
+              f"games={counts_cal.get('test_games')} "
+              f"game_brier_gain={game_test.get('brier_gain_calibrated_vs_raw')} "
+              f"duration={(calibration.get('summary') or {}).get('duration_markets_improved')}/"
+              f"{(calibration.get('summary') or {}).get('duration_markets_total')}"
+          )
+
           p = Path('frontend/data/player_dna_current_simulation.json')
           if not p.exists():
               raise SystemExit('player_dna_current_simulation.json was not generated')
@@ -517,6 +563,7 @@ jobs:
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_simulation.json
             frontend/data/player_dna_market_backtest.json
+            frontend/data/player_dna_hold_calibration_audit.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
             data/derived/player_dna/current_point_model_shadow.json
