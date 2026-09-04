@@ -553,8 +553,76 @@ def parse_visible_offer_text(
 
 
 EVENT_API_HOST = "production-superbet-offer-pl.freetls.fastly.net"
+EVENT_API_BASE = f"https://{EVENT_API_HOST}/v2/pl-PL/events"
 COMBINATION_MARKET_ID = 238733
 EVENT_JSON_SOURCE = "superbet_direct_public_event_json"
+
+
+def _event_api_url(event_id: object) -> str:
+    value = str(event_id or "").strip()
+    if not re.fullmatch(r"\d+", value):
+        raise ValueError("Superbet event id must be numeric")
+    return f"{EVENT_API_BASE}/{value}"
+
+
+def _allowed_event_api_url(url: str) -> bool:
+    parsed = urlparse(str(url or ""))
+    return (
+        parsed.scheme == "https"
+        and parsed.netloc == EVENT_API_HOST
+        and re.fullmatch(r"/v2/pl-PL/events/\d+", parsed.path) is not None
+        and not parsed.query
+        and not parsed.fragment
+    )
+
+
+def fetch_event_payload(event_id: object, timeout: int = 25) -> dict:
+    """Fetch one public Superbet event offer without browser state or login."""
+    url = _event_api_url(event_id)
+    if not _allowed_event_api_url(url):
+        raise ValueError("only the public Superbet PL event endpoint is allowed")
+    request = Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json",
+            "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.7",
+            "Cache-Control": "no-cache",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        content_type = str(response.headers.get("Content-Type") or "")
+        if "json" not in content_type.casefold():
+            raise RuntimeError(f"unexpected event content type: {content_type}")
+        raw = response.read(MAX_HTML_BYTES + 1)
+        if len(raw) > MAX_HTML_BYTES:
+            raise RuntimeError("Superbet event JSON exceeds safety limit")
+        charset = response.headers.get_content_charset() or "utf-8"
+        payload = json.loads(raw.decode(charset, errors="strict"))
+    if not isinstance(payload, dict):
+        raise RuntimeError("Superbet event response is not a JSON object")
+    return payload
+
+
+def direct_event_offer(
+    event_id: object,
+    *,
+    match_url: str | None = None,
+    title: str | None = None,
+    timeout: int = 25,
+) -> dict:
+    """Fetch and normalize one selected public Superbet event by numeric id."""
+    expected = str(event_id or "").strip()
+    payload = fetch_event_payload(expected, timeout=timeout)
+    result = parse_event_payload(
+        payload,
+        event_id=expected,
+        url=match_url,
+        title=title,
+    )
+    result["transport"] = "DIRECT_PUBLIC_EVENT_HTTP"
+    result["event_api_url"] = _event_api_url(expected)
+    return result
 
 
 def _event_record(payload: object, event_id: str | None = None) -> dict | None:
@@ -1079,21 +1147,36 @@ def browser_probe(timeout: int = 25) -> dict:
         result["sample"] = summary
 
         event_id = _event_id_from_url(sample_url)
-        payload = capture_event_payload(driver, str(event_id or ""))
-        if payload is not None:
-            normalized = parse_event_payload(
-                payload, event_id=event_id, url=sample_url, title=driver.title
+        direct_http_error = None
+        try:
+            normalized = direct_event_offer(
+                event_id,
+                match_url=sample_url,
+                title=driver.title,
+                timeout=timeout,
             )
-            normalized_source = "PUBLIC_EVENT_JSON"
-        else:
-            rendered_text = rendered_dom_text(driver)
-            normalized = parse_visible_offer_text(
-                rendered_text, url=sample_url, title=driver.title
-            )
-            normalized_source = "RENDERED_DOM_FALLBACK"
+            normalized_source = "PUBLIC_EVENT_JSON_DIRECT_HTTP"
+        except Exception as exc:
+            direct_http_error = f"{type(exc).__name__}: {exc}"
+            payload = capture_event_payload(driver, str(event_id or ""))
+            if payload is not None:
+                normalized = parse_event_payload(
+                    payload, event_id=event_id, url=sample_url, title=driver.title
+                )
+                normalized["transport"] = "BROWSER_CAPTURED_PUBLIC_XHR"
+                normalized_source = "PUBLIC_EVENT_JSON_BROWSER_CAPTURE"
+            else:
+                rendered_text = rendered_dom_text(driver)
+                normalized = parse_visible_offer_text(
+                    rendered_text, url=sample_url, title=driver.title
+                )
+                normalized["transport"] = "BROWSER_RENDERED_DOM"
+                normalized_source = "RENDERED_DOM_FALLBACK"
 
         result["normalized_offer"] = {
             "source": normalized_source,
+            "transport": normalized.get("transport"),
+            "direct_http_error": direct_http_error,
             "event_id": normalized.get("event_id"),
             "p1": normalized.get("p1"),
             "p2": normalized.get("p2"),
@@ -1108,7 +1191,8 @@ def browser_probe(timeout: int = 25) -> dict:
         result["status"] = (
             "OK"
             if summary["has_operator_market_evidence"]
-            and normalized_source == "PUBLIC_EVENT_JSON"
+            and normalized_source == "PUBLIC_EVENT_JSON_DIRECT_HTTP"
+            and normalized.get("transport") == "DIRECT_PUBLIC_EVENT_HTTP"
             and int(core_counts.get("match_winner") or 0) >= 2
             and int(core_counts.get("match_total") or 0) >= 2
             and int(normalized.get("verified_line_selections_count") or 0) >= 2
@@ -1130,8 +1214,15 @@ def main() -> None:
         if len(sys.argv) < 3:
             raise SystemExit("usage: superbet_direct.py offer-browser <superbet-match-url>")
         result = browser_offer(sys.argv[2])
+    elif mode == "offer-event":
+        if len(sys.argv) < 3:
+            raise SystemExit("usage: superbet_direct.py offer-event <numeric-event-id>")
+        result = direct_event_offer(sys.argv[2])
     else:
-        raise SystemExit("usage: superbet_direct.py [probe|probe-browser|offer-browser <url>]")
+        raise SystemExit(
+            "usage: superbet_direct.py "
+            "[probe|probe-browser|offer-browser <url>|offer-event <event-id>]"
+        )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result.get("status") != "OK":
         raise SystemExit(2)
