@@ -1,13 +1,16 @@
 import math
 
 from backend.player_dna_tennis_simulator import (
+    calibrated_hold_probability,
     early_equal_score_probability,
     hold_probability,
+    inverse_hold_probability,
     match_outcomes,
     neutral_tiebreak_win_probability,
     set_outcomes,
     simulate_current_report,
     simulate_match,
+    simulate_match_with_hold_calibration,
 )
 
 
@@ -81,3 +84,100 @@ def test_current_report_only_simulates_shadow_scored_rows_and_stays_isolated():
     assert report["superbet_playable_influence"] is False
     assert report["match_level_validation_required"] is True
     assert report["matches"][0]["validation_status"] == "UNVALIDATED_MATCH_LEVEL"
+
+
+def _promising_calibration():
+    return {
+        "version": "player-dna-hold-calibration-audit-v1",
+        "mode": "SHADOW_CALIBRATION_AUDIT_ONLY",
+        "status": "CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION",
+        "signal": "HOLD_CALIBRATION_PROMISING_SHADOW",
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_integrate": False,
+        "hold_calibrator": {
+            "intercept": 0.42,
+            "slope": 0.53,
+            "l2": 0.01,
+            "converged": True,
+        },
+    }
+
+
+def test_hold_calibration_math_round_trip_and_candidate():
+    raw_point = 0.63
+    iid_hold = hold_probability(raw_point)
+    calibrated = calibrated_hold_probability(iid_hold, _promising_calibration()["hold_calibrator"])
+    equivalent = inverse_hold_probability(calibrated)
+    assert 0.0 < calibrated < 1.0
+    assert math.isclose(hold_probability(equivalent), calibrated, abs_tol=1e-9)
+
+    candidate = simulate_match_with_hold_calibration(
+        0.63,
+        0.59,
+        _promising_calibration()["hold_calibrator"],
+        best_of=3,
+    )
+    assert candidate["mode"] == "SHADOW_HOLD_CALIBRATED_CANDIDATE"
+    assert candidate["validation_status"] == "BACKTESTED_HOLD_CALIBRATION_CANDIDATE"
+    assert candidate["production_influence"] is False
+    assert candidate["auto_promote"] is False
+
+
+def test_hold_calibration_candidate_is_additive_and_does_not_replace_raw():
+    current = {
+        "version": "player-dna-current-shadow-v1",
+        "matches": [{
+            "match_id": 1,
+            "status": "SHADOW_SCORED",
+            "p1": "A",
+            "p2": "B",
+            "p1_serve_point_win_probability": 0.63,
+            "p2_serve_point_win_probability": 0.59,
+            "model_fingerprint_sha256": "abc",
+        }],
+    }
+    raw_only = simulate_current_report(current)
+    calibrated = simulate_current_report(current, calibration_report=_promising_calibration())
+    assert raw_only["matches"][0]["simulation"] == calibrated["matches"][0]["simulation"]
+    assert raw_only["hold_calibration_candidate_enabled"] is False
+    assert calibrated["hold_calibration_candidate_enabled"] is True
+    assert calibrated["calibrated_candidate_matches"] == 1
+    row = calibrated["matches"][0]
+    assert row["validation_status"] == "UNVALIDATED_MATCH_LEVEL"
+    assert row["hold_calibrated_candidate"]["validation_status"] == "BACKTESTED_HOLD_CALIBRATION_CANDIDATE"
+    assert calibrated["market_policy"]["winner_markets"] == "NO_AUTOMATIC_SWITCH"
+
+
+def test_non_promising_calibration_cannot_enable_candidate():
+    report = _promising_calibration()
+    report["signal"] = "HOLD_CALIBRATION_NOT_YET_PROVEN"
+    current = {
+        "matches": [{
+            "match_id": 1,
+            "status": "SHADOW_SCORED",
+            "p1_serve_point_win_probability": 0.63,
+            "p2_serve_point_win_probability": 0.59,
+        }]
+    }
+    result = simulate_current_report(current, calibration_report=report)
+    assert result["hold_calibration_candidate_enabled"] is False
+    assert result["matches"][0]["hold_calibrated_candidate"] is None
+
+def test_calibration_with_any_external_influence_cannot_enable_candidate():
+    current = {
+        "matches": [{
+            "match_id": 1,
+            "status": "SHADOW_SCORED",
+            "p1_serve_point_win_probability": 0.63,
+            "p2_serve_point_win_probability": 0.59,
+        }]
+    }
+    for field in ("production_influence", "symphony2_influence", "superbet_playable_influence"):
+        report = _promising_calibration()
+        report[field] = True
+        result = simulate_current_report(current, calibration_report=report)
+        assert result["hold_calibration_candidate_enabled"] is False
+        assert result["matches"][0]["hold_calibrated_candidate"] is None
+
