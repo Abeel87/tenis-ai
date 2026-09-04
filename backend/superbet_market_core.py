@@ -242,8 +242,16 @@ def _request(path: str, api_key: str, quota: dict, **params):
         with urlopen(req, timeout=35) as response:
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace")[:300]
-        raise RuntimeError(f"OddsPapi {path}: HTTP {exc.code}; {body}") from None
+        body = exc.read().decode("utf-8", errors="replace")
+        if path == "fixtures" and exc.code == 404:
+            try:
+                payload = json.loads(body)
+            except (TypeError, ValueError):
+                payload = None
+            error = payload.get("error") if isinstance(payload, dict) else None
+            if isinstance(error, dict) and error.get("code") == "FIXTURE_NOT_FOUND":
+                return []
+        raise RuntimeError(f"OddsPapi {path}: HTTP {exc.code}; {body[:300]}") from None
     except URLError as exc:
         raise RuntimeError(f"OddsPapi {path}: network error: {exc.reason}") from None
 
