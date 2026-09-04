@@ -241,7 +241,7 @@ def _top_first_set_game_paths(
                     "winner": winner,
                     "games": 13,
                     "tiebreak": True,
-                    "progression": [*path, "6:6", score],
+                    "progression": [*path, score],
                     "probability": mass * probability,
                 })
             out.sort(key=lambda row: float(row["probability"]), reverse=True)
@@ -338,6 +338,151 @@ def _top_match_set_paths(
     return sorted(out, key=lambda row: float(row["probability"]), reverse=True)
 
 
+def _top_full_match_game_paths(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+    limit: int = 4,
+) -> list[dict[str, Any]]:
+    """Exact top-K complete match paths at game resolution.
+
+    Each path preserves every game score inside every set. The search is
+    best-first over exact game transitions, so completed paths are emitted in
+    descending probability for a known first server.
+    """
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    if limit <= 0:
+        return []
+
+    p1_hold = hold_probability(p1_serve_point)
+    p2_hold = hold_probability(p2_serve_point)
+    p1_tb = neutral_tiebreak_win_probability(p1_serve_point, p2_serve_point)
+    needed = best_of // 2 + 1
+
+    # Heap tuple order keeps the unique serial before path payloads so Python
+    # never needs to compare nested tuples when probabilities tie.
+    heap: list[tuple[
+        float, int, int, int, int, int, int,
+        tuple[str, ...], tuple[tuple[str, tuple[str, ...], bool], ...]
+    ]] = []
+    serial = 0
+    heapq.heappush(
+        heap,
+        (-1.0, serial, 0, 0, 0, 0, start_server, (), ()),
+    )
+    out: list[dict[str, Any]] = []
+
+    while heap and len(out) < limit:
+        (
+            neg_mass,
+            _serial,
+            s1,
+            s2,
+            g1,
+            g2,
+            server,
+            current_set_path,
+            completed_sets,
+        ) = heapq.heappop(heap)
+        mass = -neg_mass
+
+        if s1 >= needed or s2 >= needed:
+            sets = [
+                {
+                    "score": score,
+                    "progression": list(progression),
+                    "tiebreak": tiebreak,
+                }
+                for score, progression, tiebreak in completed_sets
+            ]
+            out.append({
+                "winner": 1 if s1 > s2 else 2,
+                "match_score": f"{s1}:{s2}",
+                "sets": sets,
+                "sets_played": len(sets),
+                "total_games": sum(len(row["progression"]) for row in sets),
+                "probability": mass,
+            })
+            continue
+
+        if g1 == 6 and g2 == 6:
+            next_set_server = _other(server)
+            for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
+                final_score = "7:6" if winner == 1 else "6:7"
+                ns1 = s1 + (1 if winner == 1 else 0)
+                ns2 = s2 + (1 if winner == 2 else 0)
+                final_path = (*current_set_path, final_score)
+                new_completed = (*completed_sets, (final_score, final_path, True))
+                serial += 1
+                heapq.heappush(
+                    heap,
+                    (
+                        -(mass * probability),
+                        serial,
+                        ns1,
+                        ns2,
+                        0,
+                        0,
+                        next_set_server,
+                        (),
+                        new_completed,
+                    ),
+                )
+            continue
+
+        if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+            set_winner = 1 if g1 > g2 else 2
+            final_score = f"{g1}:{g2}"
+            ns1 = s1 + (1 if set_winner == 1 else 0)
+            ns2 = s2 + (1 if set_winner == 2 else 0)
+            new_completed = (*completed_sets, (final_score, current_set_path, False))
+            serial += 1
+            heapq.heappush(
+                heap,
+                (
+                    -mass,
+                    serial,
+                    ns1,
+                    ns2,
+                    0,
+                    0,
+                    server,
+                    (),
+                    new_completed,
+                ),
+            )
+            continue
+
+        p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+        next_server = _other(server)
+        for ng1, ng2, probability in (
+            (g1 + 1, g2, p1_game),
+            (g1, g2 + 1, 1.0 - p1_game),
+        ):
+            serial += 1
+            score = f"{ng1}:{ng2}"
+            heapq.heappush(
+                heap,
+                (
+                    -(mass * probability),
+                    serial,
+                    s1,
+                    s2,
+                    ng1,
+                    ng2,
+                    next_server,
+                    (*current_set_path, score),
+                    completed_sets,
+                ),
+            )
+
+    return sorted(out, key=lambda row: float(row["probability"]), reverse=True)
+
+
 def trajectory_summary(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -377,6 +522,13 @@ def trajectory_summary(
                 start_server,
                 limit=12,
             ),
+            "full_match_top_game_paths": _top_full_match_game_paths(
+                p1_serve_point,
+                p2_serve_point,
+                best_of,
+                start_server,
+                limit=4,
+            ),
         }
 
     return {
@@ -391,6 +543,8 @@ def trajectory_summary(
             "checkpoint_distributions_average_both_start_servers": True,
             "full_match_set_sequence_is_ranked_not_guaranteed": True,
             "first_set_game_progression_is_ranked_not_guaranteed": True,
+            "full_match_game_progression_is_ranked_not_guaranteed": True,
+            "full_match_game_paths_are_exact_for_known_start_server": True,
             "production_influence": False,
             "symphony2_influence": False,
             "superbet_playable_influence": False,
