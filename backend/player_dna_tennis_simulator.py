@@ -16,6 +16,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
+CALIBRATION = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_current_simulation.json"
 
 VERSION = "player-dna-tennis-simulator-v1"
@@ -39,6 +40,100 @@ def hold_probability(point_win_probability: float) -> float:
     reach_deuce = 20.0 * (p**3) * (q**3)
     win_from_deuce = (p * p) / ((p * p) + (q * q))
     return win_before_deuce + reach_deuce * win_from_deuce
+
+
+def calibrated_hold_probability(iid_hold_probability: float, calibrator: dict[str, Any]) -> float:
+    p = _clamp_probability(iid_hold_probability)
+    intercept = float(calibrator.get("intercept"))
+    slope = float(calibrator.get("slope"))
+    if not math.isfinite(intercept) or not math.isfinite(slope):
+        raise ValueError("hold calibrator parameters must be finite")
+    logit = math.log(p / (1.0 - p))
+    z = max(-30.0, min(30.0, intercept + slope * logit))
+    return 1.0 / (1.0 + math.exp(-z))
+
+
+def inverse_hold_probability(target_hold: float) -> float:
+    target = _clamp_probability(target_hold)
+    lo, hi = 1e-6, 1.0 - 1e-6
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        current = hold_probability(mid)
+        if current < target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def simulate_match_with_hold_calibration(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    calibrator: dict[str, Any],
+    best_of: int = 3,
+) -> dict[str, Any]:
+    p1s = _clamp_probability(p1_serve_point)
+    p2s = _clamp_probability(p2_serve_point)
+    p1_iid_hold = hold_probability(p1s)
+    p2_iid_hold = hold_probability(p2s)
+    p1_cal_hold = calibrated_hold_probability(p1_iid_hold, calibrator)
+    p2_cal_hold = calibrated_hold_probability(p2_iid_hold, calibrator)
+    p1_equiv = inverse_hold_probability(p1_cal_hold)
+    p2_equiv = inverse_hold_probability(p2_cal_hold)
+
+    simulation = simulate_match(p1_equiv, p2_equiv, best_of=best_of)
+    simulation["mode"] = "SHADOW_HOLD_CALIBRATED_CANDIDATE"
+    simulation["validation_status"] = "BACKTESTED_HOLD_CALIBRATION_CANDIDATE"
+    simulation["production_influence"] = False
+    simulation["symphony2_influence"] = False
+    simulation["superbet_playable_influence"] = False
+    simulation["auto_promote"] = False
+    simulation["source_point_probabilities"] = {
+        "p1_serve_point_win": p1s,
+        "p2_serve_point_win": p2s,
+    }
+    simulation["raw_iid_hold_probabilities"] = {
+        "p1_hold": p1_iid_hold,
+        "p2_hold": p2_iid_hold,
+    }
+    simulation["calibrated_hold_probabilities"] = {
+        "p1_hold": p1_cal_hold,
+        "p2_hold": p2_cal_hold,
+    }
+    simulation["equivalent_point_probabilities_for_tennis_dp"] = {
+        "p1_serve_point_win": p1_equiv,
+        "p2_serve_point_win": p2_equiv,
+    }
+    simulation["hold_calibrator"] = {
+        "intercept": float(calibrator.get("intercept")),
+        "slope": float(calibrator.get("slope")),
+        "l2": calibrator.get("l2"),
+    }
+    return simulation
+
+
+def _promising_calibration(report: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(report, dict):
+        return None
+    if report.get("mode") != "SHADOW_CALIBRATION_AUDIT_ONLY":
+        return None
+    if report.get("status") != "CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION":
+        return None
+    if report.get("signal") != "HOLD_CALIBRATION_PROMISING_SHADOW":
+        return None
+    if report.get("production_influence") is not False or report.get("auto_integrate") is not False:
+        return None
+    calibrator = report.get("hold_calibrator")
+    if not isinstance(calibrator, dict) or calibrator.get("converged") is not True:
+        return None
+    try:
+        intercept = float(calibrator.get("intercept"))
+        slope = float(calibrator.get("slope"))
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(intercept) or not math.isfinite(slope):
+        return None
+    return calibrator
 
 
 def neutral_tiebreak_win_probability(p1_serve_point: float, p2_serve_point: float) -> float:
@@ -321,11 +416,16 @@ def simulate_match(
     }
 
 
-def simulate_current_report(current: dict[str, Any]) -> dict[str, Any]:
+def simulate_current_report(
+    current: dict[str, Any],
+    calibration_report: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     matches = current.get("matches") if isinstance(current, dict) else None
     matches = matches if isinstance(matches, list) else []
 
+    calibrator = _promising_calibration(calibration_report)
     out_rows = []
+    calibrated_count = 0
     for row in matches:
         if not isinstance(row, dict) or row.get("status") != "SHADOW_SCORED":
             continue
@@ -339,6 +439,16 @@ def simulate_current_report(current: dict[str, Any]) -> dict[str, Any]:
             best_of = 3
 
         simulation = simulate_match(float(p1s), float(p2s), best_of=best_of)
+        calibrated_candidate = None
+        if calibrator is not None:
+            calibrated_candidate = simulate_match_with_hold_calibration(
+                float(p1s),
+                float(p2s),
+                calibrator,
+                best_of=best_of,
+            )
+            calibrated_count += 1
+
         out_rows.append({
             "match_id": row.get("match_id"),
             "scheduled_time": row.get("scheduled_time"),
@@ -353,6 +463,7 @@ def simulate_current_report(current: dict[str, Any]) -> dict[str, Any]:
             "production_influence": False,
             "validation_status": "UNVALIDATED_MATCH_LEVEL",
             "simulation": simulation,
+            "hold_calibrated_candidate": calibrated_candidate,
         })
 
     return {
@@ -364,6 +475,20 @@ def simulate_current_report(current: dict[str, Any]) -> dict[str, Any]:
         "superbet_playable_influence": False,
         "match_level_validation_required": True,
         "auto_promote": False,
+        "hold_calibration_candidate_enabled": calibrator is not None,
+        "calibrated_candidate_matches": calibrated_count,
+        "hold_calibration_source": {
+            "version": calibration_report.get("version") if isinstance(calibration_report, dict) else None,
+            "signal": calibration_report.get("signal") if isinstance(calibration_report, dict) else None,
+            "status": calibration_report.get("status") if isinstance(calibration_report, dict) else None,
+        },
+        "market_policy": {
+            "raw_iid_remains_reference": True,
+            "hold_calibrated_is_candidate_only": True,
+            "duration_markets": "COMPARE_RAW_VS_HOLD_CALIBRATED",
+            "winner_markets": "NO_AUTOMATIC_SWITCH",
+            "exact_score_markets": "NO_AUTOMATIC_SWITCH",
+        },
         "source_scored_matches": sum(
             1 for row in matches if isinstance(row, dict) and row.get("status") == "SHADOW_SCORED"
         ),
@@ -378,7 +503,12 @@ def build() -> dict[str, Any]:
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         current = {}
 
-    report = simulate_current_report(current)
+    try:
+        calibration_report = json.loads(CALIBRATION.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        calibration_report = {}
+
+    report = simulate_current_report(current, calibration_report=calibration_report)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({
@@ -387,6 +517,8 @@ def build() -> dict[str, Any]:
         "source_scored_matches": report["source_scored_matches"],
         "simulated_matches": report["simulated_matches"],
         "match_level_validation_required": report["match_level_validation_required"],
+        "hold_calibration_candidate_enabled": report["hold_calibration_candidate_enabled"],
+        "calibrated_candidate_matches": report["calibrated_candidate_matches"],
         "production_influence": report["production_influence"],
     }, ensure_ascii=False))
     return report
