@@ -507,6 +507,12 @@ def trajectory_summary(
 
     conditioned = {}
     for start_server, label in ((1, "p1_serves_first"), (2, "p2_serves_first")):
+        scenario_families = scenario_family_distribution(
+            p1_serve_point,
+            p2_serve_point,
+            best_of,
+            start_server,
+        )
         conditioned[label] = {
             "start_server": start_server,
             "first_set_top_game_paths": _top_first_set_game_paths(
@@ -529,6 +535,10 @@ def trajectory_summary(
                 start_server,
                 limit=4,
             ),
+            "scenario_families": scenario_families[:16],
+            "scenario_family_top16_mass": sum(
+                float(row["probability"]) for row in scenario_families[:16]
+            ),
         }
 
     return {
@@ -545,6 +555,12 @@ def trajectory_summary(
             "first_set_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_paths_are_exact_for_known_start_server": True,
+            "scenario_families_aggregate_many_exact_paths": True,
+            "scenario_family_components": [
+                "score_after_6_games",
+                "first_set_shape",
+                "match_score",
+            ],
             "production_influence": False,
             "symphony2_influence": False,
             "superbet_playable_influence": False,
@@ -616,6 +632,239 @@ def set_outcomes(
     if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-10):
         raise AssertionError(f"set probability mass drift: {total}")
     return outcomes
+
+
+def scenario_first_set_shape(score: str) -> str:
+    """Collapse an exact first-set score into a stable, auditable shape."""
+    try:
+        a, b = (int(x) for x in str(score).split(":"))
+    except (TypeError, ValueError):
+        raise ValueError("score must use A:B integer form")
+    if a == b or max(a, b) < 6:
+        raise ValueError("score is not a terminal tennis set score")
+
+    winner = "P1" if a > b else "P2"
+    loser_games = min(a, b)
+    winner_games = max(a, b)
+    if winner_games == 7:
+        shape = "TIGHT"
+    elif loser_games == 4:
+        shape = "CONTROLLED"
+    else:
+        shape = "DOMINANT"
+    return f"{winner}_{shape}"
+
+
+def _set_outcomes_with_checkpoint6(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Exact set outcomes while preserving the score after six games."""
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    p1_hold = hold_probability(p1_serve_point)
+    p2_hold = hold_probability(p2_serve_point)
+    p1_tb = neutral_tiebreak_win_probability(p1_serve_point, p2_serve_point)
+
+    live: dict[tuple[int, int, int, str | None], float] = {
+        (0, 0, start_server, None): 1.0
+    }
+    outcomes: list[dict[str, Any]] = []
+
+    while live:
+        nxt: dict[tuple[int, int, int, str | None], float] = defaultdict(float)
+        for (g1, g2, server, checkpoint6), mass in live.items():
+            if mass <= 0.0:
+                continue
+
+            if g1 == 6 and g2 == 6:
+                next_set_server = _other(server)
+                for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
+                    outcomes.append({
+                        "winner": winner,
+                        "score": "7:6" if winner == 1 else "6:7",
+                        "games": 13,
+                        "tiebreak": True,
+                        "next_set_server": next_set_server,
+                        "checkpoint_after_6": checkpoint6,
+                        "probability": mass * probability,
+                    })
+                continue
+
+            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+                outcomes.append({
+                    "winner": 1 if g1 > g2 else 2,
+                    "score": f"{g1}:{g2}",
+                    "games": g1 + g2,
+                    "tiebreak": False,
+                    "next_set_server": server,
+                    "checkpoint_after_6": checkpoint6,
+                    "probability": mass,
+                })
+                continue
+
+            p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+            next_server = _other(server)
+            for ng1, ng2, probability in (
+                (g1 + 1, g2, p1_game),
+                (g1, g2 + 1, 1.0 - p1_game),
+            ):
+                next_checkpoint = checkpoint6
+                if next_checkpoint is None and ng1 + ng2 == 6:
+                    next_checkpoint = f"{ng1}:{ng2}"
+                nxt[(ng1, ng2, next_server, next_checkpoint)] += mass * probability
+
+        live = nxt
+
+    total = sum(float(row["probability"]) for row in outcomes)
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-10):
+        raise AssertionError(f"checkpoint set probability mass drift: {total}")
+    if any(not row.get("checkpoint_after_6") for row in outcomes):
+        raise AssertionError("terminal set outcome missing six-game checkpoint")
+    return outcomes
+
+
+def scenario_family_distribution(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Aggregate exact match paths into auditable scenario families.
+
+    A family intentionally keeps only three structural facts that can be
+    reconstructed leakage-safely from the canonical point tape:
+    score after six opening games, first-set shape, and final match score.
+    Many exact game-by-game paths therefore contribute probability mass to the
+    same family instead of each receiving a microscopic standalone percentage.
+    """
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    needed = best_of // 2 + 1
+    states: dict[
+        tuple[int, int, int, int, str, str, str, int],
+        float,
+    ] = defaultdict(float)
+
+    for first in _set_outcomes_with_checkpoint6(
+        p1_serve_point,
+        p2_serve_point,
+        start_server,
+    ):
+        s1 = 1 if int(first["winner"]) == 1 else 0
+        s2 = 1 if int(first["winner"]) == 2 else 0
+        first_score = str(first["score"])
+        states[(
+            s1,
+            s2,
+            int(first["next_set_server"]),
+            int(first["games"]),
+            str(first["checkpoint_after_6"]),
+            scenario_first_set_shape(first_score),
+            first_score,
+            1 if bool(first["tiebreak"]) else 0,
+        )] += float(first["probability"])
+
+    families: dict[str, dict[str, Any]] = {}
+
+    while states:
+        nxt: dict[
+            tuple[int, int, int, int, str, str, str, int],
+            float,
+        ] = defaultdict(float)
+        for (
+            s1,
+            s2,
+            server,
+            total_games,
+            checkpoint6,
+            first_shape,
+            first_score,
+            tiebreak_sets,
+        ), mass in states.items():
+            if s1 >= needed or s2 >= needed:
+                match_score = f"{s1}:{s2}"
+                family_id = f"{checkpoint6}|{first_shape}|{match_score}"
+                agg = families.setdefault(family_id, {
+                    "family_id": family_id,
+                    "score_after_6_games": checkpoint6,
+                    "first_set_shape": first_shape,
+                    "match_score": match_score,
+                    "probability": 0.0,
+                    "_weighted_total_games": 0.0,
+                    "_tiebreak_mass": 0.0,
+                    "_min_total_games": total_games,
+                    "_max_total_games": total_games,
+                    "_first_set_scores": defaultdict(float),
+                })
+                agg["probability"] += mass
+                agg["_weighted_total_games"] += mass * total_games
+                agg["_tiebreak_mass"] += mass * int(tiebreak_sets > 0)
+                agg["_min_total_games"] = min(int(agg["_min_total_games"]), total_games)
+                agg["_max_total_games"] = max(int(agg["_max_total_games"]), total_games)
+                agg["_first_set_scores"][first_score] += mass
+                continue
+
+            for row in set_outcomes(p1_serve_point, p2_serve_point, server):
+                ns1 = s1 + (1 if int(row["winner"]) == 1 else 0)
+                ns2 = s2 + (1 if int(row["winner"]) == 2 else 0)
+                nxt[(
+                    ns1,
+                    ns2,
+                    int(row["next_set_server"]),
+                    total_games + int(row["games"]),
+                    checkpoint6,
+                    first_shape,
+                    first_score,
+                    tiebreak_sets + (1 if bool(row["tiebreak"]) else 0),
+                )] += mass * float(row["probability"])
+        states = nxt
+
+    total_mass = sum(float(row["probability"]) for row in families.values())
+    if not math.isclose(total_mass, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"scenario family probability mass drift: {total_mass}")
+
+    rows = []
+    for agg in families.values():
+        probability = float(agg["probability"])
+        exact_scores = sorted(
+            agg["_first_set_scores"].items(),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        rows.append({
+            "family_id": agg["family_id"],
+            "score_after_6_games": agg["score_after_6_games"],
+            "first_set_shape": agg["first_set_shape"],
+            "match_score": agg["match_score"],
+            "probability": probability,
+            "expected_total_games": (
+                float(agg["_weighted_total_games"]) / probability
+                if probability > 0.0 else None
+            ),
+            "total_games_range": [
+                int(agg["_min_total_games"]),
+                int(agg["_max_total_games"]),
+            ],
+            "any_tiebreak_probability": (
+                float(agg["_tiebreak_mass"]) / probability
+                if probability > 0.0 else 0.0
+            ),
+            "top_first_set_scores": [
+                {
+                    "score": score,
+                    "conditional_probability": mass / probability,
+                }
+                for score, mass in exact_scores[:3]
+            ],
+        })
+
+    return sorted(rows, key=lambda row: float(row["probability"]), reverse=True)
 
 
 def early_equal_score_probability(
