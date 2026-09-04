@@ -202,7 +202,7 @@ def test_stateful_features_use_only_pre_point_score_and_prior_atomic_history():
 def test_state_lookup_does_not_read_score_after_or_current_winner_as_feature():
     base = _state_point(
         0,
-        {"sets": [1, 1], "games": [[6, 4], [4, 5]], "points": ["15", "30"]},
+        {"sets": [1, 1], "games": [[6, 4, 0], [4, 6, 0]], "points": ["15", "30"]},
         server=1,
         winner=1,
         score_after={"sets": [9, 9], "games": [[99], [0]], "points": ["A", "0"]},
