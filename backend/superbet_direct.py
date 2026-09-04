@@ -105,7 +105,7 @@ def rendered_dom_text(driver) -> str:
               if (!parent) continue;
               const tag = (parent.tagName || '').toUpperCase();
               if (['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE'].includes(tag)) continue;
-              const value = (node.nodeValue || '').replace(/\s+/g, ' ').trim();
+              const value = (node.nodeValue || '').replace(/\\s+/g, ' ').trim();
               if (value) out.push(value);
             }
             return out;
@@ -612,16 +612,48 @@ def browser_probe(timeout: int = 25) -> dict:
         result["sample"] = summary
         rendered_text = rendered_dom_text(driver)
         normalized = parse_visible_offer_text(rendered_text, url=sample_url, title=driver.title)
+        rendered_lines = [line.strip() for line in rendered_text.splitlines() if line.strip()]
         candidate_lines = [
-            line for line in rendered_text.splitlines()
+            line for line in rendered_lines
             if any(token in _norm(line) for token in (
-                "gemow w meczu",
-                "handicapu gemow",
-                "mecz zakonczy sie wynikiem",
-                "zdobedzie ponizej",
-                "zdobedzie powyzej",
+                "gem",
+                "handicap",
+                "dokladny wynik",
+                "liczba setow",
+                "tiebreak",
+                "ponizej",
+                "powyzej",
+                "wygra",
             ))
-        ][:12]
+        ][:40]
+        market_windows = []
+        seen_windows = set()
+        for index, line in enumerate(rendered_lines):
+            norm_line = _norm(line)
+            if not any(token in norm_line for token in (
+                "liczba gemow",
+                "handicap",
+                "dokladny wynik",
+                "liczba setow",
+                "tiebreak",
+                "ponizej",
+                "powyzej",
+            )):
+                continue
+            start = max(0, index - 3)
+            stop = min(len(rendered_lines), index + 8)
+            window = rendered_lines[start:stop]
+            signature = tuple(window)
+            if signature in seen_windows:
+                continue
+            seen_windows.add(signature)
+            market_windows.append({
+                "anchor_index": index,
+                "anchor": line,
+                "window": window,
+            })
+            if len(market_windows) >= 16:
+                break
         raw_html = driver.page_source or ""
         raw_snippets = []
         for needle in (
@@ -643,8 +675,9 @@ def browser_probe(timeout: int = 25) -> dict:
             "canonical_selections_count": normalized.get("canonical_selections_count"),
             "market_counts": normalized.get("market_counts"),
             "prices_used": normalized.get("prices_used"),
-            "dom_text_lines": len(rendered_text.splitlines()),
+            "dom_text_lines": len(rendered_lines),
             "candidate_line_samples": candidate_lines,
+            "market_text_windows": market_windows,
             "raw_market_snippets": raw_snippets,
         }
         result["status"] = (
