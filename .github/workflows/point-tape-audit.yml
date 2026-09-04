@@ -19,6 +19,7 @@ on:
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
+      - 'backend/player_dna_market_backtest.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -35,6 +36,7 @@ on:
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
+      - 'tests/test_player_dna_market_backtest.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -69,7 +71,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -106,6 +108,9 @@ jobs:
 
       - name: Simulate tennis markets from Player DNA (SHADOW, zero network)
         run: python backend/player_dna_tennis_simulator.py
+
+      - name: Backtest Player DNA simulated markets (SHADOW, zero network)
+        run: python backend/player_dna_market_backtest.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -407,6 +412,48 @@ jobs:
               f"fingerprint={current.get('model_fingerprint_sha256')}"
           )
 
+          p = Path('frontend/data/player_dna_market_backtest.json')
+          if not p.exists():
+              raise SystemExit('player_dna_market_backtest.json was not generated')
+          backtest = json.loads(p.read_text(encoding='utf-8'))
+          if backtest.get('mode') != 'SHADOW_BACKTEST_ONLY':
+              raise SystemExit('Player DNA market backtest must remain SHADOW-only')
+          if backtest.get('status') != 'BACKTEST_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Player DNA market backtest incomplete: {backtest.get('status')}")
+          if backtest.get('production_influence') is not False:
+              raise SystemExit('Player DNA market backtest must have zero PROD influence')
+          if backtest.get('symphony2_influence') is not False or backtest.get('superbet_playable_influence') is not False:
+              raise SystemExit('Player DNA market backtest crossed isolation boundary')
+          if backtest.get('auto_promote') is not False:
+              raise SystemExit('Player DNA market backtest cannot auto-promote')
+          if backtest.get('current_simulation_status_unchanged') != 'UNVALIDATED_MATCH_LEVEL':
+              raise SystemExit('Player DNA historical evidence must not silently promote current simulation')
+          if backtest.get('model_features') != 'PROFILE_ONLY_CURRENT_COMPATIBLE':
+              raise SystemExit('Player DNA backtest must use current-compatible profile-only features')
+          if backtest.get('model_converged') is not True:
+              raise SystemExit('Player DNA backtest point model did not converge')
+          if backtest.get('signal') not in {
+              'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
+              'MIXED_OR_NO_MATCH_LEVEL_SIGNAL',
+          }:
+              raise SystemExit(f"Player DNA market backtest signal invalid: {backtest.get('signal')}")
+          bt_counts = backtest.get('counts') or {}
+          if int(bt_counts.get('settled_simulated_holdout_matches') or 0) < 200:
+              raise SystemExit('Player DNA market backtest has too few settled holdout matches')
+          bt_summary = backtest.get('summary') or {}
+          if int(bt_summary.get('binary_markets_evaluated_ge_100') or 0) < 6:
+              raise SystemExit('Player DNA market backtest evaluated too few markets')
+          for market in ('match_p1_win', 'first_set_p1_win', 'first_set_tiebreak'):
+              metrics = (backtest.get('binary_markets') or {}).get(market) or {}
+              if int(metrics.get('n') or 0) < 100 or metrics.get('brier') is None or metrics.get('ece_10_bin') is None:
+                  raise SystemExit(f'Player DNA market backtest missing robust metrics for {market}')
+          print(
+              f"Player DNA market backtest: signal={backtest.get('signal')} "
+              f"settled_holdout={bt_counts.get('settled_simulated_holdout_matches')} "
+              f"positive_markets={bt_summary.get('binary_markets_with_positive_brier_gain')}/"
+              f"{bt_summary.get('binary_markets_evaluated_ge_100')}"
+          )
+
           p = Path('frontend/data/player_dna_current_simulation.json')
           if not p.exists():
               raise SystemExit('player_dna_current_simulation.json was not generated')
@@ -469,6 +516,7 @@ jobs:
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_simulation.json
+            frontend/data/player_dna_market_backtest.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
             data/derived/player_dna/current_point_model_shadow.json
