@@ -891,10 +891,8 @@ def browser_probe(timeout: int = 25) -> dict:
             "candidate_line_samples": candidate_lines,
             "market_text_windows": market_windows,
             "raw_market_snippets": raw_snippets,
-            "network_diagnostics": (
-                network_offer_diagnostics(driver, event_id=normalized.get("event_id"))
-                if int(normalized.get("canonical_selections_count") or 0) == 0
-                else []
+            "network_diagnostics": network_offer_diagnostics(
+                driver, event_id=normalized.get("event_id")
             ),
         }
         result["status"] = (
