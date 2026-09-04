@@ -267,3 +267,53 @@ def test_hourly_workflow_guards_direct_fallback_activation():
     assert direct_refresh < canonical_refresh
     assert "backend/superbet_direct.py" in workflow
     assert "tests/test_superbet_direct.py" in workflow
+
+
+
+def test_malformed_direct_handicap_variant_is_suppressed_before_canonical_context():
+    now = datetime(2026, 9, 4, 16, 30, tzinfo=timezone.utc)
+    sidecar = _direct_sidecar(now)
+    match = sidecar["matches"][0]
+    match["canonical_selections"].extend([
+        {
+            "market": "match_game_handicap",
+            "pick": "Tommy Paul",
+            "player": "Tommy Paul",
+            "line": 7.5,
+            "set_no": None,
+            "operator_available": True,
+            "operator_line_verified": True,
+            "fixture_line_verified": True,
+            "operator_market_id": 520,
+            "operator_outcome_id": 1327,
+            "operator_special_bet_value": "7.5",
+            "operator_specifiers": {"hcp": "7.5"},
+            "prices_used": False,
+        },
+        {
+            "market": "match_game_handicap",
+            "pick": "Alexander Bublik",
+            "player": "Alexander Bublik",
+            "line": 7.5,
+            "set_no": None,
+            "operator_available": True,
+            "operator_line_verified": True,
+            "fixture_line_verified": True,
+            "operator_market_id": 520,
+            "operator_outcome_id": 1328,
+            "operator_special_bet_value": "7.5",
+            "operator_specifiers": {"hcp": "7.5"},
+            "prices_used": False,
+        },
+    ])
+
+    fixture = context._direct_fixture_from_sidecar(match)
+
+    assert fixture is not None
+    assert fixture["direct_handicap_semantics_guard"] is True
+    assert fixture["suppressed_direct_handicap_variants"] == 1
+    assert all(
+        row["market"] != "match_game_handicap"
+        for row in fixture["canonical_selections"]
+    )
+    assert {row["market"] for row in fixture["canonical_selections"]} == {"match_total"}
