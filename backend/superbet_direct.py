@@ -204,11 +204,113 @@ def probe() -> dict:
     return result
 
 
+
+def browser_probe(timeout: int = 25) -> dict:
+    """Probe the public JS-rendered site with an isolated headless browser."""
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.support.ui import WebDriverWait
+    except ImportError as exc:
+        raise RuntimeError("browser probe requires selenium") from exc
+
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1440,1200")
+    options.add_argument("--lang=pl-PL")
+    options.add_argument(f"--user-agent={USER_AGENT}")
+
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.set_page_load_timeout(timeout)
+        driver.get(TENNIS_LISTING_URL)
+
+        def listing_ready(drv):
+            hrefs = [
+                str(el.get_attribute("href") or "")
+                for el in drv.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
+            ]
+            return any(_allowed_url(href) for href in hrefs) or bool(discover_match_urls(drv.page_source))
+
+        try:
+            WebDriverWait(driver, timeout).until(listing_ready)
+        except Exception:
+            pass
+
+        listing_html = driver.page_source
+        direct_hrefs = [
+            str(el.get_attribute("href") or "")
+            for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
+        ]
+        match_urls = []
+        seen = set()
+        for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
+            absolute = urljoin(BASE, candidate)
+            if not _allowed_url(absolute):
+                continue
+            path = urlparse(absolute).path
+            if not re.fullmatch(r"/kursy/tenis/.+-\d+", path):
+                continue
+            canonical = f"{BASE}{path}"
+            if canonical not in seen:
+                seen.add(canonical)
+                match_urls.append(canonical)
+
+        result = {
+            "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_BROWSER_PROBE",
+            "production_influence": False,
+            "playable_influence": False,
+            "player_dna_influence": False,
+            "symphony_influence": False,
+            "listing_url": TENNIS_LISTING_URL,
+            "listing_final_url": driver.current_url,
+            "listing_title": driver.title,
+            "match_urls_found": len(match_urls),
+            "sample_match_url": match_urls[0] if match_urls else None,
+        }
+        if not match_urls:
+            parsed = parse_html(listing_html)
+            result["listing_diagnostic"] = {
+                "html_length": len(listing_html),
+                "text_length": len(str(parsed.get("text") or "")),
+                "anchor_href_count": len(parsed.get("links") or []),
+            }
+            result["status"] = "NO_MATCH_URLS"
+            return result
+
+        sample_url = match_urls[0]
+        driver.get(sample_url)
+
+        def market_ready(drv):
+            summary = summarize_match_page(drv.page_source, sample_url)
+            return bool(summary.get("has_operator_market_evidence"))
+
+        try:
+            WebDriverWait(driver, timeout).until(market_ready)
+        except Exception:
+            pass
+
+        summary = summarize_match_page(driver.page_source, sample_url)
+        summary["final_url"] = driver.current_url
+        summary["title"] = driver.title
+        result["sample"] = summary
+        result["status"] = "OK" if summary["has_operator_market_evidence"] else "INSUFFICIENT_MARKET_EVIDENCE"
+        return result
+    finally:
+        driver.quit()
+
 def main() -> None:
     mode = str(sys.argv[1] if len(sys.argv) > 1 else "probe").strip().casefold()
-    if mode != "probe":
-        raise SystemExit("usage: superbet_direct.py [probe]")
-    result = probe()
+    if mode == "probe":
+        result = probe()
+    elif mode == "probe-browser":
+        result = browser_probe()
+    else:
+        raise SystemExit("usage: superbet_direct.py [probe|probe-browser]")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result.get("status") != "OK":
         raise SystemExit(2)
