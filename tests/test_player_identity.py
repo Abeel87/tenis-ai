@@ -17,6 +17,12 @@ def test_duplicate_ids_are_rejected():
     assert player_identity_map(payload) is None
 
 
+def test_non_integer_ids_are_rejected_without_coercion():
+    for bad in ("921", 921.0, True, False, None):
+        payload = {"match": {"players": {"p1": {"id": bad}, "p2": {"id": 4808}}}}
+        assert player_identity_map(payload) is None
+
+
 def test_no_fuzzy_or_top_level_fallback():
     payload = {"player1_id": 1, "player2_id": 2, "match": {}}
     assert player_identity_map(payload) is None
