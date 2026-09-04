@@ -250,3 +250,159 @@ def test_parse_visible_offer_text_reads_self_describing_total_sets_card():
     assert row["line"] == 3.5
     assert row["operator_price"] == 1.47
     assert row["prices_used"] is False
+
+
+
+def test_parse_event_payload_uses_active_single_market_json_contract():
+    payload = {
+        "dataIn": {"eventId": 14809301, "lang": "pl-PL"},
+        "data": [{
+            "eventId": 14809301,
+            "matchName": "Alexander Bublik·Tommy Paul",
+            "utcDate": "2026-09-04T16:10:00Z",
+            "marketCount": 83,
+            "odds": [
+                {
+                    "uuid": "winner-p1", "marketId": 521, "outcomeId": 1329,
+                    "price": 2.37, "status": "active", "code": "1",
+                    "name": "1", "marketName": "Zwycięzca",
+                    "info": "Alexander Bublik wygra",
+                },
+                {
+                    "uuid": "winner-p2", "marketId": 521, "outcomeId": 1330,
+                    "price": 1.60, "status": "active", "code": "2",
+                    "name": "2", "marketName": "Zwycięzca",
+                    "info": "Tommy Paul wygra",
+                },
+                {
+                    "uuid": "set1-p1", "marketId": 523, "outcomeId": 1333,
+                    "price": 2.15, "specialBetValue": "1", "status": "active",
+                    "code": "1", "name": "1. set - Alexander Bublik",
+                    "marketName": "X. set - zwycięzca", "info": "Wygra 1. seta",
+                    "specifiers": {"setnr": "1"},
+                },
+                {
+                    "uuid": "total-under", "marketId": 1002, "outcomeId": 4262,
+                    "price": 2.37, "specialBetValue": "36.5", "status": "active",
+                    "code": "-", "name": "Poniżej 36.5",
+                    "marketName": "Liczba gemów",
+                    "info": "Poniżej 36.5 gemów w meczu",
+                    "specifiers": {"total": "36.5"},
+                },
+                {
+                    "uuid": "total-over", "marketId": 1002, "outcomeId": 4263,
+                    "price": 1.55, "specialBetValue": "36.5", "status": "active",
+                    "code": "+", "name": "Powyżej 36.5",
+                    "marketName": "Liczba gemów",
+                    "info": "Powyżej 36.5 gemów w meczu",
+                    "specifiers": {"total": "36.5"},
+                },
+                {
+                    "uuid": "sets-over", "marketId": 2001, "outcomeId": 5001,
+                    "price": 1.47, "specialBetValue": "3.5", "status": "active",
+                    "name": "Powyżej 3.5", "marketName": "Liczba setów",
+                    "info": "Liczba setów - Powyżej 3.5",
+                    "specifiers": {"total": "3.5"},
+                },
+                {
+                    "uuid": "score-30", "marketId": 3001, "outcomeId": 6001,
+                    "price": 7.00, "status": "active", "name": "3:0",
+                    "marketName": "Dokładny wynik",
+                    "info": "Mecz zakończy się wynikiem 3:0",
+                },
+                {
+                    "uuid": "set1-total-under", "marketId": 4001, "outcomeId": 7001,
+                    "price": 4.10, "specialBetValue": "8.5", "status": "active",
+                    "name": "Poniżej 8.5", "marketName": "X. set - liczba gemów",
+                    "info": "Poniżej 8.5 gemów w 1. secie",
+                    "specifiers": {"setnr": "1", "total": "8.5"},
+                },
+                {
+                    "uuid": "player-set2-over", "marketId": 4002, "outcomeId": 7002,
+                    "price": 1.69, "specialBetValue": "4.5", "status": "active",
+                    "name": "Powyżej 4.5",
+                    "marketName": "X. set - liczba gemów zawodnika",
+                    "info": "Alexander Bublik zdobędzie powyżej 4.5 gemów w 2. secie",
+                    "specifiers": {"setnr": "2", "total": "4.5"},
+                },
+                {
+                    "uuid": "set2-hcp", "marketId": 4003, "outcomeId": 7003,
+                    "price": 2.87, "specialBetValue": "-1.5", "status": "active",
+                    "name": "Alexander Bublik (-1.5)",
+                    "marketName": "X. set - handicap gemów",
+                    "info": "Alexander Bublik wygra 2. set przy uwzględnieniu podanego Handicapu gemów (-1.5)",
+                    "specifiers": {"setnr": "2", "handicap": "-1.5"},
+                },
+                {
+                    "uuid": "combo", "marketId": direct.COMBINATION_MARKET_ID,
+                    "outcomeId": 16603, "price": 1.80, "status": "active",
+                    "marketName": "Liczba gemów: powyżej 39.5; 1. set - powyżej 7.5 gemów",
+                    "name": "Liczba gemów: powyżej 39.5; 1. set - powyżej 7.5 gemów",
+                    "info": "",
+                },
+                {
+                    "uuid": "inactive", "marketId": 1002, "outcomeId": 9999,
+                    "price": 9.99, "specialBetValue": "99.5", "status": "inactive",
+                    "name": "Powyżej 99.5", "marketName": "Liczba gemów",
+                    "info": "Powyżej 99.5 gemów w meczu",
+                },
+            ],
+        }],
+        "error": None,
+    }
+
+    result = direct.parse_event_payload(
+        payload,
+        event_id="14809301",
+        url="https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301",
+    )
+
+    assert result["status"] == "OK"
+    assert result["source"] == "PUBLIC_EVENT_JSON"
+    assert result["event_id"] == "14809301"
+    assert result["p1"] == "Alexander Bublik"
+    assert result["p2"] == "Tommy Paul"
+    assert result["start_time"] == "2026-09-04T16:10:00Z"
+    assert result["odds_rows_seen"] == 12
+    assert result["active_odds_rows_seen"] == 11
+    assert result["combination_rows_skipped"] == 1
+    assert result["canonical_selections_count"] == 10
+    assert result["prices_used"] is False
+    assert result["production_influence"] is False
+    assert result["playable_influence"] is False
+
+    rows = {
+        (
+            row["market"],
+            row["pick"],
+            row.get("line"),
+            row.get("player"),
+            row.get("set_no"),
+        ): row
+        for row in result["canonical_selections"]
+    }
+    assert rows[("match_winner", "Alexander Bublik", None, None, None)]["operator_price"] == 2.37
+    assert rows[("set1_winner", "Alexander Bublik", None, None, 1)]["operator_price"] == 2.15
+    assert rows[("match_total", "under", 36.5, None, None)]["operator_price"] == 2.37
+    assert rows[("match_total", "over", 36.5, None, None)]["operator_price"] == 1.55
+    assert rows[("total_sets", "over", 3.5, None, None)]["operator_price"] == 1.47
+    assert rows[("exact_match_score", "3:0", None, None, None)]["operator_price"] == 7.0
+    assert rows[("set1_total", "under", 8.5, None, 1)]["operator_price"] == 4.10
+    assert rows[("player_total_games", "over", 4.5, "Alexander Bublik", 2)]["operator_price"] == 1.69
+    assert rows[("set2_game_handicap", "Alexander Bublik", -1.5, "Alexander Bublik", 2)]["operator_price"] == 2.87
+
+    line_row = rows[("match_total", "under", 36.5, None, None)]
+    assert line_row["operator_line_verified"] is True
+    assert line_row["fixture_line_verified"] is True
+    assert line_row["operator_line_source"] == direct.EVENT_JSON_SOURCE
+    assert line_row["operator_price_source"] == direct.EVENT_JSON_SOURCE
+    assert line_row["operator_market_id"] == 1002
+    assert line_row["operator_selection_status"] == "active"
+
+
+def test_parse_event_payload_fails_closed_for_wrong_event():
+    payload = {"data": [{"eventId": 123, "matchName": "A·B", "odds": []}]}
+    result = direct.parse_event_payload(payload, event_id="999")
+    assert result["status"] == "EVENT_NOT_FOUND"
+    assert result["canonical_selections"] == []
+    assert result["prices_used"] is False
