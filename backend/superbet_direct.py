@@ -577,9 +577,10 @@ def _json_shape_samples(payload, *, event_id: str | None = None, max_samples: in
     top_keys = sorted(str(key) for key in payload.keys()) if isinstance(payload, dict) else []
     samples = []
     marketish = []
+    distinct_markets = {}
     stack = [("$", payload)]
     visited = 0
-    while stack and visited < 50000 and (len(samples) < max_samples or len(marketish) < 5):
+    while stack and visited < 100000:
         path, value = stack.pop()
         visited += 1
         if isinstance(value, dict):
@@ -599,18 +600,44 @@ def _json_shape_samples(payload, *, event_id: str | None = None, max_samples: in
                         "keys": sorted(str(key) for key in value.keys())[:30],
                         "record": shallow,
                     })
+            market_name = value.get("marketName")
+            if (
+                isinstance(market_name, str)
+                and market_name
+                and str(value.get("status") or "").casefold() == "active"
+                and market_name not in distinct_markets
+                and len(distinct_markets) < 120
+            ):
+                distinct_markets[market_name] = {
+                    "path": path,
+                    "record": shallow,
+                    "specifiers": (
+                        value.get("specifiers")
+                        if isinstance(value.get("specifiers"), dict)
+                        else None
+                    ),
+                }
             for key, child in reversed(list(value.items())):
                 if isinstance(child, (dict, list)):
                     stack.append((f"{path}.{key}", child))
         elif isinstance(value, list):
-            for index, child in reversed(list(enumerate(value[:500]))):
+            for index, child in reversed(list(enumerate(value[:5000]))):
                 if isinstance(child, (dict, list)):
                     stack.append((f"{path}[{index}]", child))
+    wanted_tokens = (
+        "gem", "handicap", "wynik", "set", "tie", "as", "podwoj", "zwyciezca"
+    )
+    selected_markets = [
+        {"marketName": name, **row}
+        for name, row in distinct_markets.items()
+        if any(token in _norm(name) for token in wanted_tokens)
+    ][:60]
     return {
         "top_level_type": type(payload).__name__,
         "top_level_keys": top_keys[:50],
         "candidate_records": samples,
         "marketish_records": marketish,
+        "distinct_market_samples": selected_markets,
     }
 
 
