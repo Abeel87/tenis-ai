@@ -19,9 +19,9 @@
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
     "previous_snapshot_count": 24,
-    "current_snapshot_count_before_retention": 24,
+    "current_snapshot_count_before_retention": 25,
     "preserved_snapshots": 24,
-    "new_snapshots": 0,
+    "new_snapshots": 1,
     "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
@@ -40,13 +40,13 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 24
+    "current_snapshot_count_after_retention": 25
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 16,
+        "upcoming": 17,
         "due_within_6h": 5,
         "overdue_6_24h": 3,
         "overdue_24_72h": 0,
@@ -57,21 +57,21 @@
         {
           "match_id": "185869",
           "scheduled_time": "2026-09-04T12:30:00+00:00",
-          "hours_since_scheduled": 7.95,
+          "hours_since_scheduled": 8.28,
           "p1": "Facundo Mena",
           "p2": "Oriol Roca Batalla"
         },
         {
           "match_id": "186496",
           "scheduled_time": "2026-09-04T12:30:00+00:00",
-          "hours_since_scheduled": 7.95,
+          "hours_since_scheduled": 8.28,
           "p1": "Duje Ajdukovic",
           "p2": "Jay Clarke"
         },
         {
           "match_id": "186411",
           "scheduled_time": "2026-09-04T13:30:00+00:00",
-          "hours_since_scheduled": 6.95,
+          "hours_since_scheduled": 7.28,
           "p1": "Hugo Dellien",
           "p2": "Miguel Damas"
         }
@@ -86,26 +86,56 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 3,
+      "count": 8,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
+          "match_id": "186711",
+          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T14:00:00+00:00",
+          "drift_minutes": 360.0
+        },
+        {
+          "match_id": "186633",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
+          "drift_minutes": 180.0
+        },
+        {
           "match_id": "186080",
           "frozen_scheduled_time": "2026-09-04T19:30:00+00:00",
-          "current_scheduled_time": "2026-09-04T20:40:00+00:00",
-          "drift_minutes": 70.0
+          "current_scheduled_time": "2026-09-04T21:30:00+00:00",
+          "drift_minutes": 120.0
+        },
+        {
+          "match_id": "186715",
+          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T10:00:00+00:00",
+          "drift_minutes": 120.0
+        },
+        {
+          "match_id": "186581",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T16:30:00+00:00",
+          "drift_minutes": 90.0
         },
         {
           "match_id": "186313",
           "frozen_scheduled_time": "2026-09-04T20:00:00+00:00",
-          "current_scheduled_time": "2026-09-04T20:55:00+00:00",
-          "drift_minutes": 55.0
+          "current_scheduled_time": "2026-09-04T20:50:00+00:00",
+          "drift_minutes": 50.0
+        },
+        {
+          "match_id": "186583",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T15:30:00+00:00",
+          "drift_minutes": 30.0
         },
         {
           "match_id": "186252",
           "frozen_scheduled_time": "2026-09-04T21:00:00+00:00",
-          "current_scheduled_time": "2026-09-04T21:20:00+00:00",
-          "drift_minutes": 20.0
+          "current_scheduled_time": "2026-09-04T21:10:00+00:00",
+          "drift_minutes": 10.0
         }
       ]
     }
@@ -153,7 +183,7 @@
           "support_sufficient": false
         },
         "challenger": {
-          "snapshots": 9,
+          "snapshots": 10,
           "settled": 0,
           "required": 30,
           "remaining": 30,
@@ -162,7 +192,7 @@
       },
       "surface": {
         "clay": {
-          "snapshots": 8,
+          "snapshots": 9,
           "settled": 0,
           "required": 30,
           "remaining": 30,
@@ -208,10 +238,10 @@
   },
   "counts": {
     "current_simulated_matches": 36,
-    "current_eligible_by_segment": 18,
-    "snapshots": 24,
+    "current_eligible_by_segment": 17,
+    "snapshots": 25,
     "settled_snapshots": 0,
-    "unsettled_snapshots": 24,
+    "unsettled_snapshots": 25,
     "label_counts": {
       "matches_seen": 3178,
       "settled_labels": 2903,
@@ -839,6 +869,31 @@
         "first_set_over_8.5": 0.8166281802588934,
         "first_set_over_9.5": 0.5820913767223649,
         "first_set_over_10.5": 0.30948026917850724
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186752",
+      "scheduled_time": "2026-09-05T15:30:00+00:00",
+      "captured_at": "2026-09-04T20:46:44.205700+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Johan Nikles",
+      "p2": "Matej Dodig",
+      "source_model_fingerprint_sha256": "f1b9d43f417d125683f2fc860d878235dd59b6366a28c112293f37c62851c5cb",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1972835959033709,
+        "first_set_over_8.5": 0.8064442143943803,
+        "first_set_over_9.5": 0.5715194105534055,
+        "first_set_over_10.5": 0.30141828483175964
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1783872743987278,
+        "first_set_over_8.5": 0.7856006987006519,
+        "first_set_over_9.5": 0.5531360122897678,
+        "first_set_over_10.5": 0.2871859335118422
       },
       "settled": false,
       "actual": null
