@@ -92,9 +92,10 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         if row.get("context_ready_player_point") is True:
             entry["has_context_ready_point"] = True
 
+    source_matches = [entry for entry in matches.values() if not entry.get("conflict")]
     valid_matches = [
-        entry for entry in matches.values()
-        if entry.get("has_context_ready_point") is True and not entry.get("conflict")
+        entry for entry in source_matches
+        if entry.get("has_context_ready_point") is True
     ]
 
     player_matches: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -157,7 +158,9 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         "point_rows": total_rows,
         "context_ready_point_rows": context_ready_rows,
         "invalid_match_time_rows": invalid_match_time_rows,
+        "source_matches_seen": len(source_matches),
         "context_ready_matches": len(valid_matches),
+        "matches_without_context_ready_points": len(source_matches) - len(valid_matches),
         "players": len(player_matches),
         "player_match_targets": targets,
         "surface_match_counts": dict(surface_counts.most_common()),
@@ -195,7 +198,9 @@ def build() -> dict[str, Any]:
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({
         "version": report["version"],
-        "matches": report["context_ready_matches"],
+        "source_matches_seen": report["source_matches_seen"],
+        "context_ready_matches": report["context_ready_matches"],
+        "matches_without_context_ready_points": report["matches_without_context_ready_points"],
         "players": report["players"],
         "targets": report["player_match_targets"],
         "readiness_any_surface": report["readiness_any_surface"],
