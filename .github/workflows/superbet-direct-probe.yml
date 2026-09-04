@@ -1,0 +1,41 @@
+name: Superbet Direct Source Probe
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/superbet_direct.py'
+      - 'tests/test_superbet_direct.py'
+      - '.github/workflows/superbet-direct-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install probe dependencies
+        run: python -m pip install pytest selenium
+
+      - name: Browser runtime diagnostic
+        run: |
+          google-chrome --version || chromium --version || chromium-browser --version
+
+      - name: Isolation and parser tests
+        run: |
+          python -m py_compile backend/superbet_direct.py
+          python -m pytest -q tests/test_superbet_direct.py
+
+      - name: Probe JS-rendered public Superbet listing and one concrete match
+        run: python backend/superbet_direct.py probe-browser
