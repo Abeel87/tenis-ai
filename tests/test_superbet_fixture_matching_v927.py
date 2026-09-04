@@ -129,7 +129,13 @@ def test_matching_rollout_forces_one_live_refresh_then_delegates():
     assert matching.availability_due(original, {}, now) is True
     assert calls == []
 
-    previous = {"fixture_matching_v927": {"version": matching.VERSION}}
+    previous = {
+        "fixture_matching_v927": {"version": matching.VERSION},
+        "operator_rows_in_horizon": 0,
+        "operator_rows_in_horizon_with_requested_bookmaker": 0,
+        "operator_rows_with_requested_bookmaker": 0,
+        "operator_fixture_ids_in_neutral_catalogue": 0,
+    }
     assert matching.availability_due(original, previous, now) is False
     assert len(calls) == 1
 
