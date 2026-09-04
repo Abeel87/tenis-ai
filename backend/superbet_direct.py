@@ -205,6 +205,288 @@ def probe() -> dict:
 
 
 
+
+_PRICE_TOKEN = re.compile(r"^\d+(?:[.,]\d{2,3})$")
+_LINE_TOKEN = r"([+-]?\d+(?:[.,]\d+)?)"
+
+
+def _float_token(value: object) -> float | None:
+    try:
+        return float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return None
+
+
+def _event_id_from_url(url: str | None) -> str | None:
+    path = urlparse(str(url or "")).path
+    match = re.search(r"-(\d+)$", path)
+    return match.group(1) if match else None
+
+
+def _players_from_title(title: str | None) -> tuple[str | None, str | None]:
+    head = str(title or "").split(":", 1)[0].strip()
+    parts = re.split(r"\s+vs\s+", head, maxsplit=1, flags=re.IGNORECASE)
+    if len(parts) != 2:
+        return None, None
+    p1, p2 = (part.strip() or None for part in parts)
+    return p1, p2
+
+
+def _canonical_player(value: str, p1: str | None, p2: str | None) -> str:
+    raw = str(value or "").strip()
+    key = _norm(raw)
+    if p1 and key == _norm(p1):
+        return p1
+    if p2 and key == _norm(p2):
+        return p2
+    return raw
+
+
+def _price_after(lines: list[str], index: int, max_steps: int = 4) -> float | None:
+    for candidate in lines[index + 1:index + 1 + max_steps]:
+        token = candidate.strip()
+        if _PRICE_TOKEN.fullmatch(token):
+            value = _float_token(token)
+            if value is not None and value >= 1.0:
+                return value
+    return None
+
+
+def _direct_selection(
+    *,
+    market: str,
+    pick: str,
+    odds: float,
+    raw_label: str,
+    line: float | None = None,
+    player: str | None = None,
+    set_no: int | None = None,
+) -> dict:
+    row = {
+        "market": market,
+        "pick": pick,
+        "line": line,
+        "player": player,
+        "set_no": set_no,
+        "raw_label": raw_label,
+        "operator": "superbet.pl",
+        "operator_available": True,
+        "operator_price": odds,
+        "operator_price_verified": True,
+        "operator_price_source": "superbet_direct_public_rendered_text",
+        "prices_used": False,
+        "direct_source": True,
+    }
+    if line is not None:
+        row.update({
+            "operator_line_verified": True,
+            "fixture_line_verified": True,
+            "operator_line_source": "superbet_direct_public_rendered_text",
+        })
+    return row
+
+
+def parse_visible_offer_text(
+    visible_text: str,
+    *,
+    url: str | None = None,
+    title: str | None = None,
+) -> dict:
+    """Normalize unambiguous public Superbet selections from rendered body text.
+
+    Operator prices are captured as metadata only and are explicitly forbidden
+    from influencing model math. Only descriptions that carry their own market
+    semantics are accepted; column-position-only markets stay out.
+    """
+    lines = [line.strip() for line in str(visible_text or "").splitlines() if line.strip()]
+    p1, p2 = _players_from_title(title)
+    selections: list[dict] = []
+
+    match_total_re = re.compile(
+        rf"^(Poniżej|Powyżej) {_LINE_TOKEN} gemów w meczu$",
+        re.IGNORECASE,
+    )
+    set_total_re = re.compile(
+        rf"^(Poniżej|Powyżej) {_LINE_TOKEN} gemów w ([123])\.\s*secie$",
+        re.IGNORECASE,
+    )
+    player_set_total_re = re.compile(
+        rf"^(.+?) zdobędzie (poniżej|powyżej) {_LINE_TOKEN} gemów w ([123])\.\s*secie$",
+        re.IGNORECASE,
+    )
+    set_handicap_re = re.compile(
+        rf"^(.+?) wygra ([123])\.\s*set przy uwzględnieniu podanego Handicapu gemów \({_LINE_TOKEN}\)$",
+        re.IGNORECASE,
+    )
+    exact_score_re = re.compile(r"^Mecz zakończy się wynikiem (\d+):(\d+)$", re.IGNORECASE)
+
+    for index, label in enumerate(lines):
+        odds = _price_after(lines, index)
+        if odds is None:
+            continue
+
+        if p1 and label == f"{p1} wygra":
+            selections.append(_direct_selection(
+                market="match_winner", pick=p1, odds=odds, raw_label=label,
+            ))
+            continue
+        if p2 and label == f"{p2} wygra":
+            selections.append(_direct_selection(
+                market="match_winner", pick=p2, odds=odds, raw_label=label,
+            ))
+            continue
+
+        match = match_total_re.fullmatch(label)
+        if match:
+            pick = "under" if _norm(match.group(1)) == "ponizej" else "over"
+            selections.append(_direct_selection(
+                market="match_total",
+                pick=pick,
+                line=float(match.group(2).replace(",", ".")),
+                odds=odds,
+                raw_label=label,
+            ))
+            continue
+
+        match = set_total_re.fullmatch(label)
+        if match:
+            pick = "under" if _norm(match.group(1)) == "ponizej" else "over"
+            set_no = int(match.group(3))
+            selections.append(_direct_selection(
+                market=f"set{set_no}_total",
+                pick=pick,
+                line=float(match.group(2).replace(",", ".")),
+                odds=odds,
+                raw_label=label,
+                set_no=set_no,
+            ))
+            continue
+
+        match = player_set_total_re.fullmatch(label)
+        if match:
+            player = _canonical_player(match.group(1), p1, p2)
+            pick = "under" if _norm(match.group(2)) == "ponizej" else "over"
+            set_no = int(match.group(4))
+            selections.append(_direct_selection(
+                market="player_total_games",
+                pick=pick,
+                line=float(match.group(3).replace(",", ".")),
+                odds=odds,
+                raw_label=label,
+                player=player,
+                set_no=set_no,
+            ))
+            continue
+
+        match = set_handicap_re.fullmatch(label)
+        if match:
+            player = _canonical_player(match.group(1), p1, p2)
+            set_no = int(match.group(2))
+            selections.append(_direct_selection(
+                market=f"set{set_no}_game_handicap",
+                pick=player,
+                line=float(match.group(3).replace(",", ".")),
+                odds=odds,
+                raw_label=label,
+                player=player,
+                set_no=set_no,
+            ))
+            continue
+
+        match = exact_score_re.fullmatch(label)
+        if match:
+            selections.append(_direct_selection(
+                market="exact_match_score",
+                pick=f"{int(match.group(1))}:{int(match.group(2))}",
+                odds=odds,
+                raw_label=label,
+            ))
+
+    dedup: dict[tuple, dict] = {}
+    for row in selections:
+        key = (
+            row.get("market"),
+            _norm(row.get("pick")),
+            row.get("line"),
+            _norm(row.get("player")),
+            row.get("set_no"),
+        )
+        dedup.setdefault(key, row)
+    selections = list(dedup.values())
+
+    market_counts: dict[str, int] = {}
+    for row in selections:
+        market = str(row.get("market") or "unknown")
+        market_counts[market] = market_counts.get(market, 0) + 1
+
+    return {
+        "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_NORMALIZED_OFFER",
+        "operator": "superbet.pl",
+        "event_id": _event_id_from_url(url),
+        "url": url,
+        "p1": p1,
+        "p2": p2,
+        "canonical_selections": selections,
+        "canonical_selections_count": len(selections),
+        "market_counts": dict(sorted(market_counts.items())),
+        "operator_prices_captured": True,
+        "prices_used": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "player_dna_influence": False,
+        "symphony_influence": False,
+    }
+
+
+def browser_offer(url: str, timeout: int = 25) -> dict:
+    """Fetch and normalize one explicitly selected public Superbet tennis match."""
+    if not _allowed_url(url) or not re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(url).path):
+        raise ValueError("browser offer requires one concrete public Superbet tennis match URL")
+    try:
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.support.ui import WebDriverWait
+    except ImportError as exc:
+        raise RuntimeError("browser offer requires selenium") from exc
+
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1440,1200")
+    options.add_argument("--lang=pl-PL")
+    options.add_argument(f"--user-agent={USER_AGENT}")
+
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.set_page_load_timeout(timeout)
+        driver.get(url)
+
+        def offer_ready(drv):
+            try:
+                body_text = drv.find_element(By.TAG_NAME, "body").text
+            except Exception:
+                return False
+            normalized = parse_visible_offer_text(body_text, url=url, title=drv.title)
+            return int(normalized.get("canonical_selections_count") or 0) >= 4
+
+        try:
+            WebDriverWait(driver, timeout).until(offer_ready)
+        except Exception:
+            pass
+
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        result = parse_visible_offer_text(body_text, url=url, title=driver.title)
+        result["final_url"] = driver.current_url
+        result["title"] = driver.title
+        result["rendered_text_length"] = len(body_text)
+        result["status"] = "OK" if int(result.get("canonical_selections_count") or 0) >= 4 else "INSUFFICIENT_NORMALIZED_OFFER"
+        return result
+    finally:
+        driver.quit()
+
 def browser_probe(timeout: int = 25) -> dict:
     """Probe the public JS-rendered site with an isolated headless browser."""
     try:
@@ -298,7 +580,25 @@ def browser_probe(timeout: int = 25) -> dict:
         summary["final_url"] = driver.current_url
         summary["title"] = driver.title
         result["sample"] = summary
-        result["status"] = "OK" if summary["has_operator_market_evidence"] else "INSUFFICIENT_MARKET_EVIDENCE"
+        try:
+            body_text = driver.find_element(By.TAG_NAME, "body").text
+        except Exception:
+            body_text = ""
+        normalized = parse_visible_offer_text(body_text, url=sample_url, title=driver.title)
+        result["normalized_offer"] = {
+            "event_id": normalized.get("event_id"),
+            "p1": normalized.get("p1"),
+            "p2": normalized.get("p2"),
+            "canonical_selections_count": normalized.get("canonical_selections_count"),
+            "market_counts": normalized.get("market_counts"),
+            "prices_used": normalized.get("prices_used"),
+        }
+        result["status"] = (
+            "OK"
+            if summary["has_operator_market_evidence"]
+            and int(normalized.get("canonical_selections_count") or 0) >= 4
+            else "INSUFFICIENT_MARKET_EVIDENCE"
+        )
         return result
     finally:
         driver.quit()
@@ -309,8 +609,12 @@ def main() -> None:
         result = probe()
     elif mode == "probe-browser":
         result = browser_probe()
+    elif mode == "offer-browser":
+        if len(sys.argv) < 3:
+            raise SystemExit("usage: superbet_direct.py offer-browser <superbet-match-url>")
+        result = browser_offer(sys.argv[2])
     else:
-        raise SystemExit("usage: superbet_direct.py [probe|probe-browser]")
+        raise SystemExit("usage: superbet_direct.py [probe|probe-browser|offer-browser <url>]")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result.get("status") != "OK":
         raise SystemExit(2)
