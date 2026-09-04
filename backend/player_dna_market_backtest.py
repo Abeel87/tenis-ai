@@ -463,7 +463,7 @@ def conditional_categorical_metrics(
     records: list[tuple[dict[str, float], str, str]],
     train_labels_by_segment: dict[str, list[str]],
 ) -> dict[str, Any]:
-    """Multiclass proper scoring against a train-only baseline for each segment."""
+    """Multiclass proper scoring against a same-information train-only baseline."""
     if not records or not train_labels_by_segment:
         return {"n": 0, "status": "NO_DATA"}
 
@@ -476,6 +476,8 @@ def conditional_categorical_metrics(
     base_top1 = 0
     actual_prob = []
     segments = set()
+    baseline_train_sizes = []
+    smoothing_alpha = 0.5
 
     for probs, actual, segment in records:
         train_labels = train_labels_by_segment.get(segment) or []
@@ -485,7 +487,12 @@ def conditional_categorical_metrics(
         total_train = sum(counts.values())
         if total_train <= 0:
             continue
-        baseline = {key: counts.get(key, 0) / total_train for key in keys}
+        denominator = total_train + smoothing_alpha * len(keys)
+        baseline = {
+            key: (counts.get(key, 0) + smoothing_alpha) / denominator
+            for key in keys
+        }
+        baseline_train_sizes.append(total_train)
 
         normalized = {key: max(0.0, float(probs.get(key, 0.0))) for key in keys}
         mass = sum(normalized.values())
@@ -520,6 +527,13 @@ def conditional_categorical_metrics(
         "n": n,
         "classes": keys,
         "segments_evaluated": len(segments),
+        "baseline_smoothing_alpha": smoothing_alpha,
+        "baseline_train_n_min": min(baseline_train_sizes) if baseline_train_sizes else None,
+        "baseline_train_n_median": (
+            sorted(baseline_train_sizes)[len(baseline_train_sizes) // 2]
+            if baseline_train_sizes
+            else None
+        ),
         "multiclass_brier": round(mb, 6),
         "baseline_multiclass_brier": round(bb, 6),
         "brier_gain_vs_segment_train_distribution": round(bb - mb, 6),
@@ -544,15 +558,17 @@ def _set_index_shape_probability_validation(
     train_by_segment: dict[str, list[str]] = defaultdict(list)
     for label in train_labels.values():
         match_score = str(label.get("match_exact_score") or "").strip()
+        actual = label.get("trajectory_actual") or {}
+        first_server = actual.get("first_server")
         sequence = tuple(
-            str(value) for value in ((label.get("trajectory_actual") or {}).get("set_score_sequence") or [])
+            str(value) for value in (actual.get("set_score_sequence") or [])
         )
-        if not match_score or not sequence:
+        if not match_score or first_server not in (1, 2) or not sequence:
             continue
         for index, score in enumerate(sequence, start=1):
             shape = set_shape_family(score)
             if shape:
-                train_by_segment[f"{match_score}|set_{index}"].append(shape)
+                train_by_segment[f"{match_score}|set_{index}|server_{first_server}"].append(shape)
 
     records_by_index: dict[int, list[tuple[dict[str, float], str, str]]] = defaultdict(list)
     all_records: list[tuple[dict[str, float], str, str]] = []
@@ -586,7 +602,7 @@ def _set_index_shape_probability_validation(
                 for row in rows
                 if row.get("shape")
             }
-            segment = f"{match_score}|set_{index}"
+            segment = f"{match_score}|set_{index}|server_{first_server}"
             record = (probs, actual_shape, segment)
             records_by_index[index].append(record)
             all_records.append(record)
@@ -597,7 +613,8 @@ def _set_index_shape_probability_validation(
     }
     out["all_sets"] = conditional_categorical_metrics(all_records, train_by_segment)
     out["conditioning"] = "ACTUAL_MATCH_SCORE_AND_OBSERVED_FIRST_SERVER_DIAGNOSTIC_ONLY"
-    out["baseline"] = "TRAIN_ONLY_SHAPE_DISTRIBUTION_FOR_SAME_MATCH_SCORE_AND_SET_INDEX"
+    out["baseline"] = "TRAIN_ONLY_SHAPE_DISTRIBUTION_FOR_SAME_MATCH_SCORE_SET_INDEX_AND_FIRST_SERVER"
+    out["baseline_smoothing"] = "JEFFREYS_ALPHA_0_5_PER_SHAPE"
     return out
 
 
