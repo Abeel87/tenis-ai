@@ -54,3 +54,15 @@ def test_match_without_context_ready_point_is_not_history_evidence():
     report = audit_rows(rows)
     assert report["context_ready_matches"] == 1
     assert report["readiness_any_surface"]["1"]["targets"] == 0
+
+
+def test_match_with_valid_context_but_no_strict_point_is_reported_not_lost():
+    rows = [
+        _row("no-strict", "2026-09-01T10:00:00Z", 1, 2, ready=False),
+        _row("strict", "2026-09-02T10:00:00Z", 1, 3, ready=True),
+    ]
+    report = audit_rows(rows)
+    assert report["source_matches_seen"] == 2
+    assert report["context_ready_matches"] == 1
+    assert report["matches_without_context_ready_points"] == 1
+    assert report["player_match_targets"] == 2
