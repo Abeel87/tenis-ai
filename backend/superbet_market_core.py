@@ -34,9 +34,15 @@ VERSION = "v9.1"
 BASE_URL = "https://api.oddspapi.io/v4"
 BOOKMAKER = "superbet.pl"
 SPORT_ID_TENNIS = 12
-REFRESH_HOURS = 10
+REFRESH_HOURS = 1
 MARKET_META_TTL_DAYS = 7
-MONTHLY_REQUEST_CAP = 150
+MONTHLY_REQUEST_CAP = 4000
+DIRECT_FIXTURE_MONTHLY_CAP = 1700
+DIRECT_FIXTURE_MAX_PER_REFRESH = 24
+DIRECT_FIXTURE_DELAY_SECONDS = 0.55
+DIRECT_FIXTURE_WINDOW_HOURS = 12
+DIRECT_FIXTURE_CLOSE_HOURS = 4
+DIRECT_FIXTURE_FINAL_RETRY_HOURS = 1
 FIXTURE_HORIZON_DAYS = 2
 MAX_MATCH_TIME_DELTA_HOURS = 4
 
@@ -260,11 +266,15 @@ def _quota_state(previous: dict, now: datetime):
     month = now.strftime("%Y-%m")
     old = previous.get("quota_guard") if isinstance(previous, dict) else {}
     old = old if isinstance(old, dict) else {}
-    used = int(old.get("requests_used_by_v91") or 0) if old.get("month") == month else 0
+    same_month = old.get("month") == month
+    used = int(old.get("requests_used_by_v91") or 0) if same_month else 0
+    direct_used = int(old.get("direct_fixture_requests_used") or 0) if same_month else 0
     return {
         "month": month,
         "monthly_cap": MONTHLY_REQUEST_CAP,
         "requests_used_by_v91": used,
+        "direct_fixture_request_cap": DIRECT_FIXTURE_MONTHLY_CAP,
+        "direct_fixture_requests_used": direct_used,
         "note": "local safety cap; OddsPapi account can include other/manual requests",
     }
 
@@ -484,6 +494,60 @@ def _meta_due(previous: dict, now: datetime):
     stamp = _parse_dt(previous.get("market_meta_generated_at") if isinstance(previous, dict) else None)
     cache = previous.get("market_meta_cache") if isinstance(previous, dict) else None
     return not isinstance(cache, dict) or not cache or stamp is None or now - stamp >= timedelta(days=MARKET_META_TTL_DAYS)
+
+
+_DIRECT_STAGE_RANK = {
+    "within_12h": 1,
+    "within_4h": 2,
+    "within_1h_retry": 3,
+}
+
+
+def _direct_offer_stage(start_time, now: datetime):
+    start = _parse_dt(start_time)
+    if start is None:
+        return None
+    hours = (start - now).total_seconds() / 3600.0
+    if hours < -(5.0 / 60.0) or hours > DIRECT_FIXTURE_WINDOW_HOURS:
+        return None
+    if hours <= DIRECT_FIXTURE_FINAL_RETRY_HOURS:
+        return "within_1h_retry"
+    if hours <= DIRECT_FIXTURE_CLOSE_HOURS:
+        return "within_4h"
+    return "within_12h"
+
+
+def _direct_offer_due(cache_entry: dict | None, stage: str, now: datetime):
+    if not isinstance(cache_entry, dict):
+        return True
+    current_rank = _DIRECT_STAGE_RANK.get(stage, 0)
+    previous_stage = str(cache_entry.get("stage") or "")
+    previous_rank = _DIRECT_STAGE_RANK.get(previous_stage, 0)
+
+    if current_rank > previous_rank:
+        # A successful <=4h offer is already recent enough for the final hour.
+        # The <=1h stage exists mainly to retry fixtures that had no offer.
+        if (
+            stage == "within_1h_retry"
+            and previous_rank >= _DIRECT_STAGE_RANK["within_4h"]
+            and isinstance(cache_entry.get("offer"), dict)
+        ):
+            return False
+        return True
+
+    if cache_entry.get("last_error"):
+        attempted = _parse_dt(cache_entry.get("last_checked_at"))
+        return attempted is None or now - attempted >= timedelta(hours=2)
+    return False
+
+
+def _direct_cache_entry(stage: str, now: datetime, offer, *, error=None):
+    return {
+        "stage": stage,
+        "last_checked_at": now.isoformat(),
+        "offer": offer if isinstance(offer, dict) else None,
+        "last_error": str(error)[:240] if error else None,
+    }
 
 
 def refresh_availability(results: list[dict], now=None):
