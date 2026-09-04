@@ -90,10 +90,19 @@ def audit_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         if isinstance(match, dict):
             for key in match:
                 match_keys[str(key)] += 1
+
+        # A list can expose the same provider path several times inside one
+        # match. Coverage is per match, so presence/non-empty counters must be
+        # incremented at most once per path for each payload.
+        seen_presence: set[str] = set()
+        seen_nonempty: set[str] = set()
         for path, value in _walk(payload):
-            path_presence[path] += 1
-            if _nonempty(value):
+            if path not in seen_presence:
+                path_presence[path] += 1
+                seen_presence.add(path)
+            if _nonempty(value) and path not in seen_nonempty:
                 path_nonempty[path] += 1
+                seen_nonempty.add(path)
             path_types.setdefault(path, Counter())[_type_name(value)] += 1
             if _nonempty(value) and not isinstance(value, (dict, list)):
                 bucket = samples.setdefault(path, [])
