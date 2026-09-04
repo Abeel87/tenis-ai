@@ -77,3 +77,61 @@ def test_dataset_carries_provider_ordering_contract_without_timestamp_reorder():
     assert all(row["ordering_authority"] == "provider_sequence_clean" for row in rows)
     assert all(row["timestamp_role"] == "metadata_only_no_reordering" for row in rows)
     assert all(row["provider_row_order_preserved"] is True for row in rows)
+
+
+def test_provider_backed_context_is_attached_only_when_identity_agrees():
+    payload = {
+        "match": {
+            "id": 77,
+            "scheduled_time": "2026-09-04T10:00:00Z",
+            "surface": "Hard",
+            "tour": "atp",
+            "format": "bo3",
+            "round_code": "qf",
+            "indoor": False,
+            "is_qualifying": False,
+            "players": {
+                "p1": {"id": 921, "name": "A", "ranking": 12},
+                "p2": {"id": 4808, "name": "B", "ranking": 33},
+            },
+        },
+        "tape": [
+            _row((0, 0), server=1),
+            _row((15, 0), server=1, winner=1),
+        ],
+    }
+    row = observations_from_payload(payload, "ctx")[0]
+    assert row["context_valid"] is True
+    assert row["context_provider_backed"] is True
+    assert row["context_training_join_enabled"] is False
+    assert row["match_scheduled_time"] == "2026-09-04T10:00:00Z"
+    assert row["surface"] == "hard"
+    assert row["tour"] == "ATP"
+    assert row["match_format"] == "BO3"
+    assert row["round_code"] == "QF"
+    assert row["indoor"] is False
+    assert row["is_qualifying"] is False
+    assert row["p1_ranking"] == 12
+    assert row["p2_ranking"] == 33
+    assert row["server_ranking"] == 12
+    assert row["receiver_ranking"] == 33
+    assert row["context_ready_player_point"] is True
+
+
+def test_invalid_or_missing_context_never_invents_shadow_features():
+    payload = {
+        "match": {"players": _players()},
+        "tape": [
+            _row((0, 0), server=1),
+            _row((15, 0), server=1, winner=1),
+        ],
+    }
+    row = observations_from_payload(payload, "no-context")[0]
+    assert row["trainable_player_point"] is True
+    assert row["context_valid"] is False
+    assert row["context_provider_backed"] is False
+    assert row["context_training_join_enabled"] is False
+    assert row["match_scheduled_time"] is None
+    assert row["surface"] is None
+    assert row["server_ranking"] is None
+    assert row["context_ready_player_point"] is False
