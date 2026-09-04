@@ -83,6 +83,11 @@ def _pair_score(app_p1, app_p2, fixture_p1, fixture_p2) -> float:
     best=max(valid,key=lambda pair:(min(pair),sum(pair))); return min(best)
 
 
+
+def pair_score(app_p1, app_p2, fixture_p1, fixture_p2) -> float:
+    """Public read-only access to the canonical two-player similarity score."""
+    return _pair_score(app_p1, app_p2, fixture_p1, fixture_p2)
+
 def _fixture_fields(row: dict, cached: bool):
     if cached:return row.get("p1"),row.get("p2"),row.get("start_time"),row.get("fixture_id")
     return row.get("participant1Name"),row.get("participant2Name"),row.get("startTime"),row.get("fixtureId")
