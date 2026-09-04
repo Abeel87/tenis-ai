@@ -378,6 +378,19 @@ def _identity_debug_snapshot(row: dict) -> dict:
     return out
 
 
+def _requested_bookmaker_payload(row: dict):
+    """Return only the exact configured bookmaker payload.
+
+    OddsPapi exposes separate sportsbook identities for superbet, superbet.pl,
+    superbet.ro, etc. Never treat a generic/foreign Superbet key as Superbet PL.
+    """
+    bookmaker_odds = row.get("bookmakerOdds") if isinstance(row, dict) else None
+    if not isinstance(bookmaker_odds, dict):
+        return None
+    book = bookmaker_odds.get(BOOKMAKER)
+    return book if isinstance(book, dict) else None
+
+
 def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool, str | None]:
     """Join neutral discovery to the operator response without assuming shared IDs."""
     discovered_id = str(discovered.get("fixtureId") or "")
@@ -401,10 +414,7 @@ def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool
 
 
 def _sanitize_fixture(row: dict, meta: dict):
-    bookmaker_odds = row.get("bookmakerOdds") or {}
-    book = bookmaker_odds.get(BOOKMAKER)
-    if not isinstance(book, dict):
-        book = next((v for k, v in bookmaker_odds.items() if "superbet" in str(k).casefold() and isinstance(v, dict)), None)
+    book = _requested_bookmaker_payload(row)
     if not isinstance(book, dict):
         return None
     raw_markets = book.get("markets") or {}
@@ -552,6 +562,10 @@ def _direct_offer_stage(start_time, now: datetime):
 def _direct_offer_due(cache_entry: dict | None, stage: str, now: datetime):
     if not isinstance(cache_entry, dict):
         return True
+    if cache_entry.get("bookmaker_key") != BOOKMAKER:
+        # Old cache entries predate strict sportsbook identity and may have
+        # accepted generic/foreign Superbet payloads. Force one clean recheck.
+        return True
     current_rank = _DIRECT_STAGE_RANK.get(stage, 0)
     previous_stage = str(cache_entry.get("stage") or "")
     previous_rank = _DIRECT_STAGE_RANK.get(previous_stage, 0)
@@ -577,6 +591,7 @@ def _direct_cache_entry(stage: str, now: datetime, offer, *, error=None):
     return {
         "stage": stage,
         "last_checked_at": now.isoformat(),
+        "bookmaker_key": BOOKMAKER,
         "offer": offer if isinstance(offer, dict) else None,
         "last_error": str(error)[:240] if error else None,
     }
@@ -712,10 +727,7 @@ def refresh_availability(results: list[dict], now=None):
             bookmaker_odds = row.get("bookmakerOdds")
             bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
             operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
-            has_requested_bookmaker = (
-                BOOKMAKER in bookmaker_keys
-                or any("superbet" in str(key).casefold() for key in bookmaker_keys)
-            )
+            has_requested_bookmaker = BOOKMAKER in bookmaker_keys
             if has_requested_bookmaker:
                 operator_rows_with_requested_bookmaker += 1
 
@@ -838,10 +850,7 @@ def refresh_availability(results: list[dict], now=None):
                             bookmaker_odds = row.get("bookmakerOdds")
                             bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
                             operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
-                            has_requested_bookmaker = (
-                                BOOKMAKER in bookmaker_keys
-                                or any("superbet" in str(key).casefold() for key in bookmaker_keys)
-                            )
+                            has_requested_bookmaker = BOOKMAKER in bookmaker_keys
                             if not has_requested_bookmaker:
                                 continue
 
@@ -906,7 +915,7 @@ def refresh_availability(results: list[dict], now=None):
             "direct_fixture_requests_due": direct_due,
             "direct_fixture_requests_this_refresh": direct_requests_this_refresh,
             "direct_fixture_rows_seen": direct_rows_seen,
-            "direct_fixture_rows_with_superbet": direct_rows_with_superbet,
+            "direct_fixture_rows_with_requested_bookmaker": direct_rows_with_superbet,
             "direct_fixture_matches": direct_fixture_matches,
             "direct_fixture_cache_offers_used": direct_cache_offers_used,
             "direct_fixture_errors": direct_errors,
@@ -932,6 +941,7 @@ def refresh_availability(results: list[dict], now=None):
                 "direct_fixture_request_safety_cap": DIRECT_FIXTURE_MONTHLY_CAP,
                 "current_operator_horizon_required": True,
                 "requested_bookmaker_required_before_join": True,
+                "requested_bookmaker_identity": "EXACT_KEY_ONLY",
                 "current_offer_primary_recovery": "odds_by_fixture",
                 "tournament_bulk_is_not_current_offer_authority": True,
                 "direct_fixture_milestone_cache": True,
