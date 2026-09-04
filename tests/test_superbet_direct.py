@@ -14,6 +14,15 @@ def test_discover_match_urls_is_tennis_only_and_deduplicated():
         "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"
     ]
 
+    hydrated = r'''
+    <html><body><script>
+      {"route":"\\/kursy\\/tenis\\/jiri-lehecka-vs-stefanos-tsitsipas-14809302"}
+    </script></body></html>
+    '''
+    assert direct.discover_match_urls(hydrated) == [
+        "https://superbet.pl/kursy/tenis/jiri-lehecka-vs-stefanos-tsitsipas-14809302"
+    ]
+
 
 def test_match_page_summary_requires_real_market_shape():
     market_block = """
