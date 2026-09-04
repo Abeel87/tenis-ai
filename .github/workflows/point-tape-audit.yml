@@ -7,12 +7,14 @@ on:
       - 'backend/point_tape_schema.py'
       - 'backend/point_tape_audit.py'
       - 'backend/point_transition_audit.py'
+      - 'backend/atomic_point_transition.py'
       - 'backend/canonical_point_event.py'
       - 'backend/player_dna_point_dataset.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
       - 'tests/test_point_transition_audit.py'
+      - 'tests/test_atomic_point_transition.py'
       - 'tests/test_canonical_point_event.py'
       - 'tests/test_player_dna_point_dataset.py'
       - 'tests/test_player_identity.py'
@@ -48,8 +50,8 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-
 
-      - name: Point tape + canonical event + Player DNA identity tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_identity.py
+      - name: Point tape + atomic validator + Player DNA identity tests
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -63,7 +65,7 @@ jobs:
       - name: Audit stable player identity candidates (zero network)
         run: python backend/player_identity_audit.py
 
-      - name: Require real cached tapes and trainable point rows
+      - name: Require real cached tapes and strict trainable point rows
         run: |
           python - <<'PY'
           import json
@@ -85,10 +87,13 @@ jobs:
           report = json.loads(p.read_text(encoding='utf-8'))
           matches = int(report.get('matches') or 0)
           events = int(report.get('events') or 0)
-          trainable = int(report.get('trainable_basic') or 0)
-          print(f'Player DNA point dataset: matches={matches} events={events} trainable_basic={trainable}')
-          if matches <= 0 or events <= 0 or trainable <= 0:
-              raise SystemExit('Player DNA point dataset is empty or has no trainable basic events')
+          trainable_basic = int(report.get('trainable_basic') or 0)
+          trainable_point = int(report.get('trainable_point') or 0)
+          print(f'Player DNA point dataset: matches={matches} events={events} trainable_basic={trainable_basic} trainable_point={trainable_point}')
+          if matches <= 0 or events <= 0 or trainable_basic <= 0 or trainable_point <= 0:
+              raise SystemExit('Player DNA point dataset is empty or has no strictly atomic trainable points')
+          if trainable_point > trainable_basic:
+              raise SystemExit('Strict point rows cannot exceed broadly observable rows')
           if report.get('shadow_only') is not True:
               raise SystemExit('Player DNA point dataset must remain SHADOW-only')
 
