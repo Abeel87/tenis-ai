@@ -619,6 +619,23 @@ jobs:
                   branch = conditioned.get(key) or {}
                   if not branch.get('first_set_top_game_paths') or not branch.get('match_top_set_paths'):
                       raise SystemExit(f'Player DNA trajectory ranked paths missing: {key}')
+                  full_paths = branch.get('full_match_top_game_paths') or []
+                  if not full_paths or len(full_paths) > 4:
+                      raise SystemExit(f'Player DNA full-match game paths missing/oversized: {key}')
+                  if full_paths != sorted(full_paths, key=lambda item: float(item.get('probability') or 0), reverse=True):
+                      raise SystemExit(f'Player DNA full-match game paths not ranked: {key}')
+                  for full_path in full_paths:
+                      sets = full_path.get('sets') or []
+                      if int(full_path.get('sets_played') or 0) != len(sets):
+                          raise SystemExit('Player DNA full-match set-count drift')
+                      if int(full_path.get('total_games') or 0) != sum(len(item.get('progression') or []) for item in sets):
+                          raise SystemExit('Player DNA full-match game-count drift')
+                      for set_path in sets:
+                          progression = set_path.get('progression') or []
+                          if not progression or progression[-1] != set_path.get('score'):
+                              raise SystemExit('Player DNA full-match set progression terminal score drift')
+                          if set_path.get('tiebreak') is True and progression.count('6:6') != 1:
+                              raise SystemExit('Player DNA tiebreak progression must contain exactly one 6:6 checkpoint')
               if abs(float(first_set.get('p1_win') or 0) + float(first_set.get('p2_win') or 0) - 1.0) > 1e-9:
                   raise SystemExit('Player DNA first-set winner probability mass drift')
               if abs(sum(float(v) for v in (first_set.get('exact_score') or {}).values()) - 1.0) > 1e-9:
@@ -647,8 +664,13 @@ jobs:
                   ctraj = candidate.get('trajectory') or {}
                   if ctraj.get('status') != 'SHADOW_TRAJECTORY_FOUNDATION':
                       raise SystemExit('Player DNA calibrated trajectory foundation missing')
-                  if (ctraj.get('contract') or {}).get('production_influence') is not False:
+                  ccontract = ctraj.get('contract') or {}
+                  if ccontract.get('production_influence') is not False:
                       raise SystemExit('Player DNA calibrated trajectory leaked PROD influence')
+                  if ccontract.get('full_match_game_paths_are_exact_for_known_start_server') is not True:
+                      raise SystemExit('Player DNA calibrated full-match path contract drift')
+                  if not all((branch or {}).get('full_match_top_game_paths') for branch in (ctraj.get('serve_order_conditioned') or {}).values()):
+                      raise SystemExit('Player DNA calibrated full-match game paths missing')
                   if abs(float(cfirst.get('p1_win') or 0) + float(cfirst.get('p2_win') or 0) - 1.0) > 1e-9:
                       raise SystemExit('Player DNA calibrated first-set winner probability mass drift')
                   if abs(sum(float(v) for v in (cfirst.get('exact_score') or {}).values()) - 1.0) > 1e-9:

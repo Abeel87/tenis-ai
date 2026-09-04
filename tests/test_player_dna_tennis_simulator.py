@@ -68,13 +68,40 @@ def test_trajectory_contains_ranked_game_and_set_paths_without_claiming_certaint
         conditioned = trajectory["serve_order_conditioned"][key]
         first_set = conditioned["first_set_top_game_paths"]
         match_paths = conditioned["match_top_set_paths"]
+        full_match_paths = conditioned["full_match_top_game_paths"]
         assert 1 <= len(first_set) <= 8
         assert 1 <= len(match_paths) <= 12
+        assert 1 <= len(full_match_paths) <= 4
         assert first_set == sorted(first_set, key=lambda row: row["probability"], reverse=True)
         assert match_paths == sorted(match_paths, key=lambda row: row["probability"], reverse=True)
+        assert full_match_paths == sorted(full_match_paths, key=lambda row: row["probability"], reverse=True)
         assert all(row["progression"][-1] == row["final_score"] for row in first_set)
         assert all(row["sets_played"] in (2, 3) for row in match_paths)
         assert all(row["match_score"] in {"2:0", "2:1", "0:2", "1:2"} for row in match_paths)
+        for path in full_match_paths:
+            assert path["sets_played"] in (2, 3)
+            assert path["match_score"] in {"2:0", "2:1", "0:2", "1:2"}
+            assert path["probability"] > 0.0
+            assert path["total_games"] == sum(len(row["progression"]) for row in path["sets"])
+            for set_row in path["sets"]:
+                a, b = (int(x) for x in set_row["score"].split(":"))
+                expected_games = 13 if set_row["tiebreak"] else a + b
+                assert len(set_row["progression"]) == expected_games
+                assert set_row["progression"][-1] == set_row["score"]
+                if set_row["tiebreak"]:
+                    assert set_row["progression"].count("6:6") == 1
+
+
+def test_full_match_game_paths_support_bo5_without_collapsing_to_single_script():
+    trajectory = trajectory_summary(0.66, 0.57, best_of=5)
+    contract = trajectory["contract"]
+    assert contract["full_match_game_progression_is_ranked_not_guaranteed"] is True
+    assert contract["full_match_game_paths_are_exact_for_known_start_server"] is True
+    for key in ("p1_serves_first", "p2_serves_first"):
+        paths = trajectory["serve_order_conditioned"][key]["full_match_top_game_paths"]
+        assert paths
+        assert all(row["sets_played"] in (3, 4, 5) for row in paths)
+        assert all(row["match_score"] in {"3:0", "3:1", "3:2", "0:3", "1:3", "2:3"} for row in paths)
 
 
 def test_simulate_match_embeds_trajectory_additively():
