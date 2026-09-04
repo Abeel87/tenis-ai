@@ -8,6 +8,7 @@ separate historical backtest proves calibration. Nothing here may influence
 PROD, Symfonia 2.0 or Superbet PLAYABLE.
 """
 
+import heapq
 import json
 import math
 from collections import defaultdict
@@ -170,6 +171,233 @@ def _game_win_probability_for_p1(p1_hold: float, p2_hold: float, server: int) ->
     return p1_hold if server == 1 else (1.0 - p2_hold)
 
 
+def score_distribution_after_games(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    games: int,
+    start_server: int,
+) -> dict[str, float]:
+    """Exact game-score distribution after a fixed number of opening games."""
+    if games <= 0 or games > 6:
+        raise ValueError("games must be between 1 and 6")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    p1_hold = hold_probability(p1_serve_point)
+    p2_hold = hold_probability(p2_serve_point)
+    states: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
+    for _ in range(games):
+        nxt: dict[tuple[int, int, int], float] = defaultdict(float)
+        for (g1, g2, server), mass in states.items():
+            p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+            next_server = _other(server)
+            nxt[(g1 + 1, g2, next_server)] += mass * p1_game
+            nxt[(g1, g2 + 1, next_server)] += mass * (1.0 - p1_game)
+        states = nxt
+
+    out: dict[str, float] = defaultdict(float)
+    for (g1, g2, _server), mass in states.items():
+        out[f"{g1}:{g2}"] += mass
+    total = sum(out.values())
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-12):
+        raise AssertionError(f"checkpoint probability mass drift: {total}")
+    return dict(sorted(out.items()))
+
+
+def _top_first_set_game_paths(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    start_server: int,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Exact top-K complete first-set game paths for one known starting server.
+
+    Best-first search is exact for top-K because every transition probability is
+    <= its parent path probability.
+    """
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    if limit <= 0:
+        return []
+
+    p1_hold = hold_probability(p1_serve_point)
+    p2_hold = hold_probability(p2_serve_point)
+    p1_tb = neutral_tiebreak_win_probability(p1_serve_point, p2_serve_point)
+
+    heap: list[tuple[float, int, int, int, int, tuple[str, ...]]] = []
+    serial = 0
+    heapq.heappush(heap, (-1.0, serial, 0, 0, start_server, ()))
+    out: list[dict[str, Any]] = []
+
+    while heap and len(out) < limit:
+        neg_mass, _serial, g1, g2, server, path = heapq.heappop(heap)
+        mass = -neg_mass
+
+        if g1 == 6 and g2 == 6:
+            for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
+                score = "7:6" if winner == 1 else "6:7"
+                out.append({
+                    "final_score": score,
+                    "winner": winner,
+                    "games": 13,
+                    "tiebreak": True,
+                    "progression": [*path, "6:6", score],
+                    "probability": mass * probability,
+                })
+            out.sort(key=lambda row: float(row["probability"]), reverse=True)
+            out = out[:limit]
+            continue
+
+        if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+            out.append({
+                "final_score": f"{g1}:{g2}",
+                "winner": 1 if g1 > g2 else 2,
+                "games": g1 + g2,
+                "tiebreak": False,
+                "progression": list(path),
+                "probability": mass,
+            })
+            continue
+
+        p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+        next_server = _other(server)
+        for ng1, ng2, probability in (
+            (g1 + 1, g2, p1_game),
+            (g1, g2 + 1, 1.0 - p1_game),
+        ):
+            serial += 1
+            score = f"{ng1}:{ng2}"
+            heapq.heappush(
+                heap,
+                (-(mass * probability), serial, ng1, ng2, next_server, (*path, score)),
+            )
+
+    return sorted(out, key=lambda row: float(row["probability"]), reverse=True)[:limit]
+
+
+def _top_match_set_paths(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    """Exact top-K set-score sequences for one known starting server."""
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    if limit <= 0:
+        return []
+
+    needed = best_of // 2 + 1
+    set_cache = {
+        1: set_outcomes(p1_serve_point, p2_serve_point, 1),
+        2: set_outcomes(p1_serve_point, p2_serve_point, 2),
+    }
+    heap: list[tuple[float, int, int, int, int, tuple[str, ...], int, int]] = []
+    serial = 0
+    heapq.heappush(heap, (-1.0, serial, 0, 0, start_server, (), 0, 0))
+    out: list[dict[str, Any]] = []
+
+    while heap and len(out) < limit:
+        neg_mass, _serial, s1, s2, server, path, total_games, tiebreak_sets = heapq.heappop(heap)
+        mass = -neg_mass
+
+        if s1 >= needed or s2 >= needed:
+            out.append({
+                "winner": 1 if s1 > s2 else 2,
+                "match_score": f"{s1}:{s2}",
+                "set_scores": list(path),
+                "sets_played": s1 + s2,
+                "total_games": total_games,
+                "tiebreak_sets": tiebreak_sets,
+                "probability": mass,
+            })
+            continue
+
+        for row in set_cache[server]:
+            ns1 = s1 + (1 if row["winner"] == 1 else 0)
+            ns2 = s2 + (1 if row["winner"] == 2 else 0)
+            child_mass = mass * float(row["probability"])
+            serial += 1
+            heapq.heappush(
+                heap,
+                (
+                    -child_mass,
+                    serial,
+                    ns1,
+                    ns2,
+                    int(row["next_set_server"]),
+                    (*path, str(row["score"])),
+                    total_games + int(row["games"]),
+                    tiebreak_sets + (1 if row["tiebreak"] else 0),
+                ),
+            )
+
+    return sorted(out, key=lambda row: float(row["probability"]), reverse=True)
+
+
+def trajectory_summary(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+) -> dict[str, Any]:
+    checkpoints = {}
+    for games in (2, 4, 6):
+        neutral: dict[str, float] = defaultdict(float)
+        for start_server in (1, 2):
+            for score, probability in score_distribution_after_games(
+                p1_serve_point,
+                p2_serve_point,
+                games,
+                start_server,
+            ).items():
+                neutral[score] += 0.5 * probability
+        ranked = sorted(neutral.items(), key=lambda item: item[1], reverse=True)
+        checkpoints[f"after_{games}_games"] = [
+            {"score": score, "probability": probability}
+            for score, probability in ranked
+        ]
+
+    conditioned = {}
+    for start_server, label in ((1, "p1_serves_first"), (2, "p2_serves_first")):
+        conditioned[label] = {
+            "start_server": start_server,
+            "first_set_top_game_paths": _top_first_set_game_paths(
+                p1_serve_point,
+                p2_serve_point,
+                start_server,
+                limit=8,
+            ),
+            "match_top_set_paths": _top_match_set_paths(
+                p1_serve_point,
+                p2_serve_point,
+                best_of,
+                start_server,
+                limit=12,
+            ),
+        }
+
+    return {
+        "status": "SHADOW_TRAJECTORY_FOUNDATION",
+        "validation_status": "UNVALIDATED_MATCH_LEVEL",
+        "checkpoints_neutral_start_server": checkpoints,
+        "serve_order_conditioned": conditioned,
+        "contract": {
+            "not_a_single_certain_script": True,
+            "ranked_paths_are_exact_within_known_start_server_condition": True,
+            "pre_match_start_server_unknown": True,
+            "checkpoint_distributions_average_both_start_servers": True,
+            "full_match_set_sequence_is_ranked_not_guaranteed": True,
+            "first_set_game_progression_is_ranked_not_guaranteed": True,
+            "production_influence": False,
+            "symphony2_influence": False,
+            "superbet_playable_influence": False,
+        },
+    }
+
+
 def set_outcomes(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -244,21 +472,15 @@ def early_equal_score_probability(
 ) -> float:
     if games not in (2, 4, 6):
         raise ValueError("games must be 2, 4 or 6")
-    p1_hold = hold_probability(p1_serve_point)
-    p2_hold = hold_probability(p2_serve_point)
-
-    states: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
-    for _ in range(games):
-        nxt: dict[tuple[int, int, int], float] = defaultdict(float)
-        for (g1, g2, server), mass in states.items():
-            p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
-            next_server = _other(server)
-            nxt[(g1 + 1, g2, next_server)] += mass * p1_game
-            nxt[(g1, g2 + 1, next_server)] += mass * (1.0 - p1_game)
-        states = nxt
-
-    target = games // 2
-    return sum(mass for (g1, g2, _server), mass in states.items() if g1 == target and g2 == target)
+    target = f"{games // 2}:{games // 2}"
+    return float(
+        score_distribution_after_games(
+            p1_serve_point,
+            p2_serve_point,
+            games,
+            start_server,
+        ).get(target, 0.0)
+    )
 
 
 def _neutral_set_distribution(p1_serve_point: float, p2_serve_point: float) -> list[dict[str, Any]]:
@@ -402,6 +624,7 @@ def simulate_match(
             "p1_hold": p1_hold,
             "p2_hold": p2_hold,
         },
+        "trajectory": trajectory_summary(p1s, p2s, best_of),
         "early_equal_score": early,
         "first_set": {
             "p1_win": p1_set,

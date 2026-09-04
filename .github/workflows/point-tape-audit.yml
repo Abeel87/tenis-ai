@@ -596,6 +596,29 @@ jobs:
               sim = row.get('simulation') or {}
               first_set = sim.get('first_set') or {}
               match = sim.get('match') or {}
+              trajectory = sim.get('trajectory') or {}
+              if trajectory.get('status') != 'SHADOW_TRAJECTORY_FOUNDATION':
+                  raise SystemExit('Player DNA trajectory foundation missing')
+              if trajectory.get('validation_status') != 'UNVALIDATED_MATCH_LEVEL':
+                  raise SystemExit('Player DNA trajectory lost unvalidated status')
+              tcontract = trajectory.get('contract') or {}
+              for key in ('production_influence', 'symphony2_influence', 'superbet_playable_influence'):
+                  if tcontract.get(key) is not False:
+                      raise SystemExit(f'Player DNA trajectory leaked influence: {key}')
+              if tcontract.get('not_a_single_certain_script') is not True:
+                  raise SystemExit('Player DNA trajectory must remain ranked scenarios, not a certain script')
+              if tcontract.get('ranked_paths_are_exact_within_known_start_server_condition') is not True:
+                  raise SystemExit('Player DNA trajectory path-ranking contract drift')
+              checkpoints = trajectory.get('checkpoints_neutral_start_server') or {}
+              for checkpoint in ('after_2_games', 'after_4_games', 'after_6_games'):
+                  rows_cp = checkpoints.get(checkpoint) or []
+                  if not rows_cp or abs(sum(float(item.get('probability') or 0) for item in rows_cp) - 1.0) > 1e-9:
+                      raise SystemExit(f'Player DNA trajectory checkpoint probability mass drift: {checkpoint}')
+              conditioned = trajectory.get('serve_order_conditioned') or {}
+              for key in ('p1_serves_first', 'p2_serves_first'):
+                  branch = conditioned.get(key) or {}
+                  if not branch.get('first_set_top_game_paths') or not branch.get('match_top_set_paths'):
+                      raise SystemExit(f'Player DNA trajectory ranked paths missing: {key}')
               if abs(float(first_set.get('p1_win') or 0) + float(first_set.get('p2_win') or 0) - 1.0) > 1e-9:
                   raise SystemExit('Player DNA first-set winner probability mass drift')
               if abs(sum(float(v) for v in (first_set.get('exact_score') or {}).values()) - 1.0) > 1e-9:
@@ -621,6 +644,11 @@ jobs:
                           raise SystemExit(f'Player DNA calibrated candidate leaked influence: {key}')
                   cfirst = candidate.get('first_set') or {}
                   cmatch = candidate.get('match') or {}
+                  ctraj = candidate.get('trajectory') or {}
+                  if ctraj.get('status') != 'SHADOW_TRAJECTORY_FOUNDATION':
+                      raise SystemExit('Player DNA calibrated trajectory foundation missing')
+                  if (ctraj.get('contract') or {}).get('production_influence') is not False:
+                      raise SystemExit('Player DNA calibrated trajectory leaked PROD influence')
                   if abs(float(cfirst.get('p1_win') or 0) + float(cfirst.get('p2_win') or 0) - 1.0) > 1e-9:
                       raise SystemExit('Player DNA calibrated first-set winner probability mass drift')
                   if abs(sum(float(v) for v in (cfirst.get('exact_score') or {}).values()) - 1.0) > 1e-9:
