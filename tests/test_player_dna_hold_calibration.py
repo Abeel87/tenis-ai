@@ -1,11 +1,11 @@
 import math
 
-from backend.player_dna_hold_calibration import (
+from backend.player_dna_hold_calibration import fit_hold_platt
+from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
-    fit_hold_platt,
+    hold_probability,
     inverse_hold_probability,
 )
-from backend.player_dna_tennis_simulator import hold_probability
 
 
 def test_inverse_hold_probability_round_trips_exact_game_formula():
