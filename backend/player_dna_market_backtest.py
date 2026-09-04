@@ -542,6 +542,7 @@ def _trajectory_validation(
 ) -> dict[str, Any]:
     checkpoint_records = {2: [], 4: [], 6: []}
     first_set_records = []
+    set_winner_records = []
     match_set_records = []
     storyline_records = []
     full_match_records = []
@@ -605,6 +606,25 @@ def _trajectory_validation(
 
         set_sequence = tuple(str(x) for x in (actual.get("set_score_sequence") or []))
         if set_sequence:
+            actual_set_winners = []
+            for score in set_sequence:
+                try:
+                    a, b = (int(x) for x in score.split(":"))
+                except (TypeError, ValueError):
+                    actual_set_winners = []
+                    break
+                actual_set_winners.append("1" if a > b else "2")
+            ranked_winners = branch.get("set_winner_trajectories") or []
+            if actual_set_winners and ranked_winners:
+                set_winner_records.append(
+                    _rank_hit(
+                        ranked_winners,
+                        tuple(actual_set_winners),
+                        "set_winners",
+                        (1, 3, 8),
+                    )
+                )
+
             ranked_sets = branch.get("match_top_set_paths") or []
             match_set_records.append(_rank_hit(ranked_sets, set_sequence, "set_scores", (1, 3, 12)))
 
@@ -649,11 +669,13 @@ def _trajectory_validation(
         },
         "first_set_conditioned_on_observed_first_server": summarize_rank(first_set_records, (1, 3, 8), include_prefix=True),
         "primary_storyline_match_score_conditioned_on_observed_first_server": summarize_rank(storyline_records, (1, 2, 3)),
+        "set_winner_sequence_conditioned_on_observed_first_server": summarize_rank(set_winner_records, (1, 3, 8)),
         "match_set_sequence_conditioned_on_observed_first_server": summarize_rank(match_set_records, (1, 3, 12)),
         "full_match_game_path_conditioned_on_observed_first_server": summarize_rank(full_match_records, (1, 2, 4), include_prefix=True),
         "coverage": {
             "settled_predictions": len(labels),
             "first_set_complete_paths": len(first_set_records),
+            "set_winner_sequences": len(set_winner_records),
             "match_set_sequences": len(match_set_records),
             "full_match_complete_paths": len(full_match_records),
         },
