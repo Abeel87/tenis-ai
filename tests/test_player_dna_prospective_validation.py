@@ -170,6 +170,64 @@ def test_existing_snapshot_settles_later_without_rewriting_prediction():
     assert integrity["rewritten_predictions"] == 0
     assert integrity["settlement_regressions"] == 0
     assert integrity["settled_actual_rewrites"] == 0
+    assert integrity["settled_at_rewrites"] == 0
+    assert second["snapshots"][0]["settled_at"] == (now + timedelta(hours=3)).isoformat()
+    latency = second["settlement_observability"]["settlement_latency"]
+    assert latency["n"] == 1
+    assert latency["median_hours"] == 2.0
+    assert latency["p90_hours"] == 2.0
+    assert latency["max_hours"] == 2.0
+    assert latency["negative_latency_count"] == 0
+
+
+def test_unsettled_observability_exposes_age_without_guessing_cancellation():
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    first = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=now + timedelta(hours=1))]},
+        _walk_forward(),
+        [],
+        {},
+        now=now,
+    )
+    later = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        first,
+        now=now + timedelta(hours=8),
+    )
+    unsettled = later["settlement_observability"]["unsettled"]
+    assert unsettled["buckets"]["overdue_6_24h"] == 1
+    assert unsettled["buckets"]["upcoming"] == 0
+    assert "does not imply cancellation" in unsettled["meaning"]
+    assert unsettled["overdue_samples"][0]["match_id"] == "1"
+    assert unsettled["overdue_samples"][0]["hours_since_scheduled"] == 7.0
+
+
+def test_schedule_drift_is_reported_without_rewriting_frozen_schedule():
+    now = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
+    original_schedule = now + timedelta(hours=2)
+    first = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=original_schedule)]},
+        _walk_forward(),
+        [],
+        {},
+        now=now,
+    )
+    shifted_schedule = original_schedule + timedelta(minutes=45)
+    second = build_report(
+        {"version": "sim", "matches": [_current_row("1", scheduled=shifted_schedule)]},
+        _walk_forward(),
+        [],
+        first,
+        now=now + timedelta(minutes=10),
+    )
+    drift = second["settlement_observability"]["schedule_drift"]
+    assert drift["count"] == 1
+    assert drift["samples"][0]["match_id"] == "1"
+    assert drift["samples"][0]["drift_minutes"] == 45.0
+    assert second["snapshots"][0]["scheduled_time"] == original_schedule.isoformat()
+    assert second["ledger_integrity"]["rewritten_predictions"] == 0
 
 
 def test_ledger_grows_without_dropping_previous_snapshot():
