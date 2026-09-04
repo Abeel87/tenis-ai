@@ -6,7 +6,9 @@ on:
     branches: [main]
     paths:
       - 'backend/superbet_direct.py'
+      - 'backend/superbet_market_context.py'
       - 'tests/test_superbet_direct.py'
+      - 'tests/test_superbet_direct_context_shadow.py'
       - '.github/workflows/superbet-direct-probe.yml'
 
 permissions:
@@ -35,7 +37,8 @@ jobs:
       - name: Isolation and parser tests
         run: |
           python -m py_compile backend/superbet_direct.py
-          python -m pytest -q tests/test_superbet_direct.py
+          python -m py_compile backend/superbet_market_context.py
+          python -m pytest -q tests/test_superbet_direct.py tests/test_superbet_direct_context_shadow.py
 
       - name: Probe JS-rendered public Superbet listing and one concrete match
         run: python backend/superbet_direct.py probe-browser
@@ -73,3 +76,6 @@ jobs:
               'prices_used': feed.get('prices_used'),
           }, sort_keys=True))
           PY
+
+      - name: Audit price-free Direct context candidates
+        run: python backend/superbet_market_context.py direct-shadow-audit
