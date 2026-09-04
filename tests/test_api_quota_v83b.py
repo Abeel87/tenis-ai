@@ -69,3 +69,19 @@ def test_unknown_usage_fails_closed_in_pure_policy():
     )
     assert q["budget"] == 0
     assert q["reason"] == "usage_unknown"
+
+def test_history_settlement_keeps_budget_after_old_100_call_cap():
+    q = compute_budget(
+        per_day=1000,
+        remaining=211,
+        role_spent=100,
+        requested=40,
+        daily_fraction=0.18,
+        run_cap=24,
+        reserve_fraction=0.12,
+    )
+    assert q["budget"] == 24
+    assert q["daily_cap"] == 180
+    assert q["reserve"] == 120
+    assert q["reason"] == "ok"
+
