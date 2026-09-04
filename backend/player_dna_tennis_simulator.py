@@ -495,6 +495,145 @@ def _ranked_match_storylines(
 
 
 
+def _ranked_set_winner_trajectories(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    best_of: int,
+    start_server: int,
+) -> list[dict[str, Any]]:
+    """Exact distribution of set-winner order with one representative full path.
+
+    This is deliberately coarser than exact set scores. Probability belongs to
+    the complete winner order, for example P1 -> P2 -> P1. Set scores and game
+    progressions are representative realizations only.
+    """
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    needed = best_of // 2 + 1
+    grouped: dict[int, dict[tuple[int, int], dict[str, Any]]] = {1: {}, 2: {}}
+    for server in (1, 2):
+        for row in set_outcomes(p1_serve_point, p2_serve_point, server):
+            key = (int(row["winner"]), int(row["next_set_server"]))
+            bucket = grouped[server].setdefault(
+                key,
+                {"probability": 0.0, "representative": None},
+            )
+            bucket["probability"] += float(row["probability"])
+            rep = bucket["representative"]
+            if rep is None or float(row["probability"]) > float(rep["probability"]):
+                bucket["representative"] = row
+
+    # key -> (total probability mass, representative exact-set-score mass, path)
+    states: dict[
+        tuple[int, int, int, tuple[int, ...]],
+        tuple[float, float, tuple[tuple[str, int, int, bool], ...]],
+    ] = {(0, 0, start_server, ()): (1.0, 1.0, ())}
+    terminal: dict[
+        tuple[int, ...],
+        tuple[float, float, tuple[tuple[str, int, int, bool], ...]],
+    ] = {}
+
+    while states:
+        nxt: dict[
+            tuple[int, int, int, tuple[int, ...]],
+            tuple[float, float, tuple[tuple[str, int, int, bool], ...]],
+        ] = {}
+        for (s1, s2, server, sequence), (mass, rep_mass, rep_path) in states.items():
+            if s1 >= needed or s2 >= needed:
+                previous = terminal.get(sequence)
+                if previous is None:
+                    terminal[sequence] = (mass, rep_mass, rep_path)
+                else:
+                    total_mass = previous[0] + mass
+                    if rep_mass > previous[1]:
+                        terminal[sequence] = (total_mass, rep_mass, rep_path)
+                    else:
+                        terminal[sequence] = (total_mass, previous[1], previous[2])
+                continue
+
+            for (winner, next_server), transition in grouped[server].items():
+                transition_probability = float(transition["probability"])
+                representative = transition["representative"]
+                if transition_probability <= 0.0 or not isinstance(representative, dict):
+                    continue
+                ns1 = s1 + (1 if winner == 1 else 0)
+                ns2 = s2 + (1 if winner == 2 else 0)
+                child_sequence = (*sequence, winner)
+                child_mass = mass * transition_probability
+                child_rep_mass = rep_mass * float(representative["probability"])
+                child_path = (
+                    *rep_path,
+                    (
+                        str(representative["score"]),
+                        server,
+                        next_server,
+                        bool(representative["tiebreak"]),
+                    ),
+                )
+                state_key = (ns1, ns2, next_server, child_sequence)
+                previous = nxt.get(state_key)
+                if previous is None:
+                    nxt[state_key] = (child_mass, child_rep_mass, child_path)
+                else:
+                    total_mass = previous[0] + child_mass
+                    if child_rep_mass > previous[1]:
+                        nxt[state_key] = (total_mass, child_rep_mass, child_path)
+                    else:
+                        nxt[state_key] = (total_mass, previous[1], previous[2])
+        states = nxt
+
+    rows: list[dict[str, Any]] = []
+    for sequence, (probability, set_score_path_probability, set_path) in terminal.items():
+        representative_sets = []
+        representative_exact_path_probability = 1.0
+        for score, set_start_server, next_set_server, tiebreak in set_path:
+            set_row = _representative_set_progression(
+                p1_serve_point,
+                p2_serve_point,
+                set_start_server,
+                score,
+            )
+            if set_row is None:
+                representative_sets = []
+                break
+            if int(set_row["next_set_server"]) != next_set_server:
+                raise AssertionError("set-winner trajectory serve-order drift")
+            if bool(set_row["tiebreak"]) != tiebreak:
+                raise AssertionError("set-winner trajectory tiebreak drift")
+            representative_exact_path_probability *= float(
+                set_row["representative_path_probability"]
+            )
+            representative_sets.append(set_row)
+
+        if not representative_sets:
+            continue
+        p1_sets = sum(1 for winner in sequence if winner == 1)
+        p2_sets = len(sequence) - p1_sets
+        rows.append({
+            "winner": 1 if p1_sets > p2_sets else 2,
+            "match_score": f"{p1_sets}:{p2_sets}",
+            "set_winners": list(sequence),
+            "probability": float(probability),
+            "probability_scope": "SET_WINNER_SEQUENCE",
+            "representative_only": True,
+            "representative_set_score_sequence_probability": float(set_score_path_probability),
+            "representative_exact_game_path_probability": representative_exact_path_probability,
+            "set_scores": [str(row["score"]) for row in representative_sets],
+            "sets": representative_sets,
+            "sets_played": len(representative_sets),
+            "total_games": sum(int(row["games"]) for row in representative_sets),
+        })
+
+    rows.sort(key=lambda row: float(row["probability"]), reverse=True)
+    total = sum(float(row["probability"]) for row in rows)
+    if rows and not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"set-winner trajectory probability mass drift: {total}")
+    return rows
+
+
 def _top_match_set_paths(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -748,6 +887,12 @@ def trajectory_summary(
                 best_of,
                 start_server,
             ),
+            "set_winner_trajectories": _ranked_set_winner_trajectories(
+                p1_serve_point,
+                p2_serve_point,
+                best_of,
+                start_server,
+            ),
             "full_match_top_game_paths": _top_full_match_game_paths(
                 p1_serve_point,
                 p2_serve_point,
@@ -772,6 +917,8 @@ def trajectory_summary(
             "full_match_game_progression_is_ranked_not_guaranteed": True,
             "full_match_game_paths_are_exact_for_known_start_server": True,
             "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
+            "set_winner_trajectory_probability_scope": "SET_WINNER_SEQUENCE",
+            "set_winner_trajectory_game_progressions_are_representative": True,
             "storyline_game_progressions_are_representative": True,
             "storyline_probability_never_claims_exact_game_path": True,
             "exact_full_match_game_paths_are_diagnostic_only": True,
