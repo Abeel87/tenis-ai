@@ -454,7 +454,17 @@ def refresh_availability(results: list[dict], now=None):
     try:
         date_from = now.date().isoformat()
         date_to = (now + timedelta(days=FIXTURE_HORIZON_DAYS)).date().isoformat()
-        fixture_rows = _request("fixtures", api_key, quota, sportId=SPORT_ID_TENNIS, **{"from": date_from, "to": date_to}, statusId=0, hasOdds="true", bookmakers=BOOKMAKER, language="en")
+        # Fixture discovery is bookmaker-neutral. The Superbet filter belongs only
+        # to the later operator-offer query, after app matches are matched to fixtures.
+        fixture_rows = _request(
+            "fixtures",
+            api_key,
+            quota,
+            sportId=SPORT_ID_TENNIS,
+            **{"from": date_from, "to": date_to},
+            statusId=0,
+            language="en",
+        )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
         wanted_fixture_ids = set()
         tournament_ids = set()
