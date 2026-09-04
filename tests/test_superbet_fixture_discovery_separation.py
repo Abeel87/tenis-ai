@@ -76,6 +76,13 @@ def test_fixture_discovery_is_bookmaker_neutral_and_operator_query_is_filtered(m
     assert report["operator_fixture_candidates"] == 1
     assert report["operator_fixture_id_matches"] == 0
     assert report["operator_pair_time_matches"] == 1
+    assert report["operator_fixture_ids_in_neutral_catalogue"] == 0
+    assert report["operator_rows_with_requested_bookmaker"] == 1
+    assert report["operator_rows_in_horizon"] == 1
+    assert report["operator_rows_in_horizon_with_requested_bookmaker"] == 1
+    assert report["operator_bookmakers_seen"] == ["superbet.pl"]
+    assert report["operator_start_min"] == "2026-09-04T12:00:00+00:00"
+    assert report["operator_start_max"] == "2026-09-04T12:00:00+00:00"
     assert len(report["fixtures"]) == 1
     assert report["fixtures"][0]["fixture_id"] == "operator-fixture-99"
     assert writes
