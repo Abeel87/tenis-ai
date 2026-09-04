@@ -21,6 +21,8 @@ on:
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
       - 'backend/player_dna_hold_calibration.py'
+      - 'backend/player_dna_hold_walk_forward.py'
+      - 'backend/player_dna_prospective_validation.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -38,7 +40,9 @@ on:
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
-      - 'tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py'
+      - 'tests/test_player_dna_hold_calibration.py'
+      - 'tests/test_player_dna_hold_walk_forward.py'
+      - 'tests/test_player_dna_prospective_validation.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -73,7 +77,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_hold_calibration.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -119,6 +123,9 @@ jobs:
 
       - name: Simulate raw + hold-calibrated Player DNA markets (SHADOW, zero network)
         run: python backend/player_dna_tennis_simulator.py
+
+      - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
+        run: python backend/player_dna_prospective_validation.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -627,6 +634,73 @@ jobs:
               f"validation={simulation.get('match_level_validation_required')} "
               f"mode={simulation.get('mode')}"
           )
+
+          p = Path('frontend/data/player_dna_prospective_validation.json')
+          if not p.exists():
+              raise SystemExit('player_dna_prospective_validation.json was not generated')
+          prospective = json.loads(p.read_text(encoding='utf-8'))
+          if prospective.get('mode') != 'SHADOW_PROSPECTIVE_VALIDATION_ONLY':
+              raise SystemExit('Player DNA prospective validation must remain SHADOW-only')
+          if prospective.get('status') != 'PROSPECTIVE_COLLECTION_ACTIVE':
+              raise SystemExit(f"Player DNA prospective status invalid: {prospective.get('status')}")
+          if prospective.get('signal') not in {
+              'COLLECTING_PROSPECTIVE_EVIDENCE',
+              'PROSPECTIVE_DURATION_ROBUST_SHADOW',
+              'PROSPECTIVE_DURATION_NOT_YET_PROVEN',
+          }:
+              raise SystemExit(f"Player DNA prospective signal invalid: {prospective.get('signal')}")
+          for key in ('production_influence', 'symphony2_influence', 'superbet_playable_influence'):
+              if prospective.get(key) is not False:
+                  raise SystemExit(f'Player DNA prospective validation crossed isolation boundary: {key}')
+          if prospective.get('current_simulator_modified') is not False:
+              raise SystemExit('Player DNA prospective validation cannot mutate simulator')
+          if prospective.get('auto_integrate') is not False:
+              raise SystemExit('Player DNA prospective validation cannot auto-integrate')
+          if prospective.get('market_scope') != 'DURATION_MARKETS_ONLY':
+              raise SystemExit('Player DNA prospective validation scope must remain duration-only')
+          if prospective.get('winner_markets_promoted') is not False:
+              raise SystemExit('Player DNA prospective validation cannot promote winner markets')
+          policy_prospective = prospective.get('eligibility_policy') or {}
+          if policy_prospective.get('requires_walk_forward_robust') is not True:
+              raise SystemExit('Player DNA prospective gate must require robust walk-forward')
+          if policy_prospective.get('requires_repeatable_tour') is not True:
+              raise SystemExit('Player DNA prospective gate must require repeatable tour')
+          if policy_prospective.get('requires_repeatable_surface') is not True:
+              raise SystemExit('Player DNA prospective gate must require repeatable surface')
+          if policy_prospective.get('post_result_snapshot_forbidden') is not True:
+              raise SystemExit('Player DNA prospective gate must forbid post-result snapshots')
+          if walk_forward.get('signal') == 'HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW':
+              repeatable_tours = sorted(
+                  name for name, row in ((walk_forward.get('segment_aggregate') or {}).get('tour') or {}).items()
+                  if isinstance(row, dict) and row.get('repeatable_duration_signal') is True
+              )
+              repeatable_surfaces = sorted(
+                  name for name, row in ((walk_forward.get('segment_aggregate') or {}).get('surface') or {}).items()
+                  if isinstance(row, dict) and row.get('repeatable_duration_signal') is True
+              )
+              if policy_prospective.get('supported_tours') != repeatable_tours:
+                  raise SystemExit('Player DNA prospective tour eligibility drift')
+              if policy_prospective.get('supported_surfaces') != repeatable_surfaces:
+                  raise SystemExit('Player DNA prospective surface eligibility drift')
+          expected_markets = {
+              'first_set_tiebreak', 'first_set_over_8.5',
+              'first_set_over_9.5', 'first_set_over_10.5',
+          }
+          for snap in prospective.get('snapshots') or []:
+              if snap.get('captured_pre_match') is not True:
+                  raise SystemExit('Player DNA prospective snapshot was not frozen pre-match')
+              if set((snap.get('raw_probabilities') or {}).keys()) != expected_markets:
+                  raise SystemExit('Player DNA prospective raw market snapshot drift')
+              if set((snap.get('calibrated_probabilities') or {}).keys()) != expected_markets:
+                  raise SystemExit('Player DNA prospective calibrated market snapshot drift')
+              if snap.get('settled') is True and set((snap.get('actual') or {}).keys()) != expected_markets:
+                  raise SystemExit('Player DNA prospective settled labels incomplete')
+          print(
+              f"Player DNA prospective: signal={prospective.get('signal')} "
+              f"snapshots={(prospective.get('counts') or {}).get('snapshots')} "
+              f"settled={(prospective.get('counts') or {}).get('settled_snapshots')} "
+              f"eligible_current={(prospective.get('counts') or {}).get('current_eligible_by_segment')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -649,6 +723,7 @@ jobs:
             frontend/data/player_dna_market_backtest.json
             frontend/data/player_dna_hold_calibration_audit.json
             frontend/data/player_dna_hold_walk_forward.json
+            frontend/data/player_dna_prospective_validation.json
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
             data/derived/player_dna/current_point_model_shadow.json
