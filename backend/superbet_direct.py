@@ -609,6 +609,10 @@ def _line_from_odd(odd: dict) -> float | None:
     return None
 
 
+def _market_key(value: object) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", _norm(value)).split())
+
+
 def _ou_pick(*values: object) -> str | None:
     text = _norm(" ".join(str(value or "") for value in values))
     if "ponizej" in text:
@@ -728,6 +732,7 @@ def parse_event_payload(
         active_seen += 1
         market_name = str(odd.get("marketName") or "")
         market_norm = _norm(market_name)
+        market_key = _market_key(market_name)
         info = str(odd.get("info") or "")
         name = str(odd.get("name") or "")
         combined = _norm(f"{market_name} {name} {info}")
@@ -742,11 +747,11 @@ def parse_event_payload(
         pick_ou = _ou_pick(info, name, market_name)
         row = None
 
-        if market_norm == "zwyciezca" and player:
+        if market_key == "zwyciezca" and player:
             row = _structured_selection(
                 odd, market="match_winner", pick=player, p1=p1, p2=p2,
             )
-        elif market_norm == "x set zwyciezca" and set_no and player:
+        elif market_key == "x set zwyciezca" and set_no and player:
             row = _structured_selection(
                 odd,
                 market=f"set{set_no}_winner",
@@ -755,7 +760,7 @@ def parse_event_payload(
                 p2=p2,
                 set_no=set_no,
             )
-        elif market_norm == "liczba gemow" and pick_ou and line is not None:
+        elif market_key == "liczba gemow" and pick_ou and line is not None:
             row = _structured_selection(
                 odd,
                 market="match_total",
@@ -764,7 +769,7 @@ def parse_event_payload(
                 p1=p1,
                 p2=p2,
             )
-        elif market_norm == "liczba setow" and pick_ou and line is not None:
+        elif market_key == "liczba setow" and pick_ou and line is not None:
             row = _structured_selection(
                 odd,
                 market="total_sets",
