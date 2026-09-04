@@ -127,6 +127,49 @@ jobs:
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
         run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
+      - name: PR-only OddsPapi Superbet capability diagnostic
+        if: github.event_name == 'pull_request'
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          api_key = os.environ['ODDSPAPI_API_KEY']
+          url = 'https://api.oddspapi.io/v4/account?' + urlencode({'apiKey': api_key})
+          req = Request(url, headers={'User-Agent': 'tenis-ai-superbet-capability-diagnostic/1.0', 'Accept': 'application/json'})
+          with urlopen(req, timeout=25) as response:
+              account = json.loads(response.read().decode('utf-8'))
+
+          current = str(account.get('current_subscription_id') or '') if isinstance(account, dict) else ''
+          rows = []
+          for subscription in (account.get('subscriptions') or []) if isinstance(account, dict) else []:
+              if not isinstance(subscription, dict):
+                  continue
+              is_current = str(subscription.get('subscription_id') or '') == current
+              books = subscription.get('bookmakers') or {}
+              if not isinstance(books, dict):
+                  continue
+              for slug, raw in books.items():
+                  if 'superbet' not in str(slug).casefold() or not isinstance(raw, dict):
+                      continue
+                  rows.append({
+                      'bookmaker': str(slug),
+                      'subscription_current': is_current,
+                      'subscription_active': bool(subscription.get('is_active', False)),
+                      'has_live_odds': raw.get('has_live_odds'),
+                      'has_player_props': raw.get('has_player_props'),
+                  })
+          print('ODDSPAPI_SUPERBET_CAPABILITY ' + json.dumps({
+              'current_subscription_present': bool(current),
+              'superbet_rows': rows,
+              'current_superbet_rows': sum(1 for row in rows if row['subscription_current']),
+              'current_active_superbet_rows': sum(1 for row in rows if row['subscription_current'] and row['subscription_active']),
+          }, sort_keys=True))
+          PY
+
       - name: Refresh real Superbet catalogue + map audited families
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
