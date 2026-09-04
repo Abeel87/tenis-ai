@@ -157,3 +157,19 @@ def test_lightweight_superbet_refresh_does_not_retrain_surface_elo_without_db():
     workflow = (ROOT / ".github" / "workflows" / "superbet-market-refresh.yml").read_text(encoding="utf-8")
     assert "python -m py_compile backend/surface_elo_integration_v893.py" in workflow
     assert "python backend/surface_elo_integration_v893.py" not in workflow
+
+
+def test_availability_due_forces_one_refresh_when_operator_contract_fields_are_missing():
+    previous = {
+        "fixture_matching_v927": {"version": VERSION},
+        "generated_at": "2026-09-04T08:00:00+00:00",
+    }
+    assert availability_due(lambda _previous, _now: False, previous, None) is True
+
+    previous.update({
+        "operator_rows_in_horizon": 0,
+        "operator_rows_in_horizon_with_requested_bookmaker": 0,
+        "operator_rows_with_requested_bookmaker": 0,
+        "operator_fixture_ids_in_neutral_catalogue": 0,
+    })
+    assert availability_due(lambda _previous, _now: False, previous, None) is False
