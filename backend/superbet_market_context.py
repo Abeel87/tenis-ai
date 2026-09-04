@@ -430,7 +430,17 @@ def _stamp_alias() -> dict:
 def prepare() -> dict:
     with _patched_runtime():
         result=dict(audit_runtime.prepare(STRICT_FIXTURE_LINE_VERSION)); audit=_stamp_alias(); matching=fixture_matching.stamp_availability()
-    result["market_mapping_version"]=VERSION;result["fixture_line_contract_version"]=STRICT_FIXTURE_LINE_VERSION;result["raw_family_audit_v924"]=audit;result["fixture_matching_v927"]=matching;result["additional_external_requests"]=0;return result
+    availability = base._read(base.AVAILABILITY, {})
+    direct = availability.get("direct_fallback") if isinstance(availability, dict) else {}
+    direct = direct if isinstance(direct, dict) else {}
+    result["market_mapping_version"]=VERSION;result["fixture_line_contract_version"]=STRICT_FIXTURE_LINE_VERSION;result["raw_family_audit_v924"]=audit;result["fixture_matching_v927"]=matching;result["additional_external_requests"]=0
+    result["operator_source_policy"] = availability.get("operator_source_policy") if isinstance(availability, dict) else None
+    result["direct_fallback_fixtures_added"] = int(direct.get("fallback_fixtures_added") or 0)
+    result["direct_existing_provider_preferred"] = int(direct.get("existing_provider_preferred") or 0)
+    result["direct_canonical_context_activation"] = direct.get("canonical_context_activation") is True
+    result["direct_downstream_playable_eligibility"] = direct.get("downstream_playable_eligibility") is True
+    result["direct_prices_used"] = direct.get("prices_used")
+    return result
 
 
 def finalize() -> dict:
