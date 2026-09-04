@@ -601,12 +601,20 @@ def refresh_availability(results: list[dict], now=None):
                 operator_rows_with_requested_bookmaker += 1
 
             operator_start = _parse_dt(row.get("startTime"))
+            in_current_horizon = False
             if operator_start is not None:
                 operator_start_times.append(operator_start)
-                if date_from <= operator_start.date().isoformat() <= date_to:
+                in_current_horizon = date_from <= operator_start.date().isoformat() <= date_to
+                if in_current_horizon:
                     operator_rows_in_horizon += 1
                     if has_requested_bookmaker:
                         operator_rows_in_horizon_with_requested_bookmaker += 1
+
+            # odds-by-tournaments can return historical fixtures from the same
+            # tournament. They are not current operator offer and must never
+            # reach identity matching, even if an ID/name happens to collide.
+            if not in_current_horizon or not has_requested_bookmaker:
+                continue
 
             match_kind = None
             for discovered in discovered_matches:
@@ -639,8 +647,6 @@ def refresh_availability(results: list[dict], now=None):
             "operator_bookmakers_seen": sorted(operator_bookmakers_seen),
             "operator_start_min": min(operator_start_times).isoformat() if operator_start_times else None,
             "operator_start_max": max(operator_start_times).isoformat() if operator_start_times else None,
-            "operator_row_identity_samples": [_identity_debug_snapshot(row) for row in odds_rows[:5]],
-            "discovered_fixture_identity_samples": [_identity_debug_snapshot(row) for row in discovered_matches[:5]],
             "fixtures": sanitized,
             "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             "contract": {
@@ -648,6 +654,8 @@ def refresh_availability(results: list[dict], now=None):
                 "market_availability_only": True,
                 "bookmaker_data_never_trains_prod_models": True,
                 "monthly_request_safety_cap": MONTHLY_REQUEST_CAP,
+                "current_operator_horizon_required": True,
+                "requested_bookmaker_required_before_join": True,
             },
         }
         _write(AVAILABILITY, report)
