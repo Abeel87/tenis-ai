@@ -14,6 +14,7 @@ on:
       - 'backend/player_dna_match_context.py'
       - 'backend/player_dna_context_time_audit.py'
       - 'backend/player_dna_ordering_authority_audit.py'
+      - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -25,6 +26,7 @@ on:
       - 'tests/test_player_dna_match_context.py'
       - 'tests/test_player_dna_context_time_audit.py'
       - 'tests/test_player_dna_ordering_authority_audit.py'
+      - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -59,7 +61,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -81,6 +83,9 @@ jobs:
 
       - name: Audit Player DNA ordering authority (zero network)
         run: python backend/player_dna_ordering_authority_audit.py
+
+      - name: Audit Player DNA historical profile readiness (zero network)
+        run: python backend/player_dna_profile_readiness.py
 
       - name: Require real cached tapes and strict trainable point rows
         run: |
@@ -190,6 +195,33 @@ jobs:
               f"provider_better_matches={comparison.get('provider_more_atomic_matches')} "
               f"timestamp_better_matches={comparison.get('timestamp_more_atomic_matches')}"
           )
+
+          p = Path('frontend/data/player_dna_profile_readiness.json')
+          if not p.exists():
+              raise SystemExit('player_dna_profile_readiness.json was not generated')
+          readiness = json.loads(p.read_text(encoding='utf-8'))
+          if readiness.get('gate') != 'AUDIT_ONLY_NO_PROFILE_AGGREGATION':
+              raise SystemExit('Profile readiness must remain audit-only')
+          if readiness.get('training_join_enabled') is not False:
+              raise SystemExit('Player DNA training join must remain disabled')
+          if readiness.get('profile_aggregation_enabled') is not False:
+              raise SystemExit('Player DNA profile aggregation must remain disabled')
+          if readiness.get('readiness_threshold_activation_enabled') is not False:
+              raise SystemExit('Player DNA readiness threshold must remain unactivated')
+          if int(readiness.get('context_ready_matches') or 0) != matches:
+              raise SystemExit(
+                  f"Player DNA readiness lost context-ready matches: "
+                  f"{readiness.get('context_ready_matches')}/{matches}"
+              )
+          if int(readiness.get('player_match_targets') or 0) <= 0:
+              raise SystemExit('Player DNA readiness audit produced no player-match targets')
+          print(
+              f"Player DNA profile readiness: players={readiness.get('players')} "
+              f"targets={readiness.get('player_match_targets')} "
+              f"any_surface={readiness.get('readiness_any_surface')} "
+              f"same_surface={readiness.get('readiness_same_surface')} "
+              f"same_time_groups={readiness.get('same_time_player_groups')}"
+          )
           PY
 
       - name: Upload point audit + Player DNA dataset artifacts
@@ -204,6 +236,7 @@ jobs:
             frontend/data/player_dna_match_metadata_audit.json
             frontend/data/player_dna_context_time_audit.json
             frontend/data/player_dna_ordering_authority_audit.json
+            frontend/data/player_dna_profile_readiness.json
             data/derived/player_dna/point_events.jsonl.gz
           if-no-files-found: error
           retention-days: 14
