@@ -119,10 +119,7 @@ def _market_line(market: str, market_meta: dict, outcome_name, bookmaker_outcome
 
 
 def _sanitize_fixture(row: dict, meta: dict):
-    bookmaker_odds = row.get("bookmakerOdds") or {}
-    book = bookmaker_odds.get(base.BOOKMAKER)
-    if not isinstance(book, dict):
-        book = next((value for key, value in bookmaker_odds.items() if "superbet" in str(key).casefold() and isinstance(value, dict)), None)
+    book = base._requested_bookmaker_payload(row)
     if not isinstance(book, dict): return None
     raw_markets = book.get("markets") or {}
     if not isinstance(raw_markets, dict): return None
