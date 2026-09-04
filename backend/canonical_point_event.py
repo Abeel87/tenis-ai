@@ -14,7 +14,12 @@ Superbet PLAYABLE.
 
 from typing import Any
 
-SCHEMA_VERSION = "canonical-point-event-v1"
+try:
+    from backend.atomic_point_transition import classify_atomic_transition
+except ModuleNotFoundError:  # direct execution compatibility
+    from atomic_point_transition import classify_atomic_transition
+
+SCHEMA_VERSION = "canonical-point-event-v2"
 
 
 def _player(value: Any) -> int | None:
@@ -63,8 +68,8 @@ def canonical_point_events(payload: dict[str, Any] | None, match_id: Any = None)
 
     Only transitions with a changed tennis score become events.  The first raw
     row cannot become a canonical event because there is no observed pre-point
-    state.  Missing winners/servers remain missing; no silent reconstruction is
-    performed in v1.
+    state. Missing winners/servers remain missing and atomic trainability is
+    granted only when the score transition proves exactly one point.
     """
     if not isinstance(payload, dict) or not isinstance(payload.get("tape"), list):
         return []
@@ -82,6 +87,8 @@ def canonical_point_events(payload: dict[str, Any] | None, match_id: Any = None)
         receiver = 3 - server if server in (1, 2) else None
         observed_winner = winner is not None
         observed_server = server is not None
+        atomic = classify_atomic_transition(prev, cur, point_winner=winner)
+        atomic_ok = bool(atomic.get("atomic_transition"))
 
         out.append({
             "schema_version": SCHEMA_VERSION,
@@ -105,6 +112,10 @@ def canonical_point_events(payload: dict[str, Any] | None, match_id: Any = None)
                 "winner_observed": observed_winner,
                 "server_observed": observed_server,
                 "trainable_basic": observed_winner and observed_server,
+                "atomic_transition": atomic_ok,
+                "atomic_reason": atomic.get("reason"),
+                "atomic_validator_version": atomic.get("validator_version"),
+                "trainable_point": observed_winner and observed_server and atomic_ok,
                 "winner_reconstructed": False,
                 "server_reconstructed": False,
             },
