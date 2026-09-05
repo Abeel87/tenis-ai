@@ -202,3 +202,87 @@ def test_current_dynamic_shadow_requires_both_provider_ranks(monkeypatch):
     report = dynamic.build_current_dynamic_shadow([], [], current, _consensus())
     assert report["matches"][0]["status"] == "BLOCKED_MISSING_PROVIDER_RANK"
     assert report["runtime_switch_enabled"] is False
+
+
+def test_current_dynamic_shadow_uses_strict_prior_provider_rank_from_current_profiles(monkeypatch):
+    cutoff = datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        dynamic,
+        "build_feature_rows",
+        lambda points, profiles: ([{
+            "match_id": "old",
+            "scheduled_time": datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc),
+            "server_overall_matches": 5,
+            "receiver_overall_matches": 5,
+            "server_won": 1,
+        }], {}),
+    )
+    monkeypatch.setattr(
+        dynamic,
+        "_fit_logistic_newton",
+        lambda frame, numeric: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
+    )
+    monkeypatch.setattr(
+        dynamic,
+        "_model_meta",
+        lambda model: {"converged": True, "model_fingerprint_sha256": "lean-fingerprint"},
+    )
+    profiles = [
+        {
+            "target_match_id": "m-prior",
+            "player_side": "p1",
+            "target_surface": "hard",
+            "target_tour": "CHALLENGER",
+            "target_format": "BO3",
+            "player_ranking": 44,
+            "player_ranking_source": "latest_strict_prior_provider_match_context",
+            "overall_prior": {"matches": 5},
+            "same_surface_prior": {"matches": 5},
+        },
+        {
+            "target_match_id": "m-prior",
+            "player_side": "p2",
+            "target_surface": "hard",
+            "target_tour": "CHALLENGER",
+            "target_format": "BO3",
+            "player_ranking": 66,
+            "player_ranking_source": "latest_strict_prior_provider_match_context",
+            "overall_prior": {"matches": 5},
+            "same_surface_prior": {"matches": 5},
+        },
+    ]
+    monkeypatch.setattr(dynamic, "build_current_target_profiles", lambda points, targets: (profiles, {}))
+    monkeypatch.setattr(dynamic, "simulate_match", lambda *args, **kwargs: _simulation())
+    monkeypatch.setattr(dynamic, "_dynamic_candidate_simulation", lambda *args, **kwargs: _simulation(p1_match=0.64))
+
+    current = {
+        "mode": "SHADOW_CURRENT_ONLY",
+        "training_cutoff_exclusive": cutoff.isoformat(),
+        "matches": [{
+            "match_id": "m-prior",
+            "scheduled_time": "2026-09-05T14:00:00Z",
+            "tour": "challenger",
+            "surface": "hard",
+            "best_of": 3,
+            "p1": "A",
+            "p2": "B",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1_rank": None,
+            "p2_rank": None,
+            "p1_rank_source": None,
+            "p2_rank_source": None,
+            "status": "SHADOW_SCORED",
+            "p1_serve_point_win_probability": 0.62,
+            "p2_serve_point_win_probability": 0.60,
+        }],
+    }
+
+    report = dynamic.build_current_dynamic_shadow([], [], current, _consensus())
+    row = report["matches"][0]
+    assert row["status"] == "DYNAMIC_SHADOW_SCORED"
+    assert row["p1_rank"] == 44
+    assert row["p2_rank"] == 66
+    assert row["p1_rank_source"] == "latest_strict_prior_provider_match_context"
+    assert row["p2_rank_source"] == "latest_strict_prior_provider_match_context"
+    assert report["counts"]["dynamic_scored_with_strict_prior_provider_rank_fallback"] == 1
