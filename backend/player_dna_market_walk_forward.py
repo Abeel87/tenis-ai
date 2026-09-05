@@ -65,7 +65,7 @@ OUT = ROOT / "frontend" / "data" / "player_dna_dynamic_market_walk_forward.json"
 
 VERSION = "player-dna-dynamic-market-walk-forward-v1"
 MODE = "SHADOW_DYNAMIC_LEAN_MARKET_WALK_FORWARD_ONLY"
-TRAIN_FRACTIONS = (0.60, 0.70, 0.80)
+TRAIN_FRACTIONS = (0.55, 0.70, 0.85)
 REQUIRED_FOLDS = 3
 FOLD_MIN_MATCHED = 120
 FOLD_MIN_MARKET_N = 80
@@ -270,6 +270,7 @@ def evaluate_walk_forward(
         "tiebreak_policy": "PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH",
         "fold_policy": {
             "train_fractions": list(TRAIN_FRACTIONS),
+            "evaluation_fraction_windows": [[0.55, 0.70], [0.70, 0.85], [0.85, 1.0]],
             "expanding_train_windows": True,
             "evaluation_windows_disjoint": True,
             "same_timestamp_groups_not_split": True,
