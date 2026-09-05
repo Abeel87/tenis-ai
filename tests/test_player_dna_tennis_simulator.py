@@ -8,6 +8,8 @@ from backend import player_dna_tennis_simulator as simulator
 
 from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
+    dynamic_hold_probability,
+    dynamic_match_outcomes,
     early_equal_score_probability,
     hold_probability,
     inverse_hold_probability,
@@ -58,6 +60,66 @@ def test_publication_preserves_full_research_and_all_consumed_fields(tmp_path, m
 def test_neutral_tiebreak_is_symmetric_for_equal_players():
     p = neutral_tiebreak_win_probability(0.62, 0.62)
     assert math.isclose(p, 0.5, abs_tol=1e-12)
+
+
+def test_dynamic_hold_callback_sees_pre_point_pressure_states_only():
+    seen = []
+
+    def callback(state):
+        seen.append(dict(state))
+        return 0.62
+
+    probability = dynamic_hold_probability(
+        callback,
+        server=2,
+        sets=(1, 1),
+        games=(4, 5),
+        best_of=3,
+    )
+    assert 0.0 < probability < 1.0
+    assert math.isclose(probability, hold_probability(0.62), abs_tol=1e-12)
+    assert any(
+        row["server_points"] == "40" and row["receiver_points"] == "40"
+        for row in seen
+    )
+    assert any(
+        row["server_points"] == "A" and row["receiver_points"] == "40"
+        for row in seen
+    )
+    assert any(
+        row["server_points"] == "40" and row["receiver_points"] == "A"
+        for row in seen
+    )
+    assert all(row["server"] == 2 and row["receiver"] == 1 for row in seen)
+    assert all(row["sets"] == [1, 1] and row["games"] == [4, 5] for row in seen)
+    assert all(row["is_tiebreak"] is False for row in seen)
+
+
+@pytest.mark.parametrize("best_of", [3, 5])
+@pytest.mark.parametrize("start_server", [1, 2])
+def test_dynamic_match_dp_reduces_exactly_to_legacy_iid(best_of, start_server):
+    p1_serve = 0.63
+    p2_serve = 0.59
+    p1_tiebreak = neutral_tiebreak_win_probability(p1_serve, p2_serve)
+
+    def point_callback(state):
+        return p1_serve if state["server"] == 1 else p2_serve
+
+    def tiebreak_callback(_state):
+        return p1_tiebreak
+
+    dynamic = dynamic_match_outcomes(
+        point_callback,
+        tiebreak_callback,
+        best_of=best_of,
+        start_server=start_server,
+    )
+    legacy = match_outcomes(p1_serve, p2_serve, best_of, start_server)
+
+    assert set(dynamic) == set(legacy)
+    assert math.isclose(sum(dynamic.values()), 1.0, abs_tol=1e-9)
+    for score in legacy:
+        assert math.isclose(dynamic[score], legacy[score], abs_tol=1e-12)
 
 
 def test_set_probability_mass_is_one_for_each_start_server():
