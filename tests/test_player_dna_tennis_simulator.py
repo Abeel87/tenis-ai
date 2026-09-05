@@ -1,4 +1,10 @@
+import copy
+import gzip
+import json
 import math
+
+import pytest
+from backend import player_dna_tennis_simulator as simulator
 
 from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
@@ -20,6 +26,33 @@ from backend.player_dna_tennis_simulator import (
 def test_hold_probability_is_exact_at_half_and_monotonic():
     assert math.isclose(hold_probability(0.5), 0.5, abs_tol=1e-12)
     assert hold_probability(0.62) > hold_probability(0.58)
+
+
+@pytest.mark.parametrize("best_of", [3, 5])
+def test_publication_preserves_full_research_and_all_consumed_fields(tmp_path, monkeypatch, best_of):
+    simulation = simulate_match(0.63, 0.59, best_of)
+    report = {"matches": [{"simulation": simulation, "hold_calibrated_candidate": copy.deepcopy(simulation)},
+                          {"simulation": simulation, "hold_calibrated_candidate": None}]}
+    original = copy.deepcopy(report)
+    monkeypatch.setattr(simulator, "FULL_REPORT", tmp_path / "full.json.gz")
+    monkeypatch.setattr(simulator, "OUT", tmp_path / "published.json")
+    simulator._write_reports(report)
+    assert report == original
+    with gzip.open(simulator.FULL_REPORT, "rt", encoding="utf-8") as handle:
+        assert json.load(handle) == original
+    published = json.loads(simulator.OUT.read_text(encoding="utf-8"))
+    assert published.pop("publication")["probabilities_modified"] is False
+    for before, after in zip(original["matches"], published["matches"]):
+        for name in ("simulation", "hold_calibrated_candidate"):
+            if before[name] is None:
+                assert after[name] is None
+                continue
+            for server, branch in before[name]["trajectory"]["serve_order_conditioned"].items():
+                public_branch = after[name]["trajectory"]["serve_order_conditioned"][server]
+                assert "set_shape_trajectories" not in public_branch
+                public_branch["set_shape_trajectories"] = branch["set_shape_trajectories"]
+    assert published == original
+    assert simulator.OUT.stat().st_size < len(json.dumps(original).encode("utf-8")) / 2
 
 
 def test_neutral_tiebreak_is_symmetric_for_equal_players():
