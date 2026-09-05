@@ -19,10 +19,10 @@
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
     "previous_snapshot_count": 30,
-    "current_snapshot_count_before_retention": 30,
+    "current_snapshot_count_before_retention": 49,
     "preserved_snapshots": 30,
-    "new_snapshots": 0,
-    "newly_settled": 0,
+    "new_snapshots": 19,
+    "newly_settled": 2,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -40,15 +40,15 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 30
+    "current_snapshot_count_after_retention": 49
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 5,
+        "upcoming": 24,
         "due_within_6h": 9,
-        "overdue_6_24h": 3,
+        "overdue_6_24h": 1,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
@@ -57,30 +57,16 @@
         {
           "match_id": "186711",
           "scheduled_time": "2026-09-05T08:00:00+00:00",
-          "hours_since_scheduled": 10.46,
+          "hours_since_scheduled": 12.57,
           "p1": "Juan Pablo Varillas",
           "p2": "Jay Clarke"
-        },
-        {
-          "match_id": "186715",
-          "scheduled_time": "2026-09-05T08:00:00+00:00",
-          "hours_since_scheduled": 10.46,
-          "p1": "Valerio Aboian",
-          "p2": "Yanaki Milev"
-        },
-        {
-          "match_id": "186713",
-          "scheduled_time": "2026-09-05T11:25:00+00:00",
-          "hours_since_scheduled": 7.05,
-          "p1": "Gustavo Heide",
-          "p2": "Facundo Mena"
         }
       ]
     },
     "settlement_latency": {
-      "n": 13,
-      "median_hours": 15.111,
-      "p90_hours": 21.911,
+      "n": 15,
+      "median_hours": 14.611,
+      "p90_hours": 21.711,
       "max_hours": 22.111,
       "negative_latency_count": 0,
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
@@ -90,16 +76,22 @@
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
+          "match_id": "186632",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
+          "drift_minutes": 570.0
+        },
+        {
           "match_id": "186652",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-06T00:30:00+00:00",
           "drift_minutes": 570.0
         },
         {
-          "match_id": "186632",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
-          "drift_minutes": 570.0
+          "match_id": "186827",
+          "frozen_scheduled_time": "2026-09-06T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T23:00:00+00:00",
+          "drift_minutes": 480.0
         },
         {
           "match_id": "186631",
@@ -110,54 +102,48 @@
         {
           "match_id": "186633",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T19:30:00+00:00",
-          "drift_minutes": 270.0
+          "current_scheduled_time": "2026-09-05T20:00:00+00:00",
+          "drift_minutes": 300.0
         },
         {
-          "match_id": "186582",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T19:10:00+00:00",
-          "drift_minutes": 250.0
-        },
-        {
-          "match_id": "186614",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T18:30:00+00:00",
-          "drift_minutes": 210.0
+          "match_id": "186782",
+          "frozen_scheduled_time": "2026-09-06T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T18:00:00+00:00",
+          "drift_minutes": 180.0
         }
       ]
     }
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 13,
+      "settled": 15,
       "required": 150,
-      "remaining": 137,
+      "remaining": 135,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 13,
+        "settled": 15,
         "required": 150,
-        "remaining": 137,
+        "remaining": 135,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 13,
+        "settled": 15,
         "required": 150,
-        "remaining": 137,
+        "remaining": 135,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 13,
+        "settled": 15,
         "required": 150,
-        "remaining": 137,
+        "remaining": 135,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 13,
+        "settled": 15,
         "required": 150,
-        "remaining": 137,
+        "remaining": 135,
         "support_sufficient": false
       }
     },
@@ -171,23 +157,23 @@
           "support_sufficient": false
         },
         "challenger": {
-          "snapshots": 11,
-          "settled": 6,
+          "snapshots": 30,
+          "settled": 8,
           "required": 30,
-          "remaining": 24,
+          "remaining": 22,
           "support_sufficient": false
         }
       },
       "surface": {
         "clay": {
-          "snapshots": 9,
-          "settled": 5,
+          "snapshots": 25,
+          "settled": 7,
           "required": 30,
-          "remaining": 25,
+          "remaining": 23,
           "support_sufficient": false
         },
         "hard": {
-          "snapshots": 21,
+          "snapshots": 24,
           "settled": 8,
           "required": 30,
           "remaining": 22,
@@ -225,52 +211,52 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 25,
-    "current_eligible_by_segment": 11,
-    "snapshots": 30,
-    "settled_snapshots": 13,
-    "unsettled_snapshots": 17,
+    "current_simulated_matches": 47,
+    "current_eligible_by_segment": 28,
+    "snapshots": 49,
+    "settled_snapshots": 15,
+    "unsettled_snapshots": 34,
     "label_counts": {
-      "matches_seen": 3314,
-      "settled_labels": 3027,
-      "incomplete_or_unsettled": 287
+      "matches_seen": 3330,
+      "settled_labels": 3041,
+      "incomplete_or_unsettled": 289
     }
   },
   "evaluation": {
-    "settled_matches": 13,
+    "settled_matches": 15,
     "markets": {
       "first_set_tiebreak": {
-        "n": 13,
-        "raw_brier": 0.130714,
-        "calibrated_brier": 0.129507,
-        "brier_gain_calibrated_vs_raw": 0.001207,
-        "improved": true
+        "n": 15,
+        "raw_brier": 0.15687,
+        "calibrated_brier": 0.158429,
+        "brier_gain_calibrated_vs_raw": -0.001558,
+        "improved": false
       },
       "first_set_over_8.5": {
-        "n": 13,
-        "raw_brier": 0.218429,
-        "calibrated_brier": 0.217871,
-        "brier_gain_calibrated_vs_raw": 0.000558,
-        "improved": true
+        "n": 15,
+        "raw_brier": 0.194345,
+        "calibrated_brier": 0.194941,
+        "brier_gain_calibrated_vs_raw": -0.000596,
+        "improved": false
       },
       "first_set_over_9.5": {
-        "n": 13,
-        "raw_brier": 0.233036,
-        "calibrated_brier": 0.237221,
-        "brier_gain_calibrated_vs_raw": -0.004186,
+        "n": 15,
+        "raw_brier": 0.226499,
+        "calibrated_brier": 0.2322,
+        "brier_gain_calibrated_vs_raw": -0.005701,
         "improved": false
       },
       "first_set_over_10.5": {
-        "n": 13,
-        "raw_brier": 0.151571,
-        "calibrated_brier": 0.147274,
-        "brier_gain_calibrated_vs_raw": 0.004297,
+        "n": 15,
+        "raw_brier": 0.168308,
+        "calibrated_brier": 0.166266,
+        "brier_gain_calibrated_vs_raw": 0.002042,
         "improved": true
       }
     },
-    "duration_markets_improved": 3,
+    "duration_markets_improved": 1,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": -0.004186
+    "worst_market_brier_gain": -0.005701
   },
   "segment_evaluation": {
     "tour": {
@@ -312,79 +298,79 @@
         "support_sufficient": false
       },
       "challenger": {
-        "settled_matches": 6,
+        "settled_matches": 8,
         "markets": {
           "first_set_tiebreak": {
-            "n": 6,
-            "raw_brier": 0.032288,
-            "calibrated_brier": 0.02884,
-            "brier_gain_calibrated_vs_raw": 0.003448,
-            "improved": true
+            "n": 8,
+            "raw_brier": 0.105938,
+            "calibrated_brier": 0.108235,
+            "brier_gain_calibrated_vs_raw": -0.002298,
+            "improved": false
           },
           "first_set_over_8.5": {
-            "n": 6,
-            "raw_brier": 0.325978,
-            "calibrated_brier": 0.323607,
-            "brier_gain_calibrated_vs_raw": 0.002371,
-            "improved": true
+            "n": 8,
+            "raw_brier": 0.253933,
+            "calibrated_brier": 0.254179,
+            "brier_gain_calibrated_vs_raw": -0.000246,
+            "improved": false
           },
           "first_set_over_9.5": {
-            "n": 6,
-            "raw_brier": 0.27147,
-            "calibrated_brier": 0.267397,
-            "brier_gain_calibrated_vs_raw": 0.004073,
-            "improved": true
+            "n": 8,
+            "raw_brier": 0.249606,
+            "calibrated_brier": 0.250439,
+            "brier_gain_calibrated_vs_raw": -0.000833,
+            "improved": false
           },
           "first_set_over_10.5": {
-            "n": 6,
-            "raw_brier": 0.082477,
-            "calibrated_brier": 0.078728,
-            "brier_gain_calibrated_vs_raw": 0.003749,
-            "improved": true
+            "n": 8,
+            "raw_brier": 0.131131,
+            "calibrated_brier": 0.131474,
+            "brier_gain_calibrated_vs_raw": -0.000343,
+            "improved": false
           }
         },
-        "duration_markets_improved": 4,
+        "duration_markets_improved": 0,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": 0.002371,
+        "worst_market_brier_gain": -0.002298,
         "support_sufficient": false
       }
     },
     "surface": {
       "clay": {
-        "settled_matches": 5,
+        "settled_matches": 7,
         "markets": {
           "first_set_tiebreak": {
-            "n": 5,
-            "raw_brier": 0.031739,
-            "calibrated_brier": 0.028515,
-            "brier_gain_calibrated_vs_raw": 0.003223,
-            "improved": true
+            "n": 7,
+            "raw_brier": 0.116066,
+            "calibrated_brier": 0.119345,
+            "brier_gain_calibrated_vs_raw": -0.003279,
+            "improved": false
           },
           "first_set_over_8.5": {
-            "n": 5,
-            "raw_brier": 0.382911,
-            "calibrated_brier": 0.378783,
-            "brier_gain_calibrated_vs_raw": 0.004128,
+            "n": 7,
+            "raw_brier": 0.284307,
+            "calibrated_brier": 0.283673,
+            "brier_gain_calibrated_vs_raw": 0.000635,
             "improved": true
           },
           "first_set_over_9.5": {
-            "n": 5,
-            "raw_brier": 0.262254,
-            "calibrated_brier": 0.260385,
-            "brier_gain_calibrated_vs_raw": 0.001869,
-            "improved": true
+            "n": 7,
+            "raw_brier": 0.239899,
+            "calibrated_brier": 0.243008,
+            "brier_gain_calibrated_vs_raw": -0.003108,
+            "improved": false
           },
           "first_set_over_10.5": {
-            "n": 5,
-            "raw_brier": 0.081585,
-            "calibrated_brier": 0.078253,
-            "brier_gain_calibrated_vs_raw": 0.003332,
-            "improved": true
+            "n": 7,
+            "raw_brier": 0.137445,
+            "calibrated_brier": 0.13867,
+            "brier_gain_calibrated_vs_raw": -0.001225,
+            "improved": false
           }
         },
-        "duration_markets_improved": 4,
+        "duration_markets_improved": 1,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": 0.001869,
+        "worst_market_brier_gain": -0.003279,
         "support_sufficient": false
       },
       "hard": {
@@ -425,6 +411,1149 @@
         "support_sufficient": false
       }
     }
+  },
+  "dynamic_lean_evidence": {
+    "mode": "SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY",
+    "status": "DYNAMIC_PROSPECTIVE_COLLECTION_ACTIVE",
+    "signal": "COLLECTING_DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE",
+    "production_influence": false,
+    "runtime_switch_enabled": false,
+    "symphony2_influence": false,
+    "superbet_playable_influence": false,
+    "auto_integrate": false,
+    "performance_verdict_emitted": false,
+    "source_contract_valid": true,
+    "eligibility_policy": {
+      "decision_required": "CONSENSUS_DYNAMIC_CANDIDATE",
+      "minimum_pre_match_lead_minutes": 5,
+      "post_result_snapshot_forbidden": true,
+      "conflict_excluded": true,
+      "insufficient_excluded": true,
+      "profile_reference_excluded": true
+    },
+    "ledger_integrity": {
+      "status": "LEDGER_INTEGRITY_OK",
+      "prediction_rewrite_forbidden": true,
+      "settlement_regression_forbidden": true,
+      "settled_actual_rewrite_forbidden": true,
+      "settled_at_rewrite_forbidden": true,
+      "snapshot_drop_forbidden_before_retention_cap": true,
+      "retention_cap": 5000,
+      "previous_snapshot_count": 0,
+      "current_snapshot_count_before_retention": 20,
+      "preserved_snapshots": 0,
+      "new_snapshots": 20,
+      "newly_settled": 0,
+      "rewritten_predictions": 0,
+      "settlement_regressions": 0,
+      "settled_actual_rewrites": 0,
+      "settled_at_rewrites": 0,
+      "missing_previous_snapshots": 0,
+      "duplicate_previous_match_ids": 0,
+      "duplicate_current_match_ids": 0,
+      "violation_samples": {
+        "missing_previous": [],
+        "rewritten_predictions": [],
+        "settlement_regressions": [],
+        "settled_actual_rewrites": [],
+        "settled_at_rewrites": [],
+        "duplicate_previous": [],
+        "duplicate_current": []
+      },
+      "pruned_by_retention": 0,
+      "current_snapshot_count_after_retention": 20
+    },
+    "settlement_observability": {
+      "unsettled": {
+        "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
+        "buckets": {
+          "upcoming": 20,
+          "due_within_6h": 0,
+          "overdue_6_24h": 0,
+          "overdue_24_72h": 0,
+          "overdue_gt_72h": 0,
+          "unparseable_schedule": 0
+        },
+        "overdue_samples": []
+      },
+      "settlement_latency": {
+        "n": 0,
+        "median_hours": null,
+        "p90_hours": null,
+        "max_hours": null,
+        "negative_latency_count": 0,
+        "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
+      },
+      "schedule_drift": {
+        "count": 0,
+        "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
+        "samples": []
+      }
+    },
+    "evidence_readiness": {
+      "settled_market_observations": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      },
+      "observed_candidate_markets": {
+        "early_2:2": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_10.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_11.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_12.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_tiebreak": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "match_p1_win": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        }
+      },
+      "ready_for_performance_verdict": false,
+      "performance_verdict_emitted": false,
+      "policy": {
+        "overall_minimum_settled_market_observations": 150,
+        "per_observed_candidate_market_minimum": 30,
+        "conflict_and_insufficient_markets_never_enter_ledger": true,
+        "profile_reference_markets_never_enter_dynamic_candidate_ledger": true,
+        "performance_verdict_is_separate_step": true,
+        "direct_tour_surface_support_required_before_verdict": true
+      }
+    },
+    "counts": {
+      "current_dynamic_matches": 183,
+      "current_rows_with_dynamic_candidates": 20,
+      "current_dynamic_candidate_market_slots": 72,
+      "snapshots": 20,
+      "settled_snapshots": 0,
+      "unsettled_snapshots": 20,
+      "settled_market_observations": 0
+    },
+    "evaluation": {
+      "settled_matches": 0,
+      "settled_market_observations": 0,
+      "markets": {
+        "match_p1_win": {
+          "n": 0
+        },
+        "first_set_p1_win": {
+          "n": 0
+        },
+        "first_set_tiebreak": {
+          "n": 0
+        },
+        "first_set_over_8.5": {
+          "n": 0
+        },
+        "first_set_over_9.5": {
+          "n": 0
+        },
+        "first_set_over_10.5": {
+          "n": 0
+        },
+        "first_set_over_11.5": {
+          "n": 0
+        },
+        "first_set_over_12.5": {
+          "n": 0
+        },
+        "early_1:1": {
+          "n": 0
+        },
+        "early_2:2": {
+          "n": 0
+        },
+        "early_3:3": {
+          "n": 0
+        }
+      },
+      "candidate_markets_seen": [
+        "early_2:2",
+        "first_set_over_10.5",
+        "first_set_over_11.5",
+        "first_set_over_12.5",
+        "first_set_tiebreak",
+        "match_p1_win"
+      ],
+      "markets_with_observations": [],
+      "markets_better_on_brier_and_log_loss": []
+    },
+    "segment_evaluation": {
+      "tour": {
+        "challenger": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      },
+      "surface": {
+        "clay": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_12.5",
+            "first_set_tiebreak"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        },
+        "hard": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      },
+      "tour_surface": {
+        "challenger|clay": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_12.5",
+            "first_set_tiebreak"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        },
+        "challenger|hard": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      }
+    },
+    "direct_segment_readiness": {
+      "tour_surface": {
+        "challenger|clay": {
+          "candidate_markets": {
+            "early_2:2": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_12.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_tiebreak": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            }
+          },
+          "all_candidate_markets_supported": false
+        },
+        "challenger|hard": {
+          "candidate_markets": {
+            "early_2:2": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_10.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_11.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_12.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_tiebreak": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "match_p1_win": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            }
+          },
+          "all_candidate_markets_supported": false
+        }
+      },
+      "observed_tour_surface_market_cells": 9,
+      "ready_for_performance_verdict": false,
+      "policy": {
+        "direct_joint_segment_evidence_required": true,
+        "per_observed_tour_surface_candidate_market_minimum": 30,
+        "marginal_tour_surface_consensus_alone_is_not_direct_validation": true,
+        "unsupported_joint_cell_blocks_verdict": true
+      }
+    },
+    "performance_verdict": {
+      "mode": "SHADOW_DYNAMIC_LEAN_PERFORMANCE_VERDICT_ONLY",
+      "production_influence": false,
+      "runtime_switch_enabled": false,
+      "symphony2_influence": false,
+      "superbet_playable_influence": false,
+      "auto_promote": false,
+      "promotion_gate": false,
+      "direct_tour_surface_validation_required": true,
+      "emitted": false,
+      "signal": "DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY",
+      "reason": "OVERALL_OR_PER_MARKET_SUPPORT_INSUFFICIENT",
+      "all_observed_candidate_markets_better_on_brier_and_log_loss": null,
+      "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss": null,
+      "global_failures": [],
+      "tour_surface_failures": []
+    },
+    "snapshots": [
+      {
+        "match_id": "186853",
+        "scheduled_time": "2026-09-06T04:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Kasidit Samrej",
+        "p2": "Ilia Simakin",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|hard",
+        "candidate_markets": {
+          "match_p1_win": {
+            "profile_reference_probability": 0.42022292210483275,
+            "dynamic_candidate_probability": 0.3094824853159493
+          },
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.21904444161408082,
+            "dynamic_candidate_probability": 0.18363965464053822
+          },
+          "first_set_over_10.5": {
+            "profile_reference_probability": 0.3204483286709746,
+            "dynamic_candidate_probability": 0.2820660161773696
+          },
+          "first_set_over_11.5": {
+            "profile_reference_probability": 0.3204483286709746,
+            "dynamic_candidate_probability": 0.2820660161773696
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.21904444161408082,
+            "dynamic_candidate_probability": 0.18363965464053822
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.5168984484470904,
+            "dynamic_candidate_probability": 0.48256726725087873
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187079",
+        "scheduled_time": "2026-09-06T08:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Kai Wehnelt",
+        "p2": "Mika Brunold",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.20274943864202982,
+            "dynamic_candidate_probability": 0.18058447199105043
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.20274943864202982,
+            "dynamic_candidate_probability": 0.18058447199105043
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.49355258175532896,
+            "dynamic_candidate_probability": 0.47121650244394786
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187066",
+        "scheduled_time": "2026-09-06T09:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Georgii Kravchenko",
+        "p2": "Yanaki Milev",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17195698518909425,
+            "dynamic_candidate_probability": 0.13850360766698633
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17195698518909425,
+            "dynamic_candidate_probability": 0.13850360766698633
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4496150417351839,
+            "dynamic_candidate_probability": 0.4168597009036079
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187068",
+        "scheduled_time": "2026-09-06T09:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Oriol Roca Batalla",
+        "p2": "Iliyan Radulov",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.16655958843554458,
+            "dynamic_candidate_probability": 0.14244296856954902
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.16655958843554458,
+            "dynamic_candidate_probability": 0.14244296856954902
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4486715618901781,
+            "dynamic_candidate_probability": 0.42569490140803745
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187043",
+        "scheduled_time": "2026-09-06T09:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Manas Dhamne",
+        "p2": "William Rejchtman Vinciguerra",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|hard",
+        "candidate_markets": {
+          "match_p1_win": {
+            "profile_reference_probability": 0.64680873732081,
+            "dynamic_candidate_probability": 0.8084520315222394
+          },
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.15617381400667601,
+            "dynamic_candidate_probability": 0.12217974372923432
+          },
+          "first_set_over_10.5": {
+            "profile_reference_probability": 0.26753890004879544,
+            "dynamic_candidate_probability": 0.22000543007386045
+          },
+          "first_set_over_11.5": {
+            "profile_reference_probability": 0.26753890004879544,
+            "dynamic_candidate_probability": 0.22000543007386045
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.15617381400667601,
+            "dynamic_candidate_probability": 0.12217974372923432
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.42540761321129317,
+            "dynamic_candidate_probability": 0.39239912700101853
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187045",
+        "scheduled_time": "2026-09-06T09:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Oskari Paldanius",
+        "p2": "Nicolas Tepmahc",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|hard",
+        "candidate_markets": {
+          "match_p1_win": {
+            "profile_reference_probability": 0.44129809182038277,
+            "dynamic_candidate_probability": 0.35146856842065166
+          },
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.16716919764387195,
+            "dynamic_candidate_probability": 0.14408283733156937
+          },
+          "first_set_over_10.5": {
+            "profile_reference_probability": 0.2785619556219149,
+            "dynamic_candidate_probability": 0.2501691570208604
+          },
+          "first_set_over_11.5": {
+            "profile_reference_probability": 0.2785619556219149,
+            "dynamic_candidate_probability": 0.2501691570208604
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.16716919764387195,
+            "dynamic_candidate_probability": 0.14408283733156937
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.43979856439383364,
+            "dynamic_candidate_probability": 0.4168747384839966
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187083",
+        "scheduled_time": "2026-09-06T09:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Ivan Gakhov",
+        "p2": "Oleg Prihodko",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17988096090782316,
+            "dynamic_candidate_probability": 0.1613296732349974
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17988096090782316,
+            "dynamic_candidate_probability": 0.1613296732349974
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.462264455833976,
+            "dynamic_candidate_probability": 0.4446857786090833
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187084",
+        "scheduled_time": "2026-09-06T09:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Niels Visker",
+        "p2": "Daniel Siniakov",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.2141459982571262,
+            "dynamic_candidate_probability": 0.1903535207928555
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.2141459982571262,
+            "dynamic_candidate_probability": 0.1903535207928555
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.5125317099207776,
+            "dynamic_candidate_probability": 0.48923871071153585
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "186936",
+        "scheduled_time": "2026-09-06T09:55:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Hugo Dellien",
+        "p2": "Facundo Mena",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.16845776475939023,
+            "dynamic_candidate_probability": 0.1485345915402197
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.16845776475939023,
+            "dynamic_candidate_probability": 0.1485345915402197
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4422503004235364,
+            "dynamic_candidate_probability": 0.42501524719044237
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187071",
+        "scheduled_time": "2026-09-06T10:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Sergi Perez Contri",
+        "p2": "Alexander Ritschard",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17410653057228828,
+            "dynamic_candidate_probability": 0.16305541662822656
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17410653057228828,
+            "dynamic_candidate_probability": 0.16305541662822656
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.45793538638664405,
+            "dynamic_candidate_probability": 0.44508820224883505
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187048",
+        "scheduled_time": "2026-09-06T11:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Amit Vales",
+        "p2": "Mathieu Scaglia",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|hard",
+        "candidate_markets": {
+          "match_p1_win": {
+            "profile_reference_probability": 0.5032246293840239,
+            "dynamic_candidate_probability": 0.6759830881546495
+          },
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.18570812841519407,
+            "dynamic_candidate_probability": 0.15490066652834428
+          },
+          "first_set_over_10.5": {
+            "profile_reference_probability": 0.2936678173067553,
+            "dynamic_candidate_probability": 0.2577763679672757
+          },
+          "first_set_over_11.5": {
+            "profile_reference_probability": 0.2936678173067553,
+            "dynamic_candidate_probability": 0.2577763679672757
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.18570812841519407,
+            "dynamic_candidate_probability": 0.15490066652834428
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.46747123380451605,
+            "dynamic_candidate_probability": 0.43631263888470995
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187086",
+        "scheduled_time": "2026-09-06T11:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Svyatoslav Gulin",
+        "p2": "Rudolf Molleker",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.22843387024474912,
+            "dynamic_candidate_probability": 0.1995823239198695
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.22843387024474912,
+            "dynamic_candidate_probability": 0.1995823239198695
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.5288625647767324,
+            "dynamic_candidate_probability": 0.5003192319636419
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187087",
+        "scheduled_time": "2026-09-06T11:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Henry Bernet",
+        "p2": "Luca Wiedenmann",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17942846127283352,
+            "dynamic_candidate_probability": 0.16056863865568766
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17942846127283352,
+            "dynamic_candidate_probability": 0.16056863865568766
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.47273217673068557,
+            "dynamic_candidate_probability": 0.45298101281837333
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187073",
+        "scheduled_time": "2026-09-06T12:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Lorenzo Carboni",
+        "p2": "Gerard Campana Lee",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.1599792840146712,
+            "dynamic_candidate_probability": 0.14968181537676645
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.1599792840146712,
+            "dynamic_candidate_probability": 0.14968181537676645
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4393513065739008,
+            "dynamic_candidate_probability": 0.4286511797201805
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187074",
+        "scheduled_time": "2026-09-06T12:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Mario Gonzalez Fernandez",
+        "p2": "Pavel Lagutin",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.16073194605154262,
+            "dynamic_candidate_probability": 0.14232844607903708
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.16073194605154262,
+            "dynamic_candidate_probability": 0.14232844607903708
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.43704715028080654,
+            "dynamic_candidate_probability": 0.4179585979075129
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187075",
+        "scheduled_time": "2026-09-06T12:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Carlos Sanchez Jover",
+        "p2": "Sergi Fita Juan",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.1529415214276112,
+            "dynamic_candidate_probability": 0.10988259548081059
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.1529415214276112,
+            "dynamic_candidate_probability": 0.10988259548081059
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4257860609195852,
+            "dynamic_candidate_probability": 0.38048554952356095
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187088",
+        "scheduled_time": "2026-09-06T12:30:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Jonas Gundacker",
+        "p2": "Andres Martin",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.18303664163971248,
+            "dynamic_candidate_probability": 0.14844537385600723
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.18303664163971248,
+            "dynamic_candidate_probability": 0.14844537385600723
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.463725018231936,
+            "dynamic_candidate_probability": 0.4296838875526028
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187077",
+        "scheduled_time": "2026-09-06T14:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Pedro Vives Marcos",
+        "p2": "Imanol Lopez Morillo",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17802560576208223,
+            "dynamic_candidate_probability": 0.16094783792892994
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17802560576208223,
+            "dynamic_candidate_probability": 0.16094783792892994
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.46062099518501737,
+            "dynamic_candidate_probability": 0.4435778010003444
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187078",
+        "scheduled_time": "2026-09-06T14:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Thiago Cigarran",
+        "p2": "Tiago Pereira",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.17376181016499653,
+            "dynamic_candidate_probability": 0.15079601616393173
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.17376181016499653,
+            "dynamic_candidate_probability": 0.15079601616393173
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4527058226713371,
+            "dynamic_candidate_probability": 0.4300600319825843
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187052",
+        "scheduled_time": "2026-09-06T15:00:00+00:00",
+        "captured_at": "2026-09-05T20:34:17.527524+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "clay",
+        "p1": "Juan Pablo Varillas",
+        "p2": "Matej Dodig",
+        "source_model_fingerprint_sha256": "47fcbf8fb1ada55a22bd3aa8cde076a9f7e99f4d476689bfbdf376834ae4373e",
+        "market_segment_key": "challenger|clay",
+        "candidate_markets": {
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.21802651265475664,
+            "dynamic_candidate_probability": 0.19480380160538266
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.21802651265475664,
+            "dynamic_candidate_probability": 0.19480380160538266
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.5147409685150648,
+            "dynamic_candidate_probability": 0.49271947434897634
+          }
+        },
+        "settled": false,
+        "actual": null
+      }
+    ]
   },
   "snapshots": [
     {
@@ -846,8 +1975,14 @@
         "first_set_over_9.5": 0.5458428047569426,
         "first_set_over_10.5": 0.2819330566574966
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T20:34:17.527524+00:00"
     },
     {
       "match_id": "186714",
@@ -902,8 +2037,14 @@
         "first_set_over_9.5": 0.5608290801476105,
         "first_set_over_10.5": 0.2929360183126779
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": true,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": true
+      },
+      "settled_at": "2026-09-05T20:34:17.527524+00:00"
     },
     {
       "match_id": "186581",
@@ -1156,6 +2297,456 @@
       "actual": null
     },
     {
+      "match_id": "187079",
+      "scheduled_time": "2026-09-06T08:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Kai Wehnelt",
+      "p2": "Mika Brunold",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.20274943864202982,
+        "first_set_over_8.5": 0.8134726055991106,
+        "first_set_over_9.5": 0.5787827796092373,
+        "first_set_over_10.5": 0.3069453401852701
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17851793066723867,
+        "first_set_over_8.5": 0.786089857595624,
+        "first_set_over_9.5": 0.5537659399552152,
+        "first_set_over_10.5": 0.2876048028288531
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187066",
+      "scheduled_time": "2026-09-06T09:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Georgii Kravchenko",
+      "p2": "Yanaki Milev",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17195698518909425,
+        "first_set_over_8.5": 0.7756252043209623,
+        "first_set_over_9.5": 0.5431758024405104,
+        "first_set_over_10.5": 0.2801761168191359
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16174182847976615,
+        "first_set_over_8.5": 0.7638193860141175,
+        "first_set_over_9.5": 0.5339520677115516,
+        "first_set_over_10.5": 0.2735402484669134
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187068",
+      "scheduled_time": "2026-09-06T09:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Oriol Roca Batalla",
+      "p2": "Iliyan Radulov",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16655958843554458,
+        "first_set_over_8.5": 0.7625354500945308,
+        "first_set_over_9.5": 0.5278746000443167,
+        "first_set_over_10.5": 0.2698134452060865
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16002856837185844,
+        "first_set_over_8.5": 0.7582726320380754,
+        "first_set_over_9.5": 0.5272348355532553,
+        "first_set_over_10.5": 0.26908884605729577
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187043",
+      "scheduled_time": "2026-09-06T09:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Manas Dhamne",
+      "p2": "William Rejchtman Vinciguerra",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.15617381400667601,
+        "first_set_over_8.5": 0.7545508968831303,
+        "first_set_over_9.5": 0.5250787295136841,
+        "first_set_over_10.5": 0.26753890004879544
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15242808189935703,
+        "first_set_over_8.5": 0.7511671871618507,
+        "first_set_over_9.5": 0.5233471541347938,
+        "first_set_over_10.5": 0.2662950726132682
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187045",
+      "scheduled_time": "2026-09-06T09:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Oskari Paldanius",
+      "p2": "Nicolas Tepmahc",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16716919764387195,
+        "first_set_over_8.5": 0.7717504739199667,
+        "first_set_over_9.5": 0.5412128587433481,
+        "first_set_over_10.5": 0.2785619556219149
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15841064070576993,
+        "first_set_over_8.5": 0.760531477261158,
+        "first_set_over_9.5": 0.5318806524832013,
+        "first_set_over_10.5": 0.2720394006883887
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187083",
+      "scheduled_time": "2026-09-06T09:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Ivan Gakhov",
+      "p2": "Oleg Prihodko",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17988096090782316,
+        "first_set_over_8.5": 0.7851283578270339,
+        "first_set_over_9.5": 0.5513296590567321,
+        "first_set_over_10.5": 0.2861712600059842
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1663659512865862,
+        "first_set_over_8.5": 0.7696664998453184,
+        "first_set_over_9.5": 0.5387896552234085,
+        "first_set_over_10.5": 0.2769398570731382
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187084",
+      "scheduled_time": "2026-09-06T09:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Niels Visker",
+      "p2": "Daniel Siniakov",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2141459982571262,
+        "first_set_over_8.5": 0.8233528911646752,
+        "first_set_over_9.5": 0.5875455134016063,
+        "first_set_over_10.5": 0.3147644976924234
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1850100904391595,
+        "first_set_over_8.5": 0.792840953495065,
+        "first_set_over_9.5": 0.5591924896100492,
+        "first_set_over_10.5": 0.2918077438812638
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186936",
+      "scheduled_time": "2026-09-06T09:55:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Hugo Dellien",
+      "p2": "Facundo Mena",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16845776475939023,
+        "first_set_over_8.5": 0.7729445206926591,
+        "first_set_over_9.5": 0.5419566036446064,
+        "first_set_over_10.5": 0.2791303460164227
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1592793326483954,
+        "first_set_over_8.5": 0.7614606782813909,
+        "first_set_over_9.5": 0.5325210859582219,
+        "first_set_over_10.5": 0.2724934682687141
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187071",
+      "scheduled_time": "2026-09-06T10:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Sergi Perez Contri",
+      "p2": "Alexander Ritschard",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17410653057228828,
+        "first_set_over_8.5": 0.774382403826296,
+        "first_set_over_9.5": 0.5395584719032839,
+        "first_set_over_10.5": 0.27799221220666875
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16390222540408494,
+        "first_set_over_8.5": 0.7645334491364387,
+        "first_set_over_9.5": 0.53322208939112,
+        "first_set_over_10.5": 0.2731773422290391
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187048",
+      "scheduled_time": "2026-09-06T11:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Amit Vales",
+      "p2": "Mathieu Scaglia",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18570812841519407,
+        "first_set_over_8.5": 0.7950257367905335,
+        "first_set_over_9.5": 0.5619629420950122,
+        "first_set_over_10.5": 0.2936678173067553
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16897660206433024,
+        "first_set_over_8.5": 0.7745384023319337,
+        "first_set_over_9.5": 0.5438925407879815,
+        "first_set_over_10.5": 0.2804197444478947
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187086",
+      "scheduled_time": "2026-09-06T11:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Svyatoslav Gulin",
+      "p2": "Rudolf Molleker",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22843387024474912,
+        "first_set_over_8.5": 0.8393922032829102,
+        "first_set_over_9.5": 0.6049599938469963,
+        "first_set_over_10.5": 0.3289495410228943
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.19200095270101708,
+        "first_set_over_8.5": 0.8022256219784882,
+        "first_set_over_9.5": 0.5685132373209629,
+        "first_set_over_10.5": 0.29868964826052313
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187087",
+      "scheduled_time": "2026-09-06T11:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Henry Bernet",
+      "p2": "Luca Wiedenmann",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17942846127283352,
+        "first_set_over_8.5": 0.7766979916935843,
+        "first_set_over_9.5": 0.5387323134422307,
+        "first_set_over_10.5": 0.277948159212282
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1678762885555402,
+        "first_set_over_8.5": 0.7671423112698765,
+        "first_set_over_9.5": 0.5337683811159186,
+        "first_set_over_10.5": 0.2737603598276946
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187073",
+      "scheduled_time": "2026-09-06T12:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Lorenzo Carboni",
+      "p2": "Gerard Campana Lee",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1599792840146712,
+        "first_set_over_8.5": 0.7526085614816682,
+        "first_set_over_9.5": 0.5187024347776115,
+        "first_set_over_10.5": 0.26347309948773273
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15641002427017323,
+        "first_set_over_8.5": 0.7528357459976474,
+        "first_set_over_9.5": 0.5223581082174014,
+        "first_set_over_10.5": 0.2657720346330332
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187074",
+      "scheduled_time": "2026-09-06T12:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Mario Gonzalez Fernandez",
+      "p2": "Pavel Lagutin",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16073194605154262,
+        "first_set_over_8.5": 0.7565110976201193,
+        "first_set_over_9.5": 0.5239689253688096,
+        "first_set_over_10.5": 0.2669754667505153
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15618230914562375,
+        "first_set_over_8.5": 0.7541030396241075,
+        "first_set_over_9.5": 0.5244183332873378,
+        "first_set_over_10.5": 0.2671092935276472
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187075",
+      "scheduled_time": "2026-09-06T12:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Carlos Sanchez Jover",
+      "p2": "Sergi Fita Juan",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1529415214276112,
+        "first_set_over_8.5": 0.7445770107138738,
+        "first_set_over_9.5": 0.5132491424779656,
+        "first_set_over_10.5": 0.25971285072036066
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15175986901788888,
+        "first_set_over_8.5": 0.7474652533365045,
+        "first_set_over_9.5": 0.5185938610937839,
+        "first_set_over_10.5": 0.2631928528935011
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187088",
+      "scheduled_time": "2026-09-06T12:30:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Jonas Gundacker",
+      "p2": "Andres Martin",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18303664163971248,
+        "first_set_over_8.5": 0.7916372783760227,
+        "first_set_over_9.5": 0.5587736547924482,
+        "first_set_over_10.5": 0.29130692755035364
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16752414206359023,
+        "first_set_over_8.5": 0.7725636184228726,
+        "first_set_over_9.5": 0.5421257874312049,
+        "first_set_over_10.5": 0.2791764225789645
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187077",
+      "scheduled_time": "2026-09-06T14:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Pedro Vives Marcos",
+      "p2": "Imanol Lopez Morillo",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17802560576208223,
+        "first_set_over_8.5": 0.7818995084581087,
+        "first_set_over_9.5": 0.5478680302683455,
+        "first_set_over_10.5": 0.28374649408959474
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1655331062573724,
+        "first_set_over_8.5": 0.7680815598299358,
+        "first_set_over_9.5": 0.5371257088544075,
+        "first_set_over_10.5": 0.2758088613001894
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187078",
+      "scheduled_time": "2026-09-06T14:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Thiago Cigarran",
+      "p2": "Tiago Pereira",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17376181016499653,
+        "first_set_over_8.5": 0.7776516606318903,
+        "first_set_over_9.5": 0.5447863963630365,
+        "first_set_over_10.5": 0.2813659183431412
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16284445303740955,
+        "first_set_over_8.5": 0.765137546141879,
+        "first_set_over_9.5": 0.5349820817450573,
+        "first_set_over_10.5": 0.27426580656729715
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
       "match_id": "186782",
       "scheduled_time": "2026-09-06T15:00:00+00:00",
       "captured_at": "2026-09-05T10:36:39.298754+00:00",
@@ -1251,6 +2842,31 @@
         "first_set_over_8.5": 0.8080279326863495,
         "first_set_over_9.5": 0.5735868312944219,
         "first_set_over_10.5": 0.30280053885153857
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187052",
+      "scheduled_time": "2026-09-06T15:00:00+00:00",
+      "captured_at": "2026-09-05T20:34:17.527524+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Juan Pablo Varillas",
+      "p2": "Matej Dodig",
+      "source_model_fingerprint_sha256": "52079d1d5d349dc081a48954fa6807ab44e8ff1bf3ac53382e0642f2bd04051a",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21802651265475664,
+        "first_set_over_8.5": 0.8294703668304653,
+        "first_set_over_9.5": 0.5947158946574811,
+        "first_set_over_10.5": 0.3200553487116488
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18658414120348632,
+        "first_set_over_8.5": 0.7959324059441406,
+        "first_set_over_9.5": 0.5627164957780136,
+        "first_set_over_10.5": 0.29425910958344736
       },
       "settled": false,
       "actual": null
