@@ -121,3 +121,44 @@ def test_player_dna_dynamic_ui_keeps_profile_reference_as_benchmark_and_reports_
     assert "current_dynamic_candidate_market_slots" in js
     assert "current_rows_with_dynamic_candidates" in js
     assert "zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE" in js
+
+
+
+def test_player_dna_shadow_ui_exposes_prospective_trajectory_evidence_without_verdict():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+
+    assert "trajectory_evidence" in js
+    assert "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY" in js
+    assert "ZBIERAMY TRAJECTORY" in js
+    assert "checkpoint_neutral_start_server" in js
+    assert "primary_storyline_match_score_conditioned_on_observed_first_server" in js
+    assert "first_set_complete_path_conditioned_on_observed_first_server" in js
+    assert "match_set_sequence_conditioned_on_observed_first_server" in js
+    assert "full_match_game_path_conditioned_on_observed_first_server" in js
+    assert "Performance verdict" in js
+    assert "najpierw czysta próbka" in js
+    assert "Nie ustawiamy jeszcze arbitralnego progu skuteczności" in js
+    assert "Pierwszy serwujący jest używany do oceny ścieżek dopiero po meczu" in js
+    assert "checkpointy 2/4/6 pozostają neutralne przed startem" in js
+    assert ".pds-trajectory-evidence" in css
+    assert ".pds-trajectory-evidence-row" in css
+
+
+def test_player_dna_trajectory_evidence_ui_reports_ranked_path_metrics_and_integrity():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "Po 2 gemach" in js
+    assert "Po 4 gemach" in js
+    assert "Po 6 gemach" in js
+    assert "Rodzina wyniku meczu" in js
+    assert "Pełna ścieżka 1. seta" in js
+    assert "Sekwencja wyników setów" in js
+    assert "Pełna ścieżka meczu" in js
+    assert "TOP1" in js
+    assert "TOP3" in js
+    assert "TOP8" in js
+    assert "TOP12" in js
+    assert "Ledger integrity" in js
+    assert "rewritten_predictions" in js
+    assert "zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE" in js
