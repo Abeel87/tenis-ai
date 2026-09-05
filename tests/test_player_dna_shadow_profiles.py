@@ -112,6 +112,8 @@ def test_current_profiles_exclude_entire_current_card_from_history():
             "surface": "hard",
             "tour": "atp",
             "best_of": 3,
+            "p1_rank": 11,
+            "p2_rank": 22,
         },
         {
             "id": "current-b",
@@ -123,6 +125,8 @@ def test_current_profiles_exclude_entire_current_card_from_history():
             "surface": "hard",
             "tour": "atp",
             "best_of": 3,
+            "p1_rank": 11,
+            "p2_rank": 33,
         },
     ]
     snapshots, summary = build_current_target_profiles(point_rows, targets)
@@ -131,6 +135,10 @@ def test_current_profiles_exclude_entire_current_card_from_history():
     assert a["overall_prior"]["matches"] == 1
     assert b["overall_prior"]["matches"] == 1
     assert a["mode"] == "SHADOW_CURRENT_AS_OF_PROFILE"
+    assert a["player_ranking"] == 11
+    assert a["opponent_ranking"] == 22
+    assert b["player_ranking"] == 11
+    assert b["opponent_ranking"] == 33
     assert b["current_card_excluded_from_history"] is True
     assert summary["excluded_current_history_matches"] == 1
 
