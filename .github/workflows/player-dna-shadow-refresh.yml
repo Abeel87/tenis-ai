@@ -213,7 +213,8 @@ jobs:
           assert current_matches > 0
           assert int(current.get('stable_id_matches') or 0) == current_matches
           assert int(current.get('valid_target_matches') or 0) == current_matches
-          assert (current.get('historical_validation') or {}).get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+          current_validation = current.get('historical_validation') or {}
+          assert current_validation.get('status') == scorer_signal.get('status')
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
 
