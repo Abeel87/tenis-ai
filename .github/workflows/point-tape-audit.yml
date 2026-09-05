@@ -597,8 +597,10 @@ jobs:
           if market_wf.get('tiebreak_policy') != 'PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH':
               raise SystemExit('Dynamic lean market walk-forward tiebreak policy drift')
           wf_policy = market_wf.get('fold_policy') or {}
-          if wf_policy.get('train_fractions') != [0.6, 0.7, 0.8]:
+          if wf_policy.get('train_fractions') != [0.55, 0.7, 0.85]:
               raise SystemExit('Dynamic lean market walk-forward train fractions drift')
+          if wf_policy.get('evaluation_fraction_windows') != [[0.55, 0.7], [0.7, 0.85], [0.85, 1.0]]:
+              raise SystemExit('Dynamic lean market walk-forward evaluation windows drift')
           for key in ('expanding_train_windows', 'evaluation_windows_disjoint', 'same_timestamp_groups_not_split'):
               if wf_policy.get(key) is not True:
                   raise SystemExit(f'Dynamic lean market walk-forward fold policy violation: {key}')
