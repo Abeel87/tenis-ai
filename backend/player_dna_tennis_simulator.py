@@ -1214,6 +1214,7 @@ def dynamic_hold_probability(
     sets: tuple[int, int],
     games: tuple[int, int],
     best_of: int,
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
 ) -> float:
     """Exact standard-game hold probability from a deterministic point callback.
 
@@ -1229,6 +1230,10 @@ def dynamic_hold_probability(
         raise ValueError("sets and games must be p1/p2 pairs")
     if any(isinstance(v, bool) or not isinstance(v, int) or v < 0 for v in (*sets, *games)):
         raise ValueError("sets and games must contain non-negative integers")
+
+    cache_key = (server, tuple(sets), tuple(games), best_of)
+    if hold_cache is not None and cache_key in hold_cache:
+        return float(hold_cache[cache_key])
 
     def point(server_points: str, receiver_points: str) -> float:
         return _clamp_probability(
@@ -1280,7 +1285,55 @@ def dynamic_hold_probability(
         memo[key] = value
         return value
 
-    return solve(0, 0)
+    result = solve(0, 0)
+    if hold_cache is not None:
+        hold_cache[cache_key] = result
+    return result
+
+
+
+def dynamic_score_distribution_after_games(
+    point_probability: PointProbabilityCallback,
+    *,
+    games: int,
+    start_server: int,
+    sets_before: tuple[int, int],
+    best_of: int,
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
+) -> dict[str, float]:
+    """Exact opening-game score distribution under a state-dependent point callback."""
+    if games <= 0 or games > 6:
+        raise ValueError("games must be between 1 and 6")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+
+    states: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
+    for _ in range(games):
+        nxt: dict[tuple[int, int, int], float] = defaultdict(float)
+        for (g1, g2, server), mass in states.items():
+            hold = dynamic_hold_probability(
+                point_probability,
+                server=server,
+                sets=sets_before,
+                games=(g1, g2),
+                best_of=best_of,
+                hold_cache=hold_cache,
+            )
+            p1_game = hold if server == 1 else (1.0 - hold)
+            next_server = _other(server)
+            nxt[(g1 + 1, g2, next_server)] += mass * p1_game
+            nxt[(g1, g2 + 1, next_server)] += mass * (1.0 - p1_game)
+        states = nxt
+
+    out: dict[str, float] = defaultdict(float)
+    for (g1, g2, _server), mass in states.items():
+        out[f"{g1}:{g2}"] += mass
+    total = sum(out.values())
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-12):
+        raise AssertionError(f"dynamic checkpoint probability mass drift: {total}")
+    return dict(sorted(out.items()))
 
 
 def dynamic_set_outcomes(
@@ -1290,6 +1343,8 @@ def dynamic_set_outcomes(
     start_server: int,
     sets_before: tuple[int, int],
     best_of: int,
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
+    set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] | None = None,
 ) -> list[dict[str, Any]]:
     """Exact set DP using state-dependent standard-game point probabilities.
 
@@ -1308,6 +1363,10 @@ def dynamic_set_outcomes(
         for v in sets_before
     ):
         raise ValueError("sets_before must contain non-negative integers")
+
+    set_cache_key = (start_server, tuple(sets_before), best_of)
+    if set_cache is not None and set_cache_key in set_cache:
+        return set_cache[set_cache_key]
 
     live: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
     outcomes: list[dict[str, Any]] = []
@@ -1367,6 +1426,7 @@ def dynamic_set_outcomes(
                 sets=sets_before,
                 games=(g1, g2),
                 best_of=best_of,
+                hold_cache=hold_cache,
             )
             p1_game = server_hold if server == 1 else (1.0 - server_hold)
             next_server = _other(server)
@@ -1378,6 +1438,8 @@ def dynamic_set_outcomes(
     total = sum(float(row["probability"]) for row in outcomes)
     if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-10):
         raise AssertionError(f"dynamic set probability mass drift: {total}")
+    if set_cache is not None:
+        set_cache[set_cache_key] = outcomes
     return outcomes
 
 
@@ -1387,6 +1449,8 @@ def dynamic_match_outcomes(
     *,
     best_of: int,
     start_server: int,
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
+    set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] | None = None,
 ) -> dict[str, float]:
     """Exact match-score DP over the dynamic SHADOW set primitive."""
     if best_of not in (3, 5):
@@ -1411,6 +1475,8 @@ def dynamic_match_outcomes(
                 start_server=server,
                 sets_before=(s1, s2),
                 best_of=best_of,
+                hold_cache=hold_cache,
+                set_cache=set_cache,
             ):
                 if int(set_row["winner"]) == 1:
                     ns1, ns2 = s1 + 1, s2

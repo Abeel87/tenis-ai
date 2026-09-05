@@ -26,24 +26,48 @@ import pandas as pd
 
 try:
     from backend.player_dna_point_scorer import (
+        LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
+        RANK_NUMERIC,
         _cohort,
         _fit_logistic_newton,
         _predict_logistic,
         build_feature_rows,
+        lean_state_features_from_simulation_state,
+        predict_logistic_row,
         split_chronological_by_match,
     )
-    from backend.player_dna_tennis_simulator import SET_SHAPE_FAMILIES, set_shape_family, simulate_match
+    from backend.player_dna_tennis_simulator import (
+        SET_SHAPE_FAMILIES,
+        dynamic_match_outcomes,
+        dynamic_score_distribution_after_games,
+        dynamic_set_outcomes,
+        neutral_tiebreak_win_probability,
+        set_shape_family,
+        simulate_match,
+    )
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
+        LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
+        RANK_NUMERIC,
         _cohort,
         _fit_logistic_newton,
         _predict_logistic,
         build_feature_rows,
+        lean_state_features_from_simulation_state,
+        predict_logistic_row,
         split_chronological_by_match,
     )
-    from player_dna_tennis_simulator import SET_SHAPE_FAMILIES, set_shape_family, simulate_match
+    from player_dna_tennis_simulator import (
+        SET_SHAPE_FAMILIES,
+        dynamic_match_outcomes,
+        dynamic_score_distribution_after_games,
+        dynamic_set_outcomes,
+        neutral_tiebreak_win_probability,
+        set_shape_family,
+        simulate_match,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -342,6 +366,482 @@ def _predict_match_simulations(
         counts["simulated"] += 1
 
     return predictions, dict(counts)
+
+
+
+def _finite_number(value: Any) -> float | None:
+    try:
+        out = float(value)
+    except (TypeError, ValueError):
+        return None
+    return out if math.isfinite(out) else None
+
+
+def _rank_context_by_match(
+    point_rows: Iterable[dict[str, Any]],
+) -> tuple[dict[str, dict[str, float | None]], dict[str, int]]:
+    contexts: dict[str, dict[str, float | None]] = {}
+    counts = Counter()
+    for row in point_rows:
+        match_id = str(row.get("match_id") or "").strip()
+        server = row.get("server")
+        if not match_id or server not in (1, 2):
+            continue
+        server_rank = _finite_number(row.get("server_ranking"))
+        receiver_rank = _finite_number(row.get("receiver_ranking"))
+        if server == 1:
+            candidate = {"p1_rank": server_rank, "p2_rank": receiver_rank}
+        else:
+            candidate = {"p1_rank": receiver_rank, "p2_rank": server_rank}
+
+        previous = contexts.get(match_id)
+        if previous is None:
+            contexts[match_id] = candidate
+            counts["matches_with_rank_context"] += 1
+            continue
+
+        for key in ("p1_rank", "p2_rank"):
+            if previous.get(key) is None and candidate.get(key) is not None:
+                previous[key] = candidate[key]
+            elif (
+                previous.get(key) is not None
+                and candidate.get(key) is not None
+                and abs(float(previous[key]) - float(candidate[key])) > 1e-9
+            ):
+                counts["rank_context_conflicts"] += 1
+    return contexts, dict(counts)
+
+
+def _serve_feature_with_rank(
+    server: dict[str, Any],
+    receiver: dict[str, Any],
+    server_rank: float | None,
+    receiver_rank: float | None,
+) -> dict[str, Any]:
+    return {
+        **_serve_feature(server, receiver),
+        "server_rank": server_rank,
+        "receiver_rank": receiver_rank,
+    }
+
+
+def _dynamic_candidate_simulation(
+    p1: dict[str, Any],
+    p2: dict[str, Any],
+    *,
+    p1_rank: float | None,
+    p2_rank: float | None,
+    lean_model: dict[str, Any],
+    profile_p1_serve: float,
+    profile_p2_serve: float,
+    best_of: int,
+) -> dict[str, Any]:
+    p1_base = _serve_feature_with_rank(p1, p2, p1_rank, p2_rank)
+    p2_base = _serve_feature_with_rank(p2, p1, p2_rank, p1_rank)
+    cache: dict[tuple[Any, ...], float] = {}
+
+    def point_probability(state: dict[str, Any]) -> float:
+        key = (
+            state.get("server"),
+            tuple(state.get("sets") or ()),
+            tuple(state.get("games") or ()),
+            state.get("server_points"),
+            state.get("receiver_points"),
+        )
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        base = p1_base if state.get("server") == 1 else p2_base
+        row = {
+            **base,
+            **lean_state_features_from_simulation_state(state),
+        }
+        probability = predict_logistic_row(lean_model, row)
+        cache[key] = probability
+        return probability
+
+    p1_tiebreak = neutral_tiebreak_win_probability(
+        profile_p1_serve,
+        profile_p2_serve,
+    )
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] = {}
+    set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] = {}
+
+    def tiebreak_probability(_state: dict[str, Any]) -> float:
+        return p1_tiebreak
+
+    first_set_exact: dict[str, float] = defaultdict(float)
+    first_set_games: dict[int, float] = defaultdict(float)
+    p1_set = 0.0
+    tiebreak = 0.0
+    for start_server in (1, 2):
+        for row in dynamic_set_outcomes(
+            point_probability,
+            tiebreak_probability,
+            start_server=start_server,
+            sets_before=(0, 0),
+            best_of=best_of,
+            hold_cache=hold_cache,
+            set_cache=set_cache,
+        ):
+            probability = 0.5 * float(row["probability"])
+            first_set_exact[str(row["score"])] += probability
+            first_set_games[int(row["games"])] += probability
+            if int(row["winner"]) == 1:
+                p1_set += probability
+            if bool(row["tiebreak"]):
+                tiebreak += probability
+
+    early = {}
+    for games, label in ((2, "1:1"), (4, "2:2"), (6, "3:3")):
+        target = f"{games // 2}:{games // 2}"
+        probability = 0.0
+        for start_server in (1, 2):
+            distribution = dynamic_score_distribution_after_games(
+                point_probability,
+                games=games,
+                start_server=start_server,
+                sets_before=(0, 0),
+                best_of=best_of,
+                hold_cache=hold_cache,
+            )
+            probability += 0.5 * float(distribution.get(target, 0.0))
+        early[label] = probability
+
+    exact_match: dict[str, float] = defaultdict(float)
+    for start_server in (1, 2):
+        for score, probability in dynamic_match_outcomes(
+            point_probability,
+            tiebreak_probability,
+            best_of=best_of,
+            start_server=start_server,
+            hold_cache=hold_cache,
+            set_cache=set_cache,
+        ).items():
+            exact_match[score] += 0.5 * float(probability)
+
+    needed = best_of // 2 + 1
+    p1_match = sum(
+        probability
+        for score, probability in exact_match.items()
+        if int(score.split(":")[0]) == needed
+    )
+    total_sets: dict[str, float] = defaultdict(float)
+    for score, probability in exact_match.items():
+        a, b = (int(x) for x in score.split(":"))
+        total_sets[str(a + b)] += probability
+
+    over_lines = {}
+    for line in (8.5, 9.5, 10.5, 11.5, 12.5):
+        over_lines[str(line)] = sum(
+            probability
+            for games, probability in first_set_games.items()
+            if games > line
+        )
+
+    return {
+        "mode": "SHADOW_DYNAMIC_LEAN_STATEFUL_BACKTEST_CANDIDATE",
+        "validation_status": "HISTORICAL_BACKTEST_CANDIDATE_ONLY",
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "runtime_scoring_enabled": False,
+        "dynamic_standard_game_state": True,
+        "tiebreak_policy": "PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH",
+        "profile_point_reference": {
+            "p1_serve_point_win": float(profile_p1_serve),
+            "p2_serve_point_win": float(profile_p2_serve),
+        },
+        "dynamic_callback_unique_states": len(cache),
+        "dynamic_hold_cache_states": len(hold_cache),
+        "dynamic_set_cache_states": len(set_cache),
+        "early_equal_score": early,
+        "first_set": {
+            "p1_win": p1_set,
+            "p2_win": 1.0 - p1_set,
+            "tiebreak": tiebreak,
+            "exact_score": dict(sorted(first_set_exact.items())),
+            "games_distribution": {
+                str(k): v for k, v in sorted(first_set_games.items())
+            },
+            "over": over_lines,
+        },
+        "match": {
+            "best_of": best_of,
+            "p1_win": p1_match,
+            "p2_win": 1.0 - p1_match,
+            "exact_score": dict(sorted(exact_match.items())),
+            "total_sets": dict(sorted(total_sets.items())),
+        },
+    }
+
+
+def _predict_dynamic_lean_simulations(
+    holdout_ids: set[str],
+    pairs: dict[str, dict[str, dict[str, Any]]],
+    profile_predictions: dict[str, dict[str, Any]],
+    rank_context: dict[str, dict[str, float | None]],
+    lean_model: dict[str, Any],
+) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
+    predictions: dict[str, dict[str, Any]] = {}
+    counts = Counter()
+    if lean_model.get("converged") is not True:
+        counts["lean_model_not_converged"] = 1
+        return predictions, dict(counts)
+
+    for match_id in sorted(holdout_ids):
+        profile_prediction = profile_predictions.get(match_id)
+        pair = pairs.get(match_id) or {}
+        p1 = pair.get("p1")
+        p2 = pair.get("p2")
+        if not isinstance(profile_prediction, dict):
+            counts["missing_profile_reference_prediction"] += 1
+            continue
+        if not isinstance(p1, dict) or not isinstance(p2, dict):
+            counts["missing_profile_pair"] += 1
+            continue
+
+        ranks = rank_context.get(match_id) or {}
+        fmt = str(p1.get("target_format") or "")
+        best_of = 5 if fmt == "BO5" else 3
+        simulation = _dynamic_candidate_simulation(
+            p1,
+            p2,
+            p1_rank=ranks.get("p1_rank"),
+            p2_rank=ranks.get("p2_rank"),
+            lean_model=lean_model,
+            profile_p1_serve=float(profile_prediction["p1_serve_point"]),
+            profile_p2_serve=float(profile_prediction["p2_serve_point"]),
+            best_of=best_of,
+        )
+        predictions[match_id] = {"simulation": simulation}
+        counts["simulated"] += 1
+        counts["dynamic_callback_unique_states"] += int(
+            simulation.get("dynamic_callback_unique_states") or 0
+        )
+    return predictions, dict(counts)
+
+
+def binary_head_to_head(
+    records: list[tuple[float, float, int]],
+) -> dict[str, Any]:
+    if not records:
+        return {"n": 0, "status": "NO_DATA"}
+    reference = np.asarray([_clip(a) for a, _b, _y in records], dtype=float)
+    candidate = np.asarray([_clip(b) for _a, b, _y in records], dtype=float)
+    y = np.asarray([int(v) for _a, _b, v in records], dtype=float)
+    reference_brier = float(np.mean(np.square(reference - y)))
+    candidate_brier = float(np.mean(np.square(candidate - y)))
+    reference_loss = float(
+        np.mean(-(y * np.log(reference) + (1.0 - y) * np.log(1.0 - reference)))
+    )
+    candidate_loss = float(
+        np.mean(-(y * np.log(candidate) + (1.0 - y) * np.log(1.0 - candidate)))
+    )
+    return {
+        "n": int(len(y)),
+        "reference_profile_only_brier": round(reference_brier, 6),
+        "dynamic_lean_brier": round(candidate_brier, 6),
+        "brier_gain_vs_profile_only": round(reference_brier - candidate_brier, 6),
+        "reference_profile_only_log_loss": round(reference_loss, 6),
+        "dynamic_lean_log_loss": round(candidate_loss, 6),
+        "log_loss_gain_vs_profile_only": round(reference_loss - candidate_loss, 6),
+        "dynamic_better_on_brier_and_log_loss": bool(
+            candidate_brier < reference_brier and candidate_loss < reference_loss
+        ),
+        "status": "EVALUATED",
+    }
+
+
+def categorical_head_to_head(
+    records: list[tuple[dict[str, float], dict[str, float], str]],
+) -> dict[str, Any]:
+    if not records:
+        return {"n": 0, "status": "NO_DATA"}
+    reference_brier = []
+    candidate_brier = []
+    reference_nll = []
+    candidate_nll = []
+    reference_top1 = 0
+    candidate_top1 = 0
+
+    for reference, candidate, actual in records:
+        keys = sorted(set(reference) | set(candidate) | {actual})
+        ref = {key: max(0.0, float(reference.get(key, 0.0))) for key in keys}
+        cand = {key: max(0.0, float(candidate.get(key, 0.0))) for key in keys}
+        ref_mass = sum(ref.values())
+        cand_mass = sum(cand.values())
+        if ref_mass <= 0.0 or cand_mass <= 0.0:
+            continue
+        ref = {key: value / ref_mass for key, value in ref.items()}
+        cand = {key: value / cand_mass for key, value in cand.items()}
+        reference_brier.append(
+            sum((ref[key] - (1.0 if key == actual else 0.0)) ** 2 for key in keys)
+        )
+        candidate_brier.append(
+            sum((cand[key] - (1.0 if key == actual else 0.0)) ** 2 for key in keys)
+        )
+        reference_nll.append(-math.log(_clip(ref.get(actual, 0.0))))
+        candidate_nll.append(-math.log(_clip(cand.get(actual, 0.0))))
+        reference_top1 += int(max(ref, key=ref.get) == actual)
+        candidate_top1 += int(max(cand, key=cand.get) == actual)
+
+    n = len(reference_brier)
+    if n == 0:
+        return {"n": 0, "status": "NO_VALID_PROBABILITY_MASS"}
+    rb = sum(reference_brier) / n
+    cb = sum(candidate_brier) / n
+    rn = sum(reference_nll) / n
+    cn = sum(candidate_nll) / n
+    return {
+        "n": n,
+        "reference_profile_only_multiclass_brier": round(rb, 6),
+        "dynamic_lean_multiclass_brier": round(cb, 6),
+        "brier_gain_vs_profile_only": round(rb - cb, 6),
+        "reference_profile_only_negative_log_likelihood": round(rn, 6),
+        "dynamic_lean_negative_log_likelihood": round(cn, 6),
+        "nll_gain_vs_profile_only": round(rn - cn, 6),
+        "reference_profile_only_top1_accuracy": round(reference_top1 / n, 6),
+        "dynamic_lean_top1_accuracy": round(candidate_top1 / n, 6),
+        "top1_accuracy_delta_pp": round(
+            ((candidate_top1 - reference_top1) / n) * 100.0,
+            3,
+        ),
+        "status": "EVALUATED",
+    }
+
+
+def _dynamic_lean_comparison(
+    profile_predictions: dict[str, dict[str, Any]],
+    dynamic_predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    *,
+    prediction_counts: dict[str, int],
+    rank_counts: dict[str, int],
+    lean_model: dict[str, Any],
+) -> dict[str, Any]:
+    matched_ids = sorted(
+        set(profile_predictions) & set(dynamic_predictions) & set(labels)
+    )
+    binary = {}
+    for market in BINARY_MARKETS:
+        records = []
+        for match_id in matched_ids:
+            actual = labels[match_id].get(market)
+            if not isinstance(actual, bool):
+                continue
+            reference_probability = _binary_probability(
+                profile_predictions[match_id]["simulation"],
+                market,
+            )
+            candidate_probability = _binary_probability(
+                dynamic_predictions[match_id]["simulation"],
+                market,
+            )
+            if reference_probability is None or candidate_probability is None:
+                continue
+            records.append(
+                (
+                    float(reference_probability),
+                    float(candidate_probability),
+                    int(actual),
+                )
+            )
+        binary[market] = binary_head_to_head(records)
+
+    categorical_specs = {
+        "first_set_exact_score": ("first_set", "exact_score", "first_set_exact_score"),
+        "match_exact_score": ("match", "exact_score", "match_exact_score"),
+        "total_sets": ("match", "total_sets", "total_sets"),
+    }
+    categorical = {}
+    for name, (section, field, label_name) in categorical_specs.items():
+        records = []
+        for match_id in matched_ids:
+            actual = labels[match_id].get(label_name)
+            if not isinstance(actual, str) or not actual:
+                continue
+            reference = (
+                (profile_predictions[match_id]["simulation"].get(section) or {}).get(field)
+                or {}
+            )
+            candidate = (
+                (dynamic_predictions[match_id]["simulation"].get(section) or {}).get(field)
+                or {}
+            )
+            records.append((reference, candidate, actual))
+        categorical[name] = categorical_head_to_head(records)
+
+    evaluated_binary = [
+        metrics
+        for metrics in binary.values()
+        if int(metrics.get("n") or 0) >= 100
+    ]
+    positive_brier = sum(
+        1
+        for metrics in evaluated_binary
+        if float(metrics.get("brier_gain_vs_profile_only") or 0.0) > 0.0
+    )
+    positive_both = sum(
+        1
+        for metrics in evaluated_binary
+        if metrics.get("dynamic_better_on_brier_and_log_loss") is True
+    )
+    primary_names = ("match_p1_win", "first_set_p1_win")
+    primary_ready = all(int(binary[name].get("n") or 0) >= 100 for name in primary_names)
+    primary_positive = primary_ready and all(
+        binary[name].get("dynamic_better_on_brier_and_log_loss") is True
+        for name in primary_names
+    )
+    enough = len(matched_ids) >= 200 and len(evaluated_binary) >= 6
+    if not enough:
+        signal = "INSUFFICIENT_DYNAMIC_LEAN_MATCH_LEVEL_SAMPLE"
+    elif (
+        primary_positive
+        and positive_brier >= math.ceil(0.6 * len(evaluated_binary))
+    ):
+        signal = "DYNAMIC_LEAN_STATEFUL_E2E_PROMISING_SHADOW"
+    else:
+        signal = "DYNAMIC_LEAN_STATEFUL_E2E_MIXED_OR_NO_GAIN"
+
+    return {
+        "mode": "SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY",
+        "status": "BACKTEST_COMPLETE_NO_PROMOTION",
+        "signal": signal,
+        "production_influence": False,
+        "runtime_scoring_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "promotion_gate": False,
+        "feature_groups": ["profile", "rank", "point_pressure", "set_match_state"],
+        "dropped_state_groups": ["tiebreak_context", "prior_momentum"],
+        "tiebreak_policy": "PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH",
+        "tiebreak_policy_reason": (
+            "lean stateful candidate was selected without tiebreak_context; "
+            "do not invent an unvalidated dynamic tiebreak policy"
+        ),
+        "model_converged": bool(lean_model.get("converged")),
+        "matched_settled_matches": len(matched_ids),
+        "prediction_counts": prediction_counts,
+        "rank_context_counts": rank_counts,
+        "binary_markets_vs_profile_only": binary,
+        "categorical_markets_vs_profile_only": categorical,
+        "summary": {
+            "binary_markets_evaluated_ge_100": len(evaluated_binary),
+            "binary_markets_with_positive_brier_gain_vs_profile_only": positive_brier,
+            "binary_markets_better_on_brier_and_log_loss": positive_both,
+            "primary_match_and_first_set_better_on_both": primary_positive,
+        },
+        "chronology_contract": {
+            "lean_model_fit_train_partition_only": True,
+            "holdout_profiles_as_of_each_match": True,
+            "rank_metadata_is_pre_match_context": True,
+            "hypothetical_point_features_are_pre_point_only": True,
+            "outcome_labels_used_only_for_evaluation": True,
+        },
+    }
 
 
 def _clip(p: float) -> float:
@@ -1022,12 +1522,32 @@ def evaluate_backtest(
 
     train_frame = pd.DataFrame(train)
     model = _fit_logistic_newton(train_frame, list(PROFILE_NUMERIC))
+    lean_model = _fit_logistic_newton(
+        train_frame,
+        list(PROFILE_NUMERIC) + list(RANK_NUMERIC) + list(LEAN_STATE_NUMERIC),
+    )
     pairs = _snapshot_pairs(profile_rows)
     predictions, prediction_counts = _predict_match_simulations(holdout_ids, pairs, model)
+    rank_context, rank_counts = _rank_context_by_match(point_rows)
+    dynamic_predictions, dynamic_prediction_counts = _predict_dynamic_lean_simulations(
+        holdout_ids,
+        pairs,
+        predictions,
+        rank_context,
+        lean_model,
+    )
     labels, label_counts = _labels_by_match(point_rows)
 
     train_settled = {mid: labels[mid] for mid in train_ids if mid in labels}
     holdout_settled = {mid: labels[mid] for mid in predictions if mid in labels}
+    dynamic_lean_stateful = _dynamic_lean_comparison(
+        predictions,
+        dynamic_predictions,
+        labels,
+        prediction_counts=dynamic_prediction_counts,
+        rank_counts=rank_counts,
+        lean_model=lean_model,
+    )
 
     binary: dict[str, Any] = {}
     for market in BINARY_MARKETS:
@@ -1110,6 +1630,9 @@ def evaluate_backtest(
         "model_features": "PROFILE_ONLY_CURRENT_COMPATIBLE",
         "model_converged": bool(model.get("converged")),
         "model_iterations": int(model.get("iterations") or 0),
+        "dynamic_lean_model_converged": bool(lean_model.get("converged")),
+        "dynamic_lean_model_iterations": int(lean_model.get("iterations") or 0),
+        "dynamic_lean_stateful_candidate": dynamic_lean_stateful,
         "split": split,
         "chronology_policy": {
             "model_parameters_fit_train_only": True,

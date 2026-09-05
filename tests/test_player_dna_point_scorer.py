@@ -14,6 +14,8 @@ from backend.player_dna_point_scorer import (
     _state_feature_lookup,
     _walk_forward_slices,
     build_feature_rows,
+    lean_state_features_from_simulation_state,
+    predict_logistic_row,
     split_chronological_by_match,
 )
 
@@ -283,6 +285,47 @@ def test_stateful_walk_forward_uses_disjoint_timestamp_windows():
         prior_test_ids |= test_ids
 
 
+def test_fast_single_row_predictor_matches_dataframe_predictor():
+    frame = pd.DataFrame([
+        {
+            "server_won": 1,
+            "surface": "hard",
+            "tour": "ATP",
+            "match_format": "BO3",
+            "server_rank": 10,
+            "receiver_rank": 30,
+        },
+        {
+            "server_won": 0,
+            "surface": "clay",
+            "tour": "ATP",
+            "match_format": "BO3",
+            "server_rank": 80,
+            "receiver_rank": 20,
+        },
+        {
+            "server_won": 1,
+            "surface": "hard",
+            "tour": "WTA",
+            "match_format": "BO3",
+            "server_rank": 15,
+            "receiver_rank": 50,
+        },
+        {
+            "server_won": 0,
+            "surface": "clay",
+            "tour": "WTA",
+            "match_format": "BO3",
+            "server_rank": 70,
+            "receiver_rank": 25,
+        },
+    ])
+    model = _fit_logistic_newton(frame, ["server_rank", "receiver_rank"])
+    expected = _predict_logistic(model, frame.iloc[[2]])[0]
+    observed = predict_logistic_row(model, frame.iloc[2].to_dict())
+    assert abs(float(expected) - observed) < 1e-12
+
+
 def test_proper_score_gains_are_positive_when_candidate_improves():
     reference = {
         "brier": 0.240,
@@ -301,6 +344,51 @@ def test_proper_score_gains_are_positive_when_candidate_improves():
         "log_loss_gain": 0.015,
     }
 
+
+
+def test_lean_simulation_adapter_matches_canonical_pre_point_state_features():
+    state = {
+        "best_of": 3,
+        "match_format": "BO3",
+        "server": 2,
+        "receiver": 1,
+        "sets": [1, 1],
+        "games": [5, 4],
+        "server_points": "40",
+        "receiver_points": "30",
+        "is_tiebreak": False,
+    }
+    features = lean_state_features_from_simulation_state(state)
+    assert list(features) == LEAN_STATE_NUMERIC
+    assert features["server_point_stage_before"] == 3
+    assert features["receiver_point_stage_before"] == 2
+    assert features["server_game_point_before"] == 1
+    assert features["break_point_against_server_before"] == 0
+    assert features["sets_completed_before"] == 2
+    assert features["set_diff_server_before"] == 0
+    assert features["current_set_games_total_before"] == 9
+    assert features["current_set_game_diff_server_before"] == -1
+    assert features["late_set_before"] == 1
+    assert features["deciding_set_before"] == 1
+
+
+def test_lean_simulation_adapter_rejects_tiebreak_state():
+    state = {
+        "best_of": 3,
+        "server": 1,
+        "receiver": 2,
+        "sets": [0, 0],
+        "games": [6, 6],
+        "server_points": "0",
+        "receiver_points": "0",
+        "is_tiebreak": True,
+    }
+    try:
+        lean_state_features_from_simulation_state(state)
+    except ValueError as exc:
+        assert "excludes tiebreak" in str(exc)
+    else:
+        raise AssertionError("tiebreak state must be rejected by lean adapter")
 
 
 def test_lean_stateful_keeps_only_ablation_supported_groups():
