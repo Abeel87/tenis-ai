@@ -1,6 +1,6 @@
 {
   "version": "v8.4C",
-  "generated_at": "2026-09-05T16:51:21.047366+00:00",
+  "generated_at": "2026-09-05T17:15:44.295124+00:00",
   "status": "ACTIVE",
   "selection_threshold": 65.0,
   "models": {
@@ -9624,16 +9624,16 @@
   "game_state_progress_v84e2": {
     "version": "v8.4E2",
     "policy": "exact_checkpoint_pbp_only_monitoring",
-    "total_tracked": 2016,
+    "total_tracked": 2019,
     "total_settled": 1077,
     "checkpoints": {
       "2": {
-        "tracked": 672,
+        "tracked": 673,
         "settled": 359,
         "hits": 209,
         "misses": 150,
         "void": 15,
-        "waiting_pbp": 298,
+        "waiting_pbp": 299,
         "accuracy": 58.2,
         "trend": {
           "version": "v8.4E2",
@@ -9820,12 +9820,12 @@
         }
       },
       "4": {
-        "tracked": 672,
+        "tracked": 673,
         "settled": 359,
         "hits": 146,
         "misses": 213,
         "void": 15,
-        "waiting_pbp": 298,
+        "waiting_pbp": 299,
         "accuracy": 40.7,
         "trend": {
           "version": "v8.4E2",
@@ -10012,12 +10012,12 @@
         }
       },
       "6": {
-        "tracked": 672,
+        "tracked": 673,
         "settled": 359,
         "hits": 110,
         "misses": 249,
         "void": 15,
-        "waiting_pbp": 298,
+        "waiting_pbp": 299,
         "accuracy": 30.6,
         "trend": {
           "version": "v8.4E2",
@@ -10617,7 +10617,7 @@
   },
   "player_model_shadow_v89": {
     "version": "v8.9",
-    "generated_at": "2026-09-05T17:03:59.648538+00:00",
+    "generated_at": "2026-09-05T17:15:47.477615+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -10790,15 +10790,15 @@
       "accuracy_delta_pp": -0.3,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 282,
-    "frozen_feature_snapshots_added": 0,
+    "current_scored_signals": 264,
+    "frozen_feature_snapshots_added": 2,
     "historical_feature_snapshots_added": 0,
     "historical_backfill_matches_skipped": 0,
     "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
   },
   "ensemble_player_learning_v891": {
     "version": "v8.9.1",
-    "generated_at": "2026-09-05T17:04:04.827233+00:00",
+    "generated_at": "2026-09-05T17:15:54.834798+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -12189,12 +12189,12 @@
       "accuracy_delta_pp": -0.1,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 282,
+    "current_scored_signals": 264,
     "note": "Ensemble + Player Learning uczy udziału Player Intelligence z historii, rynku, nawierzchni i jakości profilu. Działa wyłącznie w SHADOW i nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score."
   },
   "surface_elo_integration_v893": {
     "version": "v8.9.3",
-    "generated_at": "2026-09-05T16:51:35.173953+00:00",
+    "generated_at": "2026-09-05T17:15:58.841879+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -12206,7 +12206,7 @@
       "scale": 400.0,
       "surface_shrink_n": 12.0,
       "decay_half_life_days": 720.0,
-      "events": 20757,
+      "events": 20758,
       "players": 1678,
       "player_surface_timelines": 3018,
       "rows_with_both_surface_history": 2426
@@ -12236,11 +12236,11 @@
       },
       "catboost_player_elo": {
         "n": 568,
-        "selected_n": 274,
-        "accuracy": 74.8,
-        "brier": 0.21609,
-        "log_loss": 0.62324,
-        "avg_probability": 58.9
+        "selected_n": 277,
+        "accuracy": 75.5,
+        "brier": 0.21267,
+        "log_loss": 0.61487,
+        "avg_probability": 58.7
       },
       "ensemble_player": {
         "n": 568,
@@ -12277,12 +12277,12 @@
     },
     "gates": {
       "catboost_player_elo": {
-        "status": "watch",
+        "status": "promising",
         "production_influence": false,
         "auto_promotion": false,
-        "brier_gain": -0.00234,
-        "log_loss_gain": -0.00548,
-        "accuracy_delta_pp": -0.6
+        "brier_gain": 0.00108,
+        "log_loss_gain": 0.00289,
+        "accuracy_delta_pp": 0.1
       },
       "ensemble_player_elo": {
         "status": "watch",
