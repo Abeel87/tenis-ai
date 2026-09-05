@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 24,
-    "current_snapshot_count_before_retention": 25,
-    "preserved_snapshots": 24,
-    "new_snapshots": 1,
-    "newly_settled": 0,
+    "previous_snapshot_count": 25,
+    "current_snapshot_count_before_retention": 29,
+    "preserved_snapshots": 25,
+    "new_snapshots": 4,
+    "newly_settled": 11,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -40,60 +40,70 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 25
+    "current_snapshot_count_after_retention": 29
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 17,
-        "due_within_6h": 5,
-        "overdue_6_24h": 3,
+        "upcoming": 14,
+        "due_within_6h": 3,
+        "overdue_6_24h": 1,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
       },
       "overdue_samples": [
         {
-          "match_id": "185869",
-          "scheduled_time": "2026-09-04T12:30:00+00:00",
-          "hours_since_scheduled": 8.28,
-          "p1": "Facundo Mena",
-          "p2": "Oriol Roca Batalla"
-        },
-        {
-          "match_id": "186496",
-          "scheduled_time": "2026-09-04T12:30:00+00:00",
-          "hours_since_scheduled": 8.28,
-          "p1": "Duje Ajdukovic",
-          "p2": "Jay Clarke"
-        },
-        {
-          "match_id": "186411",
-          "scheduled_time": "2026-09-04T13:30:00+00:00",
-          "hours_since_scheduled": 7.28,
-          "p1": "Hugo Dellien",
-          "p2": "Miguel Damas"
+          "match_id": "186251",
+          "scheduled_time": "2026-09-05T00:30:00+00:00",
+          "hours_since_scheduled": 10.11,
+          "p1": "Ben Shelton",
+          "p2": "Denis Shapovalov"
         }
       ]
     },
     "settlement_latency": {
-      "n": 0,
-      "median_hours": null,
-      "p90_hours": null,
-      "max_hours": null,
+      "n": 11,
+      "median_hours": 18.111,
+      "p90_hours": 22.111,
+      "max_hours": 22.111,
       "negative_latency_count": 0,
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 8,
+      "count": 10,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
+        {
+          "match_id": "186632",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
+          "drift_minutes": 570.0
+        },
+        {
+          "match_id": "186652",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
+          "drift_minutes": 570.0
+        },
         {
           "match_id": "186711",
           "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
           "current_scheduled_time": "2026-09-05T14:00:00+00:00",
           "drift_minutes": 360.0
+        },
+        {
+          "match_id": "186631",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T20:30:00+00:00",
+          "drift_minutes": 330.0
+        },
+        {
+          "match_id": "186715",
+          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T11:00:00+00:00",
+          "drift_minutes": 180.0
         },
         {
           "match_id": "186633",
@@ -102,16 +112,16 @@
           "drift_minutes": 180.0
         },
         {
-          "match_id": "186080",
-          "frozen_scheduled_time": "2026-09-04T19:30:00+00:00",
-          "current_scheduled_time": "2026-09-04T21:30:00+00:00",
-          "drift_minutes": 120.0
+          "match_id": "186614",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
+          "drift_minutes": 180.0
         },
         {
-          "match_id": "186715",
-          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T10:00:00+00:00",
-          "drift_minutes": 120.0
+          "match_id": "186582",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
+          "drift_minutes": 180.0
         },
         {
           "match_id": "186581",
@@ -120,89 +130,77 @@
           "drift_minutes": 90.0
         },
         {
-          "match_id": "186313",
-          "frozen_scheduled_time": "2026-09-04T20:00:00+00:00",
-          "current_scheduled_time": "2026-09-04T20:50:00+00:00",
-          "drift_minutes": 50.0
-        },
-        {
           "match_id": "186583",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T15:30:00+00:00",
           "drift_minutes": 30.0
-        },
-        {
-          "match_id": "186252",
-          "frozen_scheduled_time": "2026-09-04T21:00:00+00:00",
-          "current_scheduled_time": "2026-09-04T21:10:00+00:00",
-          "drift_minutes": 10.0
         }
       ]
     }
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 0,
+      "settled": 11,
       "required": 150,
-      "remaining": 150,
+      "remaining": 139,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 0,
+        "settled": 11,
         "required": 150,
-        "remaining": 150,
+        "remaining": 139,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 0,
+        "settled": 11,
         "required": 150,
-        "remaining": 150,
+        "remaining": 139,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 0,
+        "settled": 11,
         "required": 150,
-        "remaining": 150,
+        "remaining": 139,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 0,
+        "settled": 11,
         "required": 150,
-        "remaining": 150,
+        "remaining": 139,
         "support_sufficient": false
       }
     },
     "segments": {
       "tour": {
         "atp": {
-          "snapshots": 15,
-          "settled": 0,
+          "snapshots": 19,
+          "settled": 6,
           "required": 30,
-          "remaining": 30,
+          "remaining": 24,
           "support_sufficient": false
         },
         "challenger": {
           "snapshots": 10,
-          "settled": 0,
+          "settled": 5,
           "required": 30,
-          "remaining": 30,
+          "remaining": 25,
           "support_sufficient": false
         }
       },
       "surface": {
         "clay": {
           "snapshots": 9,
-          "settled": 0,
+          "settled": 4,
           "required": 30,
-          "remaining": 30,
+          "remaining": 26,
           "support_sufficient": false
         },
         "hard": {
-          "snapshots": 16,
-          "settled": 0,
+          "snapshots": 20,
+          "settled": 7,
           "required": 30,
-          "remaining": 30,
+          "remaining": 23,
           "support_sufficient": false
         }
       }
@@ -238,39 +236,205 @@
   },
   "counts": {
     "current_simulated_matches": 36,
-    "current_eligible_by_segment": 17,
-    "snapshots": 25,
-    "settled_snapshots": 0,
-    "unsettled_snapshots": 25,
+    "current_eligible_by_segment": 16,
+    "snapshots": 29,
+    "settled_snapshots": 11,
+    "unsettled_snapshots": 18,
     "label_counts": {
-      "matches_seen": 3178,
-      "settled_labels": 2903,
-      "incomplete_or_unsettled": 275
+      "matches_seen": 3271,
+      "settled_labels": 2988,
+      "incomplete_or_unsettled": 283
     }
   },
   "evaluation": {
-    "settled_matches": 0,
+    "settled_matches": 11,
     "markets": {
       "first_set_tiebreak": {
-        "n": 0
+        "n": 11,
+        "raw_brier": 0.095843,
+        "calibrated_brier": 0.090601,
+        "brier_gain_calibrated_vs_raw": 0.005242,
+        "improved": true
       },
       "first_set_over_8.5": {
-        "n": 0
+        "n": 11,
+        "raw_brier": 0.2504,
+        "calibrated_brier": 0.248627,
+        "brier_gain_calibrated_vs_raw": 0.001773,
+        "improved": true
       },
       "first_set_over_9.5": {
-        "n": 0
+        "n": 11,
+        "raw_brier": 0.240567,
+        "calibrated_brier": 0.243269,
+        "brier_gain_calibrated_vs_raw": -0.002702,
+        "improved": false
       },
       "first_set_over_10.5": {
-        "n": 0
+        "n": 11,
+        "raw_brier": 0.129629,
+        "calibrated_brier": 0.121949,
+        "brier_gain_calibrated_vs_raw": 0.007681,
+        "improved": true
       }
     },
-    "duration_markets_improved": 0,
+    "duration_markets_improved": 3,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": 0.0
+    "worst_market_brier_gain": -0.002702
   },
   "segment_evaluation": {
-    "tour": {},
-    "surface": {}
+    "tour": {
+      "atp": {
+        "settled_matches": 6,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 6,
+            "raw_brier": 0.147888,
+            "calibrated_brier": 0.141572,
+            "brier_gain_calibrated_vs_raw": 0.006315,
+            "improved": true
+          },
+          "first_set_over_8.5": {
+            "n": 6,
+            "raw_brier": 0.142134,
+            "calibrated_brier": 0.141512,
+            "brier_gain_calibrated_vs_raw": 0.000622,
+            "improved": true
+          },
+          "first_set_over_9.5": {
+            "n": 6,
+            "raw_brier": 0.205281,
+            "calibrated_brier": 0.214697,
+            "brier_gain_calibrated_vs_raw": -0.009417,
+            "improved": false
+          },
+          "first_set_over_10.5": {
+            "n": 6,
+            "raw_brier": 0.167845,
+            "calibrated_brier": 0.157349,
+            "brier_gain_calibrated_vs_raw": 0.010496,
+            "improved": true
+          }
+        },
+        "duration_markets_improved": 3,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": -0.009417,
+        "support_sufficient": false
+      },
+      "challenger": {
+        "settled_matches": 5,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 5,
+            "raw_brier": 0.03339,
+            "calibrated_brier": 0.029435,
+            "brier_gain_calibrated_vs_raw": 0.003955,
+            "improved": true
+          },
+          "first_set_over_8.5": {
+            "n": 5,
+            "raw_brier": 0.380319,
+            "calibrated_brier": 0.377165,
+            "brier_gain_calibrated_vs_raw": 0.003154,
+            "improved": true
+          },
+          "first_set_over_9.5": {
+            "n": 5,
+            "raw_brier": 0.282911,
+            "calibrated_brier": 0.277555,
+            "brier_gain_calibrated_vs_raw": 0.005355,
+            "improved": true
+          },
+          "first_set_over_10.5": {
+            "n": 5,
+            "raw_brier": 0.083771,
+            "calibrated_brier": 0.079468,
+            "brier_gain_calibrated_vs_raw": 0.004303,
+            "improved": true
+          }
+        },
+        "duration_markets_improved": 4,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": 0.003154,
+        "support_sufficient": false
+      }
+    },
+    "surface": {
+      "clay": {
+        "settled_matches": 4,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 4,
+            "raw_brier": 0.032978,
+            "calibrated_brier": 0.029178,
+            "brier_gain_calibrated_vs_raw": 0.0038,
+            "improved": true
+          },
+          "first_set_over_8.5": {
+            "n": 4,
+            "raw_brier": 0.465071,
+            "calibrated_brier": 0.459525,
+            "brier_gain_calibrated_vs_raw": 0.005545,
+            "improved": true
+          },
+          "first_set_over_9.5": {
+            "n": 4,
+            "raw_brier": 0.27425,
+            "calibrated_brier": 0.27133,
+            "brier_gain_calibrated_vs_raw": 0.002921,
+            "improved": true
+          },
+          "first_set_over_10.5": {
+            "n": 4,
+            "raw_brier": 0.08298,
+            "calibrated_brier": 0.07906,
+            "brier_gain_calibrated_vs_raw": 0.00392,
+            "improved": true
+          }
+        },
+        "duration_markets_improved": 4,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": 0.002921,
+        "support_sufficient": false
+      },
+      "hard": {
+        "settled_matches": 7,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 7,
+            "raw_brier": 0.131766,
+            "calibrated_brier": 0.1257,
+            "brier_gain_calibrated_vs_raw": 0.006066,
+            "improved": true
+          },
+          "first_set_over_8.5": {
+            "n": 7,
+            "raw_brier": 0.127731,
+            "calibrated_brier": 0.128114,
+            "brier_gain_calibrated_vs_raw": -0.000383,
+            "improved": false
+          },
+          "first_set_over_9.5": {
+            "n": 7,
+            "raw_brier": 0.22132,
+            "calibrated_brier": 0.227235,
+            "brier_gain_calibrated_vs_raw": -0.005915,
+            "improved": false
+          },
+          "first_set_over_10.5": {
+            "n": 7,
+            "raw_brier": 0.156286,
+            "calibrated_brier": 0.146456,
+            "brier_gain_calibrated_vs_raw": 0.00983,
+            "improved": true
+          }
+        },
+        "duration_markets_improved": 2,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": -0.005915,
+        "support_sufficient": false
+      }
+    }
   },
   "snapshots": [
     {
@@ -295,8 +459,14 @@
         "first_set_over_9.5": 0.5499018225914416,
         "first_set_over_10.5": 0.2848399883198789
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186496",
@@ -320,8 +490,14 @@
         "first_set_over_9.5": 0.5366871710075325,
         "first_set_over_10.5": 0.27536270211679387
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186411",
@@ -345,8 +521,14 @@
         "first_set_over_9.5": 0.5215685413533754,
         "first_set_over_10.5": 0.265087940877713
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "185957",
@@ -370,8 +552,14 @@
         "first_set_over_9.5": 0.5680344036245508,
         "first_set_over_10.5": 0.29834742372783085
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186079",
@@ -395,8 +583,14 @@
         "first_set_over_9.5": 0.5623769569563217,
         "first_set_over_10.5": 0.2940157646289781
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186312",
@@ -420,8 +614,14 @@
         "first_set_over_9.5": 0.5576117324408914,
         "first_set_over_10.5": 0.29051038963315434
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186080",
@@ -445,8 +645,14 @@
         "first_set_over_9.5": 0.5486708155032826,
         "first_set_over_10.5": 0.28424071373276066
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": true,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": true
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186313",
@@ -470,8 +676,14 @@
         "first_set_over_9.5": 0.5638394043916599,
         "first_set_over_10.5": 0.2951038203348737
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186252",
@@ -495,8 +707,14 @@
         "first_set_over_9.5": 0.5629750371771939,
         "first_set_over_10.5": 0.29443450747131894
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186314",
@@ -520,8 +738,14 @@
         "first_set_over_9.5": 0.564008646520693,
         "first_set_over_10.5": 0.29523497583971064
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186251",
@@ -570,8 +794,14 @@
         "first_set_over_9.5": 0.549962618418155,
         "first_set_over_10.5": 0.2847817940662831
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T10:36:39.298754+00:00"
     },
     {
       "match_id": "186711",
@@ -894,6 +1124,106 @@
         "first_set_over_8.5": 0.7856006987006519,
         "first_set_over_9.5": 0.5531360122897678,
         "first_set_over_10.5": 0.2871859335118422
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186782",
+      "scheduled_time": "2026-09-06T15:00:00+00:00",
+      "captured_at": "2026-09-05T10:36:39.298754+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Carlos Alcaraz",
+      "p2": "Tommy Paul",
+      "source_model_fingerprint_sha256": "194cf30c515b48c48c8d2fcb36568d51dfdfd18d6acfc4311a6da777fffae82c",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21269074914626365,
+        "first_set_over_8.5": 0.8242265988005022,
+        "first_set_over_9.5": 0.5894859665982665,
+        "first_set_over_10.5": 0.315614448025311
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18481951072201702,
+        "first_set_over_8.5": 0.7938917544878169,
+        "first_set_over_9.5": 0.5608863640688513,
+        "first_set_over_10.5": 0.2928704071484989
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186822",
+      "scheduled_time": "2026-09-06T15:00:00+00:00",
+      "captured_at": "2026-09-05T10:36:39.298754+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Frances Tiafoe",
+      "p2": "Daniil Medvedev",
+      "source_model_fingerprint_sha256": "194cf30c515b48c48c8d2fcb36568d51dfdfd18d6acfc4311a6da777fffae82c",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22554805874836956,
+        "first_set_over_8.5": 0.8363063755233682,
+        "first_set_over_9.5": 0.6015816555360803,
+        "first_set_over_10.5": 0.32613720969675064
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.19138152191047864,
+        "first_set_over_8.5": 0.8013215957800294,
+        "first_set_over_9.5": 0.5675667565738823,
+        "first_set_over_10.5": 0.29799864493204054
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186823",
+      "scheduled_time": "2026-09-06T15:00:00+00:00",
+      "captured_at": "2026-09-05T10:36:39.298754+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Tomas Martin Etcheverry",
+      "p2": "Alex Michelsen",
+      "source_model_fingerprint_sha256": "194cf30c515b48c48c8d2fcb36568d51dfdfd18d6acfc4311a6da777fffae82c",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2236507034850156,
+        "first_set_over_8.5": 0.8314130604412616,
+        "first_set_over_9.5": 0.5952795946045772,
+        "first_set_over_10.5": 0.3218662306179272
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.19119305850310486,
+        "first_set_over_8.5": 0.799558830385505,
+        "first_set_over_9.5": 0.5650657488537811,
+        "first_set_over_10.5": 0.2963804659124675
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186827",
+      "scheduled_time": "2026-09-06T15:00:00+00:00",
+      "captured_at": "2026-09-05T10:36:39.298754+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Ben Shelton",
+      "p2": "Stefanos Tsitsipas",
+      "source_model_fingerprint_sha256": "194cf30c515b48c48c8d2fcb36568d51dfdfd18d6acfc4311a6da777fffae82c",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.23810452832622242,
+        "first_set_over_8.5": 0.8466791587723441,
+        "first_set_over_9.5": 0.6122990837473772,
+        "first_set_over_10.5": 0.33618447991954725
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1977564693217204,
+        "first_set_over_8.5": 0.8080279326863495,
+        "first_set_over_9.5": 0.5735868312944219,
+        "first_set_over_10.5": 0.30280053885153857
       },
       "settled": false,
       "actual": null
