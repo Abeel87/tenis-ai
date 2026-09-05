@@ -86,6 +86,22 @@ def _read_json(path: Path, fallback):
         return fallback
 
 
+def _legacy_runtime_validation(validation: dict[str, Any]) -> tuple[str, bool, str | None]:
+    """Keep current-card profile-only runtime gated by the legacy profile signal.
+
+    Stateful context is evaluated separately and must not silently redefine the
+    validation contract for the still-profile-only current scorer.
+    """
+    signal = validation.get("signal") if isinstance(validation, dict) else {}
+    signal = signal if isinstance(signal, dict) else {}
+    legacy_positive = signal.get("legacy_profile_signal_positive")
+    if legacy_positive is None:
+        legacy_positive = signal.get("status") == "POSITIVE_HOLDOUT_SIGNAL"
+    status = "POSITIVE_HOLDOUT_SIGNAL" if legacy_positive is True else "MIXED_OR_NO_INCREMENTAL_SIGNAL"
+    stateful_reference_status = signal.get("status")
+    return status, bool(legacy_positive is True), stateful_reference_status
+
+
 def _serialize_model(model: dict[str, Any], *, cutoff: datetime, training: pd.DataFrame) -> dict[str, Any]:
     meta = _model_meta(model)
     beta = np.asarray(model["beta"], dtype=float)
@@ -210,18 +226,20 @@ def build_current_scores(
     ]
 
     validation = evaluate(leakage_safe_history, readiness={})
+    legacy_status, legacy_positive, stateful_reference_status = _legacy_runtime_validation(validation)
+    validation_signal = validation.get("signal") or {}
     report["historical_validation"] = {
-        "status": (validation.get("signal") or {}).get("status"),
+        "status": legacy_status,
+        "runtime_feature_group": "profile_only",
+        "stateful_reference_status": stateful_reference_status,
+        "stateful_reference_is_runtime_gate": False,
         "train_points": validation.get("train_points_after_support_gate"),
         "holdout_points": validation.get("holdout_points_after_support_gate"),
-        "profile_only_brier_gain_vs_rank": (validation.get("signal") or {}).get("profile_only_brier_gain_vs_rank"),
-        "combined_brier_gain_vs_rank": (validation.get("signal") or {}).get("combined_brier_gain_vs_rank"),
+        "profile_only_brier_gain_vs_rank": validation_signal.get("profile_only_brier_gain_vs_rank"),
+        "combined_brier_gain_vs_rank": validation_signal.get("combined_brier_gain_vs_rank"),
         "split": validation.get("split"),
     }
-    if (
-        validation.get("real_shadow_training") is not True
-        or (validation.get("signal") or {}).get("status") != "POSITIVE_HOLDOUT_SIGNAL"
-    ):
+    if validation.get("real_shadow_training") is not True or not legacy_positive:
         report["status"] = "BLOCKED_VALIDATION_NOT_POSITIVE"
         report["historical_join_counts"] = join_counts
         return report, None
