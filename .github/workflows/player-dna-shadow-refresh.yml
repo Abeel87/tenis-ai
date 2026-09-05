@@ -331,6 +331,25 @@ jobs:
           assert wf_aggregate.get('mode') == 'SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY'
           assert wf_aggregate.get('status') == 'BACKTEST_COMPLETE_NO_PROMOTION'
           assert int(wf_aggregate.get('matched_settled_matches') or 0) >= 500
+          segment_aggregate = market_wf.get('segment_aggregate') or {}
+          segment_policy = segment_aggregate.get('policy') or {}
+          assert segment_policy.get('dimensions') == ['tour', 'surface', 'tour_surface']
+          assert int(segment_policy.get('segment_min_matched') or 0) == 40
+          assert int(segment_policy.get('segment_min_market_n') or 0) == 30
+          assert int(segment_policy.get('segment_min_evaluated_markets') or 0) == 4
+          assert int(segment_policy.get('repeatable_min_folds') or 0) == 2
+          assert segment_policy.get('diagnostic_only') is True
+          assert segment_policy.get('promotion_gate') is False
+          segment_dimensions = segment_aggregate.get('dimensions') or {}
+          assert set(segment_dimensions) == {'tour', 'surface', 'tour_surface'}
+          segment_watchlist = segment_aggregate.get('watchlist') or {}
+          for key in ('repeatable_positive', 'repeatable_negative', 'mixed'):
+              assert isinstance(segment_watchlist.get(key), list)
+          for fold in wf_folds:
+              segments = fold.get('segments') or {}
+              assert set(segments) == {'tour', 'surface', 'tour_surface'}
+              for dimension in ('tour', 'surface', 'tour_surface'):
+                  assert isinstance(segments.get(dimension), dict)
 
           assert (backtest.get('signal') in {
               'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
