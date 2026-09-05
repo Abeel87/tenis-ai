@@ -18,6 +18,7 @@ on:
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_dna_current_dynamic_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
       - 'backend/player_dna_market_walk_forward.py'
@@ -39,6 +40,7 @@ on:
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
+      - 'tests/test_player_dna_current_dynamic_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
       - 'tests/test_player_dna_market_walk_forward.py'
@@ -79,7 +81,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -119,6 +121,9 @@ jobs:
 
       - name: Validate dynamic lean market walk-forward robustness (SHADOW, zero network)
         run: python backend/player_dna_market_walk_forward.py
+
+      - name: Score current card with dynamic lean (SHADOW, zero network)
+        run: python backend/player_dna_current_dynamic_shadow.py
 
       - name: Audit Player DNA hold calibration (SHADOW, zero network)
         run: python backend/player_dna_hold_calibration.py
@@ -656,6 +661,19 @@ jobs:
           segment_dimensions = segment_aggregate.get('dimensions') or {}
           if set(segment_dimensions) != {'tour', 'surface', 'tour_surface'}:
               raise SystemExit('Dynamic lean segment aggregate dimensions incomplete')
+          current_dynamic_path = Path('frontend/data/player_dna_current_dynamic_shadow.json')
+          if not current_dynamic_path.exists():
+              raise SystemExit('player_dna_current_dynamic_shadow.json was not generated')
+          current_dynamic = json.loads(current_dynamic_path.read_text(encoding='utf-8'))
+          if current_dynamic.get('mode') != 'SHADOW_CURRENT_DYNAMIC_LEAN_ONLY':
+              raise SystemExit('Current dynamic lean SHADOW mode invalid')
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote'):
+              if current_dynamic.get(key) is not False:
+                  raise SystemExit(f'Current dynamic lean isolation violation: {key}={current_dynamic.get(key)}')
+          if current_dynamic.get('candidate_only') is not True or current_dynamic.get('prospective_validation_required') is not True:
+              raise SystemExit('Current dynamic lean must remain candidate-only and require prospective validation')
+          if (current_dynamic.get('lean_model_fit') or {}).get('converged') is not True:
+              raise SystemExit('Current dynamic lean SHADOW model did not converge')
           segment_watchlist = segment_aggregate.get('watchlist') or {}
           for key in ('repeatable_positive', 'repeatable_negative', 'mixed'):
               if not isinstance(segment_watchlist.get(key), list):
@@ -1095,6 +1113,7 @@ jobs:
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
+            frontend/data/player_dna_current_dynamic_shadow.json
             frontend/data/player_dna_current_simulation.json
             frontend/data/player_dna_market_backtest.json
             frontend/data/player_dna_dynamic_market_walk_forward.json

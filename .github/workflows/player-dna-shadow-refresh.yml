@@ -12,6 +12,7 @@ on:
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
+      - 'backend/player_dna_current_dynamic_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
       - 'backend/player_dna_market_walk_forward.py'
@@ -47,6 +48,7 @@ on:
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
+      - 'tests/test_player_dna_current_dynamic_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
       - 'tests/test_player_dna_market_walk_forward.py'
@@ -106,13 +108,14 @@ jobs:
           python -m py_compile backend/player_dna_profile_readiness.py
           python -m py_compile backend/player_dna_point_scorer.py
           python -m py_compile backend/player_dna_current_shadow.py
+          python -m py_compile backend/player_dna_current_dynamic_shadow.py
           python -m py_compile backend/player_dna_tennis_simulator.py
           python -m py_compile backend/player_dna_market_backtest.py
           python -m py_compile backend/player_dna_market_walk_forward.py
           python -m py_compile backend/player_dna_hold_calibration.py
           python -m py_compile backend/player_dna_hold_walk_forward.py
           python -m py_compile backend/player_dna_prospective_validation.py
-          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_market_walk_forward.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_dna_prospective_validation.py             tests/test_player_identity.py
+          python -m pytest -q             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_current_dynamic_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_market_walk_forward.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_dna_prospective_validation.py             tests/test_player_identity.py
 
       - name: Build strict Player DNA point dataset
         run: python backend/player_dna_point_dataset.py
@@ -134,6 +137,9 @@ jobs:
 
       - name: Validate dynamic lean market walk-forward robustness
         run: python backend/player_dna_market_walk_forward.py
+
+      - name: Score current card with dynamic lean in SHADOW
+        run: python backend/player_dna_current_dynamic_shadow.py
 
       - name: Audit hold calibration on untouched third partition
         run: python backend/player_dna_hold_calibration.py
@@ -373,6 +379,52 @@ jobs:
               assert set(segments) == {'tour', 'surface', 'tour_surface'}
               for dimension in ('tour', 'surface', 'tour_surface'):
                   assert isinstance(segments.get(dimension), dict)
+
+          current_dynamic = json.loads((data / 'player_dna_current_dynamic_shadow.json').read_text(encoding='utf-8'))
+          assert current_dynamic.get('mode') == 'SHADOW_CURRENT_DYNAMIC_LEAN_ONLY'
+          assert current_dynamic.get('status') in {'ACTIVE_SHADOW', 'COLLECTING_CONTEXT'}
+          assert current_dynamic.get('production_influence') is False
+          assert current_dynamic.get('runtime_switch_enabled') is False
+          assert current_dynamic.get('symphony2_influence') is False
+          assert current_dynamic.get('superbet_playable_influence') is False
+          assert current_dynamic.get('auto_promote') is False
+          assert current_dynamic.get('candidate_only') is True
+          assert current_dynamic.get('prospective_validation_required') is True
+          assert current_dynamic.get('feature_groups') == ['profile', 'rank', 'point_pressure', 'set_match_state']
+          assert current_dynamic.get('dropped_state_groups') == ['tiebreak_context', 'prior_momentum']
+          assert current_dynamic.get('tiebreak_policy') == 'PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH'
+          assert current_dynamic.get('training_cutoff_exclusive') == current.get('training_cutoff_exclusive')
+          lean_fit = current_dynamic.get('lean_model_fit') or {}
+          assert lean_fit.get('converged') is True
+          assert int(current_dynamic.get('training_points') or 0) > 0
+          assert int(current_dynamic.get('training_matches') or 0) > 0
+          dynamic_counts = current_dynamic.get('counts') or {}
+          dynamic_scored = int(dynamic_counts.get('dynamic_shadow_scored') or 0)
+          assert 0 <= dynamic_scored <= int(current.get('scored_matches') or 0)
+          for row in current_dynamic.get('matches') or []:
+              assert row.get('production_influence') is False
+              assert row.get('runtime_switch_enabled') is False
+              if row.get('status') != 'DYNAMIC_SHADOW_SCORED':
+                  continue
+              assert row.get('p1_rank') is not None and row.get('p2_rank') is not None
+              markets = row.get('markets') or {}
+              assert set(markets) == {
+                  'match_p1_win', 'first_set_p1_win', 'first_set_tiebreak',
+                  'first_set_over_8.5', 'first_set_over_9.5',
+                  'first_set_over_10.5', 'first_set_over_11.5',
+                  'first_set_over_12.5', 'early_1:1', 'early_2:2', 'early_3:3',
+              }
+              for item in markets.values():
+                  assert item.get('production_influence') is False
+                  decision = item.get('decision')
+                  assert decision in {
+                      'CONSENSUS_DYNAMIC_CANDIDATE',
+                      'CONSENSUS_PROFILE_REFERENCE',
+                      'CONFLICT',
+                      'INSUFFICIENT_OR_MIXED',
+                  }
+                  if decision in {'CONFLICT', 'INSUFFICIENT_OR_MIXED'}:
+                      assert item.get('shadow_policy_probability') is None
 
           assert (backtest.get('signal') in {
               'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
@@ -644,6 +696,7 @@ jobs:
               'PLAYER_DNA_SHADOW_OK '
               f"matches={matches} strict_points={strict_points} "
               f"current={current_matches} scored={current.get('scored_matches')} "
+              f"dynamic_scored={dynamic_counts.get('dynamic_shadow_scored')} "
               f"collecting={current.get('collecting_history_matches')} "
               f"signal={(scorer.get('signal') or {}).get('status')} "
               f"simulated={simulation.get('simulated_matches')} "
@@ -673,6 +726,7 @@ jobs:
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
+            frontend/data/player_dna_current_dynamic_shadow.json
             frontend/data/player_dna_current_simulation.json
             frontend/data/player_dna_market_backtest.json
             frontend/data/player_dna_dynamic_market_walk_forward.json
@@ -692,7 +746,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0

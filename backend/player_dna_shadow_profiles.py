@@ -332,6 +332,13 @@ def build_current_target_profiles(
         tour = str(raw.get("tour") or "unknown").strip().upper()
         best_of = raw.get("best_of")
         match_format = f"BO{int(best_of)}" if isinstance(best_of, int) and not isinstance(best_of, bool) else "unknown"
+        p1_rank = raw.get("p1_rank")
+        p2_rank = raw.get("p2_rank")
+        if isinstance(p1_rank, bool) or not isinstance(p1_rank, int) or p1_rank <= 0:
+            p1_rank = None
+        if isinstance(p2_rank, bool) or not isinstance(p2_rank, int) or p2_rank <= 0:
+            p2_rank = None
+
         normalized_targets.append({
             "match_id": match_id,
             "scheduled": scheduled,
@@ -342,6 +349,8 @@ def build_current_target_profiles(
             "p2": p2,
             "p1_name": raw.get("p1"),
             "p2_name": raw.get("p2"),
+            "p1_ranking": p1_rank,
+            "p2_ranking": p2_rank,
         })
         target_ids.add(match_id)
 
@@ -367,9 +376,17 @@ def build_current_target_profiles(
 
         target_group = list(target_group_iter)
         for target in target_group:
-            for side, pid, opponent, name, opponent_name in (
-                ("p1", target["p1"], target["p2"], target.get("p1_name"), target.get("p2_name")),
-                ("p2", target["p2"], target["p1"], target.get("p2_name"), target.get("p1_name")),
+            for side, pid, opponent, name, opponent_name, ranking, opponent_ranking in (
+                (
+                    "p1", target["p1"], target["p2"],
+                    target.get("p1_name"), target.get("p2_name"),
+                    target.get("p1_ranking"), target.get("p2_ranking"),
+                ),
+                (
+                    "p2", target["p2"], target["p1"],
+                    target.get("p2_name"), target.get("p1_name"),
+                    target.get("p2_ranking"), target.get("p1_ranking"),
+                ),
             ):
                 snapshots.append({
                     "version": VERSION,
@@ -390,8 +407,8 @@ def build_current_target_profiles(
                     "player_name": name,
                     "opponent_id": opponent,
                     "opponent_name": opponent_name,
-                    "player_ranking": None,
-                    "opponent_ranking": None,
+                    "player_ranking": ranking,
+                    "opponent_ranking": opponent_ranking,
                     "overall_prior": _project(overall.get(pid)),
                     "same_surface_prior": _project(by_surface.get(pid, {}).get(target["surface"])),
                 })
