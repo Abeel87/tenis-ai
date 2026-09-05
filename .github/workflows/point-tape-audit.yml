@@ -492,6 +492,26 @@ jobs:
               raise SystemExit('Stateful Player DNA must not gate the current profile-only scorer yet')
           if int(current.get('pre_cutoff_training_points') or 0) <= 0:
               raise SystemExit('Player DNA current scorer has no leakage-safe pre-cutoff training rows')
+          current_profile_summary = current.get('current_profile_summary') or {}
+          rank_context = current_profile_summary.get('ranking_context') or {}
+          if rank_context.get('provider_backed_only') is not True:
+              raise SystemExit('Player DNA current rank fallback must remain provider-backed')
+          if rank_context.get('name_or_fuzzy_fallback_forbidden') is not True:
+              raise SystemExit('Player DNA current rank fallback must forbid name/fuzzy matching')
+          if rank_context.get('current_fixture_preferred') is not True:
+              raise SystemExit('Player DNA current fixture rank must remain preferred when present')
+          if rank_context.get('strict_prior_provider_context_fallback_enabled') is not True:
+              raise SystemExit('Player DNA current strict-prior provider rank fallback is disabled')
+          allowed_rank_sources = {
+              None,
+              'current_fixture_provider',
+              'latest_strict_prior_provider_match_context',
+          }
+          for row in current.get('matches') or []:
+              if row.get('p1_rank_source') not in allowed_rank_sources:
+                  raise SystemExit(f"Invalid p1 rank source: {row.get('p1_rank_source')}")
+              if row.get('p2_rank_source') not in allowed_rank_sources:
+                  raise SystemExit(f"Invalid p2 rank source: {row.get('p2_rank_source')}")
           scored = int(current.get('scored_matches') or 0)
           eligible = int(current.get('eligible_matches') or 0)
           if scored != eligible:
