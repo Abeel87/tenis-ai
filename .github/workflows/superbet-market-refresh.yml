@@ -218,12 +218,19 @@ jobs:
               assert direct_fallback.get('downstream_playable_eligibility') is True
           quota = availability.get('quota_guard') or {}
           assert int(quota.get('monthly_cap') or 0) == 4000
+          assert int(quota.get('direct_fixture_request_cap') or 0) == 1700
+          assert int(quota.get('direct_fixture_requests_used') or 0) >= 0
           assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
           discovery = availability.get('fixture_discovery_contract') or {}
           assert discovery.get('bookmaker_neutral') is True
           assert discovery.get('has_odds_filter') is False
           assert discovery.get('bookmaker_filter') is False
           assert discovery.get('operator_offer_checked_later') is True
+          contract = availability.get('contract') or {}
+          assert contract.get('current_offer_primary_recovery') == 'odds_by_fixture'
+          assert contract.get('tournament_bulk_is_not_current_offer_authority') is True
+          assert contract.get('direct_fixture_milestone_cache') is True
+          assert int(contract.get('direct_fixture_request_safety_cap') or 0) == 1700
           matching = availability.get('fixture_matching_v927') or {}
           assert matching.get('version') == 'v9.2.7'
           assert int(matching.get('additional_external_requests', -1)) == 0
@@ -314,9 +321,23 @@ jobs:
           }, sort_keys=True))
           print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
               'fixtures_seen': availability.get('fixtures_seen'),
+              'fixtures_has_odds_true': availability.get('fixtures_has_odds_true'),
+              'fixtures_has_odds_false': availability.get('fixtures_has_odds_false'),
               'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
+              'matched_fixture_candidates_has_odds_true': availability.get('matched_fixture_candidates_has_odds_true'),
+              'matched_fixture_candidates_has_odds_false': availability.get('matched_fixture_candidates_has_odds_false'),
+              'matched_fixture_candidates_has_odds_missing': availability.get('matched_fixture_candidates_has_odds_missing'),
               'tournaments_queried': availability.get('tournaments_queried'),
+              'bulk_operator_odds_rows_seen': availability.get('bulk_operator_odds_rows_seen'),
               'operator_odds_rows_seen': availability.get('operator_odds_rows_seen'),
+              'direct_fixture_requests_due': availability.get('direct_fixture_requests_due'),
+              'direct_fixture_requests_this_refresh': availability.get('direct_fixture_requests_this_refresh'),
+              'direct_fixture_rows_seen': availability.get('direct_fixture_rows_seen'),
+              'direct_fixture_rows_with_superbet': availability.get('direct_fixture_rows_with_superbet'),
+              'direct_fixture_matches': availability.get('direct_fixture_matches'),
+              'direct_fixture_cache_offers_used': availability.get('direct_fixture_cache_offers_used'),
+              'direct_fixture_errors': availability.get('direct_fixture_errors'),
+              'direct_fixture_skipped_budget': availability.get('direct_fixture_skipped_budget'),
               'operator_fixture_candidates': availability.get('operator_fixture_candidates'),
               'operator_fixture_id_matches': availability.get('operator_fixture_id_matches'),
               'operator_pair_time_matches': availability.get('operator_pair_time_matches'),

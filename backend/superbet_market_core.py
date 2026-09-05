@@ -34,9 +34,15 @@ VERSION = "v9.1"
 BASE_URL = "https://api.oddspapi.io/v4"
 BOOKMAKER = "superbet.pl"
 SPORT_ID_TENNIS = 12
-REFRESH_HOURS = 10
+REFRESH_HOURS = 1
 MARKET_META_TTL_DAYS = 7
-MONTHLY_REQUEST_CAP = 150
+MONTHLY_REQUEST_CAP = 4000
+DIRECT_FIXTURE_MONTHLY_CAP = 1700
+DIRECT_FIXTURE_MAX_PER_REFRESH = 24
+DIRECT_FIXTURE_DELAY_SECONDS = 0.55
+DIRECT_FIXTURE_WINDOW_HOURS = 12
+DIRECT_FIXTURE_CLOSE_HOURS = 4
+DIRECT_FIXTURE_FINAL_RETRY_HOURS = 1
 FIXTURE_HORIZON_DAYS = 2
 MAX_MATCH_TIME_DELTA_HOURS = 4
 
@@ -260,11 +266,15 @@ def _quota_state(previous: dict, now: datetime):
     month = now.strftime("%Y-%m")
     old = previous.get("quota_guard") if isinstance(previous, dict) else {}
     old = old if isinstance(old, dict) else {}
-    used = int(old.get("requests_used_by_v91") or 0) if old.get("month") == month else 0
+    same_month = old.get("month") == month
+    used = int(old.get("requests_used_by_v91") or 0) if same_month else 0
+    direct_used = int(old.get("direct_fixture_requests_used") or 0) if same_month else 0
     return {
         "month": month,
         "monthly_cap": MONTHLY_REQUEST_CAP,
         "requests_used_by_v91": used,
+        "direct_fixture_request_cap": DIRECT_FIXTURE_MONTHLY_CAP,
+        "direct_fixture_requests_used": direct_used,
         "note": "local safety cap; OddsPapi account can include other/manual requests",
     }
 
@@ -368,6 +378,19 @@ def _identity_debug_snapshot(row: dict) -> dict:
     return out
 
 
+def _requested_bookmaker_payload(row: dict):
+    """Return only the exact configured bookmaker payload.
+
+    OddsPapi exposes separate sportsbook identities for superbet, superbet.pl,
+    superbet.ro, etc. Never treat a generic/foreign Superbet key as Superbet PL.
+    """
+    bookmaker_odds = row.get("bookmakerOdds") if isinstance(row, dict) else None
+    if not isinstance(bookmaker_odds, dict):
+        return None
+    book = bookmaker_odds.get(BOOKMAKER)
+    return book if isinstance(book, dict) else None
+
+
 def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool, str | None]:
     """Join neutral discovery to the operator response without assuming shared IDs."""
     discovered_id = str(discovered.get("fixtureId") or "")
@@ -391,10 +414,7 @@ def _same_discovered_fixture(discovered: dict, operator_row: dict) -> tuple[bool
 
 
 def _sanitize_fixture(row: dict, meta: dict):
-    bookmaker_odds = row.get("bookmakerOdds") or {}
-    book = bookmaker_odds.get(BOOKMAKER)
-    if not isinstance(book, dict):
-        book = next((v for k, v in bookmaker_odds.items() if "superbet" in str(k).casefold() and isinstance(v, dict)), None)
+    book = _requested_bookmaker_payload(row)
     if not isinstance(book, dict):
         return None
     raw_markets = book.get("markets") or {}
@@ -486,6 +506,97 @@ def _meta_due(previous: dict, now: datetime):
     return not isinstance(cache, dict) or not cache or stamp is None or now - stamp >= timedelta(days=MARKET_META_TTL_DAYS)
 
 
+_DIRECT_STAGE_RANK = {
+    "within_12h": 1,
+    "within_4h": 2,
+    "within_1h_retry": 3,
+}
+
+
+def _direct_fixture_offer_priority(row: dict):
+    """Spend bounded direct-offer requests on bookmaker-likely tennis first.
+
+    This is request ordering only, never an availability filter: every matched
+    fixture can still be queried at later milestones. The priority mirrors the
+    proven OddsPapi smoke strategy so late premium fixtures are not starved by
+    a dense block of earlier ITF events.
+    """
+    text = " ".join(
+        str(row.get(key) or "")
+        for key in ("tournamentName", "categoryName", "tournamentSlug", "categorySlug")
+    ).casefold()
+    grand_slam = any(
+        token in text
+        for token in ("grand slam", "us open", "australian open", "roland garros", "french open", "wimbledon")
+    )
+    if grand_slam:
+        competition_rank = 0
+    elif re.search(r"(^|[^a-z])(atp|wta)([^a-z]|$)", text):
+        competition_rank = 1
+    elif "challenger" in text:
+        competition_rank = 2
+    elif "itf" in text:
+        competition_rank = 4
+    else:
+        competition_rank = 3
+
+    has_odds = row.get("hasOdds")
+    odds_rank = 0 if has_odds is True else 1 if has_odds is None else 2
+    return competition_rank, odds_rank, str(row.get("startTime") or "")
+
+
+def _direct_offer_stage(start_time, now: datetime):
+    start = _parse_dt(start_time)
+    if start is None:
+        return None
+    hours = (start - now).total_seconds() / 3600.0
+    if hours < -(5.0 / 60.0) or hours > DIRECT_FIXTURE_WINDOW_HOURS:
+        return None
+    if hours <= DIRECT_FIXTURE_FINAL_RETRY_HOURS:
+        return "within_1h_retry"
+    if hours <= DIRECT_FIXTURE_CLOSE_HOURS:
+        return "within_4h"
+    return "within_12h"
+
+
+def _direct_offer_due(cache_entry: dict | None, stage: str, now: datetime):
+    if not isinstance(cache_entry, dict):
+        return True
+    if cache_entry.get("bookmaker_key") != BOOKMAKER:
+        # Old cache entries predate strict sportsbook identity and may have
+        # accepted generic/foreign Superbet payloads. Force one clean recheck.
+        return True
+    current_rank = _DIRECT_STAGE_RANK.get(stage, 0)
+    previous_stage = str(cache_entry.get("stage") or "")
+    previous_rank = _DIRECT_STAGE_RANK.get(previous_stage, 0)
+
+    if current_rank > previous_rank:
+        # A successful <=4h offer is already recent enough for the final hour.
+        # The <=1h stage exists mainly to retry fixtures that had no offer.
+        if (
+            stage == "within_1h_retry"
+            and previous_rank >= _DIRECT_STAGE_RANK["within_4h"]
+            and isinstance(cache_entry.get("offer"), dict)
+        ):
+            return False
+        return True
+
+    if cache_entry.get("last_error"):
+        attempted = _parse_dt(cache_entry.get("last_checked_at"))
+        return attempted is None or now - attempted >= timedelta(hours=2)
+    return False
+
+
+def _direct_cache_entry(stage: str, now: datetime, offer, *, error=None):
+    return {
+        "stage": stage,
+        "last_checked_at": now.isoformat(),
+        "bookmaker_key": BOOKMAKER,
+        "offer": offer if isinstance(offer, dict) else None,
+        "last_error": str(error)[:240] if error else None,
+    }
+
+
 def refresh_availability(results: list[dict], now=None):
     now = now or datetime.now(timezone.utc)
     previous = _read(AVAILABILITY, {})
@@ -525,13 +636,20 @@ def refresh_availability(results: list[dict], now=None):
             quota,
             sportId=SPORT_ID_TENNIS,
             **{"from": date_from, "to": date_to},
-            statusId=0,
             language="en",
         )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
         wanted_fixture_ids = set()
         discovered_matches = []
         tournament_ids = set()
+        fixtures_has_odds_true = sum(
+            1 for row in fixture_rows
+            if isinstance(row, dict) and row.get("hasOdds") is True
+        )
+        fixtures_has_odds_false = sum(
+            1 for row in fixture_rows
+            if isinstance(row, dict) and row.get("hasOdds") is False
+        )
         for match in results:
             if not isinstance(match, dict):
                 continue
@@ -544,11 +662,21 @@ def refresh_availability(results: list[dict], now=None):
             if fixture.get("tournamentId") is not None:
                 tournament_ids.add(str(fixture["tournamentId"]))
 
-        if not tournament_ids:
+        matched_has_odds_true = sum(
+            1 for row in discovered_matches if row.get("hasOdds") is True
+        )
+        matched_has_odds_false = sum(
+            1 for row in discovered_matches if row.get("hasOdds") is False
+        )
+        matched_has_odds_missing = len(discovered_matches) - matched_has_odds_true - matched_has_odds_false
+
+        if not wanted_fixture_ids:
             report = {
                 "version": VERSION, "generated_at": now.isoformat(), "refresh_status": "OK_NO_MATCHED_FIXTURES",
                 "bookmaker": BOOKMAKER, "contains_prices": False, "prices_used": False,
-                "fixtures_seen": len(fixture_rows), "app_matches": len(results), "fixtures": [],
+                "refresh_hours": REFRESH_HOURS,
+                "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": 0,
+                "fixtures": [], "direct_fixture_cache": {},
                 "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             }
             _write(AVAILABILITY, report)
@@ -561,14 +689,19 @@ def refresh_availability(results: list[dict], now=None):
         if not market_meta:
             raise RuntimeError("OddsPapi market metadata unavailable")
         if int(quota["requests_used_by_v91"]) >= cap:
-            raise RuntimeError("OddsPapi v9.1 monthly safety budget exhausted before odds-by-tournaments")
+            raise RuntimeError("OddsPapi v9.1 monthly safety budget exhausted before operator offer lookup")
 
-        time.sleep(1.05)
-        odds_rows = _flatten_payload(_request(
-            "odds-by-tournaments", api_key, quota,
-            tournamentIds=",".join(sorted(tournament_ids)), bookmakers=BOOKMAKER,
-            language="en", verbosity=3, oddsFormat="decimal",
-        ))
+        odds_rows = []
+        if tournament_ids:
+            # Keep the cheap tournament batch as a first pass, but never trust it
+            # as the sole current-offer source: OddsPapi can return historical rows
+            # from the same tournament.
+            time.sleep(1.05)
+            odds_rows = _flatten_payload(_request(
+                "odds-by-tournaments", api_key, quota,
+                tournamentIds=",".join(sorted(tournament_ids)), bookmakers=BOOKMAKER,
+                language="en", verbosity=3, oddsFormat="decimal",
+            ))
         sanitized = []
         operator_fixture_candidates = 0
         fixture_id_matches = 0
@@ -583,6 +716,7 @@ def refresh_availability(results: list[dict], now=None):
         operator_rows_with_requested_bookmaker = 0
         operator_bookmakers_seen = set()
         operator_start_times = []
+        bulk_covered_discovered_ids = set()
         for row in odds_rows:
             if not isinstance(row, dict):
                 continue
@@ -593,10 +727,7 @@ def refresh_availability(results: list[dict], now=None):
             bookmaker_odds = row.get("bookmakerOdds")
             bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
             operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
-            has_requested_bookmaker = (
-                BOOKMAKER in bookmaker_keys
-                or any("superbet" in str(key).casefold() for key in bookmaker_keys)
-            )
+            has_requested_bookmaker = BOOKMAKER in bookmaker_keys
             if has_requested_bookmaker:
                 operator_rows_with_requested_bookmaker += 1
 
@@ -617,10 +748,12 @@ def refresh_availability(results: list[dict], now=None):
                 continue
 
             match_kind = None
+            matched_discovered = None
             for discovered in discovered_matches:
                 same, kind = _same_discovered_fixture(discovered, row)
                 if same:
                     match_kind = kind
+                    matched_discovered = discovered
                     break
             if match_kind is None:
                 continue
@@ -632,11 +765,162 @@ def refresh_availability(results: list[dict], now=None):
             item = _sanitize_fixture(row, market_meta)
             if item:
                 sanitized.append(item)
+                discovered_id = str((matched_discovered or {}).get("fixtureId") or "")
+                if discovered_id:
+                    bulk_covered_discovered_ids.add(discovered_id)
+
+        # Current-offer fallback: query the exact matched fixture directly.
+        # Historical proof from the repository smoke test showed /v4/odds by
+        # fixtureId returns the real Superbet fixture markets even when
+        # odds-by-tournaments returns only stale tournament rows.
+        sanitized_by_fixture = {
+            str(item.get("fixture_id")): item
+            for item in sanitized
+            if isinstance(item, dict) and item.get("fixture_id") is not None
+        }
+        previous_direct_cache = previous.get("direct_fixture_cache") if isinstance(previous, dict) else {}
+        previous_direct_cache = previous_direct_cache if isinstance(previous_direct_cache, dict) else {}
+        discovered_by_id = {}
+        for discovered in discovered_matches:
+            fixture_id = str(discovered.get("fixtureId") or "")
+            if fixture_id:
+                discovered_by_id.setdefault(fixture_id, discovered)
+
+        direct_cache = {}
+        direct_requests_this_refresh = 0
+        direct_checked_this_refresh = set()
+        direct_rows_seen = 0
+        direct_rows_with_superbet = 0
+        direct_fixture_matches = 0
+        direct_cache_offers_used = 0
+        direct_errors = 0
+        direct_due = 0
+        direct_skipped_budget = 0
+        direct_cap = int(quota.get("direct_fixture_request_cap") or DIRECT_FIXTURE_MONTHLY_CAP)
+
+        for fixture_id, discovered in sorted(
+            discovered_by_id.items(),
+            key=lambda pair: _direct_fixture_offer_priority(pair[1]),
+        ):
+            stage = _direct_offer_stage(discovered.get("startTime"), now)
+            if stage is None:
+                continue
+            if fixture_id in bulk_covered_discovered_ids:
+                # Bulk happened to return a real current Superbet row this hour,
+                # so the direct request would only waste quota.
+                continue
+
+            cached = previous_direct_cache.get(fixture_id)
+            cached = dict(cached) if isinstance(cached, dict) else None
+            due = _direct_offer_due(cached, stage, now)
+            if due:
+                direct_due += 1
+                total_budget_left = int(quota.get("requests_used_by_v91") or 0) < cap
+                direct_budget_left = int(quota.get("direct_fixture_requests_used") or 0) < direct_cap
+                refresh_budget_left = direct_requests_this_refresh < DIRECT_FIXTURE_MAX_PER_REFRESH
+                if total_budget_left and direct_budget_left and refresh_budget_left:
+                    time.sleep(DIRECT_FIXTURE_DELAY_SECONDS)
+                    direct_requests_this_refresh += 1
+                    direct_checked_this_refresh.add(fixture_id)
+                    quota["direct_fixture_requests_used"] = int(quota.get("direct_fixture_requests_used") or 0) + 1
+                    try:
+                        payload = _request(
+                            "odds",
+                            api_key,
+                            quota,
+                            fixtureId=fixture_id,
+                            bookmakers=BOOKMAKER,
+                            language="en",
+                            verbosity=3,
+                            oddsFormat="decimal",
+                        )
+                        rows = _flatten_payload(payload)
+                        direct_rows_seen += len(rows)
+                        offer = None
+                        for row in rows:
+                            if not isinstance(row, dict):
+                                continue
+                            row_id = str(row.get("fixtureId") or "")
+                            same, _kind = _same_discovered_fixture(discovered, row)
+                            if not same or (row_id and row_id != fixture_id):
+                                continue
+                            start = _parse_dt(row.get("startTime"))
+                            if start is None or not (date_from <= start.date().isoformat() <= date_to):
+                                continue
+                            bookmaker_odds = row.get("bookmakerOdds")
+                            bookmaker_keys = set(bookmaker_odds.keys()) if isinstance(bookmaker_odds, dict) else set()
+                            operator_bookmakers_seen.update(str(key) for key in bookmaker_keys)
+                            has_requested_bookmaker = BOOKMAKER in bookmaker_keys
+                            if not has_requested_bookmaker:
+                                continue
+
+                            direct_rows_with_superbet += 1
+                            operator_rows_with_requested_bookmaker += 1
+                            operator_rows_in_horizon += 1
+                            operator_rows_in_horizon_with_requested_bookmaker += 1
+                            operator_start_times.append(start)
+                            if row_id and row_id in neutral_fixture_ids:
+                                operator_fixture_ids_in_neutral_catalogue += 1
+
+                            item = _sanitize_fixture(row, market_meta)
+                            if item:
+                                offer = dict(item)
+                                offer["offer_checked_at"] = now.isoformat()
+                                offer["operator_offer_source"] = "odds_by_fixture"
+                                direct_fixture_matches += 1
+                                operator_fixture_candidates += 1
+                                fixture_id_matches += 1
+                                break
+
+                        cached = _direct_cache_entry(stage, now, offer)
+                    except Exception as exc:
+                        direct_errors += 1
+                        cached = _direct_cache_entry(stage, now, None, error=exc)
+                else:
+                    direct_skipped_budget += 1
+
+            if isinstance(cached, dict):
+                direct_cache[fixture_id] = cached
+                offer = cached.get("offer")
+                if isinstance(offer, dict):
+                    item = dict(offer)
+                    item["offer_checked_at"] = cached.get("last_checked_at")
+                    item["operator_offer_source"] = (
+                        "odds_by_fixture"
+                        if fixture_id in direct_checked_this_refresh
+                        else "odds_by_fixture_cache"
+                    )
+                    sanitized_by_fixture[fixture_id] = item
+                    direct_cache_offers_used += 1
+
+        sanitized = sorted(
+            sanitized_by_fixture.values(),
+            key=lambda item: (str(item.get("start_time") or ""), str(item.get("fixture_id") or "")),
+        )
         report = {
             "version": VERSION, "generated_at": now.isoformat(), "refresh_status": "OK", "bookmaker": BOOKMAKER,
             "sport_id": SPORT_ID_TENNIS, "contains_prices": False, "prices_used": False, "refresh_hours": REFRESH_HOURS,
             "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": len(wanted_fixture_ids),
-            "tournaments_queried": len(tournament_ids), "operator_odds_rows_seen": len(odds_rows),
+            "fixtures_has_odds_true": fixtures_has_odds_true,
+            "fixtures_has_odds_false": fixtures_has_odds_false,
+            "matched_fixture_candidates_has_odds_true": matched_has_odds_true,
+            "matched_fixture_candidates_has_odds_false": matched_has_odds_false,
+            "matched_fixture_candidates_has_odds_missing": matched_has_odds_missing,
+            "tournaments_queried": len(tournament_ids),
+            "bulk_operator_odds_rows_seen": len(odds_rows),
+            "operator_odds_rows_seen": len(odds_rows) + direct_rows_seen,
+            "direct_fixture_window_hours": DIRECT_FIXTURE_WINDOW_HOURS,
+            "direct_fixture_close_hours": DIRECT_FIXTURE_CLOSE_HOURS,
+            "direct_fixture_final_retry_hours": DIRECT_FIXTURE_FINAL_RETRY_HOURS,
+            "direct_fixture_requests_due": direct_due,
+            "direct_fixture_requests_this_refresh": direct_requests_this_refresh,
+            "direct_fixture_rows_seen": direct_rows_seen,
+            "direct_fixture_rows_with_superbet": direct_rows_with_superbet,
+            "direct_fixture_rows_with_requested_bookmaker": direct_rows_with_superbet,
+            "direct_fixture_matches": direct_fixture_matches,
+            "direct_fixture_cache_offers_used": direct_cache_offers_used,
+            "direct_fixture_errors": direct_errors,
+            "direct_fixture_skipped_budget": direct_skipped_budget,
             "operator_fixture_candidates": operator_fixture_candidates,
             "operator_fixture_id_matches": fixture_id_matches,
             "operator_pair_time_matches": pair_time_matches,
@@ -648,14 +932,20 @@ def refresh_availability(results: list[dict], now=None):
             "operator_start_min": min(operator_start_times).isoformat() if operator_start_times else None,
             "operator_start_max": max(operator_start_times).isoformat() if operator_start_times else None,
             "fixtures": sanitized,
+            "direct_fixture_cache": direct_cache,
             "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             "contract": {
                 "bookmaker_prices_discarded": True,
                 "market_availability_only": True,
                 "bookmaker_data_never_trains_prod_models": True,
                 "monthly_request_safety_cap": MONTHLY_REQUEST_CAP,
+                "direct_fixture_request_safety_cap": DIRECT_FIXTURE_MONTHLY_CAP,
                 "current_operator_horizon_required": True,
                 "requested_bookmaker_required_before_join": True,
+                "requested_bookmaker_identity": "EXACT_KEY_ONLY",
+                "current_offer_primary_recovery": "odds_by_fixture",
+                "tournament_bulk_is_not_current_offer_authority": True,
+                "direct_fixture_milestone_cache": True,
             },
         }
         _write(AVAILABILITY, report)

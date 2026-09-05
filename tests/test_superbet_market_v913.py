@@ -210,3 +210,90 @@ def test_handicap_catalogue_line_is_p1_perspective_and_p2_gets_opposite_sign():
     assert got[("set1_game_handicap", "Beta")] == -1.5
     assert got[("set2_game_handicap", "Alpha")] == -2.5
     assert got[("set2_game_handicap", "Beta")] == 2.5
+
+
+
+def test_sanitize_rejects_generic_superbet_when_superbet_pl_is_missing():
+    meta = {
+        "121": {
+            "marketName": "Winner",
+            "outcomes": {
+                "121": {"outcomeName": "1"},
+                "122": {"outcomeName": "2"},
+            },
+        }
+    }
+    row = {
+        "fixtureId": "f-generic-only",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-09-04T18:00:00Z",
+        "bookmakerOdds": {
+            "superbet": {
+                "markets": {
+                    "121": {
+                        "marketActive": True,
+                        "outcomes": {
+                            "121": {"players": {"0": {"active": True, "bookmakerOutcomeId": "1"}}},
+                            "122": {"players": {"0": {"active": True, "bookmakerOutcomeId": "2"}}},
+                        },
+                    }
+                }
+            }
+        },
+    }
+
+    assert _sanitize_fixture(row, meta) is None
+
+
+def test_sanitize_uses_exact_superbet_pl_when_generic_superbet_is_also_present():
+    meta = {
+        "13000": {
+            "marketName": "Total Games Over Under",
+            "handicap": 22.5,
+            "outcomes": {
+                "13000": {"outcomeName": "Over"},
+                "13001": {"outcomeName": "Under"},
+            },
+        }
+    }
+    generic = {
+        "markets": {
+            "13000": {
+                "marketActive": True,
+                "outcomes": {
+                    "13000": {"players": {"0": {"active": True, "bookmakerOutcomeId": "generic-over"}}},
+                    "13001": {"players": {"0": {"active": True, "bookmakerOutcomeId": "generic-under"}}},
+                },
+            }
+        }
+    }
+    exact_pl = {
+        "markets": {
+            "13000": {
+                "marketActive": True,
+                "outcomes": {
+                    "13000": {"players": {"0": {"active": True, "bookmakerOutcomeId": "pl-over"}}},
+                    "13001": {"players": {"0": {"active": True, "bookmakerOutcomeId": "pl-under"}}},
+                },
+            }
+        }
+    }
+    row = {
+        "fixtureId": "f-both",
+        "participant1Name": "Alpha",
+        "participant2Name": "Beta",
+        "startTime": "2026-09-04T18:00:00Z",
+        "bookmakerOdds": {
+            "superbet": generic,
+            "superbet.pl": exact_pl,
+        },
+    }
+
+    out = _sanitize_fixture(row, meta)
+    assert out is not None
+    assert out["bookmaker"] == "superbet.pl"
+    assert {(x["pick"], x["line"]) for x in out["canonical_selections"]} == {
+        ("over", 22.5),
+        ("under", 22.5),
+    }

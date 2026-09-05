@@ -19,8 +19,8 @@ except ImportError:
 VERSION = "v9.1.5"
 MAX_TOURNAMENT_IDS_PER_REQUEST = 5
 BATCH_DELAY_SECONDS = 1.05
-REFRESH_HOURS = 1
-MONTHLY_REQUEST_CAP = 4000
+REFRESH_HOURS = base.REFRESH_HOURS
+MONTHLY_REQUEST_CAP = base.MONTHLY_REQUEST_CAP
 
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -119,10 +119,7 @@ def _market_line(market: str, market_meta: dict, outcome_name, bookmaker_outcome
 
 
 def _sanitize_fixture(row: dict, meta: dict):
-    bookmaker_odds = row.get("bookmakerOdds") or {}
-    book = bookmaker_odds.get(base.BOOKMAKER)
-    if not isinstance(book, dict):
-        book = next((value for key, value in bookmaker_odds.items() if "superbet" in str(key).casefold() and isinstance(value, dict)), None)
+    book = base._requested_bookmaker_payload(row)
     if not isinstance(book, dict): return None
     raw_markets = book.get("markets") or {}
     if not isinstance(raw_markets, dict): return None
@@ -165,24 +162,19 @@ def _stamp_runtime_adapter() -> None:
     availability = dict(availability)
     availability["runtime_adapter_version"] = VERSION
     availability["tournament_batch_limit"] = MAX_TOURNAMENT_IDS_PER_REQUEST
-    availability["refresh_hours"] = REFRESH_HOURS
-    quota = availability.get("quota_guard")
-    if isinstance(quota, dict):
-        quota = dict(quota); quota["monthly_cap"] = MONTHLY_REQUEST_CAP; availability["quota_guard"] = quota
     base._write(base.AVAILABILITY, availability)
 
 
 def prepare() -> dict:
-    original_request=base._request; original_sanitize_fixture=base._sanitize_fixture; original_availability_due=base._availability_due; original_refresh_hours=base.REFRESH_HOURS; original_monthly_cap=base.MONTHLY_REQUEST_CAP
+    original_request=base._request; original_sanitize_fixture=base._sanitize_fixture; original_availability_due=base._availability_due
     previous=base._read(base.AVAILABILITY, {}); force_parser_refresh=not isinstance(previous,dict) or previous.get("runtime_adapter_version") != VERSION
     def request(path: str, api_key: str, quota: dict, **params): return batched_request(original_request,path,api_key,quota,**params)
     base._request=request; base._sanitize_fixture=_sanitize_fixture
     if force_parser_refresh: base._availability_due=lambda _previous,_now: True
-    base.REFRESH_HOURS=REFRESH_HOURS; base.MONTHLY_REQUEST_CAP=MONTHLY_REQUEST_CAP
     try: result=dict(base.prepare())
     finally:
-        base._request=original_request; base._sanitize_fixture=original_sanitize_fixture; base._availability_due=original_availability_due; base.REFRESH_HOURS=original_refresh_hours; base.MONTHLY_REQUEST_CAP=original_monthly_cap
-    _stamp_runtime_adapter(); result["runtime_adapter_version"]=VERSION; result["tournament_batch_limit"]=MAX_TOURNAMENT_IDS_PER_REQUEST; result["refresh_hours"]=REFRESH_HOURS; result["monthly_request_cap"]=MONTHLY_REQUEST_CAP; result["parser_refresh_forced"]=force_parser_refresh; return result
+        base._request=original_request; base._sanitize_fixture=original_sanitize_fixture; base._availability_due=original_availability_due
+    _stamp_runtime_adapter(); result["runtime_adapter_version"]=VERSION; result["tournament_batch_limit"]=MAX_TOURNAMENT_IDS_PER_REQUEST; result["refresh_hours"]=base.REFRESH_HOURS; result["monthly_request_cap"]=base.MONTHLY_REQUEST_CAP; result["parser_refresh_forced"]=force_parser_refresh; return result
 
 
 def finalize() -> dict:
