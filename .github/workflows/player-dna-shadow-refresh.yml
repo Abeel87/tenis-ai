@@ -233,7 +233,14 @@ jobs:
           assert current.get('superbet_playable_influence') is False
           assert current.get('match_winner_probability_enabled') is False
           assert current.get('point_serve_probability_only') is True
+          assert current.get('rank_features_used') is False
+          assert current.get('provider_rank_context_passthrough') is True
+          assert current.get('rank_context_source') == 'fixture.players.p1/p2.ranking'
           current_matches = int(current.get('current_matches') or 0)
+          rank_context_matches = int(current.get('rank_context_matches') or 0)
+          assert 0 <= rank_context_matches <= current_matches
+          rank_context_coverage = float(current.get('rank_context_coverage') or 0.0)
+          assert 0.0 <= rank_context_coverage <= 1.0
           assert current_matches > 0
           assert int(current.get('stable_id_matches') or 0) == current_matches
           assert int(current.get('valid_target_matches') or 0) == current_matches
