@@ -345,6 +345,22 @@ jobs:
           segment_watchlist = segment_aggregate.get('watchlist') or {}
           for key in ('repeatable_positive', 'repeatable_negative', 'mixed'):
               assert isinstance(segment_watchlist.get(key), list)
+          consensus = market_wf.get('segment_consensus_shadow_policy') or {}
+          assert consensus.get('mode') == 'SHADOW_SEGMENT_CONSENSUS_DIAGNOSTIC_ONLY'
+          assert consensus.get('production_influence') is False
+          assert consensus.get('runtime_switch_enabled') is False
+          assert consensus.get('symphony2_influence') is False
+          assert consensus.get('superbet_playable_influence') is False
+          assert consensus.get('auto_promote') is False
+          assert consensus.get('joint_segment_backtest_claim') is False
+          assert consensus.get('prospective_validation_required') is True
+          consensus_policy = consensus.get('policy') or {}
+          assert consensus_policy.get('tour_and_surface_marginals_must_agree') is True
+          assert consensus_policy.get('conflict_means_no_switch') is True
+          assert consensus_policy.get('insufficient_means_no_switch') is True
+          consensus_watch = consensus.get('watchlist') or {}
+          for key in ('consensus_dynamic_candidate', 'consensus_profile_reference', 'conflict', 'insufficient_or_mixed'):
+              assert isinstance(consensus_watch.get(key), list)
           for fold in wf_folds:
               segments = fold.get('segments') or {}
               assert set(segments) == {'tour', 'surface', 'tour_surface'}

@@ -467,6 +467,119 @@ def aggregate_segment_diagnostics(
     }
 
 
+def build_segment_consensus_shadow_policy(
+    segment_aggregate: dict[str, Any],
+) -> dict[str, Any]:
+    """Classify tour + surface marginal agreement without claiming joint validation."""
+    dimensions = (segment_aggregate or {}).get("dimensions") or {}
+    tours = dimensions.get("tour") or {}
+    surfaces = dimensions.get("surface") or {}
+    tour_surfaces = dimensions.get("tour_surface") or {}
+
+    rows: dict[str, Any] = {}
+    candidate_watchlist = []
+    reference_watchlist = []
+    conflict_watchlist = []
+    insufficient_watchlist = []
+
+    for segment_name in sorted(tour_surfaces):
+        if "|" not in segment_name:
+            continue
+        tour_name, surface_name = segment_name.split("|", 1)
+        tour_row = tours.get(tour_name) or {}
+        surface_row = surfaces.get(surface_name) or {}
+        joint_row = tour_surfaces.get(segment_name) or {}
+        market_rows = {}
+
+        for market in BINARY_MARKETS:
+            tour_market = ((tour_row.get("markets") or {}).get(market) or {})
+            surface_market = ((surface_row.get("markets") or {}).get(market) or {})
+            tour_positive = tour_market.get("repeatable_positive") is True
+            tour_negative = tour_market.get("repeatable_negative") is True
+            surface_positive = surface_market.get("repeatable_positive") is True
+            surface_negative = surface_market.get("repeatable_negative") is True
+
+            if tour_positive and surface_positive:
+                decision = "CONSENSUS_DYNAMIC_CANDIDATE"
+            elif tour_negative and surface_negative:
+                decision = "CONSENSUS_PROFILE_REFERENCE"
+            elif (tour_positive and surface_negative) or (tour_negative and surface_positive):
+                decision = "CONFLICT"
+            else:
+                decision = "INSUFFICIENT_OR_MIXED"
+
+            market_row = {
+                "decision": decision,
+                "tour_repeatable_positive": tour_positive,
+                "tour_repeatable_negative": tour_negative,
+                "surface_repeatable_positive": surface_positive,
+                "surface_repeatable_negative": surface_negative,
+                "joint_segment_supported_folds": int(joint_row.get("supported_folds") or 0),
+                "joint_segment_directly_validated": bool(
+                    int(joint_row.get("supported_folds") or 0) >= SEGMENT_REPEATABLE_MIN_FOLDS
+                ),
+            }
+            market_rows[market] = market_row
+            item = {
+                "segment": segment_name,
+                "market": market,
+                "decision": decision,
+                "joint_segment_supported_folds": market_row["joint_segment_supported_folds"],
+            }
+            if decision == "CONSENSUS_DYNAMIC_CANDIDATE":
+                candidate_watchlist.append(item)
+            elif decision == "CONSENSUS_PROFILE_REFERENCE":
+                reference_watchlist.append(item)
+            elif decision == "CONFLICT":
+                conflict_watchlist.append(item)
+            else:
+                insufficient_watchlist.append(item)
+
+        rows[segment_name] = {
+            "tour": tour_name,
+            "surface": surface_name,
+            "joint_segment_supported_folds": int(joint_row.get("supported_folds") or 0),
+            "markets": market_rows,
+            "dynamic_candidate_markets": [
+                market for market, row in market_rows.items()
+                if row.get("decision") == "CONSENSUS_DYNAMIC_CANDIDATE"
+            ],
+            "profile_reference_markets": [
+                market for market, row in market_rows.items()
+                if row.get("decision") == "CONSENSUS_PROFILE_REFERENCE"
+            ],
+            "conflict_markets": [
+                market for market, row in market_rows.items()
+                if row.get("decision") == "CONFLICT"
+            ],
+        }
+
+    return {
+        "mode": "SHADOW_SEGMENT_CONSENSUS_DIAGNOSTIC_ONLY",
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "joint_segment_backtest_claim": False,
+        "prospective_validation_required": True,
+        "policy": {
+            "tour_and_surface_marginals_must_agree": True,
+            "repeatable_min_folds_per_marginal": SEGMENT_REPEATABLE_MIN_FOLDS,
+            "conflict_means_no_switch": True,
+            "insufficient_means_no_switch": True,
+            "joint_segment_direct_validation_is_reported_separately": True,
+        },
+        "segments": rows,
+        "watchlist": {
+            "consensus_dynamic_candidate": candidate_watchlist,
+            "consensus_profile_reference": reference_watchlist,
+            "conflict": conflict_watchlist,
+            "insufficient_or_mixed": insufficient_watchlist,
+        },
+    }
+
+
 def summarize_walk_forward(
     folds: list[dict[str, Any]],
     aggregate_comparison: dict[str, Any],
@@ -734,6 +847,7 @@ def evaluate_walk_forward(
     )
     summary = summarize_walk_forward(folds, aggregate_comparison)
     segment_aggregate = aggregate_segment_diagnostics(folds)
+    segment_consensus_shadow_policy = build_segment_consensus_shadow_policy(segment_aggregate)
 
     return {
         **base_report,
@@ -747,6 +861,7 @@ def evaluate_walk_forward(
         "aggregate": aggregate_comparison,
         "summary": summary,
         "segment_aggregate": segment_aggregate,
+        "segment_consensus_shadow_policy": segment_consensus_shadow_policy,
     }
 
 

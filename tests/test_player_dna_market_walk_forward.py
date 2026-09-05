@@ -4,6 +4,7 @@ from backend.player_dna_market_walk_forward import (
     FOLD_MIN_MARKET_N,
     SEGMENT_MIN_MARKET_N,
     aggregate_segment_diagnostics,
+    build_segment_consensus_shadow_policy,
     fold_verdict,
     segment_verdict,
     summarize_walk_forward,
@@ -189,6 +190,59 @@ def test_segment_verdict_requires_real_segment_support_and_tracks_primary_direct
     assert weak["support_sufficient"] is False
     assert weak["broad_positive"] is False
     assert weak["primary_both_positive"] is False
+
+
+def test_segment_consensus_policy_requires_tour_surface_agreement_and_keeps_conflicts_shadow_only():
+    def market(*, positive=False, negative=False):
+        return {
+            "repeatable_positive": positive,
+            "repeatable_negative": negative,
+        }
+
+    aggregate = {
+        "dimensions": {
+            "tour": {
+                "challenger": {
+                    "markets": {
+                        "match_p1_win": market(positive=True),
+                        "first_set_p1_win": market(positive=True),
+                        "first_set_over_9.5": market(negative=True),
+                    }
+                }
+            },
+            "surface": {
+                "hard": {
+                    "markets": {
+                        "match_p1_win": market(positive=True),
+                        "first_set_p1_win": market(negative=True),
+                        "first_set_over_9.5": market(negative=True),
+                    }
+                }
+            },
+            "tour_surface": {
+                "challenger|hard": {
+                    "supported_folds": 0,
+                    "markets": {},
+                }
+            },
+        }
+    }
+
+    policy = build_segment_consensus_shadow_policy(aggregate)
+    assert policy["mode"] == "SHADOW_SEGMENT_CONSENSUS_DIAGNOSTIC_ONLY"
+    assert policy["production_influence"] is False
+    assert policy["runtime_switch_enabled"] is False
+    assert policy["joint_segment_backtest_claim"] is False
+    assert policy["prospective_validation_required"] is True
+
+    row = policy["segments"]["challenger|hard"]
+    assert row["markets"]["match_p1_win"]["decision"] == "CONSENSUS_DYNAMIC_CANDIDATE"
+    assert row["markets"]["first_set_p1_win"]["decision"] == "CONFLICT"
+    assert row["markets"]["first_set_over_9.5"]["decision"] == "CONSENSUS_PROFILE_REFERENCE"
+    assert row["markets"]["match_p1_win"]["joint_segment_directly_validated"] is False
+    assert "match_p1_win" in row["dynamic_candidate_markets"]
+    assert "first_set_p1_win" in row["conflict_markets"]
+    assert "first_set_over_9.5" in row["profile_reference_markets"]
 
 
 def test_segment_aggregate_identifies_repeatable_positive_and_negative_market_patterns():
