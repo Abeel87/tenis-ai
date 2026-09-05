@@ -22,8 +22,6 @@ try:
         MIN_PRIOR_MATCHES,
         _binary_probability,
         binary_head_to_head,
-        _binary_probability,
-        binary_head_to_head,
         POINTS,
         PROFILES,
         _dynamic_lean_comparison,
@@ -46,6 +44,8 @@ except ModuleNotFoundError:  # direct execution
     from player_dna_market_backtest import (
         BINARY_MARKETS,
         MIN_PRIOR_MATCHES,
+        _binary_probability,
+        binary_head_to_head,
         POINTS,
         PROFILES,
         _dynamic_lean_comparison,
