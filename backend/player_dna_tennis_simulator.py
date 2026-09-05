@@ -14,7 +14,7 @@ import json
 import math
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
@@ -1177,6 +1177,254 @@ def trajectory_summary(
             "superbet_playable_influence": False,
         },
     }
+
+
+PointProbabilityCallback = Callable[[dict[str, Any]], float]
+TiebreakProbabilityCallback = Callable[[dict[str, Any]], float]
+_STANDARD_POINT_TOKENS = ("0", "15", "30", "40")
+
+
+def _dynamic_point_state(
+    *,
+    server: int,
+    sets: tuple[int, int],
+    games: tuple[int, int],
+    server_points: str,
+    receiver_points: str,
+    best_of: int,
+) -> dict[str, Any]:
+    receiver = _other(server)
+    return {
+        "best_of": best_of,
+        "match_format": "BO5" if best_of == 5 else "BO3",
+        "server": server,
+        "receiver": receiver,
+        "sets": [int(sets[0]), int(sets[1])],
+        "games": [int(games[0]), int(games[1])],
+        "server_points": server_points,
+        "receiver_points": receiver_points,
+        "is_tiebreak": False,
+    }
+
+
+def dynamic_hold_probability(
+    point_probability: PointProbabilityCallback,
+    *,
+    server: int,
+    sets: tuple[int, int],
+    games: tuple[int, int],
+    best_of: int,
+) -> float:
+    """Exact standard-game hold probability from a deterministic point callback.
+
+    The callback receives only the pre-point match state. This is a SHADOW
+    research primitive for stateful Player DNA; current runtime simulation does
+    not call it. The callback must be pure/deterministic for a given state.
+    """
+    if server not in (1, 2):
+        raise ValueError("server must be 1 or 2")
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if len(sets) != 2 or len(games) != 2:
+        raise ValueError("sets and games must be p1/p2 pairs")
+    if any(isinstance(v, bool) or not isinstance(v, int) or v < 0 for v in (*sets, *games)):
+        raise ValueError("sets and games must contain non-negative integers")
+
+    def point(server_points: str, receiver_points: str) -> float:
+        return _clamp_probability(
+            point_probability(
+                _dynamic_point_state(
+                    server=server,
+                    sets=sets,
+                    games=games,
+                    server_points=server_points,
+                    receiver_points=receiver_points,
+                    best_of=best_of,
+                )
+            )
+        )
+
+    p_deuce = point("40", "40")
+    p_server_adv = point("A", "40")
+    p_receiver_adv = point("40", "A")
+    deuce_absorption = (
+        p_deuce * p_server_adv
+        + (1.0 - p_deuce) * (1.0 - p_receiver_adv)
+    )
+    if deuce_absorption <= 0.0:
+        raise AssertionError("dynamic deuce state has no absorbing probability")
+    hold_from_deuce = (p_deuce * p_server_adv) / deuce_absorption
+
+    memo: dict[tuple[int, int], float] = {}
+
+    def solve(server_won: int, receiver_won: int) -> float:
+        key = (server_won, receiver_won)
+        if key in memo:
+            return memo[key]
+        if server_won == 3 and receiver_won == 3:
+            return hold_from_deuce
+
+        p = point(
+            _STANDARD_POINT_TOKENS[server_won],
+            _STANDARD_POINT_TOKENS[receiver_won],
+        )
+        if server_won == 3:
+            value = p + (1.0 - p) * solve(3, receiver_won + 1)
+        elif receiver_won == 3:
+            value = p * solve(server_won + 1, 3)
+        else:
+            value = (
+                p * solve(server_won + 1, receiver_won)
+                + (1.0 - p) * solve(server_won, receiver_won + 1)
+            )
+        memo[key] = value
+        return value
+
+    return solve(0, 0)
+
+
+def dynamic_set_outcomes(
+    point_probability: PointProbabilityCallback,
+    tiebreak_probability: TiebreakProbabilityCallback,
+    *,
+    start_server: int,
+    sets_before: tuple[int, int],
+    best_of: int,
+) -> list[dict[str, Any]]:
+    """Exact set DP using state-dependent standard-game point probabilities.
+
+    Tiebreak probability is deliberately a separate callback. The lean stateful
+    candidate validated in SHADOW does not yet define an exact infinite
+    tiebreak-state policy, so this function refuses to silently invent one.
+    """
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if len(sets_before) != 2:
+        raise ValueError("sets_before must be a p1/p2 pair")
+    if any(
+        isinstance(v, bool) or not isinstance(v, int) or v < 0
+        for v in sets_before
+    ):
+        raise ValueError("sets_before must contain non-negative integers")
+
+    live: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
+    outcomes: list[dict[str, Any]] = []
+
+    while live:
+        nxt: dict[tuple[int, int, int], float] = defaultdict(float)
+        for (g1, g2, server), mass in live.items():
+            if mass <= 0.0:
+                continue
+
+            if g1 == 6 and g2 == 6:
+                p1_tb = _clamp_probability(
+                    tiebreak_probability(
+                        {
+                            "best_of": best_of,
+                            "match_format": "BO5" if best_of == 5 else "BO3",
+                            "sets": [int(sets_before[0]), int(sets_before[1])],
+                            "games": [6, 6],
+                            "start_server": server,
+                            "is_tiebreak": True,
+                        }
+                    )
+                )
+                next_set_server = _other(server)
+                outcomes.append({
+                    "winner": 1,
+                    "score": "7:6",
+                    "games": 13,
+                    "tiebreak": True,
+                    "next_set_server": next_set_server,
+                    "probability": mass * p1_tb,
+                })
+                outcomes.append({
+                    "winner": 2,
+                    "score": "6:7",
+                    "games": 13,
+                    "tiebreak": True,
+                    "next_set_server": next_set_server,
+                    "probability": mass * (1.0 - p1_tb),
+                })
+                continue
+
+            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+                outcomes.append({
+                    "winner": 1 if g1 > g2 else 2,
+                    "score": f"{g1}:{g2}",
+                    "games": g1 + g2,
+                    "tiebreak": False,
+                    "next_set_server": server,
+                    "probability": mass,
+                })
+                continue
+
+            server_hold = dynamic_hold_probability(
+                point_probability,
+                server=server,
+                sets=sets_before,
+                games=(g1, g2),
+                best_of=best_of,
+            )
+            p1_game = server_hold if server == 1 else (1.0 - server_hold)
+            next_server = _other(server)
+            nxt[(g1 + 1, g2, next_server)] += mass * p1_game
+            nxt[(g1, g2 + 1, next_server)] += mass * (1.0 - p1_game)
+
+        live = nxt
+
+    total = sum(float(row["probability"]) for row in outcomes)
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-10):
+        raise AssertionError(f"dynamic set probability mass drift: {total}")
+    return outcomes
+
+
+def dynamic_match_outcomes(
+    point_probability: PointProbabilityCallback,
+    tiebreak_probability: TiebreakProbabilityCallback,
+    *,
+    best_of: int,
+    start_server: int,
+) -> dict[str, float]:
+    """Exact match-score DP over the dynamic SHADOW set primitive."""
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    needed = best_of // 2 + 1
+    states: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
+    exact: dict[str, float] = defaultdict(float)
+
+    while states:
+        nxt: dict[tuple[int, int, int], float] = defaultdict(float)
+        for (s1, s2, server), mass in states.items():
+            if s1 >= needed or s2 >= needed:
+                exact[f"{s1}:{s2}"] += mass
+                continue
+
+            for set_row in dynamic_set_outcomes(
+                point_probability,
+                tiebreak_probability,
+                start_server=server,
+                sets_before=(s1, s2),
+                best_of=best_of,
+            ):
+                if int(set_row["winner"]) == 1:
+                    ns1, ns2 = s1 + 1, s2
+                else:
+                    ns1, ns2 = s1, s2 + 1
+                nxt[(ns1, ns2, int(set_row["next_set_server"]))] += (
+                    mass * float(set_row["probability"])
+                )
+        states = nxt
+
+    total = sum(exact.values())
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"dynamic match probability mass drift: {total}")
+    return dict(exact)
 
 
 def set_outcomes(
