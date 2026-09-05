@@ -241,6 +241,7 @@ def fetch_fixtures():
                 'id':mid,'tour':m.get('tour') or '', 'tournament':m.get('tournament') or '',
                 'surface':m.get('surface') or '', 'p1':p1, 'p2':p2,
                 'p1_id':p1o.get('id'),'p2_id':p2o.get('id'),
+                'p1_rank':p1o.get('ranking'),'p2_rank':p2o.get('ranking'),
                 'scheduled_time':m.get('scheduled_time') or '',
                 'best_of':_extract_best_of(m),
                 'feed_status':m.get('status') or 'upcoming','event_status':m.get('event_status'),
