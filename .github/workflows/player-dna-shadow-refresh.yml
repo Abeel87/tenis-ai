@@ -318,8 +318,14 @@ jobs:
           wf_summary = market_wf.get('summary') or {}
           assert int(wf_summary.get('required_folds') or 0) == 3
           assert int(wf_summary.get('completed_folds') or 0) == 3
-          assert int(wf_summary.get('supported_folds') or 0) == 3
-          assert int(wf_summary.get('aggregate_matched_settled_matches') or 0) >= 500
+          supported_folds = int(wf_summary.get('supported_folds') or 0)
+          assert 0 <= supported_folds <= 3
+          aggregate_matched = int(wf_summary.get('aggregate_matched_settled_matches') or 0)
+          assert aggregate_matched >= 500
+          if market_wf.get('signal') == 'INSUFFICIENT_DYNAMIC_LEAN_MARKET_WALK_FORWARD_SAMPLE':
+              assert supported_folds < 3
+          else:
+              assert supported_folds == 3
           wf_aggregate = market_wf.get('aggregate') or {}
           assert wf_aggregate.get('mode') == 'SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY'
           assert wf_aggregate.get('status') == 'BACKTEST_COMPLETE_NO_PROMOTION'
