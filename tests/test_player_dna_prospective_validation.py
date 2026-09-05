@@ -932,3 +932,82 @@ def test_trajectory_prospective_ledger_never_rewrites_frozen_prediction():
     assert second["ledger_integrity"]["status"] == "LEDGER_INTEGRITY_OK"
     assert second["ledger_integrity"]["rewritten_predictions"] == 0
     assert second["snapshots"][0]["trajectory_predictions"] == original
+
+
+
+def test_trajectory_segment_diagnostics_keep_direct_tour_surface_separate_from_marginals():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    first = _trajectory_simulation_row(
+        match_id="traj-hard",
+        scheduled=now + timedelta(hours=2),
+    )
+    second = _trajectory_simulation_row(
+        match_id="traj-clay",
+        scheduled=now + timedelta(hours=2),
+    )
+    second["matches"][0]["surface"] = "clay"
+    first["matches"].extend(second["matches"])
+
+    initial = _build_trajectory_evidence(first, {}, {}, now)
+    snapshots = [dict(row) for row in initial["snapshots"]]
+    labels = {
+        "traj-hard": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+        "traj-clay": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+    }
+    _settle_trajectory_snapshots(
+        snapshots,
+        labels,
+        now + timedelta(hours=5),
+    )
+
+    report = _build_trajectory_evidence(
+        {"mode": "SHADOW_SIMULATION_ONLY", "matches": []},
+        labels,
+        {"trajectory_evidence": {"snapshots": snapshots}},
+        now + timedelta(hours=6),
+    )
+    diagnostics = report["segment_diagnostics"]
+
+    assert diagnostics["tour"]["challenger"]["settled"] == 2
+    assert diagnostics["surface"]["hard"]["settled"] == 1
+    assert diagnostics["surface"]["clay"]["settled"] == 1
+    assert diagnostics["tour_surface"]["challenger|hard"]["settled"] == 1
+    assert diagnostics["tour_surface"]["challenger|clay"]["settled"] == 1
+    assert diagnostics["coverage"]["tour_surface_segments_seen"] == 2
+    assert diagnostics["coverage"]["tour_surface_segments_with_settled"] == 2
+
+    policy = diagnostics["policy"]
+    assert policy["diagnostic_only"] is True
+    assert policy[
+        "direct_tour_surface_rows_are_built_from_same_match_snapshots"
+    ] is True
+    assert policy[
+        "marginal_tour_and_surface_results_never_imply_joint_validation"
+    ] is True
+    assert policy["minimum_segment_sample_not_defined_yet"] is True
+    assert policy["performance_verdict_forbidden"] is True
+
+
+def test_trajectory_segment_diagnostics_do_not_invent_sample_threshold_or_verdict():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-one",
+        scheduled=now + timedelta(hours=2),
+    )
+    evidence = _build_trajectory_evidence(current, {}, {}, now)
+
+    diagnostics = evidence["segment_diagnostics"]
+    assert diagnostics["tour"]["challenger"]["snapshots"] == 1
+    assert diagnostics["tour"]["challenger"]["settled"] == 0
+    assert diagnostics["surface"]["hard"]["snapshots"] == 1
+    assert diagnostics["tour_surface"]["challenger|hard"]["snapshots"] == 1
+    assert evidence["performance_verdict_emitted"] is False
+    assert evidence["validation_scope"][
+        "no_trajectory_performance_threshold_invented_yet"
+    ] is True
