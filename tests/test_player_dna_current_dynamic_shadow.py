@@ -200,7 +200,7 @@ def test_current_dynamic_shadow_requires_both_provider_ranks(monkeypatch):
     monkeypatch.setattr(dynamic, "build_current_target_profiles", lambda points, targets: ([], {}))
 
     report = dynamic.build_current_dynamic_shadow([], [], current, _consensus())
-    assert report["matches"][0]["status"] == "BLOCKED_MISSING_PROVIDER_RANK"
+    assert report["matches"][0]["status"] == "BLOCKED_MISSING_CURRENT_PROFILE_PAIR"
     assert report["runtime_switch_enabled"] is False
 
 
