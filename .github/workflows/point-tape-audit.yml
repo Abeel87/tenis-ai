@@ -1057,8 +1057,6 @@ jobs:
           for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_integrate'):
               if dynamic_evidence.get(key) is not False:
                   raise SystemExit(f'Player DNA dynamic prospective isolation violation: {key}={dynamic_evidence.get(key)}')
-          if dynamic_evidence.get('performance_verdict_emitted') is not False:
-              raise SystemExit('Player DNA dynamic prospective ledger cannot emit performance verdict yet')
           dynamic_integrity = dynamic_evidence.get('ledger_integrity') or {}
           if dynamic_integrity.get('status') != 'LEDGER_INTEGRITY_OK':
               raise SystemExit(f"Player DNA dynamic prospective ledger integrity failed: {dynamic_integrity.get('status')}")
@@ -1085,9 +1083,48 @@ jobs:
               raise SystemExit('Player DNA dynamic prospective conflict exclusion drift')
           if dynamic_policy.get('profile_reference_markets_never_enter_dynamic_candidate_ledger') is not True:
               raise SystemExit('Player DNA dynamic prospective profile-reference exclusion drift')
+          if dynamic_policy.get('performance_verdict_is_separate_step') is not True:
+              raise SystemExit('Player DNA dynamic prospective verdict must remain a separate evidence step')
+          if dynamic_policy.get('direct_tour_surface_support_required_before_verdict') is not True:
+              raise SystemExit('Player DNA dynamic prospective verdict lost direct segment gate')
           if dynamic_evidence.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW':
               if dynamic_readiness.get('ready_for_performance_verdict') is not True:
                   raise SystemExit('Player DNA dynamic prospective evidence-ready signal below support threshold')
+
+          direct_readiness = dynamic_evidence.get('direct_segment_readiness') or {}
+          direct_policy = direct_readiness.get('policy') or {}
+          if int(direct_policy.get('per_observed_tour_surface_candidate_market_minimum') or 0) != 30:
+              raise SystemExit('Player DNA direct tour-surface market threshold drift')
+          if direct_policy.get('direct_joint_segment_evidence_required') is not True:
+              raise SystemExit('Player DNA dynamic prospective direct joint evidence gate disabled')
+          if direct_policy.get('marginal_tour_surface_consensus_alone_is_not_direct_validation') is not True:
+              raise SystemExit('Player DNA dynamic prospective marginal consensus mislabeled as direct validation')
+          if direct_policy.get('unsupported_joint_cell_blocks_verdict') is not True:
+              raise SystemExit('Player DNA unsupported joint cell must block verdict')
+
+          dynamic_verdict = dynamic_evidence.get('performance_verdict') or {}
+          if dynamic_verdict.get('mode') != 'SHADOW_DYNAMIC_LEAN_PERFORMANCE_VERDICT_ONLY':
+              raise SystemExit('Player DNA dynamic performance verdict mode drift')
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote', 'promotion_gate'):
+              if dynamic_verdict.get(key) is not False:
+                  raise SystemExit(f'Player DNA dynamic performance verdict escaped isolation: {key}={dynamic_verdict.get(key)}')
+          if dynamic_verdict.get('direct_tour_surface_validation_required') is not True:
+              raise SystemExit('Player DNA dynamic performance verdict lost direct tour-surface requirement')
+          emitted = dynamic_verdict.get('emitted') is True
+          if dynamic_evidence.get('performance_verdict_emitted') is not emitted:
+              raise SystemExit('Player DNA dynamic performance verdict emitted flag mismatch')
+          if emitted:
+              if dynamic_readiness.get('ready_for_performance_verdict') is not True:
+                  raise SystemExit('Player DNA dynamic verdict emitted before overall/per-market support')
+              if direct_readiness.get('ready_for_performance_verdict') is not True:
+                  raise SystemExit('Player DNA dynamic verdict emitted before direct tour-surface support')
+              if dynamic_verdict.get('signal') not in {
+                  'DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW',
+                  'DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN',
+              }:
+                  raise SystemExit(f"Player DNA dynamic performance verdict signal invalid: {dynamic_verdict.get('signal')}")
+          elif dynamic_verdict.get('signal') != 'DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY':
+              raise SystemExit('Player DNA dynamic non-emitted verdict must remain NOT_READY')
           if prospective.get('market_scope') != 'DURATION_MARKETS_ONLY':
               raise SystemExit('Player DNA prospective validation scope must remain duration-only')
           if prospective.get('winner_markets_promoted') is not False:

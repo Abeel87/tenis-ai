@@ -665,7 +665,6 @@ jobs:
           assert dynamic_evidence.get('symphony2_influence') is False
           assert dynamic_evidence.get('superbet_playable_influence') is False
           assert dynamic_evidence.get('auto_integrate') is False
-          assert dynamic_evidence.get('performance_verdict_emitted') is False
           dynamic_integrity = dynamic_evidence.get('ledger_integrity') or {}
           assert dynamic_integrity.get('status') == 'LEDGER_INTEGRITY_OK'
           assert int(dynamic_integrity.get('rewritten_predictions') or 0) == 0
@@ -679,8 +678,34 @@ jobs:
           assert int(dynamic_policy.get('per_observed_candidate_market_minimum') or 0) == 30
           assert dynamic_policy.get('conflict_and_insufficient_markets_never_enter_ledger') is True
           assert dynamic_policy.get('profile_reference_markets_never_enter_dynamic_candidate_ledger') is True
+          assert dynamic_policy.get('performance_verdict_is_separate_step') is True
+          assert dynamic_policy.get('direct_tour_surface_support_required_before_verdict') is True
           if dynamic_evidence.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW':
               assert dynamic_readiness.get('ready_for_performance_verdict') is True
+
+          direct_readiness = dynamic_evidence.get('direct_segment_readiness') or {}
+          direct_policy = direct_readiness.get('policy') or {}
+          assert int(direct_policy.get('per_observed_tour_surface_candidate_market_minimum') or 0) == 30
+          assert direct_policy.get('direct_joint_segment_evidence_required') is True
+          assert direct_policy.get('marginal_tour_surface_consensus_alone_is_not_direct_validation') is True
+          assert direct_policy.get('unsupported_joint_cell_blocks_verdict') is True
+
+          dynamic_verdict = dynamic_evidence.get('performance_verdict') or {}
+          assert dynamic_verdict.get('mode') == 'SHADOW_DYNAMIC_LEAN_PERFORMANCE_VERDICT_ONLY'
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote', 'promotion_gate'):
+              assert dynamic_verdict.get(key) is False
+          assert dynamic_verdict.get('direct_tour_surface_validation_required') is True
+          emitted = dynamic_verdict.get('emitted') is True
+          assert dynamic_evidence.get('performance_verdict_emitted') is emitted
+          if emitted:
+              assert dynamic_readiness.get('ready_for_performance_verdict') is True
+              assert direct_readiness.get('ready_for_performance_verdict') is True
+              assert dynamic_verdict.get('signal') in {
+                  'DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW',
+                  'DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN',
+              }
+          else:
+              assert dynamic_verdict.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY'
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}
           assert integrity.get('status') == 'LEDGER_INTEGRITY_OK'

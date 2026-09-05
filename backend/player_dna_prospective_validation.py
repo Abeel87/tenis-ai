@@ -43,6 +43,7 @@ MIN_SEGMENT_SETTLED = 30
 MAX_SNAPSHOTS = 5000
 DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS = 150
 DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET = 30
+DYNAMIC_MIN_SETTLED_PER_TOUR_SURFACE_MARKET = DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET
 IMMUTABLE_SNAPSHOT_FIELDS = (
     "match_id",
     "scheduled_time",
@@ -518,8 +519,174 @@ def _dynamic_evidence_readiness(
             "per_observed_candidate_market_minimum": DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET,
             "conflict_and_insufficient_markets_never_enter_ledger": True,
             "profile_reference_markets_never_enter_dynamic_candidate_ledger": True,
-            "performance_verdict_is_separate_future_step": True,
+            "performance_verdict_is_separate_step": True,
+            "direct_tour_surface_support_required_before_verdict": True,
         },
+    }
+
+
+def _dynamic_direct_segment_readiness(
+    segment_evaluation: dict[str, Any],
+) -> dict[str, Any]:
+    joint = (
+        segment_evaluation.get("tour_surface")
+        if isinstance(segment_evaluation, dict)
+        else {}
+    )
+    joint = joint if isinstance(joint, dict) else {}
+    rows = {}
+    cells = []
+    for segment_name, evaluation in sorted(joint.items()):
+        if not isinstance(evaluation, dict):
+            continue
+        market_rows = {}
+        for market in list(evaluation.get("candidate_markets_seen") or []):
+            metrics = ((evaluation.get("markets") or {}).get(market) or {})
+            settled = int(metrics.get("n") or 0)
+            row = {
+                "settled": settled,
+                "required": DYNAMIC_MIN_SETTLED_PER_TOUR_SURFACE_MARKET,
+                "remaining": max(
+                    0,
+                    DYNAMIC_MIN_SETTLED_PER_TOUR_SURFACE_MARKET - settled,
+                ),
+                "support_sufficient": (
+                    settled >= DYNAMIC_MIN_SETTLED_PER_TOUR_SURFACE_MARKET
+                ),
+            }
+            market_rows[market] = row
+            cells.append(row)
+        if market_rows:
+            rows[segment_name] = {
+                "candidate_markets": market_rows,
+                "all_candidate_markets_supported": all(
+                    row.get("support_sufficient") is True
+                    for row in market_rows.values()
+                ),
+            }
+
+    ready = bool(cells) and all(
+        row.get("support_sufficient") is True for row in cells
+    )
+    return {
+        "tour_surface": rows,
+        "observed_tour_surface_market_cells": len(cells),
+        "ready_for_performance_verdict": ready,
+        "policy": {
+            "direct_joint_segment_evidence_required": True,
+            "per_observed_tour_surface_candidate_market_minimum":
+                DYNAMIC_MIN_SETTLED_PER_TOUR_SURFACE_MARKET,
+            "marginal_tour_surface_consensus_alone_is_not_direct_validation": True,
+            "unsupported_joint_cell_blocks_verdict": True,
+        },
+    }
+
+
+def _dynamic_performance_verdict(
+    evaluation: dict[str, Any],
+    segment_evaluation: dict[str, Any],
+    evidence_readiness: dict[str, Any],
+    direct_segment_readiness: dict[str, Any],
+) -> dict[str, Any]:
+    base = {
+        "mode": "SHADOW_DYNAMIC_LEAN_PERFORMANCE_VERDICT_ONLY",
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "promotion_gate": False,
+        "direct_tour_surface_validation_required": True,
+    }
+    if evidence_readiness.get("ready_for_performance_verdict") is not True:
+        return {
+            **base,
+            "emitted": False,
+            "signal": "DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY",
+            "reason": "OVERALL_OR_PER_MARKET_SUPPORT_INSUFFICIENT",
+            "all_observed_candidate_markets_better_on_brier_and_log_loss": None,
+            "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss": None,
+            "global_failures": [],
+            "tour_surface_failures": [],
+        }
+    if direct_segment_readiness.get("ready_for_performance_verdict") is not True:
+        return {
+            **base,
+            "emitted": False,
+            "signal": "DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY",
+            "reason": "DIRECT_TOUR_SURFACE_SUPPORT_INSUFFICIENT",
+            "all_observed_candidate_markets_better_on_brier_and_log_loss": None,
+            "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss": None,
+            "global_failures": [],
+            "tour_surface_failures": [],
+        }
+
+    global_failures = []
+    for market in list(evaluation.get("candidate_markets_seen") or []):
+        metrics = ((evaluation.get("markets") or {}).get(market) or {})
+        if metrics.get("dynamic_better_on_brier_and_log_loss") is not True:
+            global_failures.append({
+                "market": market,
+                "n": int(metrics.get("n") or 0),
+                "brier_gain_dynamic_vs_profile": metrics.get(
+                    "brier_gain_dynamic_vs_profile"
+                ),
+                "log_loss_gain_dynamic_vs_profile": metrics.get(
+                    "log_loss_gain_dynamic_vs_profile"
+                ),
+            })
+
+    joint_eval = (
+        segment_evaluation.get("tour_surface")
+        if isinstance(segment_evaluation, dict)
+        else {}
+    )
+    joint_eval = joint_eval if isinstance(joint_eval, dict) else {}
+    tour_surface_failures = []
+    for segment_name, support in (
+        (direct_segment_readiness.get("tour_surface") or {}).items()
+    ):
+        candidate_markets = support.get("candidate_markets") or {}
+        evaluation_row = joint_eval.get(segment_name) or {}
+        for market, support_row in candidate_markets.items():
+            if support_row.get("support_sufficient") is not True:
+                continue
+            metrics = ((evaluation_row.get("markets") or {}).get(market) or {})
+            if metrics.get("dynamic_better_on_brier_and_log_loss") is not True:
+                tour_surface_failures.append({
+                    "segment": segment_name,
+                    "market": market,
+                    "n": int(metrics.get("n") or 0),
+                    "brier_gain_dynamic_vs_profile": metrics.get(
+                        "brier_gain_dynamic_vs_profile"
+                    ),
+                    "log_loss_gain_dynamic_vs_profile": metrics.get(
+                        "log_loss_gain_dynamic_vs_profile"
+                    ),
+                })
+
+    robust = not global_failures and not tour_surface_failures
+    return {
+        **base,
+        "emitted": True,
+        "signal": (
+            "DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW"
+            if robust
+            else "DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN"
+        ),
+        "reason": (
+            "GLOBAL_AND_DIRECT_TOUR_SURFACE_GAIN_CONFIRMED"
+            if robust
+            else "ONE_OR_MORE_SUPPORTED_MARKETS_FAILED_BOTH_METRICS"
+        ),
+        "all_observed_candidate_markets_better_on_brier_and_log_loss": (
+            not global_failures
+        ),
+        "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss": (
+            not tour_surface_failures
+        ),
+        "global_failures": global_failures,
+        "tour_surface_failures": tour_surface_failures,
     }
 
 
@@ -622,6 +789,50 @@ def _build_dynamic_lean_evidence(
 
     evaluation = _dynamic_evaluation(snapshots)
     readiness = _dynamic_evidence_readiness(evaluation)
+    segment_evaluation = {
+        "tour": {
+            name: _dynamic_evaluation([
+                row for row in snapshots
+                if str(row.get("tour") or "").strip().lower() == name
+            ])
+            for name in sorted({
+                str(row.get("tour") or "").strip().lower()
+                for row in snapshots
+                if str(row.get("tour") or "").strip()
+            })
+        },
+        "surface": {
+            name: _dynamic_evaluation([
+                row for row in snapshots
+                if str(row.get("surface") or "").strip().lower() == name
+            ])
+            for name in sorted({
+                str(row.get("surface") or "").strip().lower()
+                for row in snapshots
+                if str(row.get("surface") or "").strip()
+            })
+        },
+        "tour_surface": {
+            name: _dynamic_evaluation([
+                row for row in snapshots
+                if str(row.get("market_segment_key") or "").strip().lower() == name
+            ])
+            for name in sorted({
+                str(row.get("market_segment_key") or "").strip().lower()
+                for row in snapshots
+                if str(row.get("market_segment_key") or "").strip()
+            })
+        },
+    }
+    direct_segment_readiness = _dynamic_direct_segment_readiness(
+        segment_evaluation
+    )
+    performance_verdict = _dynamic_performance_verdict(
+        evaluation,
+        segment_evaluation,
+        readiness,
+        direct_segment_readiness,
+    )
     signal = (
         "DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW"
         if readiness.get("ready_for_performance_verdict") is True
@@ -636,7 +847,7 @@ def _build_dynamic_lean_evidence(
         "symphony2_influence": False,
         "superbet_playable_influence": False,
         "auto_integrate": False,
-        "performance_verdict_emitted": False,
+        "performance_verdict_emitted": performance_verdict.get("emitted") is True,
         "source_contract_valid": contract_ok,
         "eligibility_policy": {
             "decision_required": "CONSENSUS_DYNAMIC_CANDIDATE",
@@ -675,41 +886,9 @@ def _build_dynamic_lean_evidence(
             ),
         },
         "evaluation": evaluation,
-        "segment_evaluation": {
-            "tour": {
-                name: _dynamic_evaluation([
-                    row for row in snapshots
-                    if str(row.get("tour") or "").strip().lower() == name
-                ])
-                for name in sorted({
-                    str(row.get("tour") or "").strip().lower()
-                    for row in snapshots
-                    if str(row.get("tour") or "").strip()
-                })
-            },
-            "surface": {
-                name: _dynamic_evaluation([
-                    row for row in snapshots
-                    if str(row.get("surface") or "").strip().lower() == name
-                ])
-                for name in sorted({
-                    str(row.get("surface") or "").strip().lower()
-                    for row in snapshots
-                    if str(row.get("surface") or "").strip()
-                })
-            },
-            "tour_surface": {
-                name: _dynamic_evaluation([
-                    row for row in snapshots
-                    if str(row.get("market_segment_key") or "").strip().lower() == name
-                ])
-                for name in sorted({
-                    str(row.get("market_segment_key") or "").strip().lower()
-                    for row in snapshots
-                    if str(row.get("market_segment_key") or "").strip()
-                })
-            },
-        },
+        "segment_evaluation": segment_evaluation,
+        "direct_segment_readiness": direct_segment_readiness,
+        "performance_verdict": performance_verdict,
         "snapshots": snapshots,
     }
 

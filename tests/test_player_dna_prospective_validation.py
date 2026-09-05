@@ -549,3 +549,168 @@ def test_dynamic_readiness_requires_support_for_candidate_market_seen_before_set
     assert market["remaining"] == 30
     assert market["support_sufficient"] is False
     assert readiness["ready_for_performance_verdict"] is False
+
+
+
+def _dynamic_settled_snapshot(
+    match_id,
+    segment="challenger|hard",
+    *,
+    market="match_p1_win",
+    actual=True,
+    profile_probability=0.55,
+    dynamic_probability=0.75,
+):
+    tour, surface = segment.split("|", 1)
+    return {
+        "match_id": str(match_id),
+        "scheduled_time": "2026-09-06T10:00:00+00:00",
+        "captured_at": "2026-09-06T09:00:00+00:00",
+        "captured_pre_match": True,
+        "tour": tour,
+        "surface": surface,
+        "p1": f"A{match_id}",
+        "p2": f"B{match_id}",
+        "source_model_fingerprint_sha256": "lean-fingerprint",
+        "market_segment_key": segment,
+        "candidate_markets": {
+            market: {
+                "profile_reference_probability": profile_probability,
+                "dynamic_candidate_probability": dynamic_probability,
+            }
+        },
+        "settled": True,
+        "actual": {market: bool(actual)},
+        "settled_at": "2026-09-06T13:00:00+00:00",
+    }
+
+
+def test_dynamic_performance_verdict_waits_for_direct_tour_surface_market_support():
+    now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
+    snapshots = [
+        *[
+            _dynamic_settled_snapshot(i, "challenger|hard")
+            for i in range(1, 122)
+        ],
+        *[
+            _dynamic_settled_snapshot(i, "challenger|clay")
+            for i in range(122, 151)
+        ],
+    ]
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"dynamic_lean_evidence": {"snapshots": snapshots}},
+        current_dynamic={},
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    assert dynamic["evidence_readiness"]["ready_for_performance_verdict"] is True
+    direct = dynamic["direct_segment_readiness"]
+    assert direct["ready_for_performance_verdict"] is False
+    assert direct["tour_surface"]["challenger|hard"]["candidate_markets"][
+        "match_p1_win"
+    ]["support_sufficient"] is True
+    clay = direct["tour_surface"]["challenger|clay"]["candidate_markets"][
+        "match_p1_win"
+    ]
+    assert clay["settled"] == 29
+    assert clay["required"] == 30
+    assert clay["support_sufficient"] is False
+
+    verdict = dynamic["performance_verdict"]
+    assert verdict["emitted"] is False
+    assert verdict["signal"] == "DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY"
+    assert verdict["reason"] == "DIRECT_TOUR_SURFACE_SUPPORT_INSUFFICIENT"
+    assert dynamic["performance_verdict_emitted"] is False
+
+
+def test_dynamic_performance_verdict_emits_robust_only_after_global_and_direct_joint_gain():
+    now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
+    snapshots = [
+        *[
+            _dynamic_settled_snapshot(i, "challenger|hard")
+            for i in range(1, 121)
+        ],
+        *[
+            _dynamic_settled_snapshot(i, "challenger|clay")
+            for i in range(121, 151)
+        ],
+    ]
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"dynamic_lean_evidence": {"snapshots": snapshots}},
+        current_dynamic={},
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    assert dynamic["signal"] == "DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW"
+    assert dynamic["evidence_readiness"]["ready_for_performance_verdict"] is True
+    assert dynamic["direct_segment_readiness"]["ready_for_performance_verdict"] is True
+
+    verdict = dynamic["performance_verdict"]
+    assert verdict["emitted"] is True
+    assert verdict["signal"] == "DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW"
+    assert verdict["reason"] == "GLOBAL_AND_DIRECT_TOUR_SURFACE_GAIN_CONFIRMED"
+    assert verdict[
+        "all_observed_candidate_markets_better_on_brier_and_log_loss"
+    ] is True
+    assert verdict[
+        "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss"
+    ] is True
+    assert verdict["production_influence"] is False
+    assert verdict["runtime_switch_enabled"] is False
+    assert verdict["symphony2_influence"] is False
+    assert verdict["superbet_playable_influence"] is False
+    assert verdict["auto_promote"] is False
+    assert verdict["promotion_gate"] is False
+    assert dynamic["performance_verdict_emitted"] is True
+
+
+def test_dynamic_performance_verdict_is_not_proven_when_supported_joint_segment_loses():
+    now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
+    snapshots = [
+        *[
+            _dynamic_settled_snapshot(i, "challenger|hard")
+            for i in range(1, 121)
+        ],
+        *[
+            _dynamic_settled_snapshot(
+                i,
+                "challenger|clay",
+                profile_probability=0.90,
+                dynamic_probability=0.60,
+            )
+            for i in range(121, 151)
+        ],
+    ]
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"dynamic_lean_evidence": {"snapshots": snapshots}},
+        current_dynamic={},
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    assert dynamic["evidence_readiness"]["ready_for_performance_verdict"] is True
+    assert dynamic["direct_segment_readiness"]["ready_for_performance_verdict"] is True
+
+    verdict = dynamic["performance_verdict"]
+    assert verdict["emitted"] is True
+    assert verdict["signal"] == "DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN"
+    assert verdict["reason"] == "ONE_OR_MORE_SUPPORTED_MARKETS_FAILED_BOTH_METRICS"
+    assert verdict[
+        "all_observed_candidate_markets_better_on_brier_and_log_loss"
+    ] is True
+    assert verdict[
+        "all_direct_tour_surface_market_cells_better_on_brier_and_log_loss"
+    ] is False
+    assert verdict["tour_surface_failures"][0]["segment"] == "challenger|clay"
+    assert verdict["tour_surface_failures"][0]["market"] == "match_p1_win"
