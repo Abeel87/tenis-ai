@@ -525,3 +525,27 @@ def test_dynamic_lean_prospective_ledger_excludes_conflict_and_non_candidate_mar
     assert dynamic_evidence["eligibility_policy"]["conflict_excluded"] is True
     assert dynamic_evidence["eligibility_policy"]["insufficient_excluded"] is True
     assert dynamic_evidence["eligibility_policy"]["profile_reference_excluded"] is True
+
+
+def test_dynamic_readiness_requires_support_for_candidate_market_seen_before_settlement():
+    now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic=_dynamic_current(scheduled=now + timedelta(hours=2)),
+        now=now,
+    )
+
+    dynamic_evidence = report["dynamic_lean_evidence"]
+    evaluation = dynamic_evidence["evaluation"]
+    readiness = dynamic_evidence["evidence_readiness"]
+    assert evaluation["candidate_markets_seen"] == ["match_p1_win"]
+    assert evaluation["markets_with_observations"] == []
+    market = readiness["observed_candidate_markets"]["match_p1_win"]
+    assert market["settled"] == 0
+    assert market["required"] == 30
+    assert market["remaining"] == 30
+    assert market["support_sufficient"] is False
+    assert readiness["ready_for_performance_verdict"] is False
