@@ -87,3 +87,37 @@ def test_player_dna_match_detail_prefers_storyline_families_and_keeps_exact_path
     assert "first_set_top_game_paths" in js
     assert "Pełne ścieżki meczu pojawią się po publikacji nowego raportu trajektorii" in js
     assert "Hold-calibrated DNA pozostaje kandydatem" in js
+
+
+def test_player_dna_shadow_ui_exposes_dynamic_prospective_ledger_without_promotion():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+
+    assert "dynamic_lean_evidence" in js
+    assert "SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY" in js
+    assert "CONSENSUS_DYNAMIC_CANDIDATE" in js
+    assert "DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS=150" in js
+    assert "DYNAMIC_MIN_SETTLED_PER_MARKET=30" in js
+    assert "candidate_markets_seen" in js
+    assert "profile_reference_brier" in js
+    assert "dynamic_candidate_brier" in js
+    assert "brier_gain_dynamic_vs_profile" in js
+    assert "Gotowa próbka nie oznacza jeszcze pozytywnego verdictu" in js
+    assert "performance verdict jest zablokowany" in js
+    assert "nie ma auto-promocji" in js
+    assert ".pds-dynamic" in css
+    assert ".pds-dynamic-support" in css
+
+
+def test_player_dna_dynamic_ui_keeps_profile_reference_as_benchmark_and_reports_readiness():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "PROFILE jest zamrożonym benchmarkiem" in js
+    assert "Market observations" in js
+    assert "Candidate teraz" in js
+    assert "Ledger integrity" in js
+    assert "Próg per rynek" in js
+    assert "ready_for_performance_verdict" in js
+    assert "current_dynamic_candidate_market_slots" in js
+    assert "current_rows_with_dynamic_candidates" in js
+    assert "zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE" in js
