@@ -259,6 +259,23 @@ jobs:
           assert current_validation.get('stateful_reference_is_runtime_gate') is False
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
+          current_profile_summary = current.get('current_profile_summary') or {}
+          rank_context = current_profile_summary.get('ranking_context') or {}
+          assert rank_context.get('provider_backed_only') is True
+          assert rank_context.get('name_or_fuzzy_fallback_forbidden') is True
+          assert rank_context.get('current_fixture_preferred') is True
+          assert rank_context.get('strict_prior_provider_context_fallback_enabled') is True
+          assert int(rank_context.get('snapshots_with_player_rank') or 0) >= 0
+          for row in current.get('matches') or []:
+              source1 = row.get('p1_rank_source')
+              source2 = row.get('p2_rank_source')
+              allowed_rank_sources = {
+                  None,
+                  'current_fixture_provider',
+                  'latest_strict_prior_provider_match_context',
+              }
+              assert source1 in allowed_rank_sources
+              assert source2 in allowed_rank_sources
 
           backtest = json.loads((data / 'player_dna_market_backtest.json').read_text(encoding='utf-8'))
           assert backtest.get('mode') == 'SHADOW_BACKTEST_ONLY'
