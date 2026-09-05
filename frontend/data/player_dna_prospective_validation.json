@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 25,
-    "current_snapshot_count_before_retention": 29,
-    "preserved_snapshots": 25,
-    "new_snapshots": 4,
-    "newly_settled": 11,
+    "previous_snapshot_count": 29,
+    "current_snapshot_count_before_retention": 30,
+    "preserved_snapshots": 29,
+    "new_snapshots": 1,
+    "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -40,14 +40,14 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 29
+    "current_snapshot_count_after_retention": 30
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
         "upcoming": 14,
-        "due_within_6h": 3,
+        "due_within_6h": 4,
         "overdue_6_24h": 1,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
@@ -57,7 +57,7 @@
         {
           "match_id": "186251",
           "scheduled_time": "2026-09-05T00:30:00+00:00",
-          "hours_since_scheduled": 10.11,
+          "hours_since_scheduled": 11.69,
           "p1": "Ben Shelton",
           "p2": "Denis Shapovalov"
         }
@@ -76,13 +76,13 @@
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
-          "match_id": "186632",
+          "match_id": "186652",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-06T00:30:00+00:00",
           "drift_minutes": 570.0
         },
         {
-          "match_id": "186652",
+          "match_id": "186632",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-06T00:30:00+00:00",
           "drift_minutes": 570.0
@@ -98,12 +98,6 @@
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T20:30:00+00:00",
           "drift_minutes": 330.0
-        },
-        {
-          "match_id": "186715",
-          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T11:00:00+00:00",
-          "drift_minutes": 180.0
         },
         {
           "match_id": "186633",
@@ -134,6 +128,12 @@
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T15:30:00+00:00",
           "drift_minutes": 30.0
+        },
+        {
+          "match_id": "186713",
+          "frozen_scheduled_time": "2026-09-05T11:25:00+00:00",
+          "current_scheduled_time": "2026-09-05T11:45:00+00:00",
+          "drift_minutes": 20.0
         }
       ]
     }
@@ -181,7 +181,7 @@
           "support_sufficient": false
         },
         "challenger": {
-          "snapshots": 10,
+          "snapshots": 11,
           "settled": 5,
           "required": 30,
           "remaining": 25,
@@ -197,7 +197,7 @@
           "support_sufficient": false
         },
         "hard": {
-          "snapshots": 20,
+          "snapshots": 21,
           "settled": 7,
           "required": 30,
           "remaining": 23,
@@ -237,13 +237,13 @@
   "counts": {
     "current_simulated_matches": 36,
     "current_eligible_by_segment": 16,
-    "snapshots": 29,
+    "snapshots": 30,
     "settled_snapshots": 11,
-    "unsettled_snapshots": 18,
+    "unsettled_snapshots": 19,
     "label_counts": {
-      "matches_seen": 3271,
-      "settled_labels": 2988,
-      "incomplete_or_unsettled": 283
+      "matches_seen": 3290,
+      "settled_labels": 3005,
+      "incomplete_or_unsettled": 285
     }
   },
   "evaluation": {
@@ -1124,6 +1124,31 @@
         "first_set_over_8.5": 0.7856006987006519,
         "first_set_over_9.5": 0.5531360122897678,
         "first_set_over_10.5": 0.2871859335118422
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186853",
+      "scheduled_time": "2026-09-06T04:00:00+00:00",
+      "captured_at": "2026-09-05T12:11:36.546230+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Kasidit Samrej",
+      "p2": "Ilia Simakin",
+      "source_model_fingerprint_sha256": "b1096adde6c11e9f1c5ab3f5dcb63cdee75d78165f3422a4c1d4e3a3d1a25a6c",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22007907749707875,
+        "first_set_over_8.5": 0.8310275112785678,
+        "first_set_over_9.5": 0.5961120851938008,
+        "first_set_over_10.5": 0.32141233052255475
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18834381610785023,
+        "first_set_over_8.5": 0.7977488094942182,
+        "first_set_over_9.5": 0.5642389421702122,
+        "first_set_over_10.5": 0.2954594405359936
       },
       "settled": false,
       "actual": null
