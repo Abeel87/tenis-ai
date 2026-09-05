@@ -610,6 +610,34 @@ jobs:
           assert prospective.get('current_simulator_modified') is False
           assert prospective.get('auto_integrate') is False
           assert prospective.get('market_scope') == 'DURATION_MARKETS_ONLY'
+          dynamic_evidence = prospective.get('dynamic_lean_evidence') or {}
+          assert dynamic_evidence.get('mode') == 'SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY'
+          assert dynamic_evidence.get('status') == 'DYNAMIC_PROSPECTIVE_COLLECTION_ACTIVE'
+          assert dynamic_evidence.get('signal') in {
+              'COLLECTING_DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE',
+              'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW',
+          }
+          assert dynamic_evidence.get('production_influence') is False
+          assert dynamic_evidence.get('runtime_switch_enabled') is False
+          assert dynamic_evidence.get('symphony2_influence') is False
+          assert dynamic_evidence.get('superbet_playable_influence') is False
+          assert dynamic_evidence.get('auto_integrate') is False
+          assert dynamic_evidence.get('performance_verdict_emitted') is False
+          dynamic_integrity = dynamic_evidence.get('ledger_integrity') or {}
+          assert dynamic_integrity.get('status') == 'LEDGER_INTEGRITY_OK'
+          assert int(dynamic_integrity.get('rewritten_predictions') or 0) == 0
+          assert int(dynamic_integrity.get('settlement_regressions') or 0) == 0
+          assert int(dynamic_integrity.get('settled_actual_rewrites') or 0) == 0
+          assert int(dynamic_integrity.get('settled_at_rewrites') or 0) == 0
+          dynamic_readiness = dynamic_evidence.get('evidence_readiness') or {}
+          assert dynamic_readiness.get('performance_verdict_emitted') is False
+          dynamic_policy = dynamic_readiness.get('policy') or {}
+          assert int(dynamic_policy.get('overall_minimum_settled_market_observations') or 0) == 150
+          assert int(dynamic_policy.get('per_observed_candidate_market_minimum') or 0) == 30
+          assert dynamic_policy.get('conflict_and_insufficient_markets_never_enter_ledger') is True
+          assert dynamic_policy.get('profile_reference_markets_never_enter_dynamic_candidate_ledger') is True
+          if dynamic_evidence.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW':
+              assert dynamic_readiness.get('ready_for_performance_verdict') is True
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}
           assert integrity.get('status') == 'LEDGER_INTEGRITY_OK'
