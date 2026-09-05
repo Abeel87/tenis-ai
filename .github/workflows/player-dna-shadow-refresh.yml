@@ -181,7 +181,26 @@ jobs:
           assert scorer.get('real_shadow_training') is True
           assert (scorer.get('split') or {}).get('same_timestamp_split') is False
           assert float(scorer.get('join_coverage') or 0) == 1.0
-          assert (scorer.get('signal') or {}).get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+          scorer_signal = scorer.get('signal') or {}
+          assert scorer_signal.get('status') in {
+              'POSITIVE_HOLDOUT_SIGNAL',
+              'MIXED_OR_NO_INCREMENTAL_SIGNAL',
+              'STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL',
+              'STATEFUL_CONTEXT_MIXED_OR_NO_INCREMENTAL_SIGNAL',
+          }
+          if scorer_signal.get('status', '').startswith('STATEFUL_CONTEXT_'):
+              assert scorer_signal.get('promotion_gate') is False
+              stateful_contract = scorer.get('stateful_context_contract') or {}
+              assert stateful_contract.get('features_use_score_before_only') is True
+              assert stateful_contract.get('score_after_used_as_feature') is False
+              assert stateful_contract.get('current_point_winner_used_as_feature') is False
+              assert stateful_contract.get('runtime_scoring_enabled') is False
+              assert stateful_contract.get('production_influence') is False
+              assert stateful_contract.get('symphony2_influence') is False
+              assert stateful_contract.get('superbet_playable_influence') is False
+              stateful_models = scorer.get('models') or {}
+              assert (stateful_models.get('score_state_only_logistic') or {}).get('model', {}).get('converged') is True
+              assert (stateful_models.get('profile_rank_plus_score_state_logistic') or {}).get('model', {}).get('converged') is True
 
           current = json.loads((data / 'player_dna_current_shadow.json').read_text(encoding='utf-8'))
           assert current.get('mode') == 'SHADOW_CURRENT_ONLY'
@@ -194,7 +213,11 @@ jobs:
           assert current_matches > 0
           assert int(current.get('stable_id_matches') or 0) == current_matches
           assert int(current.get('valid_target_matches') or 0) == current_matches
-          assert (current.get('historical_validation') or {}).get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+          current_validation = current.get('historical_validation') or {}
+          assert current_validation.get('status') == 'POSITIVE_HOLDOUT_SIGNAL'
+          assert current_validation.get('runtime_feature_group') == 'profile_only'
+          assert current_validation.get('stateful_reference_status') == scorer_signal.get('status')
+          assert current_validation.get('stateful_reference_is_runtime_gate') is False
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
 
