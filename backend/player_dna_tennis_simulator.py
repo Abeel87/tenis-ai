@@ -8,6 +8,7 @@ separate historical backtest proves calibration. Nothing here may influence
 PROD, Symfonia 2.0 or Superbet PLAYABLE.
 """
 
+import gzip
 import heapq
 import json
 import math
@@ -19,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
 CALIBRATION = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_current_simulation.json"
+FULL_REPORT = ROOT / "data" / "derived" / "player_dna" / "current_simulation_full.json.gz"
 
 VERSION = "player-dna-tennis-simulator-v1"
 MODE = "SHADOW_SIMULATION_ONLY"
@@ -1504,6 +1506,40 @@ def simulate_current_report(
     }
 
 
+def _write_reports(report: dict[str, Any]) -> None:
+    """Archive the full research distribution; publish only the UI projection.
+
+    Simulation and backtest callers still receive the complete distribution.
+    Only the exhaustive set-shape sequences are artifact-only; their marginals
+    and all other fields remain available to the current UI and evidence ledger.
+    """
+    FULL_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(FULL_REPORT, "wt", encoding="utf-8") as handle:
+        json.dump(report, handle, ensure_ascii=False, separators=(",", ":"))
+
+    # Copy through JSON so publication cannot mutate the in-memory research report.
+    published = json.loads(json.dumps(report, ensure_ascii=False))
+    for row in published.get("matches", []):
+        for name in ("simulation", "hold_calibrated_candidate"):
+            simulation = row.get(name) or {}
+            branches = (simulation.get("trajectory") or {}).get("serve_order_conditioned") or {}
+            for branch in branches.values():
+                branch.pop("set_shape_trajectories", None)
+    published["publication"] = {
+        "mode": "UI_PROJECTION_FULL_RESEARCH_IN_ARTIFACT",
+        "artifact_path": "data/derived/player_dna/current_simulation_full.json.gz",
+        "artifact_only_fields": [
+            "matches[*].{simulation,hold_calibrated_candidate}.trajectory.serve_order_conditioned.*.set_shape_trajectories"
+        ],
+        "probabilities_modified": False,
+    }
+    payload = json.dumps(published, ensure_ascii=False, separators=(",", ":"))
+    if len(payload.encode("utf-8")) >= 100 * 1024 * 1024:
+        raise ValueError("Player DNA publication exceeds the GitHub file limit; full report archived")
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(payload, encoding="utf-8")
+
+
 def build() -> dict[str, Any]:
     try:
         current = json.loads(CURRENT.read_text(encoding="utf-8"))
@@ -1516,8 +1552,7 @@ def build() -> dict[str, Any]:
         calibration_report = {}
 
     report = simulate_current_report(current, calibration_report=calibration_report)
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_reports(report)
     print(json.dumps({
         "version": report["version"],
         "mode": report["mode"],

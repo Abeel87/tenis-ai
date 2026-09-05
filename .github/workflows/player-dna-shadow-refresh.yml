@@ -201,6 +201,23 @@ jobs:
               stateful_models = scorer.get('models') or {}
               assert (stateful_models.get('score_state_only_logistic') or {}).get('model', {}).get('converged') is True
               assert (stateful_models.get('profile_rank_plus_score_state_logistic') or {}).get('model', {}).get('converged') is True
+              assert (stateful_models.get('profile_rank_plus_lean_score_state_logistic') or {}).get('model', {}).get('converged') is True
+              assert stateful_contract.get('lean_state_groups') == ['point_pressure', 'set_match_state']
+              assert stateful_contract.get('lean_dropped_state_groups') == ['tiebreak_context', 'prior_momentum']
+              lean_comparison = scorer.get('lean_stateful_comparison') or {}
+              assert lean_comparison.get('mode') == 'SHADOW_MODEL_SELECTION_DIAGNOSTIC_ONLY'
+              assert lean_comparison.get('runtime_scoring_enabled') is False
+              assert lean_comparison.get('production_influence') is False
+              assert lean_comparison.get('promotion_gate') is False
+              stateful_walk_forward = scorer.get('stateful_walk_forward') or {}
+              assert stateful_walk_forward.get('lean_signal') in {
+                  'LEAN_STATEFUL_WALK_FORWARD_ROBUST_SHADOW',
+                  'LEAN_STATEFUL_WALK_FORWARD_NOT_YET_ROBUST',
+              }
+              assert stateful_walk_forward.get('lean_vs_full_signal') in {
+                  'LEAN_STATEFUL_SUPERIOR_TO_FULL_WALK_FORWARD_SHADOW',
+                  'LEAN_STATEFUL_NOT_SUPERIOR_TO_FULL_ON_ALL_FOLDS',
+              }
 
           current = json.loads((data / 'player_dna_current_shadow.json').read_text(encoding='utf-8'))
           assert current.get('mode') == 'SHADOW_CURRENT_ONLY'
@@ -536,6 +553,7 @@ jobs:
             frontend/data/player_dna_hold_walk_forward.json
             frontend/data/player_dna_prospective_validation.json
             data/derived/player_dna/current_point_model_shadow.json
+            data/derived/player_dna/current_simulation_full.json.gz
             data/derived/player_dna/point_events.jsonl.gz
             data/derived/player_dna/profile_snapshots.jsonl.gz
           if-no-files-found: error
