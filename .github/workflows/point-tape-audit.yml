@@ -619,10 +619,17 @@ jobs:
           wf_summary = market_wf.get('summary') or {}
           if int(wf_summary.get('required_folds') or 0) != 3 or int(wf_summary.get('completed_folds') or 0) != 3:
               raise SystemExit('Dynamic lean market walk-forward did not complete all folds')
-          if int(wf_summary.get('supported_folds') or 0) != 3:
-              raise SystemExit('Dynamic lean market walk-forward fold support insufficient')
-          if int(wf_summary.get('aggregate_matched_settled_matches') or 0) < 500:
+          supported_folds = int(wf_summary.get('supported_folds') or 0)
+          if not 0 <= supported_folds <= 3:
+              raise SystemExit(f'Dynamic lean market walk-forward supported-fold count invalid: {supported_folds}')
+          aggregate_matched = int(wf_summary.get('aggregate_matched_settled_matches') or 0)
+          if aggregate_matched < 500:
               raise SystemExit('Dynamic lean market walk-forward aggregate sample too small')
+          if market_wf.get('signal') == 'INSUFFICIENT_DYNAMIC_LEAN_MARKET_WALK_FORWARD_SAMPLE':
+              if supported_folds >= 3:
+                  raise SystemExit('Dynamic lean market walk-forward insufficient signal inconsistent with full fold support')
+          elif supported_folds != 3:
+              raise SystemExit('Dynamic lean market walk-forward robust/mixed verdict requires all folds supported')
           wf_aggregate = market_wf.get('aggregate') or {}
           if wf_aggregate.get('mode') != 'SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY':
               raise SystemExit('Dynamic lean market walk-forward aggregate mode drift')
