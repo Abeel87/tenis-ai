@@ -114,3 +114,36 @@ def test_walk_forward_summary_stays_shadow_mixed_when_only_one_fold_repeats():
     summary = summarize_walk_forward(folds, aggregate)
     assert summary["repeatable_gain_folds"] == 1
     assert summary["signal"] == "DYNAMIC_LEAN_MARKET_WALK_FORWARD_MIXED_OR_NO_GAIN"
+
+
+def test_walk_forward_summary_reports_insufficient_when_only_one_fold_has_support():
+    supported = _comparison(matched=180, positive=True)
+    unsupported = _comparison(matched=60, positive=True)
+    folds = [
+        {
+            "fold": 1,
+            "status": "FOLD_COMPLETE",
+            "comparison": supported,
+            "verdict": fold_verdict(supported),
+        },
+        {
+            "fold": 2,
+            "status": "FOLD_COMPLETE",
+            "comparison": unsupported,
+            "verdict": fold_verdict(unsupported),
+        },
+        {
+            "fold": 3,
+            "status": "FOLD_COMPLETE",
+            "comparison": unsupported,
+            "verdict": fold_verdict(unsupported),
+        },
+    ]
+
+    aggregate = _comparison(matched=501, positive=True)
+    summary = summarize_walk_forward(folds, aggregate)
+    assert summary["completed_folds"] == 3
+    assert summary["supported_folds"] == 1
+    assert summary["aggregate_matched_settled_matches"] == 501
+    assert summary["aggregate_promising"] is True
+    assert summary["signal"] == "INSUFFICIENT_DYNAMIC_LEAN_MARKET_WALK_FORWARD_SAMPLE"
