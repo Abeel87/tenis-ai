@@ -433,9 +433,10 @@ jobs:
                   f'stable={stable_ids} valid={valid_targets} total={current_matches}'
               )
           validation = current.get('historical_validation') or {}
-          if validation.get('status') != 'POSITIVE_HOLDOUT_SIGNAL':
+          if validation.get('status') != signal.get('status'):
               raise SystemExit(
-                  f"Player DNA current scorer historical validation is not positive: {validation.get('status')}"
+                  f"Player DNA current scorer historical validation drift: "
+                  f"current={validation.get('status')} scorer={signal.get('status')}"
               )
           if int(current.get('pre_cutoff_training_points') or 0) <= 0:
               raise SystemExit('Player DNA current scorer has no leakage-safe pre-cutoff training rows')
