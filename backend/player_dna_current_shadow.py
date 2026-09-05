@@ -225,7 +225,11 @@ def build_current_scores(
         if row.get("scheduled_time") < cutoff and str(row.get("match_id")) not in target_ids
     ]
 
-    validation = evaluate(leakage_safe_history, readiness={})
+    validation = evaluate(
+        leakage_safe_history,
+        readiness={},
+        include_stateful_diagnostics=False,
+    )
     legacy_status, legacy_positive, stateful_reference_status = _legacy_runtime_validation(validation)
     validation_signal = validation.get("signal") or {}
     report["historical_validation"] = {
