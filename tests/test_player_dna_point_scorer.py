@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from backend.player_dna_point_scorer import (
+    LEAN_DROPPED_STATE_GROUPS,
+    LEAN_STATE_GROUPS,
+    LEAN_STATE_NUMERIC,
     STATE_GROUPS,
     STATE_NUMERIC,
     _fit_logistic_newton,
@@ -297,3 +300,14 @@ def test_proper_score_gains_are_positive_when_candidate_improves():
         "match_equal_brier_gain": 0.008,
         "log_loss_gain": 0.015,
     }
+
+
+
+def test_lean_stateful_keeps_only_ablation_supported_groups():
+    assert LEAN_STATE_GROUPS == ("point_pressure", "set_match_state")
+    assert LEAN_DROPPED_STATE_GROUPS == ("tiebreak_context", "prior_momentum")
+    expected = STATE_GROUPS["point_pressure"] + STATE_GROUPS["set_match_state"]
+    assert LEAN_STATE_NUMERIC == expected
+    assert not (set(LEAN_STATE_NUMERIC) & set(STATE_GROUPS["tiebreak_context"]))
+    assert not (set(LEAN_STATE_NUMERIC) & set(STATE_GROUPS["prior_momentum"]))
+    assert set(LEAN_STATE_NUMERIC).issubset(set(STATE_NUMERIC))
