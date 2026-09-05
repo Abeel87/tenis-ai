@@ -8,12 +8,28 @@
   const WALK_FORWARD_URL='data/player_dna_hold_walk_forward.json';
   const SIMULATION_URL='data/player_dna_current_simulation.json';
   const MIN_SETTLED=150;
+  const DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS=150;
+  const DYNAMIC_MIN_SETTLED_PER_MARKET=30;
   const PANEL_ID='player-dna-shadow-stats';
   const MARKET_LABELS={
     first_set_tiebreak:'Tie-break · 1. set',
     'first_set_over_8.5':'Over 8.5 · 1. set',
     'first_set_over_9.5':'Over 9.5 · 1. set',
     'first_set_over_10.5':'Over 10.5 · 1. set'
+  };
+
+  const DYNAMIC_MARKET_LABELS={
+    match_p1_win:'P1 wygra mecz',
+    first_set_p1_win:'P1 wygra 1. set',
+    first_set_tiebreak:'Tie-break · 1. set',
+    'first_set_over_8.5':'Over 8.5 · 1. set',
+    'first_set_over_9.5':'Over 9.5 · 1. set',
+    'first_set_over_10.5':'Over 10.5 · 1. set',
+    'first_set_over_11.5':'Over 11.5 · 1. set',
+    'first_set_over_12.5':'Over 12.5 · 1. set',
+    'early_1:1':'1:1 po 2 gemach',
+    'early_2:2':'2:2 po 4 gemach',
+    'early_3:3':'3:3 po 6 gemach'
   };
 
   let lastLoad=null;
@@ -47,6 +63,13 @@
       return {label:'NIEPOTWIERDZONE',tone:'warn'};
     }
     return {label:'ZBIERAMY DANE',tone:'collecting'};
+  }
+
+  function dynamicSignalMeta(signal){
+    if(signal==='DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW'){
+      return {label:'PRÓBKA GOTOWA DO OCENY',tone:'good'};
+    }
+    return {label:'ZBIERAMY DYNAMIC LEAN',tone:'collecting'};
   }
 
   async function json(url){
@@ -112,6 +135,130 @@
           <em>${esc(verdict)}</em>
         </div>`;
     }).join('');
+  }
+
+  function dynamicMarketRows(dynamic){
+    const evaluation=dynamic?.evaluation||{};
+    const markets=evaluation.markets||{};
+    const seen=Array.isArray(evaluation.candidate_markets_seen)
+      ?evaluation.candidate_markets_seen
+      :Object.keys(markets).filter(key=>(n(markets[key]?.n)||0)>0);
+    if(!seen.length){
+      return '<div class="pds-empty">Brak zamrożonych rynków dynamic-candidate w ledgerze.</div>';
+    }
+    return seen.map(key=>{
+      const label=DYNAMIC_MARKET_LABELS[key]||key;
+      const row=markets[key]||{};
+      const count=n(row.n)||0;
+      const gain=n(row.brier_gain_dynamic_vs_profile);
+      const improved=row.dynamic_better_on_brier_and_log_loss===true;
+      const verdict=count===0?'czeka na wynik':improved?'dynamic lepiej':'brak przewagi';
+      const cls=count===0?'pending':improved?'good':'warn';
+      return `
+        <div class="pds-market-row ${cls}">
+          <div><b>${esc(label)}</b><small>settled n=${count}</small></div>
+          <span>PROFILE <strong>${brier(row.profile_reference_brier)}</strong></span>
+          <span>DYNAMIC <strong>${brier(row.dynamic_candidate_brier)}</strong></span>
+          <span>Δ <strong>${delta(gain)}</strong></span>
+          <em>${esc(verdict)}</em>
+        </div>`;
+    }).join('');
+  }
+
+  function dynamicEvidenceHTML(prospective){
+    const dynamic=prospective?.dynamic_lean_evidence;
+    if(!dynamic||dynamic.mode!=='SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY'){
+      return `
+        <section class="pds-dynamic">
+          <div class="pds-subhead">
+            <b>Dynamic lean · prospective ledger</b>
+            <small>Osobny forward-test candidate vs profile reference.</small>
+          </div>
+          <div class="pds-empty">Dynamic ledger pojawi się po pierwszym refreshu raportu z kontraktem #200.</div>
+        </section>`;
+    }
+
+    const counts=dynamic.counts||{};
+    const readiness=dynamic.evidence_readiness||{};
+    const total=readiness.settled_market_observations||{};
+    const marketSupport=readiness.observed_candidate_markets||{};
+    const sig=dynamicSignalMeta(dynamic.signal);
+    const snapshots=n(counts.snapshots)||0;
+    const settledSnapshots=n(counts.settled_snapshots)||0;
+    const settledObs=n(counts.settled_market_observations)||0;
+    const currentRows=n(counts.current_rows_with_dynamic_candidates)||0;
+    const currentSlots=n(counts.current_dynamic_candidate_market_slots)||0;
+    const remaining=n(total.remaining);
+    const target=n(total.required)||DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS;
+    const progress=Math.min(100,Math.round((settledObs/Math.max(target,1))*100));
+    const marketSupportRows=Object.entries(marketSupport);
+    const underSupported=marketSupportRows.filter(([,row])=>row?.support_sufficient!==true);
+    const integrity=dynamic.ledger_integrity||{};
+    const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
+
+    return `
+      <section class="pds-dynamic">
+        <div class="pds-dynamic-head">
+          <div class="pds-subhead">
+            <b>Dynamic lean · prospective ledger</b>
+            <small>Wyłącznie CONSENSUS_DYNAMIC_CANDIDATE · PROFILE jest zamrożonym benchmarkiem.</small>
+          </div>
+          <span class="pds-status ${sig.tone}">${esc(sig.label)}</span>
+        </div>
+
+        <div class="pds-grid">
+          <div class="pds-metric">
+            <span>Dynamic snapshots</span>
+            <b>${snapshots}</b>
+            <small>settled matches: ${settledSnapshots}</small>
+          </div>
+          <div class="pds-metric">
+            <span>Market observations</span>
+            <b>${settledObs} / ${target}</b>
+            <small>pozostało: ${remaining==null?'—':remaining}</small>
+          </div>
+          <div class="pds-metric">
+            <span>Candidate teraz</span>
+            <b>${currentRows}</b>
+            <small>${currentSlots} slotów rynkowych</small>
+          </div>
+          <div class="pds-metric">
+            <span>Ledger integrity</span>
+            <b>${integrityOk?'OK':'BRAK / BŁĄD'}</b>
+            <small>rewrite: ${n(integrity.rewritten_predictions)||0}</small>
+          </div>
+        </div>
+
+        <div class="pds-progress" aria-label="Postęp dynamic prospective">
+          <span style="width:${progress}%"></span>
+        </div>
+
+        <div class="pds-dynamic-support">
+          <b>Próg per rynek: ${DYNAMIC_MIN_SETTLED_PER_MARKET}</b>
+          <small>
+            ${marketSupportRows.length
+              ?(underSupported.length
+                ?`${underSupported.length} rynków nadal poniżej minimalnej próby.`
+                :'Każdy obserwowany candidate market ma minimalną próbę.')
+              :'Czekamy na pierwszy zamrożony candidate market.'}
+          </small>
+        </div>
+
+        <div class="pds-markets">
+          <div class="pds-subhead">
+            <b>Brier: PROFILE vs dynamic lean</b>
+            <small>Δ dodatnia = przewaga dynamic. Gotowa próbka nie oznacza jeszcze pozytywnego verdictu.</small>
+          </div>
+          ${dynamicMarketRows(dynamic)}
+        </div>
+
+        <p class="pds-foot">
+          ${readiness.ready_for_performance_verdict===true
+            ?'Próg ilościowy osiągnięty — można wykonać osobny performance verdict, ale nie ma auto-promocji.'
+            :'Trwa czyste zbieranie przyszłych wyników; performance verdict jest zablokowany do czasu pełnej próby.'}
+          SHADOW · zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
+        </p>
+      </section>`;
   }
 
   function settlementHealth(prospective){
@@ -253,6 +400,8 @@
           <div class="pds-empty">Diagnostyka rozliczania pojawi się po pierwszym refreshu raportu z nowym kontraktem.</div>
         `}
       </section>
+
+      ${dynamicEvidenceHTML(prospective)}
 
       <section class="pds-markets">
         <div class="pds-subhead">
