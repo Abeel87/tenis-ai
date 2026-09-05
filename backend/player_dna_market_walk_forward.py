@@ -10,6 +10,7 @@ or modify runtime, Symfonia 2.0, or Superbet PLAYABLE behavior.
 
 import json
 import math
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,10 @@ try:
     from backend.player_dna_market_backtest import (
         BINARY_MARKETS,
         MIN_PRIOR_MATCHES,
+        _binary_probability,
+        binary_head_to_head,
+        _binary_probability,
+        binary_head_to_head,
         POINTS,
         PROFILES,
         _dynamic_lean_comparison,
@@ -71,6 +76,11 @@ FOLD_MIN_MATCHED = 120
 FOLD_MIN_MARKET_N = 80
 FOLD_MIN_EVALUATED_MARKETS = 6
 AGGREGATE_MIN_MATCHED = 500
+SEGMENT_DIMENSIONS = ("tour", "surface", "tour_surface")
+SEGMENT_MIN_MATCHED = 40
+SEGMENT_MIN_MARKET_N = 30
+SEGMENT_MIN_EVALUATED_MARKETS = 4
+SEGMENT_REPEATABLE_MIN_FOLDS = 2
 
 
 def _match_times(feature_rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -169,6 +179,291 @@ def fold_verdict(comparison: dict[str, Any]) -> dict[str, Any]:
         "primary_match_and_first_set_better_on_both": primary_positive,
         "support_sufficient": support_sufficient,
         "repeatable_gain": repeatable_gain,
+    }
+
+
+
+def segment_verdict(
+    binary_markets: dict[str, dict[str, Any]],
+    matched_settled_matches: int,
+) -> dict[str, Any]:
+    evaluated = {
+        market: metrics
+        for market, metrics in binary_markets.items()
+        if int(metrics.get("n") or 0) >= SEGMENT_MIN_MARKET_N
+    }
+    positive_both = {
+        market
+        for market, metrics in evaluated.items()
+        if metrics.get("dynamic_better_on_brier_and_log_loss") is True
+    }
+    negative_both = {
+        market
+        for market, metrics in evaluated.items()
+        if float(metrics.get("brier_gain_vs_profile_only") or 0.0) < 0.0
+        and float(metrics.get("log_loss_gain_vs_profile_only") or 0.0) < 0.0
+    }
+    primary = {}
+    for market in ("match_p1_win", "first_set_p1_win"):
+        metrics = binary_markets.get(market) or {}
+        eligible = int(metrics.get("n") or 0) >= SEGMENT_MIN_MARKET_N
+        primary[market] = {
+            "eligible": eligible,
+            "positive_both": bool(
+                eligible
+                and metrics.get("dynamic_better_on_brier_and_log_loss") is True
+            ),
+            "negative_both": bool(
+                eligible
+                and float(metrics.get("brier_gain_vs_profile_only") or 0.0) < 0.0
+                and float(metrics.get("log_loss_gain_vs_profile_only") or 0.0) < 0.0
+            ),
+        }
+    support_sufficient = bool(
+        matched_settled_matches >= SEGMENT_MIN_MATCHED
+        and len(evaluated) >= SEGMENT_MIN_EVALUATED_MARKETS
+        and all(row["eligible"] for row in primary.values())
+    )
+    broad_positive = bool(
+        support_sufficient
+        and len(positive_both) >= math.ceil(0.60 * len(evaluated))
+    )
+    primary_positive = bool(
+        support_sufficient
+        and all(row["positive_both"] for row in primary.values())
+    )
+    return {
+        "matched_settled_matches": int(matched_settled_matches),
+        "markets_evaluated_ge_segment_min": len(evaluated),
+        "markets_positive_on_brier_and_log_loss": len(positive_both),
+        "markets_negative_on_brier_and_log_loss": len(negative_both),
+        "support_sufficient": support_sufficient,
+        "broad_positive": broad_positive,
+        "primary": primary,
+        "primary_both_positive": primary_positive,
+    }
+
+
+def _segment_value(
+    pair: dict[str, dict[str, Any]],
+    dimension: str,
+) -> str:
+    p1 = pair.get("p1") if isinstance(pair, dict) else None
+    p1 = p1 if isinstance(p1, dict) else {}
+    tour = str(p1.get("target_tour") or "unknown").strip().lower()
+    surface = str(p1.get("target_surface") or "unknown").strip().lower()
+    if dimension == "tour":
+        return tour
+    if dimension == "surface":
+        return surface
+    if dimension == "tour_surface":
+        return f"{tour}|{surface}"
+    raise ValueError(f"unsupported segment dimension: {dimension}")
+
+
+def _segment_comparison(
+    match_ids: set[str],
+    profile_predictions: dict[str, dict[str, Any]],
+    dynamic_predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    matched_ids = sorted(
+        set(match_ids)
+        & set(profile_predictions)
+        & set(dynamic_predictions)
+        & set(labels)
+    )
+    binary = {}
+    for market in BINARY_MARKETS:
+        records = []
+        for match_id in matched_ids:
+            actual = labels[match_id].get(market)
+            if not isinstance(actual, bool):
+                continue
+            reference_probability = _binary_probability(
+                profile_predictions[match_id]["simulation"],
+                market,
+            )
+            candidate_probability = _binary_probability(
+                dynamic_predictions[match_id]["simulation"],
+                market,
+            )
+            if reference_probability is None or candidate_probability is None:
+                continue
+            records.append(
+                (
+                    float(reference_probability),
+                    float(candidate_probability),
+                    int(actual),
+                )
+            )
+        binary[market] = binary_head_to_head(records)
+    return {
+        "matched_settled_matches": len(matched_ids),
+        "binary_markets_vs_profile_only": binary,
+        "verdict": segment_verdict(binary, len(matched_ids)),
+    }
+
+
+def fold_segment_diagnostics(
+    profile_predictions: dict[str, dict[str, Any]],
+    dynamic_predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    pairs: dict[str, dict[str, dict[str, Any]]],
+) -> dict[str, Any]:
+    matched_ids = (
+        set(profile_predictions)
+        & set(dynamic_predictions)
+        & set(labels)
+    )
+    out: dict[str, Any] = {}
+    for dimension in SEGMENT_DIMENSIONS:
+        groups: dict[str, set[str]] = defaultdict(set)
+        for match_id in matched_ids:
+            groups[_segment_value(pairs.get(match_id) or {}, dimension)].add(match_id)
+        out[dimension] = {
+            name: _segment_comparison(
+                ids,
+                profile_predictions,
+                dynamic_predictions,
+                labels,
+            )
+            for name, ids in sorted(groups.items())
+        }
+    return out
+
+
+def aggregate_segment_diagnostics(
+    folds: list[dict[str, Any]],
+) -> dict[str, Any]:
+    dimensions: dict[str, Any] = {}
+    positive_watchlist = []
+    negative_watchlist = []
+    mixed_watchlist = []
+
+    for dimension in SEGMENT_DIMENSIONS:
+        names = sorted({
+            name
+            for fold in folds
+            for name in (((fold.get("segments") or {}).get(dimension) or {}).keys())
+        })
+        rows = {}
+        for name in names:
+            segment_folds = []
+            for fold in folds:
+                segment = (((fold.get("segments") or {}).get(dimension) or {}).get(name))
+                if isinstance(segment, dict):
+                    segment_folds.append((int(fold.get("fold") or 0), segment))
+
+            supported = [
+                (fold_no, segment)
+                for fold_no, segment in segment_folds
+                if (segment.get("verdict") or {}).get("support_sufficient") is True
+            ]
+            market_summary = {}
+            for market in BINARY_MARKETS:
+                eligible_folds = 0
+                positive_folds = 0
+                negative_folds = 0
+                brier_gains = []
+                log_loss_gains = []
+                for _fold_no, segment in supported:
+                    metrics = (
+                        (segment.get("binary_markets_vs_profile_only") or {})
+                        .get(market)
+                        or {}
+                    )
+                    if int(metrics.get("n") or 0) < SEGMENT_MIN_MARKET_N:
+                        continue
+                    eligible_folds += 1
+                    brier_gain = float(metrics.get("brier_gain_vs_profile_only") or 0.0)
+                    log_loss_gain = float(metrics.get("log_loss_gain_vs_profile_only") or 0.0)
+                    brier_gains.append(brier_gain)
+                    log_loss_gains.append(log_loss_gain)
+                    if metrics.get("dynamic_better_on_brier_and_log_loss") is True:
+                        positive_folds += 1
+                    if brier_gain < 0.0 and log_loss_gain < 0.0:
+                        negative_folds += 1
+
+                repeatable_positive = bool(
+                    eligible_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
+                    and positive_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
+                )
+                repeatable_negative = bool(
+                    eligible_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
+                    and negative_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
+                )
+                market_summary[market] = {
+                    "eligible_folds": eligible_folds,
+                    "positive_both_folds": positive_folds,
+                    "negative_both_folds": negative_folds,
+                    "mean_brier_gain_vs_profile_only": (
+                        round(sum(brier_gains) / len(brier_gains), 6)
+                        if brier_gains else None
+                    ),
+                    "mean_log_loss_gain_vs_profile_only": (
+                        round(sum(log_loss_gains) / len(log_loss_gains), 6)
+                        if log_loss_gains else None
+                    ),
+                    "repeatable_positive": repeatable_positive,
+                    "repeatable_negative": repeatable_negative,
+                }
+                item = {
+                    "dimension": dimension,
+                    "segment": name,
+                    "market": market,
+                    "eligible_folds": eligible_folds,
+                    "positive_both_folds": positive_folds,
+                    "negative_both_folds": negative_folds,
+                }
+                if repeatable_positive:
+                    positive_watchlist.append(item)
+                elif repeatable_negative:
+                    negative_watchlist.append(item)
+                elif eligible_folds >= SEGMENT_REPEATABLE_MIN_FOLDS:
+                    mixed_watchlist.append(item)
+
+            rows[name] = {
+                "folds_seen": len(segment_folds),
+                "supported_folds": len(supported),
+                "matched_settled_matches_total": sum(
+                    int(segment.get("matched_settled_matches") or 0)
+                    for _fold_no, segment in segment_folds
+                ),
+                "markets": market_summary,
+                "primary_repeatability": {
+                    market: market_summary[market]
+                    for market in ("match_p1_win", "first_set_p1_win")
+                },
+                "repeatable_positive_markets": [
+                    market
+                    for market, metrics in market_summary.items()
+                    if metrics.get("repeatable_positive") is True
+                ],
+                "repeatable_negative_markets": [
+                    market
+                    for market, metrics in market_summary.items()
+                    if metrics.get("repeatable_negative") is True
+                ],
+            }
+        dimensions[dimension] = rows
+
+    return {
+        "policy": {
+            "dimensions": list(SEGMENT_DIMENSIONS),
+            "segment_min_matched": SEGMENT_MIN_MATCHED,
+            "segment_min_market_n": SEGMENT_MIN_MARKET_N,
+            "segment_min_evaluated_markets": SEGMENT_MIN_EVALUATED_MARKETS,
+            "repeatable_min_folds": SEGMENT_REPEATABLE_MIN_FOLDS,
+            "diagnostic_only": True,
+            "promotion_gate": False,
+        },
+        "dimensions": dimensions,
+        "watchlist": {
+            "repeatable_positive": positive_watchlist,
+            "repeatable_negative": negative_watchlist,
+            "mixed": mixed_watchlist,
+        },
     }
 
 
@@ -277,6 +572,11 @@ def evaluate_walk_forward(
             "fold_min_matched": FOLD_MIN_MATCHED,
             "fold_min_market_n": FOLD_MIN_MARKET_N,
             "aggregate_min_matched": AGGREGATE_MIN_MATCHED,
+            "segment_dimensions": list(SEGMENT_DIMENSIONS),
+            "segment_min_matched": SEGMENT_MIN_MATCHED,
+            "segment_min_market_n": SEGMENT_MIN_MARKET_N,
+            "segment_min_evaluated_markets": SEGMENT_MIN_EVALUATED_MARKETS,
+            "segment_repeatable_min_folds": SEGMENT_REPEATABLE_MIN_FOLDS,
         },
         "chronology_contract": {
             "models_refit_per_fold_on_prior_matches_only": True,
@@ -396,6 +696,12 @@ def evaluate_walk_forward(
             lean_model=lean_model,
         )
         verdict = fold_verdict(comparison)
+        segments = fold_segment_diagnostics(
+            profile_predictions,
+            dynamic_predictions,
+            labels,
+            pairs,
+        )
         folds.append({
             **fold_meta,
             "status": "FOLD_COMPLETE",
@@ -405,6 +711,7 @@ def evaluate_walk_forward(
             "dynamic_prediction_counts": dynamic_counts,
             "comparison": comparison,
             "verdict": verdict,
+            "segments": segments,
         })
 
         matched_ids = (
@@ -426,6 +733,7 @@ def evaluate_walk_forward(
         lean_model={"converged": True},
     )
     summary = summarize_walk_forward(folds, aggregate_comparison)
+    segment_aggregate = aggregate_segment_diagnostics(folds)
 
     return {
         **base_report,
@@ -438,6 +746,7 @@ def evaluate_walk_forward(
         "folds": folds,
         "aggregate": aggregate_comparison,
         "summary": summary,
+        "segment_aggregate": segment_aggregate,
     }
 
 
