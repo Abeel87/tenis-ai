@@ -279,6 +279,81 @@ def _score_state_features(point: dict[str, Any], history: dict[str, Any]) -> dic
     return out
 
 
+
+def lean_state_features_from_simulation_state(state: dict[str, Any]) -> dict[str, Any]:
+    """Translate a hypothetical pre-point tennis state into the validated lean feature set.
+
+    This adapter intentionally excludes tiebreak_context and prior_momentum,
+    matching the PR191/PR192 lean selection. It is deterministic, pre-point
+    only, and is intended for SHADOW dynamic simulation/backtest use.
+    """
+    if not isinstance(state, dict):
+        raise ValueError("simulation state must be a mapping")
+    if state.get("is_tiebreak") is True:
+        raise ValueError("lean stateful simulation adapter excludes tiebreak state")
+
+    server = state.get("server")
+    receiver = state.get("receiver")
+    sets = state.get("sets")
+    games = state.get("games")
+    best_of = state.get("best_of")
+    if server not in (1, 2) or receiver not in (1, 2) or server == receiver:
+        raise ValueError("simulation state must identify opposite server/receiver sides")
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if not isinstance(sets, list) or len(sets) != 2 or not isinstance(games, list) or len(games) != 2:
+        raise ValueError("sets and games must be p1/p2 pairs")
+    try:
+        sets_pair = (int(sets[0]), int(sets[1]))
+        games_pair = (int(games[0]), int(games[1]))
+    except (TypeError, ValueError):
+        raise ValueError("sets and games must be integer pairs") from None
+    if min(*sets_pair, *games_pair) < 0:
+        raise ValueError("sets and games must be non-negative")
+
+    server_token = _point_token(state.get("server_points"))
+    receiver_token = _point_token(state.get("receiver_points"))
+    server_stage = _standard_point_stage(server_token)
+    receiver_stage = _standard_point_stage(receiver_token)
+    if server_stage is None or receiver_stage is None:
+        raise ValueError("standard-game point tokens must be 0/15/30/40/A")
+
+    server_gp, receiver_gp, deuce, server_adv, receiver_adv = _game_point_flags(
+        server_token,
+        receiver_token,
+        False,
+    )
+    if server_gp is None or receiver_gp is None:
+        raise ValueError("could not derive game-point flags")
+
+    server_idx = server - 1
+    receiver_idx = receiver - 1
+    set_pair = (sets_pair[server_idx], sets_pair[receiver_idx])
+    game_pair = (games_pair[server_idx], games_pair[receiver_idx])
+    needed = best_of // 2 + 1
+
+    features = {
+        "server_point_stage_before": server_stage,
+        "receiver_point_stage_before": receiver_stage,
+        "deuce_before": deuce,
+        "server_advantage_before": server_adv,
+        "receiver_advantage_before": receiver_adv,
+        "server_game_point_before": server_gp,
+        "break_point_against_server_before": receiver_gp,
+        "sets_completed_before": sets_pair[0] + sets_pair[1],
+        "set_diff_server_before": set_pair[0] - set_pair[1],
+        "current_set_games_total_before": games_pair[0] + games_pair[1],
+        "current_set_game_diff_server_before": game_pair[0] - game_pair[1],
+        "late_set_before": int(games_pair[0] + games_pair[1] >= 8),
+        "deciding_set_before": int(
+            set_pair[0] == needed - 1 and set_pair[1] == needed - 1
+        ),
+    }
+    if list(features) != LEAN_STATE_NUMERIC:
+        raise AssertionError("lean simulation feature order drifted from LEAN_STATE_NUMERIC")
+    return features
+
+
 def _state_feature_lookup(point_rows: list[dict[str, Any]]) -> tuple[dict[tuple[str, int], dict[str, Any]], dict[str, int]]:
     ordered = sorted(
         [row for row in point_rows if isinstance(row, dict)],
