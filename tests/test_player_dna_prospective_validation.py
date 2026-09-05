@@ -4,7 +4,10 @@ import pytest
 
 from backend.player_dna_prospective_validation import (
     DURATION_MARKETS,
+    _build_trajectory_evidence,
     _ledger_integrity,
+    _settle_trajectory_snapshots,
+    _trajectory_evaluation,
     build_report,
     prospective_eligibility,
 )
@@ -714,3 +717,297 @@ def test_dynamic_performance_verdict_is_not_proven_when_supported_joint_segment_
     ] is False
     assert verdict["tour_surface_failures"][0]["segment"] == "challenger|clay"
     assert verdict["tour_surface_failures"][0]["market"] == "match_p1_win"
+
+
+
+def _trajectory_simulation_row(match_id="traj-1", scheduled=None):
+    scheduled = scheduled or datetime(2026, 9, 8, 12, 0, tzinfo=timezone.utc)
+
+    def branch():
+        return {
+            "first_set_top_game_paths": [
+                {
+                    "progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "4:2", "5:2", "6:2"],
+                    "final_score": "6:2",
+                    "probability": 0.20,
+                },
+                {
+                    "progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "3:3", "4:3", "5:3", "6:3"],
+                    "final_score": "6:3",
+                    "probability": 0.15,
+                },
+            ],
+            "match_top_set_paths": [
+                {"set_scores": ["6:2", "6:3"], "probability": 0.22},
+                {"set_scores": ["6:3", "4:6", "6:4"], "probability": 0.12},
+            ],
+            "match_storylines": [
+                {"match_score": "2:0", "probability": 0.60},
+                {"match_score": "2:1", "probability": 0.25},
+                {"match_score": "1:2", "probability": 0.10},
+            ],
+            "full_match_top_game_paths": [
+                {
+                    "sets": [
+                        {"progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "4:2", "5:2", "6:2"]},
+                        {"progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "3:3", "4:3", "5:3", "6:3"]},
+                    ],
+                    "probability": 0.05,
+                },
+                {
+                    "sets": [
+                        {"progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "3:3", "4:3", "5:3", "6:3"]},
+                        {"progression": ["1:0", "1:1", "2:1", "2:2", "3:2", "4:2", "5:2", "6:2"]},
+                    ],
+                    "probability": 0.04,
+                },
+            ],
+        }
+
+    simulation = {
+        "mode": "SHADOW_SIMULATION_ONLY",
+        "validation_status": "UNVALIDATED_MATCH_LEVEL",
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "trajectory": {
+            "status": "SHADOW_TRAJECTORY_FOUNDATION",
+            "validation_status": "UNVALIDATED_MATCH_LEVEL",
+            "checkpoints_neutral_start_server": {
+                "after_2_games": [
+                    {"score": "1:1", "probability": 0.70},
+                    {"score": "2:0", "probability": 0.20},
+                    {"score": "0:2", "probability": 0.10},
+                ],
+                "after_4_games": [
+                    {"score": "2:2", "probability": 0.60},
+                    {"score": "3:1", "probability": 0.25},
+                    {"score": "1:3", "probability": 0.15},
+                ],
+                "after_6_games": [
+                    {"score": "3:3", "probability": 0.50},
+                    {"score": "4:2", "probability": 0.30},
+                    {"score": "2:4", "probability": 0.20},
+                ],
+            },
+            "serve_order_conditioned": {
+                "p1_serves_first": branch(),
+                "p2_serves_first": branch(),
+            },
+            "contract": {
+                "production_influence": False,
+                "symphony2_influence": False,
+                "superbet_playable_influence": False,
+            },
+        },
+    }
+    return {
+        "version": "player-dna-current-simulation-v1",
+        "mode": "SHADOW_SIMULATION_ONLY",
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "match_level_validation_required": True,
+        "auto_promote": False,
+        "matches": [{
+            "match_id": match_id,
+            "scheduled_time": scheduled.isoformat(),
+            "tour": "challenger",
+            "surface": "hard",
+            "p1": "A",
+            "p2": "B",
+            "source_model_fingerprint_sha256": "trajectory-fingerprint",
+            "production_influence": False,
+            "validation_status": "UNVALIDATED_MATCH_LEVEL",
+            "simulation": simulation,
+        }],
+    }
+
+
+def _trajectory_actual():
+    first_set = ["1:0", "1:1", "2:1", "2:2", "3:2", "4:2", "5:2", "6:2"]
+    second_set = ["1:0", "1:1", "2:1", "2:2", "3:2", "3:3", "4:3", "5:3", "6:3"]
+    return {
+        "first_server": 1,
+        "checkpoint_scores": {"2": "1:1", "4": "2:2", "6": "4:2"},
+        "first_set_progression": first_set,
+        "set_score_sequence": ["6:2", "6:3"],
+        "set_progressions": [first_set, second_set],
+        "full_match_progression_complete": True,
+    }
+
+
+def test_trajectory_prospective_ledger_freezes_pre_match_ranked_paths_without_claiming_validation():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(scheduled=now + timedelta(hours=2))
+    report = build_report(
+        current,
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic={},
+        now=now,
+    )
+
+    trajectory = report["trajectory_evidence"]
+    assert trajectory["mode"] == "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY"
+    assert trajectory["status"] == "TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE"
+    assert trajectory["signal"] == "COLLECTING_TRAJECTORY_PROSPECTIVE_EVIDENCE"
+    assert trajectory["production_influence"] is False
+    assert trajectory["runtime_switch_enabled"] is False
+    assert trajectory["symphony2_influence"] is False
+    assert trajectory["superbet_playable_influence"] is False
+    assert trajectory["auto_integrate"] is False
+    assert trajectory["performance_verdict_emitted"] is False
+    assert trajectory["validation_scope"]["no_trajectory_performance_threshold_invented_yet"] is True
+    assert trajectory["counts"]["snapshots"] == 1
+    assert trajectory["counts"]["settled_snapshots"] == 0
+
+    snapshot = trajectory["snapshots"][0]
+    assert snapshot["captured_pre_match"] is True
+    predictions = snapshot["trajectory_predictions"]
+    assert predictions["checkpoints_neutral_start_server"]["after_2_games"][0]["score"] == "1:1"
+    assert predictions["serve_order_conditioned"]["p1_serves_first"]["match_storylines"][0]["match_score"] == "2:0"
+
+
+def test_trajectory_prospective_settlement_and_metrics_use_observed_first_server_only_after_match():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(scheduled=now + timedelta(hours=2))
+    first = _build_trajectory_evidence(current, {}, {}, now)
+    snapshots = [dict(row) for row in first["snapshots"]]
+
+    labels = {
+        "traj-1": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        }
+    }
+    _settle_trajectory_snapshots(snapshots, labels, now + timedelta(hours=5))
+    evaluation = _trajectory_evaluation(snapshots)
+
+    assert snapshots[0]["settled"] is True
+    assert snapshots[0]["actual"]["first_server"] == 1
+    assert evaluation["settled_matches"] == 1
+    assert evaluation["checkpoint_neutral_start_server"]["after_2_games"]["top1"] == 1.0
+    assert evaluation["checkpoint_neutral_start_server"]["after_4_games"]["top1"] == 1.0
+    assert evaluation["checkpoint_neutral_start_server"]["after_6_games"]["top1"] == 0.0
+    assert evaluation["checkpoint_neutral_start_server"]["after_6_games"]["top3"] == 1.0
+    storyline = evaluation[
+        "primary_storyline_match_score_conditioned_on_observed_first_server"
+    ]
+    assert storyline["top1"] == 1.0
+    first_set = evaluation[
+        "first_set_complete_path_conditioned_on_observed_first_server"
+    ]
+    assert first_set["top1"] == 1.0
+    match_sets = evaluation[
+        "match_set_sequence_conditioned_on_observed_first_server"
+    ]
+    assert match_sets["top1"] == 1.0
+    full_match = evaluation[
+        "full_match_game_path_conditioned_on_observed_first_server"
+    ]
+    assert full_match["top1"] == 1.0
+    assert full_match["mean_best_prefix_fraction_top4"] == 1.0
+
+
+def test_trajectory_prospective_ledger_never_rewrites_frozen_prediction():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    first_current = _trajectory_simulation_row(scheduled=now + timedelta(hours=2))
+    first = _build_trajectory_evidence(first_current, {}, {}, now)
+    original = first["snapshots"][0]["trajectory_predictions"]
+
+    changed_current = _trajectory_simulation_row(scheduled=now + timedelta(hours=2))
+    changed_current["matches"][0]["simulation"]["trajectory"][
+        "checkpoints_neutral_start_server"
+    ]["after_2_games"][0]["score"] = "2:0"
+
+    second = _build_trajectory_evidence(
+        changed_current,
+        {},
+        {"trajectory_evidence": first},
+        now + timedelta(minutes=10),
+    )
+    assert second["ledger_integrity"]["status"] == "LEDGER_INTEGRITY_OK"
+    assert second["ledger_integrity"]["rewritten_predictions"] == 0
+    assert second["snapshots"][0]["trajectory_predictions"] == original
+
+
+
+def test_trajectory_segment_diagnostics_keep_direct_tour_surface_separate_from_marginals():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    first = _trajectory_simulation_row(
+        match_id="traj-hard",
+        scheduled=now + timedelta(hours=2),
+    )
+    second = _trajectory_simulation_row(
+        match_id="traj-clay",
+        scheduled=now + timedelta(hours=2),
+    )
+    second["matches"][0]["surface"] = "clay"
+    first["matches"].extend(second["matches"])
+
+    initial = _build_trajectory_evidence(first, {}, {}, now)
+    snapshots = [dict(row) for row in initial["snapshots"]]
+    labels = {
+        "traj-hard": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+        "traj-clay": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+    }
+    _settle_trajectory_snapshots(
+        snapshots,
+        labels,
+        now + timedelta(hours=5),
+    )
+
+    report = _build_trajectory_evidence(
+        {"mode": "SHADOW_SIMULATION_ONLY", "matches": []},
+        labels,
+        {"trajectory_evidence": {"snapshots": snapshots}},
+        now + timedelta(hours=6),
+    )
+    diagnostics = report["segment_diagnostics"]
+
+    assert diagnostics["tour"]["challenger"]["settled"] == 2
+    assert diagnostics["surface"]["hard"]["settled"] == 1
+    assert diagnostics["surface"]["clay"]["settled"] == 1
+    assert diagnostics["tour_surface"]["challenger|hard"]["settled"] == 1
+    assert diagnostics["tour_surface"]["challenger|clay"]["settled"] == 1
+    assert diagnostics["coverage"]["tour_surface_segments_seen"] == 2
+    assert diagnostics["coverage"]["tour_surface_segments_with_settled"] == 2
+
+    policy = diagnostics["policy"]
+    assert policy["diagnostic_only"] is True
+    assert policy[
+        "direct_tour_surface_rows_are_built_from_same_match_snapshots"
+    ] is True
+    assert policy[
+        "marginal_tour_and_surface_results_never_imply_joint_validation"
+    ] is True
+    assert policy["minimum_segment_sample_not_defined_yet"] is True
+    assert policy["performance_verdict_forbidden"] is True
+
+
+def test_trajectory_segment_diagnostics_do_not_invent_sample_threshold_or_verdict():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-one",
+        scheduled=now + timedelta(hours=2),
+    )
+    evidence = _build_trajectory_evidence(current, {}, {}, now)
+
+    diagnostics = evidence["segment_diagnostics"]
+    assert diagnostics["tour"]["challenger"]["snapshots"] == 1
+    assert diagnostics["tour"]["challenger"]["settled"] == 0
+    assert diagnostics["surface"]["hard"]["snapshots"] == 1
+    assert diagnostics["tour_surface"]["challenger|hard"]["snapshots"] == 1
+    assert evidence["performance_verdict_emitted"] is False
+    assert evidence["validation_scope"][
+        "no_trajectory_performance_threshold_invented_yet"
+    ] is True

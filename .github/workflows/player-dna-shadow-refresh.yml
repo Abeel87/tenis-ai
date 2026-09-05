@@ -706,6 +706,43 @@ jobs:
               }
           else:
               assert dynamic_verdict.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY'
+
+          trajectory_evidence = prospective.get('trajectory_evidence') or {}
+          assert trajectory_evidence.get('mode') == 'SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY'
+          assert trajectory_evidence.get('status') == 'TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE'
+          assert trajectory_evidence.get('signal') == 'COLLECTING_TRAJECTORY_PROSPECTIVE_EVIDENCE'
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_integrate'):
+              assert trajectory_evidence.get(key) is False
+          assert trajectory_evidence.get('performance_verdict_emitted') is False
+          trajectory_scope = trajectory_evidence.get('validation_scope') or {}
+          assert trajectory_scope.get('checkpoint_scores_after_games') == [2, 4, 6]
+          assert trajectory_scope.get('checkpoint_start_server_policy') == 'NEUTRAL_PRE_MATCH_AVERAGE'
+          assert trajectory_scope.get('conditioned_paths_use_observed_first_server_only_after_settlement') is True
+          assert trajectory_scope.get('primary_storyline_probability_scope') == 'MATCH_SCORE_FAMILY'
+          assert trajectory_scope.get('full_match_exact_game_paths_are_diagnostic_only') is True
+          assert trajectory_scope.get('no_trajectory_performance_threshold_invented_yet') is True
+          trajectory_integrity = trajectory_evidence.get('ledger_integrity') or {}
+          assert trajectory_integrity.get('status') == 'LEDGER_INTEGRITY_OK'
+          for key in ('rewritten_predictions', 'settlement_regressions', 'settled_actual_rewrites', 'settled_at_rewrites', 'missing_previous_snapshots', 'duplicate_previous_match_ids', 'duplicate_current_match_ids'):
+              assert int(trajectory_integrity.get(key) or 0) == 0
+          trajectory_eval = trajectory_evidence.get('evaluation') or {}
+          assert isinstance(trajectory_eval.get('checkpoint_neutral_start_server'), dict)
+          assert isinstance(trajectory_eval.get('primary_storyline_match_score_conditioned_on_observed_first_server'), dict)
+          assert isinstance(trajectory_eval.get('first_set_complete_path_conditioned_on_observed_first_server'), dict)
+          assert isinstance(trajectory_eval.get('match_set_sequence_conditioned_on_observed_first_server'), dict)
+          assert isinstance(trajectory_eval.get('full_match_game_path_conditioned_on_observed_first_server'), dict)
+          trajectory_segments = trajectory_evidence.get('segment_diagnostics') or {}
+          trajectory_segment_policy = trajectory_segments.get('policy') or {}
+          assert trajectory_segment_policy.get('diagnostic_only') is True
+          assert trajectory_segment_policy.get('direct_tour_surface_rows_are_built_from_same_match_snapshots') is True
+          assert trajectory_segment_policy.get('marginal_tour_and_surface_results_never_imply_joint_validation') is True
+          assert trajectory_segment_policy.get('minimum_segment_sample_not_defined_yet') is True
+          assert trajectory_segment_policy.get('performance_verdict_forbidden') is True
+          assert isinstance(trajectory_segments.get('tour'), dict)
+          assert isinstance(trajectory_segments.get('surface'), dict)
+          assert isinstance(trajectory_segments.get('tour_surface'), dict)
+          assert isinstance(trajectory_segments.get('coverage'), dict)
+
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}
           assert integrity.get('status') == 'LEDGER_INTEGRITY_OK'
