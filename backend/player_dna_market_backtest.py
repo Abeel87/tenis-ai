@@ -464,6 +464,8 @@ def _dynamic_candidate_simulation(
         profile_p1_serve,
         profile_p2_serve,
     )
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] = {}
+    set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] = {}
 
     def tiebreak_probability(_state: dict[str, Any]) -> float:
         return p1_tiebreak
@@ -479,6 +481,8 @@ def _dynamic_candidate_simulation(
             start_server=start_server,
             sets_before=(0, 0),
             best_of=best_of,
+            hold_cache=hold_cache,
+            set_cache=set_cache,
         ):
             probability = 0.5 * float(row["probability"])
             first_set_exact[str(row["score"])] += probability
@@ -499,6 +503,7 @@ def _dynamic_candidate_simulation(
                 start_server=start_server,
                 sets_before=(0, 0),
                 best_of=best_of,
+                hold_cache=hold_cache,
             )
             probability += 0.5 * float(distribution.get(target, 0.0))
         early[label] = probability
@@ -510,6 +515,8 @@ def _dynamic_candidate_simulation(
             tiebreak_probability,
             best_of=best_of,
             start_server=start_server,
+            hold_cache=hold_cache,
+            set_cache=set_cache,
         ).items():
             exact_match[score] += 0.5 * float(probability)
 
@@ -547,6 +554,8 @@ def _dynamic_candidate_simulation(
             "p2_serve_point_win": float(profile_p2_serve),
         },
         "dynamic_callback_unique_states": len(cache),
+        "dynamic_hold_cache_states": len(hold_cache),
+        "dynamic_set_cache_states": len(set_cache),
         "early_equal_score": early,
         "first_set": {
             "p1_win": p1_set,
