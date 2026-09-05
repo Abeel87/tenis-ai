@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from backend.player_dna_current_shadow import (
+    _legacy_runtime_validation,
     _profile_map,
     _serve_feature_row,
 )
@@ -67,3 +68,29 @@ def test_current_output_preserves_best_of_for_downstream_simulation():
     receiver = _profile("11", 2, 1, 5)
     features = _serve_feature_row(target, server, receiver)
     assert features["match_format"] == "BO5"
+
+
+def test_current_runtime_validation_stays_profile_only_when_stateful_signal_is_positive():
+    validation = {
+        "signal": {
+            "status": "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL",
+            "legacy_profile_signal_positive": True,
+        }
+    }
+    status, legacy_positive, stateful_status = _legacy_runtime_validation(validation)
+    assert status == "POSITIVE_HOLDOUT_SIGNAL"
+    assert legacy_positive is True
+    assert stateful_status == "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL"
+
+
+def test_current_runtime_validation_blocks_when_legacy_profile_signal_is_not_positive():
+    validation = {
+        "signal": {
+            "status": "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL",
+            "legacy_profile_signal_positive": False,
+        }
+    }
+    status, legacy_positive, stateful_status = _legacy_runtime_validation(validation)
+    assert status == "MIXED_OR_NO_INCREMENTAL_SIGNAL"
+    assert legacy_positive is False
+    assert stateful_status == "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL"
