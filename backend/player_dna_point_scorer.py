@@ -67,6 +67,37 @@ STATE_NUMERIC = [
     "previous_game_break_winner_is_server",
 ]
 
+STATE_GROUPS = {
+    "tiebreak_context": ["is_tiebreak"],
+    "point_pressure": [
+        "server_point_stage_before",
+        "receiver_point_stage_before",
+        "deuce_before",
+        "server_advantage_before",
+        "receiver_advantage_before",
+        "server_game_point_before",
+        "break_point_against_server_before",
+    ],
+    "set_match_state": [
+        "sets_completed_before",
+        "set_diff_server_before",
+        "current_set_games_total_before",
+        "current_set_game_diff_server_before",
+        "late_set_before",
+        "deciding_set_before",
+    ],
+    "prior_momentum": [
+        "previous_point_won_by_server",
+        "server_point_streak_before",
+        "receiver_point_streak_before",
+        "previous_game_won_by_server",
+        "previous_game_was_break",
+        "previous_game_break_winner_is_server",
+    ],
+}
+
+STATE_WALK_FORWARD_FRACTIONS = (0.55, 0.70, 0.85, 1.0)
+
 
 def _int_pair(value: Any) -> tuple[int, int] | None:
     if not isinstance(value, list) or len(value) < 2:
@@ -663,7 +694,234 @@ def _fit_candidate(
     }, probs
 
 
-def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None) -> dict[str, Any]:
+def _proper_score_gains(
+    reference_metrics: dict[str, Any],
+    candidate_metrics: dict[str, Any],
+) -> dict[str, float]:
+    return {
+        "brier_gain": round(
+            float(reference_metrics["brier"]) - float(candidate_metrics["brier"]),
+            6,
+        ),
+        "match_equal_brier_gain": round(
+            float(reference_metrics["match_equal_brier"])
+            - float(candidate_metrics["match_equal_brier"]),
+            6,
+        ),
+        "log_loss_gain": round(
+            float(reference_metrics["log_loss"]) - float(candidate_metrics["log_loss"]),
+            6,
+        ),
+    }
+
+
+def _state_group_ablation(
+    train: pd.DataFrame,
+    holdout: pd.DataFrame,
+    combined_numeric: list[str],
+    full_stateful_metrics: dict[str, Any],
+) -> dict[str, Any]:
+    expected = sorted(STATE_NUMERIC)
+    observed = sorted(feature for values in STATE_GROUPS.values() for feature in values)
+    if observed != expected or len(observed) != len(set(observed)):
+        raise ValueError("STATE_GROUPS must partition STATE_NUMERIC exactly once")
+
+    rows: dict[str, Any] = {}
+    for group_name, removed_features in STATE_GROUPS.items():
+        removed = set(removed_features)
+        numeric = combined_numeric + [
+            feature for feature in STATE_NUMERIC if feature not in removed
+        ]
+        result, _ = _fit_candidate(train, holdout, numeric)
+        metrics = result["metrics"]
+        penalty = {
+            "brier_penalty_when_removed": round(
+                float(metrics["brier"]) - float(full_stateful_metrics["brier"]),
+                6,
+            ),
+            "match_equal_brier_penalty_when_removed": round(
+                float(metrics["match_equal_brier"])
+                - float(full_stateful_metrics["match_equal_brier"]),
+                6,
+            ),
+            "log_loss_penalty_when_removed": round(
+                float(metrics["log_loss"]) - float(full_stateful_metrics["log_loss"]),
+                6,
+            ),
+        }
+        rows[group_name] = {
+            "removed_features": list(removed_features),
+            "metrics_without_group": metrics,
+            **penalty,
+            "contributes_on_all_primary_proper_scores": bool(
+                penalty["brier_penalty_when_removed"] > 0
+                and penalty["match_equal_brier_penalty_when_removed"] > 0
+                and penalty["log_loss_penalty_when_removed"] > 0
+            ),
+        }
+
+    strongest = max(
+        rows,
+        key=lambda name: float(rows[name]["brier_penalty_when_removed"]),
+    ) if rows else None
+    return {
+        "mode": "LEAVE_ONE_STATE_GROUP_OUT",
+        "reference_model": "profile_rank_plus_score_state_logistic",
+        "interpretation": "positive penalty when removed means the group adds holdout information",
+        "groups": rows,
+        "strongest_group_by_brier_penalty": strongest,
+        "promotion_gate": False,
+    }
+
+
+def _walk_forward_slices(
+    rows: list[dict[str, Any]],
+) -> list[tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]]:
+    eligible = _cohort(rows, EVAL_MIN_PRIOR_MATCHES)
+    if not eligible:
+        return []
+
+    match_times: dict[str, datetime] = {}
+    for row in eligible:
+        match_id = str(row["match_id"])
+        scheduled = row["scheduled_time"]
+        previous = match_times.get(match_id)
+        if previous is not None and previous != scheduled:
+            raise ValueError(f"conflicting scheduled_time for match {match_id}")
+        match_times[match_id] = scheduled
+
+    unique_times = sorted(set(match_times.values()))
+    if len(unique_times) < 20:
+        return []
+
+    n = len(unique_times)
+    boundaries = [
+        max(1, min(n - 1, int(n * fraction)))
+        for fraction in STATE_WALK_FORWARD_FRACTIONS[:-1]
+    ] + [n]
+    if not (0 < boundaries[0] < boundaries[1] < boundaries[2] < boundaries[3]):
+        return []
+
+    slices = []
+    for fold_index in range(3):
+        train_end = boundaries[fold_index]
+        test_end = boundaries[fold_index + 1]
+        train_times = set(unique_times[:train_end])
+        test_times = set(unique_times[train_end:test_end])
+        train_ids = {mid for mid, ts in match_times.items() if ts in train_times}
+        test_ids = {mid for mid, ts in match_times.items() if ts in test_times}
+        train_rows = [row for row in eligible if str(row["match_id"]) in train_ids]
+        test_rows = [row for row in eligible if str(row["match_id"]) in test_ids]
+        slices.append((
+            train_rows,
+            test_rows,
+            {
+                "fold": fold_index + 1,
+                "train_matches": len(train_ids),
+                "test_matches": len(test_ids),
+                "train_end_exclusive": unique_times[train_end].isoformat()
+                if train_end < n else None,
+                "test_start": unique_times[train_end].isoformat()
+                if train_end < n else None,
+                "test_end_exclusive": unique_times[test_end].isoformat()
+                if test_end < n else None,
+                "same_timestamp_split": False,
+                "test_window_disjoint": True,
+            },
+        ))
+    return slices
+
+
+def _stateful_walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    combined_numeric = list(PROFILE_NUMERIC) + list(RANK_NUMERIC)
+    stateful_numeric = combined_numeric + list(STATE_NUMERIC)
+    fold_rows = []
+
+    for train_rows, test_rows, meta in _walk_forward_slices(rows):
+        train = _frame(train_rows)
+        test = _frame(test_rows)
+        enough = (
+            len(train) >= 1000
+            and len(test) >= 500
+            and train["match_id"].nunique() >= 30
+            and test["match_id"].nunique() >= 20
+            and train["server_won"].nunique() == 2
+            and test["server_won"].nunique() == 2
+        ) if not train.empty and not test.empty else False
+
+        if not enough:
+            fold_rows.append({
+                **meta,
+                "status": "INSUFFICIENT_FOLD_SAMPLE",
+                "train_points": int(len(train)),
+                "test_points": int(len(test)),
+            })
+            continue
+
+        reference_result, _ = _fit_candidate(train, test, combined_numeric)
+        stateful_result, _ = _fit_candidate(train, test, stateful_numeric)
+        gains = _proper_score_gains(
+            reference_result["metrics"],
+            stateful_result["metrics"],
+        )
+        positive = bool(
+            gains["brier_gain"] > 0
+            and gains["match_equal_brier_gain"] > 0
+            and gains["log_loss_gain"] > 0
+        )
+        fold_rows.append({
+            **meta,
+            "status": "POSITIVE_STATEFUL_FOLD" if positive else "MIXED_OR_NEGATIVE_STATEFUL_FOLD",
+            "train_points": int(len(train)),
+            "test_points": int(len(test)),
+            "profile_plus_rank_metrics": reference_result["metrics"],
+            "stateful_metrics": stateful_result["metrics"],
+            **gains,
+        })
+
+    completed = [row for row in fold_rows if "brier_gain" in row]
+    positive = [row for row in completed if row["status"] == "POSITIVE_STATEFUL_FOLD"]
+
+    def _summary(name: str) -> dict[str, float] | None:
+        values = [float(row[name]) for row in completed]
+        if not values:
+            return None
+        return {
+            "mean": round(float(np.mean(values)), 6),
+            "min": round(float(np.min(values)), 6),
+            "max": round(float(np.max(values)), 6),
+        }
+
+    robust = len(completed) == 3 and len(positive) == 3
+    return {
+        "mode": "EXPANDING_TRAIN_DISJOINT_TIME_WINDOWS",
+        "fractions": list(STATE_WALK_FORWARD_FRACTIONS),
+        "folds": fold_rows,
+        "completed_folds": len(completed),
+        "positive_folds": len(positive),
+        "brier_gain": _summary("brier_gain"),
+        "match_equal_brier_gain": _summary("match_equal_brier_gain"),
+        "log_loss_gain": _summary("log_loss_gain"),
+        "signal": (
+            "STATEFUL_CONTEXT_WALK_FORWARD_ROBUST_SHADOW"
+            if robust
+            else "STATEFUL_CONTEXT_WALK_FORWARD_NOT_YET_ROBUST"
+        ),
+        "all_three_folds_positive_on_all_primary_proper_scores": robust,
+        "same_timestamp_groups_not_split": True,
+        "test_windows_disjoint": True,
+        "production_influence": False,
+        "runtime_scoring_enabled": False,
+        "promotion_gate": False,
+    }
+
+
+def evaluate(
+    rows: list[dict[str, Any]],
+    readiness: dict[str, Any] | None = None,
+    *,
+    include_stateful_diagnostics: bool = True,
+) -> dict[str, Any]:
     train_all, holdout_all, split = split_chronological_by_match(rows)
     train = _frame(_cohort(train_all, EVAL_MIN_PRIOR_MATCHES))
     holdout = _frame(_cohort(holdout_all, EVAL_MIN_PRIOR_MATCHES))
@@ -853,11 +1111,22 @@ def evaluate(rows: list[dict[str, Any]], readiness: dict[str, Any] | None = None
         "current_point_winner_used_as_feature": False,
         "momentum_uses_only_proven_contiguous_prior_atomic_points": True,
         "state_numeric_features": state_numeric,
+        "state_groups": STATE_GROUPS,
         "runtime_scoring_enabled": False,
         "production_influence": False,
         "symphony2_influence": False,
         "superbet_playable_influence": False,
     }
+    if include_stateful_diagnostics:
+        report["stateful_ablation"] = _state_group_ablation(
+            train,
+            holdout,
+            combined_numeric,
+            sm,
+        )
+        report["stateful_walk_forward"] = _stateful_walk_forward(rows)
+    else:
+        report["stateful_diagnostics_skipped_for_runtime_validation"] = True
     return report
 
 
