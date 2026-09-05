@@ -1,8 +1,13 @@
 from backend.player_dna_market_backtest import (
+    _dynamic_candidate_simulation,
+    _rank_context_by_match,
     _trajectory_validation,
+    binary_head_to_head,
     binary_metrics,
+    categorical_head_to_head,
     reconstruct_match_label,
 )
+from backend.player_dna_tennis_simulator import simulate_match
 
 
 def _row(idx, sets, games, server=None):
@@ -50,6 +55,107 @@ def test_incomplete_match_is_not_labeled_as_settled():
         _row(2, (1, 0), ([6, 2], [4, 1])),
     ]
     assert reconstruct_match_label(rows) is None
+
+
+def _profile(side, rank):
+    return {
+        "player_side": side,
+        "target_surface": "hard",
+        "target_tour": "ATP",
+        "target_format": "BO3",
+        "overall_prior": {
+            "matches": 8,
+            "serve_win_rate": 0.64,
+            "return_win_rate": 0.36,
+        },
+        "same_surface_prior": {
+            "matches": 5,
+            "serve_win_rate": 0.63,
+            "return_win_rate": 0.37,
+        },
+        "rank": rank,
+    }
+
+
+def test_dynamic_candidate_with_constant_callback_matches_legacy_summary():
+    constant_probability = 0.60
+    intercept = 0.4054651081081642
+    model = {
+        "schema": {
+            "numeric": [],
+            "medians": {},
+            "means": {},
+            "stds": {},
+            "categorical_levels": {
+                "surface": [],
+                "tour": [],
+                "match_format": [],
+            },
+        },
+        "beta": [intercept],
+        "converged": True,
+    }
+    dynamic = _dynamic_candidate_simulation(
+        _profile("p1", 10),
+        _profile("p2", 20),
+        p1_rank=10,
+        p2_rank=20,
+        lean_model=model,
+        profile_p1_serve=constant_probability,
+        profile_p2_serve=constant_probability,
+        best_of=3,
+    )
+    legacy = simulate_match(
+        constant_probability,
+        constant_probability,
+        best_of=3,
+    )
+    assert abs(dynamic["match"]["p1_win"] - legacy["match"]["p1_win"]) < 1e-12
+    assert abs(dynamic["first_set"]["p1_win"] - legacy["first_set"]["p1_win"]) < 1e-12
+    assert abs(dynamic["first_set"]["tiebreak"] - legacy["first_set"]["tiebreak"]) < 1e-12
+    assert dynamic["match"]["exact_score"].keys() == legacy["match"]["exact_score"].keys()
+    for score, probability in legacy["match"]["exact_score"].items():
+        assert abs(dynamic["match"]["exact_score"][score] - probability) < 1e-12
+    for label, probability in legacy["early_equal_score"].items():
+        assert abs(dynamic["early_equal_score"][label] - probability) < 1e-12
+
+
+def test_rank_context_orients_server_and_receiver_to_p1_p2():
+    rows = [
+        {
+            "match_id": "m1",
+            "server": 2,
+            "server_ranking": 40,
+            "receiver_ranking": 12,
+        }
+    ]
+    contexts, counts = _rank_context_by_match(rows)
+    assert contexts["m1"] == {"p1_rank": 12.0, "p2_rank": 40.0}
+    assert counts["matches_with_rank_context"] == 1
+
+
+def test_head_to_head_metrics_reward_better_dynamic_candidate():
+    binary = binary_head_to_head([
+        (0.55, 0.90, 1),
+        (0.45, 0.10, 0),
+        (0.60, 0.80, 1),
+        (0.40, 0.20, 0),
+    ])
+    assert binary["brier_gain_vs_profile_only"] > 0
+    assert binary["log_loss_gain_vs_profile_only"] > 0
+    assert binary["dynamic_better_on_brier_and_log_loss"] is True
+
+    categorical = categorical_head_to_head([
+        ({"2:0": 0.40, "2:1": 0.30, "0:2": 0.30},
+         {"2:0": 0.75, "2:1": 0.15, "0:2": 0.10},
+         "2:0"),
+        ({"2:0": 0.35, "2:1": 0.35, "0:2": 0.30},
+         {"2:0": 0.10, "2:1": 0.80, "0:2": 0.10},
+         "2:1"),
+    ])
+    assert categorical["brier_gain_vs_profile_only"] > 0
+    assert categorical["nll_gain_vs_profile_only"] > 0
+    assert categorical["top1_accuracy_delta_pp"] > 0
 
 
 def test_binary_metrics_rewards_calibrated_predictions_over_train_rate():
