@@ -110,6 +110,34 @@
   font-size:.73rem;
   line-height:1.45;
 }
+.pds-dynamic{
+  margin-top:14px;
+  padding-top:13px;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.pds-dynamic-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.pds-dynamic-support{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 10px;
+  margin:0 0 8px;
+  border-radius:11px;
+  background:rgba(119,185,255,.055);
+  border:1px solid rgba(119,185,255,.14);
+}
+.pds-dynamic-support b{font-size:.78rem}
+.pds-dynamic-support small{
+  color:var(--muted,#8fa1b8);
+  font-size:.72rem;
+  text-align:right;
+}
 .pds-markets{margin-top:13px}
 .pds-subhead{margin-bottom:8px}
 .pds-market-row{
@@ -282,8 +310,10 @@
   .pds-trajectory-grid{grid-template-columns:1fr}
   .pds-checkpoints{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .pds-checkpoints>span{padding:8px}
-  .pds-head,.pds-segments{align-items:flex-start}
-  .pds-segments{flex-direction:column}
+  .pds-head,.pds-segments,.pds-dynamic-head{align-items:flex-start}
+  .pds-segments,.pds-dynamic-head{flex-direction:column}
+  .pds-dynamic-support{align-items:flex-start;flex-direction:column}
+  .pds-dynamic-support small{text-align:left}
   .pds-chips{justify-content:flex-start}
   .pds-market-row{
     grid-template-columns:minmax(130px,1.2fr) repeat(3,minmax(55px,.6fr));
