@@ -196,6 +196,7 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
+    latest_provider_rank: dict[int, dict[str, Any]] = {}
     snapshots: list[dict[str, Any]] = []
     readiness_any = Counter()
     readiness_surface = Counter()
@@ -236,8 +237,26 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                     "player_side": side,
                     "player_id": pid,
                     "opponent_id": opponent,
-                    "player_ranking": ranking,
-                    "opponent_ranking": opponent_ranking,
+                    "player_ranking": effective_ranking,
+                    "opponent_ranking": effective_opponent_ranking,
+                    "player_ranking_source": player_rank_source,
+                    "opponent_ranking_source": opponent_rank_source,
+                    "player_ranking_source_match_id": (
+                        None if player_rank_source == "current_fixture_provider"
+                        else player_prior_rank.get("source_match_id")
+                    ),
+                    "opponent_ranking_source_match_id": (
+                        None if opponent_rank_source == "current_fixture_provider"
+                        else opponent_prior_rank.get("source_match_id")
+                    ),
+                    "player_ranking_source_scheduled_time": (
+                        None if player_rank_source == "current_fixture_provider"
+                        else player_prior_rank.get("source_scheduled_time")
+                    ),
+                    "opponent_ranking_source_scheduled_time": (
+                        None if opponent_rank_source == "current_fixture_provider"
+                        else opponent_prior_rank.get("source_scheduled_time")
+                    ),
                     "overall_prior": overall_snapshot,
                     "same_surface_prior": surface_snapshot,
                 })
@@ -369,9 +388,23 @@ def build_current_target_profiles(
     for scheduled, target_group_iter in groupby(normalized_targets, key=lambda m: m["scheduled"]):
         while hist_index < len(history) and history[hist_index]["scheduled"] < scheduled:
             match = history[hist_index]
-            for pid in (match["p1"], match["p2"]):
+            for side, pid, ranking in (
+                ("p1", match["p1"], match.get("p1_ranking")),
+                ("p2", match["p2"], match.get("p2_ranking")),
+            ):
                 _accumulate(overall[pid], match["contrib"][pid])
                 _accumulate(by_surface[pid][match["surface"]], match["contrib"][pid])
+                if (
+                    isinstance(ranking, int)
+                    and not isinstance(ranking, bool)
+                    and ranking > 0
+                ):
+                    latest_provider_rank[pid] = {
+                        "ranking": ranking,
+                        "source_match_id": match["match_id"],
+                        "source_scheduled_time": match["scheduled"].isoformat(),
+                        "player_side": side,
+                    }
             hist_index += 1
 
         target_group = list(target_group_iter)
@@ -388,6 +421,34 @@ def build_current_target_profiles(
                     target.get("p2_ranking"), target.get("p1_ranking"),
                 ),
             ):
+                player_prior_rank = latest_provider_rank.get(pid) or {}
+                opponent_prior_rank = latest_provider_rank.get(opponent) or {}
+                effective_ranking = (
+                    ranking
+                    if isinstance(ranking, int) and not isinstance(ranking, bool) and ranking > 0
+                    else player_prior_rank.get("ranking")
+                )
+                effective_opponent_ranking = (
+                    opponent_ranking
+                    if isinstance(opponent_ranking, int)
+                    and not isinstance(opponent_ranking, bool)
+                    and opponent_ranking > 0
+                    else opponent_prior_rank.get("ranking")
+                )
+                player_rank_source = (
+                    "current_fixture_provider"
+                    if ranking is not None
+                    else "latest_strict_prior_provider_match_context"
+                    if effective_ranking is not None
+                    else None
+                )
+                opponent_rank_source = (
+                    "current_fixture_provider"
+                    if opponent_ranking is not None
+                    else "latest_strict_prior_provider_match_context"
+                    if effective_opponent_ranking is not None
+                    else None
+                )
                 snapshots.append({
                     "version": VERSION,
                     "mode": "SHADOW_CURRENT_AS_OF_PROFILE",
@@ -427,6 +488,23 @@ def build_current_target_profiles(
         "snapshots": len(snapshots),
         "players": len(players),
         "excluded_current_history_matches": excluded_current_history_matches,
+        "ranking_context": {
+            "provider_backed_only": True,
+            "name_or_fuzzy_fallback_forbidden": True,
+            "current_fixture_preferred": True,
+            "strict_prior_provider_context_fallback_enabled": True,
+            "snapshots_with_player_rank": sum(
+                1 for row in snapshots if row.get("player_ranking") is not None
+            ),
+            "snapshots_with_current_fixture_player_rank": sum(
+                1 for row in snapshots
+                if row.get("player_ranking_source") == "current_fixture_provider"
+            ),
+            "snapshots_with_prior_provider_player_rank": sum(
+                1 for row in snapshots
+                if row.get("player_ranking_source") == "latest_strict_prior_provider_match_context"
+            ),
+        },
         "source_counts": source_counts,
         "rejected_targets": dict(rejected),
     }
