@@ -96,6 +96,16 @@ STATE_GROUPS = {
     ],
 }
 
+LEAN_STATE_GROUPS = ("point_pressure", "set_match_state")
+LEAN_STATE_NUMERIC = [
+    feature
+    for group_name in LEAN_STATE_GROUPS
+    for feature in STATE_GROUPS[group_name]
+]
+LEAN_DROPPED_STATE_GROUPS = tuple(
+    group_name for group_name in STATE_GROUPS if group_name not in LEAN_STATE_GROUPS
+)
+
 STATE_WALK_FORWARD_FRACTIONS = (0.55, 0.70, 0.85, 1.0)
 
 
@@ -835,6 +845,7 @@ def _walk_forward_slices(
 def _stateful_walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
     combined_numeric = list(PROFILE_NUMERIC) + list(RANK_NUMERIC)
     stateful_numeric = combined_numeric + list(STATE_NUMERIC)
+    lean_stateful_numeric = combined_numeric + list(LEAN_STATE_NUMERIC)
     fold_rows = []
 
     for train_rows, test_rows, meta in _walk_forward_slices(rows):
@@ -860,27 +871,62 @@ def _stateful_walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
         reference_result, _ = _fit_candidate(train, test, combined_numeric)
         stateful_result, _ = _fit_candidate(train, test, stateful_numeric)
+        lean_result, _ = _fit_candidate(train, test, lean_stateful_numeric)
+
         gains = _proper_score_gains(
             reference_result["metrics"],
             stateful_result["metrics"],
+        )
+        lean_gains = _proper_score_gains(
+            reference_result["metrics"],
+            lean_result["metrics"],
+        )
+        lean_vs_full = _proper_score_gains(
+            stateful_result["metrics"],
+            lean_result["metrics"],
         )
         positive = bool(
             gains["brier_gain"] > 0
             and gains["match_equal_brier_gain"] > 0
             and gains["log_loss_gain"] > 0
         )
+        lean_positive = bool(
+            lean_gains["brier_gain"] > 0
+            and lean_gains["match_equal_brier_gain"] > 0
+            and lean_gains["log_loss_gain"] > 0
+        )
+        lean_superior = bool(
+            lean_vs_full["brier_gain"] > 0
+            and lean_vs_full["match_equal_brier_gain"] > 0
+            and lean_vs_full["log_loss_gain"] > 0
+        )
         fold_rows.append({
             **meta,
             "status": "POSITIVE_STATEFUL_FOLD" if positive else "MIXED_OR_NEGATIVE_STATEFUL_FOLD",
+            "lean_status": "POSITIVE_LEAN_STATEFUL_FOLD" if lean_positive else "MIXED_OR_NEGATIVE_LEAN_STATEFUL_FOLD",
+            "lean_vs_full_status": "LEAN_SUPERIOR_TO_FULL_FOLD" if lean_superior else "LEAN_NOT_SUPERIOR_TO_FULL_FOLD",
             "train_points": int(len(train)),
             "test_points": int(len(test)),
             "profile_plus_rank_metrics": reference_result["metrics"],
             "stateful_metrics": stateful_result["metrics"],
+            "lean_stateful_metrics": lean_result["metrics"],
             **gains,
+            "lean_brier_gain_vs_profile_plus_rank": lean_gains["brier_gain"],
+            "lean_match_equal_brier_gain_vs_profile_plus_rank": lean_gains["match_equal_brier_gain"],
+            "lean_log_loss_gain_vs_profile_plus_rank": lean_gains["log_loss_gain"],
+            "lean_brier_gain_vs_full_stateful": lean_vs_full["brier_gain"],
+            "lean_match_equal_brier_gain_vs_full_stateful": lean_vs_full["match_equal_brier_gain"],
+            "lean_log_loss_gain_vs_full_stateful": lean_vs_full["log_loss_gain"],
         })
 
     completed = [row for row in fold_rows if "brier_gain" in row]
     positive = [row for row in completed if row["status"] == "POSITIVE_STATEFUL_FOLD"]
+    lean_positive = [
+        row for row in completed if row.get("lean_status") == "POSITIVE_LEAN_STATEFUL_FOLD"
+    ]
+    lean_superior = [
+        row for row in completed if row.get("lean_vs_full_status") == "LEAN_SUPERIOR_TO_FULL_FOLD"
+    ]
 
     def _summary(name: str) -> dict[str, float] | None:
         values = [float(row[name]) for row in completed]
@@ -893,21 +939,43 @@ def _stateful_walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
         }
 
     robust = len(completed) == 3 and len(positive) == 3
+    lean_robust = len(completed) == 3 and len(lean_positive) == 3
+    lean_superior_all = len(completed) == 3 and len(lean_superior) == 3
     return {
         "mode": "EXPANDING_TRAIN_DISJOINT_TIME_WINDOWS",
         "fractions": list(STATE_WALK_FORWARD_FRACTIONS),
         "folds": fold_rows,
         "completed_folds": len(completed),
         "positive_folds": len(positive),
+        "lean_positive_folds": len(lean_positive),
+        "lean_superior_to_full_folds": len(lean_superior),
         "brier_gain": _summary("brier_gain"),
         "match_equal_brier_gain": _summary("match_equal_brier_gain"),
         "log_loss_gain": _summary("log_loss_gain"),
+        "lean_brier_gain_vs_profile_plus_rank": _summary("lean_brier_gain_vs_profile_plus_rank"),
+        "lean_match_equal_brier_gain_vs_profile_plus_rank": _summary("lean_match_equal_brier_gain_vs_profile_plus_rank"),
+        "lean_log_loss_gain_vs_profile_plus_rank": _summary("lean_log_loss_gain_vs_profile_plus_rank"),
+        "lean_brier_gain_vs_full_stateful": _summary("lean_brier_gain_vs_full_stateful"),
+        "lean_match_equal_brier_gain_vs_full_stateful": _summary("lean_match_equal_brier_gain_vs_full_stateful"),
+        "lean_log_loss_gain_vs_full_stateful": _summary("lean_log_loss_gain_vs_full_stateful"),
         "signal": (
             "STATEFUL_CONTEXT_WALK_FORWARD_ROBUST_SHADOW"
             if robust
             else "STATEFUL_CONTEXT_WALK_FORWARD_NOT_YET_ROBUST"
         ),
+        "lean_signal": (
+            "LEAN_STATEFUL_WALK_FORWARD_ROBUST_SHADOW"
+            if lean_robust
+            else "LEAN_STATEFUL_WALK_FORWARD_NOT_YET_ROBUST"
+        ),
+        "lean_vs_full_signal": (
+            "LEAN_STATEFUL_SUPERIOR_TO_FULL_WALK_FORWARD_SHADOW"
+            if lean_superior_all
+            else "LEAN_STATEFUL_NOT_SUPERIOR_TO_FULL_ON_ALL_FOLDS"
+        ),
         "all_three_folds_positive_on_all_primary_proper_scores": robust,
+        "lean_all_three_folds_positive_on_all_primary_proper_scores": lean_robust,
+        "lean_superior_to_full_on_all_three_folds": lean_superior_all,
         "same_timestamp_groups_not_split": True,
         "test_windows_disjoint": True,
         "production_influence": False,
@@ -974,14 +1042,21 @@ def evaluate(
     profile_numeric = list(PROFILE_NUMERIC)
     rank_numeric = list(RANK_NUMERIC)
     state_numeric = list(STATE_NUMERIC)
+    lean_state_numeric = list(LEAN_STATE_NUMERIC)
     combined_numeric = profile_numeric + rank_numeric
     stateful_numeric = combined_numeric + state_numeric
+    lean_stateful_numeric = combined_numeric + lean_state_numeric
 
     profile_result, profile_probs = _fit_candidate(train, holdout, profile_numeric)
     rank_result, rank_probs = _fit_candidate(train, holdout, rank_numeric)
     combined_result, combined_probs = _fit_candidate(train, holdout, combined_numeric)
     state_only_result, state_only_probs = _fit_candidate(train, holdout, state_numeric)
     stateful_result, stateful_probs = _fit_candidate(train, holdout, stateful_numeric)
+    lean_stateful_result, lean_stateful_probs = _fit_candidate(
+        train,
+        holdout,
+        lean_stateful_numeric,
+    )
 
     base_probability = float(train["server_won"].mean())
     baseline_probs = np.full(len(holdout), base_probability, dtype=float)
@@ -997,12 +1072,14 @@ def evaluate(
         "profile_plus_rank_logistic": combined_result,
         "score_state_only_logistic": state_only_result,
         "profile_rank_plus_score_state_logistic": stateful_result,
+        "profile_rank_plus_lean_score_state_logistic": lean_stateful_result,
     }
 
     pm = profile_result["metrics"]
     rm = rank_result["metrics"]
     cm = combined_result["metrics"]
     sm = stateful_result["metrics"]
+    lm = lean_stateful_result["metrics"]
 
     profile_gain = float(rm["brier"] - pm["brier"])
     combined_gain = float(rm["brier"] - cm["brier"])
@@ -1010,6 +1087,8 @@ def evaluate(
     stateful_gain = float(cm["brier"] - sm["brier"])
     stateful_match_equal_gain = float(cm["match_equal_brier"] - sm["match_equal_brier"])
     stateful_log_loss_gain = float(cm["log_loss"] - sm["log_loss"])
+    lean_gains_vs_combined = _proper_score_gains(cm, lm)
+    lean_gains_vs_full = _proper_score_gains(sm, lm)
 
     profile_signal_positive = profile_gain > 0 and combined_gain > 0 and match_equal_gain > 0
     stateful_signal_positive = (
@@ -1045,6 +1124,22 @@ def evaluate(
         "stateful_match_equal_brier_gain_vs_profile_plus_rank": round(stateful_match_equal_gain, 6),
         "stateful_log_loss_gain_vs_profile_plus_rank": round(stateful_log_loss_gain, 6),
         "stateful_improves_all_primary_proper_scores": bool(stateful_signal_positive),
+        "lean_stateful_brier_gain_vs_profile_plus_rank": lean_gains_vs_combined["brier_gain"],
+        "lean_stateful_match_equal_brier_gain_vs_profile_plus_rank": lean_gains_vs_combined["match_equal_brier_gain"],
+        "lean_stateful_log_loss_gain_vs_profile_plus_rank": lean_gains_vs_combined["log_loss_gain"],
+        "lean_stateful_brier_gain_vs_full_stateful": lean_gains_vs_full["brier_gain"],
+        "lean_stateful_match_equal_brier_gain_vs_full_stateful": lean_gains_vs_full["match_equal_brier_gain"],
+        "lean_stateful_log_loss_gain_vs_full_stateful": lean_gains_vs_full["log_loss_gain"],
+        "lean_stateful_improves_profile_plus_rank_on_all_primary_proper_scores": bool(
+            lean_gains_vs_combined["brier_gain"] > 0
+            and lean_gains_vs_combined["match_equal_brier_gain"] > 0
+            and lean_gains_vs_combined["log_loss_gain"] > 0
+        ),
+        "lean_stateful_beats_full_stateful_on_all_primary_proper_scores": bool(
+            lean_gains_vs_full["brier_gain"] > 0
+            and lean_gains_vs_full["match_equal_brier_gain"] > 0
+            and lean_gains_vs_full["log_loss_gain"] > 0
+        ),
         "promotion_gate": False,
     }
     report["segments"] = {
@@ -1112,6 +1207,10 @@ def evaluate(
         "momentum_uses_only_proven_contiguous_prior_atomic_points": True,
         "state_numeric_features": state_numeric,
         "state_groups": STATE_GROUPS,
+        "lean_state_groups": list(LEAN_STATE_GROUPS),
+        "lean_state_numeric_features": lean_state_numeric,
+        "lean_dropped_state_groups": list(LEAN_DROPPED_STATE_GROUPS),
+        "lean_selection_source": "PR191 leave-one-group-out ablation; point_pressure strongest, set_match_state positive, tiebreak neutral, prior_momentum negative",
         "runtime_scoring_enabled": False,
         "production_influence": False,
         "symphony2_influence": False,
@@ -1125,6 +1224,19 @@ def evaluate(
             sm,
         )
         report["stateful_walk_forward"] = _stateful_walk_forward(rows)
+        report["lean_stateful_comparison"] = {
+            "mode": "SHADOW_MODEL_SELECTION_DIAGNOSTIC_ONLY",
+            "full_stateful_metrics": sm,
+            "lean_stateful_metrics": lm,
+            "lean_vs_profile_plus_rank": lean_gains_vs_combined,
+            "lean_vs_full_stateful": lean_gains_vs_full,
+            "lean_feature_count": len(lean_state_numeric),
+            "full_state_feature_count": len(state_numeric),
+            "dropped_groups": list(LEAN_DROPPED_STATE_GROUPS),
+            "runtime_scoring_enabled": False,
+            "production_influence": False,
+            "promotion_gate": False,
+        }
     else:
         report["stateful_diagnostics_skipped_for_runtime_validation"] = True
     return report
