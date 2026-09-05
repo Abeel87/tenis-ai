@@ -10,6 +10,7 @@ from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
     dynamic_hold_probability,
     dynamic_match_outcomes,
+    dynamic_score_distribution_after_games,
     early_equal_score_probability,
     hold_probability,
     inverse_hold_probability,
@@ -93,6 +94,33 @@ def test_dynamic_hold_callback_sees_pre_point_pressure_states_only():
     assert all(row["server"] == 2 and row["receiver"] == 1 for row in seen)
     assert all(row["sets"] == [1, 1] and row["games"] == [4, 5] for row in seen)
     assert all(row["is_tiebreak"] is False for row in seen)
+
+
+@pytest.mark.parametrize("games", [2, 4, 6])
+@pytest.mark.parametrize("start_server", [1, 2])
+def test_dynamic_checkpoints_reduce_exactly_to_legacy_iid(games, start_server):
+    p1_serve = 0.63
+    p2_serve = 0.59
+
+    def point_callback(state):
+        return p1_serve if state["server"] == 1 else p2_serve
+
+    dynamic = dynamic_score_distribution_after_games(
+        point_callback,
+        games=games,
+        start_server=start_server,
+        sets_before=(0, 0),
+        best_of=3,
+    )
+    legacy = score_distribution_after_games(
+        p1_serve,
+        p2_serve,
+        games,
+        start_server,
+    )
+    assert set(dynamic) == set(legacy)
+    for score in legacy:
+        assert math.isclose(dynamic[score], legacy[score], abs_tol=1e-12)
 
 
 @pytest.mark.parametrize("best_of", [3, 5])
