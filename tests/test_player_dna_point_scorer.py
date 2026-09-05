@@ -15,6 +15,7 @@ from backend.player_dna_point_scorer import (
     _walk_forward_slices,
     build_feature_rows,
     lean_state_features_from_simulation_state,
+    predict_logistic_row,
     split_chronological_by_match,
 )
 
@@ -282,6 +283,47 @@ def test_stateful_walk_forward_uses_disjoint_timestamp_windows():
         test_times = {row["scheduled_time"] for row in test_rows}
         assert train_times.isdisjoint(test_times)
         prior_test_ids |= test_ids
+
+
+def test_fast_single_row_predictor_matches_dataframe_predictor():
+    frame = pd.DataFrame([
+        {
+            "server_won": 1,
+            "surface": "hard",
+            "tour": "ATP",
+            "match_format": "BO3",
+            "server_rank": 10,
+            "receiver_rank": 30,
+        },
+        {
+            "server_won": 0,
+            "surface": "clay",
+            "tour": "ATP",
+            "match_format": "BO3",
+            "server_rank": 80,
+            "receiver_rank": 20,
+        },
+        {
+            "server_won": 1,
+            "surface": "hard",
+            "tour": "WTA",
+            "match_format": "BO3",
+            "server_rank": 15,
+            "receiver_rank": 50,
+        },
+        {
+            "server_won": 0,
+            "surface": "clay",
+            "tour": "WTA",
+            "match_format": "BO3",
+            "server_rank": 70,
+            "receiver_rank": 25,
+        },
+    ])
+    model = _fit_logistic_newton(frame, ["server_rank", "receiver_rank"])
+    expected = _predict_logistic(model, frame.iloc[[2]])[0]
+    observed = predict_logistic_row(model, frame.iloc[2].to_dict())
+    assert abs(float(expected) - observed) < 1e-12
 
 
 def test_proper_score_gains_are_positive_when_candidate_improves():
