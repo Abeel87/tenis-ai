@@ -393,20 +393,42 @@ def aggregate_segment_diagnostics(
                     eligible_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
                     and negative_folds >= SEGMENT_REPEATABLE_MIN_FOLDS
                 )
+                mean_brier_gain = (
+                    round(sum(brier_gains) / len(brier_gains), 6)
+                    if brier_gains else None
+                )
+                mean_log_loss_gain = (
+                    round(sum(log_loss_gains) / len(log_loss_gains), 6)
+                    if log_loss_gains else None
+                )
+                mean_positive_on_both = bool(
+                    mean_brier_gain is not None
+                    and mean_log_loss_gain is not None
+                    and mean_brier_gain > 0.0
+                    and mean_log_loss_gain > 0.0
+                )
+                mean_negative_on_both = bool(
+                    mean_brier_gain is not None
+                    and mean_log_loss_gain is not None
+                    and mean_brier_gain < 0.0
+                    and mean_log_loss_gain < 0.0
+                )
                 market_summary[market] = {
                     "eligible_folds": eligible_folds,
                     "positive_both_folds": positive_folds,
                     "negative_both_folds": negative_folds,
-                    "mean_brier_gain_vs_profile_only": (
-                        round(sum(brier_gains) / len(brier_gains), 6)
-                        if brier_gains else None
-                    ),
-                    "mean_log_loss_gain_vs_profile_only": (
-                        round(sum(log_loss_gains) / len(log_loss_gains), 6)
-                        if log_loss_gains else None
-                    ),
+                    "mean_brier_gain_vs_profile_only": mean_brier_gain,
+                    "mean_log_loss_gain_vs_profile_only": mean_log_loss_gain,
+                    "mean_positive_on_both": mean_positive_on_both,
+                    "mean_negative_on_both": mean_negative_on_both,
                     "repeatable_positive": repeatable_positive,
                     "repeatable_negative": repeatable_negative,
+                    "strict_consensus_positive": bool(
+                        repeatable_positive and mean_positive_on_both
+                    ),
+                    "strict_consensus_negative": bool(
+                        repeatable_negative and mean_negative_on_both
+                    ),
                 }
                 item = {
                     "dimension": dimension,
@@ -455,6 +477,9 @@ def aggregate_segment_diagnostics(
             "segment_min_market_n": SEGMENT_MIN_MARKET_N,
             "segment_min_evaluated_markets": SEGMENT_MIN_EVALUATED_MARKETS,
             "repeatable_min_folds": SEGMENT_REPEATABLE_MIN_FOLDS,
+            "strict_consensus_requires_mean_direction": True,
+            "strict_dynamic_candidate_requires_positive_mean_brier_and_log_loss": True,
+            "strict_profile_reference_requires_negative_mean_brier_and_log_loss": True,
             "diagnostic_only": True,
             "promotion_gate": False,
         },
@@ -494,10 +519,14 @@ def build_segment_consensus_shadow_policy(
         for market in BINARY_MARKETS:
             tour_market = ((tour_row.get("markets") or {}).get(market) or {})
             surface_market = ((surface_row.get("markets") or {}).get(market) or {})
-            tour_positive = tour_market.get("repeatable_positive") is True
-            tour_negative = tour_market.get("repeatable_negative") is True
-            surface_positive = surface_market.get("repeatable_positive") is True
-            surface_negative = surface_market.get("repeatable_negative") is True
+            tour_repeatable_positive = tour_market.get("repeatable_positive") is True
+            tour_repeatable_negative = tour_market.get("repeatable_negative") is True
+            surface_repeatable_positive = surface_market.get("repeatable_positive") is True
+            surface_repeatable_negative = surface_market.get("repeatable_negative") is True
+            tour_positive = tour_market.get("strict_consensus_positive") is True
+            tour_negative = tour_market.get("strict_consensus_negative") is True
+            surface_positive = surface_market.get("strict_consensus_positive") is True
+            surface_negative = surface_market.get("strict_consensus_negative") is True
 
             if tour_positive and surface_positive:
                 decision = "CONSENSUS_DYNAMIC_CANDIDATE"
@@ -510,10 +539,18 @@ def build_segment_consensus_shadow_policy(
 
             market_row = {
                 "decision": decision,
-                "tour_repeatable_positive": tour_positive,
-                "tour_repeatable_negative": tour_negative,
-                "surface_repeatable_positive": surface_positive,
-                "surface_repeatable_negative": surface_negative,
+                "tour_repeatable_positive": tour_repeatable_positive,
+                "tour_repeatable_negative": tour_repeatable_negative,
+                "surface_repeatable_positive": surface_repeatable_positive,
+                "surface_repeatable_negative": surface_repeatable_negative,
+                "tour_mean_brier_gain_vs_profile_only": tour_market.get("mean_brier_gain_vs_profile_only"),
+                "tour_mean_log_loss_gain_vs_profile_only": tour_market.get("mean_log_loss_gain_vs_profile_only"),
+                "surface_mean_brier_gain_vs_profile_only": surface_market.get("mean_brier_gain_vs_profile_only"),
+                "surface_mean_log_loss_gain_vs_profile_only": surface_market.get("mean_log_loss_gain_vs_profile_only"),
+                "tour_strict_consensus_positive": tour_positive,
+                "tour_strict_consensus_negative": tour_negative,
+                "surface_strict_consensus_positive": surface_positive,
+                "surface_strict_consensus_negative": surface_negative,
                 "joint_segment_supported_folds": int(joint_row.get("supported_folds") or 0),
                 "joint_segment_directly_validated": bool(
                     int(joint_row.get("supported_folds") or 0) >= SEGMENT_REPEATABLE_MIN_FOLDS
@@ -566,6 +603,9 @@ def build_segment_consensus_shadow_policy(
         "policy": {
             "tour_and_surface_marginals_must_agree": True,
             "repeatable_min_folds_per_marginal": SEGMENT_REPEATABLE_MIN_FOLDS,
+            "dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal": True,
+            "profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal": True,
+            "count_repeatability_without_mean_direction_is_insufficient": True,
             "conflict_means_no_switch": True,
             "insufficient_means_no_switch": True,
             "joint_segment_direct_validation_is_reported_separately": True,

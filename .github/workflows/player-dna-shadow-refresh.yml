@@ -370,6 +370,9 @@ jobs:
           assert int(segment_policy.get('segment_min_market_n') or 0) == 30
           assert int(segment_policy.get('segment_min_evaluated_markets') or 0) == 4
           assert int(segment_policy.get('repeatable_min_folds') or 0) == 2
+          assert segment_policy.get('strict_consensus_requires_mean_direction') is True
+          assert segment_policy.get('strict_dynamic_candidate_requires_positive_mean_brier_and_log_loss') is True
+          assert segment_policy.get('strict_profile_reference_requires_negative_mean_brier_and_log_loss') is True
           assert segment_policy.get('diagnostic_only') is True
           assert segment_policy.get('promotion_gate') is False
           segment_dimensions = segment_aggregate.get('dimensions') or {}
@@ -388,8 +391,29 @@ jobs:
           assert consensus.get('prospective_validation_required') is True
           consensus_policy = consensus.get('policy') or {}
           assert consensus_policy.get('tour_and_surface_marginals_must_agree') is True
+          assert consensus_policy.get('dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal') is True
+          assert consensus_policy.get('profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal') is True
+          assert consensus_policy.get('count_repeatability_without_mean_direction_is_insufficient') is True
           assert consensus_policy.get('conflict_means_no_switch') is True
           assert consensus_policy.get('insufficient_means_no_switch') is True
+          for segment in (consensus.get('segments') or {}).values():
+              for market_row in (segment.get('markets') or {}).values():
+                  decision = market_row.get('decision')
+                  if decision == 'CONSENSUS_DYNAMIC_CANDIDATE':
+                      assert market_row.get('tour_strict_consensus_positive') is True
+                      assert market_row.get('surface_strict_consensus_positive') is True
+                  elif decision == 'CONSENSUS_PROFILE_REFERENCE':
+                      assert market_row.get('tour_strict_consensus_negative') is True
+                      assert market_row.get('surface_strict_consensus_negative') is True
+                  elif decision == 'CONFLICT':
+                      strict_conflict = (
+                          market_row.get('tour_strict_consensus_positive') is True
+                          and market_row.get('surface_strict_consensus_negative') is True
+                      ) or (
+                          market_row.get('tour_strict_consensus_negative') is True
+                          and market_row.get('surface_strict_consensus_positive') is True
+                      )
+                      assert strict_conflict
           consensus_watch = consensus.get('watchlist') or {}
           for key in ('consensus_dynamic_candidate', 'consensus_profile_reference', 'conflict', 'insufficient_or_mixed'):
               assert isinstance(consensus_watch.get(key), list)
