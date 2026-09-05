@@ -241,7 +241,9 @@ jobs:
           assert current.get('point_serve_probability_only') is True
           assert current.get('rank_features_used') is False
           assert current.get('provider_rank_context_passthrough') is True
-          assert current.get('rank_context_source') == 'fixture.players.p1/p2.ranking'
+          assert current.get('rank_context_source') == 'current_fixture_or_latest_strict_prior_provider_context'
+          assert current.get('strict_prior_provider_rank_fallback_enabled') is True
+          assert current.get('name_or_fuzzy_rank_fallback_forbidden') is True
           current_matches = int(current.get('current_matches') or 0)
           rank_context_matches = int(current.get('rank_context_matches') or 0)
           assert 0 <= rank_context_matches <= current_matches
@@ -257,6 +259,23 @@ jobs:
           assert current_validation.get('stateful_reference_is_runtime_gate') is False
           assert int(current.get('scored_matches') or 0) > 0
           assert int(current.get('scored_matches') or 0) == int(current.get('eligible_matches') or 0)
+          current_profile_summary = current.get('current_profile_summary') or {}
+          rank_context = current_profile_summary.get('ranking_context') or {}
+          assert rank_context.get('provider_backed_only') is True
+          assert rank_context.get('name_or_fuzzy_fallback_forbidden') is True
+          assert rank_context.get('current_fixture_preferred') is True
+          assert rank_context.get('strict_prior_provider_context_fallback_enabled') is True
+          assert int(rank_context.get('snapshots_with_player_rank') or 0) >= 0
+          for row in current.get('matches') or []:
+              source1 = row.get('p1_rank_source')
+              source2 = row.get('p2_rank_source')
+              allowed_rank_sources = {
+                  None,
+                  'current_fixture_provider',
+                  'latest_strict_prior_provider_match_context',
+              }
+              assert source1 in allowed_rank_sources
+              assert source2 in allowed_rank_sources
 
           backtest = json.loads((data / 'player_dna_market_backtest.json').read_text(encoding='utf-8'))
           assert backtest.get('mode') == 'SHADOW_BACKTEST_ONLY'
@@ -610,6 +629,34 @@ jobs:
           assert prospective.get('current_simulator_modified') is False
           assert prospective.get('auto_integrate') is False
           assert prospective.get('market_scope') == 'DURATION_MARKETS_ONLY'
+          dynamic_evidence = prospective.get('dynamic_lean_evidence') or {}
+          assert dynamic_evidence.get('mode') == 'SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY'
+          assert dynamic_evidence.get('status') == 'DYNAMIC_PROSPECTIVE_COLLECTION_ACTIVE'
+          assert dynamic_evidence.get('signal') in {
+              'COLLECTING_DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE',
+              'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW',
+          }
+          assert dynamic_evidence.get('production_influence') is False
+          assert dynamic_evidence.get('runtime_switch_enabled') is False
+          assert dynamic_evidence.get('symphony2_influence') is False
+          assert dynamic_evidence.get('superbet_playable_influence') is False
+          assert dynamic_evidence.get('auto_integrate') is False
+          assert dynamic_evidence.get('performance_verdict_emitted') is False
+          dynamic_integrity = dynamic_evidence.get('ledger_integrity') or {}
+          assert dynamic_integrity.get('status') == 'LEDGER_INTEGRITY_OK'
+          assert int(dynamic_integrity.get('rewritten_predictions') or 0) == 0
+          assert int(dynamic_integrity.get('settlement_regressions') or 0) == 0
+          assert int(dynamic_integrity.get('settled_actual_rewrites') or 0) == 0
+          assert int(dynamic_integrity.get('settled_at_rewrites') or 0) == 0
+          dynamic_readiness = dynamic_evidence.get('evidence_readiness') or {}
+          assert dynamic_readiness.get('performance_verdict_emitted') is False
+          dynamic_policy = dynamic_readiness.get('policy') or {}
+          assert int(dynamic_policy.get('overall_minimum_settled_market_observations') or 0) == 150
+          assert int(dynamic_policy.get('per_observed_candidate_market_minimum') or 0) == 30
+          assert dynamic_policy.get('conflict_and_insufficient_markets_never_enter_ledger') is True
+          assert dynamic_policy.get('profile_reference_markets_never_enter_dynamic_candidate_ledger') is True
+          if dynamic_evidence.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW':
+              assert dynamic_readiness.get('ready_for_performance_verdict') is True
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}
           assert integrity.get('status') == 'LEDGER_INTEGRITY_OK'

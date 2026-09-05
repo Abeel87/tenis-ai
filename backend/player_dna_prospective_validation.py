@@ -11,19 +11,21 @@ Superbet PLAYABLE.
 
 import gzip
 import json
+import math
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
 try:
-    from backend.player_dna_market_backtest import _binary_probability, _labels_by_match
+    from backend.player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
 except ModuleNotFoundError:  # direct execution
-    from player_dna_market_backtest import _binary_probability, _labels_by_match
+    from player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 CURRENT_SIMULATION = ROOT / "frontend" / "data" / "player_dna_current_simulation.json"
+CURRENT_DYNAMIC = ROOT / "frontend" / "data" / "player_dna_current_dynamic_shadow.json"
 WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_prospective_validation.json"
 
@@ -39,6 +41,8 @@ MIN_PREMATCH_LEAD_MINUTES = 5
 MIN_SETTLED_FOR_SIGNAL = 150
 MIN_SEGMENT_SETTLED = 30
 MAX_SNAPSHOTS = 5000
+DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS = 150
+DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET = 30
 IMMUTABLE_SNAPSHOT_FIELDS = (
     "match_id",
     "scheduled_time",
@@ -51,6 +55,20 @@ IMMUTABLE_SNAPSHOT_FIELDS = (
     "source_model_fingerprint_sha256",
     "raw_probabilities",
     "calibrated_probabilities",
+)
+
+DYNAMIC_IMMUTABLE_SNAPSHOT_FIELDS = (
+    "match_id",
+    "scheduled_time",
+    "captured_at",
+    "captured_pre_match",
+    "tour",
+    "surface",
+    "p1",
+    "p2",
+    "source_model_fingerprint_sha256",
+    "market_segment_key",
+    "candidate_markets",
 )
 
 
@@ -188,6 +206,511 @@ def _snapshot_from_current(
         "calibrated_probabilities": calibrated_probabilities,
         "settled": False,
         "actual": None,
+    }
+
+
+def _dynamic_snapshot_from_current(
+    row: dict[str, Any],
+    now: datetime,
+    labels: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not isinstance(row, dict) or row.get("status") != "DYNAMIC_SHADOW_SCORED":
+        return None
+    if row.get("production_influence") is not False or row.get("runtime_switch_enabled") is not False:
+        return None
+
+    match_id = str(row.get("match_id") or "").strip()
+    scheduled = _parse_utc(row.get("scheduled_time"))
+    if not match_id or scheduled is None:
+        return None
+    if scheduled < now + timedelta(minutes=MIN_PREMATCH_LEAD_MINUTES):
+        return None
+    if match_id in labels:
+        return None
+
+    markets = row.get("markets")
+    markets = markets if isinstance(markets, dict) else {}
+    candidate_markets: dict[str, dict[str, float]] = {}
+    for market in BINARY_MARKETS:
+        item = markets.get(market)
+        if not isinstance(item, dict):
+            continue
+        if item.get("decision") != "CONSENSUS_DYNAMIC_CANDIDATE":
+            continue
+        reference = item.get("profile_reference_probability")
+        dynamic = item.get("dynamic_candidate_probability")
+        try:
+            reference = float(reference)
+            dynamic = float(dynamic)
+        except (TypeError, ValueError):
+            continue
+        if (
+            not math.isfinite(reference)
+            or not math.isfinite(dynamic)
+            or reference < 0.0
+            or reference > 1.0
+            or dynamic < 0.0
+            or dynamic > 1.0
+        ):
+            continue
+        candidate_markets[market] = {
+            "profile_reference_probability": reference,
+            "dynamic_candidate_probability": dynamic,
+        }
+
+    if not candidate_markets:
+        return None
+
+    return {
+        "match_id": match_id,
+        "scheduled_time": scheduled.isoformat(),
+        "captured_at": now.isoformat(),
+        "captured_pre_match": True,
+        "tour": str(row.get("tour") or "").strip().lower(),
+        "surface": str(row.get("surface") or "").strip().lower(),
+        "p1": row.get("p1"),
+        "p2": row.get("p2"),
+        "source_model_fingerprint_sha256": row.get("model_fingerprint_sha256"),
+        "market_segment_key": row.get("market_segment_key"),
+        "candidate_markets": candidate_markets,
+        "settled": False,
+        "actual": None,
+    }
+
+
+def _settle_dynamic_snapshots(
+    snapshots: list[dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    now: datetime,
+) -> None:
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict) or snapshot.get("settled") is True:
+            continue
+        label = labels.get(str(snapshot.get("match_id") or ""))
+        if not isinstance(label, dict):
+            continue
+        candidate_markets = snapshot.get("candidate_markets")
+        candidate_markets = candidate_markets if isinstance(candidate_markets, dict) else {}
+        if not candidate_markets:
+            continue
+        actual = {}
+        complete = True
+        for market in candidate_markets:
+            value = label.get(market)
+            if not isinstance(value, bool):
+                complete = False
+                break
+            actual[market] = bool(value)
+        if not complete:
+            continue
+        snapshot["settled"] = True
+        snapshot["actual"] = actual
+        snapshot["settled_at"] = now.isoformat()
+
+
+def _dynamic_ledger_integrity(
+    previous_snapshots: list[dict[str, Any]],
+    current_snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    def index(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[str]]:
+        indexed: dict[str, dict[str, Any]] = {}
+        duplicates = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            match_id = str(row.get("match_id") or "").strip()
+            if not match_id:
+                continue
+            if match_id in indexed:
+                duplicates.append(match_id)
+                continue
+            indexed[match_id] = row
+        return indexed, sorted(set(duplicates))
+
+    previous_by_id, duplicate_previous = index(previous_snapshots)
+    current_by_id, duplicate_current = index(current_snapshots)
+    missing_previous = sorted(set(previous_by_id) - set(current_by_id))
+    rewritten = []
+    settlement_regressions = []
+    settled_actual_rewrites = []
+    settled_at_rewrites = []
+    newly_settled = []
+
+    for match_id, old in previous_by_id.items():
+        new = current_by_id.get(match_id)
+        if not isinstance(new, dict):
+            continue
+        if any(
+            old.get(field) != new.get(field)
+            for field in DYNAMIC_IMMUTABLE_SNAPSHOT_FIELDS
+        ):
+            rewritten.append(match_id)
+
+        old_settled = old.get("settled") is True
+        new_settled = new.get("settled") is True
+        if old_settled and not new_settled:
+            settlement_regressions.append(match_id)
+        if old_settled and new_settled and old.get("actual") != new.get("actual"):
+            settled_actual_rewrites.append(match_id)
+        if old_settled and new_settled and old.get("settled_at") != new.get("settled_at"):
+            settled_at_rewrites.append(match_id)
+        if not old_settled and new_settled:
+            newly_settled.append(match_id)
+
+    new_ids = sorted(set(current_by_id) - set(previous_by_id))
+    preserved = sorted(set(previous_by_id) & set(current_by_id))
+    problems = (
+        duplicate_previous
+        or duplicate_current
+        or missing_previous
+        or rewritten
+        or settlement_regressions
+        or settled_actual_rewrites
+        or settled_at_rewrites
+    )
+    return {
+        "status": "LEDGER_INTEGRITY_OK" if not problems else "LEDGER_INTEGRITY_VIOLATION",
+        "prediction_rewrite_forbidden": True,
+        "settlement_regression_forbidden": True,
+        "settled_actual_rewrite_forbidden": True,
+        "settled_at_rewrite_forbidden": True,
+        "snapshot_drop_forbidden_before_retention_cap": True,
+        "retention_cap": MAX_SNAPSHOTS,
+        "previous_snapshot_count": len(previous_by_id),
+        "current_snapshot_count_before_retention": len(current_by_id),
+        "preserved_snapshots": len(preserved),
+        "new_snapshots": len(new_ids),
+        "newly_settled": len(newly_settled),
+        "rewritten_predictions": len(rewritten),
+        "settlement_regressions": len(settlement_regressions),
+        "settled_actual_rewrites": len(settled_actual_rewrites),
+        "settled_at_rewrites": len(settled_at_rewrites),
+        "missing_previous_snapshots": len(missing_previous),
+        "duplicate_previous_match_ids": len(duplicate_previous),
+        "duplicate_current_match_ids": len(duplicate_current),
+        "violation_samples": {
+            "missing_previous": missing_previous[:10],
+            "rewritten_predictions": rewritten[:10],
+            "settlement_regressions": settlement_regressions[:10],
+            "settled_actual_rewrites": settled_actual_rewrites[:10],
+            "settled_at_rewrites": settled_at_rewrites[:10],
+            "duplicate_previous": duplicate_previous[:10],
+            "duplicate_current": duplicate_current[:10],
+        },
+    }
+
+
+def _binary_log_loss(probability: float, actual: bool) -> float:
+    p = min(1.0 - 1e-6, max(1e-6, float(probability)))
+    y = 1.0 if actual else 0.0
+    return -(y * math.log(p) + (1.0 - y) * math.log(1.0 - p))
+
+
+def _dynamic_evaluation(
+    snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    settled = [
+        row for row in snapshots
+        if isinstance(row, dict) and row.get("settled") is True
+    ]
+    markets = {}
+    total_observations = 0
+    for market in BINARY_MARKETS:
+        reference_errors = []
+        dynamic_errors = []
+        reference_losses = []
+        dynamic_losses = []
+        for row in settled:
+            candidate = (row.get("candidate_markets") or {}).get(market)
+            actual = (row.get("actual") or {}).get(market)
+            if not isinstance(candidate, dict) or not isinstance(actual, bool):
+                continue
+            reference = candidate.get("profile_reference_probability")
+            dynamic = candidate.get("dynamic_candidate_probability")
+            if reference is None or dynamic is None:
+                continue
+            y = 1.0 if actual else 0.0
+            reference = float(reference)
+            dynamic = float(dynamic)
+            reference_errors.append((reference - y) ** 2)
+            dynamic_errors.append((dynamic - y) ** 2)
+            reference_losses.append(_binary_log_loss(reference, actual))
+            dynamic_losses.append(_binary_log_loss(dynamic, actual))
+
+        n = len(reference_errors)
+        total_observations += n
+        if n == 0:
+            markets[market] = {"n": 0}
+            continue
+        reference_brier = sum(reference_errors) / n
+        dynamic_brier = sum(dynamic_errors) / n
+        reference_log_loss = sum(reference_losses) / n
+        dynamic_log_loss = sum(dynamic_losses) / n
+        markets[market] = {
+            "n": n,
+            "profile_reference_brier": round(reference_brier, 6),
+            "dynamic_candidate_brier": round(dynamic_brier, 6),
+            "brier_gain_dynamic_vs_profile": round(reference_brier - dynamic_brier, 6),
+            "profile_reference_log_loss": round(reference_log_loss, 6),
+            "dynamic_candidate_log_loss": round(dynamic_log_loss, 6),
+            "log_loss_gain_dynamic_vs_profile": round(reference_log_loss - dynamic_log_loss, 6),
+            "dynamic_better_on_brier_and_log_loss": bool(
+                dynamic_brier < reference_brier
+                and dynamic_log_loss < reference_log_loss
+            ),
+        }
+
+    candidate_markets_seen = sorted({
+        market
+        for row in snapshots
+        if isinstance(row, dict)
+        for market in ((row.get("candidate_markets") or {}).keys())
+        if market in BINARY_MARKETS
+    })
+
+    return {
+        "settled_matches": len(settled),
+        "settled_market_observations": total_observations,
+        "markets": markets,
+        "candidate_markets_seen": candidate_markets_seen,
+        "markets_with_observations": [
+            market for market, row in markets.items()
+            if int(row.get("n") or 0) > 0
+        ],
+        "markets_better_on_brier_and_log_loss": [
+            market for market, row in markets.items()
+            if row.get("dynamic_better_on_brier_and_log_loss") is True
+        ],
+    }
+
+
+def _dynamic_evidence_readiness(
+    evaluation: dict[str, Any],
+) -> dict[str, Any]:
+    observed = list(evaluation.get("candidate_markets_seen") or [])
+    market_rows = {}
+    for market in observed:
+        row = (evaluation.get("markets") or {}).get(market) or {}
+        n = int(row.get("n") or 0)
+        market_rows[market] = {
+            "settled": n,
+            "required": DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET,
+            "remaining": max(0, DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET - n),
+            "support_sufficient": n >= DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET,
+        }
+    total = int(evaluation.get("settled_market_observations") or 0)
+    total_ready = total >= DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS
+    markets_ready = bool(market_rows) and all(
+        row.get("support_sufficient") is True for row in market_rows.values()
+    )
+    return {
+        "settled_market_observations": {
+            "settled": total,
+            "required": DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS,
+            "remaining": max(0, DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS - total),
+            "support_sufficient": total_ready,
+        },
+        "observed_candidate_markets": market_rows,
+        "ready_for_performance_verdict": bool(total_ready and markets_ready),
+        "performance_verdict_emitted": False,
+        "policy": {
+            "overall_minimum_settled_market_observations": DYNAMIC_MIN_SETTLED_MARKET_OBSERVATIONS,
+            "per_observed_candidate_market_minimum": DYNAMIC_MIN_SETTLED_PER_OBSERVED_MARKET,
+            "conflict_and_insufficient_markets_never_enter_ledger": True,
+            "profile_reference_markets_never_enter_dynamic_candidate_ledger": True,
+            "performance_verdict_is_separate_future_step": True,
+        },
+    }
+
+
+def _build_dynamic_lean_evidence(
+    current_dynamic: dict[str, Any],
+    labels: dict[str, dict[str, Any]],
+    previous: dict[str, Any] | None,
+    now: datetime,
+) -> dict[str, Any]:
+    previous_dynamic = (
+        (previous or {}).get("dynamic_lean_evidence")
+        if isinstance(previous, dict)
+        else {}
+    )
+    previous_rows = (
+        previous_dynamic.get("snapshots")
+        if isinstance(previous_dynamic, dict)
+        else []
+    )
+    previous_snapshots = [
+        row for row in (previous_rows if isinstance(previous_rows, list) else [])
+        if isinstance(row, dict) and row.get("match_id") is not None
+    ]
+    snapshots = [dict(row) for row in previous_snapshots]
+    by_id = {str(row.get("match_id")): row for row in snapshots}
+
+    contract_ok = bool(
+        isinstance(current_dynamic, dict)
+        and current_dynamic.get("mode") == "SHADOW_CURRENT_DYNAMIC_LEAN_ONLY"
+        and current_dynamic.get("production_influence") is False
+        and current_dynamic.get("runtime_switch_enabled") is False
+        and current_dynamic.get("symphony2_influence") is False
+        and current_dynamic.get("superbet_playable_influence") is False
+        and current_dynamic.get("auto_promote") is False
+        and current_dynamic.get("candidate_only") is True
+        and current_dynamic.get("prospective_validation_required") is True
+    )
+    current_rows = (
+        current_dynamic.get("matches")
+        if contract_ok and isinstance(current_dynamic.get("matches"), list)
+        else []
+    )
+    schedule_drifts = []
+    candidate_rows = 0
+    candidate_market_slots = 0
+    for row in current_rows:
+        if not isinstance(row, dict):
+            continue
+        markets = row.get("markets")
+        markets = markets if isinstance(markets, dict) else {}
+        row_candidate_slots = sum(
+            1 for item in markets.values()
+            if isinstance(item, dict)
+            and item.get("decision") == "CONSENSUS_DYNAMIC_CANDIDATE"
+        )
+        if row_candidate_slots > 0:
+            candidate_rows += 1
+            candidate_market_slots += row_candidate_slots
+
+        match_id = str(row.get("match_id") or "").strip()
+        if not match_id:
+            continue
+        if match_id in by_id:
+            frozen_time = _parse_utc(by_id[match_id].get("scheduled_time"))
+            current_time = _parse_utc(row.get("scheduled_time"))
+            if frozen_time is not None and current_time is not None:
+                drift_minutes = (current_time - frozen_time).total_seconds() / 60.0
+                if abs(drift_minutes) >= 1.0:
+                    schedule_drifts.append({
+                        "match_id": match_id,
+                        "frozen_scheduled_time": frozen_time.isoformat(),
+                        "current_scheduled_time": current_time.isoformat(),
+                        "drift_minutes": round(drift_minutes, 2),
+                    })
+            continue
+        snapshot = _dynamic_snapshot_from_current(row, now, labels)
+        if snapshot is not None:
+            snapshots.append(snapshot)
+            by_id[match_id] = snapshot
+
+    _settle_dynamic_snapshots(snapshots, labels, now)
+    integrity = _dynamic_ledger_integrity(previous_snapshots, snapshots)
+    if integrity.get("status") != "LEDGER_INTEGRITY_OK":
+        raise RuntimeError(
+            "Player DNA dynamic prospective ledger integrity violation: "
+            + json.dumps(integrity, ensure_ascii=False, sort_keys=True)
+        )
+
+    snapshots.sort(
+        key=lambda row: (
+            str(row.get("scheduled_time") or ""),
+            str(row.get("match_id") or ""),
+        )
+    )
+    before_retention = len(snapshots)
+    if len(snapshots) > MAX_SNAPSHOTS:
+        snapshots = snapshots[-MAX_SNAPSHOTS:]
+    integrity["pruned_by_retention"] = before_retention - len(snapshots)
+    integrity["current_snapshot_count_after_retention"] = len(snapshots)
+
+    evaluation = _dynamic_evaluation(snapshots)
+    readiness = _dynamic_evidence_readiness(evaluation)
+    signal = (
+        "DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW"
+        if readiness.get("ready_for_performance_verdict") is True
+        else "COLLECTING_DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE"
+    )
+    return {
+        "mode": "SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY",
+        "status": "DYNAMIC_PROSPECTIVE_COLLECTION_ACTIVE",
+        "signal": signal,
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_integrate": False,
+        "performance_verdict_emitted": False,
+        "source_contract_valid": contract_ok,
+        "eligibility_policy": {
+            "decision_required": "CONSENSUS_DYNAMIC_CANDIDATE",
+            "minimum_pre_match_lead_minutes": MIN_PREMATCH_LEAD_MINUTES,
+            "post_result_snapshot_forbidden": True,
+            "conflict_excluded": True,
+            "insufficient_excluded": True,
+            "profile_reference_excluded": True,
+        },
+        "ledger_integrity": integrity,
+        "settlement_observability": {
+            "unsettled": _unsettled_diagnostics(snapshots, now),
+            "settlement_latency": _settlement_latency_summary(snapshots),
+            "schedule_drift": {
+                "count": len(schedule_drifts),
+                "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
+                "samples": sorted(
+                    schedule_drifts,
+                    key=lambda row: abs(float(row.get("drift_minutes") or 0)),
+                    reverse=True,
+                )[:10],
+            },
+        },
+        "evidence_readiness": readiness,
+        "counts": {
+            "current_dynamic_matches": len(current_rows),
+            "current_rows_with_dynamic_candidates": candidate_rows,
+            "current_dynamic_candidate_market_slots": candidate_market_slots,
+            "snapshots": len(snapshots),
+            "settled_snapshots": int(evaluation.get("settled_matches") or 0),
+            "unsettled_snapshots": sum(
+                1 for row in snapshots if row.get("settled") is not True
+            ),
+            "settled_market_observations": int(
+                evaluation.get("settled_market_observations") or 0
+            ),
+        },
+        "evaluation": evaluation,
+        "segment_evaluation": {
+            "tour": {
+                name: _dynamic_evaluation([
+                    row for row in snapshots
+                    if str(row.get("tour") or "").strip().lower() == name
+                ])
+                for name in sorted({
+                    str(row.get("tour") or "").strip().lower()
+                    for row in snapshots
+                    if str(row.get("tour") or "").strip()
+                })
+            },
+            "surface": {
+                name: _dynamic_evaluation([
+                    row for row in snapshots
+                    if str(row.get("surface") or "").strip().lower() == name
+                ])
+                for name in sorted({
+                    str(row.get("surface") or "").strip().lower()
+                    for row in snapshots
+                    if str(row.get("surface") or "").strip()
+                })
+            },
+            "tour_surface": {
+                name: _dynamic_evaluation([
+                    row for row in snapshots
+                    if str(row.get("market_segment_key") or "").strip().lower() == name
+                ])
+                for name in sorted({
+                    str(row.get("market_segment_key") or "").strip().lower()
+                    for row in snapshots
+                    if str(row.get("market_segment_key") or "").strip()
+                })
+            },
+        },
+        "snapshots": snapshots,
     }
 
 
@@ -542,6 +1065,7 @@ def build_report(
     point_rows: list[dict[str, Any]],
     previous: dict[str, Any] | None = None,
     *,
+    current_dynamic: dict[str, Any] | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
@@ -639,6 +1163,13 @@ def build_report(
             else "PROSPECTIVE_DURATION_NOT_YET_PROVEN"
         )
 
+    dynamic_lean_evidence = _build_dynamic_lean_evidence(
+        current_dynamic if isinstance(current_dynamic, dict) else {},
+        labels,
+        previous,
+        now,
+    )
+
     return {
         "version": VERSION,
         "mode": MODE,
@@ -681,6 +1212,7 @@ def build_report(
             "tour": _segment_evaluation(snapshots, "tour"),
             "surface": _segment_evaluation(snapshots, "surface"),
         },
+        "dynamic_lean_evidence": dynamic_lean_evidence,
         "snapshots": snapshots,
     }
 
@@ -691,6 +1223,10 @@ def build() -> dict[str, Any]:
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         current = {}
     try:
+        current_dynamic = json.loads(CURRENT_DYNAMIC.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        current_dynamic = {}
+    try:
         walk_forward = json.loads(WALK_FORWARD.read_text(encoding="utf-8"))
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         walk_forward = {}
@@ -700,7 +1236,13 @@ def build() -> dict[str, Any]:
         previous = {}
 
     point_rows = list(_iter_jsonl_gz(POINTS) or ())
-    report = build_report(current, walk_forward, point_rows, previous)
+    report = build_report(
+        current,
+        walk_forward,
+        point_rows,
+        previous,
+        current_dynamic=current_dynamic,
+    )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({
@@ -713,6 +1255,9 @@ def build() -> dict[str, Any]:
         "ledger_integrity": report.get("ledger_integrity"),
         "settlement_observability": report.get("settlement_observability"),
         "evidence_readiness": report.get("evidence_readiness"),
+        "dynamic_lean_signal": (report.get("dynamic_lean_evidence") or {}).get("signal"),
+        "dynamic_lean_counts": (report.get("dynamic_lean_evidence") or {}).get("counts"),
+        "dynamic_lean_ledger_integrity": (report.get("dynamic_lean_evidence") or {}).get("ledger_integrity"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report

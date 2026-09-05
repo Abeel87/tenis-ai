@@ -389,3 +389,163 @@ def test_duration_market_scope_is_exact_and_candidate_only():
         "first_set_over_9.5",
         "first_set_over_10.5",
     )
+
+
+def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAMIC_CANDIDATE"):
+    scheduled = scheduled or datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)
+    markets = {
+        market: {
+            "decision": "INSUFFICIENT_OR_MIXED",
+            "profile_reference_probability": 0.50,
+            "dynamic_candidate_probability": 0.50,
+            "production_influence": False,
+        }
+        for market in (
+            "match_p1_win",
+            "first_set_p1_win",
+            "first_set_tiebreak",
+            "first_set_over_8.5",
+            "first_set_over_9.5",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "early_1:1",
+            "early_2:2",
+            "early_3:3",
+        )
+    }
+    markets["match_p1_win"] = {
+        "decision": decision,
+        "profile_reference_probability": 0.55,
+        "dynamic_candidate_probability": 0.65,
+        "production_influence": False,
+    }
+    markets["first_set_p1_win"] = {
+        "decision": "CONFLICT",
+        "profile_reference_probability": 0.58,
+        "dynamic_candidate_probability": 0.62,
+        "production_influence": False,
+    }
+    return {
+        "version": "player-dna-current-dynamic-shadow-v1",
+        "mode": "SHADOW_CURRENT_DYNAMIC_LEAN_ONLY",
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "candidate_only": True,
+        "prospective_validation_required": True,
+        "matches": [{
+            "match_id": match_id,
+            "scheduled_time": scheduled.isoformat(),
+            "tour": "challenger",
+            "surface": "hard",
+            "p1": "A",
+            "p2": "B",
+            "status": "DYNAMIC_SHADOW_SCORED",
+            "production_influence": False,
+            "runtime_switch_enabled": False,
+            "model_fingerprint_sha256": "lean-fingerprint",
+            "market_segment_key": "challenger|hard",
+            "markets": markets,
+        }],
+    }
+
+
+def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_markets_and_settles_later():
+    now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
+    first = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic=_dynamic_current(scheduled=now + timedelta(hours=2)),
+        now=now,
+    )
+
+    dynamic_evidence = first["dynamic_lean_evidence"]
+    assert dynamic_evidence["mode"] == "SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY"
+    assert dynamic_evidence["signal"] == "COLLECTING_DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE"
+    assert dynamic_evidence["production_influence"] is False
+    assert dynamic_evidence["runtime_switch_enabled"] is False
+    assert dynamic_evidence["auto_integrate"] is False
+    assert dynamic_evidence["performance_verdict_emitted"] is False
+    assert dynamic_evidence["counts"]["snapshots"] == 1
+
+    snapshot = dynamic_evidence["snapshots"][0]
+    assert snapshot["captured_pre_match"] is True
+    assert set(snapshot["candidate_markets"]) == {"match_p1_win"}
+    assert snapshot["candidate_markets"]["match_p1_win"]["profile_reference_probability"] == 0.55
+    assert snapshot["candidate_markets"]["match_p1_win"]["dynamic_candidate_probability"] == 0.65
+    assert "first_set_p1_win" not in snapshot["candidate_markets"]
+
+    second = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        _point_rows_for_settled("dyn-1"),
+        first,
+        current_dynamic={},
+        now=now + timedelta(hours=4),
+    )
+    dynamic_second = second["dynamic_lean_evidence"]
+    assert dynamic_second["ledger_integrity"]["status"] == "LEDGER_INTEGRITY_OK"
+    assert dynamic_second["ledger_integrity"]["newly_settled"] == 1
+    assert dynamic_second["ledger_integrity"]["rewritten_predictions"] == 0
+    assert dynamic_second["counts"]["settled_snapshots"] == 1
+    assert dynamic_second["counts"]["settled_market_observations"] == 1
+    assert dynamic_second["snapshots"][0]["actual"]["match_p1_win"] is True
+
+    metrics = dynamic_second["evaluation"]["markets"]["match_p1_win"]
+    assert metrics["n"] == 1
+    assert metrics["profile_reference_brier"] is not None
+    assert metrics["dynamic_candidate_brier"] is not None
+    assert metrics["brier_gain_dynamic_vs_profile"] is not None
+    assert metrics["log_loss_gain_dynamic_vs_profile"] is not None
+
+
+def test_dynamic_lean_prospective_ledger_excludes_conflict_and_non_candidate_markets():
+    now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
+    current_dynamic = _dynamic_current(
+        match_id="dyn-conflict",
+        scheduled=now + timedelta(hours=2),
+        decision="CONFLICT",
+    )
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic=current_dynamic,
+        now=now,
+    )
+    dynamic_evidence = report["dynamic_lean_evidence"]
+    assert dynamic_evidence["counts"]["snapshots"] == 0
+    assert dynamic_evidence["counts"]["current_rows_with_dynamic_candidates"] == 0
+    assert dynamic_evidence["eligibility_policy"]["conflict_excluded"] is True
+    assert dynamic_evidence["eligibility_policy"]["insufficient_excluded"] is True
+    assert dynamic_evidence["eligibility_policy"]["profile_reference_excluded"] is True
+
+
+def test_dynamic_readiness_requires_support_for_candidate_market_seen_before_settlement():
+    now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic=_dynamic_current(scheduled=now + timedelta(hours=2)),
+        now=now,
+    )
+
+    dynamic_evidence = report["dynamic_lean_evidence"]
+    evaluation = dynamic_evidence["evaluation"]
+    readiness = dynamic_evidence["evidence_readiness"]
+    assert evaluation["candidate_markets_seen"] == ["match_p1_win"]
+    assert evaluation["markets_with_observations"] == []
+    market = readiness["observed_candidate_markets"]["match_p1_win"]
+    assert market["settled"] == 0
+    assert market["required"] == 30
+    assert market["remaining"] == 30
+    assert market["support_sufficient"] is False
+    assert readiness["ready_for_performance_verdict"] is False

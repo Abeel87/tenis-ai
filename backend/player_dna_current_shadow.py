@@ -199,7 +199,7 @@ def build_current_scores(
         ):
             valid_targets.append(row)
 
-    rank_context_matches = sum(
+    fixture_rank_context_matches = sum(
         1
         for row in valid_targets
         if _provider_ranking(row.get("p1_rank")) is not None
@@ -217,10 +217,13 @@ def build_current_scores(
         "point_serve_probability_only": True,
         "rank_features_used": False,
         "provider_rank_context_passthrough": True,
-        "rank_context_source": "fixture.players.p1/p2.ranking",
-        "rank_context_matches": rank_context_matches,
+        "rank_context_source": "current_fixture_or_latest_strict_prior_provider_context",
+        "fixture_rank_context_matches": fixture_rank_context_matches,
+        "strict_prior_provider_rank_fallback_enabled": True,
+        "name_or_fuzzy_rank_fallback_forbidden": True,
+        "rank_context_matches": fixture_rank_context_matches,
         "rank_context_coverage": (
-            round(rank_context_matches / len(valid_targets), 6)
+            round(fixture_rank_context_matches / len(valid_targets), 6)
             if valid_targets else 0.0
         ),
         "stable_provider_identity_required": True,
@@ -305,8 +308,10 @@ def build_current_scores(
             "p2": target.get("p2"),
             "p1_id": p1_id,
             "p2_id": p2_id,
-            "p1_rank": _provider_ranking(target.get("p1_rank")),
-            "p2_rank": _provider_ranking(target.get("p2_rank")),
+            "p1_rank": None,
+            "p2_rank": None,
+            "p1_rank_source": None,
+            "p2_rank_source": None,
             "production_influence": False,
             "not_match_win_probability": True,
         }
@@ -314,6 +319,27 @@ def build_current_scores(
             base["status"] = "NO_PROFILE"
             scored.append(base)
             continue
+
+        fixture_p1_rank = _provider_ranking(target.get("p1_rank"))
+        fixture_p2_rank = _provider_ranking(target.get("p2_rank"))
+        profile_p1_rank = _provider_ranking(p1_profile.get("player_ranking"))
+        profile_p2_rank = _provider_ranking(p2_profile.get("player_ranking"))
+        base["p1_rank"] = fixture_p1_rank if fixture_p1_rank is not None else profile_p1_rank
+        base["p2_rank"] = fixture_p2_rank if fixture_p2_rank is not None else profile_p2_rank
+        base["p1_rank_source"] = (
+            "current_fixture_provider"
+            if fixture_p1_rank is not None
+            else p1_profile.get("player_ranking_source")
+            if profile_p1_rank is not None
+            else None
+        )
+        base["p2_rank_source"] = (
+            "current_fixture_provider"
+            if fixture_p2_rank is not None
+            else p2_profile.get("player_ranking_source")
+            if profile_p2_rank is not None
+            else None
+        )
 
         p1_support = int((p1_profile.get("overall_prior") or {}).get("matches") or 0)
         p2_support = int((p2_profile.get("overall_prior") or {}).get("matches") or 0)
@@ -344,8 +370,31 @@ def build_current_scores(
         })
         scored.append(base)
 
+    effective_rank_context_matches = sum(
+        1
+        for row in scored
+        if _provider_ranking(row.get("p1_rank")) is not None
+        and _provider_ranking(row.get("p2_rank")) is not None
+    )
+    strict_prior_rank_context_matches = sum(
+        1
+        for row in scored
+        if (
+            row.get("p1_rank_source") == "latest_strict_prior_provider_match_context"
+            or row.get("p2_rank_source") == "latest_strict_prior_provider_match_context"
+        )
+        and _provider_ranking(row.get("p1_rank")) is not None
+        and _provider_ranking(row.get("p2_rank")) is not None
+    )
+
     report.update({
         "status": "ACTIVE_SHADOW" if eligible > 0 else "COLLECTING_HISTORY",
+        "rank_context_matches": effective_rank_context_matches,
+        "rank_context_coverage": (
+            round(effective_rank_context_matches / len(valid_targets), 6)
+            if valid_targets else 0.0
+        ),
+        "strict_prior_rank_context_matches": strict_prior_rank_context_matches,
         "training_cutoff_exclusive": cutoff.isoformat(),
         "historical_join_counts": join_counts,
         "pre_cutoff_training_points": int(len(training)),

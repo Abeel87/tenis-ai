@@ -158,3 +158,77 @@ def test_current_profiles_require_stable_provider_ids():
     assert snapshots == []
     assert summary["targets_seen"] == 0
     assert summary["rejected_targets"]["missing_stable_identity_or_time"] == 1
+
+
+def test_current_profiles_fallback_to_latest_strict_prior_provider_ranking():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    p1_old = _point("p1-old", "2026-09-01T10:00:00Z", 1, 9, 1, 1)
+    p1_old["p1_ranking"] = 77
+    p1_old["p2_ranking"] = 190
+
+    p2_old = _point("p2-old", "2026-09-02T10:00:00Z", 2, 8, 2, 2)
+    p2_old["p1_ranking"] = 88
+    p2_old["p2_ranking"] = 155
+
+    snapshots, summary = build_current_target_profiles(
+        [p1_old, p2_old],
+        [{
+            "id": "current",
+            "scheduled_time": "2026-09-03T10:00:00Z",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1": "One",
+            "p2": "Two",
+            "surface": "hard",
+            "tour": "challenger",
+            "best_of": 3,
+            "p1_rank": None,
+            "p2_rank": None,
+        }],
+    )
+
+    p1 = _snapshot(snapshots, "current", 1)
+    p2 = _snapshot(snapshots, "current", 2)
+    assert p1["player_ranking"] == 77
+    assert p2["player_ranking"] == 88
+    assert p1["player_ranking_source"] == "latest_strict_prior_provider_match_context"
+    assert p2["player_ranking_source"] == "latest_strict_prior_provider_match_context"
+    assert p1["player_ranking_source_match_id"] == "p1-old"
+    assert p2["player_ranking_source_match_id"] == "p2-old"
+    ranking = summary["ranking_context"]
+    assert ranking["provider_backed_only"] is True
+    assert ranking["name_or_fuzzy_fallback_forbidden"] is True
+    assert ranking["strict_prior_provider_context_fallback_enabled"] is True
+    assert ranking["snapshots_with_prior_provider_player_rank"] == 2
+
+
+def test_current_fixture_ranking_wins_over_prior_provider_ranking():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    old = _point("old-rank", "2026-09-01T10:00:00Z", 1, 2, 1, 1)
+    old["p1_ranking"] = 77
+    old["p2_ranking"] = 88
+    snapshots, summary = build_current_target_profiles(
+        [old],
+        [{
+            "id": "current-rank",
+            "scheduled_time": "2026-09-03T10:00:00Z",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1": "One",
+            "p2": "Two",
+            "surface": "hard",
+            "tour": "challenger",
+            "best_of": 3,
+            "p1_rank": 11,
+            "p2_rank": 22,
+        }],
+    )
+    p1 = _snapshot(snapshots, "current-rank", 1)
+    p2 = _snapshot(snapshots, "current-rank", 2)
+    assert p1["player_ranking"] == 11
+    assert p2["player_ranking"] == 22
+    assert p1["player_ranking_source"] == "current_fixture_provider"
+    assert p2["player_ranking_source"] == "current_fixture_provider"
+    assert summary["ranking_context"]["snapshots_with_current_fixture_player_rank"] == 2

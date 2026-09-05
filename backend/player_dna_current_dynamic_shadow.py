@@ -289,14 +289,6 @@ def build_current_dynamic_shadow(
             out_rows.append(common)
             continue
 
-        p1_rank = _finite_positive_rank(row.get("p1_rank"))
-        p2_rank = _finite_positive_rank(row.get("p2_rank"))
-        if p1_rank is None or p2_rank is None:
-            common["status"] = "BLOCKED_MISSING_PROVIDER_RANK"
-            counts["blocked_missing_provider_rank"] += 1
-            out_rows.append(common)
-            continue
-
         pair = pairs.get(match_id) or {}
         p1_profile = pair.get("p1")
         p2_profile = pair.get("p2")
@@ -305,6 +297,31 @@ def build_current_dynamic_shadow(
             counts["blocked_missing_current_profile_pair"] += 1
             out_rows.append(common)
             continue
+
+        p1_rank = _finite_positive_rank(row.get("p1_rank"))
+        p2_rank = _finite_positive_rank(row.get("p2_rank"))
+        p1_rank_source = row.get("p1_rank_source")
+        p2_rank_source = row.get("p2_rank_source")
+        if p1_rank is None:
+            p1_rank = _finite_positive_rank(p1_profile.get("player_ranking"))
+            p1_rank_source = p1_profile.get("player_ranking_source") if p1_rank is not None else None
+        if p2_rank is None:
+            p2_rank = _finite_positive_rank(p2_profile.get("player_ranking"))
+            p2_rank_source = p2_profile.get("player_ranking_source") if p2_rank is not None else None
+        common["p1_rank"] = p1_rank
+        common["p2_rank"] = p2_rank
+        common["p1_rank_source"] = p1_rank_source
+        common["p2_rank_source"] = p2_rank_source
+        if p1_rank is None or p2_rank is None:
+            common["status"] = "BLOCKED_MISSING_PROVIDER_RANK"
+            counts["blocked_missing_provider_rank"] += 1
+            out_rows.append(common)
+            continue
+        if (
+            p1_rank_source == "latest_strict_prior_provider_match_context"
+            or p2_rank_source == "latest_strict_prior_provider_match_context"
+        ):
+            counts["dynamic_scored_with_strict_prior_provider_rank_fallback"] += 1
 
         p1_serve = row.get("p1_serve_point_win_probability")
         p2_serve = row.get("p2_serve_point_win_probability")
