@@ -197,6 +197,10 @@ def test_segment_consensus_policy_requires_tour_surface_agreement_and_keeps_conf
         return {
             "repeatable_positive": positive,
             "repeatable_negative": negative,
+            "mean_brier_gain_vs_profile_only": 0.01 if positive else (-0.01 if negative else 0.0),
+            "mean_log_loss_gain_vs_profile_only": 0.02 if positive else (-0.02 if negative else 0.0),
+            "strict_consensus_positive": positive,
+            "strict_consensus_negative": negative,
         }
 
     aggregate = {
@@ -234,6 +238,10 @@ def test_segment_consensus_policy_requires_tour_surface_agreement_and_keeps_conf
     assert policy["runtime_switch_enabled"] is False
     assert policy["joint_segment_backtest_claim"] is False
     assert policy["prospective_validation_required"] is True
+    consensus_rules = policy["policy"]
+    assert consensus_rules["dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal"] is True
+    assert consensus_rules["profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal"] is True
+    assert consensus_rules["count_repeatability_without_mean_direction_is_insufficient"] is True
 
     row = policy["segments"]["challenger|hard"]
     assert row["markets"]["match_p1_win"]["decision"] == "CONSENSUS_DYNAMIC_CANDIDATE"
@@ -272,8 +280,11 @@ def test_segment_aggregate_identifies_repeatable_positive_and_negative_market_pa
     atp = aggregate["dimensions"]["tour"]["atp"]
     assert atp["supported_folds"] == 3
     assert atp["markets"]["match_p1_win"]["repeatable_positive"] is True
+    assert atp["markets"]["match_p1_win"]["strict_consensus_positive"] is True
     assert atp["markets"]["first_set_p1_win"]["repeatable_positive"] is True
+    assert atp["markets"]["first_set_p1_win"]["strict_consensus_positive"] is True
     assert atp["markets"]["first_set_over_9.5"]["repeatable_negative"] is True
+    assert atp["markets"]["first_set_over_9.5"]["strict_consensus_negative"] is True
     assert "match_p1_win" in atp["repeatable_positive_markets"]
     assert "first_set_over_9.5" in atp["repeatable_negative_markets"]
 
@@ -291,3 +302,79 @@ def test_segment_aggregate_identifies_repeatable_positive_and_negative_market_pa
         and row["market"] == "first_set_over_9.5"
         for row in negative_watch
     )
+
+
+def test_segment_consensus_rejects_repeatable_count_signal_when_mean_direction_disagrees():
+    def market(*, repeatable_positive=False, repeatable_negative=False, mean_brier=0.0, mean_log_loss=0.0):
+        return {
+            "repeatable_positive": repeatable_positive,
+            "repeatable_negative": repeatable_negative,
+            "mean_brier_gain_vs_profile_only": mean_brier,
+            "mean_log_loss_gain_vs_profile_only": mean_log_loss,
+            "strict_consensus_positive": bool(
+                repeatable_positive and mean_brier > 0.0 and mean_log_loss > 0.0
+            ),
+            "strict_consensus_negative": bool(
+                repeatable_negative and mean_brier < 0.0 and mean_log_loss < 0.0
+            ),
+        }
+
+    aggregate = {
+        "dimensions": {
+            "tour": {
+                "challenger": {
+                    "markets": {
+                        "early_2:2": market(
+                            repeatable_positive=True,
+                            mean_brier=-0.000099,
+                            mean_log_loss=-0.000155,
+                        ),
+                        "first_set_p1_win": market(
+                            repeatable_positive=True,
+                            mean_brier=0.001,
+                            mean_log_loss=0.002,
+                        ),
+                    }
+                }
+            },
+            "surface": {
+                "hard": {
+                    "markets": {
+                        "early_2:2": market(
+                            repeatable_positive=True,
+                            mean_brier=0.001,
+                            mean_log_loss=0.002,
+                        ),
+                        "first_set_p1_win": market(
+                            repeatable_negative=True,
+                            mean_brier=0.0001,
+                            mean_log_loss=0.0002,
+                        ),
+                    }
+                }
+            },
+            "tour_surface": {
+                "challenger|hard": {
+                    "supported_folds": 0,
+                    "markets": {},
+                }
+            },
+        }
+    }
+
+    policy = build_segment_consensus_shadow_policy(aggregate)
+    row = policy["segments"]["challenger|hard"]
+
+    early = row["markets"]["early_2:2"]
+    assert early["tour_repeatable_positive"] is True
+    assert early["tour_strict_consensus_positive"] is False
+    assert early["surface_strict_consensus_positive"] is True
+    assert early["decision"] == "INSUFFICIENT_OR_MIXED"
+    assert "early_2:2" not in row["dynamic_candidate_markets"]
+
+    first_set = row["markets"]["first_set_p1_win"]
+    assert first_set["tour_strict_consensus_positive"] is True
+    assert first_set["surface_repeatable_negative"] is True
+    assert first_set["surface_strict_consensus_negative"] is False
+    assert first_set["decision"] == "INSUFFICIENT_OR_MIXED"
+    assert "first_set_p1_win" not in row["conflict_markets"]

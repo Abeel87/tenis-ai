@@ -676,11 +676,53 @@ jobs:
               raise SystemExit('Dynamic lean segment evaluated-market threshold drift')
           if int(segment_policy.get('repeatable_min_folds') or 0) != 2:
               raise SystemExit('Dynamic lean segment repeatability threshold drift')
+          if segment_policy.get('strict_consensus_requires_mean_direction') is not True:
+              raise SystemExit('Dynamic lean strict consensus mean-direction gate disabled')
+          if segment_policy.get('strict_dynamic_candidate_requires_positive_mean_brier_and_log_loss') is not True:
+              raise SystemExit('Dynamic lean candidate mean-positive gate disabled')
+          if segment_policy.get('strict_profile_reference_requires_negative_mean_brier_and_log_loss') is not True:
+              raise SystemExit('Dynamic lean profile-reference mean-negative gate disabled')
           if segment_policy.get('diagnostic_only') is not True or segment_policy.get('promotion_gate') is not False:
               raise SystemExit('Dynamic lean segment diagnostics escaped SHADOW-only policy')
           segment_dimensions = segment_aggregate.get('dimensions') or {}
           if set(segment_dimensions) != {'tour', 'surface', 'tour_surface'}:
               raise SystemExit('Dynamic lean segment aggregate dimensions incomplete')
+          consensus = market_wf.get('segment_consensus_shadow_policy') or {}
+          if consensus.get('mode') != 'SHADOW_SEGMENT_CONSENSUS_DIAGNOSTIC_ONLY':
+              raise SystemExit('Dynamic lean segment consensus mode drift')
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote'):
+              if consensus.get(key) is not False:
+                  raise SystemExit(f'Dynamic lean segment consensus isolation violation: {key}={consensus.get(key)}')
+          if consensus.get('joint_segment_backtest_claim') is not False:
+              raise SystemExit('Dynamic lean strict consensus cannot claim direct joint validation')
+          if consensus.get('prospective_validation_required') is not True:
+              raise SystemExit('Dynamic lean strict consensus must require prospective validation')
+          consensus_policy = consensus.get('policy') or {}
+          if consensus_policy.get('dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal') is not True:
+              raise SystemExit('Dynamic lean strict candidate mean-positive policy drift')
+          if consensus_policy.get('profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal') is not True:
+              raise SystemExit('Dynamic lean strict reference mean-negative policy drift')
+          if consensus_policy.get('count_repeatability_without_mean_direction_is_insufficient') is not True:
+              raise SystemExit('Dynamic lean count-only repeatability must remain insufficient')
+          for segment in (consensus.get('segments') or {}).values():
+              for market_name, market_row in (segment.get('markets') or {}).items():
+                  decision = market_row.get('decision')
+                  if decision == 'CONSENSUS_DYNAMIC_CANDIDATE':
+                      if market_row.get('tour_strict_consensus_positive') is not True or market_row.get('surface_strict_consensus_positive') is not True:
+                          raise SystemExit(f'Dynamic lean strict candidate escaped mean gate: {market_name}')
+                  elif decision == 'CONSENSUS_PROFILE_REFERENCE':
+                      if market_row.get('tour_strict_consensus_negative') is not True or market_row.get('surface_strict_consensus_negative') is not True:
+                          raise SystemExit(f'Dynamic lean strict reference escaped mean gate: {market_name}')
+                  elif decision == 'CONFLICT':
+                      strict_conflict = (
+                          market_row.get('tour_strict_consensus_positive') is True
+                          and market_row.get('surface_strict_consensus_negative') is True
+                      ) or (
+                          market_row.get('tour_strict_consensus_negative') is True
+                          and market_row.get('surface_strict_consensus_positive') is True
+                      )
+                      if not strict_conflict:
+                          raise SystemExit(f'Dynamic lean conflict lacks strict opposing means: {market_name}')
           current_dynamic_path = Path('frontend/data/player_dna_current_dynamic_shadow.json')
           if not current_dynamic_path.exists():
               raise SystemExit('player_dna_current_dynamic_shadow.json was not generated')
