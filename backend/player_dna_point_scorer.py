@@ -708,6 +708,41 @@ def _predict_logistic(model: dict[str, Any], frame: pd.DataFrame) -> np.ndarray:
     return _sigmoid(x @ model["beta"])
 
 
+
+def predict_logistic_row(model: dict[str, Any], row: dict[str, Any]) -> float:
+    """Predict one row with the exact canonical schema without DataFrame overhead."""
+    schema = model.get("schema") or {}
+    beta = np.asarray(model.get("beta"), dtype=float)
+    values = [1.0]
+
+    for name in schema.get("numeric") or []:
+        raw = row.get(name)
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            value = float((schema.get("medians") or {}).get(name, 0.0))
+        if not math.isfinite(value):
+            value = float((schema.get("medians") or {}).get(name, 0.0))
+        mean = float((schema.get("means") or {}).get(name, 0.0))
+        std = float((schema.get("stds") or {}).get(name, 1.0))
+        if not math.isfinite(std) or abs(std) < 1e-12:
+            std = 1.0
+        values.append((value - mean) / std)
+
+    for name in CATEGORICAL:
+        raw = row.get(name)
+        value = "__MISSING__" if raw is None else str(raw)
+        for level in (schema.get("categorical_levels") or {}).get(name, []):
+            values.append(1.0 if value == level else 0.0)
+
+    vector = np.asarray(values, dtype=float)
+    if vector.shape != beta.shape:
+        raise ValueError(
+            f"logistic row shape mismatch: row={vector.shape} beta={beta.shape}"
+        )
+    return float(_sigmoid(np.asarray([float(vector @ beta)], dtype=float))[0])
+
+
 def _match_equal_brier(match_ids: pd.Series, y: np.ndarray, p: np.ndarray) -> float:
     frame = pd.DataFrame({
         "match_id": match_ids.astype(str).to_numpy(),
