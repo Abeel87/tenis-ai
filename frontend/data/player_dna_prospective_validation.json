@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 29,
+    "previous_snapshot_count": 30,
     "current_snapshot_count_before_retention": 30,
-    "preserved_snapshots": 29,
-    "new_snapshots": 1,
-    "newly_settled": 0,
+    "preserved_snapshots": 30,
+    "new_snapshots": 0,
+    "newly_settled": 2,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -47,40 +47,41 @@
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
         "upcoming": 14,
-        "due_within_6h": 4,
-        "overdue_6_24h": 1,
+        "due_within_6h": 1,
+        "overdue_6_24h": 2,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
       },
       "overdue_samples": [
         {
-          "match_id": "186251",
-          "scheduled_time": "2026-09-05T00:30:00+00:00",
-          "hours_since_scheduled": 11.69,
-          "p1": "Ben Shelton",
-          "p2": "Denis Shapovalov"
+          "match_id": "186711",
+          "scheduled_time": "2026-09-05T08:00:00+00:00",
+          "hours_since_scheduled": 6.76,
+          "p1": "Juan Pablo Varillas",
+          "p2": "Jay Clarke"
+        },
+        {
+          "match_id": "186715",
+          "scheduled_time": "2026-09-05T08:00:00+00:00",
+          "hours_since_scheduled": 6.76,
+          "p1": "Valerio Aboian",
+          "p2": "Yanaki Milev"
         }
       ]
     },
     "settlement_latency": {
-      "n": 11,
-      "median_hours": 18.111,
-      "p90_hours": 22.111,
+      "n": 13,
+      "median_hours": 15.111,
+      "p90_hours": 21.911,
       "max_hours": 22.111,
       "negative_latency_count": 0,
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 10,
+      "count": 9,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
-        {
-          "match_id": "186652",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
-          "drift_minutes": 570.0
-        },
         {
           "match_id": "186632",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
@@ -88,16 +89,28 @@
           "drift_minutes": 570.0
         },
         {
+          "match_id": "186652",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
+          "drift_minutes": 570.0
+        },
+        {
           "match_id": "186711",
           "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T14:00:00+00:00",
-          "drift_minutes": 360.0
+          "current_scheduled_time": "2026-09-05T14:10:00+00:00",
+          "drift_minutes": 370.0
         },
         {
           "match_id": "186631",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T20:30:00+00:00",
           "drift_minutes": 330.0
+        },
+        {
+          "match_id": "186582",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
+          "drift_minutes": 180.0
         },
         {
           "match_id": "186633",
@@ -107,12 +120,6 @@
         },
         {
           "match_id": "186614",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
-          "drift_minutes": 180.0
-        },
-        {
-          "match_id": "186582",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T18:00:00+00:00",
           "drift_minutes": 180.0
@@ -128,46 +135,40 @@
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
           "current_scheduled_time": "2026-09-05T15:30:00+00:00",
           "drift_minutes": 30.0
-        },
-        {
-          "match_id": "186713",
-          "frozen_scheduled_time": "2026-09-05T11:25:00+00:00",
-          "current_scheduled_time": "2026-09-05T11:45:00+00:00",
-          "drift_minutes": 20.0
         }
       ]
     }
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 11,
+      "settled": 13,
       "required": 150,
-      "remaining": 139,
+      "remaining": 137,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 11,
+        "settled": 13,
         "required": 150,
-        "remaining": 139,
+        "remaining": 137,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 11,
+        "settled": 13,
         "required": 150,
-        "remaining": 139,
+        "remaining": 137,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 11,
+        "settled": 13,
         "required": 150,
-        "remaining": 139,
+        "remaining": 137,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 11,
+        "settled": 13,
         "required": 150,
-        "remaining": 139,
+        "remaining": 137,
         "support_sufficient": false
       }
     },
@@ -175,32 +176,32 @@
       "tour": {
         "atp": {
           "snapshots": 19,
-          "settled": 6,
+          "settled": 7,
           "required": 30,
-          "remaining": 24,
+          "remaining": 23,
           "support_sufficient": false
         },
         "challenger": {
           "snapshots": 11,
-          "settled": 5,
+          "settled": 6,
           "required": 30,
-          "remaining": 25,
+          "remaining": 24,
           "support_sufficient": false
         }
       },
       "surface": {
         "clay": {
           "snapshots": 9,
-          "settled": 4,
+          "settled": 5,
           "required": 30,
-          "remaining": 26,
+          "remaining": 25,
           "support_sufficient": false
         },
         "hard": {
           "snapshots": 21,
-          "settled": 7,
+          "settled": 8,
           "required": 30,
-          "remaining": 23,
+          "remaining": 22,
           "support_sufficient": false
         }
       }
@@ -235,203 +236,203 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 36,
-    "current_eligible_by_segment": 16,
+    "current_simulated_matches": 34,
+    "current_eligible_by_segment": 15,
     "snapshots": 30,
-    "settled_snapshots": 11,
-    "unsettled_snapshots": 19,
+    "settled_snapshots": 13,
+    "unsettled_snapshots": 17,
     "label_counts": {
-      "matches_seen": 3290,
-      "settled_labels": 3005,
-      "incomplete_or_unsettled": 285
+      "matches_seen": 3303,
+      "settled_labels": 3017,
+      "incomplete_or_unsettled": 286
     }
   },
   "evaluation": {
-    "settled_matches": 11,
+    "settled_matches": 13,
     "markets": {
       "first_set_tiebreak": {
-        "n": 11,
-        "raw_brier": 0.095843,
-        "calibrated_brier": 0.090601,
-        "brier_gain_calibrated_vs_raw": 0.005242,
+        "n": 13,
+        "raw_brier": 0.130714,
+        "calibrated_brier": 0.129507,
+        "brier_gain_calibrated_vs_raw": 0.001207,
         "improved": true
       },
       "first_set_over_8.5": {
-        "n": 11,
-        "raw_brier": 0.2504,
-        "calibrated_brier": 0.248627,
-        "brier_gain_calibrated_vs_raw": 0.001773,
+        "n": 13,
+        "raw_brier": 0.218429,
+        "calibrated_brier": 0.217871,
+        "brier_gain_calibrated_vs_raw": 0.000558,
         "improved": true
       },
       "first_set_over_9.5": {
-        "n": 11,
-        "raw_brier": 0.240567,
-        "calibrated_brier": 0.243269,
-        "brier_gain_calibrated_vs_raw": -0.002702,
+        "n": 13,
+        "raw_brier": 0.233036,
+        "calibrated_brier": 0.237221,
+        "brier_gain_calibrated_vs_raw": -0.004186,
         "improved": false
       },
       "first_set_over_10.5": {
-        "n": 11,
-        "raw_brier": 0.129629,
-        "calibrated_brier": 0.121949,
-        "brier_gain_calibrated_vs_raw": 0.007681,
+        "n": 13,
+        "raw_brier": 0.151571,
+        "calibrated_brier": 0.147274,
+        "brier_gain_calibrated_vs_raw": 0.004297,
         "improved": true
       }
     },
     "duration_markets_improved": 3,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": -0.002702
+    "worst_market_brier_gain": -0.004186
   },
   "segment_evaluation": {
     "tour": {
       "atp": {
+        "settled_matches": 7,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 7,
+            "raw_brier": 0.215079,
+            "calibrated_brier": 0.215792,
+            "brier_gain_calibrated_vs_raw": -0.000714,
+            "improved": false
+          },
+          "first_set_over_8.5": {
+            "n": 7,
+            "raw_brier": 0.126244,
+            "calibrated_brier": 0.12724,
+            "brier_gain_calibrated_vs_raw": -0.000996,
+            "improved": false
+          },
+          "first_set_over_9.5": {
+            "n": 7,
+            "raw_brier": 0.200091,
+            "calibrated_brier": 0.211356,
+            "brier_gain_calibrated_vs_raw": -0.011265,
+            "improved": false
+          },
+          "first_set_over_10.5": {
+            "n": 7,
+            "raw_brier": 0.210796,
+            "calibrated_brier": 0.206029,
+            "brier_gain_calibrated_vs_raw": 0.004767,
+            "improved": true
+          }
+        },
+        "duration_markets_improved": 1,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": -0.011265,
+        "support_sufficient": false
+      },
+      "challenger": {
         "settled_matches": 6,
         "markets": {
           "first_set_tiebreak": {
             "n": 6,
-            "raw_brier": 0.147888,
-            "calibrated_brier": 0.141572,
-            "brier_gain_calibrated_vs_raw": 0.006315,
+            "raw_brier": 0.032288,
+            "calibrated_brier": 0.02884,
+            "brier_gain_calibrated_vs_raw": 0.003448,
             "improved": true
           },
           "first_set_over_8.5": {
             "n": 6,
-            "raw_brier": 0.142134,
-            "calibrated_brier": 0.141512,
-            "brier_gain_calibrated_vs_raw": 0.000622,
+            "raw_brier": 0.325978,
+            "calibrated_brier": 0.323607,
+            "brier_gain_calibrated_vs_raw": 0.002371,
             "improved": true
           },
           "first_set_over_9.5": {
             "n": 6,
-            "raw_brier": 0.205281,
-            "calibrated_brier": 0.214697,
-            "brier_gain_calibrated_vs_raw": -0.009417,
-            "improved": false
+            "raw_brier": 0.27147,
+            "calibrated_brier": 0.267397,
+            "brier_gain_calibrated_vs_raw": 0.004073,
+            "improved": true
           },
           "first_set_over_10.5": {
             "n": 6,
-            "raw_brier": 0.167845,
-            "calibrated_brier": 0.157349,
-            "brier_gain_calibrated_vs_raw": 0.010496,
-            "improved": true
-          }
-        },
-        "duration_markets_improved": 3,
-        "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.009417,
-        "support_sufficient": false
-      },
-      "challenger": {
-        "settled_matches": 5,
-        "markets": {
-          "first_set_tiebreak": {
-            "n": 5,
-            "raw_brier": 0.03339,
-            "calibrated_brier": 0.029435,
-            "brier_gain_calibrated_vs_raw": 0.003955,
-            "improved": true
-          },
-          "first_set_over_8.5": {
-            "n": 5,
-            "raw_brier": 0.380319,
-            "calibrated_brier": 0.377165,
-            "brier_gain_calibrated_vs_raw": 0.003154,
-            "improved": true
-          },
-          "first_set_over_9.5": {
-            "n": 5,
-            "raw_brier": 0.282911,
-            "calibrated_brier": 0.277555,
-            "brier_gain_calibrated_vs_raw": 0.005355,
-            "improved": true
-          },
-          "first_set_over_10.5": {
-            "n": 5,
-            "raw_brier": 0.083771,
-            "calibrated_brier": 0.079468,
-            "brier_gain_calibrated_vs_raw": 0.004303,
+            "raw_brier": 0.082477,
+            "calibrated_brier": 0.078728,
+            "brier_gain_calibrated_vs_raw": 0.003749,
             "improved": true
           }
         },
         "duration_markets_improved": 4,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": 0.003154,
+        "worst_market_brier_gain": 0.002371,
         "support_sufficient": false
       }
     },
     "surface": {
       "clay": {
-        "settled_matches": 4,
+        "settled_matches": 5,
         "markets": {
           "first_set_tiebreak": {
-            "n": 4,
-            "raw_brier": 0.032978,
-            "calibrated_brier": 0.029178,
-            "brier_gain_calibrated_vs_raw": 0.0038,
+            "n": 5,
+            "raw_brier": 0.031739,
+            "calibrated_brier": 0.028515,
+            "brier_gain_calibrated_vs_raw": 0.003223,
             "improved": true
           },
           "first_set_over_8.5": {
-            "n": 4,
-            "raw_brier": 0.465071,
-            "calibrated_brier": 0.459525,
-            "brier_gain_calibrated_vs_raw": 0.005545,
+            "n": 5,
+            "raw_brier": 0.382911,
+            "calibrated_brier": 0.378783,
+            "brier_gain_calibrated_vs_raw": 0.004128,
             "improved": true
           },
           "first_set_over_9.5": {
-            "n": 4,
-            "raw_brier": 0.27425,
-            "calibrated_brier": 0.27133,
-            "brier_gain_calibrated_vs_raw": 0.002921,
+            "n": 5,
+            "raw_brier": 0.262254,
+            "calibrated_brier": 0.260385,
+            "brier_gain_calibrated_vs_raw": 0.001869,
             "improved": true
           },
           "first_set_over_10.5": {
-            "n": 4,
-            "raw_brier": 0.08298,
-            "calibrated_brier": 0.07906,
-            "brier_gain_calibrated_vs_raw": 0.00392,
+            "n": 5,
+            "raw_brier": 0.081585,
+            "calibrated_brier": 0.078253,
+            "brier_gain_calibrated_vs_raw": 0.003332,
             "improved": true
           }
         },
         "duration_markets_improved": 4,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": 0.002921,
+        "worst_market_brier_gain": 0.001869,
         "support_sufficient": false
       },
       "hard": {
-        "settled_matches": 7,
+        "settled_matches": 8,
         "markets": {
           "first_set_tiebreak": {
-            "n": 7,
-            "raw_brier": 0.131766,
-            "calibrated_brier": 0.1257,
-            "brier_gain_calibrated_vs_raw": 0.006066,
-            "improved": true
+            "n": 8,
+            "raw_brier": 0.192573,
+            "calibrated_brier": 0.192626,
+            "brier_gain_calibrated_vs_raw": -5.3e-05,
+            "improved": false
           },
           "first_set_over_8.5": {
-            "n": 7,
-            "raw_brier": 0.127731,
-            "calibrated_brier": 0.128114,
-            "brier_gain_calibrated_vs_raw": -0.000383,
+            "n": 8,
+            "raw_brier": 0.115628,
+            "calibrated_brier": 0.117301,
+            "brier_gain_calibrated_vs_raw": -0.001673,
             "improved": false
           },
           "first_set_over_9.5": {
-            "n": 7,
-            "raw_brier": 0.22132,
-            "calibrated_brier": 0.227235,
-            "brier_gain_calibrated_vs_raw": -0.005915,
+            "n": 8,
+            "raw_brier": 0.214774,
+            "calibrated_brier": 0.222744,
+            "brier_gain_calibrated_vs_raw": -0.00797,
             "improved": false
           },
           "first_set_over_10.5": {
-            "n": 7,
-            "raw_brier": 0.156286,
-            "calibrated_brier": 0.146456,
-            "brier_gain_calibrated_vs_raw": 0.00983,
+            "n": 8,
+            "raw_brier": 0.195313,
+            "calibrated_brier": 0.190413,
+            "brier_gain_calibrated_vs_raw": 0.0049,
             "improved": true
           }
         },
-        "duration_markets_improved": 2,
+        "duration_markets_improved": 1,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.005915,
+        "worst_market_brier_gain": -0.00797,
         "support_sufficient": false
       }
     }
@@ -769,8 +770,14 @@
         "first_set_over_9.5": 0.5626120480395903,
         "first_set_over_10.5": 0.2942339736137397
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": true,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": true
+      },
+      "settled_at": "2026-09-05T14:45:50.270250+00:00"
     },
     {
       "match_id": "186662",
@@ -875,8 +882,14 @@
         "first_set_over_9.5": 0.5345906516833131,
         "first_set_over_10.5": 0.2739076527813894
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-05T14:45:50.270250+00:00"
     },
     {
       "match_id": "186713",
