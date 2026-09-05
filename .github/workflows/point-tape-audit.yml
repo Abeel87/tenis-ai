@@ -345,7 +345,8 @@ jobs:
           if int(scorer.get('holdout_points_after_support_gate') or 0) <= 0:
               raise SystemExit('Player DNA scorer has no untouched holdout points')
           models = scorer.get('models') or {}
-          for model_name in ('profile_only_logistic', 'rank_only_logistic', 'profile_plus_rank_logistic'):
+          legacy_models = ('profile_only_logistic', 'rank_only_logistic', 'profile_plus_rank_logistic')
+          for model_name in legacy_models:
               model = models.get(model_name) or {}
               metrics = model.get('metrics') or {}
               meta = model.get('model') or {}
@@ -359,8 +360,46 @@ jobs:
                       f"{meta.get('engine')} converged={meta.get('converged')}"
                   )
           signal = scorer.get('signal') or {}
-          if signal.get('status') not in {'POSITIVE_HOLDOUT_SIGNAL', 'MIXED_OR_NO_INCREMENTAL_SIGNAL'}:
+          allowed_signal_statuses = {
+              'POSITIVE_HOLDOUT_SIGNAL',
+              'MIXED_OR_NO_INCREMENTAL_SIGNAL',
+              'STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL',
+              'STATEFUL_CONTEXT_MIXED_OR_NO_INCREMENTAL_SIGNAL',
+          }
+          if signal.get('status') not in allowed_signal_statuses:
               raise SystemExit(f"Player DNA scorer signal status invalid: {signal.get('status')}")
+          if str(signal.get('status') or '').startswith('STATEFUL_CONTEXT_'):
+              for model_name in ('score_state_only_logistic', 'profile_rank_plus_score_state_logistic'):
+                  model = models.get(model_name) or {}
+                  metrics = model.get('metrics') or {}
+                  meta = model.get('model') or {}
+                  if int(metrics.get('points') or 0) <= 0 or metrics.get('brier') is None or metrics.get('log_loss') is None:
+                      raise SystemExit(f'Player DNA {model_name} has no valid stateful holdout metrics')
+                  if meta.get('fitted') is not True or not meta.get('model_fingerprint_sha256'):
+                      raise SystemExit(f'Player DNA {model_name} was not actually fitted')
+                  if meta.get('engine') != 'NUMPY_NEWTON_LOGISTIC_L2' or meta.get('converged') is not True:
+                      raise SystemExit(
+                          f"Player DNA {model_name} did not converge with canonical NumPy logistic engine: "
+                          f"{meta.get('engine')} converged={meta.get('converged')}"
+                      )
+              if signal.get('promotion_gate') is not False:
+                  raise SystemExit('Stateful Player DNA scorer must not self-promote')
+              contract = scorer.get('stateful_context_contract') or {}
+              required_contract = {
+                  'features_use_score_before_only': True,
+                  'score_after_used_as_feature': False,
+                  'current_point_winner_used_as_feature': False,
+                  'momentum_uses_only_proven_contiguous_prior_atomic_points': True,
+                  'runtime_scoring_enabled': False,
+                  'production_influence': False,
+                  'symphony2_influence': False,
+                  'superbet_playable_influence': False,
+              }
+              for key, expected in required_contract.items():
+                  if contract.get(key) is not expected:
+                      raise SystemExit(
+                          f"Stateful Player DNA contract violation: {key}={contract.get(key)} expected={expected}"
+                      )
           print(
               f"Player DNA scorer: train={scorer.get('train_points_after_support_gate')} "
               f"holdout={scorer.get('holdout_points_after_support_gate')} "
