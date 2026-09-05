@@ -20,6 +20,7 @@ on:
       - 'backend/player_dna_current_shadow.py'
       - 'backend/player_dna_tennis_simulator.py'
       - 'backend/player_dna_market_backtest.py'
+      - 'backend/player_dna_market_walk_forward.py'
       - 'backend/player_dna_hold_calibration.py'
       - 'backend/player_dna_hold_walk_forward.py'
       - 'backend/player_dna_prospective_validation.py'
@@ -40,6 +41,7 @@ on:
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_tennis_simulator.py'
       - 'tests/test_player_dna_market_backtest.py'
+      - 'tests/test_player_dna_market_walk_forward.py'
       - 'tests/test_player_dna_hold_calibration.py'
       - 'tests/test_player_dna_hold_walk_forward.py'
       - 'tests/test_player_dna_prospective_validation.py'
@@ -77,7 +79,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -114,6 +116,9 @@ jobs:
 
       - name: Backtest Player DNA simulated markets (SHADOW, zero network)
         run: python backend/player_dna_market_backtest.py
+
+      - name: Validate dynamic lean market walk-forward robustness (SHADOW, zero network)
+        run: python backend/player_dna_market_walk_forward.py
 
       - name: Audit Player DNA hold calibration (SHADOW, zero network)
         run: python backend/player_dna_hold_calibration.py
@@ -568,6 +573,70 @@ jobs:
                   raise SystemExit(f'Dynamic lean backtest missing sample for {market}')
               if metrics.get('reference_profile_only_brier') is None or metrics.get('dynamic_lean_brier') is None:
                   raise SystemExit(f'Dynamic lean backtest missing Brier metrics for {market}')
+          p = Path('frontend/data/player_dna_dynamic_market_walk_forward.json')
+          if not p.exists():
+              raise SystemExit('player_dna_dynamic_market_walk_forward.json was not generated')
+          market_wf = json.loads(p.read_text(encoding='utf-8'))
+          if market_wf.get('mode') != 'SHADOW_DYNAMIC_LEAN_MARKET_WALK_FORWARD_ONLY':
+              raise SystemExit('Dynamic lean market walk-forward mode invalid')
+          if market_wf.get('status') != 'WALK_FORWARD_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Dynamic lean market walk-forward incomplete: {market_wf.get('status')}")
+          if market_wf.get('signal') not in {
+              'DYNAMIC_LEAN_MARKET_WALK_FORWARD_ROBUST_SHADOW',
+              'DYNAMIC_LEAN_MARKET_WALK_FORWARD_MIXED_OR_NO_GAIN',
+              'INSUFFICIENT_DYNAMIC_LEAN_MARKET_WALK_FORWARD_SAMPLE',
+          }:
+              raise SystemExit(f"Dynamic lean market walk-forward signal invalid: {market_wf.get('signal')}")
+          for key in ('production_influence', 'runtime_scoring_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote', 'promotion_gate'):
+              if market_wf.get(key) is not False:
+                  raise SystemExit(f'Dynamic lean market walk-forward isolation violation: {key}={market_wf.get(key)}')
+          if market_wf.get('feature_groups') != ['profile', 'rank', 'point_pressure', 'set_match_state']:
+              raise SystemExit('Dynamic lean market walk-forward feature groups drift')
+          if market_wf.get('dropped_state_groups') != ['tiebreak_context', 'prior_momentum']:
+              raise SystemExit('Dynamic lean market walk-forward dropped groups drift')
+          if market_wf.get('tiebreak_policy') != 'PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH':
+              raise SystemExit('Dynamic lean market walk-forward tiebreak policy drift')
+          wf_policy = market_wf.get('fold_policy') or {}
+          if wf_policy.get('train_fractions') != [0.6, 0.7, 0.8]:
+              raise SystemExit('Dynamic lean market walk-forward train fractions drift')
+          for key in ('expanding_train_windows', 'evaluation_windows_disjoint', 'same_timestamp_groups_not_split'):
+              if wf_policy.get(key) is not True:
+                  raise SystemExit(f'Dynamic lean market walk-forward fold policy violation: {key}')
+          wf_chronology = market_wf.get('chronology_contract') or {}
+          for key in ('models_refit_per_fold_on_prior_matches_only', 'evaluation_windows_are_future_only', 'evaluation_windows_are_disjoint', 'same_timestamp_groups_are_never_split', 'profiles_are_as_of_each_target_match', 'rank_metadata_is_pre_match_context', 'hypothetical_point_features_are_pre_point_only', 'outcome_labels_used_only_for_evaluation'):
+              if wf_chronology.get(key) is not True:
+                  raise SystemExit(f'Dynamic lean market walk-forward chronology violation: {key}')
+          wf_folds = market_wf.get('folds') or []
+          if len(wf_folds) != 3:
+              raise SystemExit(f'Dynamic lean market walk-forward fold count invalid: {len(wf_folds)}')
+          for fold in wf_folds:
+              if fold.get('status') != 'FOLD_COMPLETE':
+                  raise SystemExit(f"Dynamic lean market walk-forward incomplete fold: {fold.get('fold')}")
+              if fold.get('same_timestamp_split') is not False:
+                  raise SystemExit('Dynamic lean market walk-forward split a same-timestamp group')
+              if fold.get('profile_model_converged') is not True or fold.get('dynamic_lean_model_converged') is not True:
+                  raise SystemExit('Dynamic lean market walk-forward fold model convergence failure')
+          wf_summary = market_wf.get('summary') or {}
+          if int(wf_summary.get('required_folds') or 0) != 3 or int(wf_summary.get('completed_folds') or 0) != 3:
+              raise SystemExit('Dynamic lean market walk-forward did not complete all folds')
+          if int(wf_summary.get('supported_folds') or 0) != 3:
+              raise SystemExit('Dynamic lean market walk-forward fold support insufficient')
+          if int(wf_summary.get('aggregate_matched_settled_matches') or 0) < 500:
+              raise SystemExit('Dynamic lean market walk-forward aggregate sample too small')
+          wf_aggregate = market_wf.get('aggregate') or {}
+          if wf_aggregate.get('mode') != 'SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY':
+              raise SystemExit('Dynamic lean market walk-forward aggregate mode drift')
+          if wf_aggregate.get('status') != 'BACKTEST_COMPLETE_NO_PROMOTION':
+              raise SystemExit('Dynamic lean market walk-forward aggregate incomplete')
+          if int(wf_aggregate.get('matched_settled_matches') or 0) < 500:
+              raise SystemExit('Dynamic lean market walk-forward aggregate matched sample too small')
+          print(
+              f"Dynamic lean market walk-forward: signal={market_wf.get('signal')} "
+              f"completed={wf_summary.get('completed_folds')} supported={wf_summary.get('supported_folds')} "
+              f"repeatable={wf_summary.get('repeatable_gain_folds')} "
+              f"matched={wf_summary.get('aggregate_matched_settled_matches')}"
+          )
+
           if backtest.get('signal') not in {
               'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
               'MIXED_OR_NO_MATCH_LEVEL_SIGNAL',
@@ -986,6 +1055,7 @@ jobs:
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_simulation.json
             frontend/data/player_dna_market_backtest.json
+            frontend/data/player_dna_dynamic_market_walk_forward.json
             frontend/data/player_dna_hold_calibration_audit.json
             frontend/data/player_dna_hold_walk_forward.json
             frontend/data/player_dna_prospective_validation.json
