@@ -433,11 +433,19 @@ jobs:
                   f'stable={stable_ids} valid={valid_targets} total={current_matches}'
               )
           validation = current.get('historical_validation') or {}
-          if validation.get('status') != signal.get('status'):
+          if validation.get('status') != 'POSITIVE_HOLDOUT_SIGNAL':
               raise SystemExit(
-                  f"Player DNA current scorer historical validation drift: "
-                  f"current={validation.get('status')} scorer={signal.get('status')}"
+                  f"Player DNA current profile-only validation is not positive: {validation.get('status')}"
               )
+          if validation.get('runtime_feature_group') != 'profile_only':
+              raise SystemExit('Player DNA current runtime feature group drifted from profile_only')
+          if validation.get('stateful_reference_status') != signal.get('status'):
+              raise SystemExit(
+                  f"Player DNA stateful reference drift: "
+                  f"current={validation.get('stateful_reference_status')} scorer={signal.get('status')}"
+              )
+          if validation.get('stateful_reference_is_runtime_gate') is not False:
+              raise SystemExit('Stateful Player DNA must not gate the current profile-only scorer yet')
           if int(current.get('pre_cutoff_training_points') or 0) <= 0:
               raise SystemExit('Player DNA current scorer has no leakage-safe pre-cutoff training rows')
           scored = int(current.get('scored_matches') or 0)
