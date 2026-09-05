@@ -529,6 +529,45 @@ jobs:
               raise SystemExit('Player DNA backtest must use current-compatible profile-only features')
           if backtest.get('model_converged') is not True:
               raise SystemExit('Player DNA backtest point model did not converge')
+          if backtest.get('dynamic_lean_model_converged') is not True:
+              raise SystemExit('Player DNA dynamic lean point model did not converge')
+          dynamic_bt = backtest.get('dynamic_lean_stateful_candidate') or {}
+          if dynamic_bt.get('mode') != 'SHADOW_DYNAMIC_LEAN_STATEFUL_E2E_BACKTEST_ONLY':
+              raise SystemExit('Dynamic lean Player DNA backtest mode invalid')
+          if dynamic_bt.get('status') != 'BACKTEST_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Dynamic lean Player DNA backtest incomplete: {dynamic_bt.get('status')}")
+          if dynamic_bt.get('signal') not in {
+              'DYNAMIC_LEAN_STATEFUL_E2E_PROMISING_SHADOW',
+              'DYNAMIC_LEAN_STATEFUL_E2E_MIXED_OR_NO_GAIN',
+              'INSUFFICIENT_DYNAMIC_LEAN_MATCH_LEVEL_SAMPLE',
+          }:
+              raise SystemExit(f"Dynamic lean Player DNA signal invalid: {dynamic_bt.get('signal')}")
+          for key in ('production_influence', 'runtime_scoring_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_promote', 'promotion_gate'):
+              if dynamic_bt.get(key) is not False:
+                  raise SystemExit(f'Dynamic lean Player DNA isolation violation: {key}={dynamic_bt.get(key)}')
+          if dynamic_bt.get('feature_groups') != ['profile', 'rank', 'point_pressure', 'set_match_state']:
+              raise SystemExit(f"Dynamic lean feature groups invalid: {dynamic_bt.get('feature_groups')}")
+          if dynamic_bt.get('dropped_state_groups') != ['tiebreak_context', 'prior_momentum']:
+              raise SystemExit(f"Dynamic lean dropped groups invalid: {dynamic_bt.get('dropped_state_groups')}")
+          if dynamic_bt.get('tiebreak_policy') != 'PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH':
+              raise SystemExit(f"Dynamic lean tiebreak policy drift: {dynamic_bt.get('tiebreak_policy')}")
+          if dynamic_bt.get('model_converged') is not True:
+              raise SystemExit('Dynamic lean model did not converge')
+          if int(dynamic_bt.get('matched_settled_matches') or 0) < 200:
+              raise SystemExit('Dynamic lean backtest has too few matched settled matches')
+          dynamic_summary = dynamic_bt.get('summary') or {}
+          if int(dynamic_summary.get('binary_markets_evaluated_ge_100') or 0) < 6:
+              raise SystemExit('Dynamic lean backtest evaluated too few binary markets')
+          chronology = dynamic_bt.get('chronology_contract') or {}
+          for key in ('lean_model_fit_train_partition_only', 'holdout_profiles_as_of_each_match', 'rank_metadata_is_pre_match_context', 'hypothetical_point_features_are_pre_point_only', 'outcome_labels_used_only_for_evaluation'):
+              if chronology.get(key) is not True:
+                  raise SystemExit(f'Dynamic lean chronology contract violation: {key}={chronology.get(key)}')
+          for market in ('match_p1_win', 'first_set_p1_win', 'first_set_tiebreak'):
+              metrics = (dynamic_bt.get('binary_markets_vs_profile_only') or {}).get(market) or {}
+              if int(metrics.get('n') or 0) < 100:
+                  raise SystemExit(f'Dynamic lean backtest missing sample for {market}')
+              if metrics.get('reference_profile_only_brier') is None or metrics.get('dynamic_lean_brier') is None:
+                  raise SystemExit(f'Dynamic lean backtest missing Brier metrics for {market}')
           if backtest.get('signal') not in {
               'POSITIVE_MATCH_LEVEL_HOLDOUT_SIGNAL',
               'MIXED_OR_NO_MATCH_LEVEL_SIGNAL',
