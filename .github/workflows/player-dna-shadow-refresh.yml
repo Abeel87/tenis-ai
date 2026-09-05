@@ -731,6 +731,17 @@ jobs:
           assert isinstance(trajectory_eval.get('first_set_complete_path_conditioned_on_observed_first_server'), dict)
           assert isinstance(trajectory_eval.get('match_set_sequence_conditioned_on_observed_first_server'), dict)
           assert isinstance(trajectory_eval.get('full_match_game_path_conditioned_on_observed_first_server'), dict)
+          trajectory_segments = trajectory_evidence.get('segment_diagnostics') or {}
+          trajectory_segment_policy = trajectory_segments.get('policy') or {}
+          assert trajectory_segment_policy.get('diagnostic_only') is True
+          assert trajectory_segment_policy.get('direct_tour_surface_rows_are_built_from_same_match_snapshots') is True
+          assert trajectory_segment_policy.get('marginal_tour_and_surface_results_never_imply_joint_validation') is True
+          assert trajectory_segment_policy.get('minimum_segment_sample_not_defined_yet') is True
+          assert trajectory_segment_policy.get('performance_verdict_forbidden') is True
+          assert isinstance(trajectory_segments.get('tour'), dict)
+          assert isinstance(trajectory_segments.get('surface'), dict)
+          assert isinstance(trajectory_segments.get('tour_surface'), dict)
+          assert isinstance(trajectory_segments.get('coverage'), dict)
 
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}
