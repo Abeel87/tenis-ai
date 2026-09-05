@@ -460,10 +460,19 @@ def _dynamic_evaluation(
             ),
         }
 
+    candidate_markets_seen = sorted({
+        market
+        for row in snapshots
+        if isinstance(row, dict)
+        for market in ((row.get("candidate_markets") or {}).keys())
+        if market in BINARY_MARKETS
+    })
+
     return {
         "settled_matches": len(settled),
         "settled_market_observations": total_observations,
         "markets": markets,
+        "candidate_markets_seen": candidate_markets_seen,
         "markets_with_observations": [
             market for market, row in markets.items()
             if int(row.get("n") or 0) > 0
@@ -478,7 +487,7 @@ def _dynamic_evaluation(
 def _dynamic_evidence_readiness(
     evaluation: dict[str, Any],
 ) -> dict[str, Any]:
-    observed = list(evaluation.get("markets_with_observations") or [])
+    observed = list(evaluation.get("candidate_markets_seen") or [])
     market_rows = {}
     for market in observed:
         row = (evaluation.get("markets") or {}).get(market) or {}
