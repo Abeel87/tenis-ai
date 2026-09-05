@@ -639,6 +639,39 @@ jobs:
               raise SystemExit('Dynamic lean market walk-forward aggregate incomplete')
           if int(wf_aggregate.get('matched_settled_matches') or 0) < 500:
               raise SystemExit('Dynamic lean market walk-forward aggregate matched sample too small')
+          segment_aggregate = market_wf.get('segment_aggregate') or {}
+          segment_policy = segment_aggregate.get('policy') or {}
+          if segment_policy.get('dimensions') != ['tour', 'surface', 'tour_surface']:
+              raise SystemExit('Dynamic lean segment dimensions drift')
+          if int(segment_policy.get('segment_min_matched') or 0) != 40:
+              raise SystemExit('Dynamic lean segment matched threshold drift')
+          if int(segment_policy.get('segment_min_market_n') or 0) != 30:
+              raise SystemExit('Dynamic lean segment market threshold drift')
+          if int(segment_policy.get('segment_min_evaluated_markets') or 0) != 4:
+              raise SystemExit('Dynamic lean segment evaluated-market threshold drift')
+          if int(segment_policy.get('repeatable_min_folds') or 0) != 2:
+              raise SystemExit('Dynamic lean segment repeatability threshold drift')
+          if segment_policy.get('diagnostic_only') is not True or segment_policy.get('promotion_gate') is not False:
+              raise SystemExit('Dynamic lean segment diagnostics escaped SHADOW-only policy')
+          segment_dimensions = segment_aggregate.get('dimensions') or {}
+          if set(segment_dimensions) != {'tour', 'surface', 'tour_surface'}:
+              raise SystemExit('Dynamic lean segment aggregate dimensions incomplete')
+          segment_watchlist = segment_aggregate.get('watchlist') or {}
+          for key in ('repeatable_positive', 'repeatable_negative', 'mixed'):
+              if not isinstance(segment_watchlist.get(key), list):
+                  raise SystemExit(f'Dynamic lean segment watchlist invalid: {key}')
+          for fold in wf_folds:
+              segments = fold.get('segments') or {}
+              if set(segments) != {'tour', 'surface', 'tour_surface'}:
+                  raise SystemExit(f"Dynamic lean fold segment dimensions incomplete: fold={fold.get('fold')}")
+              for dimension in ('tour', 'surface', 'tour_surface'):
+                  if not isinstance(segments.get(dimension), dict):
+                      raise SystemExit(f'Dynamic lean fold segment payload invalid: {dimension}')
+          print(
+              f"Dynamic lean segment watchlist: positive={len(segment_watchlist.get('repeatable_positive') or [])} "
+              f"negative={len(segment_watchlist.get('repeatable_negative') or [])} "
+              f"mixed={len(segment_watchlist.get('mixed') or [])}"
+          )
           print(
               f"Dynamic lean market walk-forward: signal={market_wf.get('signal')} "
               f"completed={wf_summary.get('completed_folds')} supported={wf_summary.get('supported_folds')} "
