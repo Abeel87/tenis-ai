@@ -51,6 +51,7 @@ def test_walk_forward_fold_specs_are_disjoint_and_never_split_same_timestamp_gro
 
     specs = walk_forward_fold_specs(rows)
     assert len(specs) == 3
+    assert [spec["train_fraction_target"] for spec in specs] == [0.55, 0.70, 0.85]
     assert all(spec["same_timestamp_split"] is False for spec in specs)
 
     eval_sets = [set(spec["eval_ids"]) for spec in specs]
