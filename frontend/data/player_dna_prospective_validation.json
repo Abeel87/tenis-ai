@@ -22,7 +22,7 @@
     "current_snapshot_count_before_retention": 30,
     "preserved_snapshots": 30,
     "new_snapshots": 0,
-    "newly_settled": 2,
+    "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -46,9 +46,9 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 14,
-        "due_within_6h": 1,
-        "overdue_6_24h": 2,
+        "upcoming": 5,
+        "due_within_6h": 9,
+        "overdue_6_24h": 3,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
@@ -57,16 +57,23 @@
         {
           "match_id": "186711",
           "scheduled_time": "2026-09-05T08:00:00+00:00",
-          "hours_since_scheduled": 6.76,
+          "hours_since_scheduled": 10.46,
           "p1": "Juan Pablo Varillas",
           "p2": "Jay Clarke"
         },
         {
           "match_id": "186715",
           "scheduled_time": "2026-09-05T08:00:00+00:00",
-          "hours_since_scheduled": 6.76,
+          "hours_since_scheduled": 10.46,
           "p1": "Valerio Aboian",
           "p2": "Yanaki Milev"
+        },
+        {
+          "match_id": "186713",
+          "scheduled_time": "2026-09-05T11:25:00+00:00",
+          "hours_since_scheduled": 7.05,
+          "p1": "Gustavo Heide",
+          "p2": "Facundo Mena"
         }
       ]
     },
@@ -79,15 +86,9 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 9,
+      "count": 6,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
-        {
-          "match_id": "186632",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
-          "drift_minutes": 570.0
-        },
         {
           "match_id": "186652",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
@@ -95,46 +96,34 @@
           "drift_minutes": 570.0
         },
         {
-          "match_id": "186711",
-          "frozen_scheduled_time": "2026-09-05T08:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T14:10:00+00:00",
-          "drift_minutes": 370.0
+          "match_id": "186632",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T00:30:00+00:00",
+          "drift_minutes": 570.0
         },
         {
           "match_id": "186631",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T20:30:00+00:00",
-          "drift_minutes": 330.0
-        },
-        {
-          "match_id": "186582",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
-          "drift_minutes": 180.0
+          "current_scheduled_time": "2026-09-05T21:00:00+00:00",
+          "drift_minutes": 360.0
         },
         {
           "match_id": "186633",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
-          "drift_minutes": 180.0
+          "current_scheduled_time": "2026-09-05T19:30:00+00:00",
+          "drift_minutes": 270.0
+        },
+        {
+          "match_id": "186582",
+          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
+          "current_scheduled_time": "2026-09-05T19:10:00+00:00",
+          "drift_minutes": 250.0
         },
         {
           "match_id": "186614",
           "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T18:00:00+00:00",
-          "drift_minutes": 180.0
-        },
-        {
-          "match_id": "186581",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T16:30:00+00:00",
-          "drift_minutes": 90.0
-        },
-        {
-          "match_id": "186583",
-          "frozen_scheduled_time": "2026-09-05T15:00:00+00:00",
-          "current_scheduled_time": "2026-09-05T15:30:00+00:00",
-          "drift_minutes": 30.0
+          "current_scheduled_time": "2026-09-05T18:30:00+00:00",
+          "drift_minutes": 210.0
         }
       ]
     }
@@ -236,15 +225,15 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 34,
-    "current_eligible_by_segment": 15,
+    "current_simulated_matches": 25,
+    "current_eligible_by_segment": 11,
     "snapshots": 30,
     "settled_snapshots": 13,
     "unsettled_snapshots": 17,
     "label_counts": {
-      "matches_seen": 3303,
-      "settled_labels": 3017,
-      "incomplete_or_unsettled": 286
+      "matches_seen": 3314,
+      "settled_labels": 3027,
+      "incomplete_or_unsettled": 287
     }
   },
   "evaluation": {
