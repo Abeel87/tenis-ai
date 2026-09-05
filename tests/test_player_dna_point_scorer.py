@@ -3,10 +3,13 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from backend.player_dna_point_scorer import (
+    STATE_GROUPS,
     STATE_NUMERIC,
     _fit_logistic_newton,
     _predict_logistic,
+    _proper_score_gains,
     _state_feature_lookup,
+    _walk_forward_slices,
     build_feature_rows,
     split_chronological_by_match,
 )
@@ -238,3 +241,59 @@ def test_momentum_resets_when_atomic_event_sequence_has_a_gap():
     lookup, _ = _state_feature_lookup([p0, p2])
     assert lookup[("m1", 2)]["previous_point_won_by_server"] is None
     assert lookup[("m1", 2)]["server_point_streak_before"] == 0
+
+
+
+def test_state_groups_partition_state_features_exactly_once():
+    flattened = [feature for group in STATE_GROUPS.values() for feature in group]
+    assert sorted(flattened) == sorted(STATE_NUMERIC)
+    assert len(flattened) == len(set(flattened))
+
+
+def test_stateful_walk_forward_uses_disjoint_timestamp_windows():
+    rows = []
+    for day in range(1, 41):
+        when = datetime(2026, 7, 1, 10, tzinfo=timezone.utc) + pd.Timedelta(days=day)
+        for suffix in ("a", "b"):
+            rows.append({
+                "match_id": f"m{day:02d}{suffix}",
+                "scheduled_time": when.to_pydatetime() if hasattr(when, "to_pydatetime") else when,
+                "server_overall_matches": 5,
+                "receiver_overall_matches": 5,
+            })
+
+    folds = _walk_forward_slices(rows)
+    assert len(folds) == 3
+
+    prior_test_ids = set()
+    for train_rows, test_rows, meta in folds:
+        train_ids = {row["match_id"] for row in train_rows}
+        test_ids = {row["match_id"] for row in test_rows}
+        assert train_ids.isdisjoint(test_ids)
+        assert prior_test_ids.isdisjoint(test_ids)
+        assert meta["same_timestamp_split"] is False
+        assert meta["test_window_disjoint"] is True
+
+        train_times = {row["scheduled_time"] for row in train_rows}
+        test_times = {row["scheduled_time"] for row in test_rows}
+        assert train_times.isdisjoint(test_times)
+        prior_test_ids |= test_ids
+
+
+def test_proper_score_gains_are_positive_when_candidate_improves():
+    reference = {
+        "brier": 0.240,
+        "match_equal_brier": 0.241,
+        "log_loss": 0.670,
+    }
+    candidate = {
+        "brier": 0.232,
+        "match_equal_brier": 0.233,
+        "log_loss": 0.655,
+    }
+    gains = _proper_score_gains(reference, candidate)
+    assert gains == {
+        "brier_gain": 0.008,
+        "match_equal_brier_gain": 0.008,
+        "log_loss_gain": 0.015,
+    }
