@@ -196,7 +196,6 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
-    latest_provider_rank: dict[int, dict[str, Any]] = {}
     snapshots: list[dict[str, Any]] = []
     readiness_any = Counter()
     readiness_surface = Counter()
@@ -237,26 +236,8 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                     "player_side": side,
                     "player_id": pid,
                     "opponent_id": opponent,
-                    "player_ranking": effective_ranking,
-                    "opponent_ranking": effective_opponent_ranking,
-                    "player_ranking_source": player_rank_source,
-                    "opponent_ranking_source": opponent_rank_source,
-                    "player_ranking_source_match_id": (
-                        None if player_rank_source == "current_fixture_provider"
-                        else player_prior_rank.get("source_match_id")
-                    ),
-                    "opponent_ranking_source_match_id": (
-                        None if opponent_rank_source == "current_fixture_provider"
-                        else opponent_prior_rank.get("source_match_id")
-                    ),
-                    "player_ranking_source_scheduled_time": (
-                        None if player_rank_source == "current_fixture_provider"
-                        else player_prior_rank.get("source_scheduled_time")
-                    ),
-                    "opponent_ranking_source_scheduled_time": (
-                        None if opponent_rank_source == "current_fixture_provider"
-                        else opponent_prior_rank.get("source_scheduled_time")
-                    ),
+                    "player_ranking": ranking,
+                    "opponent_ranking": opponent_ranking,
                     "overall_prior": overall_snapshot,
                     "same_surface_prior": surface_snapshot,
                 })
@@ -381,6 +362,7 @@ def build_current_target_profiles(
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
+    latest_provider_rank: dict[int, dict[str, Any]] = {}
     snapshots: list[dict[str, Any]] = []
     hist_index = 0
     excluded_current_history_matches = len(historical) - len(history)
