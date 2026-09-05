@@ -261,6 +261,109 @@
       </section>`;
   }
 
+
+  function trajectoryMetric(label,row,keys){
+    row=row||{};
+    const count=n(row.n)||0;
+    const values=keys.map(([key,name])=>`
+      <span><small>${esc(name)}</small><b>${pct(row[key])}</b></span>
+    `).join('');
+    return `
+      <div class="pds-trajectory-evidence-row">
+        <div><b>${esc(label)}</b><small>n=${count}</small></div>
+        <div class="pds-trajectory-evidence-values">${values}</div>
+      </div>`;
+  }
+
+  function trajectoryEvidenceHTML(prospective){
+    const trajectory=prospective?.trajectory_evidence;
+    if(!trajectory||trajectory.mode!=='SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY'){
+      return `
+        <section class="pds-trajectory-evidence">
+          <div class="pds-subhead">
+            <b>Trajectory · prospective evidence</b>
+            <small>Forward-test przebiegu meczu, bez zmiany runtime.</small>
+          </div>
+          <div class="pds-empty">Trajectory ledger pojawi się po pierwszym refreshu nowego raportu.</div>
+        </section>`;
+    }
+
+    const counts=trajectory.counts||{};
+    const evaluation=trajectory.evaluation||{};
+    const integrity=trajectory.ledger_integrity||{};
+    const checkpoints=evaluation.checkpoint_neutral_start_server||{};
+    const settled=n(counts.settled_snapshots)||0;
+    const snapshots=n(counts.snapshots)||0;
+    const current=n(counts.new_current_pre_match_snapshots)||0;
+    const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
+
+    return `
+      <section class="pds-trajectory-evidence">
+        <div class="pds-dynamic-head">
+          <div class="pds-subhead">
+            <b>Trajectory · prospective evidence</b>
+            <small>Zamrożone przed meczem scenariusze przebiegu · bez dopasowania po wyniku.</small>
+          </div>
+          <span class="pds-status collecting">ZBIERAMY TRAJECTORY</span>
+        </div>
+
+        <div class="pds-grid">
+          <div class="pds-metric">
+            <span>Trajectory snapshots</span>
+            <b>${snapshots}</b>
+            <small>settled: ${settled}</small>
+          </div>
+          <div class="pds-metric">
+            <span>Nowe przed meczem</span>
+            <b>${current}</b>
+            <small>z bieżącego refreshu</small>
+          </div>
+          <div class="pds-metric">
+            <span>Ledger integrity</span>
+            <b>${integrityOk?'OK':'BRAK / BŁĄD'}</b>
+            <small>rewrite: ${n(integrity.rewritten_predictions)||0}</small>
+          </div>
+          <div class="pds-metric">
+            <span>Performance verdict</span>
+            <b>NIE</b>
+            <small>najpierw czysta próbka</small>
+          </div>
+        </div>
+
+        <div class="pds-trajectory-evidence-list">
+          ${trajectoryMetric('Po 2 gemach',checkpoints.after_2_games,[['top1','TOP1'],['top3','TOP3']])}
+          ${trajectoryMetric('Po 4 gemach',checkpoints.after_4_games,[['top1','TOP1'],['top3','TOP3']])}
+          ${trajectoryMetric('Po 6 gemach',checkpoints.after_6_games,[['top1','TOP1'],['top3','TOP3']])}
+          ${trajectoryMetric(
+            'Rodzina wyniku meczu',
+            evaluation.primary_storyline_match_score_conditioned_on_observed_first_server,
+            [['top1','TOP1'],['top3','TOP3']]
+          )}
+          ${trajectoryMetric(
+            'Pełna ścieżka 1. seta',
+            evaluation.first_set_complete_path_conditioned_on_observed_first_server,
+            [['top1','TOP1'],['top3','TOP3'],['top8','TOP8']]
+          )}
+          ${trajectoryMetric(
+            'Sekwencja wyników setów',
+            evaluation.match_set_sequence_conditioned_on_observed_first_server,
+            [['top1','TOP1'],['top3','TOP3'],['top12','TOP12']]
+          )}
+          ${trajectoryMetric(
+            'Pełna ścieżka meczu',
+            evaluation.full_match_game_path_conditioned_on_observed_first_server,
+            [['top1','TOP1'],['top2','TOP2'],['top4','TOP4']]
+          )}
+        </div>
+
+        <p class="pds-foot">
+          Dokładna ścieżka gem po gemie pozostaje diagnostyką SHADOW. Pierwszy serwujący jest używany do oceny ścieżek dopiero po meczu;
+          checkpointy 2/4/6 pozostają neutralne przed startem. Nie ustawiamy jeszcze arbitralnego progu skuteczności.
+          Zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
+        </p>
+      </section>`;
+  }
+
   function settlementHealth(prospective){
     const integrity=prospective?.ledger_integrity||{};
     const observability=prospective?.settlement_observability||{};
@@ -402,6 +505,8 @@
       </section>
 
       ${dynamicEvidenceHTML(prospective)}
+
+      ${trajectoryEvidenceHTML(prospective)}
 
       <section class="pds-markets">
         <div class="pds-subhead">

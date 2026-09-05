@@ -1125,6 +1125,49 @@ jobs:
                   raise SystemExit(f"Player DNA dynamic performance verdict signal invalid: {dynamic_verdict.get('signal')}")
           elif dynamic_verdict.get('signal') != 'DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY':
               raise SystemExit('Player DNA dynamic non-emitted verdict must remain NOT_READY')
+
+          trajectory_evidence = prospective.get('trajectory_evidence') or {}
+          if trajectory_evidence.get('mode') != 'SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY':
+              raise SystemExit('Player DNA trajectory prospective ledger mode invalid')
+          if trajectory_evidence.get('status') != 'TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE':
+              raise SystemExit('Player DNA trajectory prospective ledger status invalid')
+          if trajectory_evidence.get('signal') != 'COLLECTING_TRAJECTORY_PROSPECTIVE_EVIDENCE':
+              raise SystemExit(f"Player DNA trajectory prospective signal invalid: {trajectory_evidence.get('signal')}")
+          for key in ('production_influence', 'runtime_switch_enabled', 'symphony2_influence', 'superbet_playable_influence', 'auto_integrate'):
+              if trajectory_evidence.get(key) is not False:
+                  raise SystemExit(f'Player DNA trajectory prospective isolation violation: {key}={trajectory_evidence.get(key)}')
+          if trajectory_evidence.get('performance_verdict_emitted') is not False:
+              raise SystemExit('Player DNA trajectory prospective ledger cannot emit verdict before policy is defined')
+          trajectory_scope = trajectory_evidence.get('validation_scope') or {}
+          if trajectory_scope.get('checkpoint_scores_after_games') != [2, 4, 6]:
+              raise SystemExit('Player DNA trajectory checkpoint scope drift')
+          if trajectory_scope.get('checkpoint_start_server_policy') != 'NEUTRAL_PRE_MATCH_AVERAGE':
+              raise SystemExit('Player DNA trajectory checkpoint start-server policy drift')
+          if trajectory_scope.get('conditioned_paths_use_observed_first_server_only_after_settlement') is not True:
+              raise SystemExit('Player DNA trajectory prospective ledger leaked post-match first server into prediction')
+          if trajectory_scope.get('primary_storyline_probability_scope') != 'MATCH_SCORE_FAMILY':
+              raise SystemExit('Player DNA trajectory storyline probability scope drift')
+          if trajectory_scope.get('full_match_exact_game_paths_are_diagnostic_only') is not True:
+              raise SystemExit('Player DNA exact full-match paths escaped diagnostic-only policy')
+          if trajectory_scope.get('no_trajectory_performance_threshold_invented_yet') is not True:
+              raise SystemExit('Player DNA trajectory prospective ledger invented an unsupported performance threshold')
+          trajectory_integrity = trajectory_evidence.get('ledger_integrity') or {}
+          if trajectory_integrity.get('status') != 'LEDGER_INTEGRITY_OK':
+              raise SystemExit(f"Player DNA trajectory prospective integrity failed: {trajectory_integrity.get('status')}")
+          for key in ('rewritten_predictions', 'settlement_regressions', 'settled_actual_rewrites', 'settled_at_rewrites', 'missing_previous_snapshots', 'duplicate_previous_match_ids', 'duplicate_current_match_ids'):
+              if int(trajectory_integrity.get(key) or 0) != 0:
+                  raise SystemExit(f'Player DNA trajectory prospective corruption: {key}={trajectory_integrity.get(key)}')
+          trajectory_eval = trajectory_evidence.get('evaluation') or {}
+          for key in (
+              'checkpoint_neutral_start_server',
+              'primary_storyline_match_score_conditioned_on_observed_first_server',
+              'first_set_complete_path_conditioned_on_observed_first_server',
+              'match_set_sequence_conditioned_on_observed_first_server',
+              'full_match_game_path_conditioned_on_observed_first_server',
+          ):
+              if not isinstance(trajectory_eval.get(key), dict):
+                  raise SystemExit(f'Player DNA trajectory prospective evaluation missing: {key}')
+
           if prospective.get('market_scope') != 'DURATION_MARKETS_ONLY':
               raise SystemExit('Player DNA prospective validation scope must remain duration-only')
           if prospective.get('winner_markets_promoted') is not False:

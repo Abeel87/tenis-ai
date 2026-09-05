@@ -73,6 +73,20 @@ DYNAMIC_IMMUTABLE_SNAPSHOT_FIELDS = (
 )
 
 
+TRAJECTORY_IMMUTABLE_SNAPSHOT_FIELDS = (
+    "match_id",
+    "scheduled_time",
+    "captured_at",
+    "captured_pre_match",
+    "tour",
+    "surface",
+    "p1",
+    "p2",
+    "source_model_fingerprint_sha256",
+    "trajectory_predictions",
+)
+
+
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
     if not path.exists():
         return
@@ -893,6 +907,602 @@ def _build_dynamic_lean_evidence(
     }
 
 
+
+def _compact_trajectory_predictions(
+    simulation: dict[str, Any],
+) -> dict[str, Any] | None:
+    if not isinstance(simulation, dict):
+        return None
+    if simulation.get("mode") != "SHADOW_SIMULATION_ONLY":
+        return None
+    if simulation.get("validation_status") != "UNVALIDATED_MATCH_LEVEL":
+        return None
+    for key in (
+        "production_influence",
+        "symphony2_influence",
+        "superbet_playable_influence",
+        "auto_promote",
+    ):
+        if simulation.get(key) is not False:
+            return None
+
+    trajectory = simulation.get("trajectory")
+    if not isinstance(trajectory, dict):
+        return None
+    if trajectory.get("status") != "SHADOW_TRAJECTORY_FOUNDATION":
+        return None
+    if trajectory.get("validation_status") != "UNVALIDATED_MATCH_LEVEL":
+        return None
+    contract = trajectory.get("contract") or {}
+    for key in (
+        "production_influence",
+        "symphony2_influence",
+        "superbet_playable_influence",
+    ):
+        if contract.get(key) is not False:
+            return None
+
+    checkpoints = {}
+    source_checkpoints = trajectory.get("checkpoints_neutral_start_server") or {}
+    for key in ("after_2_games", "after_4_games", "after_6_games"):
+        rows = source_checkpoints.get(key)
+        if not isinstance(rows, list) or not rows:
+            return None
+        compact = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            score = str(row.get("score") or "").strip()
+            try:
+                probability = float(row.get("probability"))
+            except (TypeError, ValueError):
+                continue
+            if not score or not math.isfinite(probability) or probability < 0.0:
+                continue
+            compact.append({"score": score, "probability": probability})
+        if not compact:
+            return None
+        checkpoints[key] = compact
+
+    conditioned = {}
+    source_branches = trajectory.get("serve_order_conditioned") or {}
+    for key in ("p1_serves_first", "p2_serves_first"):
+        branch = source_branches.get(key)
+        if not isinstance(branch, dict):
+            return None
+
+        first_set_paths = []
+        for row in branch.get("first_set_top_game_paths") or []:
+            if not isinstance(row, dict):
+                continue
+            progression = [
+                str(value) for value in (row.get("progression") or [])
+                if str(value).strip()
+            ]
+            if not progression:
+                continue
+            first_set_paths.append({
+                "progression": progression,
+                "final_score": row.get("final_score"),
+                "probability": row.get("probability"),
+            })
+
+        match_set_paths = []
+        for row in branch.get("match_top_set_paths") or []:
+            if not isinstance(row, dict):
+                continue
+            set_scores = [
+                str(value) for value in (row.get("set_scores") or [])
+                if str(value).strip()
+            ]
+            if set_scores:
+                match_set_paths.append({
+                    "set_scores": set_scores,
+                    "probability": row.get("probability"),
+                })
+
+        storylines = []
+        for row in branch.get("match_storylines") or []:
+            if not isinstance(row, dict):
+                continue
+            score = str(row.get("match_score") or "").strip()
+            if score:
+                storylines.append({
+                    "match_score": score,
+                    "probability": row.get("probability"),
+                })
+
+        full_paths = []
+        for row in branch.get("full_match_top_game_paths") or []:
+            if not isinstance(row, dict):
+                continue
+            sets = []
+            for set_row in row.get("sets") or []:
+                if not isinstance(set_row, dict):
+                    continue
+                progression = [
+                    str(value) for value in (set_row.get("progression") or [])
+                    if str(value).strip()
+                ]
+                if progression:
+                    sets.append(progression)
+            if sets:
+                full_paths.append({
+                    "sets": sets,
+                    "probability": row.get("probability"),
+                })
+
+        if not first_set_paths or not match_set_paths or not storylines or not full_paths:
+            return None
+        conditioned[key] = {
+            "first_set_top_game_paths": first_set_paths,
+            "match_top_set_paths": match_set_paths,
+            "match_storylines": storylines,
+            "full_match_top_game_paths": full_paths,
+        }
+
+    return {
+        "checkpoints_neutral_start_server": checkpoints,
+        "serve_order_conditioned": conditioned,
+    }
+
+
+def _trajectory_snapshot_from_current(
+    row: dict[str, Any],
+    now: datetime,
+    labels: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not isinstance(row, dict):
+        return None
+    if row.get("production_influence") is not False:
+        return None
+    if row.get("validation_status") != "UNVALIDATED_MATCH_LEVEL":
+        return None
+
+    match_id = str(row.get("match_id") or "").strip()
+    scheduled = _parse_utc(row.get("scheduled_time"))
+    if not match_id or scheduled is None:
+        return None
+    if scheduled < now + timedelta(minutes=MIN_PREMATCH_LEAD_MINUTES):
+        return None
+    if match_id in labels:
+        return None
+
+    predictions = _compact_trajectory_predictions(row.get("simulation") or {})
+    if predictions is None:
+        return None
+    return {
+        "match_id": match_id,
+        "scheduled_time": scheduled.isoformat(),
+        "captured_at": now.isoformat(),
+        "captured_pre_match": True,
+        "tour": str(row.get("tour") or "").strip().lower(),
+        "surface": str(row.get("surface") or "").strip().lower(),
+        "p1": row.get("p1"),
+        "p2": row.get("p2"),
+        "source_model_fingerprint_sha256": row.get(
+            "source_model_fingerprint_sha256"
+        ),
+        "trajectory_predictions": predictions,
+        "settled": False,
+        "actual": None,
+    }
+
+
+def _settle_trajectory_snapshots(
+    snapshots: list[dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    now: datetime,
+) -> None:
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict) or snapshot.get("settled") is True:
+            continue
+        label = labels.get(str(snapshot.get("match_id") or ""))
+        if not isinstance(label, dict):
+            continue
+        actual = label.get("trajectory_actual")
+        if not isinstance(actual, dict):
+            continue
+        first_server = actual.get("first_server")
+        checkpoints = actual.get("checkpoint_scores")
+        set_scores = actual.get("set_score_sequence")
+        if first_server not in (1, 2):
+            continue
+        if not isinstance(checkpoints, dict) or not isinstance(set_scores, list):
+            continue
+        snapshot["settled"] = True
+        snapshot["actual"] = {
+            "first_server": first_server,
+            "checkpoint_scores": {
+                key: checkpoints.get(key) for key in ("2", "4", "6")
+            },
+            "first_set_progression": actual.get("first_set_progression"),
+            "set_score_sequence": list(set_scores),
+            "set_progressions": actual.get("set_progressions"),
+            "full_match_progression_complete": (
+                actual.get("full_match_progression_complete") is True
+            ),
+            "match_exact_score": label.get("match_exact_score"),
+        }
+        snapshot["settled_at"] = now.isoformat()
+
+
+def _trajectory_ledger_integrity(
+    previous_snapshots: list[dict[str, Any]],
+    current_snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    def index(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[str]]:
+        indexed = {}
+        duplicates = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            match_id = str(row.get("match_id") or "").strip()
+            if not match_id:
+                continue
+            if match_id in indexed:
+                duplicates.append(match_id)
+                continue
+            indexed[match_id] = row
+        return indexed, sorted(set(duplicates))
+
+    previous_by_id, duplicate_previous = index(previous_snapshots)
+    current_by_id, duplicate_current = index(current_snapshots)
+    missing_previous = sorted(set(previous_by_id) - set(current_by_id))
+    rewritten = []
+    settlement_regressions = []
+    settled_actual_rewrites = []
+    settled_at_rewrites = []
+    newly_settled = []
+
+    for match_id, old in previous_by_id.items():
+        new = current_by_id.get(match_id)
+        if not isinstance(new, dict):
+            continue
+        if any(
+            old.get(field) != new.get(field)
+            for field in TRAJECTORY_IMMUTABLE_SNAPSHOT_FIELDS
+        ):
+            rewritten.append(match_id)
+        old_settled = old.get("settled") is True
+        new_settled = new.get("settled") is True
+        if old_settled and not new_settled:
+            settlement_regressions.append(match_id)
+        if old_settled and new_settled and old.get("actual") != new.get("actual"):
+            settled_actual_rewrites.append(match_id)
+        if old_settled and new_settled and old.get("settled_at") != new.get("settled_at"):
+            settled_at_rewrites.append(match_id)
+        if not old_settled and new_settled:
+            newly_settled.append(match_id)
+
+    new_ids = sorted(set(current_by_id) - set(previous_by_id))
+    problems = (
+        duplicate_previous
+        or duplicate_current
+        or missing_previous
+        or rewritten
+        or settlement_regressions
+        or settled_actual_rewrites
+        or settled_at_rewrites
+    )
+    return {
+        "status": "LEDGER_INTEGRITY_OK" if not problems else "LEDGER_INTEGRITY_VIOLATION",
+        "prediction_rewrite_forbidden": True,
+        "settlement_regression_forbidden": True,
+        "settled_actual_rewrite_forbidden": True,
+        "settled_at_rewrite_forbidden": True,
+        "previous_snapshot_count": len(previous_by_id),
+        "current_snapshot_count_before_retention": len(current_by_id),
+        "new_snapshots": len(new_ids),
+        "newly_settled": len(newly_settled),
+        "rewritten_predictions": len(rewritten),
+        "settlement_regressions": len(settlement_regressions),
+        "settled_actual_rewrites": len(settled_actual_rewrites),
+        "settled_at_rewrites": len(settled_at_rewrites),
+        "missing_previous_snapshots": len(missing_previous),
+        "duplicate_previous_match_ids": len(duplicate_previous),
+        "duplicate_current_match_ids": len(duplicate_current),
+    }
+
+
+def _rank_metrics(
+    predicted: list[Any],
+    actual: Any,
+    cutoffs: tuple[int, ...],
+) -> dict[str, Any]:
+    if actual is None or not predicted:
+        return {"n": 0}
+    try:
+        rank = predicted.index(actual) + 1
+    except ValueError:
+        rank = None
+    return {
+        "n": 1,
+        "rank": rank,
+        **{
+            f"hit_at_{cutoff}": bool(rank is not None and rank <= cutoff)
+            for cutoff in cutoffs
+        },
+    }
+
+
+def _trajectory_prefix_fraction(
+    predicted: list[list[str]],
+    actual: list[list[str]],
+) -> float | None:
+    actual_flat = [
+        (set_index, score)
+        for set_index, progression in enumerate(actual)
+        for score in progression
+    ]
+    predicted_flat = [
+        (set_index, score)
+        for set_index, progression in enumerate(predicted)
+        for score in progression
+    ]
+    if not actual_flat:
+        return None
+    prefix = 0
+    for expected, candidate in zip(actual_flat, predicted_flat):
+        if expected != candidate:
+            break
+        prefix += 1
+    return prefix / len(actual_flat)
+
+
+def _trajectory_evaluation(
+    snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    settled = [
+        row for row in snapshots
+        if isinstance(row, dict) and row.get("settled") is True
+    ]
+    checkpoint = {
+        "after_2_games": {"n": 0, "top1": 0, "top3": 0},
+        "after_4_games": {"n": 0, "top1": 0, "top3": 0},
+        "after_6_games": {"n": 0, "top1": 0, "top3": 0},
+    }
+    storyline = {"n": 0, "top1": 0, "top3": 0}
+    first_set = {"n": 0, "top1": 0, "top3": 0, "top8": 0}
+    match_sets = {"n": 0, "top1": 0, "top3": 0, "top12": 0}
+    full_match = {
+        "n": 0,
+        "top1": 0,
+        "top2": 0,
+        "top4": 0,
+        "best_prefix_fraction_sum": 0.0,
+    }
+
+    for row in settled:
+        predictions = row.get("trajectory_predictions") or {}
+        actual = row.get("actual") or {}
+        checkpoints = predictions.get("checkpoints_neutral_start_server") or {}
+        actual_checkpoints = actual.get("checkpoint_scores") or {}
+        for games in (2, 4, 6):
+            key = f"after_{games}_games"
+            actual_score = actual_checkpoints.get(str(games))
+            ranked = [
+                str(item.get("score") or "")
+                for item in (checkpoints.get(key) or [])
+                if isinstance(item, dict)
+            ]
+            if not actual_score or not ranked:
+                continue
+            checkpoint[key]["n"] += 1
+            checkpoint[key]["top1"] += int(ranked[0] == actual_score)
+            checkpoint[key]["top3"] += int(actual_score in ranked[:3])
+
+        first_server = actual.get("first_server")
+        branch_key = (
+            "p1_serves_first" if first_server == 1
+            else "p2_serves_first" if first_server == 2
+            else None
+        )
+        branch = (
+            (predictions.get("serve_order_conditioned") or {}).get(branch_key)
+            if branch_key else None
+        )
+        if not isinstance(branch, dict):
+            continue
+
+        actual_match_score = actual.get("match_exact_score")
+        ranked_storylines = [
+            str(item.get("match_score") or "")
+            for item in (branch.get("match_storylines") or [])
+            if isinstance(item, dict)
+        ]
+        if actual_match_score and ranked_storylines:
+            storyline["n"] += 1
+            storyline["top1"] += int(ranked_storylines[0] == actual_match_score)
+            storyline["top3"] += int(actual_match_score in ranked_storylines[:3])
+
+        actual_first = actual.get("first_set_progression")
+        first_paths = [
+            item for item in (branch.get("first_set_top_game_paths") or [])
+            if isinstance(item, dict)
+        ]
+        if isinstance(actual_first, list) and actual_first and first_paths:
+            predicted = [item.get("progression") or [] for item in first_paths]
+            first_set["n"] += 1
+            first_set["top1"] += int(predicted[0] == actual_first)
+            first_set["top3"] += int(actual_first in predicted[:3])
+            first_set["top8"] += int(actual_first in predicted[:8])
+
+        actual_sets = actual.get("set_score_sequence")
+        set_paths = [
+            item for item in (branch.get("match_top_set_paths") or [])
+            if isinstance(item, dict)
+        ]
+        if isinstance(actual_sets, list) and actual_sets and set_paths:
+            predicted = [item.get("set_scores") or [] for item in set_paths]
+            match_sets["n"] += 1
+            match_sets["top1"] += int(predicted[0] == actual_sets)
+            match_sets["top3"] += int(actual_sets in predicted[:3])
+            match_sets["top12"] += int(actual_sets in predicted[:12])
+
+        actual_full = actual.get("set_progressions")
+        full_paths = [
+            item for item in (branch.get("full_match_top_game_paths") or [])
+            if isinstance(item, dict)
+        ]
+        if (
+            actual.get("full_match_progression_complete") is True
+            and isinstance(actual_full, list)
+            and actual_full
+            and full_paths
+        ):
+            predicted = [item.get("sets") or [] for item in full_paths]
+            full_match["n"] += 1
+            full_match["top1"] += int(predicted[0] == actual_full)
+            full_match["top2"] += int(actual_full in predicted[:2])
+            full_match["top4"] += int(actual_full in predicted[:4])
+            prefixes = [
+                _trajectory_prefix_fraction(path, actual_full)
+                for path in predicted[:4]
+            ]
+            valid = [value for value in prefixes if value is not None]
+            full_match["best_prefix_fraction_sum"] += max(valid) if valid else 0.0
+
+    def finalize(row: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
+        n = int(row.get("n") or 0)
+        out = {"n": n}
+        for key in keys:
+            out[key] = round(float(row.get(key) or 0) / n, 6) if n else None
+        return out
+
+    return {
+        "settled_matches": len(settled),
+        "checkpoint_neutral_start_server": {
+            key: finalize(row, ("top1", "top3"))
+            for key, row in checkpoint.items()
+        },
+        "primary_storyline_match_score_conditioned_on_observed_first_server":
+            finalize(storyline, ("top1", "top3")),
+        "first_set_complete_path_conditioned_on_observed_first_server":
+            finalize(first_set, ("top1", "top3", "top8")),
+        "match_set_sequence_conditioned_on_observed_first_server":
+            finalize(match_sets, ("top1", "top3", "top12")),
+        "full_match_game_path_conditioned_on_observed_first_server": {
+            **finalize(full_match, ("top1", "top2", "top4")),
+            "mean_best_prefix_fraction_top4": (
+                round(
+                    float(full_match["best_prefix_fraction_sum"])
+                    / int(full_match["n"]),
+                    6,
+                )
+                if int(full_match["n"]) else None
+            ),
+        },
+    }
+
+
+def _build_trajectory_evidence(
+    current_simulation: dict[str, Any],
+    labels: dict[str, dict[str, Any]],
+    previous: dict[str, Any] | None,
+    now: datetime,
+) -> dict[str, Any]:
+    previous_evidence = (
+        (previous or {}).get("trajectory_evidence")
+        if isinstance(previous, dict)
+        else {}
+    )
+    previous_rows = (
+        previous_evidence.get("snapshots")
+        if isinstance(previous_evidence, dict)
+        else []
+    )
+    previous_snapshots = [
+        row for row in (previous_rows if isinstance(previous_rows, list) else [])
+        if isinstance(row, dict) and row.get("match_id") is not None
+    ]
+    snapshots = [dict(row) for row in previous_snapshots]
+    by_id = {str(row.get("match_id")): row for row in snapshots}
+
+    contract_ok = bool(
+        isinstance(current_simulation, dict)
+        and current_simulation.get("mode") == "SHADOW_SIMULATION_ONLY"
+        and current_simulation.get("production_influence") is False
+        and current_simulation.get("symphony2_influence") is False
+        and current_simulation.get("superbet_playable_influence") is False
+        and current_simulation.get("match_level_validation_required") is True
+        and current_simulation.get("auto_promote") is False
+    )
+    current_rows = (
+        current_simulation.get("matches")
+        if contract_ok and isinstance(current_simulation.get("matches"), list)
+        else []
+    )
+    eligible_rows = 0
+    for row in current_rows:
+        match_id = str((row or {}).get("match_id") or "").strip()
+        if not match_id:
+            continue
+        if match_id in by_id:
+            continue
+        snapshot = _trajectory_snapshot_from_current(row, now, labels)
+        if snapshot is not None:
+            eligible_rows += 1
+            snapshots.append(snapshot)
+            by_id[match_id] = snapshot
+
+    _settle_trajectory_snapshots(snapshots, labels, now)
+    integrity = _trajectory_ledger_integrity(previous_snapshots, snapshots)
+    if integrity.get("status") != "LEDGER_INTEGRITY_OK":
+        raise RuntimeError(
+            "Player DNA trajectory prospective ledger integrity violation: "
+            + json.dumps(integrity, ensure_ascii=False, sort_keys=True)
+        )
+
+    snapshots.sort(
+        key=lambda row: (
+            str(row.get("scheduled_time") or ""),
+            str(row.get("match_id") or ""),
+        )
+    )
+    before_retention = len(snapshots)
+    if len(snapshots) > MAX_SNAPSHOTS:
+        snapshots = snapshots[-MAX_SNAPSHOTS:]
+    integrity["pruned_by_retention"] = before_retention - len(snapshots)
+    integrity["current_snapshot_count_after_retention"] = len(snapshots)
+
+    evaluation = _trajectory_evaluation(snapshots)
+    return {
+        "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",
+        "status": "TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE",
+        "signal": "COLLECTING_TRAJECTORY_PROSPECTIVE_EVIDENCE",
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_integrate": False,
+        "performance_verdict_emitted": False,
+        "source_contract_valid": contract_ok,
+        "validation_scope": {
+            "checkpoint_scores_after_games": [2, 4, 6],
+            "checkpoint_start_server_policy": "NEUTRAL_PRE_MATCH_AVERAGE",
+            "conditioned_paths_use_observed_first_server_only_after_settlement": True,
+            "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
+            "first_set_complete_path_ranked": True,
+            "match_set_sequence_ranked": True,
+            "full_match_exact_game_paths_are_diagnostic_only": True,
+            "no_trajectory_performance_threshold_invented_yet": True,
+        },
+        "ledger_integrity": integrity,
+        "counts": {
+            "current_simulated_matches": len(current_rows),
+            "new_current_pre_match_snapshots": eligible_rows,
+            "snapshots": len(snapshots),
+            "settled_snapshots": int(evaluation.get("settled_matches") or 0),
+            "unsettled_snapshots": sum(
+                1 for row in snapshots if row.get("settled") is not True
+            ),
+        },
+        "evaluation": evaluation,
+        "snapshots": snapshots,
+    }
+
+
 def _settle_snapshots(
     snapshots: list[dict[str, Any]],
     labels: dict[str, dict[str, Any]],
@@ -1348,6 +1958,12 @@ def build_report(
         previous,
         now,
     )
+    trajectory_evidence = _build_trajectory_evidence(
+        current_simulation if isinstance(current_simulation, dict) else {},
+        labels,
+        previous,
+        now,
+    )
 
     return {
         "version": VERSION,
@@ -1392,6 +2008,7 @@ def build_report(
             "surface": _segment_evaluation(snapshots, "surface"),
         },
         "dynamic_lean_evidence": dynamic_lean_evidence,
+        "trajectory_evidence": trajectory_evidence,
         "snapshots": snapshots,
     }
 
@@ -1437,6 +2054,9 @@ def build() -> dict[str, Any]:
         "dynamic_lean_signal": (report.get("dynamic_lean_evidence") or {}).get("signal"),
         "dynamic_lean_counts": (report.get("dynamic_lean_evidence") or {}).get("counts"),
         "dynamic_lean_ledger_integrity": (report.get("dynamic_lean_evidence") or {}).get("ledger_integrity"),
+        "trajectory_signal": (report.get("trajectory_evidence") or {}).get("signal"),
+        "trajectory_counts": (report.get("trajectory_evidence") or {}).get("counts"),
+        "trajectory_ledger_integrity": (report.get("trajectory_evidence") or {}).get("ledger_integrity"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report
