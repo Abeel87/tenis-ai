@@ -6,7 +6,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
-from update import load_history
+from update import fetch_fixtures, load_history
 
 
 def source(refresh_hours=None):
@@ -50,3 +50,37 @@ def test_total_outage_without_cache_returns_none_not_exception(tmp_path):
     assert info['mode']=='unavailable'
     assert info['missing_sources']==1
     assert warnings
+
+
+def test_fetch_fixtures_preserves_provider_rank_context(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                'data': [{
+                    'id': 123,
+                    'tour': 'ATP',
+                    'tournament': 'Test',
+                    'surface': 'hard',
+                    'scheduled_time': '2026-09-06T12:00:00Z',
+                    'status': 'upcoming',
+                    'is_doubles': False,
+                    'players': {
+                        'p1': {'id': 1, 'name': 'A', 'ranking': 12},
+                        'p2': {'id': 2, 'name': 'B', 'ranking': 34},
+                    },
+                }],
+                'meta': {'total': 1},
+            }
+
+    monkeypatch.setenv('LIVE_TENNIS_API_KEY', 'test-key')
+    monkeypatch.setattr('update.requests.get', lambda *args, **kwargs: Response())
+    monkeypatch.setattr('update.record_calls', lambda *args, **kwargs: None)
+
+    rows, mode = fetch_fixtures()
+    assert mode == 'live-tennis-api-basic'
+    assert len(rows) == 1
+    assert rows[0]['p1_rank'] == 12
+    assert rows[0]['p2_rank'] == 34

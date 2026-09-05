@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from backend.player_dna_current_shadow import (
     _legacy_runtime_validation,
     _profile_map,
+    _provider_ranking,
     _serve_feature_row,
 )
 
@@ -94,3 +95,12 @@ def test_current_runtime_validation_blocks_when_legacy_profile_signal_is_not_pos
     assert status == "MIXED_OR_NO_INCREMENTAL_SIGNAL"
     assert legacy_positive is False
     assert stateful_status == "STATEFUL_CONTEXT_POSITIVE_HOLDOUT_SIGNAL"
+
+
+def test_provider_ranking_accepts_only_positive_provider_ints():
+    assert _provider_ranking(1) == 1
+    assert _provider_ranking(250) == 250
+    assert _provider_ranking(0) is None
+    assert _provider_ranking(-1) is None
+    assert _provider_ranking(True) is None
+    assert _provider_ranking("12") is None

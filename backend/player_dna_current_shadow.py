@@ -79,6 +79,12 @@ def _parse_utc(value: Any) -> datetime | None:
     return parsed.astimezone(timezone.utc)
 
 
+def _provider_ranking(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        return None
+    return value
+
+
 def _read_json(path: Path, fallback):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -193,6 +199,13 @@ def build_current_scores(
         ):
             valid_targets.append(row)
 
+    rank_context_matches = sum(
+        1
+        for row in valid_targets
+        if _provider_ranking(row.get("p1_rank")) is not None
+        and _provider_ranking(row.get("p2_rank")) is not None
+    )
+
     report: dict[str, Any] = {
         "version": VERSION,
         "mode": MODE,
@@ -203,6 +216,13 @@ def build_current_scores(
         "match_winner_probability_enabled": False,
         "point_serve_probability_only": True,
         "rank_features_used": False,
+        "provider_rank_context_passthrough": True,
+        "rank_context_source": "fixture.players.p1/p2.ranking",
+        "rank_context_matches": rank_context_matches,
+        "rank_context_coverage": (
+            round(rank_context_matches / len(valid_targets), 6)
+            if valid_targets else 0.0
+        ),
         "stable_provider_identity_required": True,
         "evaluation_support_gate": EVAL_MIN_PRIOR_MATCHES,
         "evaluation_support_gate_is_prod_gate": False,
@@ -285,6 +305,8 @@ def build_current_scores(
             "p2": target.get("p2"),
             "p1_id": p1_id,
             "p2_id": p2_id,
+            "p1_rank": _provider_ranking(target.get("p1_rank")),
+            "p2_rank": _provider_ranking(target.get("p2_rank")),
             "production_influence": False,
             "not_match_win_probability": True,
         }
