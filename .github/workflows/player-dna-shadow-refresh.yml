@@ -396,6 +396,24 @@ jobs:
           assert consensus_policy.get('count_repeatability_without_mean_direction_is_insufficient') is True
           assert consensus_policy.get('conflict_means_no_switch') is True
           assert consensus_policy.get('insufficient_means_no_switch') is True
+          for segment in (consensus.get('segments') or {}).values():
+              for market_row in (segment.get('markets') or {}).values():
+                  decision = market_row.get('decision')
+                  if decision == 'CONSENSUS_DYNAMIC_CANDIDATE':
+                      assert market_row.get('tour_strict_consensus_positive') is True
+                      assert market_row.get('surface_strict_consensus_positive') is True
+                  elif decision == 'CONSENSUS_PROFILE_REFERENCE':
+                      assert market_row.get('tour_strict_consensus_negative') is True
+                      assert market_row.get('surface_strict_consensus_negative') is True
+                  elif decision == 'CONFLICT':
+                      strict_conflict = (
+                          market_row.get('tour_strict_consensus_positive') is True
+                          and market_row.get('surface_strict_consensus_negative') is True
+                      ) or (
+                          market_row.get('tour_strict_consensus_negative') is True
+                          and market_row.get('surface_strict_consensus_positive') is True
+                      )
+                      assert strict_conflict
           consensus_watch = consensus.get('watchlist') or {}
           for key in ('consensus_dynamic_candidate', 'consensus_profile_reference', 'conflict', 'insufficient_or_mixed'):
               assert isinstance(consensus_watch.get(key), list)
