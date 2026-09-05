@@ -450,8 +450,26 @@ def build_current_target_profiles(
                     "player_name": name,
                     "opponent_id": opponent,
                     "opponent_name": opponent_name,
-                    "player_ranking": ranking,
-                    "opponent_ranking": opponent_ranking,
+                    "player_ranking": effective_ranking,
+                    "opponent_ranking": effective_opponent_ranking,
+                    "player_ranking_source": player_rank_source,
+                    "opponent_ranking_source": opponent_rank_source,
+                    "player_ranking_source_match_id": (
+                        None if player_rank_source == "current_fixture_provider"
+                        else player_prior_rank.get("source_match_id")
+                    ),
+                    "opponent_ranking_source_match_id": (
+                        None if opponent_rank_source == "current_fixture_provider"
+                        else opponent_prior_rank.get("source_match_id")
+                    ),
+                    "player_ranking_source_scheduled_time": (
+                        None if player_rank_source == "current_fixture_provider"
+                        else player_prior_rank.get("source_scheduled_time")
+                    ),
+                    "opponent_ranking_source_scheduled_time": (
+                        None if opponent_rank_source == "current_fixture_provider"
+                        else opponent_prior_rank.get("source_scheduled_time")
+                    ),
                     "overall_prior": _project(overall.get(pid)),
                     "same_surface_prior": _project(by_surface.get(pid, {}).get(target["surface"])),
                 })
