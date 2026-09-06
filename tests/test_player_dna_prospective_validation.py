@@ -447,7 +447,7 @@ def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAM
         "prospective_validation_required": True,
         "market_policy_source": "segment_consensus_shadow_policy",
         "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
-        "market_policy_source_fingerprint_sha256": policy_fingerprint,
+        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
         "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [{
             "match_id": match_id,
@@ -593,7 +593,7 @@ def _dynamic_settled_snapshot(
         "p1": f"A{match_id}",
         "p2": f"B{match_id}",
         "source_model_fingerprint_sha256": "lean-fingerprint",
-        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
+        "market_policy_source_fingerprint_sha256": policy_fingerprint,
         "market_segment_key": segment,
         "candidate_markets": {
             market: {
