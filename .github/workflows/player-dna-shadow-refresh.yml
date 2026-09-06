@@ -395,6 +395,14 @@ jobs:
           assert consensus.get('auto_promote') is False
           assert consensus.get('joint_segment_backtest_claim') is False
           assert consensus.get('prospective_validation_required') is True
+          consensus_contract_id = consensus.get('policy_contract_id')
+          consensus_contract_fingerprint = consensus.get('policy_contract_fingerprint_sha256')
+          consensus_contract = consensus.get('policy_contract') or {}
+          assert consensus_contract_id == 'strict-marginal-agreement-mean-direction-v1'
+          assert isinstance(consensus_contract_fingerprint, str) and len(consensus_contract_fingerprint) == 64
+          assert consensus_contract.get('policy_id') == consensus_contract_id
+          assert consensus_contract.get('tour_and_surface_marginals_must_agree') is True
+          assert consensus_contract.get('count_repeatability_without_mean_direction_is_insufficient') is True
           consensus_policy = consensus.get('policy') or {}
           assert consensus_policy.get('tour_and_surface_marginals_must_agree') is True
           assert consensus_policy.get('dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal') is True
