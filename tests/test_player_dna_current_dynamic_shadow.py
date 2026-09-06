@@ -3,6 +3,10 @@ from datetime import datetime, timezone
 import backend.player_dna_current_dynamic_shadow as dynamic
 
 
+POLICY_ID = "strict-marginal-agreement-mean-direction-v1"
+POLICY_FP = "c" * 64
+
+
 def _simulation(p1_match=0.6, p1_set=0.58, tiebreak=0.22, over=0.7, early=0.8):
     return {
         "match": {"p1_win": p1_match},
@@ -43,6 +47,8 @@ def _consensus():
             "runtime_switch_enabled": False,
             "auto_promote": False,
             "prospective_validation_required": True,
+            "policy_contract_id": POLICY_ID,
+            "policy_contract_fingerprint_sha256": POLICY_FP,
             "segments": {
                 "challenger|hard": {
                     "markets": markets,
@@ -154,6 +160,8 @@ def test_current_dynamic_shadow_reuses_historical_candidate_and_never_runtime_sw
     assert report["market_policy_source_path"] == "backend/player_dna_market_walk_forward.py"
     assert isinstance(report["market_policy_source_fingerprint_sha256"], str)
     assert len(report["market_policy_source_fingerprint_sha256"]) == 64
+    assert report["market_policy_contract_id"] == POLICY_ID
+    assert report["market_policy_contract_fingerprint_sha256"] == POLICY_FP
     assert report["market_policy_provenance_required_for_prospective_verdict"] is True
     assert report["feature_groups"] == ["profile", "rank", "point_pressure", "set_match_state"]
 
