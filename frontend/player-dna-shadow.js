@@ -389,6 +389,18 @@
     const legacyUnknown=n(provenance.legacy_unknown_snapshots)||0;
     const mixedGenerations=provenance.mixed_known_generations===true;
     const simulatorContractId=provenance.current_simulator_contract_id||'—';
+    const readiness=trajectory.sample_readiness||{};
+    const readinessOverall=readiness.overall_settled_snapshots||{};
+    const readinessPolicy=readiness.policy||{};
+    const readyPrimary=n(readiness.ready_primary_metric_count)||0;
+    const primaryCount=n(readiness.primary_metric_count)||0;
+    const readyDirect=Array.isArray(readiness.ready_direct_tour_surface_segments)
+      ?readiness.ready_direct_tour_surface_segments:[];
+    const blockedDirect=Array.isArray(readiness.blocked_direct_tour_surface_segments)
+      ?readiness.blocked_direct_tour_surface_segments:[];
+    const sampleRequired=n(readinessOverall.required);
+    const directRequired=n(readinessPolicy.direct_tour_surface_minimum_reuses_existing_prospective_gate);
+    const sampleSufficient=readiness.sample_sufficient_for_future_performance_evaluation===true;
 
     return `
       <section class="pds-trajectory-evidence">
@@ -422,9 +434,14 @@
             <small>rewrite: ${n(integrity.rewritten_predictions)||0}</small>
           </div>
           <div class="pds-metric">
+            <span>Próbka trajectory</span>
+            <b>${settled} / ${sampleRequired??'—'}</b>
+            <small>sample-size gate, nie verdict</small>
+          </div>
+          <div class="pds-metric">
             <span>Performance verdict</span>
             <b>NIE</b>
-            <small>najpierw czysta próbka</small>
+            <small>${sampleSufficient?'próbka gotowa; próg skuteczności nadal niezdefiniowany':'najpierw czysta próbka'}</small>
           </div>
         </div>
 
@@ -467,6 +484,16 @@
           </small>
         </div>
 
+        <div class="pds-dynamic-support">
+          <b>Sample readiness: ${sampleSufficient?'GOTOWA DO PÓŹNIEJSZEJ OCENY':'ZBIERAMY'}</b>
+          <small>
+            Główne metryki: ${readyPrimary}/${primaryCount||'—'} gotowych.
+            Direct tour|surface: ${readyDirect.length} gotowych, ${blockedDirect.length} jeszcze zbiera próbkę.
+            ${directRequired!=null?` Minimum per direct segment: ${directRequired} settled.`:''}
+            To jest wyłącznie gate wielkości próby; nie ocenia skuteczności i nie uruchamia performance verdictu.
+          </small>
+        </div>
+
         <div class="pds-trajectory-evidence-list">
           ${trajectoryMetric('Po 2 gemach',checkpoints.after_2_games,[['top1','TOP1'],['top3','TOP3']])}
           ${trajectoryMetric('Po 4 gemach',checkpoints.after_4_games,[['top1','TOP1'],['top3','TOP3']])}
@@ -497,8 +524,8 @@
           Dokładna ścieżka gem po gemie pozostaje diagnostyką SHADOW. Pierwszy serwujący jest używany do oceny ścieżek dopiero po meczu;
           checkpointy 2/4/6 pozostają neutralne przed startem. Główne metryki liczą wyłącznie bieżącą generację simulatora;
           legacy i starsze znane generacje zostają tylko w diagnostyce ledger-wide. Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione;
-          zmiana planowanej godziny nigdy nie przepisuje frozen prediction. Nie ustawiamy jeszcze arbitralnego progu skuteczności.
-          Zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
+          zmiana planowanej godziny nigdy nie przepisuje frozen prediction. Gotowość próbki nie jest performance verdictem.
+          Nie ustawiamy jeszcze arbitralnego progu skuteczności. Zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
         </p>
       </section>`;
   }

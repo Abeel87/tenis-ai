@@ -788,7 +788,8 @@ jobs:
           assert trajectory_segment_policy.get('diagnostic_only') is True
           assert trajectory_segment_policy.get('direct_tour_surface_rows_are_built_from_same_match_snapshots') is True
           assert trajectory_segment_policy.get('marginal_tour_and_surface_results_never_imply_joint_validation') is True
-          assert trajectory_segment_policy.get('minimum_segment_sample_not_defined_yet') is True
+          assert trajectory_segment_policy.get('minimum_segment_sample_not_defined_yet') is False
+          assert int(trajectory_segment_policy.get('minimum_segment_sample_reuses_existing_prospective_gate') or 0) == 30
           assert trajectory_segment_policy.get('performance_verdict_forbidden') is True
           assert isinstance(trajectory_segments.get('tour'), dict)
           assert isinstance(trajectory_segments.get('surface'), dict)

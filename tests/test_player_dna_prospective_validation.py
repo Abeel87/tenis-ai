@@ -16,6 +16,7 @@ from backend.player_dna_prospective_validation import (
     _settle_trajectory_snapshots,
     _trajectory_evaluation,
     _trajectory_historical_benchmark,
+    _trajectory_sample_readiness,
     build_report,
     prospective_eligibility,
 )
@@ -1046,7 +1047,8 @@ def test_trajectory_segment_diagnostics_keep_direct_tour_surface_separate_from_m
     assert policy[
         "marginal_tour_and_surface_results_never_imply_joint_validation"
     ] is True
-    assert policy["minimum_segment_sample_not_defined_yet"] is True
+    assert policy["minimum_segment_sample_not_defined_yet"] is False
+    assert policy["minimum_segment_sample_reuses_existing_prospective_gate"] == 30
     assert policy["performance_verdict_forbidden"] is True
 
 
@@ -1626,3 +1628,93 @@ def test_trajectory_generation_isolation_scope_and_accounting_are_explicit():
     assert isinstance(report["ledger_evaluation"], dict)
     assert isinstance(report["ledger_segment_diagnostics"], dict)
     assert report["performance_verdict_emitted"] is False
+
+
+
+def test_trajectory_sample_readiness_reuses_existing_support_gates_without_emitting_verdict():
+    evaluation = {
+        "settled_matches": 150,
+        "checkpoint_neutral_start_server": {
+            "after_2_games": {"n": 150, "top1": 0.5, "top3": 0.8},
+            "after_4_games": {"n": 150, "top1": 0.4, "top3": 0.75},
+            "after_6_games": {"n": 150, "top1": 0.35, "top3": 0.7},
+        },
+        "primary_storyline_match_score_conditioned_on_observed_first_server": {
+            "n": 150,
+            "top1": 0.4,
+            "top3": 0.8,
+        },
+        "first_set_complete_path_conditioned_on_observed_first_server": {
+            "n": 150,
+            "top1": 0.15,
+            "top3": 0.35,
+            "top8": 0.7,
+        },
+        "match_set_sequence_conditioned_on_observed_first_server": {
+            "n": 150,
+            "top1": 0.45,
+            "top3": 0.8,
+            "top12": 1.0,
+        },
+        "full_match_game_path_conditioned_on_observed_first_server": {
+            "n": 1,
+            "top1": 0.0,
+            "top2": 0.0,
+            "top4": 0.0,
+        },
+    }
+    segment_diagnostics = {
+        "tour_surface": {
+            "atp|hard": {"settled": 30},
+            "wta|hard": {"settled": 29},
+        }
+    }
+
+    readiness = _trajectory_sample_readiness(evaluation, segment_diagnostics)
+
+    assert readiness["status"] == (
+        "TRAJECTORY_SAMPLE_SUFFICIENT_FOR_FUTURE_PERFORMANCE_EVALUATION"
+    )
+    assert readiness["overall_settled_snapshots"] == {
+        "settled": 150,
+        "required": 150,
+        "remaining": 0,
+        "support_sufficient": True,
+    }
+    assert readiness["ready_primary_metric_count"] == 6
+    assert readiness["primary_metric_count"] == 6
+    assert readiness["ready_direct_tour_surface_segments"] == ["atp|hard"]
+    assert readiness["blocked_direct_tour_surface_segments"] == ["wta|hard"]
+    assert readiness["direct_tour_surface_segments"]["atp|hard"]["required"] == 30
+    assert readiness["direct_tour_surface_segments"]["wta|hard"]["remaining"] == 1
+    assert readiness["sample_sufficient_for_future_performance_evaluation"] is True
+    assert readiness["performance_verdict_emitted"] is False
+    assert readiness["performance_verdict_allowed"] is False
+    assert readiness["policy"]["readiness_is_sample_size_only_not_performance"] is True
+    assert readiness["policy"]["full_match_exact_game_path_excluded_from_primary_readiness"] is True
+    assert readiness["policy"]["performance_threshold_not_defined"] is True
+
+
+def test_trajectory_sample_readiness_stays_collecting_when_primary_sample_is_short():
+    evaluation = {
+        "settled_matches": 149,
+        "checkpoint_neutral_start_server": {
+            "after_2_games": {"n": 149},
+            "after_4_games": {"n": 149},
+            "after_6_games": {"n": 149},
+        },
+        "primary_storyline_match_score_conditioned_on_observed_first_server": {"n": 149},
+        "first_set_complete_path_conditioned_on_observed_first_server": {"n": 149},
+        "match_set_sequence_conditioned_on_observed_first_server": {"n": 149},
+    }
+    readiness = _trajectory_sample_readiness(
+        evaluation,
+        {"tour_surface": {"atp|hard": {"settled": 30}}},
+    )
+
+    assert readiness["status"] == "COLLECTING_TRAJECTORY_SAMPLE"
+    assert readiness["overall_settled_snapshots"]["remaining"] == 1
+    assert readiness["ready_primary_metric_count"] == 0
+    assert readiness["ready_direct_tour_surface_segments"] == ["atp|hard"]
+    assert readiness["sample_sufficient_for_future_performance_evaluation"] is False
+    assert readiness["performance_verdict_allowed"] is False
