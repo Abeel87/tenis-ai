@@ -1288,8 +1288,15 @@ def _trajectory_snapshot_from_current(
     predictions = _compact_trajectory_predictions(row.get("simulation") or {})
     if predictions is None:
         return None
-    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    if simulator_fingerprint is None:
+    simulator_source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_contract = trajectory_simulator_contract()
+    simulator_contract_id = str(simulator_contract.get("contract_id") or "").strip()
+    simulator_contract_fingerprint = trajectory_simulator_contract_fingerprint()
+    if (
+        simulator_source_fingerprint is None
+        or not simulator_contract_id
+        or len(simulator_contract_fingerprint) != 64
+    ):
         return None
     return {
         "match_id": match_id,
@@ -1303,7 +1310,9 @@ def _trajectory_snapshot_from_current(
         "source_model_fingerprint_sha256": row.get(
             "source_model_fingerprint_sha256"
         ),
-        "source_simulator_fingerprint_sha256": simulator_fingerprint,
+        "source_simulator_fingerprint_sha256": simulator_source_fingerprint,
+        "simulator_contract_id": simulator_contract_id,
+        "simulator_contract_fingerprint_sha256": simulator_contract_fingerprint,
         "trajectory_predictions": predictions,
         "settled": False,
         "actual": None,
