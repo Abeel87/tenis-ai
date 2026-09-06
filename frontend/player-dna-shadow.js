@@ -296,6 +296,7 @@
     const snapshots=n(counts.snapshots)||0;
     const current=n(counts.new_current_pre_match_snapshots)||0;
     const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
+    const health=settlementHealth(trajectory);
 
     return `
       <section class="pds-trajectory-evidence">
@@ -330,6 +331,31 @@
           </div>
         </div>
 
+        ${health.ready?`
+          <div class="pds-health-grid">
+            <div class="pds-health-item">
+              <span>Nadchodzące</span>
+              <b>${health.upcoming}</b>
+              <small>jeszcze przed startem</small>
+            </div>
+            <div class="pds-health-item ${health.overdue?'warn':'good'}">
+              <span>Czekają &gt;6 h</span>
+              <b>${health.overdue}</b>
+              <small>&gt;72 h: ${health.overdue72}</small>
+            </div>
+            <div class="pds-health-item">
+              <span>Latency median</span>
+              <b>${esc(health.latencyMedian)}</b>
+              <small>n=${health.latencyN} rozliczonych</small>
+            </div>
+            <div class="pds-health-item ${health.driftCount?'warn':'good'}">
+              <span>Zmiany godziny</span>
+              <b>${health.driftCount}</b>
+              <small>frozen schedule bez rewrite</small>
+            </div>
+          </div>
+        `:''}
+
         <div class="pds-trajectory-evidence-list">
           ${trajectoryMetric('Po 2 gemach',checkpoints.after_2_games,[['top1','TOP1'],['top3','TOP3']])}
           ${trajectoryMetric('Po 4 gemach',checkpoints.after_4_games,[['top1','TOP1'],['top3','TOP3']])}
@@ -358,7 +384,8 @@
 
         <p class="pds-foot">
           Dokładna ścieżka gem po gemie pozostaje diagnostyką SHADOW. Pierwszy serwujący jest używany do oceny ścieżek dopiero po meczu;
-          checkpointy 2/4/6 pozostają neutralne przed startem. Nie ustawiamy jeszcze arbitralnego progu skuteczności.
+          checkpointy 2/4/6 pozostają neutralne przed startem. Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione;
+          zmiana planowanej godziny nigdy nie przepisuje frozen prediction. Nie ustawiamy jeszcze arbitralnego progu skuteczności.
           Zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
         </p>
       </section>`;

@@ -742,6 +742,17 @@ jobs:
           assert isinstance(trajectory_segments.get('surface'), dict)
           assert isinstance(trajectory_segments.get('tour_surface'), dict)
           assert isinstance(trajectory_segments.get('coverage'), dict)
+          trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
+          trajectory_unsettled = trajectory_observability.get('unsettled') or {}
+          trajectory_buckets = trajectory_unsettled.get('buckets') or {}
+          assert sum(int(v or 0) for v in trajectory_buckets.values()) == int((trajectory_evidence.get('counts') or {}).get('unsettled_snapshots') or 0)
+          assert 'does not imply cancellation' in str(trajectory_unsettled.get('meaning') or '')
+          trajectory_latency = trajectory_observability.get('settlement_latency') or {}
+          assert int(trajectory_latency.get('n') or 0) <= int((trajectory_evidence.get('counts') or {}).get('settled_snapshots') or 0)
+          assert 'first workflow observation' in str(trajectory_latency.get('meaning') or '')
+          trajectory_drift = trajectory_observability.get('schedule_drift') or {}
+          assert int(trajectory_drift.get('count') or 0) >= 0
+          assert 'never rewritten' in str(trajectory_drift.get('meaning') or '')
 
           assert prospective.get('winner_markets_promoted') is False
           integrity = prospective.get('ledger_integrity') or {}

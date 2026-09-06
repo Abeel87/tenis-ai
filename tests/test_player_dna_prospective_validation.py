@@ -1011,3 +1011,67 @@ def test_trajectory_segment_diagnostics_do_not_invent_sample_threshold_or_verdic
     assert evidence["validation_scope"][
         "no_trajectory_performance_threshold_invented_yet"
     ] is True
+
+
+
+def test_trajectory_settlement_observability_distinguishes_upcoming_from_overdue_and_reports_latency():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-health",
+        scheduled=now + timedelta(hours=2),
+    )
+    first = _build_trajectory_evidence(current, {}, {}, now)
+    observability = first["settlement_observability"]
+
+    assert observability["unsettled"]["buckets"]["upcoming"] == 1
+    assert observability["unsettled"]["buckets"]["due_within_6h"] == 0
+    assert observability["unsettled"]["buckets"]["overdue_gt_72h"] == 0
+    assert observability["settlement_latency"]["n"] == 0
+    assert observability["schedule_drift"]["count"] == 0
+
+    labels = {
+        "traj-health": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        }
+    }
+    settled = _build_trajectory_evidence(
+        {},
+        labels,
+        {"trajectory_evidence": first},
+        now + timedelta(hours=5),
+    )
+    settled_obs = settled["settlement_observability"]
+    assert settled["counts"]["settled_snapshots"] == 1
+    assert settled_obs["unsettled"]["buckets"]["upcoming"] == 0
+    assert settled_obs["settlement_latency"]["n"] == 1
+    assert settled_obs["settlement_latency"]["median_hours"] == 3.0
+    assert settled_obs["settlement_latency"]["negative_latency_count"] == 0
+
+
+def test_trajectory_schedule_drift_is_observed_without_rewriting_frozen_schedule():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    first_current = _trajectory_simulation_row(
+        match_id="traj-drift",
+        scheduled=now + timedelta(hours=3),
+    )
+    first = _build_trajectory_evidence(first_current, {}, {}, now)
+    frozen_time = first["snapshots"][0]["scheduled_time"]
+
+    shifted = _trajectory_simulation_row(
+        match_id="traj-drift",
+        scheduled=now + timedelta(hours=3, minutes=20),
+    )
+    second = _build_trajectory_evidence(
+        shifted,
+        {},
+        {"trajectory_evidence": first},
+        now + timedelta(minutes=15),
+    )
+
+    drift = second["settlement_observability"]["schedule_drift"]
+    assert drift["count"] == 1
+    assert drift["samples"][0]["match_id"] == "traj-drift"
+    assert drift["samples"][0]["drift_minutes"] == 20.0
+    assert second["snapshots"][0]["scheduled_time"] == frozen_time
+    assert second["ledger_integrity"]["rewritten_predictions"] == 0
