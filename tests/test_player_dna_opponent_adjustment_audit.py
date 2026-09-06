@@ -1,4 +1,7 @@
 from backend.player_dna_opponent_adjustment_audit import (
+    OPPONENT_NUMERIC,
+    OPPONENT_STRENGTH_NUMERIC,
+    OPPONENT_SUPPORT_NUMERIC,
     build_opponent_context_index,
 )
 
@@ -227,3 +230,15 @@ def test_support_counts_only_usable_bidirectional_opponent_profiles():
     assert target["overall_support"] == 1
     assert target["opponent_serve_mean"] == 0.64
     assert target["opponent_return_mean"] == 0.36
+
+
+def test_primary_opponent_strength_features_exclude_support_proxy():
+    strength = set(OPPONENT_STRENGTH_NUMERIC)
+    support = set(OPPONENT_SUPPORT_NUMERIC)
+
+    assert strength
+    assert support
+    assert strength.isdisjoint(support)
+    assert set(OPPONENT_NUMERIC) == strength | support
+    assert all("support" not in name for name in OPPONENT_STRENGTH_NUMERIC)
+    assert all("support" in name for name in OPPONENT_SUPPORT_NUMERIC)
