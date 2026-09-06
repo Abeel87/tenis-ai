@@ -1,8 +1,25 @@
 from backend.player_dna_shadow_profiles import build_snapshots_from_rows
 
 
-def _point(match_id, when, p1, p2, server, winner, surface="hard", event_index=0):
+def _point(
+    match_id,
+    when,
+    p1,
+    p2,
+    server,
+    winner,
+    surface="hard",
+    event_index=0,
+    points=("0", "0"),
+    transition_kind="point_score_changed",
+    atomic_reason="atomic_point_step",
+    trainable_point=True,
+    atomic_transition=True,
+    context_ready=True,
+):
     receiver = p2 if server == p1 else p1
+    server_side = 1 if server == p1 else 2
+    receiver_side = 3 - server_side
     return {
         "match_id": match_id,
         "event_index": event_index,
@@ -15,11 +32,22 @@ def _point(match_id, when, p1, p2, server, winner, surface="hard", event_index=0
         "p2_player_id": p2,
         "server_player_id": server,
         "receiver_player_id": receiver,
+        "server": server_side,
+        "receiver": receiver_side,
         "point_winner": 1 if winner == p1 else 2,
         "server_won": winner == server,
         "receiver_won": winner == receiver,
         "is_tiebreak_before": False,
-        "context_ready_player_point": True,
+        "context_ready_player_point": bool(context_ready),
+        "trainable_point": bool(trainable_point),
+        "atomic_transition": bool(atomic_transition),
+        "atomic_reason": atomic_reason,
+        "transition_kind": transition_kind,
+        "score_before": {
+            "sets": [0, 0],
+            "games": [[0], [0]],
+            "points": list(points),
+        },
         "p1_ranking": 10,
         "p2_ranking": 20,
     }
@@ -352,3 +380,168 @@ def test_current_card_exclusion_applies_to_canonical_rolling_windows_too():
     assert summary["rolling_profiles"]["windows"] == [5, 10, 20]
     assert summary["rolling_profiles"]["training_join_enabled"] is False
     assert summary["rolling_profiles"]["shrinkage_activation_enabled"] is False
+
+
+
+def test_canonical_profiles_include_pressure_rates_without_scorer_activation():
+    rows = [
+        # P1 saves a break point, wins a deuce point, then loses a 30:30 point.
+        _point("pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1, event_index=1, points=("30", "40")),
+        _point("pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1, event_index=2, points=("40", "40")),
+        _point("pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 2, event_index=3, points=("30", "30")),
+        # Three proven P1 service games: hold, break against, hold.
+        _point(
+            "pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1,
+            event_index=10, points=("40", "30"),
+            transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+        ),
+        # P1 breaks P2 on the first observed P1 return game.
+        _point(
+            "pressure-old", "2026-09-01T10:00:00Z", 1, 2, 2, 1,
+            event_index=20, points=("40", "30"),
+            transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+        ),
+        _point(
+            "pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 2,
+            event_index=30, points=("30", "40"),
+            transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+        ),
+        _point(
+            "pressure-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1,
+            event_index=40, points=("40", "15"),
+            transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+        ),
+        _point("pressure-target", "2026-09-02T10:00:00Z", 1, 3, 1, 1),
+    ]
+
+    snapshots, summary = build_snapshots_from_rows(rows)
+    target = _snapshot(snapshots, "pressure-target", 1)
+    overall = target["overall_prior"]
+    same_surface = target["same_surface_prior"]
+    l5 = target["rolling_prior"]["all_surface"]["windows"]["L5"]
+
+    assert overall["service_games"] == 3
+    assert overall["holds"] == 2
+    assert overall["hold_rate"] == 0.666667
+    assert overall["return_games"] == 1
+    assert overall["breaks"] == 1
+    assert overall["break_rate"] == 1.0
+
+    assert overall["bp_faced"] == 2
+    assert overall["bp_saved"] == 1
+    assert overall["bp_save_rate"] == 0.5
+    assert overall["bp_chances"] == 1
+    assert overall["bp_converted"] == 1
+    assert overall["bp_conversion_rate"] == 1.0
+
+    assert overall["deuce_serve_points"] == 1
+    assert overall["deuce_serve_wins"] == 1
+    assert overall["deuce_serve_win_rate"] == 1.0
+    assert overall["thirty_all_serve_points"] == 1
+    assert overall["thirty_all_serve_wins"] == 0
+    assert overall["thirty_all_serve_win_rate"] == 0.0
+
+    assert overall["early_service_game_1"] == 1
+    assert overall["early_service_game_1_holds"] == 1
+    assert overall["early_service_game_1_hold_rate"] == 1.0
+    assert overall["early_service_game_2"] == 1
+    assert overall["early_service_game_2_holds"] == 0
+    assert overall["early_service_game_2_hold_rate"] == 0.0
+    assert overall["early_service_game_3"] == 1
+    assert overall["early_service_game_3_holds"] == 1
+    assert overall["early_service_game_3_hold_rate"] == 1.0
+    assert overall["early_return_game_1"] == 1
+    assert overall["early_return_game_1_breaks"] == 1
+    assert overall["early_return_game_1_break_rate"] == 1.0
+
+    assert same_surface["hold_rate"] == overall["hold_rate"]
+    assert l5["hold_rate"] == overall["hold_rate"]
+    assert l5["bp_save_rate"] == overall["bp_save_rate"]
+    assert target["rolling_prior"]["all_surface"]["trend"]["hold_l5_minus_l10"] == 0.0
+    assert target["rolling_prior"]["all_surface"]["trend"]["bp_save_l5_minus_l20"] == 0.0
+
+    contract = summary["pressure_profiles"]
+    assert contract["included_in_canonical_profiles"] is True
+    assert contract["training_join_enabled"] is False
+    assert contract["scorer_feature_activation_enabled"] is False
+    assert contract["strict_atomic_game_boundaries_only"] is True
+    assert contract["set_boundary_reconstruction_enabled"] is False
+    assert contract["missing_game_reconstruction_enabled"] is False
+    assert "hold_rate" in summary["features"]["overall_prior"]
+    assert summary["features"]["rolling_prior"]["pressure_rates_in_windows"] is True
+
+
+def test_set_boundary_is_not_reconstructed_into_pressure_profile():
+    rows = [
+        _point("boundary-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1, event_index=1),
+        _point(
+            "boundary-old", "2026-09-01T10:00:00Z", 1, 2, 1, 1,
+            event_index=2, points=("40", "30"),
+            transition_kind="set_score_changed",
+            atomic_reason="set_boundary_not_yet_proven",
+            trainable_point=False,
+            atomic_transition=False,
+            context_ready=False,
+        ),
+        _point("boundary-target", "2026-09-02T10:00:00Z", 1, 3, 1, 1),
+    ]
+
+    snapshots, summary = build_snapshots_from_rows(rows)
+    target = _snapshot(snapshots, "boundary-target", 1)
+    assert target["overall_prior"]["matches"] == 1
+    assert target["overall_prior"]["service_games"] == 0
+    assert target["overall_prior"]["holds"] == 0
+    assert target["overall_prior"]["hold_rate"] is None
+    assert summary["source_counts"]["set_boundary_not_yet_proven_rows_excluded"] == 1
+    assert summary["pressure_profiles"]["set_boundary_reconstruction_enabled"] is False
+
+
+def test_current_card_exclusion_also_blocks_pressure_history():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    old_hold = _point(
+        "old-pressure", "2026-09-01T10:00:00Z", 1, 9, 1, 1,
+        event_index=1, points=("40", "15"),
+        transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+    )
+    current_break = _point(
+        "current-pressure-a", "2026-09-04T09:00:00Z", 1, 2, 1, 2,
+        event_index=1, points=("30", "40"),
+        transition_kind="game_score_changed", atomic_reason="atomic_game_boundary",
+    )
+    targets = [
+        {
+            "id": "current-pressure-a",
+            "scheduled_time": "2026-09-04T09:00:00Z",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1": "One",
+            "p2": "Two",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+        {
+            "id": "current-pressure-b",
+            "scheduled_time": "2026-09-04T12:00:00Z",
+            "p1_id": 1,
+            "p2_id": 3,
+            "p1": "One",
+            "p2": "Three",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+    ]
+
+    snapshots, summary = build_current_target_profiles(
+        [old_hold, current_break],
+        targets,
+    )
+    later = _snapshot(snapshots, "current-pressure-b", 1)
+    assert later["overall_prior"]["service_games"] == 1
+    assert later["overall_prior"]["holds"] == 1
+    assert later["overall_prior"]["hold_rate"] == 1.0
+    assert later["rolling_prior"]["all_surface"]["windows"]["L5"]["service_games"] == 1
+    assert summary["excluded_current_history_matches"] == 1
+    assert summary["pressure_profiles"]["scorer_feature_activation_enabled"] is False
