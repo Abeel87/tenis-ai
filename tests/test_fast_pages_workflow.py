@@ -20,10 +20,23 @@ def test_full_workflow_no_longer_runs_for_plain_frontend_changes():
     assert "frontend/**" not in push_block.replace("frontend/data/**", "")
 
 
-def test_long_data_build_has_its_own_concurrency_lane():
+def test_long_data_build_and_pages_deploy_use_separate_concurrency_lanes():
     workflow = read(".github/workflows/update-and-pages.yml")
-    assert "group: tennis-data-build" in workflow
-    assert "group: pages\n" not in workflow
+
+    top_level = workflow.split("jobs:", 1)[0]
+    build_job = workflow.split("  build:", 1)[1].split("  deploy_pages:", 1)[0]
+    deploy_job = workflow.split("  deploy_pages:", 1)[1]
+
+    # The expensive data/model build remains independent from Pages deployment
+    # serialization. Only the final deploy job joins the shared Pages lane used
+    # by the FAST workflow.
+    assert "group: tennis-data-build" in top_level
+    assert "group: pages" not in top_level
+    assert "concurrency:" not in build_job
+    assert "needs: build" in deploy_job
+    assert "group: pages" in deploy_job
+    assert "cancel-in-progress: false" in deploy_job
+    assert "actions/deploy-pages@v4" in deploy_job
 
     # The long build must use the one canonical Superbet market-context module
     # for both phases. Versioned adapter filenames are retired production paths.
@@ -75,3 +88,21 @@ def test_retry_selects_only_its_own_pages_artifact():
     assert len(set(artifacts)) == 2  # the original retry failed on duplicate github-pages names
     push_block = workflow.split('  push:', 1)[1].split('\npermissions:', 1)[0]
     assert "      - '.github/workflows/deploy-pages-fast.yml'" in push_block
+
+
+def test_full_pages_deploy_selects_its_own_unique_artifact():
+    workflow = read(".github/workflows/update-and-pages.yml")
+
+    def action_block(action):
+        marker = f"uses: {action}"
+        assert workflow.count(marker) == 1, f"Expected one {action} step"
+        tail = workflow.split(marker, 1)[1]
+        return tail.split("\n\n", 1)[0]
+
+    upload = action_block("actions/upload-pages-artifact@v4")
+    deploy = action_block("actions/deploy-pages@v4")
+    artifact = "github-pages-${{ github.run_id }}-${{ github.run_attempt }}"
+
+    assert f"name: {artifact}" in upload
+    assert "path: frontend" in upload
+    assert f"artifact_name: {artifact}" in deploy
