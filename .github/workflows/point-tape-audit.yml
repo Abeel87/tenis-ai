@@ -15,6 +15,7 @@ on:
       - 'backend/player_dna_context_time_audit.py'
       - 'backend/player_dna_ordering_authority_audit.py'
       - 'backend/player_dna_profile_readiness.py'
+      - 'backend/player_dna_service_split_source_readiness.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
@@ -44,6 +45,7 @@ on:
       - 'tests/test_player_dna_context_time_audit.py'
       - 'tests/test_player_dna_ordering_authority_audit.py'
       - 'tests/test_player_dna_profile_readiness.py'
+      - 'tests/test_player_dna_service_split_source_readiness.py'
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
@@ -95,7 +97,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -120,6 +122,83 @@ jobs:
 
       - name: Audit Player DNA historical profile readiness (zero network)
         run: python backend/player_dna_profile_readiness.py
+
+      - name: Audit Player DNA service-split source readiness (SHADOW, zero network)
+        run: python backend/player_dna_service_split_source_readiness.py
+
+      - name: Guard service-split source audit isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_service_split_source_readiness.json')
+          if not p.exists():
+              raise SystemExit('player_dna_service_split_source_readiness.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_SOURCE_READINESS_AUDIT_ONLY':
+              raise SystemExit('Service-split source audit mode invalid')
+          if report.get('gate') != 'AUDIT_ONLY_NO_PROFILE_BUILD':
+              raise SystemExit('Service-split source audit crossed profile-build gate')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'profile_build_enabled',
+              'training_join_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Service-split source isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'source_readiness_only',
+              'stable_provider_ids_required',
+              'day_precision_same_day_must_be_excluded',
+              'no_name_or_fuzzy_identity_for_canonical_profiles',
+              'return_split_derivation_uses_only_opponent_match_serve_counts',
+              'no_profile_values_published',
+              'no_model_fit',
+              'no_threshold_tuning',
+              'coverage_is_not_predictive_signal',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Service-split source contract violation: {key}')
+
+          if int(report.get('rows') or 0) <= 0:
+              raise SystemExit('Service-split source audit found no historical rows')
+          identity = report.get('identity_time_coverage') or {}
+          if int(identity.get('canonical_identity_time_rows') or 0) <= 0:
+              raise SystemExit('Service-split source audit found no stable-ID dated rows')
+
+          readiness = report.get('derived_matchup_source_readiness') or {}
+          for key in (
+              'first_serve_vs_first_return',
+              'second_serve_vs_second_return',
+              'ace_tendency',
+              'double_fault_tendency',
+              'ace_vs_contact_return',
+              'double_fault_vs_return_pressure',
+          ):
+              if key not in readiness:
+                  raise SystemExit(f'Service-split readiness family missing: {key}')
+
+          if (readiness.get('ace_vs_contact_return') or {}).get('source_ready') is not False:
+              raise SystemExit('Contact-return source was promoted without direct evidence')
+          if (readiness.get('double_fault_vs_return_pressure') or {}).get('source_ready') is not False:
+              raise SystemExit('Return-pressure source was promoted without direct evidence')
+
+          print(
+              'Service-split source readiness: '
+              f"rows={report.get('rows')} "
+              f"canonical={identity.get('canonical_identity_time_rows')} "
+              f"first={(readiness.get('first_serve_vs_first_return') or {}).get('canonical_match_rows')} "
+              f"second={(readiness.get('second_serve_vs_second_return') or {}).get('canonical_match_rows')}"
+          )
+          PY
 
       - name: Build leakage-safe Player DNA shadow profiles (zero network)
         run: python backend/player_dna_shadow_profiles.py
@@ -2301,6 +2380,7 @@ jobs:
             frontend/data/player_dna_context_time_audit.json
             frontend/data/player_dna_ordering_authority_audit.json
             frontend/data/player_dna_profile_readiness.json
+            frontend/data/player_dna_service_split_source_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_matchup_challenger.json
