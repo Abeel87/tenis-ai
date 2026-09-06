@@ -27,7 +27,7 @@ from backend.player_dna_tennis_simulator import (
     trajectory_summary,
 )
 
-HOLD_CALIBRATION_TEST_CONTRACT_ID = "test-hold-calibration-strict-atomic-v1"
+HOLD_CALIBRATION_TEST_CONTRACT_ID = "test-hold-calibration-strict-atomic"
 HOLD_CALIBRATION_TEST_CONTRACT_FP = "d" * 64
 
 
@@ -379,7 +379,7 @@ def test_current_report_only_simulates_shadow_scored_rows_and_stays_isolated():
 
 def _promising_calibration():
     return {
-        "version": "player-dna-hold-calibration-audit-v2",
+        "version": "player-dna-hold-calibration-audit-v1",
         "mode": "SHADOW_CALIBRATION_AUDIT_ONLY",
         "hold_calibration_contract_id": HOLD_CALIBRATION_TEST_CONTRACT_ID,
         "hold_calibration_contract_fingerprint_sha256": HOLD_CALIBRATION_TEST_CONTRACT_FP,
