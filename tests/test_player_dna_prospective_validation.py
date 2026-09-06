@@ -1047,7 +1047,8 @@ def test_trajectory_segment_diagnostics_keep_direct_tour_surface_separate_from_m
     assert policy[
         "marginal_tour_and_surface_results_never_imply_joint_validation"
     ] is True
-    assert policy["minimum_segment_sample_not_defined_yet"] is True
+    assert policy["minimum_segment_sample_not_defined_yet"] is False
+    assert policy["minimum_segment_sample_reuses_existing_prospective_gate"] == 30
     assert policy["performance_verdict_forbidden"] is True
 
 
