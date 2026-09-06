@@ -8,6 +8,20 @@
   "training_join_enabled": false,
   "profile_aggregation_enabled": false,
   "readiness_threshold_activation_enabled": false,
+  "pressure_profile_aggregation_enabled": false,
+  "pressure_training_join_enabled": false,
+  "pressure_feature_activation_enabled": false,
+  "pressure_threshold_activation_enabled": false,
+  "pressure_semantics": {
+    "canonical_source": "backend.atomic_point_transition",
+    "standard_score_pressure_only": true,
+    "tiebreak_pressure_excluded_from_bp_deuce_metrics": true,
+    "strict_atomic_game_boundaries_only": true,
+    "set_boundary_reconstruction_enabled": false,
+    "early_game_order": "observed_proven_atomic_boundaries_only",
+    "missing_game_reconstruction_enabled": false,
+    "same_time_matches_count_as_prior": false
+  },
   "point_rows": 444182,
   "context_ready_point_rows": 409911,
   "invalid_match_time_rows": 0,
@@ -84,6 +98,1295 @@
       "rate": 0.00087
     }
   },
+  "pressure_evidence": {
+    "player_match_evidence_cells": 6896,
+    "counts": {
+      "deuce_points": 18203,
+      "strict_atomic_games": 62509,
+      "holds": 44330,
+      "break_point_opportunities": 36823,
+      "break_points_saved": 18687,
+      "break_points_converted": 18136,
+      "breaks": 18179,
+      "thirty_all_points": 22782,
+      "early_service_game_1": 6869,
+      "early_return_game_1": 6869,
+      "early_service_game_2": 6831,
+      "early_return_game_2": 6831,
+      "early_service_game_3": 6780,
+      "early_return_game_3": 6780
+    },
+    "boundary_quality": {
+      "atomic_game_boundary": 62642,
+      "set_boundary_not_yet_proven": 6915,
+      "game_boundary_requires_missing_points": 5136,
+      "winner_missing_or_invalid": 3313,
+      "game_score_jump_or_wrong_winner": 2108,
+      "game_boundary_points_not_reset": 121,
+      "point_score_missing_or_invalid": 71,
+      "game_score_shape_unproven": 8
+    },
+    "support_metric_source": {
+      "hold": "service_games",
+      "break": "return_games",
+      "bp_save": "bp_faced",
+      "bp_conversion": "bp_chances",
+      "deuce_serve": "deuce_serve_points",
+      "deuce_return": "deuce_return_points",
+      "thirty_all_serve": "thirty_all_serve_points",
+      "thirty_all_return": "thirty_all_return_points",
+      "early_service_game_1": "early_service_game_1",
+      "early_service_game_2": "early_service_game_2",
+      "early_service_game_3": "early_service_game_3",
+      "early_return_game_1": "early_return_game_1",
+      "early_return_game_2": "early_return_game_2",
+      "early_return_game_3": "early_return_game_3"
+    }
+  },
+  "pressure_readiness_any_surface": {
+    "hold": {
+      "1": {
+        "targets": 4939,
+        "rate": 0.715797
+      },
+      "3": {
+        "targets": 4900,
+        "rate": 0.710145
+      },
+      "5": {
+        "targets": 4832,
+        "rate": 0.70029
+      },
+      "10": {
+        "targets": 4141,
+        "rate": 0.600145
+      },
+      "20": {
+        "targets": 3117,
+        "rate": 0.451739
+      }
+    },
+    "break": {
+      "1": {
+        "targets": 4942,
+        "rate": 0.716232
+      },
+      "3": {
+        "targets": 4899,
+        "rate": 0.71
+      },
+      "5": {
+        "targets": 4838,
+        "rate": 0.701159
+      },
+      "10": {
+        "targets": 4180,
+        "rate": 0.605797
+      },
+      "20": {
+        "targets": 3126,
+        "rate": 0.453043
+      }
+    },
+    "bp_save": {
+      "1": {
+        "targets": 4882,
+        "rate": 0.707536
+      },
+      "3": {
+        "targets": 4632,
+        "rate": 0.671304
+      },
+      "5": {
+        "targets": 4285,
+        "rate": 0.621014
+      },
+      "10": {
+        "targets": 3267,
+        "rate": 0.473478
+      },
+      "20": {
+        "targets": 1889,
+        "rate": 0.273768
+      }
+    },
+    "bp_conversion": {
+      "1": {
+        "targets": 4884,
+        "rate": 0.707826
+      },
+      "3": {
+        "targets": 4683,
+        "rate": 0.678696
+      },
+      "5": {
+        "targets": 4367,
+        "rate": 0.632899
+      },
+      "10": {
+        "targets": 3476,
+        "rate": 0.503768
+      },
+      "20": {
+        "targets": 2205,
+        "rate": 0.319565
+      }
+    },
+    "deuce_serve": {
+      "1": {
+        "targets": 4824,
+        "rate": 0.69913
+      },
+      "3": {
+        "targets": 4190,
+        "rate": 0.607246
+      },
+      "5": {
+        "targets": 3405,
+        "rate": 0.493478
+      },
+      "10": {
+        "targets": 2043,
+        "rate": 0.296087
+      },
+      "20": {
+        "targets": 630,
+        "rate": 0.091304
+      }
+    },
+    "deuce_return": {
+      "1": {
+        "targets": 4829,
+        "rate": 0.699855
+      },
+      "3": {
+        "targets": 4203,
+        "rate": 0.60913
+      },
+      "5": {
+        "targets": 3482,
+        "rate": 0.504638
+      },
+      "10": {
+        "targets": 2162,
+        "rate": 0.313333
+      },
+      "20": {
+        "targets": 716,
+        "rate": 0.103768
+      }
+    },
+    "thirty_all_serve": {
+      "1": {
+        "targets": 4862,
+        "rate": 0.704638
+      },
+      "3": {
+        "targets": 4419,
+        "rate": 0.640435
+      },
+      "5": {
+        "targets": 3766,
+        "rate": 0.545797
+      },
+      "10": {
+        "targets": 2540,
+        "rate": 0.368116
+      },
+      "20": {
+        "targets": 1025,
+        "rate": 0.148551
+      }
+    },
+    "thirty_all_return": {
+      "1": {
+        "targets": 4868,
+        "rate": 0.705507
+      },
+      "3": {
+        "targets": 4438,
+        "rate": 0.643188
+      },
+      "5": {
+        "targets": 3805,
+        "rate": 0.551449
+      },
+      "10": {
+        "targets": 2568,
+        "rate": 0.372174
+      },
+      "20": {
+        "targets": 1143,
+        "rate": 0.165652
+      }
+    },
+    "early_service_game_1": {
+      "1": {
+        "targets": 4939,
+        "rate": 0.715797
+      },
+      "3": {
+        "targets": 2880,
+        "rate": 0.417391
+      },
+      "5": {
+        "targets": 1646,
+        "rate": 0.238551
+      },
+      "10": {
+        "targets": 240,
+        "rate": 0.034783
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_service_game_2": {
+      "1": {
+        "targets": 4920,
+        "rate": 0.713043
+      },
+      "3": {
+        "targets": 2859,
+        "rate": 0.414348
+      },
+      "5": {
+        "targets": 1627,
+        "rate": 0.235797
+      },
+      "10": {
+        "targets": 233,
+        "rate": 0.033768
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_service_game_3": {
+      "1": {
+        "targets": 4900,
+        "rate": 0.710145
+      },
+      "3": {
+        "targets": 2836,
+        "rate": 0.411014
+      },
+      "5": {
+        "targets": 1605,
+        "rate": 0.232609
+      },
+      "10": {
+        "targets": 228,
+        "rate": 0.033043
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    },
+    "early_return_game_1": {
+      "1": {
+        "targets": 4942,
+        "rate": 0.716232
+      },
+      "3": {
+        "targets": 2883,
+        "rate": 0.417826
+      },
+      "5": {
+        "targets": 1648,
+        "rate": 0.238841
+      },
+      "10": {
+        "targets": 244,
+        "rate": 0.035362
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_return_game_2": {
+      "1": {
+        "targets": 4925,
+        "rate": 0.713768
+      },
+      "3": {
+        "targets": 2865,
+        "rate": 0.415217
+      },
+      "5": {
+        "targets": 1632,
+        "rate": 0.236522
+      },
+      "10": {
+        "targets": 236,
+        "rate": 0.034203
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    },
+    "early_return_game_3": {
+      "1": {
+        "targets": 4899,
+        "rate": 0.71
+      },
+      "3": {
+        "targets": 2841,
+        "rate": 0.411739
+      },
+      "5": {
+        "targets": 1608,
+        "rate": 0.233043
+      },
+      "10": {
+        "targets": 231,
+        "rate": 0.033478
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    }
+  },
+  "pressure_readiness_same_surface": {
+    "hold": {
+      "1": {
+        "targets": 4610,
+        "rate": 0.668116
+      },
+      "3": {
+        "targets": 4577,
+        "rate": 0.663333
+      },
+      "5": {
+        "targets": 4511,
+        "rate": 0.653768
+      },
+      "10": {
+        "targets": 3778,
+        "rate": 0.547536
+      },
+      "20": {
+        "targets": 2690,
+        "rate": 0.389855
+      }
+    },
+    "break": {
+      "1": {
+        "targets": 4613,
+        "rate": 0.668551
+      },
+      "3": {
+        "targets": 4576,
+        "rate": 0.663188
+      },
+      "5": {
+        "targets": 4523,
+        "rate": 0.655507
+      },
+      "10": {
+        "targets": 3814,
+        "rate": 0.552754
+      },
+      "20": {
+        "targets": 2716,
+        "rate": 0.393623
+      }
+    },
+    "bp_save": {
+      "1": {
+        "targets": 4537,
+        "rate": 0.657536
+      },
+      "3": {
+        "targets": 4261,
+        "rate": 0.617536
+      },
+      "5": {
+        "targets": 3885,
+        "rate": 0.563043
+      },
+      "10": {
+        "targets": 2823,
+        "rate": 0.40913
+      },
+      "20": {
+        "targets": 1490,
+        "rate": 0.215942
+      }
+    },
+    "bp_conversion": {
+      "1": {
+        "targets": 4563,
+        "rate": 0.661304
+      },
+      "3": {
+        "targets": 4372,
+        "rate": 0.633623
+      },
+      "5": {
+        "targets": 4039,
+        "rate": 0.585362
+      },
+      "10": {
+        "targets": 3081,
+        "rate": 0.446522
+      },
+      "20": {
+        "targets": 1812,
+        "rate": 0.262609
+      }
+    },
+    "deuce_serve": {
+      "1": {
+        "targets": 4484,
+        "rate": 0.649855
+      },
+      "3": {
+        "targets": 3825,
+        "rate": 0.554348
+      },
+      "5": {
+        "targets": 2997,
+        "rate": 0.434348
+      },
+      "10": {
+        "targets": 1648,
+        "rate": 0.238841
+      },
+      "20": {
+        "targets": 443,
+        "rate": 0.064203
+      }
+    },
+    "deuce_return": {
+      "1": {
+        "targets": 4501,
+        "rate": 0.652319
+      },
+      "3": {
+        "targets": 3854,
+        "rate": 0.558551
+      },
+      "5": {
+        "targets": 3090,
+        "rate": 0.447826
+      },
+      "10": {
+        "targets": 1769,
+        "rate": 0.256377
+      },
+      "20": {
+        "targets": 517,
+        "rate": 0.074928
+      }
+    },
+    "thirty_all_serve": {
+      "1": {
+        "targets": 4540,
+        "rate": 0.657971
+      },
+      "3": {
+        "targets": 4070,
+        "rate": 0.589855
+      },
+      "5": {
+        "targets": 3378,
+        "rate": 0.489565
+      },
+      "10": {
+        "targets": 2126,
+        "rate": 0.308116
+      },
+      "20": {
+        "targets": 772,
+        "rate": 0.111884
+      }
+    },
+    "thirty_all_return": {
+      "1": {
+        "targets": 4542,
+        "rate": 0.658261
+      },
+      "3": {
+        "targets": 4117,
+        "rate": 0.596667
+      },
+      "5": {
+        "targets": 3416,
+        "rate": 0.495072
+      },
+      "10": {
+        "targets": 2157,
+        "rate": 0.312609
+      },
+      "20": {
+        "targets": 867,
+        "rate": 0.125652
+      }
+    },
+    "early_service_game_1": {
+      "1": {
+        "targets": 4610,
+        "rate": 0.668116
+      },
+      "3": {
+        "targets": 2438,
+        "rate": 0.353333
+      },
+      "5": {
+        "targets": 1283,
+        "rate": 0.185942
+      },
+      "10": {
+        "targets": 163,
+        "rate": 0.023623
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_service_game_2": {
+      "1": {
+        "targets": 4596,
+        "rate": 0.666087
+      },
+      "3": {
+        "targets": 2426,
+        "rate": 0.351594
+      },
+      "5": {
+        "targets": 1274,
+        "rate": 0.184638
+      },
+      "10": {
+        "targets": 160,
+        "rate": 0.023188
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_service_game_3": {
+      "1": {
+        "targets": 4577,
+        "rate": 0.663333
+      },
+      "3": {
+        "targets": 2407,
+        "rate": 0.348841
+      },
+      "5": {
+        "targets": 1258,
+        "rate": 0.182319
+      },
+      "10": {
+        "targets": 156,
+        "rate": 0.022609
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    },
+    "early_return_game_1": {
+      "1": {
+        "targets": 4613,
+        "rate": 0.668551
+      },
+      "3": {
+        "targets": 2438,
+        "rate": 0.353333
+      },
+      "5": {
+        "targets": 1281,
+        "rate": 0.185652
+      },
+      "10": {
+        "targets": 163,
+        "rate": 0.023623
+      },
+      "20": {
+        "targets": 5,
+        "rate": 0.000725
+      }
+    },
+    "early_return_game_2": {
+      "1": {
+        "targets": 4599,
+        "rate": 0.666522
+      },
+      "3": {
+        "targets": 2429,
+        "rate": 0.352029
+      },
+      "5": {
+        "targets": 1275,
+        "rate": 0.184783
+      },
+      "10": {
+        "targets": 161,
+        "rate": 0.023333
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    },
+    "early_return_game_3": {
+      "1": {
+        "targets": 4576,
+        "rate": 0.663188
+      },
+      "3": {
+        "targets": 2413,
+        "rate": 0.34971
+      },
+      "5": {
+        "targets": 1260,
+        "rate": 0.182609
+      },
+      "10": {
+        "targets": 158,
+        "rate": 0.022899
+      },
+      "20": {
+        "targets": 4,
+        "rate": 0.00058
+      }
+    }
+  },
+  "pressure_readiness_by_target_tour_at_5": {
+    "ATP": {
+      "targets": 1050,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 873,
+          "rate": 0.831429
+        },
+        "break": {
+          "targets": 877,
+          "rate": 0.835238
+        },
+        "bp_save": {
+          "targets": 801,
+          "rate": 0.762857
+        },
+        "bp_conversion": {
+          "targets": 805,
+          "rate": 0.766667
+        },
+        "deuce_serve": {
+          "targets": 688,
+          "rate": 0.655238
+        },
+        "deuce_return": {
+          "targets": 693,
+          "rate": 0.66
+        },
+        "thirty_all_serve": {
+          "targets": 754,
+          "rate": 0.718095
+        },
+        "thirty_all_return": {
+          "targets": 745,
+          "rate": 0.709524
+        },
+        "early_service_game_1": {
+          "targets": 386,
+          "rate": 0.367619
+        },
+        "early_service_game_2": {
+          "targets": 381,
+          "rate": 0.362857
+        },
+        "early_service_game_3": {
+          "targets": 376,
+          "rate": 0.358095
+        },
+        "early_return_game_1": {
+          "targets": 384,
+          "rate": 0.365714
+        },
+        "early_return_game_2": {
+          "targets": 380,
+          "rate": 0.361905
+        },
+        "early_return_game_3": {
+          "targets": 373,
+          "rate": 0.355238
+        }
+      }
+    },
+    "CHALLENGER": {
+      "targets": 2132,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 1647,
+          "rate": 0.772514
+        },
+        "break": {
+          "targets": 1644,
+          "rate": 0.771107
+        },
+        "bp_save": {
+          "targets": 1471,
+          "rate": 0.689962
+        },
+        "bp_conversion": {
+          "targets": 1466,
+          "rate": 0.687617
+        },
+        "deuce_serve": {
+          "targets": 1169,
+          "rate": 0.548311
+        },
+        "deuce_return": {
+          "targets": 1217,
+          "rate": 0.570826
+        },
+        "thirty_all_serve": {
+          "targets": 1300,
+          "rate": 0.609756
+        },
+        "thirty_all_return": {
+          "targets": 1326,
+          "rate": 0.621951
+        },
+        "early_service_game_1": {
+          "targets": 591,
+          "rate": 0.277205
+        },
+        "early_service_game_2": {
+          "targets": 586,
+          "rate": 0.274859
+        },
+        "early_service_game_3": {
+          "targets": 577,
+          "rate": 0.270638
+        },
+        "early_return_game_1": {
+          "targets": 591,
+          "rate": 0.277205
+        },
+        "early_return_game_2": {
+          "targets": 588,
+          "rate": 0.275797
+        },
+        "early_return_game_3": {
+          "targets": 578,
+          "rate": 0.271107
+        }
+      }
+    },
+    "ITF": {
+      "targets": 2704,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 1532,
+          "rate": 0.566568
+        },
+        "break": {
+          "targets": 1537,
+          "rate": 0.568417
+        },
+        "bp_save": {
+          "targets": 1277,
+          "rate": 0.472263
+        },
+        "bp_conversion": {
+          "targets": 1340,
+          "rate": 0.495562
+        },
+        "deuce_serve": {
+          "targets": 922,
+          "rate": 0.340976
+        },
+        "deuce_return": {
+          "targets": 928,
+          "rate": 0.343195
+        },
+        "thirty_all_serve": {
+          "targets": 1041,
+          "rate": 0.384985
+        },
+        "thirty_all_return": {
+          "targets": 1054,
+          "rate": 0.389793
+        },
+        "early_service_game_1": {
+          "targets": 351,
+          "rate": 0.129808
+        },
+        "early_service_game_2": {
+          "targets": 345,
+          "rate": 0.127589
+        },
+        "early_service_game_3": {
+          "targets": 339,
+          "rate": 0.12537
+        },
+        "early_return_game_1": {
+          "targets": 353,
+          "rate": 0.130547
+        },
+        "early_return_game_2": {
+          "targets": 349,
+          "rate": 0.129068
+        },
+        "early_return_game_3": {
+          "targets": 344,
+          "rate": 0.127219
+        }
+      }
+    },
+    "JUNIORS": {
+      "targets": 2,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "break": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "bp_save": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "bp_conversion": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "deuce_serve": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "deuce_return": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "thirty_all_serve": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "thirty_all_return": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        }
+      }
+    },
+    "WTA": {
+      "targets": 966,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 776,
+          "rate": 0.803313
+        },
+        "break": {
+          "targets": 776,
+          "rate": 0.803313
+        },
+        "bp_save": {
+          "targets": 734,
+          "rate": 0.759834
+        },
+        "bp_conversion": {
+          "targets": 754,
+          "rate": 0.780538
+        },
+        "deuce_serve": {
+          "targets": 626,
+          "rate": 0.648033
+        },
+        "deuce_return": {
+          "targets": 644,
+          "rate": 0.666667
+        },
+        "thirty_all_serve": {
+          "targets": 670,
+          "rate": 0.693582
+        },
+        "thirty_all_return": {
+          "targets": 678,
+          "rate": 0.701863
+        },
+        "early_service_game_1": {
+          "targets": 318,
+          "rate": 0.329193
+        },
+        "early_service_game_2": {
+          "targets": 315,
+          "rate": 0.326087
+        },
+        "early_service_game_3": {
+          "targets": 313,
+          "rate": 0.324017
+        },
+        "early_return_game_1": {
+          "targets": 320,
+          "rate": 0.331263
+        },
+        "early_return_game_2": {
+          "targets": 315,
+          "rate": 0.326087
+        },
+        "early_return_game_3": {
+          "targets": 313,
+          "rate": 0.324017
+        }
+      }
+    },
+    "unknown": {
+      "targets": 46,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 4,
+          "rate": 0.086957
+        },
+        "break": {
+          "targets": 4,
+          "rate": 0.086957
+        },
+        "bp_save": {
+          "targets": 2,
+          "rate": 0.043478
+        },
+        "bp_conversion": {
+          "targets": 2,
+          "rate": 0.043478
+        },
+        "deuce_serve": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "deuce_return": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "thirty_all_serve": {
+          "targets": 1,
+          "rate": 0.021739
+        },
+        "thirty_all_return": {
+          "targets": 2,
+          "rate": 0.043478
+        },
+        "early_service_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        }
+      }
+    }
+  },
+  "pressure_readiness_by_target_surface_at_5": {
+    "clay": {
+      "targets": 2798,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 1717,
+          "rate": 0.613653
+        },
+        "break": {
+          "targets": 1722,
+          "rate": 0.61544
+        },
+        "bp_save": {
+          "targets": 1442,
+          "rate": 0.515368
+        },
+        "bp_conversion": {
+          "targets": 1528,
+          "rate": 0.546104
+        },
+        "deuce_serve": {
+          "targets": 1063,
+          "rate": 0.379914
+        },
+        "deuce_return": {
+          "targets": 1111,
+          "rate": 0.397069
+        },
+        "thirty_all_serve": {
+          "targets": 1200,
+          "rate": 0.428878
+        },
+        "thirty_all_return": {
+          "targets": 1243,
+          "rate": 0.444246
+        },
+        "early_service_game_1": {
+          "targets": 426,
+          "rate": 0.152252
+        },
+        "early_service_game_2": {
+          "targets": 418,
+          "rate": 0.149392
+        },
+        "early_service_game_3": {
+          "targets": 410,
+          "rate": 0.146533
+        },
+        "early_return_game_1": {
+          "targets": 423,
+          "rate": 0.151179
+        },
+        "early_return_game_2": {
+          "targets": 421,
+          "rate": 0.150465
+        },
+        "early_return_game_3": {
+          "targets": 413,
+          "rate": 0.147605
+        }
+      }
+    },
+    "grass": {
+      "targets": 212,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 68,
+          "rate": 0.320755
+        },
+        "break": {
+          "targets": 67,
+          "rate": 0.316038
+        },
+        "bp_save": {
+          "targets": 46,
+          "rate": 0.216981
+        },
+        "bp_conversion": {
+          "targets": 59,
+          "rate": 0.278302
+        },
+        "deuce_serve": {
+          "targets": 35,
+          "rate": 0.165094
+        },
+        "deuce_return": {
+          "targets": 28,
+          "rate": 0.132075
+        },
+        "thirty_all_serve": {
+          "targets": 39,
+          "rate": 0.183962
+        },
+        "thirty_all_return": {
+          "targets": 31,
+          "rate": 0.146226
+        },
+        "early_service_game_1": {
+          "targets": 4,
+          "rate": 0.018868
+        },
+        "early_service_game_2": {
+          "targets": 4,
+          "rate": 0.018868
+        },
+        "early_service_game_3": {
+          "targets": 4,
+          "rate": 0.018868
+        },
+        "early_return_game_1": {
+          "targets": 4,
+          "rate": 0.018868
+        },
+        "early_return_game_2": {
+          "targets": 4,
+          "rate": 0.018868
+        },
+        "early_return_game_3": {
+          "targets": 4,
+          "rate": 0.018868
+        }
+      }
+    },
+    "hard": {
+      "targets": 3840,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 2722,
+          "rate": 0.708854
+        },
+        "break": {
+          "targets": 2730,
+          "rate": 0.710938
+        },
+        "bp_save": {
+          "targets": 2395,
+          "rate": 0.623698
+        },
+        "bp_conversion": {
+          "targets": 2450,
+          "rate": 0.638021
+        },
+        "deuce_serve": {
+          "targets": 1899,
+          "rate": 0.494531
+        },
+        "deuce_return": {
+          "targets": 1951,
+          "rate": 0.508073
+        },
+        "thirty_all_serve": {
+          "targets": 2138,
+          "rate": 0.556771
+        },
+        "thirty_all_return": {
+          "targets": 2140,
+          "rate": 0.557292
+        },
+        "early_service_game_1": {
+          "targets": 853,
+          "rate": 0.222135
+        },
+        "early_service_game_2": {
+          "targets": 852,
+          "rate": 0.221875
+        },
+        "early_service_game_3": {
+          "targets": 844,
+          "rate": 0.219792
+        },
+        "early_return_game_1": {
+          "targets": 854,
+          "rate": 0.222396
+        },
+        "early_return_game_2": {
+          "targets": 850,
+          "rate": 0.221354
+        },
+        "early_return_game_3": {
+          "targets": 843,
+          "rate": 0.219531
+        }
+      }
+    },
+    "unknown": {
+      "targets": 50,
+      "minimum_prior_observations": 5,
+      "metrics": {
+        "hold": {
+          "targets": 4,
+          "rate": 0.08
+        },
+        "break": {
+          "targets": 4,
+          "rate": 0.08
+        },
+        "bp_save": {
+          "targets": 2,
+          "rate": 0.04
+        },
+        "bp_conversion": {
+          "targets": 2,
+          "rate": 0.04
+        },
+        "deuce_serve": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "deuce_return": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "thirty_all_serve": {
+          "targets": 1,
+          "rate": 0.02
+        },
+        "thirty_all_return": {
+          "targets": 2,
+          "rate": 0.04
+        },
+        "early_service_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_service_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_1": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_2": {
+          "targets": 0,
+          "rate": 0.0
+        },
+        "early_return_game_3": {
+          "targets": 0,
+          "rate": 0.0
+        }
+      }
+    }
+  },
   "same_time_player_groups": 0,
-  "note": "Evidence only. No minimum-history threshold is activated here. The next gate must choose any threshold from measured coverage and leakage-safe validation."
+  "note": "Evidence only. No minimum-history or pressure-support threshold is activated here. The next gate may choose candidates only from measured leakage-safe coverage and must validate them out of sample before any profile/model activation."
 }

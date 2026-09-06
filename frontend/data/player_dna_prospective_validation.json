@@ -46,14 +46,78 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 68,
-        "due_within_6h": 21,
-        "overdue_6_24h": 0,
+        "upcoming": 60,
+        "due_within_6h": 20,
+        "overdue_6_24h": 9,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
       },
-      "overdue_samples": []
+      "overdue_samples": [
+        {
+          "match_id": "187079",
+          "scheduled_time": "2026-09-06T08:00:00+00:00",
+          "hours_since_scheduled": 7.57,
+          "p1": "Kai Wehnelt",
+          "p2": "Mika Brunold"
+        },
+        {
+          "match_id": "187165",
+          "scheduled_time": "2026-09-06T08:00:00+00:00",
+          "hours_since_scheduled": 7.57,
+          "p1": "Massimo Giunta",
+          "p2": "Giovanni Oradini"
+        },
+        {
+          "match_id": "187068",
+          "scheduled_time": "2026-09-06T09:00:00+00:00",
+          "hours_since_scheduled": 6.57,
+          "p1": "Oriol Roca Batalla",
+          "p2": "Iliyan Radulov"
+        },
+        {
+          "match_id": "186964",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Adrienn Nagy",
+          "p2": "Samira De Stefano"
+        },
+        {
+          "match_id": "187043",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Manas Dhamne",
+          "p2": "William Rejchtman Vinciguerra"
+        },
+        {
+          "match_id": "187045",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Oskari Paldanius",
+          "p2": "Nicolas Tepmahc"
+        },
+        {
+          "match_id": "187083",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Ivan Gakhov",
+          "p2": "Oleg Prihodko"
+        },
+        {
+          "match_id": "187084",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Niels Visker",
+          "p2": "Daniel Siniakov"
+        },
+        {
+          "match_id": "187166",
+          "scheduled_time": "2026-09-06T09:30:00+00:00",
+          "hours_since_scheduled": 6.07,
+          "p1": "Oleksii Krutykh",
+          "p2": "Stefan Popovic"
+        }
+      ]
     },
     "settlement_latency": {
       "n": 27,
@@ -64,7 +128,7 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 26,
+      "count": 22,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
@@ -80,6 +144,12 @@
           "drift_minutes": 480.0
         },
         {
+          "match_id": "186888",
+          "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
+          "current_scheduled_time": "2026-09-07T10:00:00+00:00",
+          "drift_minutes": 480.0
+        },
+        {
           "match_id": "186883",
           "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
           "current_scheduled_time": "2026-09-07T10:00:00+00:00",
@@ -87,12 +157,6 @@
         },
         {
           "match_id": "186890",
-          "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
-          "current_scheduled_time": "2026-09-07T10:00:00+00:00",
-          "drift_minutes": 480.0
-        },
-        {
-          "match_id": "186888",
           "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
           "current_scheduled_time": "2026-09-07T10:00:00+00:00",
           "drift_minutes": 480.0
@@ -116,13 +180,13 @@
           "drift_minutes": 300.0
         },
         {
-          "match_id": "187125",
+          "match_id": "187133",
           "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
           "current_scheduled_time": "2026-09-07T12:30:00+00:00",
           "drift_minutes": 270.0
         },
         {
-          "match_id": "187133",
+          "match_id": "187125",
           "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
           "current_scheduled_time": "2026-09-07T12:30:00+00:00",
           "drift_minutes": 270.0
@@ -222,7 +286,7 @@
     "hold_calibration_contract_fingerprint_sha256": null
   },
   "counts": {
-    "current_simulated_matches": 75,
+    "current_simulated_matches": 69,
     "current_eligible_by_segment": 0,
     "snapshots": 116,
     "settled_snapshots": 27,
@@ -358,10 +422,10 @@
       "settled_at_rewrite_forbidden": true,
       "snapshot_drop_forbidden_before_retention_cap": true,
       "retention_cap": 5000,
-      "previous_snapshot_count": 83,
+      "previous_snapshot_count": 91,
       "current_snapshot_count_before_retention": 91,
-      "preserved_snapshots": 83,
-      "new_snapshots": 8,
+      "preserved_snapshots": 91,
+      "new_snapshots": 0,
       "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
@@ -386,14 +450,78 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 68,
-          "due_within_6h": 21,
-          "overdue_6_24h": 0,
+          "upcoming": 65,
+          "due_within_6h": 15,
+          "overdue_6_24h": 9,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
           "unparseable_schedule": 0
         },
-        "overdue_samples": []
+        "overdue_samples": [
+          {
+            "match_id": "187079",
+            "scheduled_time": "2026-09-06T08:00:00+00:00",
+            "hours_since_scheduled": 7.57,
+            "p1": "Kai Wehnelt",
+            "p2": "Mika Brunold"
+          },
+          {
+            "match_id": "187165",
+            "scheduled_time": "2026-09-06T08:00:00+00:00",
+            "hours_since_scheduled": 7.57,
+            "p1": "Massimo Giunta",
+            "p2": "Giovanni Oradini"
+          },
+          {
+            "match_id": "187068",
+            "scheduled_time": "2026-09-06T09:00:00+00:00",
+            "hours_since_scheduled": 6.57,
+            "p1": "Oriol Roca Batalla",
+            "p2": "Iliyan Radulov"
+          },
+          {
+            "match_id": "186964",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Adrienn Nagy",
+            "p2": "Samira De Stefano"
+          },
+          {
+            "match_id": "187043",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Manas Dhamne",
+            "p2": "William Rejchtman Vinciguerra"
+          },
+          {
+            "match_id": "187045",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Oskari Paldanius",
+            "p2": "Nicolas Tepmahc"
+          },
+          {
+            "match_id": "187083",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Ivan Gakhov",
+            "p2": "Oleg Prihodko"
+          },
+          {
+            "match_id": "187084",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Niels Visker",
+            "p2": "Daniel Siniakov"
+          },
+          {
+            "match_id": "187166",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Oleksii Krutykh",
+            "p2": "Stefan Popovic"
+          }
+        ]
       },
       "settlement_latency": {
         "n": 2,
@@ -404,9 +532,15 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 21,
+        "count": 17,
         "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
         "samples": [
+          {
+            "match_id": "186888",
+            "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
+            "current_scheduled_time": "2026-09-07T10:00:00+00:00",
+            "drift_minutes": 480.0
+          },
           {
             "match_id": "186883",
             "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
@@ -415,12 +549,6 @@
           },
           {
             "match_id": "186890",
-            "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-07T10:00:00+00:00",
-            "drift_minutes": 480.0
-          },
-          {
-            "match_id": "186888",
             "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
             "current_scheduled_time": "2026-09-07T10:00:00+00:00",
             "drift_minutes": 480.0
@@ -444,13 +572,13 @@
             "drift_minutes": 300.0
           },
           {
-            "match_id": "187125",
+            "match_id": "187133",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T12:30:00+00:00",
             "drift_minutes": 270.0
           },
           {
-            "match_id": "187133",
+            "match_id": "187125",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T12:30:00+00:00",
             "drift_minutes": 270.0
@@ -462,7 +590,7 @@
             "drift_minutes": 240.0
           },
           {
-            "match_id": "187130",
+            "match_id": "187131",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T11:00:00+00:00",
             "drift_minutes": 180.0
@@ -527,9 +655,9 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 208,
-      "current_rows_with_dynamic_candidates": 54,
-      "current_dynamic_candidate_market_slots": 225,
+      "current_dynamic_matches": 190,
+      "current_rows_with_dynamic_candidates": 50,
+      "current_dynamic_candidate_market_slots": 213,
       "snapshots": 91,
       "ledger_settled_snapshots": 2,
       "ledger_unsettled_snapshots": 89,
@@ -3865,9 +3993,9 @@
       "settlement_regression_forbidden": true,
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
-      "previous_snapshot_count": 106,
+      "previous_snapshot_count": 115,
       "current_snapshot_count_before_retention": 115,
-      "new_snapshots": 9,
+      "new_snapshots": 0,
       "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
@@ -3883,14 +4011,85 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 88,
-          "due_within_6h": 26,
-          "overdue_6_24h": 0,
+          "upcoming": 83,
+          "due_within_6h": 20,
+          "overdue_6_24h": 11,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
           "unparseable_schedule": 0
         },
-        "overdue_samples": []
+        "overdue_samples": [
+          {
+            "match_id": "187079",
+            "scheduled_time": "2026-09-06T08:00:00+00:00",
+            "hours_since_scheduled": 7.57,
+            "p1": "Kai Wehnelt",
+            "p2": "Mika Brunold"
+          },
+          {
+            "match_id": "187165",
+            "scheduled_time": "2026-09-06T08:00:00+00:00",
+            "hours_since_scheduled": 7.57,
+            "p1": "Massimo Giunta",
+            "p2": "Giovanni Oradini"
+          },
+          {
+            "match_id": "186869",
+            "scheduled_time": "2026-09-06T08:30:00+00:00",
+            "hours_since_scheduled": 7.07,
+            "p1": "Cesar Bouchelaghem",
+            "p2": "Aziz Dougaz"
+          },
+          {
+            "match_id": "186940",
+            "scheduled_time": "2026-09-06T08:30:00+00:00",
+            "hours_since_scheduled": 7.07,
+            "p1": "Ryan Nijboer",
+            "p2": "Martin Van Der Meerschen"
+          },
+          {
+            "match_id": "187068",
+            "scheduled_time": "2026-09-06T09:00:00+00:00",
+            "hours_since_scheduled": 6.57,
+            "p1": "Oriol Roca Batalla",
+            "p2": "Iliyan Radulov"
+          },
+          {
+            "match_id": "186964",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Adrienn Nagy",
+            "p2": "Samira De Stefano"
+          },
+          {
+            "match_id": "187043",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Manas Dhamne",
+            "p2": "William Rejchtman Vinciguerra"
+          },
+          {
+            "match_id": "187045",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Oskari Paldanius",
+            "p2": "Nicolas Tepmahc"
+          },
+          {
+            "match_id": "187083",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Ivan Gakhov",
+            "p2": "Oleg Prihodko"
+          },
+          {
+            "match_id": "187084",
+            "scheduled_time": "2026-09-06T09:30:00+00:00",
+            "hours_since_scheduled": 6.07,
+            "p1": "Niels Visker",
+            "p2": "Daniel Siniakov"
+          }
+        ]
       },
       "settlement_latency": {
         "n": 1,
@@ -3901,9 +4100,15 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 21,
+        "count": 17,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
         "samples": [
+          {
+            "match_id": "186888",
+            "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
+            "current_scheduled_time": "2026-09-07T10:00:00+00:00",
+            "drift_minutes": 480.0
+          },
           {
             "match_id": "186883",
             "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
@@ -3912,12 +4117,6 @@
           },
           {
             "match_id": "186890",
-            "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-07T10:00:00+00:00",
-            "drift_minutes": 480.0
-          },
-          {
-            "match_id": "186888",
             "frozen_scheduled_time": "2026-09-07T02:00:00+00:00",
             "current_scheduled_time": "2026-09-07T10:00:00+00:00",
             "drift_minutes": 480.0
@@ -3941,13 +4140,13 @@
             "drift_minutes": 300.0
           },
           {
-            "match_id": "187125",
+            "match_id": "187133",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T12:30:00+00:00",
             "drift_minutes": 270.0
           },
           {
-            "match_id": "187133",
+            "match_id": "187125",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T12:30:00+00:00",
             "drift_minutes": 270.0
@@ -3959,7 +4158,7 @@
             "drift_minutes": 240.0
           },
           {
-            "match_id": "187130",
+            "match_id": "187131",
             "frozen_scheduled_time": "2026-09-07T08:00:00+00:00",
             "current_scheduled_time": "2026-09-07T11:00:00+00:00",
             "drift_minutes": 180.0
@@ -3968,8 +4167,8 @@
       }
     },
     "counts": {
-      "current_simulated_matches": 75,
-      "new_current_pre_match_snapshots": 9,
+      "current_simulated_matches": 69,
+      "new_current_pre_match_snapshots": 0,
       "snapshots": 115,
       "ledger_settled_snapshots": 1,
       "ledger_unsettled_snapshots": 114,
@@ -5366,9 +5565,9 @@
         "checkpoint_after_4_games_top3": 0.893782,
         "checkpoint_after_6_games_top1": 0.336788,
         "checkpoint_after_6_games_top3": 0.818653,
-        "first_set_complete_path_top1": 0.031088,
-        "first_set_complete_path_top3": 0.098446,
-        "first_set_complete_path_top8": 0.202073,
+        "first_set_complete_path_top1": 0.033679,
+        "first_set_complete_path_top3": 0.101036,
+        "first_set_complete_path_top8": 0.199482,
         "storyline_match_score_top1": 0.346253,
         "storyline_match_score_top3": 0.658915,
         "match_set_sequence_top1": 0.023256,
@@ -5377,7 +5576,7 @@
         "full_match_game_path_top1": 0.0,
         "full_match_game_path_top2": 0.0,
         "full_match_game_path_top4": 0.0,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.094789
+        "full_match_game_path_mean_top1_prefix_fraction": 0.094151
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
