@@ -16,6 +16,7 @@ on:
       - 'backend/player_dna_ordering_authority_audit.py'
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_shadow_profiles.py'
+      - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_opponent_context_audit.py'
       - 'backend/player_dna_opponent_adjustment_audit.py'
       - 'backend/player_dna_pressure_challenger.py'
@@ -43,6 +44,7 @@ on:
       - 'tests/test_player_dna_ordering_authority_audit.py'
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_shadow_profiles.py'
+      - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_opponent_context_audit.py'
       - 'tests/test_player_dna_opponent_adjustment_audit.py'
       - 'tests/test_player_dna_pressure_challenger.py'
@@ -91,7 +93,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -119,6 +121,107 @@ jobs:
 
       - name: Build leakage-safe Player DNA shadow profiles (zero network)
         run: python backend/player_dna_shadow_profiles.py
+
+      - name: Audit Phase-3 Player DNA matchup readiness (SHADOW, zero network)
+        run: python backend/player_dna_matchup_readiness_audit.py
+
+      - name: Guard Phase-3 matchup readiness isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_matchup_readiness_audit.json')
+          if not p.exists():
+              raise SystemExit('player_dna_matchup_readiness_audit.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_MATCHUP_READINESS_AUDIT_ONLY':
+              raise SystemExit('Matchup readiness audit mode invalid')
+          if report.get('gate') != 'AUDIT_ONLY_NO_MATCHUP_FEATURES':
+              raise SystemExit('Matchup readiness audit crossed its audit-only gate')
+          if report.get('phase') != 'PHASE_3_MATCHUP_ENGINE_READINESS':
+              raise SystemExit('Matchup readiness audit phase drifted')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'training_join_enabled',
+              'matchup_feature_activation_enabled',
+              'canonical_profile_write_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Matchup readiness isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'canonical_strict_as_of_profiles_only',
+              'same_timestamp_matches_never_count_as_prior',
+              'stable_provider_player_ids_only',
+              'reciprocal_target_match_pairs_only',
+              'no_fuzzy_identity',
+              'no_matchup_score_computed',
+              'no_interaction_weight_tuned',
+              'no_model_threshold_activated',
+              'coverage_is_readiness_not_signal',
+              'future_matchup_candidate_requires_chronological_walk_forward',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Matchup readiness contract violation: {key}')
+
+          expected_interactions = {
+              'serve_vs_return',
+              'hold_vs_break',
+              'bp_save_vs_conversion',
+              'deuce_serve_vs_return',
+              'thirty_all_serve_vs_return',
+              'early_game_1_hold_vs_break',
+              'early_game_2_hold_vs_break',
+              'early_game_3_hold_vs_break',
+              'tiebreak_vs_tiebreak',
+          }
+          interactions = report.get('canonical_interactions') or {}
+          if set(interactions) != expected_interactions:
+              raise SystemExit(f'Matchup interaction set drifted: {sorted(interactions)}')
+
+          required_gaps = {
+              'first_serve_vs_first_return',
+              'second_serve_vs_second_return',
+              'ace_vs_contact_return',
+              'double_fault_vs_return_pressure',
+              'after_break_response',
+              'first_set_vs_first_set',
+              'stamina_long_match_bo5',
+          }
+          gaps = report.get('not_canonically_available') or {}
+          if set(gaps) != required_gaps:
+              raise SystemExit(f'Matchup readiness gap set drifted: {sorted(gaps)}')
+          if not all((gaps[name] or {}).get('requires_separate_source_readiness_audit') is True for name in gaps):
+              raise SystemExit('Missing matchup family escaped separate source-readiness requirement')
+
+          if int(report.get('paired_matches') or 0) <= 0:
+              raise SystemExit('Matchup readiness audit found no reciprocal target matches')
+          if int(report.get('directional_matchups') or 0) != 2 * int(report.get('paired_matches') or 0):
+              raise SystemExit('Matchup readiness directional accounting drifted')
+
+          serve_at1 = (
+              (((report.get('coverage') or {}).get('overall') or {})
+              .get('serve_vs_return') or {})
+              .get('by_threshold') or {}
+          ).get('1') or {}
+          if int(serve_at1.get('ready_directions') or 0) <= 0:
+              raise SystemExit('Matchup readiness found no usable serve-vs-return directions')
+
+          print(
+              'Matchup readiness: '
+              f"paired_matches={report.get('paired_matches')} "
+              f"directions={report.get('directional_matchups')} "
+              f"serve_at1={serve_at1.get('ready_directions')} "
+              f"serve_at1_rate={serve_at1.get('rate')}"
+          )
+          PY
 
       - name: Audit Player DNA opponent/common-opponent context (SHADOW, zero network)
         run: python backend/player_dna_opponent_context_audit.py
@@ -2103,6 +2206,7 @@ jobs:
             frontend/data/player_dna_ordering_authority_audit.json
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
+            frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
