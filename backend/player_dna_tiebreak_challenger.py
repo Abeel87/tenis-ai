@@ -151,7 +151,7 @@ def enrich_feature_rows(
     rows: list[dict[str, Any]] = []
     counts: dict[str, int] = defaultdict(int)
     for row in base_rows:
-        if row.get("is_tiebreak") is not True:
+        if not bool(row.get("is_tiebreak")):
             continue
 
         counts["tiebreak_base_rows"] += 1
