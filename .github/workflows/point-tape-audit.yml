@@ -1182,6 +1182,23 @@ jobs:
           for key in ('tour', 'surface', 'tour_surface', 'coverage'):
               if not isinstance(trajectory_segments.get(key), dict):
                   raise SystemExit(f'Player DNA trajectory segment diagnostics missing: {key}')
+          trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
+          trajectory_unsettled = trajectory_observability.get('unsettled') or {}
+          trajectory_buckets = trajectory_unsettled.get('buckets') or {}
+          if sum(int(v or 0) for v in trajectory_buckets.values()) != int((trajectory_evidence.get('counts') or {}).get('unsettled_snapshots') or 0):
+              raise SystemExit('Player DNA trajectory unsettled observability count drift')
+          if 'does not imply cancellation' not in str(trajectory_unsettled.get('meaning') or ''):
+              raise SystemExit('Player DNA trajectory unsettled meaning drift')
+          trajectory_latency = trajectory_observability.get('settlement_latency') or {}
+          if int(trajectory_latency.get('n') or 0) > int((trajectory_evidence.get('counts') or {}).get('settled_snapshots') or 0):
+              raise SystemExit('Player DNA trajectory settlement latency count exceeds settled snapshots')
+          if 'first workflow observation' not in str(trajectory_latency.get('meaning') or ''):
+              raise SystemExit('Player DNA trajectory settlement latency meaning drift')
+          trajectory_drift = trajectory_observability.get('schedule_drift') or {}
+          if int(trajectory_drift.get('count') or 0) < 0:
+              raise SystemExit('Player DNA trajectory schedule drift count invalid')
+          if 'never rewritten' not in str(trajectory_drift.get('meaning') or ''):
+              raise SystemExit('Player DNA trajectory schedule drift rewrite policy drift')
 
           if prospective.get('market_scope') != 'DURATION_MARKETS_ONLY':
               raise SystemExit('Player DNA prospective validation scope must remain duration-only')
