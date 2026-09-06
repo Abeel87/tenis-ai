@@ -249,3 +249,23 @@ def test_player_dna_dynamic_ui_describes_actual_nested_verdict_instead_of_readin
     assert "verdict.emitted===true" in js
     assert "Global/per-market support jest gotowy, ale verdict nadal blokuje brak direct tour|surface support" in js
     assert "Performance verdict został policzony wyłącznie z bieżącej generacji policy" in js
+
+
+
+def test_player_dna_trajectory_ui_exposes_sample_readiness_without_performance_verdict():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "trajectory.sample_readiness" in js
+    assert "overall_settled_snapshots" in js
+    assert "ready_primary_metric_count" in js
+    assert "ready_direct_tour_surface_segments" in js
+    assert "blocked_direct_tour_surface_segments" in js
+    assert "direct_tour_surface_minimum_reuses_existing_prospective_gate" in js
+    assert "Próbka trajectory" in js
+    assert "sample-size gate, nie verdict" in js
+    assert "Sample readiness" in js
+    assert "Minimum per direct segment" in js
+    assert "Gotowość próbki nie jest performance verdictem" in js
+    assert "Nie ustawiamy jeszcze arbitralnego progu skuteczności" in js
+    assert "Performance verdict" in js
+    assert "<b>NIE</b>" in js
