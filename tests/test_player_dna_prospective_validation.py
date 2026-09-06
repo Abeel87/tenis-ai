@@ -397,6 +397,9 @@ def test_duration_market_scope_is_exact_and_candidate_only():
     )
 
 
+DYNAMIC_POLICY_FP = "a" * 64
+
+
 def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAMIC_CANDIDATE"):
     scheduled = scheduled or datetime(2026, 9, 6, 12, 0, tzinfo=timezone.utc)
     markets = {
@@ -442,6 +445,10 @@ def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAM
         "auto_promote": False,
         "candidate_only": True,
         "prospective_validation_required": True,
+        "market_policy_source": "segment_consensus_shadow_policy",
+        "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
+        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
+        "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [{
             "match_id": match_id,
             "scheduled_time": scheduled.isoformat(),
@@ -481,6 +488,7 @@ def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_market
 
     snapshot = dynamic_evidence["snapshots"][0]
     assert snapshot["captured_pre_match"] is True
+    assert snapshot["market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_FP
     assert set(snapshot["candidate_markets"]) == {"match_p1_win"}
     assert snapshot["candidate_markets"]["match_p1_win"]["profile_reference_probability"] == 0.55
     assert snapshot["candidate_markets"]["match_p1_win"]["dynamic_candidate_probability"] == 0.65
@@ -491,7 +499,13 @@ def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_market
         _walk_forward(),
         _point_rows_for_settled("dyn-1"),
         first,
-        current_dynamic={},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-settled-contract",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
         now=now + timedelta(hours=4),
     )
     dynamic_second = second["dynamic_lean_evidence"]
@@ -578,6 +592,7 @@ def _dynamic_settled_snapshot(
         "p1": f"A{match_id}",
         "p2": f"B{match_id}",
         "source_model_fingerprint_sha256": "lean-fingerprint",
+        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
         "market_segment_key": segment,
         "candidate_markets": {
             market: {
@@ -608,7 +623,13 @@ def test_dynamic_performance_verdict_waits_for_direct_tour_surface_market_suppor
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
-        current_dynamic={},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
         now=now,
     )
 
@@ -650,7 +671,13 @@ def test_dynamic_performance_verdict_emits_robust_only_after_global_and_direct_j
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
-        current_dynamic={},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
         now=now,
     )
 
@@ -700,7 +727,13 @@ def test_dynamic_performance_verdict_is_not_proven_when_supported_joint_segment_
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
-        current_dynamic={},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
         now=now,
     )
 
@@ -849,7 +882,13 @@ def test_trajectory_prospective_ledger_freezes_pre_match_ranked_paths_without_cl
         _walk_forward(),
         [],
         {},
-        current_dynamic={},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
         now=now,
     )
 
