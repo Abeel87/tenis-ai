@@ -746,9 +746,15 @@ jobs:
               raise SystemExit('Current dynamic lean market-policy source drift')
           if current_dynamic.get('market_policy_source_path') != 'backend/player_dna_market_walk_forward.py':
               raise SystemExit('Current dynamic lean market-policy source path drift')
-          current_dynamic_policy_fingerprint = current_dynamic.get('market_policy_source_fingerprint_sha256')
-          if not isinstance(current_dynamic_policy_fingerprint, str) or len(current_dynamic_policy_fingerprint) != 64:
+          current_dynamic_policy_source_fingerprint = current_dynamic.get('market_policy_source_fingerprint_sha256')
+          if not isinstance(current_dynamic_policy_source_fingerprint, str) or len(current_dynamic_policy_source_fingerprint) != 64:
               raise SystemExit('Current dynamic lean market-policy source fingerprint missing')
+          current_dynamic_policy_contract_id = current_dynamic.get('market_policy_contract_id')
+          current_dynamic_policy_contract_fingerprint = current_dynamic.get('market_policy_contract_fingerprint_sha256')
+          if not isinstance(current_dynamic_policy_contract_id, str) or not current_dynamic_policy_contract_id:
+              raise SystemExit('Current dynamic lean semantic policy contract id missing')
+          if not isinstance(current_dynamic_policy_contract_fingerprint, str) or len(current_dynamic_policy_contract_fingerprint) != 64:
+              raise SystemExit('Current dynamic lean semantic policy contract fingerprint missing')
           if current_dynamic.get('market_policy_provenance_required_for_prospective_verdict') is not True:
               raise SystemExit('Current dynamic lean prospective policy provenance requirement disabled')
           if (current_dynamic.get('lean_model_fit') or {}).get('converged') is not True:
@@ -1108,10 +1114,16 @@ jobs:
           dynamic_provenance_policy = dynamic_provenance.get('policy') or {}
           if dynamic_evidence.get('source_contract_valid') is not True:
               raise SystemExit('Player DNA dynamic prospective source contract invalid')
-          if dynamic_provenance.get('current_market_policy_source_fingerprint_sha256') != current_dynamic_policy_fingerprint:
-              raise SystemExit('Player DNA dynamic prospective/current market-policy fingerprint mismatch')
-          if dynamic_provenance_policy.get('new_snapshots_require_market_policy_source_fingerprint') is not True:
-              raise SystemExit('Player DNA dynamic new snapshots lost policy provenance')
+          if dynamic_provenance.get('current_market_policy_contract_id') != current_dynamic_policy_contract_id:
+              raise SystemExit('Player DNA dynamic prospective/current semantic policy id mismatch')
+          if dynamic_provenance.get('current_market_policy_contract_fingerprint_sha256') != current_dynamic_policy_contract_fingerprint:
+              raise SystemExit('Player DNA dynamic prospective/current semantic policy fingerprint mismatch')
+          if dynamic_provenance.get('current_market_policy_source_fingerprint_sha256') != current_dynamic_policy_source_fingerprint:
+              raise SystemExit('Player DNA dynamic prospective/current source fingerprint audit mismatch')
+          if dynamic_provenance_policy.get('new_snapshots_require_market_policy_contract_fingerprint') is not True:
+              raise SystemExit('Player DNA dynamic new snapshots lost semantic policy provenance')
+          if dynamic_provenance_policy.get('source_file_fingerprint_is_audit_only_not_generation_identity') is not True:
+              raise SystemExit('Player DNA dynamic source file fingerprint became generation identity')
           if dynamic_provenance_policy.get('legacy_unknown_snapshots_remain_immutable') is not True:
               raise SystemExit('Player DNA dynamic legacy snapshots may not be rewritten')
           if dynamic_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is not True:
