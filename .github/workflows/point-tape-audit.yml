@@ -705,6 +705,19 @@ jobs:
               raise SystemExit('Dynamic lean strict consensus cannot claim direct joint validation')
           if consensus.get('prospective_validation_required') is not True:
               raise SystemExit('Dynamic lean strict consensus must require prospective validation')
+          consensus_contract_id = consensus.get('policy_contract_id')
+          consensus_contract_fingerprint = consensus.get('policy_contract_fingerprint_sha256')
+          consensus_contract = consensus.get('policy_contract') or {}
+          if consensus_contract_id != 'strict-marginal-agreement-mean-direction-v1':
+              raise SystemExit('Dynamic lean semantic consensus policy id drift')
+          if not isinstance(consensus_contract_fingerprint, str) or len(consensus_contract_fingerprint) != 64:
+              raise SystemExit('Dynamic lean semantic consensus policy fingerprint missing')
+          if consensus_contract.get('policy_id') != consensus_contract_id:
+              raise SystemExit('Dynamic lean semantic consensus policy contract mismatch')
+          if consensus_contract.get('tour_and_surface_marginals_must_agree') is not True:
+              raise SystemExit('Dynamic lean semantic consensus lost marginal agreement requirement')
+          if consensus_contract.get('count_repeatability_without_mean_direction_is_insufficient') is not True:
+              raise SystemExit('Dynamic lean semantic consensus lost strict mean-direction requirement')
           consensus_policy = consensus.get('policy') or {}
           if consensus_policy.get('dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal') is not True:
               raise SystemExit('Dynamic lean strict candidate mean-positive policy drift')
