@@ -1,7 +1,9 @@
 import pytest
 
 from backend.player_dna_pressure_challenger import (
+    DEUCE_THIRTY_DIAGNOSTIC_NUMERIC,
     EARLY_GAME_DIAGNOSTIC_NUMERIC,
+    PRESSURE_FAMILY_FEATURES,
     PRESSURE_PRIMARY_NUMERIC,
     evaluate,
     enrich_feature_rows,
@@ -27,6 +29,10 @@ def _prior(
         "break_rate": brk if matches else None,
         "bp_save_rate": bp_save if matches else None,
         "bp_conversion_rate": bp_conv if matches else None,
+        "deuce_serve_win_rate": (serve - 0.02) if matches else None,
+        "deuce_return_win_rate": (ret + 0.02) if matches else None,
+        "thirty_all_serve_win_rate": (serve - 0.01) if matches else None,
+        "thirty_all_return_win_rate": (ret + 0.01) if matches else None,
     }
     for index in (1, 2, 3):
         row[f"early_service_game_{index}_hold_rate"] = (
@@ -193,10 +199,13 @@ def test_pressure_enrichment_uses_canonical_overall_surface_and_rolling_profiles
     assert row["receiver_surface_bp_conversion_rate"] == 0.45
     assert row["server_all_l5_hold_rate"] == 0.86
     assert row["receiver_surface_l20_break_rate"] == pytest.approx(0.27)
+    assert row["server_all_l5_deuce_serve_win_rate"] == pytest.approx(0.62)
+    assert row["receiver_surface_l5_thirty_all_return_win_rate"] == pytest.approx(0.39)
     assert row["server_all_l5_early_service_game_1_hold_rate"] == 0.90
     assert row["receiver_surface_l5_early_return_game_3_break_rate"] == 0.36
     assert counts["enrichment_counts"]["enriched_rows"] == 1
     assert counts["enrichment_counts"]["rows_with_any_primary_pressure_rate"] == 1
+    assert counts["enrichment_counts"]["rows_with_any_deuce_thirty_rate"] == 1
     assert counts["enrichment_counts"]["rows_with_any_early_game_rate"] == 1
 
 
@@ -231,3 +240,48 @@ def test_early_game_is_explicitly_diagnostic_only_even_without_enough_sample():
     assert contract["primary_raw_support_counts_are_features"] is False
     assert signal["early_game_diagnostic_affects_primary_signal"] is False
     assert signal["status"] == "INSUFFICIENT_SHADOW_SAMPLE"
+
+
+def test_predeclared_pressure_family_screen_is_non_overlapping_and_diagnostic():
+    families = PRESSURE_FAMILY_FEATURES
+    assert set(families) == {
+        "hold_break_long",
+        "hold_break_rolling",
+        "break_point_long",
+        "break_point_rolling",
+        "deuce_thirty_long",
+        "deuce_thirty_rolling",
+    }
+
+    seen = set()
+    for name, features in families.items():
+        assert features, name
+        current = set(features)
+        assert seen.isdisjoint(current), name
+        assert all("support" not in feature for feature in current)
+        seen |= current
+
+    deuce = set(DEUCE_THIRTY_DIAGNOSTIC_NUMERIC)
+    primary = set(PRESSURE_PRIMARY_NUMERIC)
+    early = set(EARLY_GAME_DIAGNOSTIC_NUMERIC)
+    assert deuce
+    assert deuce.isdisjoint(primary)
+    assert deuce.isdisjoint(early)
+
+
+def test_family_screen_requires_fresh_confirmation_before_activation():
+    report = evaluate([])
+    policy = report["family_screen_policy"]
+    contract = report["pressure_contract"]
+
+    assert policy["mode"] == "PREDECLARED_HISTORICAL_DIAGNOSTIC_SCREEN"
+    assert policy["predeclared_before_results"] is True
+    assert policy["families_are_non_overlapping_feature_sets"] is True
+    assert policy["multiple_family_comparison"] is True
+    assert policy["historical_screen_may_select_candidate_for_fresh_confirmation_only"] is True
+    assert policy["fresh_confirmation_required_before_any_activation"] is True
+    assert policy["historical_screen_cannot_promote_or_replace_reference"] is True
+    assert policy["no_threshold_tuning_from_screen_results"] is True
+    assert policy["same_holdout_and_walk_forward_windows_as_primary"] is True
+    assert contract["deuce_and_thirty_all_family_screen_is_diagnostic_only"] is True
+    assert report["candidate_may_replace_reference"] is False
