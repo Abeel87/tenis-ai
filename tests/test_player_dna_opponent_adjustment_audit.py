@@ -194,3 +194,36 @@ def test_same_surface_context_ignores_other_surface_matches():
     assert target["surface_support"] == 1
     assert target["opponent_return_surface_mean"] == 0.32
     assert target["opponent_serve_surface_mean"] == 0.68
+
+
+def test_support_counts_only_usable_bidirectional_opponent_profiles():
+    rows = []
+    rows += _match_rows(
+        "missing-profile",
+        "2026-01-01T10:00:00Z",
+        1,
+        9,
+        p2_prior=(0, 0.60, 0.40),
+    )
+    rows += _match_rows(
+        "ready-profile",
+        "2026-01-02T10:00:00Z",
+        1,
+        8,
+        p2_prior=(3, 0.64, 0.36),
+    )
+    rows += _match_rows(
+        "target",
+        "2026-01-03T10:00:00Z",
+        1,
+        7,
+        p2_prior=(3, 0.62, 0.38),
+    )
+
+    index, _ = build_opponent_context_index(rows)
+    target = index[("target", 1)]
+
+    assert target["overall_history_matches"] == 2
+    assert target["overall_support"] == 1
+    assert target["opponent_serve_mean"] == 0.64
+    assert target["opponent_return_mean"] == 0.36
