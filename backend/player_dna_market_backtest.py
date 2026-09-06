@@ -15,6 +15,7 @@ model parameters remain frozen from the training partition.
 """
 
 import gzip
+import hashlib
 import json
 import math
 from collections import Counter, defaultdict
@@ -73,11 +74,20 @@ ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 PROFILES = ROOT / "data" / "derived" / "player_dna" / "profile_snapshots.jsonl.gz"
 OUT = ROOT / "frontend" / "data" / "player_dna_market_backtest.json"
+SIMULATOR_SOURCE = ROOT / "backend" / "player_dna_tennis_simulator.py"
 
 VERSION = "player-dna-market-backtest-v1"
 MODE = "SHADOW_BACKTEST_ONLY"
 MIN_PRIOR_MATCHES = 3
 MIN_SET_SHAPE_BASELINE_MATCHES = 20
+def _sha256_file(path: Path) -> str | None:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return None
+    return hashlib.sha256(payload).hexdigest()
+
+
 BINARY_MARKETS = (
     "match_p1_win",
     "first_set_p1_win",
@@ -1656,6 +1666,12 @@ def evaluate_backtest(
         "binary_markets": binary,
         "categorical_markets": categorical,
         "trajectory_validation": trajectory_validation,
+        "trajectory_simulator_provenance": {
+            "source_path": "backend/player_dna_tennis_simulator.py",
+            "source_sha256": _sha256_file(SIMULATOR_SOURCE),
+            "binding": "THIS_HISTORICAL_TRAJECTORY_VALIDATION_WAS_GENERATED_WITH_THIS_SIMULATOR_SOURCE",
+            "production_gate": False,
+        },
         "summary": {
             "binary_markets_evaluated_ge_100": len(evaluated),
             "binary_markets_with_positive_brier_gain": positive,
@@ -1678,6 +1694,7 @@ def build() -> dict[str, Any]:
         "counts": report.get("counts"),
         "summary": report.get("summary"),
         "trajectory_validation": report.get("trajectory_validation"),
+        "trajectory_simulator_provenance": report.get("trajectory_simulator_provenance"),
         "production_influence": report.get("production_influence"),
     }, ensure_ascii=False))
     return report
