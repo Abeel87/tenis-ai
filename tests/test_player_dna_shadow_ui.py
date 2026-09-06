@@ -189,3 +189,16 @@ def test_player_dna_trajectory_ui_exposes_simulator_generation_provenance():
     assert "Simulator generations" in js
     assert "przyszły verdict musi liczyć je osobno" in js
     assert "Legacy bez fingerprintu" in js
+
+
+
+def test_player_dna_dynamic_ui_exposes_policy_generation_isolation_for_verdict():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "market_policy_provenance" in js
+    assert "known_generation_count" in js
+    assert "legacy_unknown_snapshots" in js
+    assert "verdict_excluded_snapshots" in js
+    assert "Policy generations" in js
+    assert "Verdict liczy wyłącznie bieżącą generację strict segment-consensus" in js
+    assert "legacy bez fingerprintu" in js
