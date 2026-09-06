@@ -19,9 +19,9 @@
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
     "previous_snapshot_count": 56,
-    "current_snapshot_count_before_retention": 56,
+    "current_snapshot_count_before_retention": 115,
     "preserved_snapshots": 56,
-    "new_snapshots": 0,
+    "new_snapshots": 59,
     "newly_settled": 4,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
@@ -40,60 +40,31 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 56
+    "current_snapshot_count_after_retention": 115
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 30,
-        "due_within_6h": 0,
-        "overdue_6_24h": 4,
+        "upcoming": 87,
+        "due_within_6h": 2,
+        "overdue_6_24h": 0,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
         "unparseable_schedule": 0
       },
-      "overdue_samples": [
-        {
-          "match_id": "186581",
-          "scheduled_time": "2026-09-05T15:00:00+00:00",
-          "hours_since_scheduled": 16.89,
-          "p1": "Alexander Blockx",
-          "p2": "Flavio Cobolli"
-        },
-        {
-          "match_id": "186583",
-          "scheduled_time": "2026-09-05T15:00:00+00:00",
-          "hours_since_scheduled": 16.89,
-          "p1": "Francisco Cerundolo",
-          "p2": "Taylor Fritz"
-        },
-        {
-          "match_id": "186631",
-          "scheduled_time": "2026-09-05T15:00:00+00:00",
-          "hours_since_scheduled": 16.89,
-          "p1": "Botic Van De Zandschulp",
-          "p2": "Zizou Bergs"
-        },
-        {
-          "match_id": "186652",
-          "scheduled_time": "2026-09-05T15:00:00+00:00",
-          "hours_since_scheduled": 16.89,
-          "p1": "Alexander Zverev",
-          "p2": "Alejandro Tabilo"
-        }
-      ]
+      "overdue_samples": []
     },
     "settlement_latency": {
-      "n": 22,
-      "median_hours": 14.437,
-      "p90_hours": 22.011,
+      "n": 26,
+      "median_hours": 15.999,
+      "p90_hours": 21.611,
       "max_hours": 23.888,
       "negative_latency_count": 0,
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 5,
+      "count": 18,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
@@ -125,46 +96,106 @@
           "frozen_scheduled_time": "2026-09-06T15:00:00+00:00",
           "current_scheduled_time": "2026-09-06T18:00:00+00:00",
           "drift_minutes": 180.0
+        },
+        {
+          "match_id": "187183",
+          "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T11:40:00+00:00",
+          "drift_minutes": 10.0
+        },
+        {
+          "match_id": "186964",
+          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+          "drift_minutes": 5.0
+        },
+        {
+          "match_id": "187166",
+          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+          "drift_minutes": 5.0
+        },
+        {
+          "match_id": "187043",
+          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+          "drift_minutes": 5.0
+        },
+        {
+          "match_id": "187045",
+          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+          "drift_minutes": 5.0
         }
       ]
     }
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 22,
+      "settled": 26,
       "required": 150,
-      "remaining": 128,
+      "remaining": 124,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 22,
+        "settled": 26,
         "required": 150,
-        "remaining": 128,
+        "remaining": 124,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 22,
+        "settled": 26,
         "required": 150,
-        "remaining": 128,
+        "remaining": 124,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 22,
+        "settled": 26,
         "required": 150,
-        "remaining": 128,
+        "remaining": 124,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 22,
+        "settled": 26,
         "required": 150,
-        "remaining": 128,
+        "remaining": 124,
         "support_sufficient": false
       }
     },
     "segments": {
-      "tour": {},
-      "surface": {}
+      "tour": {
+        "atp": {
+          "snapshots": 23,
+          "settled": 15,
+          "required": 30,
+          "remaining": 15,
+          "support_sufficient": false
+        },
+        "challenger": {
+          "snapshots": 92,
+          "settled": 11,
+          "required": 30,
+          "remaining": 19,
+          "support_sufficient": false
+        }
+      },
+      "surface": {
+        "clay": {
+          "snapshots": 57,
+          "settled": 9,
+          "required": 30,
+          "remaining": 21,
+          "support_sufficient": false
+        },
+        "hard": {
+          "snapshots": 58,
+          "settled": 17,
+          "required": 30,
+          "remaining": 13,
+          "support_sufficient": false
+        }
+      }
     },
     "segment_support_ready": false,
     "ready_for_performance_verdict": false,
@@ -179,101 +210,107 @@
     "requires_walk_forward_robust": true,
     "requires_repeatable_tour": true,
     "requires_repeatable_surface": true,
-    "supported_tours": [],
-    "supported_surfaces": [],
+    "supported_tours": [
+      "atp",
+      "challenger"
+    ],
+    "supported_surfaces": [
+      "clay",
+      "hard"
+    ],
     "minimum_pre_match_lead_minutes": 5,
     "post_result_snapshot_forbidden": true
   },
   "source": {
     "walk_forward_version": "player-dna-hold-walk-forward-v1",
-    "walk_forward_signal": "HOLD_CALIBRATION_WALK_FORWARD_NOT_YET_ROBUST",
+    "walk_forward_signal": "HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW",
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 105,
-    "current_eligible_by_segment": 0,
-    "snapshots": 56,
-    "settled_snapshots": 22,
-    "unsettled_snapshots": 34,
+    "current_simulated_matches": 103,
+    "current_eligible_by_segment": 87,
+    "snapshots": 115,
+    "settled_snapshots": 26,
+    "unsettled_snapshots": 89,
     "label_counts": {
-      "matches_seen": 3448,
-      "settled_labels": 3143,
+      "matches_seen": 3453,
+      "settled_labels": 3148,
       "incomplete_or_unsettled": 305
     }
   },
   "evaluation": {
-    "settled_matches": 22,
+    "settled_matches": 26,
     "markets": {
       "first_set_tiebreak": {
-        "n": 22,
-        "raw_brier": 0.177308,
-        "calibrated_brier": 0.177831,
-        "brier_gain_calibrated_vs_raw": -0.000523,
+        "n": 26,
+        "raw_brier": 0.179666,
+        "calibrated_brier": 0.180179,
+        "brier_gain_calibrated_vs_raw": -0.000513,
         "improved": false
       },
       "first_set_over_8.5": {
-        "n": 22,
-        "raw_brier": 0.144276,
-        "calibrated_brier": 0.147288,
-        "brier_gain_calibrated_vs_raw": -0.003012,
+        "n": 26,
+        "raw_brier": 0.154806,
+        "calibrated_brier": 0.155252,
+        "brier_gain_calibrated_vs_raw": -0.000447,
         "improved": false
       },
       "first_set_over_9.5": {
-        "n": 22,
-        "raw_brier": 0.244483,
-        "calibrated_brier": 0.243681,
-        "brier_gain_calibrated_vs_raw": 0.000802,
+        "n": 26,
+        "raw_brier": 0.254069,
+        "calibrated_brier": 0.250488,
+        "brier_gain_calibrated_vs_raw": 0.003581,
         "improved": true
       },
       "first_set_over_10.5": {
-        "n": 22,
-        "raw_brier": 0.182733,
-        "calibrated_brier": 0.179503,
-        "brier_gain_calibrated_vs_raw": 0.003231,
+        "n": 26,
+        "raw_brier": 0.184605,
+        "calibrated_brier": 0.181241,
+        "brier_gain_calibrated_vs_raw": 0.003364,
         "improved": true
       }
     },
     "duration_markets_improved": 2,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": -0.003012
+    "worst_market_brier_gain": -0.000513
   },
   "segment_evaluation": {
     "tour": {
       "atp": {
-        "settled_matches": 11,
+        "settled_matches": 15,
         "markets": {
           "first_set_tiebreak": {
-            "n": 11,
-            "raw_brier": 0.206756,
-            "calibrated_brier": 0.207535,
-            "brier_gain_calibrated_vs_raw": -0.000779,
+            "n": 15,
+            "raw_brier": 0.202991,
+            "calibrated_brier": 0.203684,
+            "brier_gain_calibrated_vs_raw": -0.000693,
             "improved": false
           },
           "first_set_over_8.5": {
-            "n": 11,
-            "raw_brier": 0.092917,
-            "calibrated_brier": 0.096909,
-            "brier_gain_calibrated_vs_raw": -0.003991,
-            "improved": false
+            "n": 15,
+            "raw_brier": 0.124865,
+            "calibrated_brier": 0.124147,
+            "brier_gain_calibrated_vs_raw": 0.000717,
+            "improved": true
           },
           "first_set_over_9.5": {
-            "n": 11,
-            "raw_brier": 0.225562,
-            "calibrated_brier": 0.228918,
-            "brier_gain_calibrated_vs_raw": -0.003356,
-            "improved": false
+            "n": 15,
+            "raw_brier": 0.247222,
+            "calibrated_brier": 0.244654,
+            "brier_gain_calibrated_vs_raw": 0.002569,
+            "improved": true
           },
           "first_set_over_10.5": {
-            "n": 11,
-            "raw_brier": 0.204389,
-            "calibrated_brier": 0.200204,
-            "brier_gain_calibrated_vs_raw": 0.004185,
+            "n": 15,
+            "raw_brier": 0.201858,
+            "calibrated_brier": 0.197696,
+            "brier_gain_calibrated_vs_raw": 0.004162,
             "improved": true
           }
         },
-        "duration_markets_improved": 1,
+        "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.003991,
+        "worst_market_brier_gain": -0.000693,
         "support_sufficient": false
       },
       "challenger": {
@@ -353,40 +390,40 @@
         "support_sufficient": false
       },
       "hard": {
-        "settled_matches": 13,
+        "settled_matches": 17,
         "markets": {
           "first_set_tiebreak": {
-            "n": 13,
-            "raw_brier": 0.181368,
-            "calibrated_brier": 0.180679,
-            "brier_gain_calibrated_vs_raw": 0.00069,
+            "n": 17,
+            "raw_brier": 0.18402,
+            "calibrated_brier": 0.1836,
+            "brier_gain_calibrated_vs_raw": 0.00042,
             "improved": true
           },
           "first_set_over_8.5": {
-            "n": 13,
-            "raw_brier": 0.083997,
-            "calibrated_brier": 0.088818,
-            "brier_gain_calibrated_vs_raw": -0.004821,
+            "n": 17,
+            "raw_brier": 0.114284,
+            "calibrated_brier": 0.114755,
+            "brier_gain_calibrated_vs_raw": -0.000471,
             "improved": false
           },
           "first_set_over_9.5": {
-            "n": 13,
-            "raw_brier": 0.242622,
-            "calibrated_brier": 0.241455,
-            "brier_gain_calibrated_vs_raw": 0.001167,
+            "n": 17,
+            "raw_brier": 0.25772,
+            "calibrated_brier": 0.25239,
+            "brier_gain_calibrated_vs_raw": 0.00533,
             "improved": true
           },
           "first_set_over_10.5": {
-            "n": 13,
-            "raw_brier": 0.187578,
-            "calibrated_brier": 0.182357,
-            "brier_gain_calibrated_vs_raw": 0.005221,
+            "n": 17,
+            "raw_brier": 0.189301,
+            "calibrated_brier": 0.184344,
+            "brier_gain_calibrated_vs_raw": 0.004957,
             "improved": true
           }
         },
         "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.004821,
+        "worst_market_brier_gain": -0.000471,
         "support_sufficient": false
       }
     }
@@ -447,7 +484,7 @@
       "current_snapshot_count_before_retention": 82,
       "preserved_snapshots": 82,
       "new_snapshots": 0,
-      "newly_settled": 1,
+      "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -471,8 +508,8 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 81,
-          "due_within_6h": 0,
+          "upcoming": 79,
+          "due_within_6h": 2,
           "overdue_6_24h": 0,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
@@ -489,9 +526,70 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 0,
+        "count": 13,
         "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
-        "samples": []
+        "samples": [
+          {
+            "match_id": "187183",
+            "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
+            "drift_minutes": 10.0
+          },
+          {
+            "match_id": "186964",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187166",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187043",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187045",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187083",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187084",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187086",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187087",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187048",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          }
+        ]
       }
     },
     "evidence_readiness": {
@@ -514,9 +612,9 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 282,
-      "current_rows_with_dynamic_candidates": 81,
-      "current_dynamic_candidate_market_slots": 342,
+      "current_dynamic_matches": 258,
+      "current_rows_with_dynamic_candidates": 79,
+      "current_dynamic_candidate_market_slots": 336,
       "snapshots": 82,
       "ledger_settled_snapshots": 1,
       "ledger_unsettled_snapshots": 81,
@@ -3195,6 +3293,8 @@
       "first_set_complete_path_ranked": true,
       "match_set_sequence_ranked": true,
       "full_match_exact_game_paths_are_diagnostic_only": true,
+      "primary_metrics_use_current_simulator_generation_only": true,
+      "legacy_and_other_simulator_generations_are_diagnostic_only": true,
       "no_trajectory_performance_threshold_invented_yet": true
     },
     "ledger_integrity": {
@@ -3203,9 +3303,9 @@
       "settlement_regression_forbidden": true,
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
-      "previous_snapshot_count": 0,
+      "previous_snapshot_count": 105,
       "current_snapshot_count_before_retention": 105,
-      "new_snapshots": 105,
+      "new_snapshots": 0,
       "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
@@ -3221,8 +3321,8 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 105,
-          "due_within_6h": 0,
+          "upcoming": 101,
+          "due_within_6h": 4,
           "overdue_6_24h": 0,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
@@ -3239,19 +3339,128 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 0,
+        "count": 13,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
-        "samples": []
+        "samples": [
+          {
+            "match_id": "187183",
+            "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
+            "drift_minutes": 10.0
+          },
+          {
+            "match_id": "186964",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187166",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187043",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187045",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187083",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187084",
+            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187086",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187087",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          },
+          {
+            "match_id": "187048",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
+            "drift_minutes": 5.0
+          }
+        ]
       }
     },
     "counts": {
-      "current_simulated_matches": 105,
-      "new_current_pre_match_snapshots": 105,
+      "current_simulated_matches": 103,
+      "new_current_pre_match_snapshots": 0,
       "snapshots": 105,
+      "ledger_settled_snapshots": 0,
+      "ledger_unsettled_snapshots": 105,
+      "current_generation_snapshots": 105,
+      "evaluation_excluded_snapshots": 0,
       "settled_snapshots": 0,
       "unsettled_snapshots": 105
     },
     "evaluation": {
+      "settled_matches": 0,
+      "checkpoint_neutral_start_server": {
+        "after_2_games": {
+          "n": 0,
+          "top1": null,
+          "top3": null
+        },
+        "after_4_games": {
+          "n": 0,
+          "top1": null,
+          "top3": null
+        },
+        "after_6_games": {
+          "n": 0,
+          "top1": null,
+          "top3": null
+        }
+      },
+      "primary_storyline_match_score_conditioned_on_observed_first_server": {
+        "n": 0,
+        "top1": null,
+        "top3": null
+      },
+      "first_set_complete_path_conditioned_on_observed_first_server": {
+        "n": 0,
+        "top1": null,
+        "top3": null,
+        "top8": null
+      },
+      "match_set_sequence_conditioned_on_observed_first_server": {
+        "n": 0,
+        "top1": null,
+        "top3": null,
+        "top12": null
+      },
+      "full_match_game_path_conditioned_on_observed_first_server": {
+        "n": 0,
+        "top1": null,
+        "top2": null,
+        "top4": null,
+        "mean_best_prefix_fraction_top4": null
+      }
+    },
+    "ledger_evaluation": {
       "settled_matches": 0,
       "checkpoint_neutral_start_server": {
         "after_2_games": {
@@ -4086,6 +4295,797 @@
         "performance_verdict_forbidden": true
       }
     },
+    "ledger_segment_diagnostics": {
+      "tour": {
+        "atp": {
+          "snapshots": 8,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "challenger": {
+          "snapshots": 82,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "itf": {
+          "snapshots": 6,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "juniors": {
+          "snapshots": 1,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "wta": {
+          "snapshots": 8,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        }
+      },
+      "surface": {
+        "clay": {
+          "snapshots": 51,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "grass": {
+          "snapshots": 1,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "hard": {
+          "snapshots": 53,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        }
+      },
+      "tour_surface": {
+        "atp|hard": {
+          "snapshots": 8,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "challenger|clay": {
+          "snapshots": 48,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "challenger|grass": {
+          "snapshots": 1,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "challenger|hard": {
+          "snapshots": 33,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "itf|clay": {
+          "snapshots": 3,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "itf|hard": {
+          "snapshots": 3,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "juniors|hard": {
+          "snapshots": 1,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        },
+        "wta|hard": {
+          "snapshots": 8,
+          "settled": 0,
+          "evaluation": {
+            "settled_matches": 0,
+            "checkpoint_neutral_start_server": {
+              "after_2_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_4_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              },
+              "after_6_games": {
+                "n": 0,
+                "top1": null,
+                "top3": null
+              }
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null
+            },
+            "first_set_complete_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top8": null
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top3": null,
+              "top12": null
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+              "n": 0,
+              "top1": null,
+              "top2": null,
+              "top4": null,
+              "mean_best_prefix_fraction_top4": null
+            }
+          }
+        }
+      },
+      "coverage": {
+        "tour_segments_seen": 5,
+        "surface_segments_seen": 3,
+        "tour_surface_segments_seen": 8,
+        "tour_segments_with_settled": 0,
+        "surface_segments_with_settled": 0,
+        "tour_surface_segments_with_settled": 0
+      },
+      "policy": {
+        "diagnostic_only": true,
+        "direct_tour_surface_rows_are_built_from_same_match_snapshots": true,
+        "marginal_tour_and_surface_results_never_imply_joint_validation": true,
+        "minimum_segment_sample_not_defined_yet": true,
+        "performance_verdict_forbidden": true
+      }
+    },
     "provenance": {
       "current_simulator_fingerprint_sha256": "3916fea065216302640ecc073e76554e8810b6053fd367796959f6e51b6b275d",
       "generations": {
@@ -4098,10 +5098,15 @@
       "known_generation_count": 1,
       "legacy_unknown_snapshots": 0,
       "current_generation_snapshots": 105,
+      "other_known_generation_snapshots": 0,
+      "evaluation_excluded_snapshots": 0,
       "mixed_known_generations": false,
       "policy": {
         "new_snapshots_require_current_simulator_fingerprint": true,
         "legacy_snapshots_are_never_rewritten_to_add_provenance": true,
+        "legacy_unknown_snapshots_are_diagnostic_only": true,
+        "current_generation_only_for_primary_prospective_metrics": true,
+        "other_known_generations_are_diagnostic_only": true,
         "future_trajectory_verdict_must_not_mix_simulator_generations": true,
         "current_generation_should_be_evaluated_separately": true
       }
@@ -4114,34 +5119,34 @@
       "source_backtest_version": "player-dna-market-backtest-v1",
       "source_backtest_signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
       "historical_sample": {
-        "settled_predictions": 384,
-        "checkpoint_after_2_games_n": 383,
-        "checkpoint_after_4_games_n": 383,
-        "checkpoint_after_6_games_n": 383,
-        "first_set_complete_path_n": 383,
-        "storyline_match_score_n": 384,
-        "match_set_sequence_n": 384,
-        "full_match_game_path_n": 378
+        "settled_predictions": 386,
+        "checkpoint_after_2_games_n": 385,
+        "checkpoint_after_4_games_n": 385,
+        "checkpoint_after_6_games_n": 385,
+        "first_set_complete_path_n": 385,
+        "storyline_match_score_n": 386,
+        "match_set_sequence_n": 386,
+        "full_match_game_path_n": 380
       },
       "metrics": {
-        "checkpoint_after_2_games_top1": 0.5953,
+        "checkpoint_after_2_games_top1": 0.594805,
         "checkpoint_after_2_games_top3": 1.0,
-        "checkpoint_after_4_games_top1": 0.409922,
-        "checkpoint_after_4_games_top3": 0.898172,
-        "checkpoint_after_6_games_top1": 0.339426,
-        "checkpoint_after_6_games_top3": 0.819843,
-        "first_set_complete_path_top1": 0.033943,
-        "first_set_complete_path_top3": 0.099217,
-        "first_set_complete_path_top8": 0.203655,
-        "storyline_match_score_top1": 0.348958,
-        "storyline_match_score_top3": 0.664062,
-        "match_set_sequence_top1": 0.020833,
-        "match_set_sequence_top3": 0.078125,
-        "match_set_sequence_top12": 0.190104,
+        "checkpoint_after_4_games_top1": 0.407792,
+        "checkpoint_after_4_games_top3": 0.896104,
+        "checkpoint_after_6_games_top1": 0.337662,
+        "checkpoint_after_6_games_top3": 0.820779,
+        "first_set_complete_path_top1": 0.033766,
+        "first_set_complete_path_top3": 0.101299,
+        "first_set_complete_path_top8": 0.2,
+        "storyline_match_score_top1": 0.34456,
+        "storyline_match_score_top3": 0.658031,
+        "match_set_sequence_top1": 0.023316,
+        "match_set_sequence_top3": 0.07772,
+        "match_set_sequence_top12": 0.19171,
         "full_match_game_path_top1": 0.0,
         "full_match_game_path_top2": 0.0,
         "full_match_game_path_top4": 0.0,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.097426
+        "full_match_game_path_mean_top1_prefix_fraction": 0.094399
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
@@ -88983,8 +89988,14 @@
         "first_set_over_9.5": 0.5621618769760853,
         "first_set_over_10.5": 0.29382096871200186
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": true,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": true
+      },
+      "settled_at": "2026-09-06T08:58:44.402880+00:00"
     },
     {
       "match_id": "186582",
@@ -89039,8 +90050,14 @@
         "first_set_over_9.5": 0.5588348879231977,
         "first_set_over_10.5": 0.29181423653262967
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-06T08:58:44.402880+00:00"
     },
     {
       "match_id": "186614",
@@ -89095,8 +90112,14 @@
         "first_set_over_9.5": 0.5557742968185708,
         "first_set_over_10.5": 0.289107159213302
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-06T08:58:44.402880+00:00"
     },
     {
       "match_id": "186632",
@@ -89182,8 +90205,14 @@
         "first_set_over_9.5": 0.5820913767223649,
         "first_set_over_10.5": 0.30948026917850724
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-06T08:58:44.402880+00:00"
     },
     {
       "match_id": "186752",
@@ -89993,6 +91022,1481 @@
         "first_set_over_8.5": 0.7915266368721826,
         "first_set_over_9.5": 0.5587906774324636,
         "first_set_over_10.5": 0.2912883070780463
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186882",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Fajing Sun",
+      "p2": "Jie Cui",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2039485389239457,
+        "first_set_over_8.5": 0.812748034995816,
+        "first_set_over_9.5": 0.5770575116499815,
+        "first_set_over_10.5": 0.3060985684491123
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18162861391275412,
+        "first_set_over_8.5": 0.7887552654980888,
+        "first_set_over_9.5": 0.5554825967847995,
+        "first_set_over_10.5": 0.2890345320123304
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186883",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Taro Daniel",
+      "p2": "Matthew Dellavedova",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1963273564565967,
+        "first_set_over_8.5": 0.802020345207443,
+        "first_set_over_9.5": 0.5654864568075219,
+        "first_set_over_10.5": 0.2974501182757148
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1779256214908094,
+        "first_set_over_8.5": 0.7829063688320058,
+        "first_set_over_9.5": 0.5494595585369533,
+        "first_set_over_10.5": 0.2847669782454492
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186884",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Yi Zhou",
+      "p2": "Sergey Fomin",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21653749299464,
+        "first_set_over_8.5": 0.8264653312189033,
+        "first_set_over_9.5": 0.5910073666487305,
+        "first_set_over_10.5": 0.3174434705283343
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.188358647077702,
+        "first_set_over_8.5": 0.7971490201769846,
+        "first_set_over_9.5": 0.5633375598925061,
+        "first_set_over_10.5": 0.2948859497504337
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186885",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Yu-Hsiou Hsu",
+      "p2": "Ilya Ivashka",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21050882988982664,
+        "first_set_over_8.5": 0.8221177624447825,
+        "first_set_over_9.5": 0.5874504817761107,
+        "first_set_over_10.5": 0.31388363612083575
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18468213991766286,
+        "first_set_over_8.5": 0.7937718575788204,
+        "first_set_over_9.5": 0.560802563642593,
+        "first_set_over_10.5": 0.29280025016801614
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186886",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Hayato Matsuoka",
+      "p2": "Jake Delaney",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.20921416963177153,
+        "first_set_over_8.5": 0.8180126391689518,
+        "first_set_over_9.5": 0.5820776973122804,
+        "first_set_over_10.5": 0.3102953302086063
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18459150867577534,
+        "first_set_over_8.5": 0.7921455830137651,
+        "first_set_over_9.5": 0.5584458007907511,
+        "first_set_over_10.5": 0.2912783072412471
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186887",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Rio Noguchi",
+      "p2": "Rigele Te",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1842427095715751,
+        "first_set_over_8.5": 0.7910988688347473,
+        "first_set_over_9.5": 0.5571252875644744,
+        "first_set_over_10.5": 0.2903888862455294
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17032825067677643,
+        "first_set_over_8.5": 0.7751029015612804,
+        "first_set_over_9.5": 0.5436770939575939,
+        "first_set_over_10.5": 0.2803782791309099
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186888",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Alexis Galarneau",
+      "p2": "Semen Pankin",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16449680381658147,
+        "first_set_over_8.5": 0.7646407448359895,
+        "first_set_over_9.5": 0.5328819943519458,
+        "first_set_over_10.5": 0.27298719455271825
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15900223959218704,
+        "first_set_over_8.5": 0.759476633139441,
+        "first_set_over_9.5": 0.529873578356926,
+        "first_set_over_10.5": 0.270764845145253
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186889",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Akira Santillan",
+      "p2": "Bernard Tomic",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21118656786095902,
+        "first_set_over_8.5": 0.8228713850612925,
+        "first_set_over_9.5": 0.5882229775764914,
+        "first_set_over_10.5": 0.3145060220865649
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18504104444753833,
+        "first_set_over_8.5": 0.7942294538181769,
+        "first_set_over_9.5": 0.5612357650984799,
+        "first_set_over_10.5": 0.2931208930512034
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "186890",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Marat Sharipov",
+      "p2": "Yosuke Watanuki",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18399422721739625,
+        "first_set_over_8.5": 0.7907788436424587,
+        "first_set_over_9.5": 0.5568215679891377,
+        "first_set_over_10.5": 0.29016435306151245
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17018999709984356,
+        "first_set_over_8.5": 0.7749145450647357,
+        "first_set_over_9.5": 0.5435066344245476,
+        "first_set_over_10.5": 0.28025767260998485
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187102",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Enzo Aguiard",
+      "p2": "Khumoyun Sultanov",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22447387830070897,
+        "first_set_over_8.5": 0.8358107843365589,
+        "first_set_over_9.5": 0.6012665728110886,
+        "first_set_over_10.5": 0.3256562997538327
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.19228220806285343,
+        "first_set_over_8.5": 0.8025861298777022,
+        "first_set_over_9.5": 0.5688697573989073,
+        "first_set_over_10.5": 0.29895714062118267
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187103",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Maximus Jones",
+      "p2": "Florent Bax",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16855829132655736,
+        "first_set_over_8.5": 0.7565477758470023,
+        "first_set_over_9.5": 0.5163289002221597,
+        "first_set_over_10.5": 0.26225583792691676
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16463500442302353,
+        "first_set_over_8.5": 0.7588872707414399,
+        "first_set_over_9.5": 0.5239962099451786,
+        "first_set_over_10.5": 0.2671563958694617
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187107",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Moise Kouame",
+      "p2": "Kenta Miyoshi",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1758970567100479,
+        "first_set_over_8.5": 0.7814773574997563,
+        "first_set_over_9.5": 0.5488569442315897,
+        "first_set_over_10.5": 0.2841876434791478
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16530870437909184,
+        "first_set_over_8.5": 0.7689371213096124,
+        "first_set_over_9.5": 0.5385617629829008,
+        "first_set_over_10.5": 0.2767272325134442
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187108",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Hiroki Moriya",
+      "p2": "Dominik Palan",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19349632418069496,
+        "first_set_over_8.5": 0.8005085143601521,
+        "first_set_over_9.5": 0.5650015701459049,
+        "first_set_over_10.5": 0.2966840988367205
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17594663808536057,
+        "first_set_over_8.5": 0.7814121021142818,
+        "first_set_over_9.5": 0.5487221799080413,
+        "first_set_over_10.5": 0.28410496174086797
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187111",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Kasidit Samrej",
+      "p2": "Sidharth Rawat",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18279910144735947,
+        "first_set_over_8.5": 0.7871263239509417,
+        "first_set_over_9.5": 0.5521825560889773,
+        "first_set_over_10.5": 0.28703925626098203
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1700316827972688,
+        "first_set_over_8.5": 0.7735097031855378,
+        "first_set_over_9.5": 0.5415502626806427,
+        "first_set_over_10.5": 0.2789772443003209
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187112",
+      "scheduled_time": "2026-09-07T03:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Philip Sekulic",
+      "p2": "Moerani Bouzige",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.174385414305244,
+        "first_set_over_8.5": 0.777169717656966,
+        "first_set_over_9.5": 0.5435702964455991,
+        "first_set_over_10.5": 0.28062828173136084
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16500457257540158,
+        "first_set_over_8.5": 0.7672663801436852,
+        "first_set_over_9.5": 0.5363531484812427,
+        "first_set_over_10.5": 0.27527594759555324
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187196",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Tiago Torres",
+      "p2": "Mert Alkaya",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17580189220662704,
+        "first_set_over_8.5": 0.7830243284491722,
+        "first_set_over_9.5": 0.5512217281326254,
+        "first_set_over_10.5": 0.2857064436238318
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1648433132675529,
+        "first_set_over_8.5": 0.7691852190008835,
+        "first_set_over_9.5": 0.5392906849135717,
+        "first_set_over_10.5": 0.2771711365291617
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187197",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Alafia Ayeni",
+      "p2": "Carl Emil Overbeck",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16863603638653446,
+        "first_set_over_8.5": 0.772630183285454,
+        "first_set_over_9.5": 0.5413533912510473,
+        "first_set_over_10.5": 0.27875158242161197
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1608781301801729,
+        "first_set_over_8.5": 0.7632988928717703,
+        "first_set_over_9.5": 0.5338931608181713,
+        "first_set_over_10.5": 0.27345870275408435
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187199",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Christian Langmo",
+      "p2": "Marek Gengel",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2091688068772086,
+        "first_set_over_8.5": 0.819130746917889,
+        "first_set_over_9.5": 0.5837411446513748,
+        "first_set_over_10.5": 0.31131038574691894
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.184308006854996,
+        "first_set_over_8.5": 0.7924546111751628,
+        "first_set_over_9.5": 0.559103814685823,
+        "first_set_over_10.5": 0.29166668945610286
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187200",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Michele Ribecai",
+      "p2": "Jay Friend",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.20607490196698688,
+        "first_set_over_8.5": 0.8175233708167569,
+        "first_set_over_9.5": 0.58295800461138,
+        "first_set_over_10.5": 0.310186772457649
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18223080991586194,
+        "first_set_over_8.5": 0.7908525782030115,
+        "first_set_over_9.5": 0.5581733480129409,
+        "first_set_over_10.5": 0.2908306856007611
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187203",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Ivan Marrero Curbelo",
+      "p2": "Maks Kasnikowski",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21412228913774184,
+        "first_set_over_8.5": 0.8258460552910799,
+        "first_set_over_9.5": 0.5911801385465997,
+        "first_set_over_10.5": 0.3169763467132003
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18664922045677868,
+        "first_set_over_8.5": 0.7961269550312777,
+        "first_set_over_9.5": 0.5629612705336844,
+        "first_set_over_10.5": 0.29442383147803053
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187204",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Cezar Cretu",
+      "p2": "Harold Mayot",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17600879536304082,
+        "first_set_over_8.5": 0.7828526828466,
+        "first_set_over_9.5": 0.5508150053456091,
+        "first_set_over_10.5": 0.2854628535815059
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16507136418170384,
+        "first_set_over_8.5": 0.7692645501387829,
+        "first_set_over_9.5": 0.5392271983081416,
+        "first_set_over_10.5": 0.2771438602588465
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187205",
+      "scheduled_time": "2026-09-07T07:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Timofey Skatov",
+      "p2": "Yanki Erel",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19426443786681136,
+        "first_set_over_8.5": 0.8010259064107135,
+        "first_set_over_9.5": 0.5652884588930822,
+        "first_set_over_10.5": 0.29698657761776
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.176462502616143,
+        "first_set_over_8.5": 0.781853942228133,
+        "first_set_over_9.5": 0.5489908157503207,
+        "first_set_over_10.5": 0.2843257803896396
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187123",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Gustavo Heide",
+      "p2": "Sean Cuenin",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21172089927225407,
+        "first_set_over_8.5": 0.8216772141718353,
+        "first_set_over_9.5": 0.586227345157658,
+        "first_set_over_10.5": 0.31339939130412386
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18572395418144452,
+        "first_set_over_8.5": 0.7940900913153776,
+        "first_set_over_9.5": 0.5605623000890769,
+        "first_set_over_10.5": 0.2927730331132536
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187124",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Hynek Barton",
+      "p2": "Nico Hipfl",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19350017615264628,
+        "first_set_over_8.5": 0.8034327250159591,
+        "first_set_over_9.5": 0.5693613460628928,
+        "first_set_over_10.5": 0.29945054339357585
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17525879514869327,
+        "first_set_over_8.5": 0.7821404573738784,
+        "first_set_over_9.5": 0.5503190276394261,
+        "first_set_over_10.5": 0.285075063856828
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187125",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Martin Krumich",
+      "p2": "Sebastian Sorger",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16628992905492784,
+        "first_set_over_8.5": 0.7683605293875571,
+        "first_set_over_9.5": 0.5369227588970699,
+        "first_set_over_10.5": 0.275722284925651
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15975783043761888,
+        "first_set_over_8.5": 0.7611868723613193,
+        "first_set_over_9.5": 0.5317377636565479,
+        "first_set_over_10.5": 0.2720081886608329
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187126",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Filip Cristian Jianu",
+      "p2": "Juan Manuel La Serna",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1829760479415802,
+        "first_set_over_8.5": 0.790866204447809,
+        "first_set_over_9.5": 0.5576705323401758,
+        "first_set_over_10.5": 0.29059175449727653
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1692819677030765,
+        "first_set_over_8.5": 0.7744459653865511,
+        "first_set_over_9.5": 0.5435215336806025,
+        "first_set_over_10.5": 0.28020153038188983
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187127",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Alex Barrena",
+      "p2": "O. Milic",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.15791845692045442,
+        "first_set_over_8.5": 0.7596879941785996,
+        "first_set_over_9.5": 0.5310640160273624,
+        "first_set_over_10.5": 0.2714894464589774
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15397562676675217,
+        "first_set_over_8.5": 0.7546048556598853,
+        "first_set_over_9.5": 0.5269770496657539,
+        "first_set_over_10.5": 0.2686918113063385
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187128",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Joao Lucas Reis Da Silva",
+      "p2": "A. Molcan",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.13760435155721468,
+        "first_set_over_8.5": 0.7228032872363472,
+        "first_set_over_9.5": 0.49603375510095754,
+        "first_set_over_10.5": 0.24844036479321918
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.14271781351934038,
+        "first_set_over_8.5": 0.7350150983510991,
+        "first_set_over_9.5": 0.5086901523702786,
+        "first_set_over_10.5": 0.2566349439400037
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187129",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Thiago Monteiro",
+      "p2": "Max Hans Rehberg",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22633204004419172,
+        "first_set_over_8.5": 0.8374400532225124,
+        "first_set_over_9.5": 0.6029156896749885,
+        "first_set_over_10.5": 0.32714683249325605
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1933033137737559,
+        "first_set_over_8.5": 0.8036854043529489,
+        "first_set_over_9.5": 0.5698583747736369,
+        "first_set_over_10.5": 0.2997359904586354
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187130",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Maxim Mrva",
+      "p2": "Marvin Moeller",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17512030191618633,
+        "first_set_over_8.5": 0.7820381124323855,
+        "first_set_over_9.5": 0.550270847199267,
+        "first_set_over_10.5": 0.285031648301192
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16447252157090947,
+        "first_set_over_8.5": 0.7686312405725761,
+        "first_set_over_9.5": 0.5387760839605783,
+        "first_set_over_10.5": 0.2768159636474209
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187131",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Matias Soto",
+      "p2": "Sandro Kopp",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1464955292853545,
+        "first_set_over_8.5": 0.728897992991524,
+        "first_set_over_9.5": 0.4959133909523752,
+        "first_set_over_10.5": 0.2481976131000139
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15039310552198276,
+        "first_set_over_8.5": 0.741986131538646,
+        "first_set_over_9.5": 0.5118076091718317,
+        "first_set_over_10.5": 0.25873238969937895
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187133",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Elahi Galan Daniel",
+      "p2": "Marko Topo",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.22212289728023268,
+        "first_set_over_8.5": 0.8335498198131361,
+        "first_set_over_9.5": 0.5989236756103972,
+        "first_set_over_10.5": 0.3236299223755117
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.19102269344924225,
+        "first_set_over_8.5": 0.8011303455858884,
+        "first_set_over_9.5": 0.5675124101587954,
+        "first_set_over_10.5": 0.2979128767765154
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187145",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Fiona Ferro",
+      "p2": "Mona Barthel",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.13127855943693023,
+        "first_set_over_8.5": 0.7137257958891965,
+        "first_set_over_9.5": 0.48917557221837776,
+        "first_set_over_10.5": 0.24410272330719096
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.13814132898159842,
+        "first_set_over_8.5": 0.7286736355113544,
+        "first_set_over_9.5": 0.5037794984124815,
+        "first_set_over_10.5": 0.25344829877894237
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187186",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Matej Dodig",
+      "p2": "Franco Agamenone",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18954790175943187,
+        "first_set_over_8.5": 0.7950101090659539,
+        "first_set_over_9.5": 0.5593286572049874,
+        "first_set_over_10.5": 0.2924874546309524
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17393151567583376,
+        "first_set_over_8.5": 0.7783689675822903,
+        "first_set_over_9.5": 0.5457266284516724,
+        "first_set_over_10.5": 0.2819898128257456
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187187",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Filippo Romano",
+      "p2": "Duje Ajdukovic",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17030196530390915,
+        "first_set_over_8.5": 0.7750883898221467,
+        "first_set_over_9.5": 0.543676115874789,
+        "first_set_over_10.5": 0.28037570648322396
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16180435149664668,
+        "first_set_over_8.5": 0.7646866851961346,
+        "first_set_over_9.5": 0.5351625734927904,
+        "first_set_over_10.5": 0.27432801456682127
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187190",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Enrico Dalla Valle",
+      "p2": "Gabriele Crivellaro",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21134430268949905,
+        "first_set_over_8.5": 0.8229889966091685,
+        "first_set_over_9.5": 0.5883190415148503,
+        "first_set_over_10.5": 0.3145995801637549
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18513753738475586,
+        "first_set_over_8.5": 0.7943203369355811,
+        "first_set_over_9.5": 0.5613047426845896,
+        "first_set_over_10.5": 0.29317674587497355
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187191",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Felipe Meligeni Alves",
+      "p2": "Hugo Dellien",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1644430632051845,
+        "first_set_over_8.5": 0.7686849145137028,
+        "first_set_over_9.5": 0.5388772247257954,
+        "first_set_over_10.5": 0.27687965301308115
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15795060873448874,
+        "first_set_over_8.5": 0.7601410863583433,
+        "first_set_over_9.5": 0.5316884226598854,
+        "first_set_over_10.5": 0.2718945359194653
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187192",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Stefano Travaglia",
+      "p2": "Stefano Napolitano",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.169415681216083,
+        "first_set_over_8.5": 0.774949906036972,
+        "first_set_over_9.5": 0.544157763231325,
+        "first_set_over_10.5": 0.2806227821190339
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16102404466395315,
+        "first_set_over_8.5": 0.7641540554902925,
+        "first_set_over_9.5": 0.5350134806963048,
+        "first_set_over_10.5": 0.2741911987509966
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187193",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Gabriele Piraino",
+      "p2": "Kilian Feldbausch",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.15135195925484551,
+        "first_set_over_8.5": 0.7420628223201321,
+        "first_set_over_9.5": 0.5110051904144767,
+        "first_set_over_10.5": 0.2582140293209787
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15195651556509407,
+        "first_set_over_8.5": 0.7475356262037354,
+        "first_set_over_9.5": 0.5185236982028594,
+        "first_set_over_10.5": 0.26315158835648456
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187194",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Stefanos Sakellaridis",
+      "p2": "Mili Poljicak",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1744178838992044,
+        "first_set_over_8.5": 0.7787285924696472,
+        "first_set_over_9.5": 0.5458868626439818,
+        "first_set_over_10.5": 0.28213473194555866
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16465231274653724,
+        "first_set_over_8.5": 0.7676129795035469,
+        "first_set_over_9.5": 0.5371470487357338,
+        "first_set_over_10.5": 0.2757710374032611
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187195",
+      "scheduled_time": "2026-09-07T08:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Lorenzo Sonego",
+      "p2": "Francesco Passaro",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21614171020828635,
+        "first_set_over_8.5": 0.8273385200613464,
+        "first_set_over_9.5": 0.592444086645629,
+        "first_set_over_10.5": 0.31822014005154525
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18786694089441822,
+        "first_set_over_8.5": 0.7972697302035958,
+        "first_set_over_9.5": 0.5638437832481272,
+        "first_set_over_10.5": 0.29514435231681524
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187091",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Dan Added",
+      "p2": "Daniel Masur",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19698471962912956,
+        "first_set_over_8.5": 0.8077508752784505,
+        "first_set_over_9.5": 0.5736339159936895,
+        "first_set_over_10.5": 0.3027022125734878
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1771336590414846,
+        "first_set_over_8.5": 0.7846797646683643,
+        "first_set_over_9.5": 0.5526882236339342,
+        "first_set_over_10.5": 0.28677586245525943
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187092",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Laurent Lokoli",
+      "p2": "Ugo Blanchet",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2167070714226738,
+        "first_set_over_8.5": 0.8283867371225492,
+        "first_set_over_9.5": 0.5937142246949411,
+        "first_set_over_10.5": 0.31912740137643575
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1880663694090626,
+        "first_set_over_8.5": 0.7977667937085787,
+        "first_set_over_9.5": 0.5644489295264359,
+        "first_set_over_10.5": 0.29555685246525665
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187094",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Nicolai Budkov Kjaer",
+      "p2": "Felix Balshaw",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1837480776977465,
+        "first_set_over_8.5": 0.7898211560564378,
+        "first_set_over_9.5": 0.5555598073613933,
+        "first_set_over_10.5": 0.28932427127046856
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17020758269750083,
+        "first_set_over_8.5": 0.7745811114482377,
+        "first_set_over_9.5": 0.5430001942788761,
+        "first_set_over_10.5": 0.27993074384437866
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187096",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Maxime Chazal",
+      "p2": "Titouan Droguet",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1905556268248962,
+        "first_set_over_8.5": 0.7993753139264759,
+        "first_set_over_9.5": 0.5652065283229273,
+        "first_set_over_10.5": 0.29637913089605317
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17374763143254765,
+        "first_set_over_8.5": 0.7798853648701618,
+        "first_set_over_9.5": 0.5481197716195172,
+        "first_set_over_10.5": 0.28352345989256267
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187097",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Moez Echargui",
+      "p2": "Lucas Poullain",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18096932462463955,
+        "first_set_over_8.5": 0.7893520875627009,
+        "first_set_over_9.5": 0.5568393169122374,
+        "first_set_over_10.5": 0.2898357063350264
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1678904104352656,
+        "first_set_over_8.5": 0.7731287556513907,
+        "first_set_over_9.5": 0.5426681071455302,
+        "first_set_over_10.5": 0.27955206312856784
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187098",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Hugo Grenier",
+      "p2": "Billy Harris",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18770483197945864,
+        "first_set_over_8.5": 0.7973536206726906,
+        "first_set_over_9.5": 0.5640757461247854,
+        "first_set_over_10.5": 0.295271324378264
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17180269516097185,
+        "first_set_over_8.5": 0.7781150495853187,
+        "first_set_over_9.5": 0.546981882703263,
+        "first_set_over_10.5": 0.2826292017777067
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187100",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Raphael Perot",
+      "p2": "Gauthier Onclin",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19267738969616524,
+        "first_set_over_8.5": 0.8010942744045568,
+        "first_set_over_9.5": 0.5664015425941655,
+        "first_set_over_10.5": 0.2974481472719197
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17512563048401128,
+        "first_set_over_8.5": 0.7812233267894806,
+        "first_set_over_9.5": 0.5490613868608831,
+        "first_set_over_10.5": 0.284250945537406
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187113",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Gilles Arnaud Bailly",
+      "p2": "Calvin Hemery",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16524264009318973,
+        "first_set_over_8.5": 0.7697372693243745,
+        "first_set_over_9.5": 0.5397811542445875,
+        "first_set_over_10.5": 0.2775127861201816
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15843947934470745,
+        "first_set_over_8.5": 0.7608001329300009,
+        "first_set_over_9.5": 0.5322433334571264,
+        "first_set_over_10.5": 0.2722751630577652
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187114",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Alejandro Moro Canas",
+      "p2": "Petr Brunclik",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.18632413120715513,
+        "first_set_over_8.5": 0.793599042138519,
+        "first_set_over_9.5": 0.5594167279433412,
+        "first_set_over_10.5": 0.2921140877877836
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17152289191889897,
+        "first_set_over_8.5": 0.7766345403703007,
+        "first_set_over_9.5": 0.5450139467995272,
+        "first_set_over_10.5": 0.28133437729603566
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187115",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Kimmer Coppejans",
+      "p2": "Pablo Llamas Ruiz",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.15838383230263944,
+        "first_set_over_8.5": 0.7551483583907147,
+        "first_set_over_9.5": 0.5240362683852718,
+        "first_set_over_10.5": 0.26693459886910054
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1555539987267881,
+        "first_set_over_8.5": 0.7541725696695849,
+        "first_set_over_9.5": 0.5250547658732372,
+        "first_set_over_10.5": 0.26750218726698993
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187117",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Sebastian Ofner",
+      "p2": "Felix Gill",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19680705559655903,
+        "first_set_over_8.5": 0.8064546175240634,
+        "first_set_over_9.5": 0.5718206098900273,
+        "first_set_over_10.5": 0.30152909247742465
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1772934557460794,
+        "first_set_over_8.5": 0.7842901513227346,
+        "first_set_over_9.5": 0.5519945115375158,
+        "first_set_over_10.5": 0.28634375650057897
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187118",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Martin Landaluce",
+      "p2": "D. Lajovic",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.17922696774274177,
+        "first_set_over_8.5": 0.7867908880706292,
+        "first_set_over_9.5": 0.5542911222823177,
+        "first_set_over_10.5": 0.288014274323331
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.16697688285370535,
+        "first_set_over_8.5": 0.7717234549026312,
+        "first_set_over_9.5": 0.54132346708019,
+        "first_set_over_10.5": 0.27862091828323116
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187119",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Inaki Montes-De La Torre",
+      "p2": "Raul Brancaccio",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.16072793640769825,
+        "first_set_over_8.5": 0.7637574488198233,
+        "first_set_over_9.5": 0.5346762672199868,
+        "first_set_over_10.5": 0.27395803672734564
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.15565818847953633,
+        "first_set_over_8.5": 0.7570390742286787,
+        "first_set_over_9.5": 0.5290889152129575,
+        "first_set_over_10.5": 0.2701188842878093
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187120",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Dali Blanch",
+      "p2": "Genaro Alberto Olivieri",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1798824014747712,
+        "first_set_over_8.5": 0.7868358656586852,
+        "first_set_over_9.5": 0.5538827871328575,
+        "first_set_over_10.5": 0.28781840988615126
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1675462247928411,
+        "first_set_over_8.5": 0.7720671445546321,
+        "first_set_over_9.5": 0.5413818512140811,
+        "first_set_over_10.5": 0.2786963511483058
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187122",
+      "scheduled_time": "2026-09-07T09:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "clay",
+      "p1": "Frederico Ferreira Silva",
+      "p2": "Nikolas Sanchez Izquierdo",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.1847509438749032,
+        "first_set_over_8.5": 0.7938182310293183,
+        "first_set_over_9.5": 0.5608242430677276,
+        "first_set_over_10.5": 0.29282238165245256
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1701096312156084,
+        "first_set_over_8.5": 0.7759364491663725,
+        "first_set_over_9.5": 0.5450720888346253,
+        "first_set_over_10.5": 0.28126490933038795
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187233",
+      "scheduled_time": "2026-09-07T15:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Botic Van De Zandschulp",
+      "p2": "Arthur Gea",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19583049569456773,
+        "first_set_over_8.5": 0.8065757090591723,
+        "first_set_over_9.5": 0.5725872049585897,
+        "first_set_over_10.5": 0.3018547424888749
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.17645530232063125,
+        "first_set_over_8.5": 0.7839004528919307,
+        "first_set_over_9.5": 0.5520340668760915,
+        "first_set_over_10.5": 0.286290401358079
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187234",
+      "scheduled_time": "2026-09-07T15:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Alexander Zverev",
+      "p2": "Luciano Darderi",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.2173067237975624,
+        "first_set_over_8.5": 0.8289238576020558,
+        "first_set_over_9.5": 0.5942324534154053,
+        "first_set_over_10.5": 0.319586651974354
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18840456369749348,
+        "first_set_over_8.5": 0.7981312492067675,
+        "first_set_over_9.5": 0.56476617248123,
+        "first_set_over_10.5": 0.295803955209525
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187239",
+      "scheduled_time": "2026-09-07T15:00:00+00:00",
+      "captured_at": "2026-09-06T08:58:44.402880+00:00",
+      "captured_pre_match": true,
+      "tour": "atp",
+      "surface": "hard",
+      "p1": "Karen Khachanov",
+      "p2": "Learner Tien",
+      "source_model_fingerprint_sha256": "66db5fff6c7c083800ca5bb9073aeff525bca4a6af920e4377f7ff19d0b37032",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.21071632628276604,
+        "first_set_over_8.5": 0.8220280698166844,
+        "first_set_over_9.5": 0.5872196796328113,
+        "first_set_over_10.5": 0.31378660255247637
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.18486482483133554,
+        "first_set_over_8.5": 0.793825566087256,
+        "first_set_over_9.5": 0.5607572115333592,
+        "first_set_over_10.5": 0.2927931212542488
       },
       "settled": false,
       "actual": null
