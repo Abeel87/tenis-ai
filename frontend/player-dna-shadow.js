@@ -297,6 +297,10 @@
     const current=n(counts.new_current_pre_match_snapshots)||0;
     const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
     const health=settlementHealth(trajectory);
+    const provenance=trajectory.provenance||{};
+    const knownGenerations=n(provenance.known_generation_count)||0;
+    const legacyUnknown=n(provenance.legacy_unknown_snapshots)||0;
+    const mixedGenerations=provenance.mixed_known_generations===true;
 
     return `
       <section class="pds-trajectory-evidence">
@@ -355,6 +359,18 @@
             </div>
           </div>
         `:''}
+
+        <div class="pds-dynamic-support">
+          <b>Simulator generations: ${knownGenerations}</b>
+          <small>
+            ${mixedGenerations
+              ?'UWAGA: ledger zawiera więcej niż jedną znaną wersję simulatora — przyszły verdict musi liczyć je osobno.'
+              :knownGenerations===1
+                ?'Jedna znana generacja simulatora w ledgerze.'
+                :'Czekamy na pierwszą snapshotowaną generację simulatora.'}
+            ${legacyUnknown?` Legacy bez fingerprintu: ${legacyUnknown}.`:''}
+          </small>
+        </div>
 
         <div class="pds-trajectory-evidence-list">
           ${trajectoryMetric('Po 2 gemach',checkpoints.after_2_games,[['top1','TOP1'],['top3','TOP3']])}
