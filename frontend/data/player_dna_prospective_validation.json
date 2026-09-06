@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 56,
-    "current_snapshot_count_before_retention": 115,
-    "preserved_snapshots": 56,
-    "new_snapshots": 59,
-    "newly_settled": 4,
+    "previous_snapshot_count": 115,
+    "current_snapshot_count_before_retention": 116,
+    "preserved_snapshots": 115,
+    "new_snapshots": 1,
+    "newly_settled": 1,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -40,14 +40,14 @@
       "duplicate_current": []
     },
     "pruned_by_retention": 0,
-    "current_snapshot_count_after_retention": 115
+    "current_snapshot_count_after_retention": 116
   },
   "settlement_observability": {
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 87,
-        "due_within_6h": 2,
+        "upcoming": 70,
+        "due_within_6h": 19,
         "overdue_6_24h": 0,
         "overdue_24_72h": 0,
         "overdue_gt_72h": 0,
@@ -56,15 +56,15 @@
       "overdue_samples": []
     },
     "settlement_latency": {
-      "n": 26,
-      "median_hours": 15.999,
-      "p90_hours": 21.611,
+      "n": 27,
+      "median_hours": 15.111,
+      "p90_hours": 21.511,
       "max_hours": 23.888,
       "negative_latency_count": 0,
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 18,
+      "count": 16,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
@@ -98,68 +98,68 @@
           "drift_minutes": 180.0
         },
         {
+          "match_id": "187169",
+          "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T12:20:00+00:00",
+          "drift_minutes": 80.0
+        },
+        {
           "match_id": "187183",
           "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T12:50:00+00:00",
+          "drift_minutes": 80.0
+        },
+        {
+          "match_id": "187171",
+          "frozen_scheduled_time": "2026-09-06T12:30:00+00:00",
+          "current_scheduled_time": "2026-09-06T13:45:00+00:00",
+          "drift_minutes": 75.0
+        },
+        {
+          "match_id": "187075",
+          "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+          "current_scheduled_time": "2026-09-06T13:00:00+00:00",
+          "drift_minutes": 60.0
+        },
+        {
+          "match_id": "187087",
+          "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
           "current_scheduled_time": "2026-09-06T11:40:00+00:00",
-          "drift_minutes": 10.0
-        },
-        {
-          "match_id": "186964",
-          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-          "drift_minutes": 5.0
-        },
-        {
-          "match_id": "187166",
-          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-          "drift_minutes": 5.0
-        },
-        {
-          "match_id": "187043",
-          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-          "drift_minutes": 5.0
-        },
-        {
-          "match_id": "187045",
-          "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-          "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-          "drift_minutes": 5.0
+          "drift_minutes": 40.0
         }
       ]
     }
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 26,
+      "settled": 27,
       "required": 150,
-      "remaining": 124,
+      "remaining": 123,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 26,
+        "settled": 27,
         "required": 150,
-        "remaining": 124,
+        "remaining": 123,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 26,
+        "settled": 27,
         "required": 150,
-        "remaining": 124,
+        "remaining": 123,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 26,
+        "settled": 27,
         "required": 150,
-        "remaining": 124,
+        "remaining": 123,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 26,
+        "settled": 27,
         "required": 150,
-        "remaining": 124,
+        "remaining": 123,
         "support_sufficient": false
       }
     },
@@ -173,23 +173,23 @@
           "support_sufficient": false
         },
         "challenger": {
-          "snapshots": 92,
-          "settled": 11,
+          "snapshots": 93,
+          "settled": 12,
           "required": 30,
-          "remaining": 19,
+          "remaining": 18,
           "support_sufficient": false
         }
       },
       "surface": {
         "clay": {
           "snapshots": 57,
-          "settled": 9,
+          "settled": 10,
           "required": 30,
-          "remaining": 21,
+          "remaining": 20,
           "support_sufficient": false
         },
         "hard": {
-          "snapshots": 58,
+          "snapshots": 59,
           "settled": 17,
           "required": 30,
           "remaining": 13,
@@ -227,52 +227,52 @@
     "current_simulation_version": "player-dna-tennis-simulator-v1"
   },
   "counts": {
-    "current_simulated_matches": 103,
-    "current_eligible_by_segment": 87,
-    "snapshots": 115,
-    "settled_snapshots": 26,
+    "current_simulated_matches": 91,
+    "current_eligible_by_segment": 77,
+    "snapshots": 116,
+    "settled_snapshots": 27,
     "unsettled_snapshots": 89,
     "label_counts": {
-      "matches_seen": 3453,
-      "settled_labels": 3148,
+      "matches_seen": 3454,
+      "settled_labels": 3149,
       "incomplete_or_unsettled": 305
     }
   },
   "evaluation": {
-    "settled_matches": 26,
+    "settled_matches": 27,
     "markets": {
       "first_set_tiebreak": {
-        "n": 26,
-        "raw_brier": 0.179666,
-        "calibrated_brier": 0.180179,
-        "brier_gain_calibrated_vs_raw": -0.000513,
+        "n": 27,
+        "raw_brier": 0.174107,
+        "calibrated_brier": 0.174475,
+        "brier_gain_calibrated_vs_raw": -0.000368,
         "improved": false
       },
       "first_set_over_8.5": {
-        "n": 26,
-        "raw_brier": 0.154806,
-        "calibrated_brier": 0.155252,
-        "brier_gain_calibrated_vs_raw": -0.000447,
-        "improved": false
+        "n": 27,
+        "raw_brier": 0.171353,
+        "calibrated_brier": 0.17111,
+        "brier_gain_calibrated_vs_raw": 0.000243,
+        "improved": true
       },
       "first_set_over_9.5": {
-        "n": 26,
-        "raw_brier": 0.254069,
-        "calibrated_brier": 0.250488,
-        "brier_gain_calibrated_vs_raw": 0.003581,
+        "n": 27,
+        "raw_brier": 0.255586,
+        "calibrated_brier": 0.25177,
+        "brier_gain_calibrated_vs_raw": 0.003816,
         "improved": true
       },
       "first_set_over_10.5": {
-        "n": 26,
-        "raw_brier": 0.184605,
-        "calibrated_brier": 0.181241,
-        "brier_gain_calibrated_vs_raw": 0.003364,
+        "n": 27,
+        "raw_brier": 0.180675,
+        "calibrated_brier": 0.1773,
+        "brier_gain_calibrated_vs_raw": 0.003375,
         "improved": true
       }
     },
-    "duration_markets_improved": 2,
+    "duration_markets_improved": 3,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": -0.000513
+    "worst_market_brier_gain": -0.000368
   },
   "segment_evaluation": {
     "tour": {
@@ -314,79 +314,79 @@
         "support_sufficient": false
       },
       "challenger": {
-        "settled_matches": 11,
+        "settled_matches": 12,
         "markets": {
           "first_set_tiebreak": {
-            "n": 11,
-            "raw_brier": 0.14786,
-            "calibrated_brier": 0.148128,
-            "brier_gain_calibrated_vs_raw": -0.000268,
-            "improved": false
+            "n": 12,
+            "raw_brier": 0.138002,
+            "calibrated_brier": 0.137964,
+            "brier_gain_calibrated_vs_raw": 3.9e-05,
+            "improved": true
           },
           "first_set_over_8.5": {
-            "n": 11,
-            "raw_brier": 0.195635,
-            "calibrated_brier": 0.197668,
-            "brier_gain_calibrated_vs_raw": -0.002033,
+            "n": 12,
+            "raw_brier": 0.229465,
+            "calibrated_brier": 0.229814,
+            "brier_gain_calibrated_vs_raw": -0.000349,
             "improved": false
           },
           "first_set_over_9.5": {
-            "n": 11,
-            "raw_brier": 0.263404,
-            "calibrated_brier": 0.258444,
-            "brier_gain_calibrated_vs_raw": 0.00496,
+            "n": 12,
+            "raw_brier": 0.266041,
+            "calibrated_brier": 0.260666,
+            "brier_gain_calibrated_vs_raw": 0.005375,
             "improved": true
           },
           "first_set_over_10.5": {
-            "n": 11,
-            "raw_brier": 0.161078,
-            "calibrated_brier": 0.158802,
-            "brier_gain_calibrated_vs_raw": 0.002276,
+            "n": 12,
+            "raw_brier": 0.154196,
+            "calibrated_brier": 0.151804,
+            "brier_gain_calibrated_vs_raw": 0.002393,
             "improved": true
           }
         },
-        "duration_markets_improved": 2,
+        "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.002033,
+        "worst_market_brier_gain": -0.000349,
         "support_sufficient": false
       }
     },
     "surface": {
       "clay": {
-        "settled_matches": 9,
+        "settled_matches": 10,
         "markets": {
           "first_set_tiebreak": {
-            "n": 9,
-            "raw_brier": 0.171443,
-            "calibrated_brier": 0.173719,
-            "brier_gain_calibrated_vs_raw": -0.002276,
+            "n": 10,
+            "raw_brier": 0.157256,
+            "calibrated_brier": 0.158963,
+            "brier_gain_calibrated_vs_raw": -0.001707,
             "improved": false
           },
           "first_set_over_8.5": {
-            "n": 9,
-            "raw_brier": 0.231346,
-            "calibrated_brier": 0.231746,
-            "brier_gain_calibrated_vs_raw": -0.0004,
-            "improved": false
+            "n": 10,
+            "raw_brier": 0.268371,
+            "calibrated_brier": 0.266914,
+            "brier_gain_calibrated_vs_raw": 0.001457,
+            "improved": true
           },
           "first_set_over_9.5": {
-            "n": 9,
-            "raw_brier": 0.247172,
-            "calibrated_brier": 0.246896,
-            "brier_gain_calibrated_vs_raw": 0.000276,
+            "n": 10,
+            "raw_brier": 0.251959,
+            "calibrated_brier": 0.250716,
+            "brier_gain_calibrated_vs_raw": 0.001242,
             "improved": true
           },
           "first_set_over_10.5": {
-            "n": 9,
-            "raw_brier": 0.175735,
-            "calibrated_brier": 0.17538,
-            "brier_gain_calibrated_vs_raw": 0.000355,
+            "n": 10,
+            "raw_brier": 0.166012,
+            "calibrated_brier": 0.165325,
+            "brier_gain_calibrated_vs_raw": 0.000687,
             "improved": true
           }
         },
-        "duration_markets_improved": 2,
+        "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": -0.002276,
+        "worst_market_brier_gain": -0.001707,
         "support_sufficient": false
       },
       "hard": {
@@ -446,26 +446,35 @@
       "conflict_excluded": true,
       "insufficient_excluded": true,
       "profile_reference_excluded": true,
-      "market_policy_source_fingerprint_required": true,
+      "market_policy_source_fingerprint_required_for_audit": true,
+      "market_policy_contract_fingerprint_required_for_verdict": true,
       "legacy_or_other_policy_generations_excluded_from_verdict": true
     },
     "market_policy_provenance": {
-      "current_market_policy_source_fingerprint_sha256": "19b37066af8c7b3be7a705328dccede4578a8ff1153e1b6353a78b76b599d5ef",
+      "current_market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+      "current_market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+      "current_market_policy_source_fingerprint_sha256": "723de9a91456264eeb310bddaf38091c17a09bf64375dfc1fa8cb7c24ce0930d",
       "generations": {
         "LEGACY_UNKNOWN": {
           "snapshots": 82,
-          "settled": 1,
-          "unsettled": 81
+          "settled": 2,
+          "unsettled": 80
+        },
+        "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd": {
+          "snapshots": 1,
+          "settled": 0,
+          "unsettled": 1
         }
       },
-      "known_generation_count": 0,
+      "known_generation_count": 1,
       "legacy_unknown_snapshots": 82,
-      "current_generation_snapshots": 0,
+      "current_generation_snapshots": 1,
       "other_known_generation_snapshots": 0,
       "mixed_known_generations": false,
       "verdict_excluded_snapshots": 82,
       "policy": {
-        "new_snapshots_require_market_policy_source_fingerprint": true,
+        "new_snapshots_require_market_policy_contract_fingerprint": true,
+        "source_file_fingerprint_is_audit_only_not_generation_identity": true,
         "legacy_unknown_snapshots_remain_immutable": true,
         "legacy_unknown_snapshots_are_diagnostic_only": true,
         "future_verdict_uses_current_policy_generation_only": true,
@@ -481,10 +490,10 @@
       "snapshot_drop_forbidden_before_retention_cap": true,
       "retention_cap": 5000,
       "previous_snapshot_count": 82,
-      "current_snapshot_count_before_retention": 82,
+      "current_snapshot_count_before_retention": 83,
       "preserved_snapshots": 82,
-      "new_snapshots": 0,
-      "newly_settled": 0,
+      "new_snapshots": 1,
+      "newly_settled": 1,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -502,14 +511,14 @@
         "duplicate_current": []
       },
       "pruned_by_retention": 0,
-      "current_snapshot_count_after_retention": 82
+      "current_snapshot_count_after_retention": 83
     },
     "settlement_observability": {
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 79,
-          "due_within_6h": 2,
+          "upcoming": 62,
+          "due_within_6h": 19,
           "overdue_6_24h": 0,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
@@ -518,76 +527,76 @@
         "overdue_samples": []
       },
       "settlement_latency": {
-        "n": 1,
-        "median_hours": 3.888,
-        "p90_hours": 3.888,
+        "n": 2,
+        "median_hours": 3.575,
+        "p90_hours": 3.825,
         "max_hours": 3.888,
         "negative_latency_count": 0,
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 13,
+        "count": 11,
         "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
         "samples": [
           {
+            "match_id": "187169",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:20:00+00:00",
+            "drift_minutes": 80.0
+          },
+          {
             "match_id": "187183",
             "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
-            "drift_minutes": 10.0
+            "current_scheduled_time": "2026-09-06T12:50:00+00:00",
+            "drift_minutes": 80.0
           },
           {
-            "match_id": "186964",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
+            "match_id": "187171",
+            "frozen_scheduled_time": "2026-09-06T12:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T13:45:00+00:00",
+            "drift_minutes": 75.0
           },
           {
-            "match_id": "187166",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187043",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187045",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187083",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187084",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187086",
-            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "match_id": "187075",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T13:00:00+00:00",
+            "drift_minutes": 60.0
           },
           {
             "match_id": "187087",
             "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
+            "drift_minutes": 40.0
           },
           {
-            "match_id": "187048",
+            "match_id": "187073",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:35:00+00:00",
+            "drift_minutes": 35.0
+          },
+          {
+            "match_id": "187086",
             "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "current_scheduled_time": "2026-09-06T11:30:00+00:00",
+            "drift_minutes": 30.0
+          },
+          {
+            "match_id": "187077",
+            "frozen_scheduled_time": "2026-09-06T14:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T14:30:00+00:00",
+            "drift_minutes": 30.0
+          },
+          {
+            "match_id": "187074",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:50:00+00:00",
+            "drift_minutes": -10.0
+          },
+          {
+            "match_id": "187088",
+            "frozen_scheduled_time": "2026-09-06T12:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:40:00+00:00",
+            "drift_minutes": 10.0
           }
         ]
       }
@@ -599,7 +608,44 @@
         "remaining": 150,
         "support_sufficient": false
       },
-      "observed_candidate_markets": {},
+      "observed_candidate_markets": {
+        "early_2:2": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_10.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_11.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_over_12.5": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "first_set_tiebreak": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        },
+        "match_p1_win": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        }
+      },
       "ready_for_performance_verdict": false,
       "performance_verdict_emitted": false,
       "policy": {
@@ -612,16 +658,16 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 258,
-      "current_rows_with_dynamic_candidates": 79,
-      "current_dynamic_candidate_market_slots": 336,
-      "snapshots": 82,
-      "ledger_settled_snapshots": 1,
+      "current_dynamic_matches": 212,
+      "current_rows_with_dynamic_candidates": 69,
+      "current_dynamic_candidate_market_slots": 300,
+      "snapshots": 83,
+      "ledger_settled_snapshots": 2,
       "ledger_unsettled_snapshots": 81,
-      "verdict_eligible_snapshots": 0,
+      "verdict_eligible_snapshots": 1,
       "verdict_excluded_snapshots": 82,
       "settled_snapshots": 0,
-      "unsettled_snapshots": 0,
+      "unsettled_snapshots": 1,
       "settled_market_observations": 0
     },
     "evaluation": {
@@ -662,13 +708,20 @@
           "n": 0
         }
       },
-      "candidate_markets_seen": [],
+      "candidate_markets_seen": [
+        "early_2:2",
+        "first_set_over_10.5",
+        "first_set_over_11.5",
+        "first_set_over_12.5",
+        "first_set_tiebreak",
+        "match_p1_win"
+      ],
       "markets_with_observations": [],
       "markets_better_on_brier_and_log_loss": []
     },
     "ledger_evaluation": {
-      "settled_matches": 1,
-      "settled_market_observations": 6,
+      "settled_matches": 2,
+      "settled_market_observations": 9,
       "markets": {
         "match_p1_win": {
           "n": 1,
@@ -684,13 +737,13 @@
           "n": 0
         },
         "first_set_tiebreak": {
-          "n": 1,
-          "profile_reference_brier": 0.04798,
-          "dynamic_candidate_brier": 0.033724,
-          "brier_gain_dynamic_vs_profile": 0.014257,
-          "profile_reference_log_loss": 0.247237,
-          "dynamic_candidate_log_loss": 0.202899,
-          "log_loss_gain_dynamic_vs_profile": 0.044338,
+          "n": 2,
+          "profile_reference_brier": 0.038775,
+          "dynamic_candidate_brier": 0.026453,
+          "brier_gain_dynamic_vs_profile": 0.012321,
+          "profile_reference_log_loss": 0.217964,
+          "dynamic_candidate_log_loss": 0.175992,
+          "log_loss_gain_dynamic_vs_profile": 0.041972,
           "dynamic_better_on_brier_and_log_loss": true
         },
         "first_set_over_8.5": {
@@ -720,26 +773,26 @@
           "dynamic_better_on_brier_and_log_loss": true
         },
         "first_set_over_12.5": {
-          "n": 1,
-          "profile_reference_brier": 0.04798,
-          "dynamic_candidate_brier": 0.033724,
-          "brier_gain_dynamic_vs_profile": 0.014257,
-          "profile_reference_log_loss": 0.247237,
-          "dynamic_candidate_log_loss": 0.202899,
-          "log_loss_gain_dynamic_vs_profile": 0.044338,
+          "n": 2,
+          "profile_reference_brier": 0.038775,
+          "dynamic_candidate_brier": 0.026453,
+          "brier_gain_dynamic_vs_profile": 0.012321,
+          "profile_reference_log_loss": 0.217964,
+          "dynamic_candidate_log_loss": 0.175992,
+          "log_loss_gain_dynamic_vs_profile": 0.041972,
           "dynamic_better_on_brier_and_log_loss": true
         },
         "early_1:1": {
           "n": 0
         },
         "early_2:2": {
-          "n": 1,
-          "profile_reference_brier": 0.233387,
-          "dynamic_candidate_brier": 0.267737,
-          "brier_gain_dynamic_vs_profile": -0.03435,
-          "profile_reference_log_loss": 0.659909,
-          "dynamic_candidate_log_loss": 0.728635,
-          "log_loss_gain_dynamic_vs_profile": -0.068726,
+          "n": 2,
+          "profile_reference_brier": 0.21777,
+          "dynamic_candidate_brier": 0.220754,
+          "brier_gain_dynamic_vs_profile": -0.002984,
+          "profile_reference_log_loss": 0.628523,
+          "dynamic_candidate_log_loss": 0.633981,
+          "log_loss_gain_dynamic_vs_profile": -0.005458,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "early_3:3": {
@@ -771,13 +824,205 @@
       ]
     },
     "segment_evaluation": {
-      "tour": {},
-      "surface": {},
-      "tour_surface": {}
+      "tour": {
+        "challenger": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      },
+      "surface": {
+        "hard": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      },
+      "tour_surface": {
+        "challenger|hard": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_2:2",
+            "first_set_over_10.5",
+            "first_set_over_11.5",
+            "first_set_over_12.5",
+            "first_set_tiebreak",
+            "match_p1_win"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        }
+      }
     },
     "direct_segment_readiness": {
-      "tour_surface": {},
-      "observed_tour_surface_market_cells": 0,
+      "tour_surface": {
+        "challenger|hard": {
+          "candidate_markets": {
+            "early_2:2": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_10.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_11.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_over_12.5": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "first_set_tiebreak": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            },
+            "match_p1_win": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            }
+          },
+          "all_candidate_markets_supported": false
+        }
+      },
+      "observed_tour_surface_market_cells": 6,
       "ready_for_performance_verdict": false,
       "policy": {
         "direct_joint_segment_evidence_required": true,
@@ -929,8 +1174,13 @@
             "dynamic_candidate_probability": 0.4168597009036079
           }
         },
-        "settled": false,
-        "actual": null
+        "settled": true,
+        "actual": {
+          "first_set_tiebreak": false,
+          "first_set_over_12.5": false,
+          "early_2:2": false
+        },
+        "settled_at": "2026-09-06T12:15:45.259610+00:00"
       },
       {
         "match_id": "187068",
@@ -1895,6 +2145,49 @@
           "first_set_over_12.5": {
             "profile_reference_probability": 0.18388460738940482,
             "dynamic_candidate_probability": 0.1655559026442708
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187266",
+        "scheduled_time": "2026-09-07T02:00:00+00:00",
+        "captured_at": "2026-09-06T12:15:45.259610+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Tsung-Hao Huang",
+        "p2": "Luca Castelnuovo",
+        "source_model_fingerprint_sha256": "50d929d46dc92ac424d6f96a93ce11b1d1d4a8f2fca45edfd7e6950ec48754a2",
+        "market_policy_source_fingerprint_sha256": "723de9a91456264eeb310bddaf38091c17a09bf64375dfc1fa8cb7c24ce0930d",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "challenger|hard",
+        "candidate_markets": {
+          "match_p1_win": {
+            "profile_reference_probability": 0.7080908893925438,
+            "dynamic_candidate_probability": 0.6328714825403747
+          },
+          "first_set_tiebreak": {
+            "profile_reference_probability": 0.19801178392358745,
+            "dynamic_candidate_probability": 0.18239497842746744
+          },
+          "first_set_over_10.5": {
+            "profile_reference_probability": 0.2985021483003295,
+            "dynamic_candidate_probability": 0.2845031025847553
+          },
+          "first_set_over_11.5": {
+            "profile_reference_probability": 0.2985021483003295,
+            "dynamic_candidate_probability": 0.2845031025847553
+          },
+          "first_set_over_12.5": {
+            "profile_reference_probability": 0.19801178392358745,
+            "dynamic_candidate_probability": 0.18239497842746744
+          },
+          "early_2:2": {
+            "profile_reference_probability": 0.4934339614374936,
+            "dynamic_candidate_probability": 0.47765969100937966
           }
         },
         "settled": false,
@@ -3295,6 +3588,7 @@
       "full_match_exact_game_paths_are_diagnostic_only": true,
       "primary_metrics_use_current_simulator_generation_only": true,
       "legacy_and_other_simulator_generations_are_diagnostic_only": true,
+      "sample_readiness_is_support_only_not_performance_verdict": true,
       "no_trajectory_performance_threshold_invented_yet": true
     },
     "ledger_integrity": {
@@ -3304,9 +3598,9 @@
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
       "previous_snapshot_count": 105,
-      "current_snapshot_count_before_retention": 105,
-      "new_snapshots": 0,
-      "newly_settled": 0,
+      "current_snapshot_count_before_retention": 106,
+      "new_snapshots": 1,
+      "newly_settled": 1,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -3315,14 +3609,14 @@
       "duplicate_previous_match_ids": 0,
       "duplicate_current_match_ids": 0,
       "pruned_by_retention": 0,
-      "current_snapshot_count_after_retention": 105
+      "current_snapshot_count_after_retention": 106
     },
     "settlement_observability": {
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 101,
-          "due_within_6h": 4,
+          "upcoming": 83,
+          "due_within_6h": 22,
           "overdue_6_24h": 0,
           "overdue_24_72h": 0,
           "overdue_gt_72h": 0,
@@ -3331,90 +3625,90 @@
         "overdue_samples": []
       },
       "settlement_latency": {
-        "n": 0,
-        "median_hours": null,
-        "p90_hours": null,
-        "max_hours": null,
+        "n": 1,
+        "median_hours": 3.263,
+        "p90_hours": 3.263,
+        "max_hours": 3.263,
         "negative_latency_count": 0,
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 13,
+        "count": 11,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
         "samples": [
           {
+            "match_id": "187169",
+            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:20:00+00:00",
+            "drift_minutes": 80.0
+          },
+          {
             "match_id": "187183",
             "frozen_scheduled_time": "2026-09-06T11:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
-            "drift_minutes": 10.0
+            "current_scheduled_time": "2026-09-06T12:50:00+00:00",
+            "drift_minutes": 80.0
           },
           {
-            "match_id": "186964",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
+            "match_id": "187171",
+            "frozen_scheduled_time": "2026-09-06T12:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T13:45:00+00:00",
+            "drift_minutes": 75.0
           },
           {
-            "match_id": "187166",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187043",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187045",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187083",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187084",
-            "frozen_scheduled_time": "2026-09-06T09:30:00+00:00",
-            "current_scheduled_time": "2026-09-06T09:35:00+00:00",
-            "drift_minutes": 5.0
-          },
-          {
-            "match_id": "187086",
-            "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "match_id": "187075",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T13:00:00+00:00",
+            "drift_minutes": 60.0
           },
           {
             "match_id": "187087",
             "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "current_scheduled_time": "2026-09-06T11:40:00+00:00",
+            "drift_minutes": 40.0
           },
           {
-            "match_id": "187048",
+            "match_id": "187073",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:35:00+00:00",
+            "drift_minutes": 35.0
+          },
+          {
+            "match_id": "187086",
             "frozen_scheduled_time": "2026-09-06T11:00:00+00:00",
-            "current_scheduled_time": "2026-09-06T11:05:00+00:00",
-            "drift_minutes": 5.0
+            "current_scheduled_time": "2026-09-06T11:30:00+00:00",
+            "drift_minutes": 30.0
+          },
+          {
+            "match_id": "187077",
+            "frozen_scheduled_time": "2026-09-06T14:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T14:30:00+00:00",
+            "drift_minutes": 30.0
+          },
+          {
+            "match_id": "187074",
+            "frozen_scheduled_time": "2026-09-06T12:00:00+00:00",
+            "current_scheduled_time": "2026-09-06T11:50:00+00:00",
+            "drift_minutes": -10.0
+          },
+          {
+            "match_id": "187088",
+            "frozen_scheduled_time": "2026-09-06T12:30:00+00:00",
+            "current_scheduled_time": "2026-09-06T12:40:00+00:00",
+            "drift_minutes": 10.0
           }
         ]
       }
     },
     "counts": {
-      "current_simulated_matches": 103,
-      "new_current_pre_match_snapshots": 0,
-      "snapshots": 105,
-      "ledger_settled_snapshots": 0,
+      "current_simulated_matches": 91,
+      "new_current_pre_match_snapshots": 1,
+      "snapshots": 106,
+      "ledger_settled_snapshots": 1,
       "ledger_unsettled_snapshots": 105,
-      "current_generation_snapshots": 105,
-      "evaluation_excluded_snapshots": 0,
+      "current_generation_snapshots": 1,
+      "evaluation_excluded_snapshots": 105,
       "settled_snapshots": 0,
-      "unsettled_snapshots": 105
+      "unsettled_snapshots": 1
     },
     "evaluation": {
       "settled_matches": 0,
@@ -3461,245 +3755,53 @@
       }
     },
     "ledger_evaluation": {
-      "settled_matches": 0,
+      "settled_matches": 1,
       "checkpoint_neutral_start_server": {
         "after_2_games": {
-          "n": 0,
-          "top1": null,
-          "top3": null
+          "n": 1,
+          "top1": 0.0,
+          "top3": 1.0
         },
         "after_4_games": {
-          "n": 0,
-          "top1": null,
-          "top3": null
+          "n": 1,
+          "top1": 0.0,
+          "top3": 0.0
         },
         "after_6_games": {
-          "n": 0,
-          "top1": null,
-          "top3": null
+          "n": 1,
+          "top1": 0.0,
+          "top3": 0.0
         }
       },
       "primary_storyline_match_score_conditioned_on_observed_first_server": {
-        "n": 0,
-        "top1": null,
-        "top3": null
+        "n": 1,
+        "top1": 1.0,
+        "top3": 1.0
       },
       "first_set_complete_path_conditioned_on_observed_first_server": {
-        "n": 0,
-        "top1": null,
-        "top3": null,
-        "top8": null
+        "n": 1,
+        "top1": 0.0,
+        "top3": 0.0,
+        "top8": 0.0
       },
       "match_set_sequence_conditioned_on_observed_first_server": {
-        "n": 0,
-        "top1": null,
-        "top3": null,
-        "top12": null
+        "n": 1,
+        "top1": 0.0,
+        "top3": 0.0,
+        "top12": 0.0
       },
       "full_match_game_path_conditioned_on_observed_first_server": {
-        "n": 0,
-        "top1": null,
-        "top2": null,
-        "top4": null,
-        "mean_best_prefix_fraction_top4": null
+        "n": 1,
+        "top1": 0.0,
+        "top2": 0.0,
+        "top4": 0.0,
+        "mean_best_prefix_fraction_top4": 0.0
       }
     },
     "segment_diagnostics": {
       "tour": {
-        "atp": {
-          "snapshots": 8,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
         "challenger": {
-          "snapshots": 82,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "itf": {
-          "snapshots": 6,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "juniors": {
           "snapshots": 1,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "wta": {
-          "snapshots": 8,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -3748,104 +3850,8 @@
         }
       },
       "surface": {
-        "clay": {
-          "snapshots": 51,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "grass": {
-          "snapshots": 1,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
         "hard": {
-          "snapshots": 53,
+          "snapshots": 1,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -3894,344 +3900,8 @@
         }
       },
       "tour_surface": {
-        "atp|hard": {
-          "snapshots": 8,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "challenger|clay": {
-          "snapshots": 48,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "challenger|grass": {
-          "snapshots": 1,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
         "challenger|hard": {
-          "snapshots": 33,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "itf|clay": {
-          "snapshots": 3,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "itf|hard": {
-          "snapshots": 3,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "juniors|hard": {
           "snapshots": 1,
-          "settled": 0,
-          "evaluation": {
-            "settled_matches": 0,
-            "checkpoint_neutral_start_server": {
-              "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              },
-              "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
-              }
-            },
-            "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
-            },
-            "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
-            },
-            "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
-            },
-            "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
-            }
-          }
-        },
-        "wta|hard": {
-          "snapshots": 8,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -4280,9 +3950,9 @@
         }
       },
       "coverage": {
-        "tour_segments_seen": 5,
-        "surface_segments_seen": 3,
-        "tour_surface_segments_seen": 8,
+        "tour_segments_seen": 1,
+        "surface_segments_seen": 1,
+        "tour_surface_segments_seen": 1,
         "tour_segments_with_settled": 0,
         "surface_segments_with_settled": 0,
         "tour_surface_segments_with_settled": 0
@@ -4291,7 +3961,8 @@
         "diagnostic_only": true,
         "direct_tour_surface_rows_are_built_from_same_match_snapshots": true,
         "marginal_tour_and_surface_results_never_imply_joint_validation": true,
-        "minimum_segment_sample_not_defined_yet": true,
+        "minimum_segment_sample_not_defined_yet": false,
+        "minimum_segment_sample_reuses_existing_prospective_gate": 30,
         "performance_verdict_forbidden": true
       }
     },
@@ -4346,50 +4017,50 @@
           }
         },
         "challenger": {
-          "snapshots": 82,
-          "settled": 0,
+          "snapshots": 83,
+          "settled": 1,
           "evaluation": {
-            "settled_matches": 0,
+            "settled_matches": 1,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 1.0
               },
               "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               },
               "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
+              "n": 1,
+              "top1": 1.0,
+              "top3": 1.0
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top8": 0.0
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top12": 0.0
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
+              "n": 1,
+              "top1": 0.0,
+              "top2": 0.0,
+              "top4": 0.0,
+              "mean_best_prefix_fraction_top4": 0.0
             }
           }
         },
@@ -4541,49 +4212,49 @@
       "surface": {
         "clay": {
           "snapshots": 51,
-          "settled": 0,
+          "settled": 1,
           "evaluation": {
-            "settled_matches": 0,
+            "settled_matches": 1,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 1.0
               },
               "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               },
               "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
+              "n": 1,
+              "top1": 1.0,
+              "top3": 1.0
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top8": 0.0
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top12": 0.0
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
+              "n": 1,
+              "top1": 0.0,
+              "top2": 0.0,
+              "top4": 0.0,
+              "mean_best_prefix_fraction_top4": 0.0
             }
           }
         },
@@ -4636,7 +4307,7 @@
           }
         },
         "hard": {
-          "snapshots": 53,
+          "snapshots": 54,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -4735,49 +4406,49 @@
         },
         "challenger|clay": {
           "snapshots": 48,
-          "settled": 0,
+          "settled": 1,
           "evaluation": {
-            "settled_matches": 0,
+            "settled_matches": 1,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 1.0
               },
               "after_4_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               },
               "after_6_games": {
-                "n": 0,
-                "top1": null,
-                "top3": null
+                "n": 1,
+                "top1": 0.0,
+                "top3": 0.0
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null
+              "n": 1,
+              "top1": 1.0,
+              "top3": 1.0
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top8": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top8": 0.0
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top3": null,
-              "top12": null
+              "n": 1,
+              "top1": 0.0,
+              "top3": 0.0,
+              "top12": 0.0
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 0,
-              "top1": null,
-              "top2": null,
-              "top4": null,
-              "mean_best_prefix_fraction_top4": null
+              "n": 1,
+              "top1": 0.0,
+              "top2": 0.0,
+              "top4": 0.0,
+              "mean_best_prefix_fraction_top4": 0.0
             }
           }
         },
@@ -4830,7 +4501,7 @@
           }
         },
         "challenger|hard": {
-          "snapshots": 33,
+          "snapshots": 34,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -5074,35 +4745,117 @@
         "tour_segments_seen": 5,
         "surface_segments_seen": 3,
         "tour_surface_segments_seen": 8,
-        "tour_segments_with_settled": 0,
-        "surface_segments_with_settled": 0,
-        "tour_surface_segments_with_settled": 0
+        "tour_segments_with_settled": 1,
+        "surface_segments_with_settled": 1,
+        "tour_surface_segments_with_settled": 1
       },
       "policy": {
         "diagnostic_only": true,
         "direct_tour_surface_rows_are_built_from_same_match_snapshots": true,
         "marginal_tour_and_surface_results_never_imply_joint_validation": true,
-        "minimum_segment_sample_not_defined_yet": true,
+        "minimum_segment_sample_not_defined_yet": false,
+        "minimum_segment_sample_reuses_existing_prospective_gate": 30,
         "performance_verdict_forbidden": true
       }
     },
-    "provenance": {
-      "current_simulator_fingerprint_sha256": "3916fea065216302640ecc073e76554e8810b6053fd367796959f6e51b6b275d",
-      "generations": {
-        "3916fea065216302640ecc073e76554e8810b6053fd367796959f6e51b6b275d": {
-          "snapshots": 105,
+    "sample_readiness": {
+      "status": "COLLECTING_TRAJECTORY_SAMPLE",
+      "overall_settled_snapshots": {
+        "settled": 0,
+        "required": 150,
+        "remaining": 150,
+        "support_sufficient": false
+      },
+      "primary_metrics": {
+        "checkpoint_after_2_games": {
           "settled": 0,
-          "unsettled": 105
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        },
+        "checkpoint_after_4_games": {
+          "settled": 0,
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        },
+        "checkpoint_after_6_games": {
+          "settled": 0,
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        },
+        "primary_storyline_match_score": {
+          "settled": 0,
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        },
+        "first_set_complete_path": {
+          "settled": 0,
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        },
+        "match_set_sequence": {
+          "settled": 0,
+          "required": 150,
+          "remaining": 150,
+          "support_sufficient": false
+        }
+      },
+      "ready_primary_metric_count": 0,
+      "primary_metric_count": 6,
+      "direct_tour_surface_segments": {
+        "challenger|hard": {
+          "settled": 0,
+          "required": 30,
+          "remaining": 30,
+          "support_sufficient": false
+        }
+      },
+      "ready_direct_tour_surface_segments": [],
+      "blocked_direct_tour_surface_segments": [
+        "challenger|hard"
+      ],
+      "sample_sufficient_for_future_performance_evaluation": false,
+      "performance_verdict_emitted": false,
+      "performance_verdict_allowed": false,
+      "policy": {
+        "readiness_is_sample_size_only_not_performance": true,
+        "overall_minimum_reuses_existing_prospective_gate": 150,
+        "direct_tour_surface_minimum_reuses_existing_prospective_gate": 30,
+        "full_match_exact_game_path_excluded_from_primary_readiness": true,
+        "performance_threshold_not_defined": true,
+        "performance_verdict_forbidden": true,
+        "no_auto_promotion": true
+      }
+    },
+    "provenance": {
+      "current_simulator_contract_id": "player-dna-trajectory-dp-v1",
+      "current_simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+      "current_simulator_source_fingerprint_sha256": "0acaac760947fd0b06bcad4170c2fafff120db80386412b12044b989f090f7ec",
+      "generations": {
+        "LEGACY_UNKNOWN": {
+          "snapshots": 105,
+          "settled": 1,
+          "unsettled": 104
+        },
+        "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691": {
+          "snapshots": 1,
+          "settled": 0,
+          "unsettled": 1
         }
       },
       "known_generation_count": 1,
-      "legacy_unknown_snapshots": 0,
-      "current_generation_snapshots": 105,
+      "legacy_unknown_snapshots": 105,
+      "current_generation_snapshots": 1,
       "other_known_generation_snapshots": 0,
-      "evaluation_excluded_snapshots": 0,
+      "evaluation_excluded_snapshots": 105,
       "mixed_known_generations": false,
       "policy": {
-        "new_snapshots_require_current_simulator_fingerprint": true,
+        "new_snapshots_require_semantic_simulator_contract_fingerprint": true,
+        "source_file_fingerprint_is_audit_only_not_generation_identity": true,
         "legacy_snapshots_are_never_rewritten_to_add_provenance": true,
         "legacy_unknown_snapshots_are_diagnostic_only": true,
         "current_generation_only_for_primary_prospective_metrics": true,
@@ -5114,43 +4867,48 @@
     "historical_benchmark": {
       "status": "COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK",
       "compatible_with_current_simulator_generation": true,
-      "current_simulator_fingerprint_sha256": "3916fea065216302640ecc073e76554e8810b6053fd367796959f6e51b6b275d",
-      "benchmark_simulator_fingerprint_sha256": "3916fea065216302640ecc073e76554e8810b6053fd367796959f6e51b6b275d",
+      "current_simulator_contract_id": "player-dna-trajectory-dp-v1",
+      "current_simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+      "current_simulator_source_fingerprint_sha256": "0acaac760947fd0b06bcad4170c2fafff120db80386412b12044b989f090f7ec",
+      "benchmark_simulator_contract_id": "player-dna-trajectory-dp-v1",
+      "benchmark_simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+      "benchmark_simulator_source_fingerprint_sha256": "0acaac760947fd0b06bcad4170c2fafff120db80386412b12044b989f090f7ec",
       "source_backtest_version": "player-dna-market-backtest-v1",
       "source_backtest_signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
       "historical_sample": {
-        "settled_predictions": 386,
-        "checkpoint_after_2_games_n": 385,
-        "checkpoint_after_4_games_n": 385,
-        "checkpoint_after_6_games_n": 385,
-        "first_set_complete_path_n": 385,
-        "storyline_match_score_n": 386,
-        "match_set_sequence_n": 386,
-        "full_match_game_path_n": 380
+        "settled_predictions": 387,
+        "checkpoint_after_2_games_n": 386,
+        "checkpoint_after_4_games_n": 386,
+        "checkpoint_after_6_games_n": 386,
+        "first_set_complete_path_n": 386,
+        "storyline_match_score_n": 387,
+        "match_set_sequence_n": 387,
+        "full_match_game_path_n": 381
       },
       "metrics": {
-        "checkpoint_after_2_games_top1": 0.594805,
+        "checkpoint_after_2_games_top1": 0.593264,
         "checkpoint_after_2_games_top3": 1.0,
-        "checkpoint_after_4_games_top1": 0.407792,
-        "checkpoint_after_4_games_top3": 0.896104,
-        "checkpoint_after_6_games_top1": 0.337662,
-        "checkpoint_after_6_games_top3": 0.820779,
-        "first_set_complete_path_top1": 0.033766,
-        "first_set_complete_path_top3": 0.101299,
-        "first_set_complete_path_top8": 0.2,
-        "storyline_match_score_top1": 0.34456,
-        "storyline_match_score_top3": 0.658031,
-        "match_set_sequence_top1": 0.023316,
-        "match_set_sequence_top3": 0.07772,
-        "match_set_sequence_top12": 0.19171,
+        "checkpoint_after_4_games_top1": 0.406736,
+        "checkpoint_after_4_games_top3": 0.893782,
+        "checkpoint_after_6_games_top1": 0.336788,
+        "checkpoint_after_6_games_top3": 0.818653,
+        "first_set_complete_path_top1": 0.033679,
+        "first_set_complete_path_top3": 0.101036,
+        "first_set_complete_path_top8": 0.199482,
+        "storyline_match_score_top1": 0.346253,
+        "storyline_match_score_top3": 0.658915,
+        "match_set_sequence_top1": 0.023256,
+        "match_set_sequence_top3": 0.077519,
+        "match_set_sequence_top12": 0.191214,
         "full_match_game_path_top1": 0.0,
         "full_match_game_path_top2": 0.0,
         "full_match_game_path_top4": 0.0,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.094399
+        "full_match_game_path_mean_top1_prefix_fraction": 0.094151
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
-        "fingerprint_match_required_for_comparison": true,
+        "semantic_contract_match_required_for_comparison": true,
+        "source_file_fingerprint_is_audit_only_not_compatibility_gate": true,
         "incompatible_benchmark_must_not_be_used_for_claims": true,
         "prospective_evidence_remains_primary_for_future_verdict": true,
         "no_promotion_from_historical_benchmark": true
@@ -9078,8 +8836,50 @@
             }
           }
         },
-        "settled": false,
-        "actual": null
+        "settled": true,
+        "actual": {
+          "first_server": 2,
+          "checkpoint_scores": {
+            "2": "2:0",
+            "4": "4:0",
+            "6": "6:0"
+          },
+          "first_set_progression": [
+            "1:0",
+            "2:0",
+            "3:0",
+            "4:0",
+            "5:0",
+            "6:0"
+          ],
+          "set_score_sequence": [
+            "6:0",
+            "6:2"
+          ],
+          "set_progressions": [
+            [
+              "1:0",
+              "2:0",
+              "3:0",
+              "4:0",
+              "5:0",
+              "6:0"
+            ],
+            [
+              "0:1",
+              "1:1",
+              "2:1",
+              "3:1",
+              "3:2",
+              "4:2",
+              "5:2",
+              "6:2"
+            ]
+          ],
+          "full_match_progression_complete": true,
+          "match_exact_score": "2:0"
+        },
+        "settled_at": "2026-09-06T12:15:45.259610+00:00"
       },
       {
         "match_id": "187068",
@@ -45471,6 +45271,822 @@
                     ]
                   ],
                   "probability": 0.0006218694027509975
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "187266",
+        "scheduled_time": "2026-09-07T02:00:00+00:00",
+        "captured_at": "2026-09-06T12:15:45.259610+00:00",
+        "captured_pre_match": true,
+        "tour": "challenger",
+        "surface": "hard",
+        "p1": "Tsung-Hao Huang",
+        "p2": "Luca Castelnuovo",
+        "source_model_fingerprint_sha256": "9974b9ac5835c59af027ac2cbb9b12e0514b2b9627e31b5fd5656004eb0f9a19",
+        "source_simulator_fingerprint_sha256": "0acaac760947fd0b06bcad4170c2fafff120db80386412b12044b989f090f7ec",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.6633512859155823
+              },
+              {
+                "score": "2:0",
+                "probability": 0.20874183739235636
+              },
+              {
+                "score": "0:2",
+                "probability": 0.1279068766920612
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.4934339614374936
+              },
+              {
+                "score": "3:1",
+                "probability": 0.276938332517202
+              },
+              {
+                "score": "1:3",
+                "probability": 0.16969438226224925
+              },
+              {
+                "score": "4:0",
+                "probability": 0.043573154677936946
+              },
+              {
+                "score": "0:4",
+                "probability": 0.016360169105118148
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.3981646871311469
+              },
+              {
+                "score": "4:2",
+                "probability": 0.2922810168593296
+              },
+              {
+                "score": "2:4",
+                "probability": 0.17909563530662626
+              },
+              {
+                "score": "5:1",
+                "probability": 0.08671292456102414
+              },
+              {
+                "score": "1:5",
+                "probability": 0.03255761764102952
+              },
+              {
+                "score": "6:0",
+                "probability": 0.009095540368453907
+              },
+              {
+                "score": "0:6",
+                "probability": 0.002092578132389616
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.041306168777037966
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.041306168777037966
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.041306168777037966
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.04130616877703796
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "5:4",
+                    "5:5",
+                    "6:5",
+                    "6:6",
+                    "7:6"
+                  ],
+                  "final_score": "7:6",
+                  "probability": 0.03238838397532587
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140397
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "5:4",
+                    "5:5",
+                    "6:5",
+                    "6:6",
+                    "6:7"
+                  ],
+                  "final_score": "6:7",
+                  "probability": 0.024581915243619586
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.022408265955043378
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.05957789403557046
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.028080699606469462
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:2"
+                  ],
+                  "probability": 0.02741897690226101
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "7:6"
+                  ],
+                  "probability": 0.026886907596762395
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.02336259074612552
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.01985751043216556
+                },
+                {
+                  "set_scores": [
+                    "6:1",
+                    "6:4"
+                  ],
+                  "probability": 0.017932510976782865
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.017324681305698503
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:3"
+                  ],
+                  "probability": 0.015463431535974306
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "7:5"
+                  ],
+                  "probability": 0.014882161127567224
+                },
+                {
+                  "set_scores": [
+                    "7:5",
+                    "6:3"
+                  ],
+                  "probability": 0.014882161127567224
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "6:7"
+                  ],
+                  "probability": 0.013059265566133035
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.41292577197428715
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.2951651174182567
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.16416935158893886
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.12773975901851714
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003224
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003224
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003224
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "5:3",
+                      "6:3"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003222
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "4:5",
+                    "5:5",
+                    "5:6",
+                    "6:6",
+                    "7:6"
+                  ],
+                  "final_score": "7:6",
+                  "probability": 0.03238838397532587
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "3:2",
+                    "4:2",
+                    "4:3",
+                    "5:3",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140404
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "3:2",
+                    "4:2",
+                    "4:3",
+                    "5:3",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140404
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "2:1",
+                    "3:1",
+                    "3:2",
+                    "4:2",
+                    "4:3",
+                    "5:3",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140404
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140397
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "4:3",
+                    "5:3",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.030905931347140397
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "4:5",
+                    "5:5",
+                    "5:6",
+                    "6:6",
+                    "6:7"
+                  ],
+                  "final_score": "6:7",
+                  "probability": 0.024581915243619586
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.022842575274354644
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.062223182029322574
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.028636393052573633
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.028636393052573633
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.02808069960646946
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:3"
+                  ],
+                  "probability": 0.026886907596762395
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.020188297197179628
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.01809390573357412
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.017324681305698503
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:5"
+                  ],
+                  "probability": 0.015542936450178223
+                },
+                {
+                  "set_scores": [
+                    "7:5",
+                    "6:4"
+                  ],
+                  "probability": 0.015542936450178223
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:2"
+                  ],
+                  "probability": 0.013179059320287468
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "4:6"
+                  ],
+                  "probability": 0.013059265566133033
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.41292577197428715
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.2951651174182567
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.16416935158893886
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.1277397590185171
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "5:3",
+                      "6:3"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003222
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003222
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003222
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "5:5",
+                      "5:6",
+                      "6:6",
+                      "7:6"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "4:2",
+                      "5:2",
+                      "5:3",
+                      "6:3"
+                    ]
+                  ],
+                  "probability": 0.0013378400549003222
                 }
               ]
             }
@@ -90348,8 +90964,14 @@
         "first_set_over_9.5": 0.5339520677115516,
         "first_set_over_10.5": 0.2735402484669134
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": false,
+        "first_set_over_8.5": false,
+        "first_set_over_9.5": false,
+        "first_set_over_10.5": false
+      },
+      "settled_at": "2026-09-06T12:15:45.259610+00:00"
     },
     {
       "match_id": "187068",
@@ -91247,6 +91869,31 @@
         "first_set_over_8.5": 0.7749145450647357,
         "first_set_over_9.5": 0.5435066344245476,
         "first_set_over_10.5": 0.28025767260998485
+      },
+      "settled": false,
+      "actual": null
+    },
+    {
+      "match_id": "187266",
+      "scheduled_time": "2026-09-07T02:00:00+00:00",
+      "captured_at": "2026-09-06T12:15:45.259610+00:00",
+      "captured_pre_match": true,
+      "tour": "challenger",
+      "surface": "hard",
+      "p1": "Tsung-Hao Huang",
+      "p2": "Luca Castelnuovo",
+      "source_model_fingerprint_sha256": "9974b9ac5835c59af027ac2cbb9b12e0514b2b9627e31b5fd5656004eb0f9a19",
+      "raw_probabilities": {
+        "first_set_tiebreak": 0.19801178392358745,
+        "first_set_over_8.5": 0.8035098157386702,
+        "first_set_over_9.5": 0.5666921198693836,
+        "first_set_over_10.5": 0.2985021483003295
+      },
+      "calibrated_probabilities": {
+        "first_set_tiebreak": 0.1789534138969755,
+        "first_set_over_8.5": 0.7839421745535773,
+        "first_set_over_9.5": 0.5502405666303335,
+        "first_set_over_10.5": 0.28537315013572656
       },
       "settled": false,
       "actual": null

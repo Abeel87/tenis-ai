@@ -8,50 +8,50 @@
   "profile_threshold_activation_enabled": false,
   "strict_as_of_policy": "prior_match_scheduled_time < target_match_scheduled_time",
   "same_time_matches_count_as_prior": false,
-  "strict_matches": 3449,
-  "player_match_snapshots": 6898,
+  "strict_matches": 3450,
+  "player_match_snapshots": 6900,
   "players": 1937,
   "same_time_groups": 555,
   "source_counts": {
-    "point_rows_seen": 444094,
-    "non_strict_rows_skipped": 34267,
-    "strict_rows_used": 409827,
-    "strict_matches": 3449
+    "point_rows_seen": 444182,
+    "non_strict_rows_skipped": 34271,
+    "strict_rows_used": 409911,
+    "strict_matches": 3450
   },
   "readiness_any_surface": {
     "1": {
-      "targets": 4961,
-      "rate": 0.719194
+      "targets": 4963,
+      "rate": 0.719275
     },
     "3": {
-      "targets": 2902,
-      "rate": 0.420702
+      "targets": 2904,
+      "rate": 0.42087
     },
     "5": {
-      "targets": 1663,
-      "rate": 0.241084
+      "targets": 1665,
+      "rate": 0.241304
     },
     "10": {
-      "targets": 249,
-      "rate": 0.036097
+      "targets": 250,
+      "rate": 0.036232
     }
   },
   "readiness_same_surface": {
     "1": {
-      "targets": 4625,
-      "rate": 0.670484
+      "targets": 4627,
+      "rate": 0.67058
     },
     "3": {
-      "targets": 2448,
-      "rate": 0.354885
+      "targets": 2450,
+      "rate": 0.355072
     },
     "5": {
-      "targets": 1288,
-      "rate": 0.186721
+      "targets": 1290,
+      "rate": 0.186957
     },
     "10": {
-      "targets": 166,
-      "rate": 0.024065
+      "targets": 167,
+      "rate": 0.024203
     }
   },
   "features": {
@@ -78,7 +78,21 @@
       "tiebreak_points",
       "tiebreak_wins",
       "tiebreak_win_rate"
-    ]
+    ],
+    "rolling_prior": {
+      "windows": [
+        5,
+        10,
+        20
+      ],
+      "all_surface": true,
+      "same_surface": true,
+      "trend_l5_vs_l10_l20": true,
+      "raw_support_counts": true,
+      "training_join_enabled": false,
+      "shrinkage_activation_enabled": false,
+      "shrinkage_requires_separate_data_driven_gate": true
+    }
   },
   "note": "SHADOW evidence only. Raw support counts accompany every rate. No minimum-history threshold, training join or production influence is activated.",
   "dataset_path": "data/derived/player_dna/profile_snapshots.jsonl.gz"
