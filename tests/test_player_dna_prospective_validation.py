@@ -397,7 +397,9 @@ def test_duration_market_scope_is_exact_and_candidate_only():
     )
 
 
-DYNAMIC_POLICY_FP = "a" * 64
+DYNAMIC_POLICY_SOURCE_FP = "a" * 64
+DYNAMIC_POLICY_CONTRACT_FP = "c" * 64
+DYNAMIC_POLICY_CONTRACT_ID = "strict-marginal-agreement-mean-direction-v1"
 
 
 def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAMIC_CANDIDATE"):
@@ -447,7 +449,9 @@ def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAM
         "prospective_validation_required": True,
         "market_policy_source": "segment_consensus_shadow_policy",
         "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
-        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
+        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_SOURCE_FP,
+        "market_policy_contract_id": DYNAMIC_POLICY_CONTRACT_ID,
+        "market_policy_contract_fingerprint_sha256": DYNAMIC_POLICY_CONTRACT_FP,
         "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [{
             "match_id": match_id,
@@ -488,7 +492,9 @@ def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_market
 
     snapshot = dynamic_evidence["snapshots"][0]
     assert snapshot["captured_pre_match"] is True
-    assert snapshot["market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_FP
+    assert snapshot["market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_SOURCE_FP
+    assert snapshot["market_policy_contract_id"] == DYNAMIC_POLICY_CONTRACT_ID
+    assert snapshot["market_policy_contract_fingerprint_sha256"] == DYNAMIC_POLICY_CONTRACT_FP
     assert set(snapshot["candidate_markets"]) == {"match_p1_win"}
     assert snapshot["candidate_markets"]["match_p1_win"]["profile_reference_probability"] == 0.55
     assert snapshot["candidate_markets"]["match_p1_win"]["dynamic_candidate_probability"] == 0.65
@@ -580,7 +586,7 @@ def _dynamic_settled_snapshot(
     actual=True,
     profile_probability=0.55,
     dynamic_probability=0.75,
-    policy_fingerprint=DYNAMIC_POLICY_FP,
+    policy_fingerprint=DYNAMIC_POLICY_CONTRACT_FP,
 ):
     tour, surface = segment.split("|", 1)
     return {
@@ -593,7 +599,9 @@ def _dynamic_settled_snapshot(
         "p1": f"A{match_id}",
         "p2": f"B{match_id}",
         "source_model_fingerprint_sha256": "lean-fingerprint",
-        "market_policy_source_fingerprint_sha256": policy_fingerprint,
+        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_SOURCE_FP,
+        "market_policy_contract_id": DYNAMIC_POLICY_CONTRACT_ID,
+        "market_policy_contract_fingerprint_sha256": policy_fingerprint,
         "market_segment_key": segment,
         "candidate_markets": {
             market: {
@@ -1338,14 +1346,16 @@ def test_dynamic_policy_provenance_marks_new_snapshot_as_current_generation():
 
     dynamic = report["dynamic_lean_evidence"]
     provenance = dynamic["market_policy_provenance"]
-    assert provenance["current_market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_FP
+    assert provenance["current_market_policy_contract_id"] == DYNAMIC_POLICY_CONTRACT_ID
+    assert provenance["current_market_policy_contract_fingerprint_sha256"] == DYNAMIC_POLICY_CONTRACT_FP
+    assert provenance["current_market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_SOURCE_FP
     assert provenance["known_generation_count"] == 1
     assert provenance["legacy_unknown_snapshots"] == 0
     assert provenance["current_generation_snapshots"] == 1
     assert provenance["other_known_generation_snapshots"] == 0
     assert provenance["verdict_excluded_snapshots"] == 0
     assert provenance["policy"][
-        "new_snapshots_require_market_policy_source_fingerprint"
+        "new_snapshots_require_market_policy_contract_fingerprint"
     ] is True
     assert provenance["policy"][
         "future_verdict_uses_current_policy_generation_only"
@@ -1355,7 +1365,8 @@ def test_dynamic_policy_provenance_marks_new_snapshot_as_current_generation():
 def test_dynamic_legacy_policy_unknown_snapshots_remain_immutable_but_do_not_count_for_verdict():
     now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
     legacy = _dynamic_settled_snapshot("legacy-1")
-    legacy.pop("market_policy_source_fingerprint_sha256", None)
+    legacy.pop("market_policy_contract_id", None)
+    legacy.pop("market_policy_contract_fingerprint_sha256", None)
 
     report = build_report(
         {"version": "sim", "matches": []},
@@ -1373,7 +1384,8 @@ def test_dynamic_legacy_policy_unknown_snapshots_remain_immutable_but_do_not_cou
     )
 
     dynamic = report["dynamic_lean_evidence"]
-    assert "market_policy_source_fingerprint_sha256" not in dynamic["snapshots"][0]
+    assert "market_policy_contract_fingerprint_sha256" not in dynamic["snapshots"][0]
+    assert dynamic["snapshots"][0]["market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_SOURCE_FP
     assert dynamic["ledger_integrity"]["rewritten_predictions"] == 0
     assert dynamic["ledger_evaluation"]["settled_market_observations"] == 1
     assert dynamic["evaluation"]["settled_market_observations"] == 0
