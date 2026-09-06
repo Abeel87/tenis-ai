@@ -202,3 +202,18 @@ def test_player_dna_dynamic_ui_exposes_policy_generation_isolation_for_verdict()
     assert "Policy generations" in js
     assert "Verdict liczy wyłącznie bieżącą generację strict segment-consensus" in js
     assert "legacy bez fingerprintu" in js
+
+
+
+def test_player_dna_trajectory_ui_uses_current_simulator_generation_for_primary_metrics():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "ledger_settled_snapshots" in js
+    assert "current_generation_snapshots" in js
+    assert "evaluation_excluded_snapshots" in js
+    assert "Trajectory ledger" in js
+    assert "Bieżąca generacja" in js
+    assert "settled do metryk" in js
+    assert "Wykluczone z bieżących metryk" in js
+    assert "Główne metryki liczą wyłącznie bieżącą generację simulatora" in js
+    assert "legacy i starsze znane generacje zostają tylko w diagnostyce ledger-wide" in js
