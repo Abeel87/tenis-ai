@@ -1,5 +1,7 @@
 from backend.player_dna_market_backtest import (
+    SIMULATOR_SOURCE,
     _dynamic_candidate_simulation,
+    _sha256_file,
     _rank_context_by_match,
     _trajectory_validation,
     binary_head_to_head,
@@ -420,3 +422,10 @@ def test_deciding_set_order_is_ranked_inside_actual_match_score_family():
     assert conditional["edge_vs_chance_pp"] == -50.0
     assert metrics["coverage"]["deciding_set_order_sequences"] == 1
 
+
+
+
+def test_trajectory_backtest_simulator_source_has_stable_sha256_provenance():
+    fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    assert isinstance(fingerprint, str)
+    assert len(fingerprint) == 64
