@@ -17,6 +17,7 @@ on:
       - 'backend/player_dna_profile_readiness.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_opponent_context_audit.py'
+      - 'backend/player_dna_opponent_adjustment_audit.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
       - 'backend/player_dna_current_dynamic_shadow.py'
@@ -40,6 +41,7 @@ on:
       - 'tests/test_player_dna_profile_readiness.py'
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_opponent_context_audit.py'
+      - 'tests/test_player_dna_opponent_adjustment_audit.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
       - 'tests/test_player_dna_current_dynamic_shadow.py'
@@ -83,7 +85,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -157,6 +159,56 @@ jobs:
               f"paired_matches={report.get('paired_matches')} "
               f"target_player_rows={report.get('target_player_rows')} "
               f"common_any={((report.get('common_opponent_coverage') or {}).get('overall') or {}).get('with_any')}"
+          )
+          PY
+
+      - name: Evaluate opponent-strength challenger (SHADOW, zero network)
+        run: python backend/player_dna_opponent_adjustment_audit.py
+
+      - name: Guard opponent-strength challenger isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_opponent_adjustment_audit.json')
+          if not p.exists():
+              raise SystemExit('player_dna_opponent_adjustment_audit.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+          if report.get('mode') != 'SHADOW_CHALLENGER_EVAL_ONLY':
+              raise SystemExit('Opponent adjustment challenger mode invalid')
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'training_join_enabled',
+              'canonical_profile_write_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+              'promotion_gate',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Opponent challenger isolation violation: {key}')
+          leakage = report.get('leakage_contract') or {}
+          for key in (
+              'historical_opponent_strength_is_from_opponents_own_pre_match_snapshot',
+              'target_match_not_added_to_its_own_history',
+              'same_timestamp_matches_never_count_as_prior',
+              'stable_provider_player_ids_only',
+              'future_match_results_not_used',
+          ):
+              if leakage.get(key) is not True:
+                  raise SystemExit(f'Opponent challenger leakage contract violation: {key}')
+          if int(report.get('all_enriched_points') or 0) <= 0:
+              raise SystemExit('Opponent challenger produced no enriched real-cache points')
+          signal = report.get('signal') or {}
+          if signal.get('candidate_may_replace_reference') is True:
+              raise SystemExit('Audit-only challenger must never replace the reference automatically')
+          print(
+              'Opponent challenger: '
+              f"status={signal.get('status')} "
+              f"positive_vs_lean={signal.get('positive_vs_lean_stateful')} "
+              f"robust={signal.get('robust_positive_vs_lean_stateful')}"
           )
           PY
 
@@ -1505,6 +1557,7 @@ jobs:
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_opponent_context_audit.json
+            frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_dynamic_shadow.json
