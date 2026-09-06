@@ -59,7 +59,7 @@ VERSION = "player-dna-opponent-adjustment-audit-v1"
 MODE = "SHADOW_CHALLENGER_EVAL_ONLY"
 L5 = 5
 
-OPPONENT_NUMERIC = [
+OPPONENT_STRENGTH_NUMERIC = [
     "server_history_opponent_return_mean",
     "server_history_opponent_return_l5",
     "server_history_opponent_return_surface_mean",
@@ -68,11 +68,14 @@ OPPONENT_NUMERIC = [
     "receiver_history_opponent_serve_l5",
     "receiver_history_opponent_serve_surface_mean",
     "receiver_history_opponent_serve_surface_l5",
+]
+OPPONENT_SUPPORT_NUMERIC = [
     "server_history_opponent_overall_support",
     "server_history_opponent_surface_support",
     "receiver_history_opponent_overall_support",
     "receiver_history_opponent_surface_support",
 ]
+OPPONENT_NUMERIC = OPPONENT_STRENGTH_NUMERIC + OPPONENT_SUPPORT_NUMERIC
 
 
 def _parse_utc(value: Any) -> datetime | None:
@@ -414,27 +417,56 @@ def _positive_gains(gains: dict[str, float]) -> bool:
 def _evaluate_frames(train, test) -> dict[str, Any]:
     base_numeric = list(PROFILE_NUMERIC) + list(RANK_NUMERIC)
     lean_numeric = base_numeric + list(LEAN_STATE_NUMERIC)
-    opponent_numeric = base_numeric + list(OPPONENT_NUMERIC)
-    lean_opponent_numeric = lean_numeric + list(OPPONENT_NUMERIC)
+    strength_numeric = base_numeric + list(OPPONENT_STRENGTH_NUMERIC)
+    lean_strength_numeric = lean_numeric + list(OPPONENT_STRENGTH_NUMERIC)
+    full_context_numeric = base_numeric + list(OPPONENT_NUMERIC)
+    lean_full_context_numeric = lean_numeric + list(OPPONENT_NUMERIC)
 
     base, _ = _fit_candidate(train, test, base_numeric)
-    opponent, _ = _fit_candidate(train, test, opponent_numeric)
+    strength, _ = _fit_candidate(train, test, strength_numeric)
+    full_context, _ = _fit_candidate(train, test, full_context_numeric)
     lean, _ = _fit_candidate(train, test, lean_numeric)
-    lean_opponent, _ = _fit_candidate(train, test, lean_opponent_numeric)
+    lean_strength, _ = _fit_candidate(train, test, lean_strength_numeric)
+    lean_full_context, _ = _fit_candidate(
+        train, test, lean_full_context_numeric
+    )
 
-    gains_vs_base = _proper_score_gains(base["metrics"], opponent["metrics"])
-    gains_vs_lean = _proper_score_gains(
-        lean["metrics"], lean_opponent["metrics"]
+    strength_gains_vs_base = _proper_score_gains(
+        base["metrics"], strength["metrics"]
+    )
+    strength_gains_vs_lean = _proper_score_gains(
+        lean["metrics"], lean_strength["metrics"]
+    )
+    full_gains_vs_base = _proper_score_gains(
+        base["metrics"], full_context["metrics"]
+    )
+    full_gains_vs_lean = _proper_score_gains(
+        lean["metrics"], lean_full_context["metrics"]
+    )
+    support_gains_beyond_strength = _proper_score_gains(
+        lean_strength["metrics"], lean_full_context["metrics"]
     )
     return {
         "profile_plus_rank": base,
-        "profile_rank_plus_opponent": opponent,
+        "profile_rank_plus_opponent_strength": strength,
+        "profile_rank_plus_opponent_strength_and_support": full_context,
         "lean_stateful": lean,
-        "lean_stateful_plus_opponent": lean_opponent,
-        "opponent_gains_vs_profile_plus_rank": gains_vs_base,
-        "opponent_gains_vs_lean_stateful": gains_vs_lean,
-        "positive_vs_profile_plus_rank": _positive_gains(gains_vs_base),
-        "positive_vs_lean_stateful": _positive_gains(gains_vs_lean),
+        "lean_stateful_plus_opponent_strength": lean_strength,
+        "lean_stateful_plus_opponent_strength_and_support": lean_full_context,
+        "opponent_strength_gains_vs_profile_plus_rank": strength_gains_vs_base,
+        "opponent_strength_gains_vs_lean_stateful": strength_gains_vs_lean,
+        "full_context_gains_vs_profile_plus_rank": full_gains_vs_base,
+        "full_context_gains_vs_lean_stateful": full_gains_vs_lean,
+        "support_gains_beyond_strength": support_gains_beyond_strength,
+        "positive_strength_vs_profile_plus_rank": _positive_gains(
+            strength_gains_vs_base
+        ),
+        "positive_strength_vs_lean_stateful": _positive_gains(
+            strength_gains_vs_lean
+        ),
+        "support_improves_all_primary_scores_beyond_strength": _positive_gains(
+            support_gains_beyond_strength
+        ),
     }
 
 
@@ -468,7 +500,7 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 **meta,
                 "status": (
                     "POSITIVE_OPPONENT_CONTEXT_FOLD"
-                    if result["positive_vs_lean_stateful"]
+                    if result["positive_strength_vs_lean_stateful"]
                     else "MIXED_OR_NEGATIVE_OPPONENT_CONTEXT_FOLD"
                 ),
                 "train_points": int(len(train)),
@@ -480,12 +512,12 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
     completed = [
         row
         for row in folds
-        if "opponent_gains_vs_lean_stateful" in row
+        if "opponent_strength_gains_vs_lean_stateful" in row
     ]
     positive = [
         row
         for row in completed
-        if row.get("positive_vs_lean_stateful") is True
+        if row.get("positive_strength_vs_lean_stateful") is True
     ]
 
     def mean_gain(key: str, metric: str) -> float | None:
@@ -502,14 +534,14 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "mean_gains_vs_lean_stateful": {
             "brier_gain": mean_gain(
-                "opponent_gains_vs_lean_stateful", "brier_gain"
+                "opponent_strength_gains_vs_lean_stateful", "brier_gain"
             ),
             "match_equal_brier_gain": mean_gain(
-                "opponent_gains_vs_lean_stateful",
+                "opponent_strength_gains_vs_lean_stateful",
                 "match_equal_brier_gain",
             ),
             "log_loss_gain": mean_gain(
-                "opponent_gains_vs_lean_stateful", "log_loss_gain"
+                "opponent_strength_gains_vs_lean_stateful", "log_loss_gain"
             ),
         },
     }
@@ -538,6 +570,8 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "all_enriched_points": len(rows),
         "train_points_after_support_gate": int(len(train)),
         "holdout_points_after_support_gate": int(len(holdout)),
+        "opponent_strength_numeric_features": list(OPPONENT_STRENGTH_NUMERIC),
+        "opponent_support_numeric_features": list(OPPONENT_SUPPORT_NUMERIC),
         "opponent_numeric_features": list(OPPONENT_NUMERIC),
         "production_influence": False,
         "runtime_scoring_enabled": False,
@@ -550,6 +584,8 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "opponent_support_contract": {
             "support_counts_only_bidirectional_pre_match_serve_return_profiles": True,
             "raw_prior_match_count_is_not_an_opponent_strength_feature": True,
+            "support_features_are_separate_uncertainty_diagnostic": True,
+            "primary_success_gate_uses_strength_rates_without_support_features": True,
             "no_modeling_support_threshold_activated": True,
         },
         "source_limitations": {
@@ -579,7 +615,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     holdout_result = _evaluate_frames(train, holdout)
     walk_forward = _walk_forward(rows)
     robust = bool(walk_forward["robust_positive_vs_lean_stateful"])
-    holdout_positive = bool(holdout_result["positive_vs_lean_stateful"])
+    holdout_positive = bool(holdout_result["positive_strength_vs_lean_stateful"])
 
     report["holdout"] = holdout_result
     report["walk_forward"] = walk_forward
@@ -590,7 +626,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             else "OPPONENT_CONTEXT_NOT_ROBUST_ENOUGH"
         ),
         "positive_vs_profile_plus_rank": bool(
-            holdout_result["positive_vs_profile_plus_rank"]
+            holdout_result["positive_strength_vs_profile_plus_rank"]
         ),
         "positive_vs_lean_stateful": holdout_positive,
         "robust_positive_vs_lean_stateful": robust,
