@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 CURRENT_SIMULATION = ROOT / "frontend" / "data" / "player_dna_current_simulation.json"
 CURRENT_DYNAMIC = ROOT / "frontend" / "data" / "player_dna_current_dynamic_shadow.json"
+MARKET_BACKTEST = ROOT / "frontend" / "data" / "player_dna_market_backtest.json"
 WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_prospective_validation.json"
 SIMULATOR_SOURCE = ROOT / "backend" / "player_dna_tennis_simulator.py"
@@ -1520,11 +1521,141 @@ def _trajectory_segment_diagnostics(
     }
 
 
+def _trajectory_historical_benchmark(
+    market_backtest: dict[str, Any],
+    current_simulator_fingerprint: str | None,
+) -> dict[str, Any]:
+    validation = (
+        market_backtest.get("trajectory_validation")
+        if isinstance(market_backtest, dict)
+        else {}
+    )
+    validation = validation if isinstance(validation, dict) else {}
+    provenance = (
+        market_backtest.get("trajectory_simulator_provenance")
+        if isinstance(market_backtest, dict)
+        else {}
+    )
+    provenance = provenance if isinstance(provenance, dict) else {}
+    benchmark_fingerprint = str(provenance.get("source_sha256") or "").strip()
+    compatible = bool(
+        current_simulator_fingerprint
+        and benchmark_fingerprint
+        and benchmark_fingerprint == current_simulator_fingerprint
+    )
+
+    checkpoint = validation.get("checkpoint_neutral_start_server") or {}
+    first_set = (
+        validation.get(
+            "first_set_conditioned_on_observed_first_server"
+        ) or {}
+    )
+    storyline = (
+        validation.get(
+            "primary_storyline_match_score_conditioned_on_observed_first_server"
+        ) or {}
+    )
+    match_sets = (
+        validation.get(
+            "match_set_sequence_conditioned_on_observed_first_server"
+        ) or {}
+    )
+    full_match = (
+        validation.get(
+            "full_match_game_path_conditioned_on_observed_first_server"
+        ) or {}
+    )
+
+    return {
+        "status": (
+            "COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK"
+            if compatible
+            else "HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE"
+        ),
+        "compatible_with_current_simulator_generation": compatible,
+        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
+        "benchmark_simulator_fingerprint_sha256": (
+            benchmark_fingerprint or None
+        ),
+        "source_backtest_version": (
+            market_backtest.get("version")
+            if isinstance(market_backtest, dict)
+            else None
+        ),
+        "source_backtest_signal": (
+            market_backtest.get("signal")
+            if isinstance(market_backtest, dict)
+            else None
+        ),
+        "historical_sample": {
+            "settled_predictions": int(
+                ((validation.get("coverage") or {}).get("settled_predictions"))
+                or 0
+            ),
+            "checkpoint_after_2_games_n": int(
+                ((checkpoint.get("after_2_games") or {}).get("n")) or 0
+            ),
+            "checkpoint_after_4_games_n": int(
+                ((checkpoint.get("after_4_games") or {}).get("n")) or 0
+            ),
+            "checkpoint_after_6_games_n": int(
+                ((checkpoint.get("after_6_games") or {}).get("n")) or 0
+            ),
+            "first_set_complete_path_n": int(first_set.get("n") or 0),
+            "storyline_match_score_n": int(storyline.get("n") or 0),
+            "match_set_sequence_n": int(match_sets.get("n") or 0),
+            "full_match_game_path_n": int(full_match.get("n") or 0),
+        },
+        "metrics": {
+            "checkpoint_after_2_games_top1": (
+                (checkpoint.get("after_2_games") or {}).get("top1_accuracy")
+            ),
+            "checkpoint_after_2_games_top3": (
+                (checkpoint.get("after_2_games") or {}).get("top3_accuracy")
+            ),
+            "checkpoint_after_4_games_top1": (
+                (checkpoint.get("after_4_games") or {}).get("top1_accuracy")
+            ),
+            "checkpoint_after_4_games_top3": (
+                (checkpoint.get("after_4_games") or {}).get("top3_accuracy")
+            ),
+            "checkpoint_after_6_games_top1": (
+                (checkpoint.get("after_6_games") or {}).get("top1_accuracy")
+            ),
+            "checkpoint_after_6_games_top3": (
+                (checkpoint.get("after_6_games") or {}).get("top3_accuracy")
+            ),
+            "first_set_complete_path_top1": first_set.get("hit_at_1"),
+            "first_set_complete_path_top3": first_set.get("hit_at_3"),
+            "first_set_complete_path_top8": first_set.get("hit_at_8"),
+            "storyline_match_score_top1": storyline.get("hit_at_1"),
+            "storyline_match_score_top3": storyline.get("hit_at_3"),
+            "match_set_sequence_top1": match_sets.get("hit_at_1"),
+            "match_set_sequence_top3": match_sets.get("hit_at_3"),
+            "match_set_sequence_top12": match_sets.get("hit_at_12"),
+            "full_match_game_path_top1": full_match.get("hit_at_1"),
+            "full_match_game_path_top2": full_match.get("hit_at_2"),
+            "full_match_game_path_top4": full_match.get("hit_at_4"),
+            "full_match_game_path_mean_top1_prefix_fraction": (
+                full_match.get("mean_top1_prefix_fraction")
+            ),
+        },
+        "policy": {
+            "benchmark_is_historical_reference_not_performance_verdict": True,
+            "fingerprint_match_required_for_comparison": True,
+            "incompatible_benchmark_must_not_be_used_for_claims": True,
+            "prospective_evidence_remains_primary_for_future_verdict": True,
+            "no_promotion_from_historical_benchmark": True,
+        },
+    }
+
+
 def _build_trajectory_evidence(
     current_simulation: dict[str, Any],
     labels: dict[str, dict[str, Any]],
     previous: dict[str, Any] | None,
     now: datetime,
+    market_backtest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     previous_evidence = (
         (previous or {}).get("trajectory_evidence")
@@ -1609,6 +1740,10 @@ def _build_trajectory_evidence(
         snapshots,
         simulator_fingerprint,
     )
+    historical_benchmark = _trajectory_historical_benchmark(
+        market_backtest if isinstance(market_backtest, dict) else {},
+        simulator_fingerprint,
+    )
     return {
         "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",
         "status": "TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE",
@@ -1656,6 +1791,7 @@ def _build_trajectory_evidence(
         "evaluation": evaluation,
         "segment_diagnostics": segment_diagnostics,
         "provenance": provenance,
+        "historical_benchmark": historical_benchmark,
         "snapshots": snapshots,
     }
 
@@ -2012,6 +2148,7 @@ def build_report(
     previous: dict[str, Any] | None = None,
     *,
     current_dynamic: dict[str, Any] | None = None,
+    market_backtest: dict[str, Any] | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
@@ -2120,6 +2257,9 @@ def build_report(
         labels,
         previous,
         now,
+        market_backtest=(
+            market_backtest if isinstance(market_backtest, dict) else {}
+        ),
     )
 
     return {
@@ -2183,6 +2323,11 @@ def build() -> dict[str, Any]:
         walk_forward = json.loads(WALK_FORWARD.read_text(encoding="utf-8"))
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         walk_forward = {}
+
+    try:
+        market_backtest = json.loads(MARKET_BACKTEST.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        market_backtest = {}
     try:
         previous = json.loads(OUT.read_text(encoding="utf-8"))
     except (FileNotFoundError, OSError, json.JSONDecodeError):
@@ -2195,6 +2340,7 @@ def build() -> dict[str, Any]:
         point_rows,
         previous,
         current_dynamic=current_dynamic,
+        market_backtest=market_backtest,
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
