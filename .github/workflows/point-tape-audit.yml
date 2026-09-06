@@ -742,6 +742,15 @@ jobs:
                   raise SystemExit(f'Current dynamic lean isolation violation: {key}={current_dynamic.get(key)}')
           if current_dynamic.get('candidate_only') is not True or current_dynamic.get('prospective_validation_required') is not True:
               raise SystemExit('Current dynamic lean must remain candidate-only and require prospective validation')
+          if current_dynamic.get('market_policy_source') != 'segment_consensus_shadow_policy':
+              raise SystemExit('Current dynamic lean market-policy source drift')
+          if current_dynamic.get('market_policy_source_path') != 'backend/player_dna_market_walk_forward.py':
+              raise SystemExit('Current dynamic lean market-policy source path drift')
+          current_dynamic_policy_fingerprint = current_dynamic.get('market_policy_source_fingerprint_sha256')
+          if not isinstance(current_dynamic_policy_fingerprint, str) or len(current_dynamic_policy_fingerprint) != 64:
+              raise SystemExit('Current dynamic lean market-policy source fingerprint missing')
+          if current_dynamic.get('market_policy_provenance_required_for_prospective_verdict') is not True:
+              raise SystemExit('Current dynamic lean prospective policy provenance requirement disabled')
           if (current_dynamic.get('lean_model_fit') or {}).get('converged') is not True:
               raise SystemExit('Current dynamic lean SHADOW model did not converge')
           segment_watchlist = segment_aggregate.get('watchlist') or {}
@@ -1095,6 +1104,29 @@ jobs:
               raise SystemExit('Player DNA dynamic prospective verdict must remain a separate evidence step')
           if dynamic_policy.get('direct_tour_surface_support_required_before_verdict') is not True:
               raise SystemExit('Player DNA dynamic prospective verdict lost direct segment gate')
+          dynamic_provenance = dynamic_evidence.get('market_policy_provenance') or {}
+          dynamic_provenance_policy = dynamic_provenance.get('policy') or {}
+          if dynamic_evidence.get('source_contract_valid') is not True:
+              raise SystemExit('Player DNA dynamic prospective source contract invalid')
+          if dynamic_provenance.get('current_market_policy_source_fingerprint_sha256') != current_dynamic_policy_fingerprint:
+              raise SystemExit('Player DNA dynamic prospective/current market-policy fingerprint mismatch')
+          if dynamic_provenance_policy.get('new_snapshots_require_market_policy_source_fingerprint') is not True:
+              raise SystemExit('Player DNA dynamic new snapshots lost policy provenance')
+          if dynamic_provenance_policy.get('legacy_unknown_snapshots_remain_immutable') is not True:
+              raise SystemExit('Player DNA dynamic legacy snapshots may not be rewritten')
+          if dynamic_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is not True:
+              raise SystemExit('Player DNA dynamic legacy snapshots escaped diagnostic-only evidence')
+          if dynamic_provenance_policy.get('future_verdict_uses_current_policy_generation_only') is not True:
+              raise SystemExit('Player DNA dynamic verdict may not mix legacy policy evidence')
+          if dynamic_provenance_policy.get('other_known_policy_generations_are_not_mixed_into_current_verdict') is not True:
+              raise SystemExit('Player DNA dynamic verdict may not mix older known policy generations')
+          dynamic_counts_prospective = dynamic_evidence.get('counts') or {}
+          if int(dynamic_counts_prospective.get('verdict_eligible_snapshots') or 0) + int(dynamic_counts_prospective.get('verdict_excluded_snapshots') or 0) != int(dynamic_counts_prospective.get('snapshots') or 0):
+              raise SystemExit('Player DNA dynamic policy provenance snapshot accounting drift')
+          if int(dynamic_provenance.get('verdict_excluded_snapshots') or 0) != int(dynamic_counts_prospective.get('verdict_excluded_snapshots') or 0):
+              raise SystemExit('Player DNA dynamic policy provenance excluded-count mismatch')
+          if not isinstance(dynamic_evidence.get('ledger_evaluation'), dict):
+              raise SystemExit('Player DNA dynamic ledger-wide diagnostic evaluation missing')
           if dynamic_evidence.get('signal') == 'DYNAMIC_LEAN_PROSPECTIVE_EVIDENCE_READY_SHADOW':
               if dynamic_readiness.get('ready_for_performance_verdict') is not True:
                   raise SystemExit('Player DNA dynamic prospective evidence-ready signal below support threshold')
