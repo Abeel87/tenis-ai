@@ -10,6 +10,7 @@ Superbet PLAYABLE.
 """
 
 import gzip
+import hashlib
 import json
 import math
 from collections import defaultdict
@@ -28,6 +29,7 @@ CURRENT_SIMULATION = ROOT / "frontend" / "data" / "player_dna_current_simulation
 CURRENT_DYNAMIC = ROOT / "frontend" / "data" / "player_dna_current_dynamic_shadow.json"
 WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_prospective_validation.json"
+SIMULATOR_SOURCE = ROOT / "backend" / "player_dna_tennis_simulator.py"
 
 VERSION = "player-dna-prospective-validation-v1"
 MODE = "SHADOW_PROSPECTIVE_VALIDATION_ONLY"
@@ -83,8 +85,62 @@ TRAJECTORY_IMMUTABLE_SNAPSHOT_FIELDS = (
     "p1",
     "p2",
     "source_model_fingerprint_sha256",
+    "source_simulator_fingerprint_sha256",
     "trajectory_predictions",
 )
+
+
+def _sha256_file(path: Path) -> str | None:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return None
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _trajectory_provenance_diagnostics(
+    snapshots: list[dict[str, Any]],
+    current_simulator_fingerprint: str | None,
+) -> dict[str, Any]:
+    counts: dict[str, dict[str, int]] = {}
+    for row in snapshots:
+        if not isinstance(row, dict):
+            continue
+        fingerprint = str(
+            row.get("source_simulator_fingerprint_sha256") or ""
+        ).strip()
+        key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
+        bucket = counts.setdefault(
+            key,
+            {"snapshots": 0, "settled": 0, "unsettled": 0},
+        )
+        bucket["snapshots"] += 1
+        if row.get("settled") is True:
+            bucket["settled"] += 1
+        else:
+            bucket["unsettled"] += 1
+
+    known = sorted(key for key in counts if key != "LEGACY_UNKNOWN")
+    legacy_unknown = int((counts.get("LEGACY_UNKNOWN") or {}).get("snapshots") or 0)
+    current_count = (
+        int((counts.get(current_simulator_fingerprint) or {}).get("snapshots") or 0)
+        if current_simulator_fingerprint
+        else 0
+    )
+    return {
+        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
+        "generations": counts,
+        "known_generation_count": len(known),
+        "legacy_unknown_snapshots": legacy_unknown,
+        "current_generation_snapshots": current_count,
+        "mixed_known_generations": len(known) > 1,
+        "policy": {
+            "new_snapshots_require_current_simulator_fingerprint": True,
+            "legacy_snapshots_are_never_rewritten_to_add_provenance": True,
+            "future_trajectory_verdict_must_not_mix_simulator_generations": True,
+            "current_generation_should_be_evaluated_separately": True,
+        },
+    }
 
 
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
@@ -1071,6 +1127,9 @@ def _trajectory_snapshot_from_current(
     predictions = _compact_trajectory_predictions(row.get("simulation") or {})
     if predictions is None:
         return None
+    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    if simulator_fingerprint is None:
+        return None
     return {
         "match_id": match_id,
         "scheduled_time": scheduled.isoformat(),
@@ -1083,6 +1142,7 @@ def _trajectory_snapshot_from_current(
         "source_model_fingerprint_sha256": row.get(
             "source_model_fingerprint_sha256"
         ),
+        "source_simulator_fingerprint_sha256": simulator_fingerprint,
         "trajectory_predictions": predictions,
         "settled": False,
         "actual": None,
@@ -1544,6 +1604,11 @@ def _build_trajectory_evidence(
 
     evaluation = _trajectory_evaluation(snapshots)
     segment_diagnostics = _trajectory_segment_diagnostics(snapshots)
+    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    provenance = _trajectory_provenance_diagnostics(
+        snapshots,
+        simulator_fingerprint,
+    )
     return {
         "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",
         "status": "TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE",
@@ -1590,6 +1655,7 @@ def _build_trajectory_evidence(
         },
         "evaluation": evaluation,
         "segment_diagnostics": segment_diagnostics,
+        "provenance": provenance,
         "snapshots": snapshots,
     }
 
