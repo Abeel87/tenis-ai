@@ -232,3 +232,123 @@ def test_current_fixture_ranking_wins_over_prior_provider_ranking():
     assert p1["player_ranking_source"] == "current_fixture_provider"
     assert p2["player_ranking_source"] == "current_fixture_provider"
     assert summary["ranking_context"]["snapshots_with_current_fixture_player_rank"] == 2
+
+
+
+def test_canonical_profile_exposes_exact_l5_l10_l20_windows_without_changing_baseline():
+    rows = []
+    for day in range(1, 9):
+        rows.append(
+            _point(
+                f"m{day}",
+                f"2026-08-{day:02d}T10:00:00Z",
+                1,
+                100 + day,
+                1,
+                1,
+                surface="hard",
+            )
+        )
+
+    snapshots, summary = build_snapshots_from_rows(rows)
+    target = _snapshot(snapshots, "m8", 1)
+    rolling = target["rolling_prior"]["all_surface"]["windows"]
+
+    assert target["overall_prior"]["matches"] == 7
+    assert rolling["L5"]["requested_matches"] == 5
+    assert rolling["L5"]["matches_used"] == 5
+    assert rolling["L5"]["matches"] == 5
+    assert rolling["L5"]["window_full"] is True
+    assert rolling["L5"]["match_coverage"] == 1.0
+    assert rolling["L10"]["matches_used"] == 7
+    assert rolling["L10"]["window_full"] is False
+    assert rolling["L10"]["match_coverage"] == 0.7
+    assert rolling["L20"]["matches_used"] == 7
+    assert rolling["L20"]["match_coverage"] == 0.35
+    assert target["rolling_prior"]["all_surface"]["trend"]["serve_l5_minus_l20"] == 0.0
+
+    rolling_summary = summary["features"]["rolling_prior"]
+    assert rolling_summary["windows"] == [5, 10, 20]
+    assert rolling_summary["training_join_enabled"] is False
+    assert rolling_summary["shrinkage_activation_enabled"] is False
+    assert rolling_summary["shrinkage_requires_separate_data_driven_gate"] is True
+
+
+def test_canonical_rolling_same_surface_uses_only_prior_matching_surface():
+    rows = [
+        _point("h1", "2026-08-01T10:00:00Z", 1, 2, 1, 1, surface="hard"),
+        _point("c1", "2026-08-02T10:00:00Z", 1, 3, 1, 1, surface="clay"),
+        _point("h2", "2026-08-03T10:00:00Z", 1, 4, 1, 1, surface="hard"),
+        _point("c2", "2026-08-04T10:00:00Z", 1, 5, 1, 1, surface="clay"),
+        _point("target", "2026-08-05T10:00:00Z", 1, 6, 1, 1, surface="hard"),
+    ]
+    snapshots, _ = build_snapshots_from_rows(rows)
+    target = _snapshot(snapshots, "target", 1)
+    same_surface = target["rolling_prior"]["same_surface"]
+
+    assert same_surface["surface"] == "hard"
+    assert same_surface["windows"]["L5"]["matches_used"] == 2
+    assert same_surface["windows"]["L10"]["matches_used"] == 2
+    assert same_surface["windows"]["L20"]["matches_used"] == 2
+    assert target["overall_prior"]["matches"] == 4
+    assert target["same_surface_prior"]["matches"] == 2
+
+
+def test_canonical_rolling_windows_keep_same_timestamp_isolation():
+    rows = [
+        _point("same-a", "2026-08-01T10:00:00Z", 1, 2, 1, 1),
+        _point("same-b", "2026-08-01T10:00:00Z", 1, 3, 1, 1),
+        _point("later", "2026-08-02T10:00:00Z", 1, 4, 1, 1),
+    ]
+    snapshots, _ = build_snapshots_from_rows(rows)
+
+    a = _snapshot(snapshots, "same-a", 1)["rolling_prior"]["all_surface"]["windows"]["L5"]
+    b = _snapshot(snapshots, "same-b", 1)["rolling_prior"]["all_surface"]["windows"]["L5"]
+    later = _snapshot(snapshots, "later", 1)["rolling_prior"]["all_surface"]["windows"]["L5"]
+
+    assert a["matches_used"] == 0
+    assert b["matches_used"] == 0
+    assert later["matches_used"] == 2
+
+
+def test_current_card_exclusion_applies_to_canonical_rolling_windows_too():
+    from backend.player_dna_shadow_profiles import build_current_target_profiles
+
+    point_rows = [
+        _point("old", "2026-08-01T10:00:00Z", 1, 9, 1, 1),
+        _point("current-a", "2026-08-04T09:00:00Z", 1, 2, 1, 1),
+    ]
+    targets = [
+        {
+            "id": "current-a",
+            "scheduled_time": "2026-08-04T09:00:00Z",
+            "p1_id": 1,
+            "p2_id": 2,
+            "p1": "One",
+            "p2": "Two",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+        {
+            "id": "current-b",
+            "scheduled_time": "2026-08-04T12:00:00Z",
+            "p1_id": 1,
+            "p2_id": 3,
+            "p1": "One",
+            "p2": "Three",
+            "surface": "hard",
+            "tour": "atp",
+            "best_of": 3,
+        },
+    ]
+
+    snapshots, summary = build_current_target_profiles(point_rows, targets)
+    a = _snapshot(snapshots, "current-a", 1)
+    b = _snapshot(snapshots, "current-b", 1)
+
+    assert a["rolling_prior"]["all_surface"]["windows"]["L5"]["matches_used"] == 1
+    assert b["rolling_prior"]["all_surface"]["windows"]["L5"]["matches_used"] == 1
+    assert summary["rolling_profiles"]["windows"] == [5, 10, 20]
+    assert summary["rolling_profiles"]["training_join_enabled"] is False
+    assert summary["rolling_profiles"]["shrinkage_activation_enabled"] is False
