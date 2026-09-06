@@ -25,6 +25,7 @@ OUT_SUMMARY = ROOT / "frontend" / "data" / "player_dna_shadow_profile_summary.js
 
 VERSION = "player-dna-shadow-profiles-v1"
 THRESHOLDS = (1, 3, 5, 10)
+ROLLING_WINDOWS = (5, 10, 20)
 
 
 def _parse_utc(value: Any) -> datetime | None:
@@ -97,6 +98,88 @@ def _accumulate(target: dict[str, int], contribution: dict[str, int]) -> None:
         "tiebreak_points", "tiebreak_wins",
     ):
         target[key] += int(contribution.get(key) or 0)
+
+
+def _rolling_window(
+    history: list[dict[str, int]],
+    window: int,
+) -> dict[str, Any]:
+    selected = history[-window:]
+    aggregate = _empty_stats()
+    for contribution in selected:
+        _accumulate(aggregate, contribution)
+    projected = _project(aggregate)
+    return {
+        **projected,
+        "requested_matches": int(window),
+        "matches_used": len(selected),
+        "window_full": len(selected) >= window,
+        "match_coverage": round(len(selected) / window, 6) if window else 0.0,
+    }
+
+
+def _rate_delta(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    key: str,
+) -> float | None:
+    a = left.get(key)
+    b = right.get(key)
+    if not isinstance(a, (int, float)) or isinstance(a, bool):
+        return None
+    if not isinstance(b, (int, float)) or isinstance(b, bool):
+        return None
+    return round(float(a) - float(b), 6)
+
+
+def _rolling_family(history: list[dict[str, int]]) -> dict[str, Any]:
+    windows = {
+        f"L{window}": _rolling_window(history, window)
+        for window in ROLLING_WINDOWS
+    }
+    l5 = windows["L5"]
+    l10 = windows["L10"]
+    l20 = windows["L20"]
+    return {
+        "windows": windows,
+        "trend": {
+            "serve_l5_minus_l10": _rate_delta(
+                l5, l10, "serve_win_rate"
+            ),
+            "serve_l5_minus_l20": _rate_delta(
+                l5, l20, "serve_win_rate"
+            ),
+            "return_l5_minus_l10": _rate_delta(
+                l5, l10, "return_win_rate"
+            ),
+            "return_l5_minus_l20": _rate_delta(
+                l5, l20, "return_win_rate"
+            ),
+        },
+    }
+
+
+def _rolling_prior(
+    overall_history: list[dict[str, int]],
+    surface_history: list[dict[str, int]],
+    surface: str,
+) -> dict[str, Any]:
+    return {
+        "all_surface": _rolling_family(overall_history),
+        "same_surface": {
+            "surface": surface,
+            **_rolling_family(surface_history),
+        },
+        "policy": {
+            "strictly_prior_matches_only": True,
+            "same_time_matches_never_count_as_prior": True,
+            "raw_windows_are_diagnostic_only": True,
+            "training_join_enabled": False,
+            "shrinkage_activation_enabled": False,
+            "shrinkage_requires_separate_data_driven_gate": True,
+            "long_baseline_remains_overall_prior": True,
+        },
+    }
 
 
 def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
@@ -196,6 +279,10 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
+    rolling_overall: dict[int, list[dict[str, int]]] = defaultdict(list)
+    rolling_by_surface: dict[int, dict[str, list[dict[str, int]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
     snapshots: list[dict[str, Any]] = []
     readiness_any = Counter()
     readiness_surface = Counter()
@@ -240,6 +327,11 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                     "opponent_ranking": opponent_ranking,
                     "overall_prior": overall_snapshot,
                     "same_surface_prior": surface_snapshot,
+                    "rolling_prior": _rolling_prior(
+                        rolling_overall.get(pid, []),
+                        rolling_by_surface.get(pid, {}).get(match["surface"], []),
+                        match["surface"],
+                    ),
                 })
 
         # Only after all snapshots at this timestamp exist does history advance.
@@ -248,6 +340,8 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                 contribution = match["contrib"][pid]
                 _accumulate(overall[pid], contribution)
                 _accumulate(by_surface[pid][match["surface"]], contribution)
+                rolling_overall[pid].append(dict(contribution))
+                rolling_by_surface[pid][match["surface"]].append(dict(contribution))
 
     targets = len(snapshots)
     players = {int(row["player_id"]) for row in snapshots}
@@ -291,6 +385,16 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                 "return_points", "return_wins", "return_win_rate",
                 "tiebreak_points", "tiebreak_wins", "tiebreak_win_rate",
             ],
+            "rolling_prior": {
+                "windows": list(ROLLING_WINDOWS),
+                "all_surface": True,
+                "same_surface": True,
+                "trend_l5_vs_l10_l20": True,
+                "raw_support_counts": True,
+                "training_join_enabled": False,
+                "shrinkage_activation_enabled": False,
+                "shrinkage_requires_separate_data_driven_gate": True,
+            },
         },
         "note": (
             "SHADOW evidence only. Raw support counts accompany every rate. "
@@ -362,6 +466,10 @@ def build_current_target_profiles(
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
+    rolling_overall: dict[int, list[dict[str, int]]] = defaultdict(list)
+    rolling_by_surface: dict[int, dict[str, list[dict[str, int]]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
     latest_provider_rank: dict[int, dict[str, Any]] = {}
     snapshots: list[dict[str, Any]] = []
     hist_index = 0
@@ -376,6 +484,10 @@ def build_current_target_profiles(
             ):
                 _accumulate(overall[pid], match["contrib"][pid])
                 _accumulate(by_surface[pid][match["surface"]], match["contrib"][pid])
+                rolling_overall[pid].append(dict(match["contrib"][pid]))
+                rolling_by_surface[pid][match["surface"]].append(
+                    dict(match["contrib"][pid])
+                )
                 if (
                     isinstance(ranking, int)
                     and not isinstance(ranking, bool)
@@ -472,6 +584,11 @@ def build_current_target_profiles(
                     ),
                     "overall_prior": _project(overall.get(pid)),
                     "same_surface_prior": _project(by_surface.get(pid, {}).get(target["surface"])),
+                    "rolling_prior": _rolling_prior(
+                        rolling_overall.get(pid, []),
+                        rolling_by_surface.get(pid, {}).get(target["surface"], []),
+                        target["surface"],
+                    ),
                 })
 
     players = {row["player_id"] for row in snapshots}
@@ -484,6 +601,15 @@ def build_current_target_profiles(
         "strict_as_of_policy": "history_match_scheduled_time < current_target_scheduled_time",
         "current_card_excluded_from_history": True,
         "same_time_matches_count_as_prior": False,
+        "rolling_profiles": {
+            "windows": list(ROLLING_WINDOWS),
+            "all_surface": True,
+            "same_surface": True,
+            "trend_l5_vs_l10_l20": True,
+            "training_join_enabled": False,
+            "shrinkage_activation_enabled": False,
+            "shrinkage_requires_separate_data_driven_gate": True,
+        },
         "targets_seen": len(normalized_targets),
         "snapshots": len(snapshots),
         "players": len(players),
