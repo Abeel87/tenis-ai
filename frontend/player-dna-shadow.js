@@ -306,6 +306,9 @@
     const checkpoints=evaluation.checkpoint_neutral_start_server||{};
     const settled=n(counts.settled_snapshots)||0;
     const snapshots=n(counts.snapshots)||0;
+    const ledgerSettled=n(counts.ledger_settled_snapshots)||0;
+    const currentGeneration=n(counts.current_generation_snapshots)||0;
+    const excludedGeneration=n(counts.evaluation_excluded_snapshots)||0;
     const current=n(counts.new_current_pre_match_snapshots)||0;
     const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
     const health=settlementHealth(trajectory);
@@ -326,9 +329,14 @@
 
         <div class="pds-grid">
           <div class="pds-metric">
-            <span>Trajectory snapshots</span>
+            <span>Trajectory ledger</span>
             <b>${snapshots}</b>
-            <small>settled: ${settled}</small>
+            <small>settled łącznie: ${ledgerSettled}</small>
+          </div>
+          <div class="pds-metric">
+            <span>Bieżąca generacja</span>
+            <b>${currentGeneration}</b>
+            <small>settled do metryk: ${settled}</small>
           </div>
           <div class="pds-metric">
             <span>Nowe przed meczem</span>
@@ -380,6 +388,7 @@
               :knownGenerations===1
                 ?'Jedna znana generacja simulatora w ledgerze.'
                 :'Czekamy na pierwszą snapshotowaną generację simulatora.'}
+            Wykluczone z bieżących metryk: ${excludedGeneration}.
             ${legacyUnknown?` Legacy bez fingerprintu: ${legacyUnknown}.`:''}
           </small>
         </div>
@@ -412,7 +421,8 @@
 
         <p class="pds-foot">
           Dokładna ścieżka gem po gemie pozostaje diagnostyką SHADOW. Pierwszy serwujący jest używany do oceny ścieżek dopiero po meczu;
-          checkpointy 2/4/6 pozostają neutralne przed startem. Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione;
+          checkpointy 2/4/6 pozostają neutralne przed startem. Główne metryki liczą wyłącznie bieżącą generację simulatora;
+          legacy i starsze znane generacje zostają tylko w diagnostyce ledger-wide. Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione;
           zmiana planowanej godziny nigdy nie przepisuje frozen prediction. Nie ustawiamy jeszcze arbitralnego progu skuteczności.
           Zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
         </p>
