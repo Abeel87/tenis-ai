@@ -1529,7 +1529,9 @@ def test_trajectory_legacy_unknown_snapshot_stays_in_ledger_but_not_primary_metr
     )
     first = _build_trajectory_evidence(current, {}, {}, now - timedelta(hours=6))
     snapshot = dict(first["snapshots"][0])
-    snapshot.pop("source_simulator_fingerprint_sha256", None)
+    source_fingerprint = snapshot["source_simulator_fingerprint_sha256"]
+    snapshot.pop("simulator_contract_id", None)
+    snapshot.pop("simulator_contract_fingerprint_sha256", None)
 
     labels = {
         "traj-current-generation": {
@@ -1552,6 +1554,7 @@ def test_trajectory_legacy_unknown_snapshot_stays_in_ledger_but_not_primary_metr
     assert report["counts"]["settled_snapshots"] == 0
     assert report["counts"]["current_generation_snapshots"] == 0
     assert report["counts"]["evaluation_excluded_snapshots"] == 1
+    assert snapshot["source_simulator_fingerprint_sha256"] == source_fingerprint
     provenance = report["provenance"]
     assert provenance["legacy_unknown_snapshots"] == 1
     assert provenance["evaluation_excluded_snapshots"] == 1
@@ -1571,7 +1574,8 @@ def test_trajectory_other_known_generation_cannot_contaminate_current_generation
     current_snapshot = dict(first["snapshots"][0])
     old_snapshot = dict(current_snapshot)
     old_snapshot["match_id"] = "traj-old"
-    old_snapshot["source_simulator_fingerprint_sha256"] = "0" * 64
+    old_snapshot["simulator_contract_id"] = "player-dna-trajectory-dp-old"
+    old_snapshot["simulator_contract_fingerprint_sha256"] = "0" * 64
 
     labels = {
         "traj-current": {
