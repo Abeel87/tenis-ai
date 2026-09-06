@@ -547,6 +547,17 @@ jobs:
               'HOLD_CALIBRATION_PROMISING_SHADOW',
               'HOLD_CALIBRATION_NOT_YET_PROVEN',
           }
+          hold_contract_id = calibration.get('hold_calibration_contract_id')
+          hold_contract_fp = calibration.get('hold_calibration_contract_fingerprint_sha256')
+          assert isinstance(hold_contract_id, str) and hold_contract_id
+          assert isinstance(hold_contract_fp, str) and len(hold_contract_fp) == 64
+          hold_label_policy = calibration.get('game_label_policy') or {}
+          assert hold_label_policy.get('transition_kind') == 'game_score_changed'
+          assert hold_label_policy.get('atomic_reason') == 'atomic_game_boundary'
+          assert hold_label_policy.get('trainable_point_required') is True
+          assert hold_label_policy.get('atomic_transition_required') is True
+          assert hold_label_policy.get('set_score_changed_included') is False
+          assert hold_label_policy.get('set_boundary_reconstruction_enabled') is False
           assert ((calibration.get('split') or {}).get('same_timestamp_groups_not_split')) is True
           counts_cal = calibration.get('counts') or {}
           assert int(counts_cal.get('calibration_games') or 0) >= 500
@@ -598,6 +609,11 @@ jobs:
           assert int(simulation.get('calibrated_candidate_matches') or 0) == expected_candidate_count
           source_cal = simulation.get('hold_calibration_source') or {}
           assert source_cal.get('signal') == calibration.get('signal')
+          if expected_candidate:
+              assert source_cal.get('hold_calibration_contract_id') == hold_contract_id
+              assert source_cal.get('hold_calibration_contract_fingerprint_sha256') == hold_contract_fp
+              assert source_cal.get('semantic_contract_required_for_candidate') is True
+              assert source_cal.get('source_file_sha_is_not_generation_identity') is True
           policy = simulation.get('market_policy') or {}
           assert policy.get('raw_iid_remains_reference') is True
           assert policy.get('hold_calibrated_is_candidate_only') is True
@@ -646,6 +662,8 @@ jobs:
               candidate = row.get('hold_calibrated_candidate')
               if expected_candidate:
                   assert isinstance(candidate, dict)
+                  assert candidate.get('hold_calibration_contract_id') == hold_contract_id
+                  assert candidate.get('hold_calibration_contract_fingerprint_sha256') == hold_contract_fp
                   assert candidate.get('mode') == 'SHADOW_HOLD_CALIBRATED_CANDIDATE'
                   assert candidate.get('validation_status') == 'BACKTESTED_HOLD_CALIBRATION_CANDIDATE'
                   assert candidate.get('production_influence') is False
@@ -682,6 +700,21 @@ jobs:
           assert prospective.get('current_simulator_modified') is False
           assert prospective.get('auto_integrate') is False
           assert prospective.get('market_scope') == 'DURATION_MARKETS_ONLY'
+          hold_provenance = prospective.get('hold_calibration_provenance') or {}
+          hold_provenance_policy = hold_provenance.get('policy') or {}
+          assert hold_provenance_policy.get('new_snapshots_require_semantic_hold_calibration_contract') is True
+          assert hold_provenance_policy.get('legacy_snapshots_are_never_rewritten_to_add_provenance') is True
+          assert hold_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is True
+          assert hold_provenance_policy.get('current_generation_only_for_primary_prospective_metrics') is True
+          assert hold_provenance_policy.get('future_hold_calibration_verdict_must_not_mix_generations') is True
+          assert hold_provenance_policy.get('source_file_sha_is_not_generation_identity') is True
+          hold_counts = prospective.get('counts') or {}
+          assert int(hold_counts.get('verdict_eligible_snapshots') or 0) + int(hold_counts.get('verdict_excluded_snapshots') or 0) == int(hold_counts.get('snapshots') or 0)
+          hold_policy = prospective.get('eligibility_policy') or {}
+          assert hold_policy.get('hold_calibration_contract_required_for_new_snapshot') is True
+          assert hold_policy.get('current_calibration_generation_only_for_verdict') is True
+          assert hold_policy.get('legacy_or_other_calibration_generations_excluded_from_verdict') is True
+          assert isinstance(prospective.get('ledger_evaluation'), dict)
           dynamic_evidence = prospective.get('dynamic_lean_evidence') or {}
           assert dynamic_evidence.get('mode') == 'SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY'
           assert dynamic_evidence.get('status') == 'DYNAMIC_PROSPECTIVE_COLLECTION_ACTIVE'

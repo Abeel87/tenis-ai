@@ -16,6 +16,7 @@ current Player DNA simulator. Integration requires a separate gate.
 """
 
 import gzip
+import hashlib
 import json
 import math
 from collections import Counter, defaultdict
@@ -76,12 +77,59 @@ OUT = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
 VERSION = "player-dna-hold-calibration-audit-v1"
 MODE = "SHADOW_CALIBRATION_AUDIT_ONLY"
 MIN_PRIOR_MATCHES = 3
+# Canonical semantic identity: the fingerprint carries change identity; do not create numbered calibration variants.
+HOLD_CALIBRATION_CONTRACT_ID = "player-dna-hold-calibration-strict-atomic-game"
+HOLD_CALIBRATION_LABEL_POLICY = {
+    "transition_kind": "game_score_changed",
+    "atomic_reason": "atomic_game_boundary",
+    "trainable_point_required": True,
+    "atomic_transition_required": True,
+    "set_score_changed_included": False,
+    "set_boundary_reconstruction_enabled": False,
+}
 UNIQUE_DURATION_MARKETS = (
     "first_set_tiebreak",
     "first_set_over_8.5",
     "first_set_over_9.5",
     "first_set_over_10.5",
 )
+
+
+def hold_calibration_contract() -> dict[str, Any]:
+    return {
+        "contract_id": HOLD_CALIBRATION_CONTRACT_ID,
+        "label_policy": dict(HOLD_CALIBRATION_LABEL_POLICY),
+        "calibration_algorithm": {
+            "family": "PLATT_LOGISTIC_ON_IID_HOLD_PROBABILITY",
+            "fit_function": "fit_hold_platt",
+            "regularization": "L2_SLOPE_ONLY",
+        },
+        "point_model_family": "PROFILE_ONLY_CURRENT_COMPATIBLE",
+        "chronology": {
+            "three_way_split": True,
+            "fit_point_model_then_calibration_then_untouched_test": True,
+            "same_timestamp_groups_not_split": True,
+        },
+    }
+
+
+def hold_calibration_contract_fingerprint() -> str:
+    payload = json.dumps(
+        hold_calibration_contract(),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _strict_game_label_eligible(row: dict[str, Any]) -> bool:
+    return bool(
+        isinstance(row, dict)
+        and row.get("transition_kind") == "game_score_changed"
+        and row.get("trainable_point") is True
+        and row.get("atomic_transition") is True
+        and row.get("atomic_reason") == "atomic_game_boundary"
+    )
 
 
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
@@ -162,7 +210,7 @@ def _game_observations(
         pred = match_predictions.get(match_id)
         if pred is None:
             continue
-        if row.get("transition_kind") not in ("game_score_changed", "set_score_changed"):
+        if not _strict_game_label_eligible(row):
             continue
         server = row.get("server")
         winner = row.get("point_winner")
@@ -365,6 +413,14 @@ def evaluate(
         "auto_integrate": False,
         "evaluation_min_prior_matches": MIN_PRIOR_MATCHES,
         "point_model_features": "PROFILE_ONLY_CURRENT_COMPATIBLE",
+        "hold_calibration_contract_id": HOLD_CALIBRATION_CONTRACT_ID,
+        "hold_calibration_contract_fingerprint_sha256": hold_calibration_contract_fingerprint(),
+        "hold_calibration_contract": hold_calibration_contract(),
+        "game_label_policy": {
+            **HOLD_CALIBRATION_LABEL_POLICY,
+            "strict_game_label_eligibility_only": True,
+            "legacy_unproven_game_labels_excluded": True,
+        },
         "split": {
             "fit_point_model": inner_split,
             "final_test": outer_split,
@@ -428,6 +484,8 @@ def build() -> dict[str, Any]:
         "status": report.get("status"),
         "signal": report.get("signal"),
         "counts": report.get("counts"),
+        "hold_calibration_contract_id": report.get("hold_calibration_contract_id"),
+        "hold_calibration_contract_fingerprint_sha256": report.get("hold_calibration_contract_fingerprint_sha256"),
         "hold_calibrator": report.get("hold_calibrator"),
         "game_hold_test": report.get("game_hold_test"),
         "summary": report.get("summary"),
