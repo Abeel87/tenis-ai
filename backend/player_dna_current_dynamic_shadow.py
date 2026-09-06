@@ -13,6 +13,7 @@ Superbet PLAYABLE. Conflicts and insufficient segment evidence remain blocked.
 """
 
 import gzip
+import hashlib
 import json
 from collections import Counter
 from datetime import datetime, timezone
@@ -67,10 +68,19 @@ PROFILES = ROOT / "data" / "derived" / "player_dna" / "profile_snapshots.jsonl.g
 CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
 WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_dynamic_market_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_current_dynamic_shadow.json"
+MARKET_POLICY_SOURCE = ROOT / "backend" / "player_dna_market_walk_forward.py"
 
 VERSION = "player-dna-current-dynamic-shadow-v1"
 MODE = "SHADOW_CURRENT_DYNAMIC_LEAN_ONLY"
 FEATURE_GROUPS = ("profile", "rank", "point_pressure", "set_match_state")
+
+
+def _sha256_file(path: Path) -> str | None:
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return None
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
@@ -205,6 +215,9 @@ def build_current_dynamic_shadow(
         "dropped_state_groups": ["tiebreak_context", "prior_momentum"],
         "tiebreak_policy": "PROFILE_ONLY_NEUTRAL_FIXED_PER_MATCH",
         "market_policy_source": "segment_consensus_shadow_policy",
+        "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
+        "market_policy_source_fingerprint_sha256": _sha256_file(MARKET_POLICY_SOURCE),
+        "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [],
     }
 
@@ -228,6 +241,8 @@ def build_current_dynamic_shadow(
         or consensus.get("runtime_switch_enabled") is not False
         or consensus.get("auto_promote") is not False
         or consensus.get("prospective_validation_required") is not True
+        or not isinstance(base.get("market_policy_source_fingerprint_sha256"), str)
+        or len(base.get("market_policy_source_fingerprint_sha256") or "") != 64
     ):
         base["status"] = "BLOCKED_SEGMENT_CONSENSUS_CONTRACT"
         return base
