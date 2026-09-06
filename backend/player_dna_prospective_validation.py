@@ -1913,13 +1913,16 @@ def _build_trajectory_evidence(
     integrity["pruned_by_retention"] = before_retention - len(snapshots)
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
-    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_contract = trajectory_simulator_contract()
+    simulator_contract_id = str(simulator_contract.get("contract_id") or "").strip()
+    simulator_contract_fingerprint = trajectory_simulator_contract_fingerprint()
     current_generation_snapshots = [
         row for row in snapshots
-        if str(row.get("source_simulator_fingerprint_sha256") or "").strip()
-        == str(simulator_fingerprint or "").strip()
-        and isinstance(simulator_fingerprint, str)
-        and len(simulator_fingerprint) == 64
+        if str(row.get("simulator_contract_fingerprint_sha256") or "").strip()
+        == simulator_contract_fingerprint
+        and bool(simulator_contract_id)
+        and len(simulator_contract_fingerprint) == 64
     ]
     ledger_evaluation = _trajectory_evaluation(snapshots)
     evaluation = _trajectory_evaluation(current_generation_snapshots)
@@ -1929,11 +1932,15 @@ def _build_trajectory_evidence(
     )
     provenance = _trajectory_provenance_diagnostics(
         snapshots,
-        simulator_fingerprint,
+        simulator_contract_id or None,
+        simulator_contract_fingerprint if len(simulator_contract_fingerprint) == 64 else None,
+        simulator_source_fingerprint if isinstance(simulator_source_fingerprint, str) and len(simulator_source_fingerprint) == 64 else None,
     )
     historical_benchmark = _trajectory_historical_benchmark(
         market_backtest if isinstance(market_backtest, dict) else {},
-        simulator_fingerprint,
+        simulator_contract_id or None,
+        simulator_contract_fingerprint if len(simulator_contract_fingerprint) == 64 else None,
+        simulator_source_fingerprint if isinstance(simulator_source_fingerprint, str) and len(simulator_source_fingerprint) == 64 else None,
     )
     return {
         "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",
