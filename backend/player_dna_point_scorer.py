@@ -20,6 +20,19 @@ from typing import Any, Iterable
 import numpy as np
 import pandas as pd
 
+try:
+    from backend.atomic_point_transition import (
+        game_point_flags,
+        point_token,
+        standard_point_stage,
+    )
+except ModuleNotFoundError:  # direct execution compatibility
+    from atomic_point_transition import (
+        game_point_flags,
+        point_token,
+        standard_point_stage,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 PROFILES = ROOT / "data" / "derived" / "player_dna" / "profile_snapshots.jsonl.gz"
@@ -134,52 +147,6 @@ def _current_set_games(score: dict[str, Any], completed_sets: int) -> tuple[int,
         return None
 
 
-def _point_token(value: Any) -> str | None:
-    if value is None or isinstance(value, bool):
-        return None
-    token = str(value).strip().upper()
-    if token == "AD":
-        token = "A"
-    return token or None
-
-
-def _standard_point_stage(token: str | None) -> int | None:
-    return {"0": 0, "15": 1, "30": 2, "40": 3, "A": 4}.get(token or "")
-
-
-def _game_point_flags(
-    server_token: str | None,
-    receiver_token: str | None,
-    is_tiebreak: bool,
-) -> tuple[int | None, int | None, int | None, int | None, int | None]:
-    if is_tiebreak:
-        try:
-            s = int(server_token) if server_token is not None else None
-            r = int(receiver_token) if receiver_token is not None else None
-        except ValueError:
-            s = r = None
-        if s is None or r is None:
-            return None, None, None, None, None
-        server_gp = int(s >= 6 and s - r >= 1)
-        receiver_gp = int(r >= 6 and r - s >= 1)
-        return server_gp, receiver_gp, 0, 0, 0
-
-    if server_token is None or receiver_token is None:
-        return None, None, None, None, None
-    server_gp = int(
-        (server_token == "40" and receiver_token in {"0", "15", "30"})
-        or (server_token == "A" and receiver_token == "40")
-    )
-    receiver_gp = int(
-        (receiver_token == "40" and server_token in {"0", "15", "30"})
-        or (receiver_token == "A" and server_token == "40")
-    )
-    deuce = int(server_token == "40" and receiver_token == "40")
-    server_adv = int(server_token == "A" and receiver_token == "40")
-    receiver_adv = int(receiver_token == "A" and server_token == "40")
-    return server_gp, receiver_gp, deuce, server_adv, receiver_adv
-
-
 def _score_state_features(point: dict[str, Any], history: dict[str, Any]) -> dict[str, Any]:
     server_side = point.get("server")
     receiver_side = point.get("receiver")
@@ -206,8 +173,8 @@ def _score_state_features(point: dict[str, Any], history: dict[str, Any]) -> dic
     receiver_idx = receiver_side - 1
     set_pair = (sets[server_idx], sets[receiver_idx])
     game_pair = (games[server_idx], games[receiver_idx])
-    server_token = _point_token(points[server_idx])
-    receiver_token = _point_token(points[receiver_idx])
+    server_token = point_token(points[server_idx])
+    receiver_token = point_token(points[receiver_idx])
     if server_token is None or receiver_token is None:
         return out
 
@@ -218,12 +185,12 @@ def _score_state_features(point: dict[str, Any], history: dict[str, Any]) -> dic
         except ValueError:
             return out
     else:
-        server_stage = _standard_point_stage(server_token)
-        receiver_stage = _standard_point_stage(receiver_token)
+        server_stage = standard_point_stage(server_token)
+        receiver_stage = standard_point_stage(receiver_token)
         if server_stage is None or receiver_stage is None:
             return out
 
-    server_gp, receiver_gp, deuce, server_adv, receiver_adv = _game_point_flags(
+    server_gp, receiver_gp, deuce, server_adv, receiver_adv = game_point_flags(
         server_token,
         receiver_token,
         is_tiebreak,
@@ -311,14 +278,14 @@ def lean_state_features_from_simulation_state(state: dict[str, Any]) -> dict[str
     if min(*sets_pair, *games_pair) < 0:
         raise ValueError("sets and games must be non-negative")
 
-    server_token = _point_token(state.get("server_points"))
-    receiver_token = _point_token(state.get("receiver_points"))
-    server_stage = _standard_point_stage(server_token)
-    receiver_stage = _standard_point_stage(receiver_token)
+    server_token = point_token(state.get("server_points"))
+    receiver_token = point_token(state.get("receiver_points"))
+    server_stage = standard_point_stage(server_token)
+    receiver_stage = standard_point_stage(receiver_token)
     if server_stage is None or receiver_stage is None:
         raise ValueError("standard-game point tokens must be 0/15/30/40/A")
 
-    server_gp, receiver_gp, deuce, server_adv, receiver_adv = _game_point_flags(
+    server_gp, receiver_gp, deuce, server_adv, receiver_adv = game_point_flags(
         server_token,
         receiver_token,
         False,
