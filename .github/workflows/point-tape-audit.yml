@@ -553,6 +553,14 @@ jobs:
               raise SystemExit('Player DNA market backtest crossed isolation boundary')
           if backtest.get('auto_promote') is not False:
               raise SystemExit('Player DNA market backtest cannot auto-promote')
+          backtest_trajectory_provenance = backtest.get('trajectory_simulator_provenance') or {}
+          backtest_trajectory_fingerprint = backtest_trajectory_provenance.get('source_sha256')
+          if not isinstance(backtest_trajectory_fingerprint, str) or len(backtest_trajectory_fingerprint) != 64:
+              raise SystemExit('Player DNA trajectory backtest simulator fingerprint missing')
+          if backtest_trajectory_provenance.get('source_path') != 'backend/player_dna_tennis_simulator.py':
+              raise SystemExit('Player DNA trajectory backtest simulator source path drift')
+          if backtest_trajectory_provenance.get('production_gate') is not False:
+              raise SystemExit('Player DNA trajectory historical benchmark cannot become a production gate')
           if backtest.get('current_simulation_status_unchanged') != 'UNVALIDATED_MATCH_LEVEL':
               raise SystemExit('Player DNA historical evidence must not silently promote current simulation')
           if backtest.get('model_features') != 'PROFILE_ONLY_CURRENT_COMPATIBLE':
@@ -1199,6 +1207,28 @@ jobs:
               raise SystemExit('Player DNA trajectory known generation count invalid')
           if int(trajectory_provenance.get('legacy_unknown_snapshots') or 0) < 0:
               raise SystemExit('Player DNA trajectory legacy provenance count invalid')
+          trajectory_benchmark = trajectory_evidence.get('historical_benchmark') or {}
+          trajectory_benchmark_policy = trajectory_benchmark.get('policy') or {}
+          if trajectory_benchmark.get('status') not in {
+              'COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK',
+              'HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE',
+          }:
+              raise SystemExit('Player DNA trajectory historical benchmark status invalid')
+          if trajectory_benchmark_policy.get('benchmark_is_historical_reference_not_performance_verdict') is not True:
+              raise SystemExit('Player DNA trajectory historical benchmark mislabeled as verdict')
+          if trajectory_benchmark_policy.get('fingerprint_match_required_for_comparison') is not True:
+              raise SystemExit('Player DNA trajectory historical benchmark fingerprint gate disabled')
+          if trajectory_benchmark_policy.get('incompatible_benchmark_must_not_be_used_for_claims') is not True:
+              raise SystemExit('Player DNA incompatible trajectory benchmark may not support claims')
+          if trajectory_benchmark_policy.get('prospective_evidence_remains_primary_for_future_verdict') is not True:
+              raise SystemExit('Player DNA trajectory prospective evidence lost primary status')
+          if trajectory_benchmark_policy.get('no_promotion_from_historical_benchmark') is not True:
+              raise SystemExit('Player DNA trajectory historical benchmark cannot promote')
+          if trajectory_benchmark.get('compatible_with_current_simulator_generation') is True:
+              if trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') != current_simulator_fingerprint:
+                  raise SystemExit('Player DNA compatible trajectory benchmark fingerprint mismatch')
+              if trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') != backtest_trajectory_fingerprint:
+                  raise SystemExit('Player DNA prospective/backtest trajectory fingerprint mismatch')
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}
