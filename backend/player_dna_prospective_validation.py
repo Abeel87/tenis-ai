@@ -72,6 +72,8 @@ DYNAMIC_IMMUTABLE_SNAPSHOT_FIELDS = (
     "p2",
     "source_model_fingerprint_sha256",
     "market_policy_source_fingerprint_sha256",
+    "market_policy_contract_id",
+    "market_policy_contract_fingerprint_sha256",
     "market_segment_key",
     "candidate_markets",
 )
@@ -298,12 +300,18 @@ def _dynamic_snapshot_from_current(
     now: datetime,
     labels: dict[str, dict[str, Any]],
     market_policy_source_fingerprint_sha256: str,
+    market_policy_contract_id: str,
+    market_policy_contract_fingerprint_sha256: str,
 ) -> dict[str, Any] | None:
     if not isinstance(row, dict) or row.get("status") != "DYNAMIC_SHADOW_SCORED":
         return None
     if (
         not isinstance(market_policy_source_fingerprint_sha256, str)
         or len(market_policy_source_fingerprint_sha256) != 64
+        or not isinstance(market_policy_contract_id, str)
+        or not market_policy_contract_id.strip()
+        or not isinstance(market_policy_contract_fingerprint_sha256, str)
+        or len(market_policy_contract_fingerprint_sha256) != 64
     ):
         return None
     if row.get("production_influence") is not False or row.get("runtime_switch_enabled") is not False:
@@ -362,6 +370,8 @@ def _dynamic_snapshot_from_current(
         "p2": row.get("p2"),
         "source_model_fingerprint_sha256": row.get("model_fingerprint_sha256"),
         "market_policy_source_fingerprint_sha256": market_policy_source_fingerprint_sha256,
+        "market_policy_contract_id": market_policy_contract_id,
+        "market_policy_contract_fingerprint_sha256": market_policy_contract_fingerprint_sha256,
         "market_segment_key": row.get("market_segment_key"),
         "candidate_markets": candidate_markets,
         "settled": False,
@@ -782,14 +792,16 @@ def _dynamic_performance_verdict(
 
 def _dynamic_policy_provenance_diagnostics(
     snapshots: list[dict[str, Any]],
-    current_policy_fingerprint: str | None,
+    current_policy_contract_id: str | None,
+    current_policy_contract_fingerprint: str | None,
+    current_policy_source_fingerprint: str | None,
 ) -> dict[str, Any]:
     generations: dict[str, dict[str, int]] = {}
     for row in snapshots:
         if not isinstance(row, dict):
             continue
         fingerprint = str(
-            row.get("market_policy_source_fingerprint_sha256") or ""
+            row.get("market_policy_contract_fingerprint_sha256") or ""
         ).strip()
         key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
         bucket = generations.setdefault(
@@ -804,8 +816,8 @@ def _dynamic_policy_provenance_diagnostics(
 
     known = sorted(key for key in generations if key != "LEGACY_UNKNOWN")
     current_count = (
-        int((generations.get(current_policy_fingerprint) or {}).get("snapshots") or 0)
-        if current_policy_fingerprint
+        int((generations.get(current_policy_contract_fingerprint) or {}).get("snapshots") or 0)
+        if current_policy_contract_fingerprint
         else 0
     )
     legacy_unknown = int(
@@ -814,10 +826,12 @@ def _dynamic_policy_provenance_diagnostics(
     other_known = sum(
         int(row.get("snapshots") or 0)
         for key, row in generations.items()
-        if key not in {"LEGACY_UNKNOWN", current_policy_fingerprint}
+        if key not in {"LEGACY_UNKNOWN", current_policy_contract_fingerprint}
     )
     return {
-        "current_market_policy_source_fingerprint_sha256": current_policy_fingerprint,
+        "current_market_policy_contract_id": current_policy_contract_id,
+        "current_market_policy_contract_fingerprint_sha256": current_policy_contract_fingerprint,
+        "current_market_policy_source_fingerprint_sha256": current_policy_source_fingerprint,
         "generations": generations,
         "known_generation_count": len(known),
         "legacy_unknown_snapshots": legacy_unknown,
@@ -826,7 +840,8 @@ def _dynamic_policy_provenance_diagnostics(
         "mixed_known_generations": len(known) > 1,
         "verdict_excluded_snapshots": legacy_unknown + other_known,
         "policy": {
-            "new_snapshots_require_market_policy_source_fingerprint": True,
+            "new_snapshots_require_market_policy_contract_fingerprint": True,
+            "source_file_fingerprint_is_audit_only_not_generation_identity": True,
             "legacy_unknown_snapshots_remain_immutable": True,
             "legacy_unknown_snapshots_are_diagnostic_only": True,
             "future_verdict_uses_current_policy_generation_only": True,
@@ -858,8 +873,18 @@ def _build_dynamic_lean_evidence(
     snapshots = [dict(row) for row in previous_snapshots]
     by_id = {str(row.get("match_id")): row for row in snapshots}
 
-    current_policy_fingerprint = (
+    current_policy_source_fingerprint = (
         str(current_dynamic.get("market_policy_source_fingerprint_sha256") or "").strip()
+        if isinstance(current_dynamic, dict)
+        else ""
+    )
+    current_policy_contract_id = (
+        str(current_dynamic.get("market_policy_contract_id") or "").strip()
+        if isinstance(current_dynamic, dict)
+        else ""
+    )
+    current_policy_contract_fingerprint = (
+        str(current_dynamic.get("market_policy_contract_fingerprint_sha256") or "").strip()
         if isinstance(current_dynamic, dict)
         else ""
     )
@@ -876,7 +901,9 @@ def _build_dynamic_lean_evidence(
         and current_dynamic.get("market_policy_source") == "segment_consensus_shadow_policy"
         and current_dynamic.get("market_policy_source_path") == "backend/player_dna_market_walk_forward.py"
         and current_dynamic.get("market_policy_provenance_required_for_prospective_verdict") is True
-        and len(current_policy_fingerprint) == 64
+        and len(current_policy_source_fingerprint) == 64
+        and bool(current_policy_contract_id)
+        and len(current_policy_contract_fingerprint) == 64
     )
     current_rows = (
         current_dynamic.get("matches")
@@ -920,7 +947,9 @@ def _build_dynamic_lean_evidence(
             row,
             now,
             labels,
-            current_policy_fingerprint,
+            current_policy_source_fingerprint,
+            current_policy_contract_id,
+            current_policy_contract_fingerprint,
         )
         if snapshot is not None:
             snapshots.append(snapshot)
@@ -949,15 +978,17 @@ def _build_dynamic_lean_evidence(
     ledger_evaluation = _dynamic_evaluation(snapshots)
     verdict_snapshots = [
         row for row in snapshots
-        if str(row.get("market_policy_source_fingerprint_sha256") or "").strip()
-        == current_policy_fingerprint
-        and len(current_policy_fingerprint) == 64
+        if str(row.get("market_policy_contract_fingerprint_sha256") or "").strip()
+        == current_policy_contract_fingerprint
+        and len(current_policy_contract_fingerprint) == 64
     ]
     evaluation = _dynamic_evaluation(verdict_snapshots)
     readiness = _dynamic_evidence_readiness(evaluation)
     policy_provenance = _dynamic_policy_provenance_diagnostics(
         snapshots,
-        current_policy_fingerprint if len(current_policy_fingerprint) == 64 else None,
+        current_policy_contract_id or None,
+        current_policy_contract_fingerprint if len(current_policy_contract_fingerprint) == 64 else None,
+        current_policy_source_fingerprint if len(current_policy_source_fingerprint) == 64 else None,
     )
     segment_evaluation = {
         "tour": {
@@ -1026,7 +1057,8 @@ def _build_dynamic_lean_evidence(
             "conflict_excluded": True,
             "insufficient_excluded": True,
             "profile_reference_excluded": True,
-            "market_policy_source_fingerprint_required": True,
+            "market_policy_source_fingerprint_required_for_audit": True,
+            "market_policy_contract_fingerprint_required_for_verdict": True,
             "legacy_or_other_policy_generations_excluded_from_verdict": True,
         },
         "market_policy_provenance": policy_provenance,

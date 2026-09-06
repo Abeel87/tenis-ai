@@ -200,6 +200,17 @@ def build_current_dynamic_shadow(
     current: dict[str, Any],
     walk_forward: dict[str, Any],
 ) -> dict[str, Any]:
+    consensus = (
+        walk_forward.get("segment_consensus_shadow_policy")
+        if isinstance(walk_forward, dict)
+        else None
+    )
+    consensus = consensus if isinstance(consensus, dict) else {}
+    policy_contract_id = str(consensus.get("policy_contract_id") or "").strip()
+    policy_contract_fingerprint = str(
+        consensus.get("policy_contract_fingerprint_sha256") or ""
+    ).strip()
+
     base = {
         "version": VERSION,
         "mode": MODE,
@@ -217,6 +228,10 @@ def build_current_dynamic_shadow(
         "market_policy_source": "segment_consensus_shadow_policy",
         "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
         "market_policy_source_fingerprint_sha256": _sha256_file(MARKET_POLICY_SOURCE),
+        "market_policy_contract_id": policy_contract_id or None,
+        "market_policy_contract_fingerprint_sha256": (
+            policy_contract_fingerprint or None
+        ),
         "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [],
     }
@@ -229,11 +244,6 @@ def build_current_dynamic_shadow(
     if cutoff is None or not current_rows:
         return base
 
-    consensus = (
-        walk_forward.get("segment_consensus_shadow_policy")
-        if isinstance(walk_forward, dict)
-        else None
-    )
     if (
         not isinstance(consensus, dict)
         or consensus.get("mode") != "SHADOW_SEGMENT_CONSENSUS_DIAGNOSTIC_ONLY"
@@ -241,6 +251,8 @@ def build_current_dynamic_shadow(
         or consensus.get("runtime_switch_enabled") is not False
         or consensus.get("auto_promote") is not False
         or consensus.get("prospective_validation_required") is not True
+        or not policy_contract_id
+        or len(policy_contract_fingerprint) != 64
         or not isinstance(base.get("market_policy_source_fingerprint_sha256"), str)
         or len(base.get("market_policy_source_fingerprint_sha256") or "") != 64
     ):
