@@ -8,6 +8,7 @@ split equal scheduled timestamps. This module is SHADOW-only and cannot promote
 or modify runtime, Symfonia 2.0, or Superbet PLAYABLE behavior.
 """
 
+import hashlib
 import json
 import math
 from collections import defaultdict
@@ -81,6 +82,36 @@ SEGMENT_MIN_MATCHED = 40
 SEGMENT_MIN_MARKET_N = 30
 SEGMENT_MIN_EVALUATED_MARKETS = 4
 SEGMENT_REPEATABLE_MIN_FOLDS = 2
+SEGMENT_CONSENSUS_POLICY_ID = "strict-marginal-agreement-mean-direction-v1"
+
+
+def segment_consensus_policy_contract() -> dict[str, Any]:
+    return {
+        "policy_id": SEGMENT_CONSENSUS_POLICY_ID,
+        "market_universe": list(BINARY_MARKETS),
+        "segment_dimensions": list(SEGMENT_DIMENSIONS),
+        "segment_min_matched": SEGMENT_MIN_MATCHED,
+        "segment_min_market_n": SEGMENT_MIN_MARKET_N,
+        "segment_min_evaluated_markets": SEGMENT_MIN_EVALUATED_MARKETS,
+        "repeatable_min_folds_per_marginal": SEGMENT_REPEATABLE_MIN_FOLDS,
+        "tour_and_surface_marginals_must_agree": True,
+        "dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal": True,
+        "profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal": True,
+        "count_repeatability_without_mean_direction_is_insufficient": True,
+        "conflict_means_no_switch": True,
+        "insufficient_means_no_switch": True,
+        "joint_segment_direct_validation_is_reported_separately": True,
+    }
+
+
+def segment_consensus_policy_fingerprint() -> str:
+    payload = json.dumps(
+        segment_consensus_policy_contract(),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _match_times(feature_rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -600,6 +631,9 @@ def build_segment_consensus_shadow_policy(
         "auto_promote": False,
         "joint_segment_backtest_claim": False,
         "prospective_validation_required": True,
+        "policy_contract_id": SEGMENT_CONSENSUS_POLICY_ID,
+        "policy_contract_fingerprint_sha256": segment_consensus_policy_fingerprint(),
+        "policy_contract": segment_consensus_policy_contract(),
         "policy": {
             "tour_and_surface_marginals_must_agree": True,
             "repeatable_min_folds_per_marginal": SEGMENT_REPEATABLE_MIN_FOLDS,
