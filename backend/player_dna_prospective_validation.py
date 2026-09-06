@@ -71,6 +71,7 @@ DYNAMIC_IMMUTABLE_SNAPSHOT_FIELDS = (
     "p1",
     "p2",
     "source_model_fingerprint_sha256",
+    "market_policy_source_fingerprint_sha256",
     "market_segment_key",
     "candidate_markets",
 )
@@ -285,8 +286,14 @@ def _dynamic_snapshot_from_current(
     row: dict[str, Any],
     now: datetime,
     labels: dict[str, dict[str, Any]],
+    market_policy_source_fingerprint_sha256: str,
 ) -> dict[str, Any] | None:
     if not isinstance(row, dict) or row.get("status") != "DYNAMIC_SHADOW_SCORED":
+        return None
+    if (
+        not isinstance(market_policy_source_fingerprint_sha256, str)
+        or len(market_policy_source_fingerprint_sha256) != 64
+    ):
         return None
     if row.get("production_influence") is not False or row.get("runtime_switch_enabled") is not False:
         return None
@@ -343,6 +350,7 @@ def _dynamic_snapshot_from_current(
         "p1": row.get("p1"),
         "p2": row.get("p2"),
         "source_model_fingerprint_sha256": row.get("model_fingerprint_sha256"),
+        "market_policy_source_fingerprint_sha256": market_policy_source_fingerprint_sha256,
         "market_segment_key": row.get("market_segment_key"),
         "candidate_markets": candidate_markets,
         "settled": False,
@@ -761,6 +769,61 @@ def _dynamic_performance_verdict(
     }
 
 
+def _dynamic_policy_provenance_diagnostics(
+    snapshots: list[dict[str, Any]],
+    current_policy_fingerprint: str | None,
+) -> dict[str, Any]:
+    generations: dict[str, dict[str, int]] = {}
+    for row in snapshots:
+        if not isinstance(row, dict):
+            continue
+        fingerprint = str(
+            row.get("market_policy_source_fingerprint_sha256") or ""
+        ).strip()
+        key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
+        bucket = generations.setdefault(
+            key,
+            {"snapshots": 0, "settled": 0, "unsettled": 0},
+        )
+        bucket["snapshots"] += 1
+        if row.get("settled") is True:
+            bucket["settled"] += 1
+        else:
+            bucket["unsettled"] += 1
+
+    known = sorted(key for key in generations if key != "LEGACY_UNKNOWN")
+    current_count = (
+        int((generations.get(current_policy_fingerprint) or {}).get("snapshots") or 0)
+        if current_policy_fingerprint
+        else 0
+    )
+    legacy_unknown = int(
+        (generations.get("LEGACY_UNKNOWN") or {}).get("snapshots") or 0
+    )
+    other_known = sum(
+        int(row.get("snapshots") or 0)
+        for key, row in generations.items()
+        if key not in {"LEGACY_UNKNOWN", current_policy_fingerprint}
+    )
+    return {
+        "current_market_policy_source_fingerprint_sha256": current_policy_fingerprint,
+        "generations": generations,
+        "known_generation_count": len(known),
+        "legacy_unknown_snapshots": legacy_unknown,
+        "current_generation_snapshots": current_count,
+        "other_known_generation_snapshots": other_known,
+        "mixed_known_generations": len(known) > 1,
+        "verdict_excluded_snapshots": legacy_unknown + other_known,
+        "policy": {
+            "new_snapshots_require_market_policy_source_fingerprint": True,
+            "legacy_unknown_snapshots_remain_immutable": True,
+            "legacy_unknown_snapshots_are_diagnostic_only": True,
+            "future_verdict_uses_current_policy_generation_only": True,
+            "other_known_policy_generations_are_not_mixed_into_current_verdict": True,
+        },
+    }
+
+
 def _build_dynamic_lean_evidence(
     current_dynamic: dict[str, Any],
     labels: dict[str, dict[str, Any]],
@@ -784,6 +847,11 @@ def _build_dynamic_lean_evidence(
     snapshots = [dict(row) for row in previous_snapshots]
     by_id = {str(row.get("match_id")): row for row in snapshots}
 
+    current_policy_fingerprint = (
+        str(current_dynamic.get("market_policy_source_fingerprint_sha256") or "").strip()
+        if isinstance(current_dynamic, dict)
+        else ""
+    )
     contract_ok = bool(
         isinstance(current_dynamic, dict)
         and current_dynamic.get("mode") == "SHADOW_CURRENT_DYNAMIC_LEAN_ONLY"
@@ -794,6 +862,10 @@ def _build_dynamic_lean_evidence(
         and current_dynamic.get("auto_promote") is False
         and current_dynamic.get("candidate_only") is True
         and current_dynamic.get("prospective_validation_required") is True
+        and current_dynamic.get("market_policy_source") == "segment_consensus_shadow_policy"
+        and current_dynamic.get("market_policy_source_path") == "backend/player_dna_market_walk_forward.py"
+        and current_dynamic.get("market_policy_provenance_required_for_prospective_verdict") is True
+        and len(current_policy_fingerprint) == 64
     )
     current_rows = (
         current_dynamic.get("matches")
@@ -833,7 +905,12 @@ def _build_dynamic_lean_evidence(
                         "drift_minutes": round(drift_minutes, 2),
                     })
             continue
-        snapshot = _dynamic_snapshot_from_current(row, now, labels)
+        snapshot = _dynamic_snapshot_from_current(
+            row,
+            now,
+            labels,
+            current_policy_fingerprint,
+        )
         if snapshot is not None:
             snapshots.append(snapshot)
             by_id[match_id] = snapshot
@@ -858,39 +935,50 @@ def _build_dynamic_lean_evidence(
     integrity["pruned_by_retention"] = before_retention - len(snapshots)
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
-    evaluation = _dynamic_evaluation(snapshots)
+    ledger_evaluation = _dynamic_evaluation(snapshots)
+    verdict_snapshots = [
+        row for row in snapshots
+        if str(row.get("market_policy_source_fingerprint_sha256") or "").strip()
+        == current_policy_fingerprint
+        and len(current_policy_fingerprint) == 64
+    ]
+    evaluation = _dynamic_evaluation(verdict_snapshots)
     readiness = _dynamic_evidence_readiness(evaluation)
+    policy_provenance = _dynamic_policy_provenance_diagnostics(
+        snapshots,
+        current_policy_fingerprint if len(current_policy_fingerprint) == 64 else None,
+    )
     segment_evaluation = {
         "tour": {
             name: _dynamic_evaluation([
-                row for row in snapshots
+                row for row in verdict_snapshots
                 if str(row.get("tour") or "").strip().lower() == name
             ])
             for name in sorted({
                 str(row.get("tour") or "").strip().lower()
-                for row in snapshots
+                for row in verdict_snapshots
                 if str(row.get("tour") or "").strip()
             })
         },
         "surface": {
             name: _dynamic_evaluation([
-                row for row in snapshots
+                row for row in verdict_snapshots
                 if str(row.get("surface") or "").strip().lower() == name
             ])
             for name in sorted({
                 str(row.get("surface") or "").strip().lower()
-                for row in snapshots
+                for row in verdict_snapshots
                 if str(row.get("surface") or "").strip()
             })
         },
         "tour_surface": {
             name: _dynamic_evaluation([
-                row for row in snapshots
+                row for row in verdict_snapshots
                 if str(row.get("market_segment_key") or "").strip().lower() == name
             ])
             for name in sorted({
                 str(row.get("market_segment_key") or "").strip().lower()
-                for row in snapshots
+                for row in verdict_snapshots
                 if str(row.get("market_segment_key") or "").strip()
             })
         },
@@ -927,7 +1015,10 @@ def _build_dynamic_lean_evidence(
             "conflict_excluded": True,
             "insufficient_excluded": True,
             "profile_reference_excluded": True,
+            "market_policy_source_fingerprint_required": True,
+            "legacy_or_other_policy_generations_excluded_from_verdict": True,
         },
+        "market_policy_provenance": policy_provenance,
         "ledger_integrity": integrity,
         "settlement_observability": {
             "unsettled": _unsettled_diagnostics(snapshots, now),
@@ -948,15 +1039,26 @@ def _build_dynamic_lean_evidence(
             "current_rows_with_dynamic_candidates": candidate_rows,
             "current_dynamic_candidate_market_slots": candidate_market_slots,
             "snapshots": len(snapshots),
+            "ledger_settled_snapshots": int(
+                ledger_evaluation.get("settled_matches") or 0
+            ),
+            "ledger_unsettled_snapshots": sum(
+                1 for row in snapshots if row.get("settled") is not True
+            ),
+            "verdict_eligible_snapshots": len(verdict_snapshots),
+            "verdict_excluded_snapshots": (
+                len(snapshots) - len(verdict_snapshots)
+            ),
             "settled_snapshots": int(evaluation.get("settled_matches") or 0),
             "unsettled_snapshots": sum(
-                1 for row in snapshots if row.get("settled") is not True
+                1 for row in verdict_snapshots if row.get("settled") is not True
             ),
             "settled_market_observations": int(
                 evaluation.get("settled_market_observations") or 0
             ),
         },
         "evaluation": evaluation,
+        "ledger_evaluation": ledger_evaluation,
         "segment_evaluation": segment_evaluation,
         "direct_segment_readiness": direct_segment_readiness,
         "performance_verdict": performance_verdict,

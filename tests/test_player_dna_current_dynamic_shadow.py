@@ -150,6 +150,11 @@ def test_current_dynamic_shadow_reuses_historical_candidate_and_never_runtime_sw
     assert report["runtime_switch_enabled"] is False
     assert report["auto_promote"] is False
     assert report["prospective_validation_required"] is True
+    assert report["market_policy_source"] == "segment_consensus_shadow_policy"
+    assert report["market_policy_source_path"] == "backend/player_dna_market_walk_forward.py"
+    assert isinstance(report["market_policy_source_fingerprint_sha256"], str)
+    assert len(report["market_policy_source_fingerprint_sha256"]) == 64
+    assert report["market_policy_provenance_required_for_prospective_verdict"] is True
     assert report["feature_groups"] == ["profile", "rank", "point_pressure", "set_match_state"]
 
     row = report["matches"][0]
