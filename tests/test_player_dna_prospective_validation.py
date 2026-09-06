@@ -4,7 +4,9 @@ import pytest
 
 from backend.player_dna_prospective_validation import (
     DURATION_MARKETS,
+    SIMULATOR_SOURCE,
     _build_trajectory_evidence,
+    _sha256_file,
     _ledger_integrity,
     _settle_trajectory_snapshots,
     _trajectory_evaluation,
@@ -1075,3 +1077,86 @@ def test_trajectory_schedule_drift_is_observed_without_rewriting_frozen_schedule
     assert drift["samples"][0]["drift_minutes"] == 20.0
     assert second["snapshots"][0]["scheduled_time"] == frozen_time
     assert second["ledger_integrity"]["rewritten_predictions"] == 0
+
+
+
+def test_trajectory_new_snapshot_freezes_current_simulator_source_fingerprint():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-provenance",
+        scheduled=now + timedelta(hours=2),
+    )
+    evidence = _build_trajectory_evidence(current, {}, {}, now)
+
+    expected = _sha256_file(SIMULATOR_SOURCE)
+    assert expected is not None
+    snapshot = evidence["snapshots"][0]
+    assert snapshot["source_simulator_fingerprint_sha256"] == expected
+
+    provenance = evidence["provenance"]
+    assert provenance["current_simulator_fingerprint_sha256"] == expected
+    assert provenance["known_generation_count"] == 1
+    assert provenance["legacy_unknown_snapshots"] == 0
+    assert provenance["current_generation_snapshots"] == 1
+    assert provenance["mixed_known_generations"] is False
+    assert provenance["policy"][
+        "new_snapshots_require_current_simulator_fingerprint"
+    ] is True
+    assert provenance["policy"][
+        "future_trajectory_verdict_must_not_mix_simulator_generations"
+    ] is True
+
+
+def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_fingerprint():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-legacy",
+        scheduled=now + timedelta(hours=2),
+    )
+    first = _build_trajectory_evidence(current, {}, {}, now)
+    legacy = dict(first["snapshots"][0])
+    legacy.pop("source_simulator_fingerprint_sha256", None)
+
+    second = _build_trajectory_evidence(
+        {},
+        {},
+        {"trajectory_evidence": {"snapshots": [legacy]}},
+        now + timedelta(minutes=20),
+    )
+
+    assert "source_simulator_fingerprint_sha256" not in second["snapshots"][0]
+    assert second["ledger_integrity"]["rewritten_predictions"] == 0
+    provenance = second["provenance"]
+    assert provenance["legacy_unknown_snapshots"] == 1
+    assert provenance["current_generation_snapshots"] == 0
+    assert provenance["policy"][
+        "legacy_snapshots_are_never_rewritten_to_add_provenance"
+    ] is True
+
+
+def test_trajectory_provenance_marks_mixed_known_generations_without_merging_claims():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-mixed",
+        scheduled=now + timedelta(hours=2),
+    )
+    first = _build_trajectory_evidence(current, {}, {}, now)
+    current_snapshot = dict(first["snapshots"][0])
+    historical = dict(current_snapshot)
+    historical["match_id"] = "traj-old-generation"
+    historical["source_simulator_fingerprint_sha256"] = "0" * 64
+
+    report = _build_trajectory_evidence(
+        {},
+        {},
+        {"trajectory_evidence": {"snapshots": [historical, current_snapshot]}},
+        now + timedelta(minutes=20),
+    )
+    provenance = report["provenance"]
+
+    assert provenance["known_generation_count"] == 2
+    assert provenance["mixed_known_generations"] is True
+    assert provenance["generations"]["0" * 64]["snapshots"] == 1
+    assert provenance["policy"][
+        "current_generation_should_be_evaluated_separately"
+    ] is True
