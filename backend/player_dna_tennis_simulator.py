@@ -116,6 +116,26 @@ def simulate_match_with_hold_calibration(
     return simulation
 
 
+def _hold_calibration_provenance(
+    report: dict[str, Any] | None,
+) -> dict[str, str] | None:
+    if not isinstance(report, dict):
+        return None
+    contract_id = report.get("hold_calibration_contract_id")
+    fingerprint = report.get("hold_calibration_contract_fingerprint_sha256")
+    if (
+        not isinstance(contract_id, str)
+        or not contract_id.strip()
+        or not isinstance(fingerprint, str)
+        or len(fingerprint) != 64
+    ):
+        return None
+    return {
+        "hold_calibration_contract_id": contract_id.strip(),
+        "hold_calibration_contract_fingerprint_sha256": fingerprint,
+    }
+
+
 def _promising_calibration(report: dict[str, Any] | None) -> dict[str, Any] | None:
     if not isinstance(report, dict):
         return None
@@ -124,6 +144,8 @@ def _promising_calibration(report: dict[str, Any] | None) -> dict[str, Any] | No
     if report.get("status") != "CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION":
         return None
     if report.get("signal") != "HOLD_CALIBRATION_PROMISING_SHADOW":
+        return None
+    if _hold_calibration_provenance(report) is None:
         return None
     if (
         report.get("production_influence") is not False
@@ -1789,6 +1811,11 @@ def simulate_current_report(
     matches = matches if isinstance(matches, list) else []
 
     calibrator = _promising_calibration(calibration_report)
+    calibration_provenance = (
+        _hold_calibration_provenance(calibration_report)
+        if calibrator is not None
+        else None
+    )
     out_rows = []
     calibrated_count = 0
     for row in matches:
@@ -1812,6 +1839,11 @@ def simulate_current_report(
                 calibrator,
                 best_of=best_of,
             )
+            if calibration_provenance is None:
+                raise AssertionError(
+                    "promising hold calibration is missing semantic provenance"
+                )
+            calibrated_candidate.update(calibration_provenance)
             calibrated_count += 1
 
         out_rows.append({
@@ -1846,6 +1878,16 @@ def simulate_current_report(
             "version": calibration_report.get("version") if isinstance(calibration_report, dict) else None,
             "signal": calibration_report.get("signal") if isinstance(calibration_report, dict) else None,
             "status": calibration_report.get("status") if isinstance(calibration_report, dict) else None,
+            "hold_calibration_contract_id": (
+                calibration_provenance.get("hold_calibration_contract_id")
+                if calibration_provenance is not None else None
+            ),
+            "hold_calibration_contract_fingerprint_sha256": (
+                calibration_provenance.get("hold_calibration_contract_fingerprint_sha256")
+                if calibration_provenance is not None else None
+            ),
+            "semantic_contract_required_for_candidate": True,
+            "source_file_sha_is_not_generation_identity": True,
         },
         "market_policy": {
             "raw_iid_remains_reference": True,
