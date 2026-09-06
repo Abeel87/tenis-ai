@@ -20,8 +20,16 @@ from typing import Any, Iterable
 
 try:
     from backend.player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
+    from backend.player_dna_tennis_simulator import (
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
+    )
 except ModuleNotFoundError:  # direct execution
     from player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
+    from player_dna_tennis_simulator import (
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -90,6 +98,8 @@ TRAJECTORY_IMMUTABLE_SNAPSHOT_FIELDS = (
     "p2",
     "source_model_fingerprint_sha256",
     "source_simulator_fingerprint_sha256",
+    "simulator_contract_id",
+    "simulator_contract_fingerprint_sha256",
     "trajectory_predictions",
 )
 
