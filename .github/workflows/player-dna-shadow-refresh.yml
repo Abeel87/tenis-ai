@@ -286,9 +286,15 @@ jobs:
           assert backtest.get('superbet_playable_influence') is False
           assert backtest.get('auto_promote') is False
           backtest_trajectory_provenance = backtest.get('trajectory_simulator_provenance') or {}
-          backtest_trajectory_fingerprint = backtest_trajectory_provenance.get('source_sha256')
-          assert isinstance(backtest_trajectory_fingerprint, str) and len(backtest_trajectory_fingerprint) == 64
+          backtest_trajectory_source_fingerprint = backtest_trajectory_provenance.get('source_sha256')
+          backtest_trajectory_contract_id = backtest_trajectory_provenance.get('semantic_contract_id')
+          backtest_trajectory_contract_fingerprint = backtest_trajectory_provenance.get('semantic_contract_fingerprint_sha256')
+          assert isinstance(backtest_trajectory_source_fingerprint, str) and len(backtest_trajectory_source_fingerprint) == 64
+          assert backtest_trajectory_contract_id == 'player-dna-trajectory-dp-v1'
+          assert isinstance(backtest_trajectory_contract_fingerprint, str) and len(backtest_trajectory_contract_fingerprint) == 64
           assert backtest_trajectory_provenance.get('source_path') == 'backend/player_dna_tennis_simulator.py'
+          assert backtest_trajectory_provenance.get('source_sha256_is_audit_only') is True
+          assert backtest_trajectory_provenance.get('semantic_contract_fingerprint_is_generation_identity') is True
           assert backtest_trajectory_provenance.get('production_gate') is False
           assert backtest.get('current_simulation_status_unchanged') == 'UNVALIDATED_MATCH_LEVEL'
           assert backtest.get('model_features') == 'PROFILE_ONLY_CURRENT_COMPATIBLE'
@@ -790,9 +796,14 @@ jobs:
           assert isinstance(trajectory_segments.get('coverage'), dict)
           trajectory_provenance = trajectory_evidence.get('provenance') or {}
           trajectory_provenance_policy = trajectory_provenance.get('policy') or {}
-          current_simulator_fingerprint = trajectory_provenance.get('current_simulator_fingerprint_sha256')
-          assert isinstance(current_simulator_fingerprint, str) and len(current_simulator_fingerprint) == 64
-          assert trajectory_provenance_policy.get('new_snapshots_require_current_simulator_fingerprint') is True
+          current_simulator_contract_id = trajectory_provenance.get('current_simulator_contract_id')
+          current_simulator_contract_fingerprint = trajectory_provenance.get('current_simulator_contract_fingerprint_sha256')
+          current_simulator_source_fingerprint = trajectory_provenance.get('current_simulator_source_fingerprint_sha256')
+          assert current_simulator_contract_id == 'player-dna-trajectory-dp-v1'
+          assert isinstance(current_simulator_contract_fingerprint, str) and len(current_simulator_contract_fingerprint) == 64
+          assert isinstance(current_simulator_source_fingerprint, str) and len(current_simulator_source_fingerprint) == 64
+          assert trajectory_provenance_policy.get('new_snapshots_require_semantic_simulator_contract_fingerprint') is True
+          assert trajectory_provenance_policy.get('source_file_fingerprint_is_audit_only_not_generation_identity') is True
           assert trajectory_provenance_policy.get('legacy_snapshots_are_never_rewritten_to_add_provenance') is True
           assert trajectory_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is True
           assert trajectory_provenance_policy.get('current_generation_only_for_primary_prospective_metrics') is True
@@ -809,13 +820,15 @@ jobs:
               'HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE',
           }
           assert trajectory_benchmark_policy.get('benchmark_is_historical_reference_not_performance_verdict') is True
-          assert trajectory_benchmark_policy.get('fingerprint_match_required_for_comparison') is True
+          assert trajectory_benchmark_policy.get('semantic_contract_match_required_for_comparison') is True
+          assert trajectory_benchmark_policy.get('source_file_fingerprint_is_audit_only_not_compatibility_gate') is True
           assert trajectory_benchmark_policy.get('incompatible_benchmark_must_not_be_used_for_claims') is True
           assert trajectory_benchmark_policy.get('prospective_evidence_remains_primary_for_future_verdict') is True
           assert trajectory_benchmark_policy.get('no_promotion_from_historical_benchmark') is True
           if trajectory_benchmark.get('compatible_with_current_simulator_generation') is True:
-              assert trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') == current_simulator_fingerprint
-              assert trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') == backtest_trajectory_fingerprint
+              assert trajectory_benchmark.get('benchmark_simulator_contract_id') == current_simulator_contract_id
+              assert trajectory_benchmark.get('benchmark_simulator_contract_fingerprint_sha256') == current_simulator_contract_fingerprint
+              assert trajectory_benchmark.get('benchmark_simulator_contract_fingerprint_sha256') == backtest_trajectory_contract_fingerprint
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}
