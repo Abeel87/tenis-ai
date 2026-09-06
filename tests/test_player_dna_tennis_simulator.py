@@ -22,6 +22,8 @@ from backend.player_dna_tennis_simulator import (
     simulate_current_report,
     simulate_match,
     simulate_match_with_hold_calibration,
+    trajectory_simulator_contract,
+    trajectory_simulator_contract_fingerprint,
     trajectory_summary,
 )
 
@@ -467,3 +469,32 @@ def test_calibration_with_any_external_influence_cannot_enable_candidate():
         assert result["hold_calibration_candidate_enabled"] is False
         assert result["matches"][0]["hold_calibrated_candidate"] is None
 
+
+
+
+def test_trajectory_semantic_contract_is_stable_and_captures_path_policy():
+    contract = trajectory_simulator_contract()
+    fingerprint = trajectory_simulator_contract_fingerprint()
+
+    assert contract["contract_id"] == "player-dna-trajectory-dp-v1"
+    assert contract["engine"] == "EXACT_TENNIS_DP_FROM_SERVE_POINT_PROBABILITIES"
+    assert contract["serve_order_pre_match"] == "NEUTRAL_50_50"
+    assert contract["checkpoint_games"] == [2, 4, 6]
+    assert contract["first_set_top_game_paths_limit"] == 8
+    assert contract["match_top_set_paths_limit"] == 12
+    assert contract["full_match_top_game_paths_limit"] == 4
+    assert contract["exact_full_match_game_paths_are_diagnostic_only"] is True
+    assert isinstance(fingerprint, str)
+    assert len(fingerprint) == 64
+    assert fingerprint == trajectory_simulator_contract_fingerprint()
+
+
+def test_trajectory_summary_publishes_same_semantic_contract_identity():
+    trajectory = trajectory_summary(0.63, 0.59, 3)
+
+    assert trajectory["semantic_contract_id"] == "player-dna-trajectory-dp-v1"
+    assert (
+        trajectory["semantic_contract_fingerprint_sha256"]
+        == trajectory_simulator_contract_fingerprint()
+    )
+    assert trajectory["contract"]["contract_id"] == trajectory["semantic_contract_id"]
