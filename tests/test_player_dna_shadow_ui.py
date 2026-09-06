@@ -217,3 +217,32 @@ def test_player_dna_trajectory_ui_uses_current_simulator_generation_for_primary_
     assert "Wykluczone z bieżących metryk" in js
     assert "Główne metryki liczą wyłącznie bieżącą generację simulatora" in js
     assert "legacy i starsze znane generacje zostają tylko w diagnostyce ledger-wide" in js
+
+
+
+def test_player_dna_dynamic_ui_exposes_direct_joint_support_and_performance_verdict():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+
+    assert "direct_segment_readiness" in js
+    assert "observed_tour_surface_market_cells" in js
+    assert "dynamicDirectSegmentRows" in js
+    assert "Bezpośrednia próba tour|surface" in js
+    assert "Każdy obserwowany candidate cell potrzebuje własnych settled wyników" in js
+    assert "marginesy tour i surface nie zastępują joint evidence" in js
+    assert "Performance verdict" in js
+    assert "DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW" in js
+    assert "DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN" in js
+    assert "DIRECT_TOUR_SURFACE_SUPPORT_INSUFFICIENT" in js
+    assert "Nawet ROBUST SHADOW nie oznacza auto-promocji" in js
+    assert ".pds-direct-cell" in css
+    assert ".pds-dynamic-verdict" in css
+
+
+def test_player_dna_dynamic_ui_describes_actual_nested_verdict_instead_of_readiness_as_verdict():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "dynamic.performance_verdict" in js
+    assert "verdict.emitted===true" in js
+    assert "Global/per-market support jest gotowy, ale verdict nadal blokuje brak direct tour|surface support" in js
+    assert "Performance verdict został policzony wyłącznie z bieżącej generacji policy" in js
