@@ -10,16 +10,24 @@ It measures source availability only. It does not build profiles, fit models,
 change runtime scoring, or affect PROD / Symfonia 2.0 / Superbet PLAYABLE.
 """
 
+import gzip
 import json
 import math
+import unicodedata
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
+try:
+    from backend.player_identity import player_identity_map
+except ModuleNotFoundError:
+    from player_identity import player_identity_map
+
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache"
+PBP_CACHE = CACHE / "pbp_v7" / "matches"
 OUT = ROOT / "frontend" / "data" / "player_dna_service_split_source_readiness.json"
 
 VERSION = "player-dna-service-split-source-readiness-v1"
@@ -173,6 +181,138 @@ def load_raw_history(cache_dir: Path = CACHE) -> pd.DataFrame:
         frame["_source_file"] = path.name
         frames.append(frame)
     return pd.concat(frames, ignore_index=True, sort=False) if frames else pd.DataFrame()
+
+
+def _identity_name(value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = unicodedata.normalize("NFKD", value.strip())
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    return " ".join(text.casefold().split())
+
+
+def _historical_id_names(raw: pd.DataFrame) -> dict[int, set[str]]:
+    if raw is None or raw.empty:
+        return {}
+    columns = _resolve_columns(raw)
+    out: dict[int, set[str]] = {}
+    for _, row in raw.iterrows():
+        for side in ("winner", "loser"):
+            player_id = _positive_int(_get(row, columns, f"{side}_id"))
+            name = _identity_name(_get(row, columns, f"{side}_name"))
+            if player_id is None:
+                continue
+            out.setdefault(player_id, set())
+            if name is not None:
+                out[player_id].add(name)
+    return out
+
+
+def _pbp_id_names(cache_dir: Path = PBP_CACHE) -> dict[int, set[str]]:
+    out: dict[int, set[str]] = {}
+    if not cache_dir.exists():
+        return out
+    for path in sorted(cache_dir.glob("*.json.gz")):
+        try:
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        identities = player_identity_map(payload)
+        if not identities:
+            continue
+        for item in identities.values():
+            player_id = item.get("id")
+            if isinstance(player_id, bool) or not isinstance(player_id, int):
+                continue
+            name = _identity_name(item.get("name"))
+            out.setdefault(player_id, set())
+            if name is not None:
+                out[player_id].add(name)
+    return out
+
+
+def audit_identity_namespace(
+    raw: pd.DataFrame,
+    pbp_cache: Path = PBP_CACHE,
+) -> dict[str, Any]:
+    """Check whether numeric IDs in CSV history are the same namespace as PBP IDs.
+
+    Names are diagnostic evidence only. They are never used to create an ID map.
+    A direct canonical join remains disabled until this compatibility gate is
+    explicitly satisfied.
+    """
+    historical = _historical_id_names(raw)
+    pbp = _pbp_id_names(pbp_cache)
+    shared = sorted(set(historical) & set(pbp))
+
+    agreements = 0
+    mismatches = 0
+    missing_name_evidence = 0
+    examples = []
+    for player_id in shared:
+        left = historical.get(player_id) or set()
+        right = pbp.get(player_id) or set()
+        if not left or not right:
+            missing_name_evidence += 1
+            status = "MISSING_NAME_EVIDENCE"
+        elif left & right:
+            agreements += 1
+            status = "EXACT_NORMALIZED_NAME_AGREEMENT"
+        else:
+            mismatches += 1
+            status = "NAME_MISMATCH"
+        if len(examples) < 20:
+            examples.append({
+                "player_id": player_id,
+                "historical_names": sorted(left)[:4],
+                "pbp_names": sorted(right)[:4],
+                "status": status,
+            })
+
+    shared_count = len(shared)
+    named_comparable = agreements + mismatches
+    agreement_rate = (
+        round(agreements / named_comparable, 6) if named_comparable else 0.0
+    )
+    historical_overlap_rate = (
+        round(shared_count / len(historical), 6) if historical else 0.0
+    )
+    pbp_overlap_rate = round(shared_count / len(pbp), 6) if pbp else 0.0
+
+    evidence_strong = bool(
+        shared_count >= 100
+        and named_comparable >= 100
+        and agreement_rate >= 0.95
+        and mismatches <= max(2, int(named_comparable * 0.01))
+    )
+    return {
+        "historical_unique_stable_ids": len(historical),
+        "pbp_unique_stable_ids": len(pbp),
+        "shared_numeric_ids": shared_count,
+        "historical_id_overlap_rate": historical_overlap_rate,
+        "pbp_id_overlap_rate": pbp_overlap_rate,
+        "shared_ids_with_exact_normalized_name_agreement": agreements,
+        "shared_ids_with_name_mismatch": mismatches,
+        "shared_ids_missing_name_evidence": missing_name_evidence,
+        "named_comparable_shared_ids": named_comparable,
+        "exact_normalized_name_agreement_rate": agreement_rate,
+        "diagnostic_name_matching_only": True,
+        "name_matching_used_for_join": False,
+        "fuzzy_matching_used": False,
+        "id_namespace_evidence_strong": evidence_strong,
+        "direct_id_join_authorized": False,
+        "examples": examples,
+        "gate_policy": {
+            "minimum_shared_ids": 100,
+            "minimum_named_comparable_shared_ids": 100,
+            "minimum_exact_normalized_name_agreement_rate": 0.95,
+            "maximum_name_mismatch_rate": 0.01,
+            "profile_join_requires_separate_explicit_gate": True,
+        },
+    }
 
 
 def audit_history(raw: pd.DataFrame) -> dict[str, Any]:
@@ -365,7 +505,15 @@ def audit_history(raw: pd.DataFrame) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    report = audit_history(load_raw_history())
+    raw = load_raw_history()
+    report = audit_history(raw)
+    report["identity_namespace_audit"] = audit_identity_namespace(raw)
+    report["contract"]["cross_source_numeric_id_namespace_must_be_proven_before_join"] = True
+    report["next_gate"] = (
+        "Review identity_namespace_audit first. Only if the numeric ID namespace is "
+        "proven compatible may first/second-serve splits enter the canonical strict-as-of "
+        "Player DNA profile store. Names remain diagnostic-only and may never create the join."
+    )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False))
