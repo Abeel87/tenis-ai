@@ -1,4 +1,9 @@
-from backend.atomic_point_transition import classify_atomic_transition
+from backend.atomic_point_transition import (
+    classify_atomic_transition,
+    game_point_flags,
+    point_token,
+    standard_point_stage,
+)
 
 
 def row(points, games=(0, 0), sets=(0, 0), winner=None, tb=False):
@@ -75,3 +80,21 @@ def test_missing_winner_never_becomes_atomic():
     result = classify_atomic_transition(row(("0", "0")), row(("15", "0")))
     assert result["atomic_transition"] is False
     assert result["reason"] == "winner_missing_or_invalid"
+
+
+
+def test_canonical_point_score_semantics_cover_pressure_states():
+    assert point_token("AD") == "A"
+    assert point_token(" 40 ") == "40"
+    assert standard_point_stage("30") == 2
+    assert standard_point_stage("A") == 4
+
+    server_gp, receiver_gp, deuce, server_adv, receiver_adv = game_point_flags(
+        "40", "30", False
+    )
+    assert (server_gp, receiver_gp, deuce, server_adv, receiver_adv) == (1, 0, 0, 0, 0)
+
+    assert game_point_flags("30", "40", False) == (0, 1, 0, 0, 0)
+    assert game_point_flags("40", "40", False) == (0, 0, 1, 0, 0)
+    assert game_point_flags("A", "40", False) == (1, 0, 0, 1, 0)
+    assert game_point_flags("40", "A", False) == (0, 1, 0, 0, 1)
