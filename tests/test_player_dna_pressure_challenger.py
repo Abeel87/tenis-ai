@@ -1,3 +1,5 @@
+import pytest
+
 from backend.player_dna_pressure_challenger import (
     EARLY_GAME_DIAGNOSTIC_NUMERIC,
     PRESSURE_PRIMARY_NUMERIC,
@@ -190,7 +192,7 @@ def test_pressure_enrichment_uses_canonical_overall_surface_and_rolling_profiles
     assert row["receiver_overall_break_rate"] == 0.24
     assert row["receiver_surface_bp_conversion_rate"] == 0.45
     assert row["server_all_l5_hold_rate"] == 0.86
-    assert row["receiver_surface_l20_break_rate"] == 0.27
+    assert row["receiver_surface_l20_break_rate"] == pytest.approx(0.27)
     assert row["server_all_l5_early_service_game_1_hold_rate"] == 0.90
     assert row["receiver_surface_l5_early_return_game_3_break_rate"] == 0.36
     assert counts["enrichment_counts"]["enriched_rows"] == 1
