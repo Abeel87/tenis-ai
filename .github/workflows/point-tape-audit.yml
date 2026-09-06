@@ -554,11 +554,21 @@ jobs:
           if backtest.get('auto_promote') is not False:
               raise SystemExit('Player DNA market backtest cannot auto-promote')
           backtest_trajectory_provenance = backtest.get('trajectory_simulator_provenance') or {}
-          backtest_trajectory_fingerprint = backtest_trajectory_provenance.get('source_sha256')
-          if not isinstance(backtest_trajectory_fingerprint, str) or len(backtest_trajectory_fingerprint) != 64:
-              raise SystemExit('Player DNA trajectory backtest simulator fingerprint missing')
+          backtest_trajectory_source_fingerprint = backtest_trajectory_provenance.get('source_sha256')
+          backtest_trajectory_contract_id = backtest_trajectory_provenance.get('semantic_contract_id')
+          backtest_trajectory_contract_fingerprint = backtest_trajectory_provenance.get('semantic_contract_fingerprint_sha256')
+          if not isinstance(backtest_trajectory_source_fingerprint, str) or len(backtest_trajectory_source_fingerprint) != 64:
+              raise SystemExit('Player DNA trajectory backtest simulator source audit fingerprint missing')
+          if backtest_trajectory_contract_id != 'player-dna-trajectory-dp-v1':
+              raise SystemExit('Player DNA trajectory semantic simulator contract id drift')
+          if not isinstance(backtest_trajectory_contract_fingerprint, str) or len(backtest_trajectory_contract_fingerprint) != 64:
+              raise SystemExit('Player DNA trajectory semantic simulator contract fingerprint missing')
           if backtest_trajectory_provenance.get('source_path') != 'backend/player_dna_tennis_simulator.py':
               raise SystemExit('Player DNA trajectory backtest simulator source path drift')
+          if backtest_trajectory_provenance.get('source_sha256_is_audit_only') is not True:
+              raise SystemExit('Player DNA trajectory source SHA became semantic generation identity')
+          if backtest_trajectory_provenance.get('semantic_contract_fingerprint_is_generation_identity') is not True:
+              raise SystemExit('Player DNA trajectory semantic contract lost generation identity')
           if backtest_trajectory_provenance.get('production_gate') is not False:
               raise SystemExit('Player DNA trajectory historical benchmark cannot become a production gate')
           if backtest.get('current_simulation_status_unchanged') != 'UNVALIDATED_MATCH_LEVEL':
@@ -1262,11 +1272,19 @@ jobs:
                   raise SystemExit(f'Player DNA trajectory segment diagnostics missing: {key}')
           trajectory_provenance = trajectory_evidence.get('provenance') or {}
           trajectory_provenance_policy = trajectory_provenance.get('policy') or {}
-          current_simulator_fingerprint = trajectory_provenance.get('current_simulator_fingerprint_sha256')
-          if not isinstance(current_simulator_fingerprint, str) or len(current_simulator_fingerprint) != 64:
-              raise SystemExit('Player DNA trajectory simulator provenance fingerprint missing')
-          if trajectory_provenance_policy.get('new_snapshots_require_current_simulator_fingerprint') is not True:
-              raise SystemExit('Player DNA new trajectory snapshots lost simulator provenance requirement')
+          current_simulator_contract_id = trajectory_provenance.get('current_simulator_contract_id')
+          current_simulator_contract_fingerprint = trajectory_provenance.get('current_simulator_contract_fingerprint_sha256')
+          current_simulator_source_fingerprint = trajectory_provenance.get('current_simulator_source_fingerprint_sha256')
+          if current_simulator_contract_id != 'player-dna-trajectory-dp-v1':
+              raise SystemExit('Player DNA trajectory current semantic simulator contract id drift')
+          if not isinstance(current_simulator_contract_fingerprint, str) or len(current_simulator_contract_fingerprint) != 64:
+              raise SystemExit('Player DNA trajectory semantic simulator contract fingerprint missing')
+          if not isinstance(current_simulator_source_fingerprint, str) or len(current_simulator_source_fingerprint) != 64:
+              raise SystemExit('Player DNA trajectory simulator source audit fingerprint missing')
+          if trajectory_provenance_policy.get('new_snapshots_require_semantic_simulator_contract_fingerprint') is not True:
+              raise SystemExit('Player DNA new trajectory snapshots lost semantic simulator provenance requirement')
+          if trajectory_provenance_policy.get('source_file_fingerprint_is_audit_only_not_generation_identity') is not True:
+              raise SystemExit('Player DNA trajectory source file fingerprint became generation identity')
           if trajectory_provenance_policy.get('legacy_snapshots_are_never_rewritten_to_add_provenance') is not True:
               raise SystemExit('Player DNA trajectory provenance may not rewrite legacy snapshots')
           if trajectory_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is not True:
@@ -1294,8 +1312,10 @@ jobs:
               raise SystemExit('Player DNA trajectory historical benchmark status invalid')
           if trajectory_benchmark_policy.get('benchmark_is_historical_reference_not_performance_verdict') is not True:
               raise SystemExit('Player DNA trajectory historical benchmark mislabeled as verdict')
-          if trajectory_benchmark_policy.get('fingerprint_match_required_for_comparison') is not True:
-              raise SystemExit('Player DNA trajectory historical benchmark fingerprint gate disabled')
+          if trajectory_benchmark_policy.get('semantic_contract_match_required_for_comparison') is not True:
+              raise SystemExit('Player DNA trajectory historical benchmark semantic contract gate disabled')
+          if trajectory_benchmark_policy.get('source_file_fingerprint_is_audit_only_not_compatibility_gate') is not True:
+              raise SystemExit('Player DNA trajectory source SHA became benchmark compatibility gate')
           if trajectory_benchmark_policy.get('incompatible_benchmark_must_not_be_used_for_claims') is not True:
               raise SystemExit('Player DNA incompatible trajectory benchmark may not support claims')
           if trajectory_benchmark_policy.get('prospective_evidence_remains_primary_for_future_verdict') is not True:
@@ -1303,10 +1323,12 @@ jobs:
           if trajectory_benchmark_policy.get('no_promotion_from_historical_benchmark') is not True:
               raise SystemExit('Player DNA trajectory historical benchmark cannot promote')
           if trajectory_benchmark.get('compatible_with_current_simulator_generation') is True:
-              if trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') != current_simulator_fingerprint:
-                  raise SystemExit('Player DNA compatible trajectory benchmark fingerprint mismatch')
-              if trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') != backtest_trajectory_fingerprint:
-                  raise SystemExit('Player DNA prospective/backtest trajectory fingerprint mismatch')
+              if trajectory_benchmark.get('benchmark_simulator_contract_id') != current_simulator_contract_id:
+                  raise SystemExit('Player DNA compatible trajectory benchmark semantic contract id mismatch')
+              if trajectory_benchmark.get('benchmark_simulator_contract_fingerprint_sha256') != current_simulator_contract_fingerprint:
+                  raise SystemExit('Player DNA compatible trajectory benchmark semantic fingerprint mismatch')
+              if trajectory_benchmark.get('benchmark_simulator_contract_fingerprint_sha256') != backtest_trajectory_contract_fingerprint:
+                  raise SystemExit('Player DNA prospective/backtest trajectory semantic fingerprint mismatch')
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}
