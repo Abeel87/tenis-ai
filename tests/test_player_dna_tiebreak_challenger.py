@@ -79,7 +79,7 @@ def test_tiebreak_enrichment_uses_only_canonical_pre_match_tiebreak_rates():
 
     assert len(rows) == 1
     row = rows[0]
-    assert row["is_tiebreak"] is True
+    assert row["is_tiebreak"] == 1
     assert row["server_overall_tiebreak_win_rate"] == 0.58
     assert row["receiver_overall_tiebreak_win_rate"] == 0.47
     assert row["server_surface_tiebreak_win_rate"] == 0.56
