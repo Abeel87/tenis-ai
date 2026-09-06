@@ -40,7 +40,7 @@ WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_prospective_validation.json"
 SIMULATOR_SOURCE = ROOT / "backend" / "player_dna_tennis_simulator.py"
 
-VERSION = "player-dna-prospective-validation-v1"
+VERSION = "player-dna-prospective-validation-v2"
 MODE = "SHADOW_PROSPECTIVE_VALIDATION_ONLY"
 DURATION_MARKETS = (
     "first_set_tiebreak",
@@ -65,6 +65,8 @@ IMMUTABLE_SNAPSHOT_FIELDS = (
     "p1",
     "p2",
     "source_model_fingerprint_sha256",
+    "hold_calibration_contract_id",
+    "hold_calibration_contract_fingerprint_sha256",
     "raw_probabilities",
     "calibrated_probabilities",
 )
@@ -110,6 +112,106 @@ def _sha256_file(path: Path) -> str | None:
     except OSError:
         return None
     return hashlib.sha256(payload).hexdigest()
+
+
+def _current_hold_calibration_contract(
+    current_simulation: dict[str, Any],
+) -> tuple[str | None, str | None]:
+    if not isinstance(current_simulation, dict):
+        return None, None
+
+    source = current_simulation.get("hold_calibration_source")
+    source = source if isinstance(source, dict) else {}
+    source_id = source.get("hold_calibration_contract_id")
+    source_fp = source.get("hold_calibration_contract_fingerprint_sha256")
+    if (
+        isinstance(source_id, str)
+        and source_id.strip()
+        and isinstance(source_fp, str)
+        and len(source_fp) == 64
+    ):
+        return source_id.strip(), source_fp
+
+    observed: set[tuple[str, str]] = set()
+    rows = current_simulation.get("matches")
+    rows = rows if isinstance(rows, list) else []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        candidate = row.get("hold_calibrated_candidate")
+        if not isinstance(candidate, dict):
+            continue
+        contract_id = candidate.get("hold_calibration_contract_id")
+        fingerprint = candidate.get("hold_calibration_contract_fingerprint_sha256")
+        if (
+            isinstance(contract_id, str)
+            and contract_id.strip()
+            and isinstance(fingerprint, str)
+            and len(fingerprint) == 64
+        ):
+            observed.add((contract_id.strip(), fingerprint))
+    if len(observed) != 1:
+        return None, None
+    return next(iter(observed))
+
+
+def _hold_calibration_provenance_diagnostics(
+    snapshots: list[dict[str, Any]],
+    current_contract_id: str | None,
+    current_contract_fingerprint: str | None,
+) -> dict[str, Any]:
+    counts: dict[str, dict[str, int]] = {}
+    for row in snapshots:
+        if not isinstance(row, dict):
+            continue
+        fingerprint = str(
+            row.get("hold_calibration_contract_fingerprint_sha256") or ""
+        ).strip()
+        key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
+        bucket = counts.setdefault(
+            key,
+            {"snapshots": 0, "settled": 0, "unsettled": 0},
+        )
+        bucket["snapshots"] += 1
+        if row.get("settled") is True:
+            bucket["settled"] += 1
+        else:
+            bucket["unsettled"] += 1
+
+    known = sorted(key for key in counts if key != "LEGACY_UNKNOWN")
+    legacy_unknown = int(
+        (counts.get("LEGACY_UNKNOWN") or {}).get("snapshots") or 0
+    )
+    current_count = (
+        int((counts.get(current_contract_fingerprint) or {}).get("snapshots") or 0)
+        if current_contract_fingerprint
+        else 0
+    )
+    other_known = sum(
+        int(row.get("snapshots") or 0)
+        for key, row in counts.items()
+        if key not in {"LEGACY_UNKNOWN", current_contract_fingerprint}
+    )
+    return {
+        "current_hold_calibration_contract_id": current_contract_id,
+        "current_hold_calibration_contract_fingerprint_sha256": current_contract_fingerprint,
+        "generations": counts,
+        "known_generation_count": len(known),
+        "legacy_unknown_snapshots": legacy_unknown,
+        "current_generation_snapshots": current_count,
+        "other_known_generation_snapshots": other_known,
+        "evaluation_excluded_snapshots": legacy_unknown + other_known,
+        "mixed_known_generations": len(known) > 1,
+        "policy": {
+            "new_snapshots_require_semantic_hold_calibration_contract": True,
+            "legacy_snapshots_are_never_rewritten_to_add_provenance": True,
+            "legacy_unknown_snapshots_are_diagnostic_only": True,
+            "current_generation_only_for_primary_prospective_metrics": True,
+            "other_known_generations_are_diagnostic_only": True,
+            "future_hold_calibration_verdict_must_not_mix_generations": True,
+            "source_file_sha_is_not_generation_identity": True,
+        },
+    }
 
 
 def _trajectory_provenance_diagnostics(
@@ -282,6 +384,17 @@ def _snapshot_from_current(
         return None
     if calibrated.get("mode") != "SHADOW_HOLD_CALIBRATED_CANDIDATE":
         return None
+    calibration_contract_id = calibrated.get("hold_calibration_contract_id")
+    calibration_contract_fingerprint = calibrated.get(
+        "hold_calibration_contract_fingerprint_sha256"
+    )
+    if (
+        not isinstance(calibration_contract_id, str)
+        or not calibration_contract_id.strip()
+        or not isinstance(calibration_contract_fingerprint, str)
+        or len(calibration_contract_fingerprint) != 64
+    ):
+        return None
     for key in ("production_influence", "symphony2_influence", "superbet_playable_influence", "auto_promote"):
         if calibrated.get(key) is not False:
             return None
@@ -303,6 +416,8 @@ def _snapshot_from_current(
         "p1": row.get("p1"),
         "p2": row.get("p2"),
         "source_model_fingerprint_sha256": row.get("source_model_fingerprint_sha256"),
+        "hold_calibration_contract_id": calibration_contract_id.strip(),
+        "hold_calibration_contract_fingerprint_sha256": calibration_contract_fingerprint,
         "raw_probabilities": raw_probabilities,
         "calibrated_probabilities": calibrated_probabilities,
         "settled": False,
@@ -2531,11 +2646,31 @@ def build_report(
     integrity["pruned_by_retention"] = before_retention - len(snapshots)
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
-    evaluation = _evaluation(snapshots)
+    current_calibration_contract_id, current_calibration_contract_fingerprint = (
+        _current_hold_calibration_contract(current_simulation)
+    )
+    ledger_evaluation = _evaluation(snapshots)
+    verdict_snapshots = [
+        row
+        for row in snapshots
+        if isinstance(row, dict)
+        and str(
+            row.get("hold_calibration_contract_fingerprint_sha256") or ""
+        ).strip()
+        == current_calibration_contract_fingerprint
+        and isinstance(current_calibration_contract_fingerprint, str)
+        and len(current_calibration_contract_fingerprint) == 64
+    ]
+    evaluation = _evaluation(verdict_snapshots)
+    calibration_provenance = _hold_calibration_provenance_diagnostics(
+        snapshots,
+        current_calibration_contract_id,
+        current_calibration_contract_fingerprint,
+    )
     supported_tours = sorted(_repeatable_segments(walk_forward, "tour"))
     supported_surfaces = sorted(_repeatable_segments(walk_forward, "surface"))
     evidence_readiness = _evidence_readiness(
-        snapshots,
+        verdict_snapshots,
         evaluation,
         supported_tours,
         supported_surfaces,
@@ -2597,6 +2732,7 @@ def build_report(
         "winner_markets_promoted": False,
         "ledger_integrity": integrity,
         "settlement_observability": settlement_observability,
+        "hold_calibration_provenance": calibration_provenance,
         "evidence_readiness": evidence_readiness,
         "eligibility_policy": {
             "requires_walk_forward_robust": True,
@@ -2606,24 +2742,35 @@ def build_report(
             "supported_surfaces": supported_surfaces,
             "minimum_pre_match_lead_minutes": MIN_PREMATCH_LEAD_MINUTES,
             "post_result_snapshot_forbidden": True,
+            "hold_calibration_contract_required_for_new_snapshot": True,
+            "current_calibration_generation_only_for_verdict": True,
+            "legacy_or_other_calibration_generations_excluded_from_verdict": True,
         },
         "source": {
             "walk_forward_version": walk_forward.get("version") if isinstance(walk_forward, dict) else None,
             "walk_forward_signal": walk_forward.get("signal") if isinstance(walk_forward, dict) else None,
             "current_simulation_version": current_simulation.get("version") if isinstance(current_simulation, dict) else None,
+            "hold_calibration_contract_id": current_calibration_contract_id,
+            "hold_calibration_contract_fingerprint_sha256": current_calibration_contract_fingerprint,
         },
         "counts": {
             "current_simulated_matches": len(current_rows),
             "current_eligible_by_segment": eligible_current,
             "snapshots": len(snapshots),
+            "ledger_settled_snapshots": int(ledger_evaluation.get("settled_matches") or 0),
+            "verdict_eligible_snapshots": len(verdict_snapshots),
+            "verdict_excluded_snapshots": len(snapshots) - len(verdict_snapshots),
             "settled_snapshots": settled,
-            "unsettled_snapshots": sum(1 for row in snapshots if row.get("settled") is not True),
+            "unsettled_snapshots": sum(
+                1 for row in verdict_snapshots if row.get("settled") is not True
+            ),
             "label_counts": label_counts,
         },
         "evaluation": evaluation,
+        "ledger_evaluation": ledger_evaluation,
         "segment_evaluation": {
-            "tour": _segment_evaluation(snapshots, "tour"),
-            "surface": _segment_evaluation(snapshots, "surface"),
+            "tour": _segment_evaluation(verdict_snapshots, "tour"),
+            "surface": _segment_evaluation(verdict_snapshots, "surface"),
         },
         "dynamic_lean_evidence": dynamic_lean_evidence,
         "trajectory_evidence": trajectory_evidence,
