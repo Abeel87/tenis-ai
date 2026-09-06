@@ -1684,8 +1684,110 @@ def _trajectory_segment_diagnostics(
             "diagnostic_only": True,
             "direct_tour_surface_rows_are_built_from_same_match_snapshots": True,
             "marginal_tour_and_surface_results_never_imply_joint_validation": True,
-            "minimum_segment_sample_not_defined_yet": True,
+            "minimum_segment_sample_not_defined_yet": False,
+            "minimum_segment_sample_reuses_existing_prospective_gate": MIN_SEGMENT_SETTLED,
             "performance_verdict_forbidden": True,
+        },
+    }
+
+
+def _trajectory_sample_readiness(
+    evaluation: dict[str, Any],
+    segment_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    checkpoints = evaluation.get("checkpoint_neutral_start_server") or {}
+    primary_sources = {
+        "checkpoint_after_2_games": checkpoints.get("after_2_games") or {},
+        "checkpoint_after_4_games": checkpoints.get("after_4_games") or {},
+        "checkpoint_after_6_games": checkpoints.get("after_6_games") or {},
+        "primary_storyline_match_score": (
+            evaluation.get(
+                "primary_storyline_match_score_conditioned_on_observed_first_server"
+            ) or {}
+        ),
+        "first_set_complete_path": (
+            evaluation.get(
+                "first_set_complete_path_conditioned_on_observed_first_server"
+            ) or {}
+        ),
+        "match_set_sequence": (
+            evaluation.get(
+                "match_set_sequence_conditioned_on_observed_first_server"
+            ) or {}
+        ),
+    }
+
+    primary_metrics = {}
+    for name, row in primary_sources.items():
+        settled = int((row or {}).get("n") or 0)
+        primary_metrics[name] = {
+            "settled": settled,
+            "required": MIN_SETTLED_FOR_SIGNAL,
+            "remaining": max(0, MIN_SETTLED_FOR_SIGNAL - settled),
+            "support_sufficient": settled >= MIN_SETTLED_FOR_SIGNAL,
+        }
+
+    settled_matches = int(evaluation.get("settled_matches") or 0)
+    overall = {
+        "settled": settled_matches,
+        "required": MIN_SETTLED_FOR_SIGNAL,
+        "remaining": max(0, MIN_SETTLED_FOR_SIGNAL - settled_matches),
+        "support_sufficient": settled_matches >= MIN_SETTLED_FOR_SIGNAL,
+    }
+
+    joint = segment_diagnostics.get("tour_surface") or {}
+    joint = joint if isinstance(joint, dict) else {}
+    direct_segments = {}
+    ready_direct = []
+    blocked_direct = []
+    for name, row in sorted(joint.items()):
+        if not isinstance(row, dict):
+            continue
+        settled = int(row.get("settled") or 0)
+        support_sufficient = settled >= MIN_SEGMENT_SETTLED
+        direct_segments[name] = {
+            "settled": settled,
+            "required": MIN_SEGMENT_SETTLED,
+            "remaining": max(0, MIN_SEGMENT_SETTLED - settled),
+            "support_sufficient": support_sufficient,
+        }
+        (ready_direct if support_sufficient else blocked_direct).append(name)
+
+    ready_primary = [
+        name
+        for name, row in primary_metrics.items()
+        if row.get("support_sufficient") is True
+    ]
+    all_primary_ready = bool(primary_metrics) and len(ready_primary) == len(primary_metrics)
+    any_direct_ready = bool(ready_direct)
+    sample_sufficient = bool(
+        overall["support_sufficient"] and all_primary_ready and any_direct_ready
+    )
+
+    return {
+        "status": (
+            "TRAJECTORY_SAMPLE_SUFFICIENT_FOR_FUTURE_PERFORMANCE_EVALUATION"
+            if sample_sufficient
+            else "COLLECTING_TRAJECTORY_SAMPLE"
+        ),
+        "overall_settled_snapshots": overall,
+        "primary_metrics": primary_metrics,
+        "ready_primary_metric_count": len(ready_primary),
+        "primary_metric_count": len(primary_metrics),
+        "direct_tour_surface_segments": direct_segments,
+        "ready_direct_tour_surface_segments": ready_direct,
+        "blocked_direct_tour_surface_segments": blocked_direct,
+        "sample_sufficient_for_future_performance_evaluation": sample_sufficient,
+        "performance_verdict_emitted": False,
+        "performance_verdict_allowed": False,
+        "policy": {
+            "readiness_is_sample_size_only_not_performance": True,
+            "overall_minimum_reuses_existing_prospective_gate": MIN_SETTLED_FOR_SIGNAL,
+            "direct_tour_surface_minimum_reuses_existing_prospective_gate": MIN_SEGMENT_SETTLED,
+            "full_match_exact_game_path_excluded_from_primary_readiness": True,
+            "performance_threshold_not_defined": True,
+            "performance_verdict_forbidden": True,
+            "no_auto_promotion": True,
         },
     }
 
@@ -1930,6 +2032,10 @@ def _build_trajectory_evidence(
     segment_diagnostics = _trajectory_segment_diagnostics(
         current_generation_snapshots
     )
+    sample_readiness = _trajectory_sample_readiness(
+        evaluation,
+        segment_diagnostics,
+    )
     provenance = _trajectory_provenance_diagnostics(
         snapshots,
         simulator_contract_id or None,
@@ -1963,6 +2069,7 @@ def _build_trajectory_evidence(
             "full_match_exact_game_paths_are_diagnostic_only": True,
             "primary_metrics_use_current_simulator_generation_only": True,
             "legacy_and_other_simulator_generations_are_diagnostic_only": True,
+            "sample_readiness_is_support_only_not_performance_verdict": True,
             "no_trajectory_performance_threshold_invented_yet": True,
         },
         "ledger_integrity": integrity,
@@ -2003,6 +2110,7 @@ def _build_trajectory_evidence(
         "ledger_evaluation": ledger_evaluation,
         "segment_diagnostics": segment_diagnostics,
         "ledger_segment_diagnostics": ledger_segment_diagnostics,
+        "sample_readiness": sample_readiness,
         "provenance": provenance,
         "historical_benchmark": historical_benchmark,
         "snapshots": snapshots,
