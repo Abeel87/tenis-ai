@@ -130,7 +130,11 @@ def test_opponent_strength_history_support_uses_opponents_own_pre_match_profile(
     support = report["opponent_strength_history_support"]["overall"]
 
     assert report["player_match_entries"] == 4
-    assert support["1"]["unique_history_entries_ready"] == 1
+    # Threshold 1 also counts the later a-b history entry for player 2 because
+    # opponent 1 legitimately has one strictly-prior match by then.
+    assert support["1"]["unique_history_entries_ready"] == 2
+    # Threshold 3 isolates the intended a-x case: only opponent 9 had three
+    # strictly-prior matches before that historical entry.
     assert support["3"]["unique_history_entries_ready"] == 1
     assert support["5"]["unique_history_entries_ready"] == 0
     assert support["3"]["target_rows_with_adjustable_history"]["1"]["targets"] == 1
