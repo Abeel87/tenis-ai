@@ -388,6 +388,7 @@
     const knownGenerations=n(provenance.known_generation_count)||0;
     const legacyUnknown=n(provenance.legacy_unknown_snapshots)||0;
     const mixedGenerations=provenance.mixed_known_generations===true;
+    const simulatorContractId=provenance.current_simulator_contract_id||'—';
 
     return `
       <section class="pds-trajectory-evidence">
@@ -455,6 +456,7 @@
         <div class="pds-dynamic-support">
           <b>Simulator generations: ${knownGenerations}</b>
           <small>
+            Semantic contract: ${esc(simulatorContractId)} · source SHA służy tylko do audytu.
             ${mixedGenerations
               ?'UWAGA: ledger zawiera więcej niż jedną znaną wersję simulatora — przyszły verdict musi liczyć je osobno.'
               :knownGenerations===1
