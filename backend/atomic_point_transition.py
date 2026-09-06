@@ -121,10 +121,14 @@ def _standard_next(points: tuple[str, str], winner: int) -> tuple[str, str] | No
 
 
 def _standard_game_winning_state(points: tuple[str, str], winner: int) -> bool:
-    w = winner - 1
-    l = 1 - w
-    wp, lp = points[w], points[l]
-    return (wp == "40" and lp in {"0", "15", "30"}) or (wp == "A" and lp == "40")
+    winner_index = winner - 1
+    loser_index = 1 - winner_index
+    server_gp, _, _, _, _ = game_point_flags(
+        points[winner_index],
+        points[loser_index],
+        False,
+    )
+    return server_gp == 1
 
 
 def _tiebreak_next(points: tuple[str, str], winner: int) -> tuple[str, str] | None:
