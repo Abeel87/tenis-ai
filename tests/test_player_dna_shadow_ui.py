@@ -103,7 +103,7 @@ def test_player_dna_shadow_ui_exposes_dynamic_prospective_ledger_without_promoti
     assert "dynamic_candidate_brier" in js
     assert "brier_gain_dynamic_vs_profile" in js
     assert "Gotowa próbka nie oznacza jeszcze pozytywnego verdictu" in js
-    assert "performance verdict jest zablokowany" in js
+    assert "verdict pozostaje zablokowany" in js
     assert "nie ma auto-promocji" in js
     assert ".pds-dynamic" in css
     assert ".pds-dynamic-support" in css
