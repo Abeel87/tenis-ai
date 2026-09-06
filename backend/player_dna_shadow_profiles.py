@@ -17,6 +17,11 @@ from itertools import groupby
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from backend.atomic_point_transition import game_point_flags, point_token
+except ModuleNotFoundError:  # direct execution compatibility
+    from atomic_point_transition import game_point_flags, point_token
+
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 OUT_DIR = ROOT / "data" / "derived" / "player_dna"
@@ -26,6 +31,22 @@ OUT_SUMMARY = ROOT / "frontend" / "data" / "player_dna_shadow_profile_summary.js
 VERSION = "player-dna-shadow-profiles-v1"
 THRESHOLDS = (1, 3, 5, 10)
 ROLLING_WINDOWS = (5, 10, 20)
+ACCUMULATE_KEYS = (
+    "serve_points", "serve_wins", "return_points", "return_wins",
+    "tiebreak_points", "tiebreak_wins",
+    "service_games", "holds", "return_games", "breaks",
+    "bp_faced", "bp_saved", "bp_chances", "bp_converted",
+    "deuce_serve_points", "deuce_serve_wins",
+    "deuce_return_points", "deuce_return_wins",
+    "thirty_all_serve_points", "thirty_all_serve_wins",
+    "thirty_all_return_points", "thirty_all_return_wins",
+    "early_service_game_1", "early_service_game_1_holds",
+    "early_service_game_2", "early_service_game_2_holds",
+    "early_service_game_3", "early_service_game_3_holds",
+    "early_return_game_1", "early_return_game_1_breaks",
+    "early_return_game_2", "early_return_game_2_breaks",
+    "early_return_game_3", "early_return_game_3_breaks",
+)
 
 
 def _parse_utc(value: Any) -> datetime | None:
@@ -56,12 +77,7 @@ def iter_point_rows(path: Path = POINTS) -> Iterable[dict[str, Any]]:
 def _empty_stats() -> dict[str, int]:
     return {
         "matches": 0,
-        "serve_points": 0,
-        "serve_wins": 0,
-        "return_points": 0,
-        "return_wins": 0,
-        "tiebreak_points": 0,
-        "tiebreak_wins": 0,
+        **{key: 0 for key in ACCUMULATE_KEYS},
     }
 
 
@@ -71,34 +87,76 @@ def _rate(wins: int, points: int) -> float | None:
 
 def _project(stats: dict[str, int] | None) -> dict[str, Any]:
     stats = stats or _empty_stats()
-    serve_points = int(stats.get("serve_points") or 0)
-    serve_wins = int(stats.get("serve_wins") or 0)
-    return_points = int(stats.get("return_points") or 0)
-    return_wins = int(stats.get("return_wins") or 0)
-    tb_points = int(stats.get("tiebreak_points") or 0)
-    tb_wins = int(stats.get("tiebreak_wins") or 0)
-    return {
-        "matches": int(stats.get("matches") or 0),
-        "serve_points": serve_points,
-        "serve_wins": serve_wins,
-        "serve_win_rate": _rate(serve_wins, serve_points),
-        "return_points": return_points,
-        "return_wins": return_wins,
-        "return_win_rate": _rate(return_wins, return_points),
-        "tiebreak_points": tb_points,
-        "tiebreak_wins": tb_wins,
-        "tiebreak_win_rate": _rate(tb_wins, tb_points),
+
+    def count(key: str) -> int:
+        return int(stats.get(key) or 0)
+
+    out = {
+        "matches": count("matches"),
+        "serve_points": count("serve_points"),
+        "serve_wins": count("serve_wins"),
+        "serve_win_rate": _rate(count("serve_wins"), count("serve_points")),
+        "return_points": count("return_points"),
+        "return_wins": count("return_wins"),
+        "return_win_rate": _rate(count("return_wins"), count("return_points")),
+        "tiebreak_points": count("tiebreak_points"),
+        "tiebreak_wins": count("tiebreak_wins"),
+        "tiebreak_win_rate": _rate(count("tiebreak_wins"), count("tiebreak_points")),
+        "service_games": count("service_games"),
+        "holds": count("holds"),
+        "hold_rate": _rate(count("holds"), count("service_games")),
+        "return_games": count("return_games"),
+        "breaks": count("breaks"),
+        "break_rate": _rate(count("breaks"), count("return_games")),
+        "bp_faced": count("bp_faced"),
+        "bp_saved": count("bp_saved"),
+        "bp_save_rate": _rate(count("bp_saved"), count("bp_faced")),
+        "bp_chances": count("bp_chances"),
+        "bp_converted": count("bp_converted"),
+        "bp_conversion_rate": _rate(count("bp_converted"), count("bp_chances")),
+        "deuce_serve_points": count("deuce_serve_points"),
+        "deuce_serve_wins": count("deuce_serve_wins"),
+        "deuce_serve_win_rate": _rate(
+            count("deuce_serve_wins"), count("deuce_serve_points")
+        ),
+        "deuce_return_points": count("deuce_return_points"),
+        "deuce_return_wins": count("deuce_return_wins"),
+        "deuce_return_win_rate": _rate(
+            count("deuce_return_wins"), count("deuce_return_points")
+        ),
+        "thirty_all_serve_points": count("thirty_all_serve_points"),
+        "thirty_all_serve_wins": count("thirty_all_serve_wins"),
+        "thirty_all_serve_win_rate": _rate(
+            count("thirty_all_serve_wins"), count("thirty_all_serve_points")
+        ),
+        "thirty_all_return_points": count("thirty_all_return_points"),
+        "thirty_all_return_wins": count("thirty_all_return_wins"),
+        "thirty_all_return_win_rate": _rate(
+            count("thirty_all_return_wins"), count("thirty_all_return_points")
+        ),
     }
+    for index in (1, 2, 3):
+        service_key = f"early_service_game_{index}"
+        service_wins_key = f"{service_key}_holds"
+        return_key = f"early_return_game_{index}"
+        return_wins_key = f"{return_key}_breaks"
+        out[service_key] = count(service_key)
+        out[service_wins_key] = count(service_wins_key)
+        out[f"{service_key}_hold_rate"] = _rate(
+            count(service_wins_key), count(service_key)
+        )
+        out[return_key] = count(return_key)
+        out[return_wins_key] = count(return_wins_key)
+        out[f"{return_key}_break_rate"] = _rate(
+            count(return_wins_key), count(return_key)
+        )
+    return out
 
 
 def _accumulate(target: dict[str, int], contribution: dict[str, int]) -> None:
     target["matches"] += 1
-    for key in (
-        "serve_points", "serve_wins", "return_points", "return_wins",
-        "tiebreak_points", "tiebreak_wins",
-    ):
+    for key in ACCUMULATE_KEYS:
         target[key] += int(contribution.get(key) or 0)
-
 
 def _rolling_window(
     history: list[dict[str, int]],
@@ -140,24 +198,36 @@ def _rolling_family(history: list[dict[str, int]]) -> dict[str, Any]:
     l5 = windows["L5"]
     l10 = windows["L10"]
     l20 = windows["L20"]
+
+    rate_fields = {
+        "serve": "serve_win_rate",
+        "return": "return_win_rate",
+        "hold": "hold_rate",
+        "break": "break_rate",
+        "bp_save": "bp_save_rate",
+        "bp_conversion": "bp_conversion_rate",
+        "deuce_serve": "deuce_serve_win_rate",
+        "deuce_return": "deuce_return_win_rate",
+        "thirty_all_serve": "thirty_all_serve_win_rate",
+        "thirty_all_return": "thirty_all_return_win_rate",
+    }
+    for index in (1, 2, 3):
+        rate_fields[f"early_service_game_{index}_hold"] = (
+            f"early_service_game_{index}_hold_rate"
+        )
+        rate_fields[f"early_return_game_{index}_break"] = (
+            f"early_return_game_{index}_break_rate"
+        )
+
+    trend: dict[str, float | None] = {}
+    for label, key in rate_fields.items():
+        trend[f"{label}_l5_minus_l10"] = _rate_delta(l5, l10, key)
+        trend[f"{label}_l5_minus_l20"] = _rate_delta(l5, l20, key)
+
     return {
         "windows": windows,
-        "trend": {
-            "serve_l5_minus_l10": _rate_delta(
-                l5, l10, "serve_win_rate"
-            ),
-            "serve_l5_minus_l20": _rate_delta(
-                l5, l20, "serve_win_rate"
-            ),
-            "return_l5_minus_l10": _rate_delta(
-                l5, l10, "return_win_rate"
-            ),
-            "return_l5_minus_l20": _rate_delta(
-                l5, l20, "return_win_rate"
-            ),
-        },
+        "trend": trend,
     }
-
 
 def _rolling_prior(
     overall_history: list[dict[str, int]],
@@ -182,16 +252,87 @@ def _rolling_prior(
     }
 
 
+def _player_side(player_id: int, p1: int, p2: int) -> int | None:
+    if player_id == p1:
+        return 1
+    if player_id == p2:
+        return 2
+    return None
+
+
+def _standard_pressure_state(
+    row: dict[str, Any],
+    p1: int,
+    p2: int,
+    server_player_id: int,
+    receiver_player_id: int,
+) -> tuple[int, int, int, str, str] | None:
+    if row.get("is_tiebreak_before") is True:
+        return None
+    score = row.get("score_before")
+    if not isinstance(score, dict):
+        return None
+    points = score.get("points")
+    if not isinstance(points, list) or len(points) < 2:
+        return None
+
+    server_side = _player_side(server_player_id, p1, p2)
+    receiver_side = _player_side(receiver_player_id, p1, p2)
+    if server_side not in (1, 2) or receiver_side not in (1, 2) or server_side == receiver_side:
+        return None
+
+    server_token = point_token(points[server_side - 1])
+    receiver_token = point_token(points[receiver_side - 1])
+    if server_token is None or receiver_token is None:
+        return None
+    server_gp, receiver_gp, deuce, _, _ = game_point_flags(
+        server_token,
+        receiver_token,
+        False,
+    )
+    if server_gp is None or receiver_gp is None or deuce is None:
+        return None
+    return int(server_gp), int(receiver_gp), int(deuce), server_token, receiver_token
+
+
+def _strict_atomic_game(row: dict[str, Any]) -> bool:
+    return bool(
+        row.get("transition_kind") == "game_score_changed"
+        and row.get("trainable_point") is True
+        and row.get("atomic_transition") is True
+        and row.get("atomic_reason") == "atomic_game_boundary"
+    )
+
+
+def _pressure_contract() -> dict[str, Any]:
+    return {
+        "included_in_canonical_profiles": True,
+        "shadow_only": True,
+        "training_join_enabled": False,
+        "scorer_feature_activation_enabled": False,
+        "canonical_score_semantics": "backend.atomic_point_transition",
+        "strict_atomic_game_boundaries_only": True,
+        "set_boundary_reconstruction_enabled": False,
+        "missing_game_reconstruction_enabled": False,
+        "tiebreak_excluded_from_standard_bp_deuce_metrics": True,
+        "early_game_order": "observed_proven_atomic_boundaries_only",
+        "raw_support_counts_accompany_every_rate": True,
+        "rolling_windows": list(ROLLING_WINDOWS),
+    }
+
+
 def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
     matches: dict[str, dict[str, Any]] = {}
     counters = Counter()
 
-    for row in rows:
+    for row_index, row in enumerate(rows):
         if not isinstance(row, dict):
             continue
         counters["point_rows_seen"] += 1
         if row.get("context_ready_player_point") is not True:
             counters["non_strict_rows_skipped"] += 1
+            if row.get("atomic_reason") == "set_boundary_not_yet_proven":
+                counters["set_boundary_not_yet_proven_rows_excluded"] += 1
             continue
 
         match_id = str(row.get("match_id") or "").strip()
@@ -223,6 +364,7 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
             "p1_ranking": row.get("p1_ranking"),
             "p2_ranking": row.get("p2_ranking"),
             "contrib": {p1: _empty_stats(), p2: _empty_stats()},
+            "game_boundaries": [],
             "conflict": False,
         })
 
@@ -242,10 +384,52 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
             counters["side_identity_conflicts"] += 1
             continue
 
-        entry["contrib"][server]["serve_points"] += 1
-        entry["contrib"][server]["serve_wins"] += int(row.get("server_won") is True)
-        entry["contrib"][receiver]["return_points"] += 1
-        entry["contrib"][receiver]["return_wins"] += int(row.get("receiver_won") is True)
+        server_stats = entry["contrib"][server]
+        receiver_stats = entry["contrib"][receiver]
+        server_stats["serve_points"] += 1
+        server_stats["serve_wins"] += int(row.get("server_won") is True)
+        receiver_stats["return_points"] += 1
+        receiver_stats["return_wins"] += int(row.get("receiver_won") is True)
+
+        pressure = _standard_pressure_state(row, p1, p2, server, receiver)
+        if pressure is not None:
+            _, receiver_gp, deuce, server_token, receiver_token = pressure
+            if receiver_gp == 1:
+                server_stats["bp_faced"] += 1
+                receiver_stats["bp_chances"] += 1
+                counters["break_point_opportunities_used"] += 1
+                if row.get("server_won") is True:
+                    server_stats["bp_saved"] += 1
+                elif row.get("server_won") is False:
+                    receiver_stats["bp_converted"] += 1
+
+            if deuce == 1:
+                server_stats["deuce_serve_points"] += 1
+                receiver_stats["deuce_return_points"] += 1
+                server_stats["deuce_serve_wins"] += int(row.get("server_won") is True)
+                receiver_stats["deuce_return_wins"] += int(row.get("receiver_won") is True)
+                counters["deuce_points_used"] += 1
+
+            if server_token == "30" and receiver_token == "30":
+                server_stats["thirty_all_serve_points"] += 1
+                receiver_stats["thirty_all_return_points"] += 1
+                server_stats["thirty_all_serve_wins"] += int(row.get("server_won") is True)
+                receiver_stats["thirty_all_return_wins"] += int(row.get("receiver_won") is True)
+                counters["thirty_all_points_used"] += 1
+
+        if _strict_atomic_game(row):
+            held = row.get("server_won") is True
+            server_stats["service_games"] += 1
+            receiver_stats["return_games"] += 1
+            server_stats["holds"] += int(held)
+            receiver_stats["breaks"] += int(not held)
+            counters["strict_atomic_games_used"] += 1
+            event_index = row.get("event_index")
+            if isinstance(event_index, bool) or not isinstance(event_index, int):
+                event_index = row_index
+            entry["game_boundaries"].append(
+                (int(event_index), int(server), int(receiver), bool(held))
+            )
 
         if row.get("is_tiebreak_before") is True:
             winner = row.get("point_winner")
@@ -258,6 +442,25 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
 
     valid = []
     for entry in matches.values():
+        serve_seen: Counter[int] = Counter()
+        return_seen: Counter[int] = Counter()
+        for _, server, receiver, held in sorted(entry.get("game_boundaries") or []):
+            serve_seen[server] += 1
+            return_seen[receiver] += 1
+            serve_index = int(serve_seen[server])
+            return_index = int(return_seen[receiver])
+            if serve_index <= 3:
+                key = f"early_service_game_{serve_index}"
+                entry["contrib"][server][key] += 1
+                entry["contrib"][server][f"{key}_holds"] += int(held)
+                counters[f"{key}_used"] += 1
+            if return_index <= 3:
+                key = f"early_return_game_{return_index}"
+                entry["contrib"][receiver][key] += 1
+                entry["contrib"][receiver][f"{key}_breaks"] += int(not held)
+                counters[f"{key}_used"] += 1
+        entry.pop("game_boundaries", None)
+
         if entry.get("conflict"):
             counters["conflicting_matches_rejected"] += 1
             continue
@@ -272,7 +475,6 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
     valid.sort(key=lambda m: (m["scheduled"], m["match_id"]))
     counters["strict_matches"] = len(valid)
     return valid, dict(counters)
-
 
 def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     matches, source_counts = _prepare_matches(rows)
@@ -375,27 +577,21 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
             for threshold in THRESHOLDS
         },
         "features": {
-            "overall_prior": [
-                "matches", "serve_points", "serve_wins", "serve_win_rate",
-                "return_points", "return_wins", "return_win_rate",
-                "tiebreak_points", "tiebreak_wins", "tiebreak_win_rate",
-            ],
-            "same_surface_prior": [
-                "matches", "serve_points", "serve_wins", "serve_win_rate",
-                "return_points", "return_wins", "return_win_rate",
-                "tiebreak_points", "tiebreak_wins", "tiebreak_win_rate",
-            ],
+            "overall_prior": list(_project(None).keys()),
+            "same_surface_prior": list(_project(None).keys()),
             "rolling_prior": {
                 "windows": list(ROLLING_WINDOWS),
                 "all_surface": True,
                 "same_surface": True,
                 "trend_l5_vs_l10_l20": True,
+                "pressure_rates_in_windows": True,
                 "raw_support_counts": True,
                 "training_join_enabled": False,
                 "shrinkage_activation_enabled": False,
                 "shrinkage_requires_separate_data_driven_gate": True,
             },
         },
+        "pressure_profiles": _pressure_contract(),
         "note": (
             "SHADOW evidence only. Raw support counts accompany every rate. "
             "No minimum-history threshold, training join or production influence is activated."
@@ -606,10 +802,12 @@ def build_current_target_profiles(
             "all_surface": True,
             "same_surface": True,
             "trend_l5_vs_l10_l20": True,
+            "pressure_rates_in_windows": True,
             "training_join_enabled": False,
             "shrinkage_activation_enabled": False,
             "shrinkage_requires_separate_data_driven_gate": True,
         },
+        "pressure_profiles": _pressure_contract(),
         "targets_seen": len(normalized_targets),
         "snapshots": len(snapshots),
         "players": len(players),
