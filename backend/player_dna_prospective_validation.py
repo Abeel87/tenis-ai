@@ -1498,11 +1498,23 @@ def _build_trajectory_evidence(
         else []
     )
     eligible_rows = 0
+    schedule_drifts = []
     for row in current_rows:
         match_id = str((row or {}).get("match_id") or "").strip()
         if not match_id:
             continue
         if match_id in by_id:
+            frozen_time = _parse_utc(by_id[match_id].get("scheduled_time"))
+            current_time = _parse_utc(row.get("scheduled_time"))
+            if frozen_time is not None and current_time is not None:
+                drift_minutes = (current_time - frozen_time).total_seconds() / 60.0
+                if abs(drift_minutes) >= 1.0:
+                    schedule_drifts.append({
+                        "match_id": match_id,
+                        "frozen_scheduled_time": frozen_time.isoformat(),
+                        "current_scheduled_time": current_time.isoformat(),
+                        "drift_minutes": round(drift_minutes, 2),
+                    })
             continue
         snapshot = _trajectory_snapshot_from_current(row, now, labels)
         if snapshot is not None:
@@ -1554,6 +1566,19 @@ def _build_trajectory_evidence(
             "no_trajectory_performance_threshold_invented_yet": True,
         },
         "ledger_integrity": integrity,
+        "settlement_observability": {
+            "unsettled": _unsettled_diagnostics(snapshots, now),
+            "settlement_latency": _settlement_latency_summary(snapshots),
+            "schedule_drift": {
+                "count": len(schedule_drifts),
+                "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
+                "samples": sorted(
+                    schedule_drifts,
+                    key=lambda row: abs(float(row.get("drift_minutes") or 0)),
+                    reverse=True,
+                )[:10],
+            },
+        },
         "counts": {
             "current_simulated_matches": len(current_rows),
             "new_current_pre_match_snapshots": eligible_rows,
