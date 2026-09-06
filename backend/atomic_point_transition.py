@@ -21,7 +21,7 @@ def _winner(value: Any) -> int | None:
     return None
 
 
-def _point_token(value: Any) -> str | None:
+def point_token(value: Any) -> str | None:
     if value is None or isinstance(value, bool):
         return None
     token = str(value).strip().upper()
@@ -30,11 +30,49 @@ def _point_token(value: Any) -> str | None:
     return token or None
 
 
+def standard_point_stage(token: str | None) -> int | None:
+    return {"0": 0, "15": 1, "30": 2, "40": 3, "A": 4}.get(token or "")
+
+
+def game_point_flags(
+    server_token: str | None,
+    receiver_token: str | None,
+    is_tiebreak: bool,
+) -> tuple[int | None, int | None, int | None, int | None, int | None]:
+    """Return server game-point, receiver game-point, deuce and advantage flags."""
+    if is_tiebreak:
+        try:
+            server_score = int(server_token) if server_token is not None else None
+            receiver_score = int(receiver_token) if receiver_token is not None else None
+        except ValueError:
+            server_score = receiver_score = None
+        if server_score is None or receiver_score is None:
+            return None, None, None, None, None
+        server_gp = int(server_score >= 6 and server_score - receiver_score >= 1)
+        receiver_gp = int(receiver_score >= 6 and receiver_score - server_score >= 1)
+        return server_gp, receiver_gp, 0, 0, 0
+
+    if server_token is None or receiver_token is None:
+        return None, None, None, None, None
+    server_gp = int(
+        (server_token == "40" and receiver_token in {"0", "15", "30"})
+        or (server_token == "A" and receiver_token == "40")
+    )
+    receiver_gp = int(
+        (receiver_token == "40" and server_token in {"0", "15", "30"})
+        or (receiver_token == "A" and server_token == "40")
+    )
+    deuce = int(server_token == "40" and receiver_token == "40")
+    server_adv = int(server_token == "A" and receiver_token == "40")
+    receiver_adv = int(receiver_token == "A" and server_token == "40")
+    return server_gp, receiver_gp, deuce, server_adv, receiver_adv
+
+
 def _point_pair(row: dict[str, Any]) -> tuple[str, str] | None:
     value = row.get("points")
     if not isinstance(value, list) or len(value) != 2:
         return None
-    a, b = _point_token(value[0]), _point_token(value[1])
+    a, b = point_token(value[0]), point_token(value[1])
     return (a, b) if a is not None and b is not None else None
 
 
