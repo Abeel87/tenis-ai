@@ -742,6 +742,16 @@ jobs:
           assert isinstance(trajectory_segments.get('surface'), dict)
           assert isinstance(trajectory_segments.get('tour_surface'), dict)
           assert isinstance(trajectory_segments.get('coverage'), dict)
+          trajectory_provenance = trajectory_evidence.get('provenance') or {}
+          trajectory_provenance_policy = trajectory_provenance.get('policy') or {}
+          current_simulator_fingerprint = trajectory_provenance.get('current_simulator_fingerprint_sha256')
+          assert isinstance(current_simulator_fingerprint, str) and len(current_simulator_fingerprint) == 64
+          assert trajectory_provenance_policy.get('new_snapshots_require_current_simulator_fingerprint') is True
+          assert trajectory_provenance_policy.get('legacy_snapshots_are_never_rewritten_to_add_provenance') is True
+          assert trajectory_provenance_policy.get('future_trajectory_verdict_must_not_mix_simulator_generations') is True
+          assert trajectory_provenance_policy.get('current_generation_should_be_evaluated_separately') is True
+          assert int(trajectory_provenance.get('known_generation_count') or 0) >= 0
+          assert int(trajectory_provenance.get('legacy_unknown_snapshots') or 0) >= 0
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}
