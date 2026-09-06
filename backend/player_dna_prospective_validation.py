@@ -40,7 +40,7 @@ WALK_FORWARD = ROOT / "frontend" / "data" / "player_dna_hold_walk_forward.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_prospective_validation.json"
 SIMULATOR_SOURCE = ROOT / "backend" / "player_dna_tennis_simulator.py"
 
-VERSION = "player-dna-prospective-validation-v2"
+VERSION = "player-dna-prospective-validation-v1"
 MODE = "SHADOW_PROSPECTIVE_VALIDATION_ONLY"
 DURATION_MARKETS = (
     "first_set_tiebreak",
