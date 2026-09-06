@@ -202,44 +202,6 @@ jobs:
               raise SystemExit('Opponent challenger primary gate must use strength rates without support features')
           if support.get('no_modeling_support_threshold_activated') is not True:
               raise SystemExit('Opponent challenger activated an unsupported modeling threshold')
-          family_policy = report.get('family_screen_policy') or {}
-          for key in (
-              'predeclared_before_results',
-              'families_are_non_overlapping_feature_sets',
-              'multiple_family_comparison',
-              'historical_screen_may_select_candidate_for_fresh_confirmation_only',
-              'fresh_confirmation_required_before_any_activation',
-              'historical_screen_cannot_promote_or_replace_reference',
-              'no_threshold_tuning_from_screen_results',
-              'same_holdout_and_walk_forward_windows_as_primary',
-          ):
-              if family_policy.get(key) is not True:
-                  raise SystemExit(f'Pressure family screen policy violation: {key}')
-          if family_policy.get('mode') != 'PREDECLARED_HISTORICAL_DIAGNOSTIC_SCREEN':
-              raise SystemExit('Pressure family screen mode invalid')
-
-          families = report.get('pressure_family_features') or {}
-          expected_families = {
-              'hold_break_long',
-              'hold_break_rolling',
-              'break_point_long',
-              'break_point_rolling',
-              'deuce_thirty_long',
-              'deuce_thirty_rolling',
-          }
-          if set(families) != expected_families:
-              raise SystemExit(f'Pressure family screen set drifted: {sorted(families)}')
-          seen = set()
-          for family_name, features in families.items():
-              if not features:
-                  raise SystemExit(f'Pressure family screen empty: {family_name}')
-              overlap = seen.intersection(features)
-              if overlap:
-                  raise SystemExit(f'Pressure family screen feature overlap: {family_name} {sorted(overlap)}')
-              if any('support' in name for name in features):
-                  raise SystemExit(f'Pressure family screen leaked support proxy: {family_name}')
-              seen.update(features)
-
           leakage = report.get('leakage_contract') or {}
           for key in (
               'historical_opponent_strength_is_from_opponents_own_pre_match_snapshot',
@@ -252,15 +214,6 @@ jobs:
                   raise SystemExit(f'Opponent challenger leakage contract violation: {key}')
           if int(report.get('all_enriched_points') or 0) <= 0:
               raise SystemExit('Opponent challenger produced no enriched real-cache points')
-          family_screen = report.get('family_screen') or {}
-          if family_screen:
-              if family_screen.get('fresh_confirmation_required_before_any_activation') is not True:
-                  raise SystemExit('Historical pressure family candidate escaped fresh-confirmation requirement')
-              if family_screen.get('candidate_selection_is_not_promotion') is not True:
-                  raise SystemExit('Historical pressure family selection was treated as promotion')
-              if family_screen.get('early_game_not_part_of_family_selection') is not True:
-                  raise SystemExit('Early-game diagnostic leaked into family selection')
-
           signal = report.get('signal') or {}
           if signal.get('candidate_may_replace_reference') is True:
               raise SystemExit('Audit-only challenger must never replace the reference automatically')
@@ -325,6 +278,44 @@ jobs:
           if contract.get('primary_raw_support_counts_are_features') is not False:
               raise SystemExit('Pressure challenger leaked support proxy into primary features')
 
+          family_policy = report.get('family_screen_policy') or {}
+          for key in (
+              'predeclared_before_results',
+              'families_are_non_overlapping_feature_sets',
+              'multiple_family_comparison',
+              'historical_screen_may_select_candidate_for_fresh_confirmation_only',
+              'fresh_confirmation_required_before_any_activation',
+              'historical_screen_cannot_promote_or_replace_reference',
+              'no_threshold_tuning_from_screen_results',
+              'same_holdout_and_walk_forward_windows_as_primary',
+          ):
+              if family_policy.get(key) is not True:
+                  raise SystemExit(f'Pressure family screen policy violation: {key}')
+          if family_policy.get('mode') != 'PREDECLARED_HISTORICAL_DIAGNOSTIC_SCREEN':
+              raise SystemExit('Pressure family screen mode invalid')
+
+          families = report.get('pressure_family_features') or {}
+          expected_families = {
+              'hold_break_long',
+              'hold_break_rolling',
+              'break_point_long',
+              'break_point_rolling',
+              'deuce_thirty_long',
+              'deuce_thirty_rolling',
+          }
+          if set(families) != expected_families:
+              raise SystemExit(f'Pressure family screen set drifted: {sorted(families)}')
+          seen = set()
+          for family_name, features in families.items():
+              if not features:
+                  raise SystemExit(f'Pressure family screen empty: {family_name}')
+              overlap = seen.intersection(features)
+              if overlap:
+                  raise SystemExit(f'Pressure family screen feature overlap: {family_name} {sorted(overlap)}')
+              if any('support' in name for name in features):
+                  raise SystemExit(f'Pressure family screen leaked support proxy: {family_name}')
+              seen.update(features)
+
           leakage = report.get('leakage_contract') or {}
           for key in (
               'canonical_strict_as_of_profiles_only',
@@ -351,6 +342,15 @@ jobs:
               raise SystemExit('Early-game diagnostic family contains a non-early feature')
           if int(report.get('all_enriched_points') or 0) <= 0:
               raise SystemExit('Pressure challenger produced no enriched real-cache points')
+
+          family_screen = report.get('family_screen') or {}
+          if family_screen:
+              if family_screen.get('fresh_confirmation_required_before_any_activation') is not True:
+                  raise SystemExit('Historical pressure family candidate escaped fresh-confirmation requirement')
+              if family_screen.get('candidate_selection_is_not_promotion') is not True:
+                  raise SystemExit('Historical pressure family selection was treated as promotion')
+              if family_screen.get('early_game_not_part_of_family_selection') is not True:
+                  raise SystemExit('Early-game diagnostic leaked into family selection')
 
           signal = report.get('signal') or {}
           if signal.get('early_game_diagnostic_affects_primary_signal') is not False:
