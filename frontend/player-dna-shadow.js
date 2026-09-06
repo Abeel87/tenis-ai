@@ -195,6 +195,10 @@
     const underSupported=marketSupportRows.filter(([,row])=>row?.support_sufficient!==true);
     const integrity=dynamic.ledger_integrity||{};
     const integrityOk=integrity.status==='LEDGER_INTEGRITY_OK';
+    const policyProvenance=dynamic.market_policy_provenance||{};
+    const policyGenerations=n(policyProvenance.known_generation_count)||0;
+    const legacyPolicySnapshots=n(policyProvenance.legacy_unknown_snapshots)||0;
+    const excludedPolicySnapshots=n(policyProvenance.verdict_excluded_snapshots)||0;
 
     return `
       <section class="pds-dynamic">
@@ -241,6 +245,14 @@
                 ?`${underSupported.length} rynków nadal poniżej minimalnej próby.`
                 :'Każdy obserwowany candidate market ma minimalną próbę.')
               :'Czekamy na pierwszy zamrożony candidate market.'}
+          </small>
+        </div>
+
+        <div class="pds-dynamic-support">
+          <b>Policy generations: ${policyGenerations}</b>
+          <small>
+            Verdict liczy wyłącznie bieżącą generację strict segment-consensus.
+            Wykluczone ze strict verdictu: ${excludedPolicySnapshots}; legacy bez fingerprintu: ${legacyPolicySnapshots}.
           </small>
         </div>
 
