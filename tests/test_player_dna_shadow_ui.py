@@ -187,6 +187,9 @@ def test_player_dna_trajectory_ui_exposes_simulator_generation_provenance():
     assert "legacy_unknown_snapshots" in js
     assert "mixed_known_generations" in js
     assert "Simulator generations" in js
+    assert "current_simulator_contract_id" in js
+    assert "Semantic contract" in js
+    assert "source SHA służy tylko do audytu" in js
     assert "przyszły verdict musi liczyć je osobno" in js
     assert "Legacy bez fingerprintu" in js
 

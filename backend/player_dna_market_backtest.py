@@ -46,6 +46,8 @@ try:
         neutral_tiebreak_win_probability,
         set_shape_family,
         simulate_match,
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
     )
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
@@ -68,6 +70,8 @@ except ModuleNotFoundError:  # direct execution
         neutral_tiebreak_win_probability,
         set_shape_family,
         simulate_match,
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
     )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1669,7 +1673,12 @@ def evaluate_backtest(
         "trajectory_simulator_provenance": {
             "source_path": "backend/player_dna_tennis_simulator.py",
             "source_sha256": _sha256_file(SIMULATOR_SOURCE),
-            "binding": "THIS_HISTORICAL_TRAJECTORY_VALIDATION_WAS_GENERATED_WITH_THIS_SIMULATOR_SOURCE",
+            "semantic_contract_id": trajectory_simulator_contract().get("contract_id"),
+            "semantic_contract_fingerprint_sha256": trajectory_simulator_contract_fingerprint(),
+            "semantic_contract": trajectory_simulator_contract(),
+            "binding": "THIS_HISTORICAL_TRAJECTORY_VALIDATION_WAS_GENERATED_WITH_THIS_SEMANTIC_SIMULATOR_CONTRACT",
+            "source_sha256_is_audit_only": True,
+            "semantic_contract_fingerprint_is_generation_identity": True,
             "production_gate": False,
         },
         "summary": {

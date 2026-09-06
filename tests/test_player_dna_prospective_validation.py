@@ -2,6 +2,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from backend.player_dna_tennis_simulator import (
+    trajectory_simulator_contract,
+    trajectory_simulator_contract_fingerprint,
+)
+
 from backend.player_dna_prospective_validation import (
     DURATION_MARKETS,
     SIMULATOR_SOURCE,
@@ -1129,7 +1134,7 @@ def test_trajectory_schedule_drift_is_observed_without_rewriting_frozen_schedule
 
 
 
-def test_trajectory_new_snapshot_freezes_current_simulator_source_fingerprint():
+def test_trajectory_new_snapshot_freezes_source_audit_and_semantic_simulator_contract():
     now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
     current = _trajectory_simulation_row(
         match_id="traj-provenance",
@@ -1137,26 +1142,42 @@ def test_trajectory_new_snapshot_freezes_current_simulator_source_fingerprint():
     )
     evidence = _build_trajectory_evidence(current, {}, {}, now)
 
-    expected = _sha256_file(SIMULATOR_SOURCE)
-    assert expected is not None
+    source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    contract = trajectory_simulator_contract()
+    contract_fingerprint = trajectory_simulator_contract_fingerprint()
+    assert source_fingerprint is not None
+
     snapshot = evidence["snapshots"][0]
-    assert snapshot["source_simulator_fingerprint_sha256"] == expected
+    assert snapshot["source_simulator_fingerprint_sha256"] == source_fingerprint
+    assert snapshot["simulator_contract_id"] == contract["contract_id"]
+    assert snapshot["simulator_contract_fingerprint_sha256"] == contract_fingerprint
 
     provenance = evidence["provenance"]
-    assert provenance["current_simulator_fingerprint_sha256"] == expected
+    assert provenance["current_simulator_contract_id"] == contract["contract_id"]
+    assert (
+        provenance["current_simulator_contract_fingerprint_sha256"]
+        == contract_fingerprint
+    )
+    assert (
+        provenance["current_simulator_source_fingerprint_sha256"]
+        == source_fingerprint
+    )
     assert provenance["known_generation_count"] == 1
     assert provenance["legacy_unknown_snapshots"] == 0
     assert provenance["current_generation_snapshots"] == 1
     assert provenance["mixed_known_generations"] is False
     assert provenance["policy"][
-        "new_snapshots_require_current_simulator_fingerprint"
+        "new_snapshots_require_semantic_simulator_contract_fingerprint"
+    ] is True
+    assert provenance["policy"][
+        "source_file_fingerprint_is_audit_only_not_generation_identity"
     ] is True
     assert provenance["policy"][
         "future_trajectory_verdict_must_not_mix_simulator_generations"
     ] is True
 
 
-def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_fingerprint():
+def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_semantic_contract():
     now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
     current = _trajectory_simulation_row(
         match_id="traj-legacy",
@@ -1164,7 +1185,9 @@ def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_finger
     )
     first = _build_trajectory_evidence(current, {}, {}, now)
     legacy = dict(first["snapshots"][0])
-    legacy.pop("source_simulator_fingerprint_sha256", None)
+    source_fingerprint = legacy["source_simulator_fingerprint_sha256"]
+    legacy.pop("simulator_contract_id", None)
+    legacy.pop("simulator_contract_fingerprint_sha256", None)
 
     second = _build_trajectory_evidence(
         {},
@@ -1173,7 +1196,11 @@ def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_finger
         now + timedelta(minutes=20),
     )
 
-    assert "source_simulator_fingerprint_sha256" not in second["snapshots"][0]
+    assert "simulator_contract_fingerprint_sha256" not in second["snapshots"][0]
+    assert (
+        second["snapshots"][0]["source_simulator_fingerprint_sha256"]
+        == source_fingerprint
+    )
     assert second["ledger_integrity"]["rewritten_predictions"] == 0
     provenance = second["provenance"]
     assert provenance["legacy_unknown_snapshots"] == 1
@@ -1183,7 +1210,7 @@ def test_trajectory_provenance_never_rewrites_legacy_snapshot_to_backfill_finger
     ] is True
 
 
-def test_trajectory_provenance_marks_mixed_known_generations_without_merging_claims():
+def test_trajectory_provenance_marks_mixed_semantic_generations_without_merging_claims():
     now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
     current = _trajectory_simulation_row(
         match_id="traj-mixed",
@@ -1193,7 +1220,8 @@ def test_trajectory_provenance_marks_mixed_known_generations_without_merging_cla
     current_snapshot = dict(first["snapshots"][0])
     historical = dict(current_snapshot)
     historical["match_id"] = "traj-old-generation"
-    historical["source_simulator_fingerprint_sha256"] = "0" * 64
+    historical["simulator_contract_id"] = "player-dna-trajectory-dp-old"
+    historical["simulator_contract_fingerprint_sha256"] = "0" * 64
 
     report = _build_trajectory_evidence(
         {},
@@ -1211,13 +1239,22 @@ def test_trajectory_provenance_marks_mixed_known_generations_without_merging_cla
     ] is True
 
 
-
-def _trajectory_backtest_fixture(fingerprint):
+def _trajectory_backtest_fixture(
+    semantic_fingerprint,
+    *,
+    contract_id=None,
+    source_fingerprint="f" * 64,
+):
+    contract_id = contract_id or trajectory_simulator_contract()["contract_id"]
     return {
         "version": "player-dna-market-backtest-v1",
         "signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
         "trajectory_simulator_provenance": {
-            "source_sha256": fingerprint,
+            "source_sha256": source_fingerprint,
+            "semantic_contract_id": contract_id,
+            "semantic_contract_fingerprint_sha256": semantic_fingerprint,
+            "source_sha256_is_audit_only": True,
+            "semantic_contract_fingerprint_is_generation_identity": True,
         },
         "trajectory_validation": {
             "coverage": {"settled_predictions": 369},
@@ -1266,12 +1303,20 @@ def _trajectory_backtest_fixture(fingerprint):
     }
 
 
-def test_trajectory_historical_benchmark_requires_same_simulator_fingerprint():
-    fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    assert fingerprint is not None
+def test_trajectory_historical_benchmark_requires_same_semantic_simulator_contract():
+    source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    contract = trajectory_simulator_contract()
+    semantic_fingerprint = trajectory_simulator_contract_fingerprint()
+    assert source_fingerprint is not None
+
     benchmark = _trajectory_historical_benchmark(
-        _trajectory_backtest_fixture(fingerprint),
-        fingerprint,
+        _trajectory_backtest_fixture(
+            semantic_fingerprint,
+            source_fingerprint=source_fingerprint,
+        ),
+        contract["contract_id"],
+        semantic_fingerprint,
+        source_fingerprint,
     )
 
     assert benchmark["status"] == "COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK"
@@ -1285,16 +1330,50 @@ def test_trajectory_historical_benchmark_requires_same_simulator_fingerprint():
         "benchmark_is_historical_reference_not_performance_verdict"
     ] is True
     assert benchmark["policy"][
+        "semantic_contract_match_required_for_comparison"
+    ] is True
+    assert benchmark["policy"][
+        "source_file_fingerprint_is_audit_only_not_compatibility_gate"
+    ] is True
+    assert benchmark["policy"][
         "prospective_evidence_remains_primary_for_future_verdict"
     ] is True
 
 
-def test_trajectory_historical_benchmark_rejects_different_simulator_generation():
-    fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    assert fingerprint is not None
+def test_trajectory_historical_benchmark_accepts_source_sha_change_when_semantics_match():
+    source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    contract = trajectory_simulator_contract()
+    semantic_fingerprint = trajectory_simulator_contract_fingerprint()
+    assert source_fingerprint is not None
+
+    benchmark = _trajectory_historical_benchmark(
+        _trajectory_backtest_fixture(
+            semantic_fingerprint,
+            source_fingerprint="1" * 64,
+        ),
+        contract["contract_id"],
+        semantic_fingerprint,
+        source_fingerprint,
+    )
+
+    assert benchmark["compatible_with_current_simulator_generation"] is True
+    assert (
+        benchmark["benchmark_simulator_source_fingerprint_sha256"]
+        != benchmark["current_simulator_source_fingerprint_sha256"]
+    )
+
+
+def test_trajectory_historical_benchmark_rejects_different_semantic_simulator_generation():
+    source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    contract = trajectory_simulator_contract()
+    semantic_fingerprint = trajectory_simulator_contract_fingerprint()
+    assert source_fingerprint is not None
+
     benchmark = _trajectory_historical_benchmark(
         _trajectory_backtest_fixture("0" * 64),
-        fingerprint,
+        contract["contract_id"],
+        semantic_fingerprint,
+        source_fingerprint,
     )
 
     assert (
@@ -1302,7 +1381,9 @@ def test_trajectory_historical_benchmark_rejects_different_simulator_generation(
         == "HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE"
     )
     assert benchmark["compatible_with_current_simulator_generation"] is False
-    assert benchmark["policy"]["fingerprint_match_required_for_comparison"] is True
+    assert benchmark["policy"][
+        "semantic_contract_match_required_for_comparison"
+    ] is True
     assert benchmark["policy"][
         "incompatible_benchmark_must_not_be_used_for_claims"
     ] is True
@@ -1310,8 +1391,7 @@ def test_trajectory_historical_benchmark_rejects_different_simulator_generation(
 
 def test_trajectory_evidence_exposes_compatible_historical_reference_without_verdict():
     now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
-    fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    assert fingerprint is not None
+    semantic_fingerprint = trajectory_simulator_contract_fingerprint()
     current = _trajectory_simulation_row(
         match_id="traj-benchmark",
         scheduled=now + timedelta(hours=2),
@@ -1321,7 +1401,7 @@ def test_trajectory_evidence_exposes_compatible_historical_reference_without_ver
         {},
         {},
         now,
-        market_backtest=_trajectory_backtest_fixture(fingerprint),
+        market_backtest=_trajectory_backtest_fixture(semantic_fingerprint),
     )
 
     benchmark = evidence["historical_benchmark"]
@@ -1449,7 +1529,9 @@ def test_trajectory_legacy_unknown_snapshot_stays_in_ledger_but_not_primary_metr
     )
     first = _build_trajectory_evidence(current, {}, {}, now - timedelta(hours=6))
     snapshot = dict(first["snapshots"][0])
-    snapshot.pop("source_simulator_fingerprint_sha256", None)
+    source_fingerprint = snapshot["source_simulator_fingerprint_sha256"]
+    snapshot.pop("simulator_contract_id", None)
+    snapshot.pop("simulator_contract_fingerprint_sha256", None)
 
     labels = {
         "traj-current-generation": {
@@ -1472,6 +1554,7 @@ def test_trajectory_legacy_unknown_snapshot_stays_in_ledger_but_not_primary_metr
     assert report["counts"]["settled_snapshots"] == 0
     assert report["counts"]["current_generation_snapshots"] == 0
     assert report["counts"]["evaluation_excluded_snapshots"] == 1
+    assert snapshot["source_simulator_fingerprint_sha256"] == source_fingerprint
     provenance = report["provenance"]
     assert provenance["legacy_unknown_snapshots"] == 1
     assert provenance["evaluation_excluded_snapshots"] == 1
@@ -1491,7 +1574,8 @@ def test_trajectory_other_known_generation_cannot_contaminate_current_generation
     current_snapshot = dict(first["snapshots"][0])
     old_snapshot = dict(current_snapshot)
     old_snapshot["match_id"] = "traj-old"
-    old_snapshot["source_simulator_fingerprint_sha256"] = "0" * 64
+    old_snapshot["simulator_contract_id"] = "player-dna-trajectory-dp-old"
+    old_snapshot["simulator_contract_fingerprint_sha256"] = "0" * 64
 
     labels = {
         "traj-current": {

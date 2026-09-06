@@ -20,8 +20,16 @@ from typing import Any, Iterable
 
 try:
     from backend.player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
+    from backend.player_dna_tennis_simulator import (
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
+    )
 except ModuleNotFoundError:  # direct execution
     from player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
+    from player_dna_tennis_simulator import (
+        trajectory_simulator_contract,
+        trajectory_simulator_contract_fingerprint,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
@@ -90,6 +98,8 @@ TRAJECTORY_IMMUTABLE_SNAPSHOT_FIELDS = (
     "p2",
     "source_model_fingerprint_sha256",
     "source_simulator_fingerprint_sha256",
+    "simulator_contract_id",
+    "simulator_contract_fingerprint_sha256",
     "trajectory_predictions",
 )
 
@@ -104,14 +114,16 @@ def _sha256_file(path: Path) -> str | None:
 
 def _trajectory_provenance_diagnostics(
     snapshots: list[dict[str, Any]],
-    current_simulator_fingerprint: str | None,
+    current_simulator_contract_id: str | None,
+    current_simulator_contract_fingerprint: str | None,
+    current_simulator_source_fingerprint: str | None,
 ) -> dict[str, Any]:
     counts: dict[str, dict[str, int]] = {}
     for row in snapshots:
         if not isinstance(row, dict):
             continue
         fingerprint = str(
-            row.get("source_simulator_fingerprint_sha256") or ""
+            row.get("simulator_contract_fingerprint_sha256") or ""
         ).strip()
         key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
         bucket = counts.setdefault(
@@ -127,18 +139,20 @@ def _trajectory_provenance_diagnostics(
     known = sorted(key for key in counts if key != "LEGACY_UNKNOWN")
     legacy_unknown = int((counts.get("LEGACY_UNKNOWN") or {}).get("snapshots") or 0)
     current_count = (
-        int((counts.get(current_simulator_fingerprint) or {}).get("snapshots") or 0)
-        if current_simulator_fingerprint
+        int((counts.get(current_simulator_contract_fingerprint) or {}).get("snapshots") or 0)
+        if current_simulator_contract_fingerprint
         else 0
     )
     other_known = sum(
         int(row.get("snapshots") or 0)
         for key, row in counts.items()
-        if key not in {"LEGACY_UNKNOWN", current_simulator_fingerprint}
+        if key not in {"LEGACY_UNKNOWN", current_simulator_contract_fingerprint}
     )
     excluded = legacy_unknown + other_known
     return {
-        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
+        "current_simulator_contract_id": current_simulator_contract_id,
+        "current_simulator_contract_fingerprint_sha256": current_simulator_contract_fingerprint,
+        "current_simulator_source_fingerprint_sha256": current_simulator_source_fingerprint,
         "generations": counts,
         "known_generation_count": len(known),
         "legacy_unknown_snapshots": legacy_unknown,
@@ -147,7 +161,8 @@ def _trajectory_provenance_diagnostics(
         "evaluation_excluded_snapshots": excluded,
         "mixed_known_generations": len(known) > 1,
         "policy": {
-            "new_snapshots_require_current_simulator_fingerprint": True,
+            "new_snapshots_require_semantic_simulator_contract_fingerprint": True,
+            "source_file_fingerprint_is_audit_only_not_generation_identity": True,
             "legacy_snapshots_are_never_rewritten_to_add_provenance": True,
             "legacy_unknown_snapshots_are_diagnostic_only": True,
             "current_generation_only_for_primary_prospective_metrics": True,
@@ -1273,8 +1288,15 @@ def _trajectory_snapshot_from_current(
     predictions = _compact_trajectory_predictions(row.get("simulation") or {})
     if predictions is None:
         return None
-    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    if simulator_fingerprint is None:
+    simulator_source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_contract = trajectory_simulator_contract()
+    simulator_contract_id = str(simulator_contract.get("contract_id") or "").strip()
+    simulator_contract_fingerprint = trajectory_simulator_contract_fingerprint()
+    if (
+        simulator_source_fingerprint is None
+        or not simulator_contract_id
+        or len(simulator_contract_fingerprint) != 64
+    ):
         return None
     return {
         "match_id": match_id,
@@ -1288,7 +1310,9 @@ def _trajectory_snapshot_from_current(
         "source_model_fingerprint_sha256": row.get(
             "source_model_fingerprint_sha256"
         ),
-        "source_simulator_fingerprint_sha256": simulator_fingerprint,
+        "source_simulator_fingerprint_sha256": simulator_source_fingerprint,
+        "simulator_contract_id": simulator_contract_id,
+        "simulator_contract_fingerprint_sha256": simulator_contract_fingerprint,
         "trajectory_predictions": predictions,
         "settled": False,
         "actual": None,
@@ -1668,7 +1692,9 @@ def _trajectory_segment_diagnostics(
 
 def _trajectory_historical_benchmark(
     market_backtest: dict[str, Any],
-    current_simulator_fingerprint: str | None,
+    current_simulator_contract_id: str | None,
+    current_simulator_contract_fingerprint: str | None,
+    current_simulator_source_fingerprint: str | None,
 ) -> dict[str, Any]:
     validation = (
         market_backtest.get("trajectory_validation")
@@ -1682,11 +1708,17 @@ def _trajectory_historical_benchmark(
         else {}
     )
     provenance = provenance if isinstance(provenance, dict) else {}
-    benchmark_fingerprint = str(provenance.get("source_sha256") or "").strip()
+    benchmark_contract_id = str(provenance.get("semantic_contract_id") or "").strip()
+    benchmark_fingerprint = str(
+        provenance.get("semantic_contract_fingerprint_sha256") or ""
+    ).strip()
+    benchmark_source_fingerprint = str(provenance.get("source_sha256") or "").strip()
     compatible = bool(
-        current_simulator_fingerprint
+        current_simulator_contract_id
+        and benchmark_contract_id == current_simulator_contract_id
+        and current_simulator_contract_fingerprint
         and benchmark_fingerprint
-        and benchmark_fingerprint == current_simulator_fingerprint
+        and benchmark_fingerprint == current_simulator_contract_fingerprint
     )
 
     checkpoint = validation.get("checkpoint_neutral_start_server") or {}
@@ -1718,10 +1750,12 @@ def _trajectory_historical_benchmark(
             else "HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE"
         ),
         "compatible_with_current_simulator_generation": compatible,
-        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
-        "benchmark_simulator_fingerprint_sha256": (
-            benchmark_fingerprint or None
-        ),
+        "current_simulator_contract_id": current_simulator_contract_id,
+        "current_simulator_contract_fingerprint_sha256": current_simulator_contract_fingerprint,
+        "current_simulator_source_fingerprint_sha256": current_simulator_source_fingerprint,
+        "benchmark_simulator_contract_id": benchmark_contract_id or None,
+        "benchmark_simulator_contract_fingerprint_sha256": benchmark_fingerprint or None,
+        "benchmark_simulator_source_fingerprint_sha256": benchmark_source_fingerprint or None,
         "source_backtest_version": (
             market_backtest.get("version")
             if isinstance(market_backtest, dict)
@@ -1787,7 +1821,8 @@ def _trajectory_historical_benchmark(
         },
         "policy": {
             "benchmark_is_historical_reference_not_performance_verdict": True,
-            "fingerprint_match_required_for_comparison": True,
+            "semantic_contract_match_required_for_comparison": True,
+            "source_file_fingerprint_is_audit_only_not_compatibility_gate": True,
             "incompatible_benchmark_must_not_be_used_for_claims": True,
             "prospective_evidence_remains_primary_for_future_verdict": True,
             "no_promotion_from_historical_benchmark": True,
@@ -1878,13 +1913,16 @@ def _build_trajectory_evidence(
     integrity["pruned_by_retention"] = before_retention - len(snapshots)
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
-    simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    simulator_contract = trajectory_simulator_contract()
+    simulator_contract_id = str(simulator_contract.get("contract_id") or "").strip()
+    simulator_contract_fingerprint = trajectory_simulator_contract_fingerprint()
     current_generation_snapshots = [
         row for row in snapshots
-        if str(row.get("source_simulator_fingerprint_sha256") or "").strip()
-        == str(simulator_fingerprint or "").strip()
-        and isinstance(simulator_fingerprint, str)
-        and len(simulator_fingerprint) == 64
+        if str(row.get("simulator_contract_fingerprint_sha256") or "").strip()
+        == simulator_contract_fingerprint
+        and bool(simulator_contract_id)
+        and len(simulator_contract_fingerprint) == 64
     ]
     ledger_evaluation = _trajectory_evaluation(snapshots)
     evaluation = _trajectory_evaluation(current_generation_snapshots)
@@ -1894,11 +1932,15 @@ def _build_trajectory_evidence(
     )
     provenance = _trajectory_provenance_diagnostics(
         snapshots,
-        simulator_fingerprint,
+        simulator_contract_id or None,
+        simulator_contract_fingerprint if len(simulator_contract_fingerprint) == 64 else None,
+        simulator_source_fingerprint if isinstance(simulator_source_fingerprint, str) and len(simulator_source_fingerprint) == 64 else None,
     )
     historical_benchmark = _trajectory_historical_benchmark(
         market_backtest if isinstance(market_backtest, dict) else {},
-        simulator_fingerprint,
+        simulator_contract_id or None,
+        simulator_contract_fingerprint if len(simulator_contract_fingerprint) == 64 else None,
+        simulator_source_fingerprint if isinstance(simulator_source_fingerprint, str) and len(simulator_source_fingerprint) == 64 else None,
     )
     return {
         "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",

@@ -9,7 +9,11 @@ from backend.player_dna_market_backtest import (
     categorical_head_to_head,
     reconstruct_match_label,
 )
-from backend.player_dna_tennis_simulator import simulate_match
+from backend.player_dna_tennis_simulator import (
+    simulate_match,
+    trajectory_simulator_contract,
+    trajectory_simulator_contract_fingerprint,
+)
 
 
 def _row(idx, sets, games, server=None):
@@ -425,7 +429,13 @@ def test_deciding_set_order_is_ranked_inside_actual_match_score_family():
 
 
 
-def test_trajectory_backtest_simulator_source_has_stable_sha256_provenance():
-    fingerprint = _sha256_file(SIMULATOR_SOURCE)
-    assert isinstance(fingerprint, str)
-    assert len(fingerprint) == 64
+def test_trajectory_backtest_simulator_source_and_semantic_provenance_are_available():
+    source_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    semantic_fingerprint = trajectory_simulator_contract_fingerprint()
+    contract = trajectory_simulator_contract()
+
+    assert isinstance(source_fingerprint, str)
+    assert len(source_fingerprint) == 64
+    assert isinstance(semantic_fingerprint, str)
+    assert len(semantic_fingerprint) == 64
+    assert contract["contract_id"] == "player-dna-trajectory-dp-v1"
