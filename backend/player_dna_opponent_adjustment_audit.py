@@ -184,26 +184,53 @@ def _pair_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _context(history: list[dict[str, Any]], surface: str) -> dict[str, Any]:
-    surface_rows = [row for row in history if row["surface"] == surface]
+    # Support means usable opponent-strength evidence, not merely prior matches.
+    # Require the opponent's own pre-match serve AND return profile together so
+    # the candidate cannot gain signal from a disguised "matches played" proxy.
+    overall_ready = [
+        row
+        for row in history
+        if row.get("opponent_return") is not None
+        and row.get("opponent_serve") is not None
+    ]
+    surface_ready = [
+        row
+        for row in history
+        if row["surface"] == surface
+        and row.get("opponent_surface_return") is not None
+        and row.get("opponent_surface_serve") is not None
+    ]
     return {
-        "opponent_return_mean": _mean(row["opponent_return"] for row in history),
-        "opponent_return_l5": _last_mean(row["opponent_return"] for row in history),
-        "opponent_serve_mean": _mean(row["opponent_serve"] for row in history),
-        "opponent_serve_l5": _last_mean(row["opponent_serve"] for row in history),
+        "opponent_return_mean": _mean(
+            row["opponent_return"] for row in overall_ready
+        ),
+        "opponent_return_l5": _last_mean(
+            row["opponent_return"] for row in overall_ready
+        ),
+        "opponent_serve_mean": _mean(
+            row["opponent_serve"] for row in overall_ready
+        ),
+        "opponent_serve_l5": _last_mean(
+            row["opponent_serve"] for row in overall_ready
+        ),
         "opponent_return_surface_mean": _mean(
-            row["opponent_surface_return"] for row in surface_rows
+            row["opponent_surface_return"] for row in surface_ready
         ),
         "opponent_return_surface_l5": _last_mean(
-            row["opponent_surface_return"] for row in surface_rows
+            row["opponent_surface_return"] for row in surface_ready
         ),
         "opponent_serve_surface_mean": _mean(
-            row["opponent_surface_serve"] for row in surface_rows
+            row["opponent_surface_serve"] for row in surface_ready
         ),
         "opponent_serve_surface_l5": _last_mean(
-            row["opponent_surface_serve"] for row in surface_rows
+            row["opponent_surface_serve"] for row in surface_ready
         ),
-        "overall_support": len(history),
-        "surface_support": len(surface_rows),
+        "overall_support": len(overall_ready),
+        "surface_support": len(surface_ready),
+        "overall_history_matches": len(history),
+        "surface_history_matches": sum(
+            1 for row in history if row["surface"] == surface
+        ),
     }
 
 
@@ -520,6 +547,11 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "superbet_playable_influence": False,
         "auto_promote": False,
         "promotion_gate": False,
+        "opponent_support_contract": {
+            "support_counts_only_bidirectional_pre_match_serve_return_profiles": True,
+            "raw_prior_match_count_is_not_an_opponent_strength_feature": True,
+            "no_modeling_support_threshold_activated": True,
+        },
         "source_limitations": {
             "reliable_first_serve_in_available": False,
             "reliable_first_second_serve_split_available": False,
