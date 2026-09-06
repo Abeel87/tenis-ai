@@ -1692,7 +1692,9 @@ def _trajectory_segment_diagnostics(
 
 def _trajectory_historical_benchmark(
     market_backtest: dict[str, Any],
-    current_simulator_fingerprint: str | None,
+    current_simulator_contract_id: str | None,
+    current_simulator_contract_fingerprint: str | None,
+    current_simulator_source_fingerprint: str | None,
 ) -> dict[str, Any]:
     validation = (
         market_backtest.get("trajectory_validation")
@@ -1706,11 +1708,17 @@ def _trajectory_historical_benchmark(
         else {}
     )
     provenance = provenance if isinstance(provenance, dict) else {}
-    benchmark_fingerprint = str(provenance.get("source_sha256") or "").strip()
+    benchmark_contract_id = str(provenance.get("semantic_contract_id") or "").strip()
+    benchmark_fingerprint = str(
+        provenance.get("semantic_contract_fingerprint_sha256") or ""
+    ).strip()
+    benchmark_source_fingerprint = str(provenance.get("source_sha256") or "").strip()
     compatible = bool(
-        current_simulator_fingerprint
+        current_simulator_contract_id
+        and benchmark_contract_id == current_simulator_contract_id
+        and current_simulator_contract_fingerprint
         and benchmark_fingerprint
-        and benchmark_fingerprint == current_simulator_fingerprint
+        and benchmark_fingerprint == current_simulator_contract_fingerprint
     )
 
     checkpoint = validation.get("checkpoint_neutral_start_server") or {}
@@ -1742,10 +1750,12 @@ def _trajectory_historical_benchmark(
             else "HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE"
         ),
         "compatible_with_current_simulator_generation": compatible,
-        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
-        "benchmark_simulator_fingerprint_sha256": (
-            benchmark_fingerprint or None
-        ),
+        "current_simulator_contract_id": current_simulator_contract_id,
+        "current_simulator_contract_fingerprint_sha256": current_simulator_contract_fingerprint,
+        "current_simulator_source_fingerprint_sha256": current_simulator_source_fingerprint,
+        "benchmark_simulator_contract_id": benchmark_contract_id or None,
+        "benchmark_simulator_contract_fingerprint_sha256": benchmark_fingerprint or None,
+        "benchmark_simulator_source_fingerprint_sha256": benchmark_source_fingerprint or None,
         "source_backtest_version": (
             market_backtest.get("version")
             if isinstance(market_backtest, dict)
@@ -1811,7 +1821,8 @@ def _trajectory_historical_benchmark(
         },
         "policy": {
             "benchmark_is_historical_reference_not_performance_verdict": True,
-            "fingerprint_match_required_for_comparison": True,
+            "semantic_contract_match_required_for_comparison": True,
+            "source_file_fingerprint_is_audit_only_not_compatibility_gate": True,
             "incompatible_benchmark_must_not_be_used_for_claims": True,
             "prospective_evidence_remains_primary_for_future_verdict": True,
             "no_promotion_from_historical_benchmark": True,
