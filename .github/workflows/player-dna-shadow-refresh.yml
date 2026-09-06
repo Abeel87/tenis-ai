@@ -217,6 +217,47 @@ jobs:
           assert profiles.get('same_time_matches_count_as_prior') is False
           assert int(profiles.get('player_match_snapshots') or 0) > 0
 
+          pressure_profile = profiles.get('pressure_profiles') or {}
+          assert pressure_profile.get('included_in_canonical_profiles') is True
+          assert pressure_profile.get('shadow_only') is True
+          assert pressure_profile.get('training_join_enabled') is False
+          assert pressure_profile.get('scorer_feature_activation_enabled') is False
+          assert pressure_profile.get('canonical_score_semantics') == 'backend.atomic_point_transition'
+          assert pressure_profile.get('strict_atomic_game_boundaries_only') is True
+          assert pressure_profile.get('set_boundary_reconstruction_enabled') is False
+          assert pressure_profile.get('missing_game_reconstruction_enabled') is False
+          assert pressure_profile.get('tiebreak_excluded_from_standard_bp_deuce_metrics') is True
+          assert pressure_profile.get('raw_support_counts_accompany_every_rate') is True
+
+          profile_counts = profiles.get('source_counts') or {}
+          for profile_key, audit_key in {
+              'strict_atomic_games_used': 'strict_atomic_games',
+              'break_point_opportunities_used': 'break_point_opportunities',
+              'deuce_points_used': 'deuce_points',
+              'thirty_all_points_used': 'thirty_all_points',
+              'early_service_game_1_used': 'early_service_game_1',
+              'early_service_game_2_used': 'early_service_game_2',
+              'early_service_game_3_used': 'early_service_game_3',
+              'early_return_game_1_used': 'early_return_game_1',
+              'early_return_game_2_used': 'early_return_game_2',
+              'early_return_game_3_used': 'early_return_game_3',
+          }.items():
+              assert int(profile_counts.get(profile_key) or 0) == int(pressure_counts.get(audit_key) or 0)
+
+          features = profiles.get('features') or {}
+          profile_fields = set(features.get('overall_prior') or [])
+          assert {
+              'hold_rate', 'break_rate', 'bp_save_rate', 'bp_conversion_rate',
+              'deuce_serve_win_rate', 'deuce_return_win_rate',
+              'thirty_all_serve_win_rate', 'thirty_all_return_win_rate',
+              'early_service_game_1_hold_rate', 'early_service_game_2_hold_rate',
+              'early_service_game_3_hold_rate',
+              'early_return_game_1_break_rate', 'early_return_game_2_break_rate',
+              'early_return_game_3_break_rate',
+          }.issubset(profile_fields)
+          assert (features.get('rolling_prior') or {}).get('pressure_rates_in_windows') is True
+          assert (features.get('rolling_prior') or {}).get('training_join_enabled') is False
+
           scorer = json.loads((data / 'player_dna_point_scorer.json').read_text(encoding='utf-8'))
           assert scorer.get('mode') == 'SHADOW_EVAL_ONLY'
           assert scorer.get('production_influence') is False
