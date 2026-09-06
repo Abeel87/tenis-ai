@@ -21,7 +21,7 @@ from backend.player_dna_prospective_validation import (
     prospective_eligibility,
 )
 
-HOLD_CALIBRATION_CONTRACT_ID = "test-hold-calibration-strict-atomic-v1"
+HOLD_CALIBRATION_CONTRACT_ID = "test-hold-calibration-strict-atomic"
 HOLD_CALIBRATION_CONTRACT_FP = "e" * 64
 
 
