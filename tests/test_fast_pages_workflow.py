@@ -93,21 +93,16 @@ def test_retry_selects_only_its_own_pages_artifact():
 def test_full_pages_deploy_selects_its_own_unique_artifact():
     workflow = read(".github/workflows/update-and-pages.yml")
 
-    def action_input(action, key):
-        match = re.search(
-            rf"(?ms)^\\s*- name: [^\\n]+\\n"
-            rf"\\s+.*?uses: {re.escape(action)}\\n"
-            rf"\\s+with:\\n"
-            rf"(?:\\s+[^\\n]+\\n)*?"
-            rf"\\s+{re.escape(key)}: ([^\\n]+)",
-            workflow,
-        )
-        assert match, f"Missing {key} input for {action}"
-        return match.group(1).strip().strip("\"'")
+    def action_block(action):
+        marker = f"uses: {action}"
+        assert workflow.count(marker) == 1, f"Expected one {action} step"
+        tail = workflow.split(marker, 1)[1]
+        return tail.split("\n\n", 1)[0]
 
-    upload_name = action_input("actions/upload-pages-artifact@v4", "name")
-    deploy_name = action_input("actions/deploy-pages@v4", "artifact_name")
+    upload = action_block("actions/upload-pages-artifact@v4")
+    deploy = action_block("actions/deploy-pages@v4")
+    artifact = "github-pages-${{ github.run_id }}-${{ github.run_attempt }}"
 
-    assert upload_name == deploy_name
-    assert "${{ github.run_id }}" in upload_name
-    assert "${{ github.run_attempt }}" in upload_name
+    assert f"name: {artifact}" in upload
+    assert "path: frontend" in upload
+    assert f"artifact_name: {artifact}" in deploy
