@@ -114,14 +114,16 @@ def _sha256_file(path: Path) -> str | None:
 
 def _trajectory_provenance_diagnostics(
     snapshots: list[dict[str, Any]],
-    current_simulator_fingerprint: str | None,
+    current_simulator_contract_id: str | None,
+    current_simulator_contract_fingerprint: str | None,
+    current_simulator_source_fingerprint: str | None,
 ) -> dict[str, Any]:
     counts: dict[str, dict[str, int]] = {}
     for row in snapshots:
         if not isinstance(row, dict):
             continue
         fingerprint = str(
-            row.get("source_simulator_fingerprint_sha256") or ""
+            row.get("simulator_contract_fingerprint_sha256") or ""
         ).strip()
         key = fingerprint if fingerprint else "LEGACY_UNKNOWN"
         bucket = counts.setdefault(
@@ -137,18 +139,20 @@ def _trajectory_provenance_diagnostics(
     known = sorted(key for key in counts if key != "LEGACY_UNKNOWN")
     legacy_unknown = int((counts.get("LEGACY_UNKNOWN") or {}).get("snapshots") or 0)
     current_count = (
-        int((counts.get(current_simulator_fingerprint) or {}).get("snapshots") or 0)
-        if current_simulator_fingerprint
+        int((counts.get(current_simulator_contract_fingerprint) or {}).get("snapshots") or 0)
+        if current_simulator_contract_fingerprint
         else 0
     )
     other_known = sum(
         int(row.get("snapshots") or 0)
         for key, row in counts.items()
-        if key not in {"LEGACY_UNKNOWN", current_simulator_fingerprint}
+        if key not in {"LEGACY_UNKNOWN", current_simulator_contract_fingerprint}
     )
     excluded = legacy_unknown + other_known
     return {
-        "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
+        "current_simulator_contract_id": current_simulator_contract_id,
+        "current_simulator_contract_fingerprint_sha256": current_simulator_contract_fingerprint,
+        "current_simulator_source_fingerprint_sha256": current_simulator_source_fingerprint,
         "generations": counts,
         "known_generation_count": len(known),
         "legacy_unknown_snapshots": legacy_unknown,
@@ -157,7 +161,8 @@ def _trajectory_provenance_diagnostics(
         "evaluation_excluded_snapshots": excluded,
         "mixed_known_generations": len(known) > 1,
         "policy": {
-            "new_snapshots_require_current_simulator_fingerprint": True,
+            "new_snapshots_require_semantic_simulator_contract_fingerprint": True,
+            "source_file_fingerprint_is_audit_only_not_generation_identity": True,
             "legacy_snapshots_are_never_rewritten_to_add_provenance": True,
             "legacy_unknown_snapshots_are_diagnostic_only": True,
             "current_generation_only_for_primary_prospective_metrics": True,
