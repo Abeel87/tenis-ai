@@ -176,3 +176,16 @@ def test_player_dna_trajectory_ui_exposes_settlement_health_without_rewriting_pr
     assert "frozen schedule bez rewrite" in js
     assert "Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione" in js
     assert "zmiana planowanej godziny nigdy nie przepisuje frozen prediction" in js
+
+
+
+def test_player_dna_trajectory_ui_exposes_simulator_generation_provenance():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "trajectory.provenance" in js
+    assert "known_generation_count" in js
+    assert "legacy_unknown_snapshots" in js
+    assert "mixed_known_generations" in js
+    assert "Simulator generations" in js
+    assert "przyszły verdict musi liczyć je osobno" in js
+    assert "Legacy bez fingerprintu" in js
