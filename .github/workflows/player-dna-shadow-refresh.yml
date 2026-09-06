@@ -743,6 +743,8 @@ jobs:
           assert trajectory_scope.get('conditioned_paths_use_observed_first_server_only_after_settlement') is True
           assert trajectory_scope.get('primary_storyline_probability_scope') == 'MATCH_SCORE_FAMILY'
           assert trajectory_scope.get('full_match_exact_game_paths_are_diagnostic_only') is True
+          assert trajectory_scope.get('primary_metrics_use_current_simulator_generation_only') is True
+          assert trajectory_scope.get('legacy_and_other_simulator_generations_are_diagnostic_only') is True
           assert trajectory_scope.get('no_trajectory_performance_threshold_invented_yet') is True
           trajectory_integrity = trajectory_evidence.get('ledger_integrity') or {}
           assert trajectory_integrity.get('status') == 'LEDGER_INTEGRITY_OK'
@@ -754,6 +756,11 @@ jobs:
           assert isinstance(trajectory_eval.get('first_set_complete_path_conditioned_on_observed_first_server'), dict)
           assert isinstance(trajectory_eval.get('match_set_sequence_conditioned_on_observed_first_server'), dict)
           assert isinstance(trajectory_eval.get('full_match_game_path_conditioned_on_observed_first_server'), dict)
+          assert isinstance(trajectory_evidence.get('ledger_evaluation'), dict)
+          assert isinstance(trajectory_evidence.get('ledger_segment_diagnostics'), dict)
+          trajectory_counts = trajectory_evidence.get('counts') or {}
+          assert int(trajectory_counts.get('current_generation_snapshots') or 0) + int(trajectory_counts.get('evaluation_excluded_snapshots') or 0) == int(trajectory_counts.get('snapshots') or 0)
+          assert int(trajectory_counts.get('settled_snapshots') or 0) <= int(trajectory_counts.get('ledger_settled_snapshots') or 0)
           trajectory_segments = trajectory_evidence.get('segment_diagnostics') or {}
           trajectory_segment_policy = trajectory_segments.get('policy') or {}
           assert trajectory_segment_policy.get('diagnostic_only') is True
@@ -771,10 +778,14 @@ jobs:
           assert isinstance(current_simulator_fingerprint, str) and len(current_simulator_fingerprint) == 64
           assert trajectory_provenance_policy.get('new_snapshots_require_current_simulator_fingerprint') is True
           assert trajectory_provenance_policy.get('legacy_snapshots_are_never_rewritten_to_add_provenance') is True
+          assert trajectory_provenance_policy.get('legacy_unknown_snapshots_are_diagnostic_only') is True
+          assert trajectory_provenance_policy.get('current_generation_only_for_primary_prospective_metrics') is True
+          assert trajectory_provenance_policy.get('other_known_generations_are_diagnostic_only') is True
           assert trajectory_provenance_policy.get('future_trajectory_verdict_must_not_mix_simulator_generations') is True
           assert trajectory_provenance_policy.get('current_generation_should_be_evaluated_separately') is True
           assert int(trajectory_provenance.get('known_generation_count') or 0) >= 0
           assert int(trajectory_provenance.get('legacy_unknown_snapshots') or 0) >= 0
+          assert int(trajectory_provenance.get('evaluation_excluded_snapshots') or 0) == int(trajectory_counts.get('evaluation_excluded_snapshots') or 0)
           trajectory_benchmark = trajectory_evidence.get('historical_benchmark') or {}
           trajectory_benchmark_policy = trajectory_benchmark.get('policy') or {}
           assert trajectory_benchmark.get('status') in {
@@ -792,10 +803,10 @@ jobs:
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}
-          assert sum(int(v or 0) for v in trajectory_buckets.values()) == int((trajectory_evidence.get('counts') or {}).get('unsettled_snapshots') or 0)
+          assert sum(int(v or 0) for v in trajectory_buckets.values()) == int(trajectory_counts.get('ledger_unsettled_snapshots') or 0)
           assert 'does not imply cancellation' in str(trajectory_unsettled.get('meaning') or '')
           trajectory_latency = trajectory_observability.get('settlement_latency') or {}
-          assert int(trajectory_latency.get('n') or 0) <= int((trajectory_evidence.get('counts') or {}).get('settled_snapshots') or 0)
+          assert int(trajectory_latency.get('n') or 0) <= int(trajectory_counts.get('ledger_settled_snapshots') or 0)
           assert 'first workflow observation' in str(trajectory_latency.get('meaning') or '')
           trajectory_drift = trajectory_observability.get('schedule_drift') or {}
           assert int(trajectory_drift.get('count') or 0) >= 0

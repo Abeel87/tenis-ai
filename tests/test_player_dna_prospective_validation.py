@@ -1426,3 +1426,107 @@ def test_dynamic_old_known_policy_generation_cannot_satisfy_current_verdict_thre
     assert provenance["policy"][
         "other_known_policy_generations_are_not_mixed_into_current_verdict"
     ] is True
+
+
+
+def test_trajectory_legacy_unknown_snapshot_stays_in_ledger_but_not_primary_metrics():
+    now = datetime(2026, 9, 9, 12, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-current-generation",
+        scheduled=now - timedelta(hours=4),
+    )
+    first = _build_trajectory_evidence(current, {}, {}, now - timedelta(hours=6))
+    snapshot = dict(first["snapshots"][0])
+    snapshot.pop("source_simulator_fingerprint_sha256", None)
+
+    labels = {
+        "traj-current-generation": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        }
+    }
+    _settle_trajectory_snapshots([snapshot], labels, now)
+
+    report = _build_trajectory_evidence(
+        {},
+        labels,
+        {"trajectory_evidence": {"snapshots": [snapshot]}},
+        now,
+    )
+
+    assert report["ledger_evaluation"]["settled_matches"] == 1
+    assert report["evaluation"]["settled_matches"] == 0
+    assert report["counts"]["ledger_settled_snapshots"] == 1
+    assert report["counts"]["settled_snapshots"] == 0
+    assert report["counts"]["current_generation_snapshots"] == 0
+    assert report["counts"]["evaluation_excluded_snapshots"] == 1
+    provenance = report["provenance"]
+    assert provenance["legacy_unknown_snapshots"] == 1
+    assert provenance["evaluation_excluded_snapshots"] == 1
+    assert provenance["policy"]["legacy_unknown_snapshots_are_diagnostic_only"] is True
+    assert provenance["policy"][
+        "current_generation_only_for_primary_prospective_metrics"
+    ] is True
+
+
+def test_trajectory_other_known_generation_cannot_contaminate_current_generation_metrics():
+    now = datetime(2026, 9, 9, 12, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-current",
+        scheduled=now - timedelta(hours=4),
+    )
+    first = _build_trajectory_evidence(current, {}, {}, now - timedelta(hours=6))
+    current_snapshot = dict(first["snapshots"][0])
+    old_snapshot = dict(current_snapshot)
+    old_snapshot["match_id"] = "traj-old"
+    old_snapshot["source_simulator_fingerprint_sha256"] = "0" * 64
+
+    labels = {
+        "traj-current": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+        "traj-old": {
+            "match_exact_score": "2:0",
+            "trajectory_actual": _trajectory_actual(),
+        },
+    }
+    snapshots = [current_snapshot, old_snapshot]
+    _settle_trajectory_snapshots(snapshots, labels, now)
+
+    report = _build_trajectory_evidence(
+        {},
+        labels,
+        {"trajectory_evidence": {"snapshots": snapshots}},
+        now,
+    )
+
+    assert report["ledger_evaluation"]["settled_matches"] == 2
+    assert report["evaluation"]["settled_matches"] == 1
+    assert report["counts"]["current_generation_snapshots"] == 1
+    assert report["counts"]["evaluation_excluded_snapshots"] == 1
+    assert report["segment_diagnostics"]["tour"]["challenger"]["settled"] == 1
+    assert report["ledger_segment_diagnostics"]["tour"]["challenger"]["settled"] == 2
+    provenance = report["provenance"]
+    assert provenance["known_generation_count"] == 2
+    assert provenance["other_known_generation_snapshots"] == 1
+    assert provenance["evaluation_excluded_snapshots"] == 1
+    assert provenance["policy"]["other_known_generations_are_diagnostic_only"] is True
+
+
+def test_trajectory_generation_isolation_scope_and_accounting_are_explicit():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    current = _trajectory_simulation_row(
+        match_id="traj-generation-scope",
+        scheduled=now + timedelta(hours=2),
+    )
+    report = _build_trajectory_evidence(current, {}, {}, now)
+
+    counts = report["counts"]
+    assert counts["current_generation_snapshots"] + counts["evaluation_excluded_snapshots"] == counts["snapshots"]
+    scope = report["validation_scope"]
+    assert scope["primary_metrics_use_current_simulator_generation_only"] is True
+    assert scope["legacy_and_other_simulator_generations_are_diagnostic_only"] is True
+    assert isinstance(report["ledger_evaluation"], dict)
+    assert isinstance(report["ledger_segment_diagnostics"], dict)
+    assert report["performance_verdict_emitted"] is False
