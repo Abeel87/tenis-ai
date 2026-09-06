@@ -2,10 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 from backend.player_dna_market_walk_forward import (
     FOLD_MIN_MARKET_N,
+    SEGMENT_CONSENSUS_POLICY_ID,
     SEGMENT_MIN_MARKET_N,
     aggregate_segment_diagnostics,
     build_segment_consensus_shadow_policy,
     fold_verdict,
+    segment_consensus_policy_contract,
+    segment_consensus_policy_fingerprint,
     segment_verdict,
     summarize_walk_forward,
     walk_forward_fold_specs,
@@ -378,3 +381,24 @@ def test_segment_consensus_rejects_repeatable_count_signal_when_mean_direction_d
     assert first_set["surface_strict_consensus_negative"] is False
     assert first_set["decision"] == "INSUFFICIENT_OR_MIXED"
     assert "first_set_p1_win" not in row["conflict_markets"]
+
+
+
+def test_segment_consensus_semantic_policy_fingerprint_is_stable_and_explicit():
+    contract = segment_consensus_policy_contract()
+    fingerprint = segment_consensus_policy_fingerprint()
+
+    assert contract["policy_id"] == SEGMENT_CONSENSUS_POLICY_ID
+    assert contract["repeatable_min_folds_per_marginal"] == 2
+    assert contract[
+        "dynamic_candidate_requires_positive_mean_brier_and_log_loss_per_marginal"
+    ] is True
+    assert contract[
+        "profile_reference_requires_negative_mean_brier_and_log_loss_per_marginal"
+    ] is True
+    assert contract[
+        "count_repeatability_without_mean_direction_is_insufficient"
+    ] is True
+    assert isinstance(fingerprint, str)
+    assert len(fingerprint) == 64
+    assert fingerprint == segment_consensus_policy_fingerprint()
