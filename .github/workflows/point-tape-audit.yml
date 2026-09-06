@@ -1167,6 +1167,21 @@ jobs:
           ):
               if not isinstance(trajectory_eval.get(key), dict):
                   raise SystemExit(f'Player DNA trajectory prospective evaluation missing: {key}')
+          trajectory_segments = trajectory_evidence.get('segment_diagnostics') or {}
+          trajectory_segment_policy = trajectory_segments.get('policy') or {}
+          if trajectory_segment_policy.get('diagnostic_only') is not True:
+              raise SystemExit('Player DNA trajectory segment diagnostics escaped diagnostic-only mode')
+          if trajectory_segment_policy.get('direct_tour_surface_rows_are_built_from_same_match_snapshots') is not True:
+              raise SystemExit('Player DNA trajectory joint segment rows are not direct same-match evidence')
+          if trajectory_segment_policy.get('marginal_tour_and_surface_results_never_imply_joint_validation') is not True:
+              raise SystemExit('Player DNA trajectory marginal segments were allowed to imply joint validation')
+          if trajectory_segment_policy.get('minimum_segment_sample_not_defined_yet') is not True:
+              raise SystemExit('Player DNA trajectory segment diagnostics invented a sample threshold')
+          if trajectory_segment_policy.get('performance_verdict_forbidden') is not True:
+              raise SystemExit('Player DNA trajectory segment diagnostics cannot emit a verdict')
+          for key in ('tour', 'surface', 'tour_surface', 'coverage'):
+              if not isinstance(trajectory_segments.get(key), dict):
+                  raise SystemExit(f'Player DNA trajectory segment diagnostics missing: {key}')
 
           if prospective.get('market_scope') != 'DURATION_MARKETS_ONLY':
               raise SystemExit('Player DNA prospective validation scope must remain duration-only')

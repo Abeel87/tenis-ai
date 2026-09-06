@@ -1396,6 +1396,70 @@ def _trajectory_evaluation(
     }
 
 
+def _trajectory_segment_diagnostics(
+    snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    dimensions = {
+        "tour": lambda row: str(row.get("tour") or "").strip().lower(),
+        "surface": lambda row: str(row.get("surface") or "").strip().lower(),
+        "tour_surface": lambda row: (
+            f"{str(row.get('tour') or '').strip().lower()}|"
+            f"{str(row.get('surface') or '').strip().lower()}"
+            if str(row.get("tour") or "").strip()
+            and str(row.get("surface") or "").strip()
+            else ""
+        ),
+    }
+    out: dict[str, dict[str, Any]] = {}
+    for dimension, key_fn in dimensions.items():
+        names = sorted({
+            key_fn(row)
+            for row in snapshots
+            if isinstance(row, dict) and key_fn(row)
+        })
+        rows = {}
+        for name in names:
+            subset = [
+                row for row in snapshots
+                if isinstance(row, dict) and key_fn(row) == name
+            ]
+            evaluation = _trajectory_evaluation(subset)
+            rows[name] = {
+                "snapshots": len(subset),
+                "settled": int(evaluation.get("settled_matches") or 0),
+                "evaluation": evaluation,
+            }
+        out[dimension] = rows
+
+    return {
+        **out,
+        "coverage": {
+            "tour_segments_seen": len(out["tour"]),
+            "surface_segments_seen": len(out["surface"]),
+            "tour_surface_segments_seen": len(out["tour_surface"]),
+            "tour_segments_with_settled": sum(
+                1 for row in out["tour"].values()
+                if int(row.get("settled") or 0) > 0
+            ),
+            "surface_segments_with_settled": sum(
+                1 for row in out["surface"].values()
+                if int(row.get("settled") or 0) > 0
+            ),
+            "tour_surface_segments_with_settled": sum(
+                1 for row in out["tour_surface"].values()
+                if int(row.get("settled") or 0) > 0
+            ),
+        },
+        "policy": {
+            "diagnostic_only": True,
+            "direct_tour_surface_rows_are_built_from_same_match_snapshots": True,
+            "marginal_tour_and_surface_results_never_imply_joint_validation": True,
+            "minimum_segment_sample_not_defined_yet": True,
+            "performance_verdict_forbidden": True,
+        },
+    }
+
+
 def _build_trajectory_evidence(
     current_simulation: dict[str, Any],
     labels: dict[str, dict[str, Any]],
@@ -1467,6 +1531,7 @@ def _build_trajectory_evidence(
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
     evaluation = _trajectory_evaluation(snapshots)
+    segment_diagnostics = _trajectory_segment_diagnostics(snapshots)
     return {
         "mode": "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY",
         "status": "TRAJECTORY_PROSPECTIVE_COLLECTION_ACTIVE",
@@ -1499,6 +1564,7 @@ def _build_trajectory_evidence(
             ),
         },
         "evaluation": evaluation,
+        "segment_diagnostics": segment_diagnostics,
         "snapshots": snapshots,
     }
 
