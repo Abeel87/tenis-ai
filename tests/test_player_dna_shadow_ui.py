@@ -162,3 +162,17 @@ def test_player_dna_trajectory_evidence_ui_reports_ranked_path_metrics_and_integ
     assert "Ledger integrity" in js
     assert "rewritten_predictions" in js
     assert "zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE" in js
+
+
+
+def test_player_dna_trajectory_ui_exposes_settlement_health_without_rewriting_predictions():
+    js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
+
+    assert "settlementHealth(trajectory)" in js
+    assert "Nadchodzące" in js
+    assert "Czekają &gt;6 h" in js
+    assert "Latency median" in js
+    assert "Zmiany godziny" in js
+    assert "frozen schedule bez rewrite" in js
+    assert "Nierozliczone snapshoty są rozdzielone na nadchodzące i faktycznie opóźnione" in js
+    assert "zmiana planowanej godziny nigdy nie przepisuje frozen prediction" in js
