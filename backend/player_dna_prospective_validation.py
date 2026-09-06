@@ -129,16 +129,27 @@ def _trajectory_provenance_diagnostics(
         if current_simulator_fingerprint
         else 0
     )
+    other_known = sum(
+        int(row.get("snapshots") or 0)
+        for key, row in counts.items()
+        if key not in {"LEGACY_UNKNOWN", current_simulator_fingerprint}
+    )
+    excluded = legacy_unknown + other_known
     return {
         "current_simulator_fingerprint_sha256": current_simulator_fingerprint,
         "generations": counts,
         "known_generation_count": len(known),
         "legacy_unknown_snapshots": legacy_unknown,
         "current_generation_snapshots": current_count,
+        "other_known_generation_snapshots": other_known,
+        "evaluation_excluded_snapshots": excluded,
         "mixed_known_generations": len(known) > 1,
         "policy": {
             "new_snapshots_require_current_simulator_fingerprint": True,
             "legacy_snapshots_are_never_rewritten_to_add_provenance": True,
+            "legacy_unknown_snapshots_are_diagnostic_only": True,
+            "current_generation_only_for_primary_prospective_metrics": True,
+            "other_known_generations_are_diagnostic_only": True,
             "future_trajectory_verdict_must_not_mix_simulator_generations": True,
             "current_generation_should_be_evaluated_separately": True,
         },
@@ -1835,9 +1846,20 @@ def _build_trajectory_evidence(
     integrity["pruned_by_retention"] = before_retention - len(snapshots)
     integrity["current_snapshot_count_after_retention"] = len(snapshots)
 
-    evaluation = _trajectory_evaluation(snapshots)
-    segment_diagnostics = _trajectory_segment_diagnostics(snapshots)
     simulator_fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    current_generation_snapshots = [
+        row for row in snapshots
+        if str(row.get("source_simulator_fingerprint_sha256") or "").strip()
+        == str(simulator_fingerprint or "").strip()
+        and isinstance(simulator_fingerprint, str)
+        and len(simulator_fingerprint) == 64
+    ]
+    ledger_evaluation = _trajectory_evaluation(snapshots)
+    evaluation = _trajectory_evaluation(current_generation_snapshots)
+    ledger_segment_diagnostics = _trajectory_segment_diagnostics(snapshots)
+    segment_diagnostics = _trajectory_segment_diagnostics(
+        current_generation_snapshots
+    )
     provenance = _trajectory_provenance_diagnostics(
         snapshots,
         simulator_fingerprint,
@@ -1865,6 +1887,8 @@ def _build_trajectory_evidence(
             "first_set_complete_path_ranked": True,
             "match_set_sequence_ranked": True,
             "full_match_exact_game_paths_are_diagnostic_only": True,
+            "primary_metrics_use_current_simulator_generation_only": True,
+            "legacy_and_other_simulator_generations_are_diagnostic_only": True,
             "no_trajectory_performance_threshold_invented_yet": True,
         },
         "ledger_integrity": integrity,
@@ -1885,13 +1909,26 @@ def _build_trajectory_evidence(
             "current_simulated_matches": len(current_rows),
             "new_current_pre_match_snapshots": eligible_rows,
             "snapshots": len(snapshots),
+            "ledger_settled_snapshots": int(
+                ledger_evaluation.get("settled_matches") or 0
+            ),
+            "ledger_unsettled_snapshots": sum(
+                1 for row in snapshots if row.get("settled") is not True
+            ),
+            "current_generation_snapshots": len(current_generation_snapshots),
+            "evaluation_excluded_snapshots": (
+                len(snapshots) - len(current_generation_snapshots)
+            ),
             "settled_snapshots": int(evaluation.get("settled_matches") or 0),
             "unsettled_snapshots": sum(
-                1 for row in snapshots if row.get("settled") is not True
+                1 for row in current_generation_snapshots
+                if row.get("settled") is not True
             ),
         },
         "evaluation": evaluation,
+        "ledger_evaluation": ledger_evaluation,
         "segment_diagnostics": segment_diagnostics,
+        "ledger_segment_diagnostics": ledger_segment_diagnostics,
         "provenance": provenance,
         "historical_benchmark": historical_benchmark,
         "snapshots": snapshots,
