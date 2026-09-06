@@ -21,6 +21,20 @@ from backend.player_dna_prospective_validation import (
     prospective_eligibility,
 )
 
+HOLD_CALIBRATION_CONTRACT_ID = "test-hold-calibration-strict-atomic-v1"
+HOLD_CALIBRATION_CONTRACT_FP = "e" * 64
+
+
+def _empty_current_simulation():
+    return {
+        "version": "sim",
+        "hold_calibration_source": {
+            "hold_calibration_contract_id": HOLD_CALIBRATION_CONTRACT_ID,
+            "hold_calibration_contract_fingerprint_sha256": HOLD_CALIBRATION_CONTRACT_FP,
+        },
+        "matches": [],
+    }
+
 
 def _walk_forward():
     return {
@@ -68,6 +82,8 @@ def _candidate(p=0.45):
         "symphony2_influence": False,
         "superbet_playable_influence": False,
         "auto_promote": False,
+        "hold_calibration_contract_id": HOLD_CALIBRATION_CONTRACT_ID,
+        "hold_calibration_contract_fingerprint_sha256": HOLD_CALIBRATION_CONTRACT_FP,
     })
     return row
 
@@ -101,6 +117,8 @@ def _settled_snapshot(match_id, tour="atp", surface="hard"):
         "p1": f"A{match_id}",
         "p2": f"B{match_id}",
         "source_model_fingerprint_sha256": "abc",
+        "hold_calibration_contract_id": HOLD_CALIBRATION_CONTRACT_ID,
+        "hold_calibration_contract_fingerprint_sha256": HOLD_CALIBRATION_CONTRACT_FP,
         "raw_probabilities": raw,
         "calibrated_probabilities": calibrated,
         "settled": True,
@@ -148,6 +166,11 @@ def test_snapshot_is_only_created_before_match_and_before_result_exists():
     snap = report["snapshots"][0]
     assert snap["captured_pre_match"] is True
     assert snap["settled"] is False
+    assert snap["hold_calibration_contract_id"] == HOLD_CALIBRATION_CONTRACT_ID
+    assert (
+        snap["hold_calibration_contract_fingerprint_sha256"]
+        == HOLD_CALIBRATION_CONTRACT_FP
+    )
 
     too_late = _current_row(match_id="2", scheduled=now + timedelta(minutes=2))
     report_late = build_report(
@@ -181,7 +204,7 @@ def test_existing_snapshot_settles_later_without_rewriting_prediction():
     )
     original_raw = dict(first["snapshots"][0]["raw_probabilities"])
     second = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         _point_rows_for_settled("1"),
         first,
@@ -224,7 +247,7 @@ def test_unsettled_observability_exposes_age_without_guessing_cancellation():
         now=now,
     )
     later = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         first,
@@ -336,7 +359,7 @@ def test_duplicate_previous_snapshot_fails_closed():
 
     with pytest.raises(RuntimeError, match="ledger integrity violation"):
         build_report(
-            {"version": "sim", "matches": []},
+            _empty_current_simulation(),
             _walk_forward(),
             [],
             corrupted_previous,
@@ -351,7 +374,7 @@ def test_performance_verdict_waits_for_every_supported_segment_minimum():
         *[_settled_snapshot(i, "challenger", "clay") for i in range(122, 151)],
     ]
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"snapshots": snapshots},
@@ -376,7 +399,7 @@ def test_performance_verdict_unlocks_only_after_overall_and_segment_support():
         *[_settled_snapshot(i, "challenger", "clay") for i in range(122, 152)],
     ]
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"snapshots": snapshots},
@@ -392,6 +415,35 @@ def test_performance_verdict_unlocks_only_after_overall_and_segment_support():
     assert all(row["support_sufficient"] is True for row in readiness["markets"].values())
     assert report["evaluation"]["duration_markets_improved"] == 4
     assert report["signal"] == "PROSPECTIVE_DURATION_ROBUST_SHADOW"
+
+
+def test_hold_calibration_legacy_unknown_snapshot_stays_immutable_but_not_primary_metrics():
+    now = datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc)
+    legacy = _settled_snapshot("legacy")
+    legacy.pop("hold_calibration_contract_id", None)
+    legacy.pop("hold_calibration_contract_fingerprint_sha256", None)
+
+    report = build_report(
+        _empty_current_simulation(),
+        _walk_forward(),
+        [],
+        {"snapshots": [legacy]},
+        now=now,
+    )
+
+    assert "hold_calibration_contract_fingerprint_sha256" not in report["snapshots"][0]
+    assert report["ledger_integrity"]["rewritten_predictions"] == 0
+    assert report["ledger_evaluation"]["settled_matches"] == 1
+    assert report["evaluation"]["settled_matches"] == 0
+    assert report["counts"]["verdict_eligible_snapshots"] == 0
+    assert report["counts"]["verdict_excluded_snapshots"] == 1
+    assert report["evidence_readiness"]["ready_for_performance_verdict"] is False
+    provenance = report["hold_calibration_provenance"]
+    assert provenance["legacy_unknown_snapshots"] == 1
+    assert provenance["current_generation_snapshots"] == 0
+    assert provenance["evaluation_excluded_snapshots"] == 1
+    assert provenance["policy"]["legacy_snapshots_are_never_rewritten_to_add_provenance"] is True
+    assert provenance["policy"]["current_generation_only_for_primary_prospective_metrics"] is True
 
 
 def test_duration_market_scope_is_exact_and_candidate_only():
@@ -479,7 +531,7 @@ def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAM
 def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_markets_and_settles_later():
     now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
     first = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {},
@@ -507,7 +559,7 @@ def test_dynamic_lean_prospective_ledger_freezes_only_consensus_candidate_market
     assert "first_set_p1_win" not in snapshot["candidate_markets"]
 
     second = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         _point_rows_for_settled("dyn-1"),
         first,
@@ -544,7 +596,7 @@ def test_dynamic_lean_prospective_ledger_excludes_conflict_and_non_candidate_mar
         decision="CONFLICT",
     )
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {},
@@ -562,7 +614,7 @@ def test_dynamic_lean_prospective_ledger_excludes_conflict_and_non_candidate_mar
 def test_dynamic_readiness_requires_support_for_candidate_market_seen_before_settlement():
     now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {},
@@ -634,7 +686,7 @@ def test_dynamic_performance_verdict_waits_for_direct_tour_surface_market_suppor
         ],
     ]
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
@@ -682,7 +734,7 @@ def test_dynamic_performance_verdict_emits_robust_only_after_global_and_direct_j
         ],
     ]
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
@@ -738,7 +790,7 @@ def test_dynamic_performance_verdict_is_not_proven_when_supported_joint_segment_
         ],
     ]
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
@@ -1418,7 +1470,7 @@ def test_trajectory_evidence_exposes_compatible_historical_reference_without_ver
 def test_dynamic_policy_provenance_marks_new_snapshot_as_current_generation():
     now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {},
@@ -1451,7 +1503,7 @@ def test_dynamic_legacy_policy_unknown_snapshots_remain_immutable_but_do_not_cou
     legacy.pop("market_policy_contract_fingerprint_sha256", None)
 
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": [legacy]}},
@@ -1492,7 +1544,7 @@ def test_dynamic_old_known_policy_generation_cannot_satisfy_current_verdict_thre
     ]
 
     report = build_report(
-        {"version": "sim", "matches": []},
+        _empty_current_simulation(),
         _walk_forward(),
         [],
         {"dynamic_lean_evidence": {"snapshots": snapshots}},
