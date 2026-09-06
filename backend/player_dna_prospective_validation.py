@@ -2757,11 +2757,14 @@ def build_report(
             "current_simulated_matches": len(current_rows),
             "current_eligible_by_segment": eligible_current,
             "snapshots": len(snapshots),
-            "ledger_settled_snapshots": int(ledger_evaluation.get("settled_matches") or 0),
+            "settled_snapshots": int(ledger_evaluation.get("settled_matches") or 0),
+            "unsettled_snapshots": sum(
+                1 for row in snapshots if row.get("settled") is not True
+            ),
             "verdict_eligible_snapshots": len(verdict_snapshots),
             "verdict_excluded_snapshots": len(snapshots) - len(verdict_snapshots),
-            "settled_snapshots": settled,
-            "unsettled_snapshots": sum(
+            "verdict_settled_snapshots": settled,
+            "verdict_unsettled_snapshots": sum(
                 1 for row in verdict_snapshots if row.get("settled") is not True
             ),
             "label_counts": label_counts,
