@@ -447,7 +447,7 @@ def _dynamic_current(match_id="dyn-1", scheduled=None, decision="CONSENSUS_DYNAM
         "prospective_validation_required": True,
         "market_policy_source": "segment_consensus_shadow_policy",
         "market_policy_source_path": "backend/player_dna_market_walk_forward.py",
-        "market_policy_source_fingerprint_sha256": DYNAMIC_POLICY_FP,
+        "market_policy_source_fingerprint_sha256": policy_fingerprint,
         "market_policy_provenance_required_for_prospective_verdict": True,
         "matches": [{
             "match_id": match_id,
@@ -580,6 +580,7 @@ def _dynamic_settled_snapshot(
     actual=True,
     profile_probability=0.55,
     dynamic_probability=0.75,
+    policy_fingerprint=DYNAMIC_POLICY_FP,
 ):
     tour, surface = segment.split("|", 1)
     return {
@@ -1320,4 +1321,108 @@ def test_trajectory_evidence_exposes_compatible_historical_reference_without_ver
     assert evidence["performance_verdict_emitted"] is False
     assert evidence["validation_scope"][
         "no_trajectory_performance_threshold_invented_yet"
+    ] is True
+
+
+
+def test_dynamic_policy_provenance_marks_new_snapshot_as_current_generation():
+    now = datetime(2026, 9, 6, 9, 0, tzinfo=timezone.utc)
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {},
+        current_dynamic=_dynamic_current(scheduled=now + timedelta(hours=2)),
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    provenance = dynamic["market_policy_provenance"]
+    assert provenance["current_market_policy_source_fingerprint_sha256"] == DYNAMIC_POLICY_FP
+    assert provenance["known_generation_count"] == 1
+    assert provenance["legacy_unknown_snapshots"] == 0
+    assert provenance["current_generation_snapshots"] == 1
+    assert provenance["other_known_generation_snapshots"] == 0
+    assert provenance["verdict_excluded_snapshots"] == 0
+    assert provenance["policy"][
+        "new_snapshots_require_market_policy_source_fingerprint"
+    ] is True
+    assert provenance["policy"][
+        "future_verdict_uses_current_policy_generation_only"
+    ] is True
+
+
+def test_dynamic_legacy_policy_unknown_snapshots_remain_immutable_but_do_not_count_for_verdict():
+    now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
+    legacy = _dynamic_settled_snapshot("legacy-1")
+    legacy.pop("market_policy_source_fingerprint_sha256", None)
+
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"dynamic_lean_evidence": {"snapshots": [legacy]}},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    assert "market_policy_source_fingerprint_sha256" not in dynamic["snapshots"][0]
+    assert dynamic["ledger_integrity"]["rewritten_predictions"] == 0
+    assert dynamic["ledger_evaluation"]["settled_market_observations"] == 1
+    assert dynamic["evaluation"]["settled_market_observations"] == 0
+    assert dynamic["evidence_readiness"]["ready_for_performance_verdict"] is False
+    provenance = dynamic["market_policy_provenance"]
+    assert provenance["legacy_unknown_snapshots"] == 1
+    assert provenance["current_generation_snapshots"] == 0
+    assert provenance["verdict_excluded_snapshots"] == 1
+    assert provenance["policy"]["legacy_unknown_snapshots_remain_immutable"] is True
+    assert provenance["policy"]["legacy_unknown_snapshots_are_diagnostic_only"] is True
+
+
+def test_dynamic_old_known_policy_generation_cannot_satisfy_current_verdict_threshold():
+    now = datetime(2026, 9, 7, 12, 0, tzinfo=timezone.utc)
+    old_policy = "b" * 64
+    snapshots = [
+        _dynamic_settled_snapshot(
+            i,
+            policy_fingerprint=old_policy,
+        )
+        for i in range(1, 151)
+    ]
+
+    report = build_report(
+        {"version": "sim", "matches": []},
+        _walk_forward(),
+        [],
+        {"dynamic_lean_evidence": {"snapshots": snapshots}},
+        current_dynamic={
+            **_dynamic_current(
+                match_id="dyn-contract-only",
+                scheduled=now - timedelta(hours=1),
+            ),
+            "matches": [],
+        },
+        now=now,
+    )
+
+    dynamic = report["dynamic_lean_evidence"]
+    assert dynamic["ledger_evaluation"]["settled_market_observations"] == 150
+    assert dynamic["evaluation"]["settled_market_observations"] == 0
+    assert dynamic["counts"]["verdict_eligible_snapshots"] == 0
+    assert dynamic["counts"]["verdict_excluded_snapshots"] == 150
+    assert dynamic["evidence_readiness"]["ready_for_performance_verdict"] is False
+    assert dynamic["performance_verdict"]["emitted"] is False
+    assert dynamic["performance_verdict"]["signal"] == "DYNAMIC_LEAN_PROSPECTIVE_VERDICT_NOT_READY"
+    provenance = dynamic["market_policy_provenance"]
+    assert provenance["known_generation_count"] == 1
+    assert provenance["other_known_generation_snapshots"] == 150
+    assert provenance["policy"][
+        "other_known_policy_generations_are_not_mixed_into_current_verdict"
     ] is True
