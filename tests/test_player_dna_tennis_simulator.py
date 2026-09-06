@@ -27,6 +27,9 @@ from backend.player_dna_tennis_simulator import (
     trajectory_summary,
 )
 
+HOLD_CALIBRATION_TEST_CONTRACT_ID = "test-hold-calibration-strict-atomic-v1"
+HOLD_CALIBRATION_TEST_CONTRACT_FP = "d" * 64
+
 
 def test_hold_probability_is_exact_at_half_and_monotonic():
     assert math.isclose(hold_probability(0.5), 0.5, abs_tol=1e-12)
@@ -376,8 +379,10 @@ def test_current_report_only_simulates_shadow_scored_rows_and_stays_isolated():
 
 def _promising_calibration():
     return {
-        "version": "player-dna-hold-calibration-audit-v1",
+        "version": "player-dna-hold-calibration-audit-v2",
         "mode": "SHADOW_CALIBRATION_AUDIT_ONLY",
+        "hold_calibration_contract_id": HOLD_CALIBRATION_TEST_CONTRACT_ID,
+        "hold_calibration_contract_fingerprint_sha256": HOLD_CALIBRATION_TEST_CONTRACT_FP,
         "status": "CALIBRATION_EXPERIMENT_COMPLETE_NO_INTEGRATION",
         "signal": "HOLD_CALIBRATION_PROMISING_SHADOW",
         "production_influence": False,
@@ -435,7 +440,39 @@ def test_hold_calibration_candidate_is_additive_and_does_not_replace_raw():
     row = calibrated["matches"][0]
     assert row["validation_status"] == "UNVALIDATED_MATCH_LEVEL"
     assert row["hold_calibrated_candidate"]["validation_status"] == "BACKTESTED_HOLD_CALIBRATION_CANDIDATE"
+    assert (
+        row["hold_calibrated_candidate"]["hold_calibration_contract_id"]
+        == HOLD_CALIBRATION_TEST_CONTRACT_ID
+    )
+    assert (
+        row["hold_calibrated_candidate"]["hold_calibration_contract_fingerprint_sha256"]
+        == HOLD_CALIBRATION_TEST_CONTRACT_FP
+    )
+    source = calibrated["hold_calibration_source"]
+    assert source["hold_calibration_contract_id"] == HOLD_CALIBRATION_TEST_CONTRACT_ID
+    assert (
+        source["hold_calibration_contract_fingerprint_sha256"]
+        == HOLD_CALIBRATION_TEST_CONTRACT_FP
+    )
+    assert source["semantic_contract_required_for_candidate"] is True
     assert calibrated["market_policy"]["winner_markets"] == "NO_AUTOMATIC_SWITCH"
+
+
+def test_promising_calibration_without_semantic_provenance_cannot_enable_candidate():
+    report = _promising_calibration()
+    report.pop("hold_calibration_contract_id")
+    report.pop("hold_calibration_contract_fingerprint_sha256")
+    current = {
+        "matches": [{
+            "match_id": 1,
+            "status": "SHADOW_SCORED",
+            "p1_serve_point_win_probability": 0.63,
+            "p2_serve_point_win_probability": 0.59,
+        }]
+    }
+    result = simulate_current_report(current, calibration_report=report)
+    assert result["hold_calibration_candidate_enabled"] is False
+    assert result["matches"][0]["hold_calibrated_candidate"] is None
 
 
 def test_non_promising_calibration_cannot_enable_candidate():
