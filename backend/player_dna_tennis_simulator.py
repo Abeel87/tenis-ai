@@ -9,6 +9,7 @@ PROD, Symfonia 2.0 or Superbet PLAYABLE.
 """
 
 import gzip
+import hashlib
 import heapq
 import json
 import math
@@ -504,6 +505,44 @@ SET_SHAPE_FAMILIES = (
     "EXTENDED_7_5",
     "TIEBREAK",
 )
+
+
+TRAJECTORY_SIMULATOR_CONTRACT_ID = "player-dna-trajectory-dp-v1"
+
+
+def trajectory_simulator_contract() -> dict[str, Any]:
+    return {
+        "contract_id": TRAJECTORY_SIMULATOR_CONTRACT_ID,
+        "simulator_version": VERSION,
+        "engine": "EXACT_TENNIS_DP_FROM_SERVE_POINT_PROBABILITIES",
+        "serve_order_pre_match": "NEUTRAL_50_50",
+        "checkpoint_games": [2, 4, 6],
+        "checkpoint_start_server_policy": "NEUTRAL_PRE_MATCH_AVERAGE",
+        "tiebreak_method": "neutral_average_point_probability_exact_first_to_7_by_2",
+        "first_set_top_game_paths_limit": 8,
+        "match_top_set_paths_limit": 12,
+        "full_match_top_game_paths_limit": 4,
+        "primary_storyline_probability_scope": "MATCH_SCORE_FAMILY",
+        "set_shape_taxonomy": list(SET_SHAPE_FAMILIES),
+        "full_match_game_paths_are_exact_for_known_start_server": True,
+        "exact_full_match_game_paths_are_diagnostic_only": True,
+        "ranked_paths_are_exact_within_known_start_server_condition": True,
+        "conditioned_paths_require_known_start_server": True,
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+    }
+
+
+def trajectory_simulator_contract_fingerprint() -> str:
+    payload = json.dumps(
+        trajectory_simulator_contract(),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
 
 
 def set_shape_family(score: str) -> str | None:
@@ -1152,7 +1191,10 @@ def trajectory_summary(
         "validation_status": "UNVALIDATED_MATCH_LEVEL",
         "checkpoints_neutral_start_server": checkpoints,
         "serve_order_conditioned": conditioned,
+        "semantic_contract_id": TRAJECTORY_SIMULATOR_CONTRACT_ID,
+        "semantic_contract_fingerprint_sha256": trajectory_simulator_contract_fingerprint(),
         "contract": {
+            **trajectory_simulator_contract(),
             "not_a_single_certain_script": True,
             "ranked_paths_are_exact_within_known_start_server_condition": True,
             "pre_match_start_server_unknown": True,
