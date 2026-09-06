@@ -165,6 +165,48 @@
     }).join('');
   }
 
+  function dynamicDirectSegmentRows(dynamic){
+    const direct=dynamic?.direct_segment_readiness||{};
+    const segments=direct.tour_surface||{};
+    const rows=[];
+    Object.entries(segments).forEach(([segment,payload])=>{
+      Object.entries(payload?.candidate_markets||{}).forEach(([market,support])=>{
+        const settled=n(support?.settled)||0;
+        const required=n(support?.required)||DYNAMIC_MIN_SETTLED_PER_MARKET;
+        const remaining=n(support?.remaining);
+        const ready=support?.support_sufficient===true;
+        rows.push({segment,market,settled,required,remaining,ready});
+      });
+    });
+    if(!rows.length){
+      return '<div class="pds-empty">Brak bezpośrednich tour|surface candidate cells w bieżącej generacji policy.</div>';
+    }
+    return rows.map(row=>`
+      <div class="pds-direct-cell ${row.ready?'good':'pending'}">
+        <div>
+          <b>${esc(row.segment)}</b>
+          <small>${esc(DYNAMIC_MARKET_LABELS[row.market]||row.market)}</small>
+        </div>
+        <span><strong>${row.settled} / ${row.required}</strong></span>
+        <em>${row.ready?'DIRECT READY':`brakuje ${row.remaining==null?'—':row.remaining}`}</em>
+      </div>
+    `).join('');
+  }
+
+  function dynamicVerdictMeta(verdict){
+    const signal=verdict?.signal;
+    if(signal==='DYNAMIC_LEAN_PROSPECTIVE_ROBUST_SHADOW'){
+      return {label:'ROBUST SHADOW',tone:'good',detail:'Global i wszystkie wspierane direct tour|surface cells wygrywają jednocześnie na Brier i log-loss.'};
+    }
+    if(signal==='DYNAMIC_LEAN_PROSPECTIVE_NOT_PROVEN'){
+      return {label:'NIEPOTWIERDZONE',tone:'warn',detail:'Próba jest gotowa, ale co najmniej jeden rynek lub direct cell nie potwierdził przewagi na obu metrykach.'};
+    }
+    if(verdict?.reason==='DIRECT_TOUR_SURFACE_SUPPORT_INSUFFICIENT'){
+      return {label:'CZEKA NA DIRECT',tone:'pending',detail:'Globalna próba może być gotowa, ale brakuje bezpośredniej próby w co najmniej jednym tour|surface candidate cell.'};
+    }
+    return {label:'CZEKA NA PRÓBĘ',tone:'pending',detail:'Za mało bieżących settled observations per rynek lub łącznie.'};
+  }
+
   function dynamicEvidenceHTML(prospective){
     const dynamic=prospective?.dynamic_lean_evidence;
     if(!dynamic||dynamic.mode!=='SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY'){
@@ -199,6 +241,11 @@
     const policyGenerations=n(policyProvenance.known_generation_count)||0;
     const legacyPolicySnapshots=n(policyProvenance.legacy_unknown_snapshots)||0;
     const excludedPolicySnapshots=n(policyProvenance.verdict_excluded_snapshots)||0;
+    const direct=dynamic.direct_segment_readiness||{};
+    const directCells=n(direct.observed_tour_surface_market_cells)||0;
+    const directReady=direct.ready_for_performance_verdict===true;
+    const verdict=dynamic.performance_verdict||{};
+    const verdictMeta=dynamicVerdictMeta(verdict);
 
     return `
       <section class="pds-dynamic">
@@ -256,6 +303,27 @@
           </small>
         </div>
 
+        <div class="pds-dynamic-support">
+          <b>Direct tour|surface: ${directReady?'READY':'CZEKA'} · ${directCells} cells</b>
+          <small>Każdy obserwowany candidate cell potrzebuje własnych settled wyników; marginesy tour i surface nie zastępują joint evidence.</small>
+        </div>
+
+        <div class="pds-direct">
+          <div class="pds-subhead">
+            <b>Bezpośrednia próba tour|surface</b>
+            <small>To ta warstwa blokuje verdict, jeśli choć jeden obserwowany joint cell nie ma pełnego wsparcia.</small>
+          </div>
+          ${dynamicDirectSegmentRows(dynamic)}
+        </div>
+
+        <div class="pds-dynamic-verdict ${verdictMeta.tone}">
+          <div>
+            <b>Performance verdict · ${esc(verdictMeta.label)}</b>
+            <small>${esc(verdict.reason||'—')}</small>
+          </div>
+          <p>${esc(verdictMeta.detail)}</p>
+        </div>
+
         <div class="pds-markets">
           <div class="pds-subhead">
             <b>Brier: PROFILE vs dynamic lean</b>
@@ -265,10 +333,14 @@
         </div>
 
         <p class="pds-foot">
-          ${readiness.ready_for_performance_verdict===true
-            ?'Próg ilościowy osiągnięty — można wykonać osobny performance verdict, ale nie ma auto-promocji.'
-            :'Trwa czyste zbieranie przyszłych wyników; performance verdict jest zablokowany do czasu pełnej próby.'}
-          SHADOW · zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
+          ${verdict.emitted===true
+            ?'Performance verdict został policzony wyłącznie z bieżącej generacji policy oraz z pełnym direct tour|surface support.'
+            :directReady
+              ?'Direct support jest gotowy; verdict nadal czeka na pełną próbę global/per-market.'
+              :readiness.ready_for_performance_verdict===true
+                ?'Global/per-market support jest gotowy, ale verdict nadal blokuje brak direct tour|surface support.'
+                :'Trwa czyste zbieranie wyników bieżącej generacji policy; verdict pozostaje zablokowany.'}
+          Nawet ROBUST SHADOW nie oznacza auto-promocji. SHADOW · zero wpływu na PROD, Symfonię 2.0 i Superbet PLAYABLE.
         </p>
       </section>`;
   }
