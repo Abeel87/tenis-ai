@@ -284,6 +284,11 @@ jobs:
           assert backtest.get('symphony2_influence') is False
           assert backtest.get('superbet_playable_influence') is False
           assert backtest.get('auto_promote') is False
+          backtest_trajectory_provenance = backtest.get('trajectory_simulator_provenance') or {}
+          backtest_trajectory_fingerprint = backtest_trajectory_provenance.get('source_sha256')
+          assert isinstance(backtest_trajectory_fingerprint, str) and len(backtest_trajectory_fingerprint) == 64
+          assert backtest_trajectory_provenance.get('source_path') == 'backend/player_dna_tennis_simulator.py'
+          assert backtest_trajectory_provenance.get('production_gate') is False
           assert backtest.get('current_simulation_status_unchanged') == 'UNVALIDATED_MATCH_LEVEL'
           assert backtest.get('model_features') == 'PROFILE_ONLY_CURRENT_COMPATIBLE'
           assert backtest.get('model_converged') is True
@@ -752,6 +757,20 @@ jobs:
           assert trajectory_provenance_policy.get('current_generation_should_be_evaluated_separately') is True
           assert int(trajectory_provenance.get('known_generation_count') or 0) >= 0
           assert int(trajectory_provenance.get('legacy_unknown_snapshots') or 0) >= 0
+          trajectory_benchmark = trajectory_evidence.get('historical_benchmark') or {}
+          trajectory_benchmark_policy = trajectory_benchmark.get('policy') or {}
+          assert trajectory_benchmark.get('status') in {
+              'COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK',
+              'HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE',
+          }
+          assert trajectory_benchmark_policy.get('benchmark_is_historical_reference_not_performance_verdict') is True
+          assert trajectory_benchmark_policy.get('fingerprint_match_required_for_comparison') is True
+          assert trajectory_benchmark_policy.get('incompatible_benchmark_must_not_be_used_for_claims') is True
+          assert trajectory_benchmark_policy.get('prospective_evidence_remains_primary_for_future_verdict') is True
+          assert trajectory_benchmark_policy.get('no_promotion_from_historical_benchmark') is True
+          if trajectory_benchmark.get('compatible_with_current_simulator_generation') is True:
+              assert trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') == current_simulator_fingerprint
+              assert trajectory_benchmark.get('benchmark_simulator_fingerprint_sha256') == backtest_trajectory_fingerprint
           trajectory_observability = trajectory_evidence.get('settlement_observability') or {}
           trajectory_unsettled = trajectory_observability.get('unsettled') or {}
           trajectory_buckets = trajectory_unsettled.get('buckets') or {}

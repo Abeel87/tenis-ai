@@ -10,6 +10,7 @@ from backend.player_dna_prospective_validation import (
     _ledger_integrity,
     _settle_trajectory_snapshots,
     _trajectory_evaluation,
+    _trajectory_historical_benchmark,
     build_report,
     prospective_eligibility,
 )
@@ -1159,4 +1160,125 @@ def test_trajectory_provenance_marks_mixed_known_generations_without_merging_cla
     assert provenance["generations"]["0" * 64]["snapshots"] == 1
     assert provenance["policy"][
         "current_generation_should_be_evaluated_separately"
+    ] is True
+
+
+
+def _trajectory_backtest_fixture(fingerprint):
+    return {
+        "version": "player-dna-market-backtest-v1",
+        "signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
+        "trajectory_simulator_provenance": {
+            "source_sha256": fingerprint,
+        },
+        "trajectory_validation": {
+            "coverage": {"settled_predictions": 369},
+            "checkpoint_neutral_start_server": {
+                "after_2_games": {
+                    "n": 368,
+                    "top1_accuracy": 0.589674,
+                    "top3_accuracy": 1.0,
+                },
+                "after_4_games": {
+                    "n": 368,
+                    "top1_accuracy": 0.407609,
+                    "top3_accuracy": 0.894022,
+                },
+                "after_6_games": {
+                    "n": 368,
+                    "top1_accuracy": 0.326087,
+                    "top3_accuracy": 0.8125,
+                },
+            },
+            "first_set_conditioned_on_observed_first_server": {
+                "n": 368,
+                "hit_at_1": 0.019022,
+                "hit_at_3": 0.100543,
+                "hit_at_8": 0.203804,
+            },
+            "primary_storyline_match_score_conditioned_on_observed_first_server": {
+                "n": 369,
+                "hit_at_1": 0.349593,
+                "hit_at_3": 0.666667,
+            },
+            "match_set_sequence_conditioned_on_observed_first_server": {
+                "n": 369,
+                "hit_at_1": 0.02168,
+                "hit_at_3": 0.078591,
+                "hit_at_12": 0.189702,
+            },
+            "full_match_game_path_conditioned_on_observed_first_server": {
+                "n": 362,
+                "hit_at_1": 0.0,
+                "hit_at_2": 0.0,
+                "hit_at_4": 0.0,
+                "mean_top1_prefix_fraction": 0.097088,
+            },
+        },
+    }
+
+
+def test_trajectory_historical_benchmark_requires_same_simulator_fingerprint():
+    fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    assert fingerprint is not None
+    benchmark = _trajectory_historical_benchmark(
+        _trajectory_backtest_fixture(fingerprint),
+        fingerprint,
+    )
+
+    assert benchmark["status"] == "COMPATIBLE_HISTORICAL_TRAJECTORY_BENCHMARK"
+    assert benchmark["compatible_with_current_simulator_generation"] is True
+    assert benchmark["historical_sample"]["settled_predictions"] == 369
+    assert benchmark["historical_sample"]["full_match_game_path_n"] == 362
+    assert benchmark["metrics"]["checkpoint_after_2_games_top1"] == 0.589674
+    assert benchmark["metrics"]["storyline_match_score_top3"] == 0.666667
+    assert benchmark["metrics"]["full_match_game_path_top4"] == 0.0
+    assert benchmark["policy"][
+        "benchmark_is_historical_reference_not_performance_verdict"
+    ] is True
+    assert benchmark["policy"][
+        "prospective_evidence_remains_primary_for_future_verdict"
+    ] is True
+
+
+def test_trajectory_historical_benchmark_rejects_different_simulator_generation():
+    fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    assert fingerprint is not None
+    benchmark = _trajectory_historical_benchmark(
+        _trajectory_backtest_fixture("0" * 64),
+        fingerprint,
+    )
+
+    assert (
+        benchmark["status"]
+        == "HISTORICAL_TRAJECTORY_BENCHMARK_NOT_COMPATIBLE"
+    )
+    assert benchmark["compatible_with_current_simulator_generation"] is False
+    assert benchmark["policy"]["fingerprint_match_required_for_comparison"] is True
+    assert benchmark["policy"][
+        "incompatible_benchmark_must_not_be_used_for_claims"
+    ] is True
+
+
+def test_trajectory_evidence_exposes_compatible_historical_reference_without_verdict():
+    now = datetime(2026, 9, 8, 9, 0, tzinfo=timezone.utc)
+    fingerprint = _sha256_file(SIMULATOR_SOURCE)
+    assert fingerprint is not None
+    current = _trajectory_simulation_row(
+        match_id="traj-benchmark",
+        scheduled=now + timedelta(hours=2),
+    )
+    evidence = _build_trajectory_evidence(
+        current,
+        {},
+        {},
+        now,
+        market_backtest=_trajectory_backtest_fixture(fingerprint),
+    )
+
+    benchmark = evidence["historical_benchmark"]
+    assert benchmark["compatible_with_current_simulator_generation"] is True
+    assert evidence["performance_verdict_emitted"] is False
+    assert evidence["validation_scope"][
+        "no_trajectory_performance_threshold_invented_yet"
     ] is True
