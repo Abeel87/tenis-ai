@@ -74,10 +74,10 @@ POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
 PROFILES = ROOT / "data" / "derived" / "player_dna" / "profile_snapshots.jsonl.gz"
 OUT = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
 
-VERSION = "player-dna-hold-calibration-audit-v2"
+VERSION = "player-dna-hold-calibration-audit-v1"
 MODE = "SHADOW_CALIBRATION_AUDIT_ONLY"
 MIN_PRIOR_MATCHES = 3
-HOLD_CALIBRATION_CONTRACT_ID = "player-dna-hold-calibration-strict-atomic-game-v1"
+HOLD_CALIBRATION_CONTRACT_ID = "player-dna-hold-calibration-strict-atomic-game"
 HOLD_CALIBRATION_LABEL_POLICY = {
     "transition_kind": "game_score_changed",
     "atomic_reason": "atomic_game_boundary",
