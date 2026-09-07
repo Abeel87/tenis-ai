@@ -6,8 +6,14 @@ from backend.neuro_shadow_training import (
     PLAYABLE_INFLUENCE,
     PRODUCTION_INFLUENCE,
     SYMPHONY_PROD_INFLUENCE,
+    PHASE8_FEATURE_NAMES,
+    _phase8_feature_vector,
+    _phase8_fold_specs,
+    _phase8_items,
     build_training_report,
+    evaluate_phase8_market,
     refresh_training_artifact,
+    summarize_phase8_gate,
     training_fingerprint,
 )
 
@@ -201,3 +207,129 @@ def test_refresh_writes_dedicated_artifact(tmp_path):
     assert saved["playable_influence"] is False
     assert saved["auto_promotion"] is False
     assert saved["auto_promote"] is False
+
+
+def _phase8_snapshot(probability, *, bookmaker=False, final=False):
+    return {
+        "numeric": {
+            "state_probability": probability,
+            "base_probability": probability,
+            "current_probability": probability,
+            "catboost_probability": 1.0 - probability,
+            "tabpfn_probability": 1.0 - probability,
+            "adaptive_probability": probability,
+            "best_of_5": 0.0,
+            "surface_hard": 1.0,
+            "surface_clay": 0.0,
+            "surface_grass": 0.0,
+        },
+        "contains_final_result": final,
+        "contains_bookmaker_price": bookmaker,
+    }
+
+
+def _phase8_row(index, hit, *, scheduled_time=None):
+    probability = 0.78 if hit else 0.22
+    return {
+        "prediction_key": f"phase8-{index}",
+        "match_id": f"phase8-match-{index}",
+        "market": "set2_total",
+        "settlement": "hit" if hit else "miss",
+        "scheduled_time": scheduled_time
+        or f"2026-01-{1 + index // 24:02d}T{index % 24:02d}:00:00Z",
+        "created_at": scheduled_time
+        or f"2026-01-{1 + index // 24:02d}T{index % 24:02d}:00:00Z",
+        "feature_snapshot": _phase8_snapshot(probability),
+    }
+
+
+def test_phase8_feature_contract_forbids_result_and_bookmaker_and_excludes_old_model_outputs():
+    row = _phase8_row(0, True)
+    vector = _phase8_feature_vector(row)
+    assert vector is not None
+    assert len(vector) == len(PHASE8_FEATURE_NAMES)
+    assert "catboost_probability" not in PHASE8_FEATURE_NAMES
+    assert "tabpfn_probability" not in PHASE8_FEATURE_NAMES
+
+    bookmaker = _phase8_row(1, False)
+    bookmaker["feature_snapshot"] = _phase8_snapshot(0.4, bookmaker=True)
+    assert _phase8_feature_vector(bookmaker) is None
+
+    final = _phase8_row(2, True)
+    final["feature_snapshot"] = _phase8_snapshot(0.6, final=True)
+    assert _phase8_feature_vector(final) is None
+
+
+def test_phase8_fold_specs_never_split_equal_timestamp_groups():
+    rows = [_phase8_row(i, i % 2 == 0) for i in range(120)]
+    shared_time = "2026-01-05T12:30:00Z"
+    for i in range(48, 54):
+        rows[i]["scheduled_time"] = shared_time
+        rows[i]["created_at"] = shared_time
+
+    items = _phase8_items(rows, "set2_total")
+    specs = _phase8_fold_specs(items)
+
+    assert len(specs) == 3
+    for spec in specs:
+        assert spec["same_timestamp_split"] is False
+        train_times = {item[0]["scheduled_time"] for item in spec["train"]}
+        eval_times = {item[0]["scheduled_time"] for item in spec["evaluation"]}
+        assert train_times.isdisjoint(eval_times)
+
+
+def test_phase8_market_walk_forward_compares_identical_rows_for_all_model_classes():
+    rows = [_phase8_row(i, i % 2 == 0) for i in range(160)]
+    report = evaluate_phase8_market(rows, "set2_total")
+
+    assert report["status"] == "WALK_FORWARD_COMPLETE"
+    assert report["complete_folds"] == 3
+    assert report["required_folds"] == 3
+    assert report["runtime_switch_authorized"] is False
+    for fold in report["folds"]:
+        assert fold["status"] == "FOLD_COMPLETE"
+        assert fold["same_timestamp_split"] is False
+        assert fold["same_eval_rows_all_models"] is True
+        models = fold["models"]
+        assert set(models) == {"logistic", "catboost", "neural", "ensemble"}
+        assert len({models[name]["n"] for name in models}) == 1
+        for metrics in models.values():
+            assert metrics["brier"] is not None
+            assert metrics["log_loss"] is not None
+            assert metrics["ece_10_bin"] is not None
+
+
+def test_phase8_gate_closes_evaluation_without_global_model_promotion():
+    market_reports = {}
+    for index in range(6):
+        market_reports[f"market-{index}"] = {
+            "status": "WALK_FORWARD_COMPLETE",
+            "complete_folds": 3,
+            "folds": [
+                {
+                    "status": "FOLD_COMPLETE",
+                    "same_eval_rows_all_models": True,
+                }
+                for _ in range(3)
+            ],
+            "neural_review_candidate": index == 0,
+            "ensemble_review_candidate": index == 1,
+        }
+
+    summary = summarize_phase8_gate(
+        market_reports,
+        {
+            "phase7_complete": True,
+            "phase8_ready": True,
+        },
+    )
+
+    assert summary["technical_validation_complete"] is True
+    assert summary["phase8_complete"] is True
+    assert summary["phase9_ready"] is True
+    assert summary["supported_markets"] == 6
+    assert summary["neural_review_candidates"] == ["market-0"]
+    assert summary["ensemble_review_candidates"] == ["market-1"]
+    assert summary["neural_global_promotion_authorized"] is False
+    assert summary["ensemble_global_promotion_authorized"] is False
+    assert summary["promotion_verdict"] == "PER_MARKET_REVIEW_CANDIDATES_SHADOW_ONLY"
