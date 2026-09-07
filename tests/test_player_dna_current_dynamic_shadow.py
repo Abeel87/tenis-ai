@@ -88,8 +88,8 @@ def test_current_dynamic_shadow_reuses_historical_candidate_and_never_runtime_sw
     monkeypatch.setattr(dynamic, "build_feature_rows", lambda points, profiles: ([feature_row], {"joined_rows": 1}))
     monkeypatch.setattr(
         dynamic,
-        "_fit_logistic_newton",
-        lambda frame, numeric: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
+        "fit_point_probability_model",
+        lambda frame: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
     )
     monkeypatch.setattr(
         dynamic,
@@ -206,8 +206,8 @@ def test_current_dynamic_shadow_requires_both_provider_ranks(monkeypatch):
     )
     monkeypatch.setattr(
         dynamic,
-        "_fit_logistic_newton",
-        lambda frame, numeric: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
+        "fit_point_probability_model",
+        lambda frame: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
     )
     monkeypatch.setattr(dynamic, "_model_meta", lambda model: {"converged": True})
     monkeypatch.setattr(dynamic, "build_current_target_profiles", lambda points, targets: ([], {}))
@@ -232,8 +232,8 @@ def test_current_dynamic_shadow_uses_strict_prior_provider_rank_from_current_pro
     )
     monkeypatch.setattr(
         dynamic,
-        "_fit_logistic_newton",
-        lambda frame, numeric: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
+        "fit_point_probability_model",
+        lambda frame: {"converged": True, "schema": {}, "beta": [], "feature_names": []},
     )
     monkeypatch.setattr(
         dynamic,
