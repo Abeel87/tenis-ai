@@ -21,7 +21,7 @@ CURRENT = DATA / "symphony2_current.json"
 BASE_HISTORY = DATA / "history.json"
 HISTORY = DATA / "symphony2_history.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-tracker-2"
+VERSION = "symphony2-tracker-3"
 
 
 def _read(path: Path, fallback):
@@ -234,6 +234,117 @@ def settle(history_doc: dict, base_history: list[dict]) -> tuple[dict, int]:
     return doc, settled
 
 
+def _brier(observations: list[tuple[float, int]]) -> float | None:
+    if not observations:
+        return None
+    return sum((float(probability) - int(target)) ** 2 for probability, target in observations) / len(observations)
+
+
+def _decile_label(value: float) -> str:
+    bounded = max(0.0, min(1.0, float(value)))
+    index = min(9, int(bounded * 10.0))
+    lo = index / 10.0
+    hi = (index + 1) / 10.0
+    return f"{lo:.1f}-{hi:.1f}"
+
+
+def _calibration_summary(observations: list[tuple[float, int]]) -> dict:
+    if not observations:
+        return {
+            "settled": 0,
+            "hits": 0,
+            "misses": 0,
+            "observed_hit_rate": None,
+            "mean_predicted_probability": None,
+            "brier": None,
+        }
+    hits = sum(int(target) for _, target in observations)
+    mean_probability = sum(float(probability) for probability, _ in observations) / len(observations)
+    return {
+        "settled": len(observations),
+        "hits": hits,
+        "misses": len(observations) - hits,
+        "observed_hit_rate": round(100.0 * hits / len(observations), 3),
+        "mean_predicted_probability": round(100.0 * mean_probability, 3),
+        "brier": round(float(_brier(observations)), 6),
+    }
+
+
+def _dependency_settlement_calibration(entries: list[dict]) -> dict:
+    composition_observations: list[tuple[float, int]] = []
+    pair_observations: list[dict] = []
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        result = str(entry.get("result") or "")
+        joint_probability = _num(entry.get("joint_probability"))
+        if result in {"hit", "miss"} and joint_probability is not None:
+            composition_observations.append((
+                max(0.0, min(1.0, float(joint_probability) / 100.0)),
+                1 if result == "hit" else 0,
+            ))
+
+        diagnostics = entry.get("dependency_diagnostics")
+        if not isinstance(diagnostics, dict):
+            continue
+        legs = {
+            str(leg.get("selection_id")): leg
+            for leg in (entry.get("selection") or [])
+            if isinstance(leg, dict) and leg.get("selection_id") is not None
+        }
+        for pair in diagnostics.get("pairs") or []:
+            if not isinstance(pair, dict):
+                continue
+            left = legs.get(str(pair.get("left_selection_id")))
+            right = legs.get(str(pair.get("right_selection_id")))
+            if not isinstance(left, dict) or not isinstance(right, dict):
+                continue
+            left_result = str(left.get("result") or "")
+            right_result = str(right.get("result") or "")
+            if left_result not in {"hit", "miss"} or right_result not in {"hit", "miss"}:
+                continue
+            pair_joint = _num(pair.get("exact_pair_joint_probability"))
+            redundancy = _num(pair.get("redundancy_score"))
+            conflict = _num(pair.get("conflict_score"))
+            if pair_joint is None:
+                continue
+            probability = max(0.0, min(1.0, float(pair_joint) / 100.0))
+            target = 1 if left_result == "hit" and right_result == "hit" else 0
+            pair_observations.append({
+                "probability": probability,
+                "target": target,
+                "redundancy_score": redundancy,
+                "conflict_score": conflict,
+            })
+
+    redundancy_bins: dict[str, list[tuple[float, int]]] = {}
+    for row in pair_observations:
+        score = row.get("redundancy_score")
+        if score is None:
+            continue
+        label = _decile_label(float(score))
+        redundancy_bins.setdefault(label, []).append((row["probability"], row["target"]))
+
+    return {
+        "status": "PROSPECTIVE_SETTLEMENT_CALIBRATION_DIAGNOSTIC_ONLY",
+        "prospective_only": True,
+        "threshold_selection_enabled": False,
+        "ranking_influence": False,
+        "composition_joint": _calibration_summary(composition_observations),
+        "exact_pair_joint": _calibration_summary([
+            (row["probability"], row["target"])
+            for row in pair_observations
+        ]),
+        "by_redundancy_decile": {
+            label: _calibration_summary(rows)
+            for label, rows in sorted(redundancy_bins.items())
+        },
+        "pair_outcome_policy": "BOTH_LEGS_MUST_BE_SETTLED_HIT_OR_MISS; HIT_ONLY_IF_BOTH_HIT; VOID_OR_PENDING_EXCLUDED",
+        "score_source": "FROZEN_PREMATCH_EXACT_SHARED_STATE",
+    }
+
+
 def performance_stats(history_doc: dict) -> dict:
     entries = [x for x in (history_doc.get("entries") or []) if isinstance(x, dict)]
     settled = [x for x in entries if x.get("result") in {"hit", "miss"}]
@@ -289,6 +400,7 @@ def performance_stats(history_doc: dict) -> dict:
             "prospective_only": True,
             "threshold_calibration_enabled": False,
             "ranking_influence": False,
+            "settlement_calibration": _dependency_settlement_calibration(entries),
         },
         "legacy_symphony_stats_used": False,
     }
