@@ -1,3 +1,5 @@
+import pytest
+
 from backend.player_dna_match_state_readiness import (
     MODE,
     _exact_set_winner_sequence,
@@ -111,7 +113,7 @@ def test_audit_reports_comeback_and_exact_bo5_late_set_readiness_without_activat
     comeback = report["comeback_readiness"]
     assert comeback["first_set_loss_player_exposures"] == 3
     assert comeback["comeback_wins_after_first_set_loss"] == 1
-    assert comeback["observed_comeback_rate"] == 1 / 3
+    assert comeback["observed_comeback_rate"] == pytest.approx(1 / 3, abs=1e-6)
     assert comeback["profile_build_enabled"] is False
     assert comeback["predictive_signal_proven"] is False
 
