@@ -15,6 +15,7 @@ Symfonia 2.0 / Superbet PLAYABLE.
 import json
 import math
 from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -56,11 +57,24 @@ except ModuleNotFoundError:  # direct execution compatibility
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data" / "player_dna_small_sample_challenger.json"
 
-VERSION = "player-dna-small-sample-challenger-v1"
+VERSION = "player-dna-small-sample-challenger-v2"
 MODE = "SHADOW_SMALL_SAMPLE_SHRINKAGE_CHALLENGER_EVAL_ONLY"
 PRIOR_STRENGTH_GRID = (0.0, 25.0, 50.0, 100.0, 200.0)
 INNER_TRAIN_FRACTION = 0.80
 SMALL_SAMPLE_MATCH_THRESHOLD = 5
+
+# Frozen after the first leakage-safe robust historical run on PR #252.
+# The artifact contained data only through this provider scheduled_time and the
+# outer train-only selector chose 200 pseudo-points. Future confirmation must
+# never retune either value using post-freeze labels.
+FRESH_CONFIRMATION_CUTOFF = datetime(2026, 9, 7, 1, 35, tzinfo=timezone.utc)
+FROZEN_FRESH_PRIOR_STRENGTH = 200.0
+
+# Reuse the canonical outer-evaluation floor rather than inventing a separate
+# promotion threshold. Meeting this floor only makes the fresh diagnostic
+# evaluable; it does not promote or activate the candidate.
+FRESH_MIN_POINTS = 500
+FRESH_MIN_MATCHES = 20
 
 RAW_SUPPORT_FIELDS = (
     "server_overall_serve_wins",
@@ -551,10 +565,166 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _fresh_confirmation_split(
+    rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    frozen_train = []
+    fresh = []
+    invalid_time = 0
+
+    for row in rows:
+        scheduled = row.get("scheduled_time")
+        if not isinstance(scheduled, datetime) or scheduled.tzinfo is None:
+            invalid_time += 1
+            continue
+        scheduled = scheduled.astimezone(timezone.utc)
+        if scheduled <= FRESH_CONFIRMATION_CUTOFF:
+            frozen_train.append(row)
+        else:
+            fresh.append(row)
+
+    def _match_count(part: list[dict[str, Any]]) -> int:
+        return len({str(row.get("match_id") or "") for row in part if row.get("match_id")})
+
+    return frozen_train, fresh, {
+        "cutoff_time": FRESH_CONFIRMATION_CUTOFF.isoformat(),
+        "policy": "scheduled_time <= cutoff frozen training; scheduled_time > cutoff fresh-only confirmation",
+        "frozen_train_points": len(frozen_train),
+        "frozen_train_matches": _match_count(frozen_train),
+        "fresh_points": len(fresh),
+        "fresh_matches": _match_count(fresh),
+        "invalid_time_rows": invalid_time,
+        "same_timestamp_crosses_cutoff": False,
+    }
+
+
+def _fresh_confirmation(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    train_rows, fresh_rows, split = _fresh_confirmation_split(rows)
+    train = _frame(train_rows)
+    fresh = _frame(fresh_rows)
+
+    fresh_matches = (
+        int(fresh["match_id"].astype(str).nunique())
+        if not fresh.empty and "match_id" in fresh.columns
+        else 0
+    )
+    enough = bool(
+        not train.empty
+        and not fresh.empty
+        and len(train) >= 1000
+        and len(fresh) >= FRESH_MIN_POINTS
+        and train["match_id"].astype(str).nunique() >= 30
+        and fresh_matches >= FRESH_MIN_MATCHES
+        and train["server_won"].nunique() == 2
+        and fresh["server_won"].nunique() == 2
+    )
+
+    base = {
+        "mode": "FROZEN_CANDIDATE_FRESH_ONLY_CONFIRMATION",
+        "frozen_at_cutoff": FRESH_CONFIRMATION_CUTOFF.isoformat(),
+        "frozen_prior_strength": FROZEN_FRESH_PRIOR_STRENGTH,
+        "minimum_fresh_points_for_evaluation": FRESH_MIN_POINTS,
+        "minimum_fresh_matches_for_evaluation": FRESH_MIN_MATCHES,
+        "split": split,
+        "parameter_reselection_enabled": False,
+        "post_cutoff_labels_used_for_prior_mean": False,
+        "post_cutoff_labels_used_for_prior_strength": False,
+        "post_cutoff_labels_used_for_model_fit": False,
+        "production_influence": False,
+        "runtime_scoring_enabled": False,
+        "promotion_gate": False,
+        "candidate_may_replace_reference": False,
+    }
+    if not enough:
+        return {
+            **base,
+            "status": "WAITING_FOR_FRESH_SAMPLE",
+            "fresh_sample_ready": False,
+            "fresh_positive_all_proper_scores": None,
+            "fresh_small_sample_positive_all_proper_scores": None,
+        }
+
+    priors = _prior_means(train_rows)
+    shrunk_train = _frame(
+        _apply_shrinkage(
+            train_rows,
+            priors,
+            FROZEN_FRESH_PRIOR_STRENGTH,
+        )
+    )
+    shrunk_fresh = _frame(
+        _apply_shrinkage(
+            fresh_rows,
+            priors,
+            FROZEN_FRESH_PRIOR_STRENGTH,
+        )
+    )
+
+    reference, reference_probs = _fit_candidate(
+        train,
+        fresh,
+        REFERENCE_NUMERIC,
+    )
+    candidate, candidate_probs = _fit_candidate(
+        shrunk_train,
+        shrunk_fresh,
+        SHRUNK_NUMERIC,
+    )
+    gains = _proper_score_gains(
+        reference["metrics"],
+        candidate["metrics"],
+    )
+    positive = bool(
+        gains["brier_gain"] > 0
+        and gains["match_equal_brier_gain"] > 0
+        and gains["log_loss_gain"] > 0
+    )
+
+    mask = _small_sample_mask(fresh)
+    reference_small = _segment_metrics(fresh, reference_probs, mask)
+    candidate_small = _segment_metrics(fresh, candidate_probs, mask)
+    small_gains = (
+        _proper_score_gains(reference_small, candidate_small)
+        if reference_small is not None and candidate_small is not None
+        else None
+    )
+    small_positive = bool(
+        small_gains
+        and small_gains["brier_gain"] > 0
+        and small_gains["match_equal_brier_gain"] > 0
+        and small_gains["log_loss_gain"] > 0
+    )
+
+    return {
+        **base,
+        "status": (
+            "FRESH_CONFIRMATION_POSITIVE_SHADOW"
+            if positive and small_positive
+            else "FRESH_CONFIRMATION_MIXED_OR_NEGATIVE_SHADOW"
+        ),
+        "fresh_sample_ready": True,
+        "frozen_train_prior_means": priors,
+        "raw_reference_metrics": reference["metrics"],
+        "shrunk_candidate_metrics": candidate["metrics"],
+        "gains_vs_raw_reference": gains,
+        "fresh_positive_all_proper_scores": positive,
+        "small_sample_segment": {
+            "definition": "min(server_overall_matches, receiver_overall_matches) < 5",
+            "points": int(mask.sum()),
+            "raw_reference_metrics": reference_small,
+            "shrunk_candidate_metrics": candidate_small,
+            "gains_vs_raw_reference": small_gains,
+            "positive_all_proper_scores": small_positive,
+        },
+        "fresh_small_sample_positive_all_proper_scores": small_positive,
+    }
+
+
 def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     train_rows, holdout_rows, split = split_chronological_by_match(rows)
     outer = _evaluate_outer(train_rows, holdout_rows)
     walk_forward = _walk_forward(rows)
+    fresh_confirmation = _fresh_confirmation(rows)
 
     holdout_positive = bool(outer.get("positive_all_proper_scores") is True)
     robust = bool(walk_forward.get("robust_positive_all_three_folds") is True)
@@ -569,6 +739,8 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "prior_strength_grid": list(PRIOR_STRENGTH_GRID),
         "inner_train_fraction": INNER_TRAIN_FRACTION,
         "small_sample_match_threshold": SMALL_SAMPLE_MATCH_THRESHOLD,
+        "frozen_fresh_confirmation_cutoff": FRESH_CONFIRMATION_CUTOFF.isoformat(),
+        "frozen_fresh_prior_strength": FROZEN_FRESH_PRIOR_STRENGTH,
         "reference_numeric_features": list(REFERENCE_NUMERIC),
         "shrunk_numeric_features": list(SHRUNK_NUMERIC),
         "raw_support_fields_used_for_transformation_only": list(RAW_SUPPORT_FIELDS),
@@ -596,6 +768,9 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "historical_success_requires_holdout_and_three_walk_forward_folds": True,
             "all_three_proper_scores_must_improve": True,
             "fresh_confirmation_required_before_any_activation": True,
+            "fresh_candidate_cutoff_is_frozen": True,
+            "fresh_candidate_prior_strength_is_frozen": True,
+            "post_cutoff_labels_cannot_retune_candidate": True,
         },
         "leakage_contract": {
             "canonical_strict_as_of_profiles_only": True,
@@ -604,9 +779,12 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "outer_test_labels_not_used_for_prior_mean": True,
             "outer_test_labels_not_used_for_prior_strength": True,
             "walk_forward_strength_reselected_inside_each_fold_train_only": True,
+            "fresh_confirmation_uses_only_strictly_post_cutoff_rows_for_scoring": True,
+            "fresh_confirmation_trains_only_on_at_or_before_cutoff_rows": True,
         },
         "holdout": outer,
         "walk_forward": walk_forward,
+        "fresh_confirmation": fresh_confirmation,
         "signal": {
             "status": (
                 "SMALL_SAMPLE_SHRINKAGE_ROBUST_HISTORICAL_SIGNAL_REQUIRES_FRESH_CONFIRMATION"
@@ -616,6 +794,10 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "positive_holdout": holdout_positive,
             "robust_walk_forward": robust,
             "fresh_confirmation_required": True,
+            "fresh_confirmation_status": fresh_confirmation.get("status"),
+            "fresh_confirmation_positive": (
+                fresh_confirmation.get("status") == "FRESH_CONFIRMATION_POSITIVE_SHADOW"
+            ),
             "candidate_may_replace_reference": False,
             "promotion_gate": False,
         },
@@ -644,6 +826,12 @@ def build() -> dict[str, Any]:
         "selected_strength": (
             (report.get("holdout") or {}).get("strength_selection") or {}
         ).get("selected_prior_strength"),
+        "fresh_confirmation": (
+            report.get("fresh_confirmation") or {}
+        ).get("status"),
+        "fresh_points": (
+            ((report.get("fresh_confirmation") or {}).get("split") or {})
+        ).get("fresh_points"),
     }, ensure_ascii=False))
     return report
 
