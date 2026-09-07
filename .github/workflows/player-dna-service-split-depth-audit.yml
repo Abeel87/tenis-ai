@@ -75,6 +75,8 @@ jobs:
               'partial_raw_validation_diagnostic_only': True,
               'partial_raw_authorized_for_canonical_history': False,
               'partial_raw_gate_activation_enabled': False,
+              'tape_point_coverage_diagnostic_only': True,
+              'tape_point_coverage_authorized_as_terminal_proof': False,
               'training_join_enabled': False,
               'scorer_activation_enabled': False,
               'runtime_activation_enabled': False,
@@ -125,10 +127,20 @@ jobs:
           if contract.get('partial_raw_authorized_for_canonical_history') is not False:
               raise SystemExit('partial raw snapshots were authorized without a separate gate')
           progress_candidates = partial.get('raw_without_terminal_candidates_by_progress') or {}
+          tape_candidates = partial.get('raw_without_terminal_candidates_by_tape_point_coverage') or {}
           raw_without_terminal = int(comparison.get('raw_all_four_outside_terminal_proof_matches') or 0)
           for threshold, item in progress_candidates.items():
               if int((item or {}).get('matches') or 0) > raw_without_terminal:
                   raise SystemExit(f'partial raw candidate count exceeds source gap at {threshold}')
+          for threshold, item in tape_candidates.items():
+              if int((item or {}).get('matches') or 0) > raw_without_terminal:
+                  raise SystemExit(f'tape point candidate count exceeds source gap at {threshold}')
+
+          tape_calibration = partial.get('tape_point_coverage_calibration') or {}
+          if int(tape_calibration.get('matches') or 0) > terminal:
+              raise SystemExit('terminal tape calibration exceeds terminal raw matches')
+          if contract.get('tape_point_coverage_authorized_as_terminal_proof') is not False:
+              raise SystemExit('tape point coverage was authorized as terminal proof')
 
           print(
               'Service-split depth: '
@@ -147,6 +159,11 @@ jobs:
               f"p90_mae={((partial.get('by_minimum_game_progress') or {}).get('0.9') or {}).get('mean_abs_error_pp')} "
               f"p90_within5={((partial.get('by_minimum_game_progress') or {}).get('0.9') or {}).get('within_5pp_rate')} "
               f"p90_candidates={(progress_candidates.get('0.9') or {}).get('matches')} "
+              f"tape95_pairs={((partial.get('by_minimum_tape_point_coverage') or {}).get('0.95') or {}).get('matches')} "
+              f"tape95_mae={((partial.get('by_minimum_tape_point_coverage') or {}).get('0.95') or {}).get('mean_abs_error_pp')} "
+              f"tape95_within5={((partial.get('by_minimum_tape_point_coverage') or {}).get('0.95') or {}).get('within_5pp_rate')} "
+              f"tape95_candidates={(tape_candidates.get('0.95') or {}).get('matches')} "
+              f"terminal_tape10={tape_calibration.get('within_10pct_of_one_rate')} "
               f"dominant_gap={funnel.get('dominant_observed_gap')}"
           )
           PY
