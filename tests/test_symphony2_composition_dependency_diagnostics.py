@@ -73,7 +73,11 @@ def test_exact_state_diagnostics_expose_implication_without_classifying_it():
 
     pair = diagnostics["pairs"][0]
     assert pair["overlap_of_smaller_leg"] == 1.0
+    assert pair["redundancy_score"] == 1.0
+    assert pair["conflict_score"] == 0.0
+    assert pair["score_semantics"] == "NORMALIZED_EXACT_PAIR_OVERLAP_AXIS"
     assert pair["exact_pair_joint_probability"] > 0.0
+    assert winner_diag["marginal_information_gain_nats"] == winner_diag["conditional_information_nats"]
 
 
 def test_dependency_diagnostics_do_not_change_composition_utility_or_selection():
@@ -99,3 +103,52 @@ def test_dependency_diagnostics_do_not_change_composition_utility_or_selection()
         row["selection_id"]
         for row in selected["dependency_diagnostics"]["per_leg"]
     } == {_selection_id(row) for row in scored}
+
+
+
+def test_mutually_exclusive_pair_has_full_conflict_score():
+    match = _match()
+    outcomes = build_outcomes(match)
+    over = _row("set1_total", "over", 60.0, line=9.5)
+    under = _row("set1_total", "under", 60.0, line=9.5)
+    combo = (over, under)
+
+    joint, supported = joint_probability(match, list(combo), outcomes)
+    assert joint is not None and supported == 2
+    assert abs(joint) < 1e-15
+
+    diagnostics = _composition_dependency_diagnostics(
+        match,
+        combo,
+        joint,
+        outcomes,
+    )
+
+    pair = diagnostics["pairs"][0]
+    assert pair["redundancy_score"] == 0.0
+    assert pair["conflict_score"] == 1.0
+    assert pair["exact_pair_joint_probability"] == 0.0
+    assert diagnostics["threshold_classification_enabled"] is False
+
+
+def test_weakest_leg_impact_is_exposed_without_affecting_ranking():
+    match = _match()
+    outcomes = build_outcomes(match)
+    winner = _row("match_winner", "Alpha", 68.0)
+    total = _row("match_total", "over", 20.5, 57.0)
+    combo = (winner, total)
+
+    joint, supported = joint_probability(match, list(combo), outcomes)
+    assert joint is not None and supported == 2
+
+    diagnostics = _composition_dependency_diagnostics(
+        match,
+        combo,
+        joint,
+        outcomes,
+    )
+
+    assert diagnostics["weakest_supervised_leg_selection_id"] == _selection_id(total)
+    assert diagnostics["weakest_supervised_leg_joint_mass_removed_pp"] is not None
+    assert diagnostics["dependency_score_semantics"]["thresholds_enabled"] is False
+    assert diagnostics["ranking_influence"] is False
