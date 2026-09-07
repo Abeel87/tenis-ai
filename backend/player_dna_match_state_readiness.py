@@ -9,13 +9,17 @@ payloads. It does not build Player DNA profiles or activate any model feature.
 A match is eligible only when:
 - stable p1/p2 provider IDs exist,
 - scheduled_time is valid,
-- latest stats snapshot score exactly matches the final tape score,
-- the final set score is a legal completed BO3/BO5 score,
+- provider format is explicitly BO3 or BO5,
+- provider status + outcome say completed and no withdrawal/retirement is marked,
+- provider winner is explicit,
+- provider final match score exactly matches the final tape score,
+- the final set score is terminal for the declared BO3/BO5 format,
 - the tape proves the complete set-winner sequence from 0:0 by atomic +1 set
   transitions with no jumps/regressions.
 
-That proof is intentionally stricter than merely seeing a final score because
-comeback and stamina semantics depend on set order.
+Terminal stats snapshots are deliberately NOT required here. Unlike first/second
+serve split counts, comeback/stamina semantics come from provider match terminality
+and exact set order; requiring stats would throw away valid state evidence.
 """
 
 import gzip
@@ -27,7 +31,6 @@ from typing import Any, Iterable
 try:
     from backend.player_dna_pbp_service_split_readiness import (
         _final_tape_score,
-        _latest_stats_profile,
         _parse_utc,
         _score_core,
     )
@@ -35,7 +38,6 @@ try:
 except ModuleNotFoundError:  # direct execution compatibility
     from player_dna_pbp_service_split_readiness import (
         _final_tape_score,
-        _latest_stats_profile,
         _parse_utc,
         _score_core,
     )
@@ -45,7 +47,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT = ROOT / "frontend" / "data" / "player_dna_match_state_readiness.json"
 
-VERSION = "player-dna-match-state-readiness-v1"
+VERSION = "player-dna-match-state-readiness-v2"
 MODE = "SHADOW_MATCH_STATE_READINESS_AUDIT_ONLY"
 GATE = "AUDIT_ONLY_NO_PROFILE_BUILD"
 SUPPORT_THRESHOLDS = (1, 3, 5, 10)
@@ -73,12 +75,51 @@ def _sets(value: Any) -> tuple[int, int] | None:
     return int(sets[0]), int(sets[1])
 
 
-def _legal_completed_match(final_sets: tuple[int, int]) -> tuple[int, int] | None:
+def _best_of(match: dict[str, Any]) -> int | None:
+    value = str(match.get("format") or "").strip().upper()
+    if value == "BO3":
+        return 3
+    if value == "BO5":
+        return 5
+    return None
+
+
+def _provider_completed(match: dict[str, Any]) -> bool:
+    status = str(match.get("status") or "").strip().casefold()
+    outcome = str(match.get("outcome") or "").strip().casefold()
+    event_status = str(match.get("event_status") or "").strip().casefold()
+    withdrew = match.get("withdrew")
+    winner = match.get("winner")
+    bad_event = event_status in {
+        "retired",
+        "cancelled",
+        "canceled",
+        "withdrawn",
+        "walkover",
+    }
+    return bool(
+        status == "completed"
+        and outcome == "completed"
+        and withdrew is None
+        and not bad_event
+        and not isinstance(winner, bool)
+        and isinstance(winner, int)
+        and winner in (1, 2)
+    )
+
+
+def _legal_completed_match(
+    final_sets: tuple[int, int],
+    best_of: int,
+) -> int | None:
+    if best_of not in (3, 5):
+        return None
+    needed = best_of // 2 + 1
     s1, s2 = final_sets
-    if (s1 == 2 and 0 <= s2 <= 1) or (s2 == 2 and 0 <= s1 <= 1):
-        return 3, 1 if s1 == 2 else 2
-    if (s1 == 3 and 0 <= s2 <= 2) or (s2 == 3 and 0 <= s1 <= 2):
-        return 5, 1 if s1 == 3 else 2
+    if s1 == needed and 0 <= s2 < needed:
+        return 1
+    if s2 == needed and 0 <= s1 < needed:
+        return 2
     return None
 
 
@@ -133,28 +174,41 @@ def inspect_payload(payload: dict[str, Any]) -> dict[str, Any]:
             "scheduled_time": False,
         }
 
-    profile = _latest_stats_profile(payload)
-    if profile is None:
+    best_of = _best_of(match)
+    if best_of is None:
         return {
             "stable_identity": True,
             "scheduled_time": True,
-            "stats_profile": False,
+            "provider_format": False,
         }
 
-    state = profile.get("input_state") if isinstance(profile.get("input_state"), dict) else {}
+    completed = _provider_completed(match)
+    if not completed:
+        return {
+            "stable_identity": True,
+            "scheduled_time": True,
+            "provider_format": True,
+            "provider_completed_match": False,
+            "provider_status": match.get("status"),
+            "provider_outcome": match.get("outcome"),
+            "provider_event_status": match.get("event_status"),
+            "provider_withdrew": match.get("withdrew"),
+        }
+
     final_score = _final_tape_score(payload)
-    snapshot_score = _score_core(state.get("score"))
+    provider_score = _score_core(match.get("score"))
     terminal = bool(
         final_score is not None
-        and snapshot_score is not None
-        and final_score == snapshot_score
+        and provider_score is not None
+        and final_score == provider_score
     )
     if not terminal:
         return {
             "stable_identity": True,
             "scheduled_time": True,
-            "stats_profile": True,
-            "terminal_score_match": False,
+            "provider_format": True,
+            "provider_completed_match": True,
+            "provider_match_score_matches_final_tape": False,
         }
 
     tape = payload.get("tape")
@@ -166,18 +220,36 @@ def inspect_payload(payload: dict[str, Any]) -> dict[str, Any]:
                 if final_sets is not None:
                     break
 
-    legal = _legal_completed_match(final_sets) if final_sets is not None else None
-    if legal is None:
+    match_winner = (
+        int(match["winner"])
+        if isinstance(match.get("winner"), int)
+        and not isinstance(match.get("winner"), bool)
+        and int(match["winner"]) in (1, 2)
+        else None
+    )
+    legal_winner = (
+        _legal_completed_match(final_sets, best_of)
+        if final_sets is not None
+        else None
+    )
+    legal = bool(
+        legal_winner is not None
+        and match_winner is not None
+        and legal_winner == match_winner
+    )
+    if not legal:
         return {
             "stable_identity": True,
             "scheduled_time": True,
-            "stats_profile": True,
-            "terminal_score_match": True,
+            "provider_format": True,
+            "provider_completed_match": True,
+            "provider_match_score_matches_final_tape": True,
             "legal_completed_match": False,
+            "best_of": best_of,
+            "provider_winner_side": match_winner,
             "final_sets": list(final_sets) if final_sets is not None else None,
         }
 
-    best_of, match_winner = legal
     sequence = _exact_set_winner_sequence(payload)
     exact_sequence = bool(
         sequence is not None
@@ -204,8 +276,9 @@ def inspect_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "stable_identity": True,
         "scheduled_time": True,
-        "stats_profile": True,
-        "terminal_score_match": True,
+        "provider_format": True,
+        "provider_completed_match": True,
+        "provider_match_score_matches_final_tape": True,
         "legal_completed_match": True,
         "exact_set_winner_sequence": exact_sequence,
         "match_id": str(match.get("id") or "").strip(),
@@ -223,7 +296,6 @@ def inspect_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "late_set_count": max(0, len(sequence) - 2) if exact_sequence and sequence else None,
         "late_set_winners": list(sequence[2:]) if exact_sequence and sequence else None,
     }
-
 
 def _threshold_report(counter: Counter[int]) -> dict[str, dict[str, int]]:
     players = set(counter)
@@ -259,12 +331,17 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
         if not scheduled:
             continue
 
-        stats_profile = item.get("stats_profile") is True
-        counts["matches_with_stats_profile"] += int(stats_profile)
-        if not stats_profile:
+        provider_format = item.get("provider_format") is True
+        counts["matches_with_provider_format"] += int(provider_format)
+        if not provider_format:
             continue
 
-        terminal = item.get("terminal_score_match") is True
+        completed = item.get("provider_completed_match") is True
+        counts["provider_completed_matches"] += int(completed)
+        if not completed:
+            continue
+
+        terminal = item.get("provider_match_score_matches_final_tape") is True
         counts["matches_with_terminal_score_proof"] += int(terminal)
         if not terminal:
             continue
@@ -327,7 +404,8 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
         "matches_seen": int(counts["matches_seen"]),
         "stable_identity_matches": int(counts["stable_identity_matches"]),
         "matches_with_scheduled_time": int(counts["matches_with_scheduled_time"]),
-        "matches_with_stats_profile": int(counts["matches_with_stats_profile"]),
+        "matches_with_provider_format": int(counts["matches_with_provider_format"]),
+        "provider_completed_matches": int(counts["provider_completed_matches"]),
         "matches_with_terminal_score_proof": int(counts["matches_with_terminal_score_proof"]),
         "legal_completed_matches": legal_matches,
         "matches_with_exact_set_sequence": exact_matches,
@@ -377,7 +455,14 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "pbp_native_provider_ids_only": True,
             "historical_csv_id_namespace_not_used": True,
             "name_or_fuzzy_join_forbidden": True,
-            "latest_stats_score_must_match_final_tape_score": True,
+            "provider_format_bo3_or_bo5_required": True,
+            "provider_status_completed_required": True,
+            "provider_outcome_completed_required": True,
+            "provider_withdrawal_or_retirement_rejected": True,
+            "provider_winner_required": True,
+            "provider_match_score_must_match_final_tape_score": True,
+            "provider_winner_must_match_terminal_set_score": True,
+            "terminal_stats_snapshot_not_required_for_match_state_semantics": True,
             "legal_completed_match_score_required": True,
             "full_set_winner_sequence_from_zero_required": True,
             "atomic_plus_one_set_transitions_only": True,
@@ -388,8 +473,10 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "chronological_backtest_required_after_profile_gate": True,
         },
         "note": (
-            "Readiness evidence only. Exact set-order proof is required because "
-            "final score alone cannot prove comeback or late-set stamina semantics."
+            "Readiness evidence only. Provider completed status/outcome + declared "
+            "BO3/BO5 format + provider score/tape agreement prove terminality; exact "
+            "set-order proof is still required because final score alone cannot prove "
+            "comeback or late-set stamina semantics."
         ),
     }
 
