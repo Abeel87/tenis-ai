@@ -3,10 +3,16 @@ from datetime import datetime, timezone
 import pytest
 
 from backend.player_dna_small_sample_challenger import (
+    FRESH_CONFIRMATION_CUTOFF,
+    FRESH_MIN_MATCHES,
+    FRESH_MIN_POINTS,
+    FROZEN_FRESH_PRIOR_STRENGTH,
     MODE,
     PRIOR_STRENGTH_GRID,
     SMALL_SAMPLE_MATCH_THRESHOLD,
     _apply_shrinkage,
+    _fresh_confirmation,
+    _fresh_confirmation_split,
     _posterior_rate,
     _prior_means,
     evaluate,
@@ -155,3 +161,74 @@ def test_empty_evaluation_keeps_shrinkage_challenger_shadow_only():
     assert leakage["walk_forward_strength_reselected_inside_each_fold_train_only"] is True
     assert report["signal"]["candidate_may_replace_reference"] is False
     assert report["signal"]["fresh_confirmation_required"] is True
+
+
+
+def test_fresh_confirmation_cutoff_is_strict_and_same_timestamp_stays_frozen_train():
+    before = _row(
+        "before",
+        "2026-09-07T01:34:59Z",
+        won=1,
+    )
+    at_cutoff = _row(
+        "cutoff",
+        "2026-09-07T01:35:00Z",
+        won=0,
+    )
+    after = _row(
+        "after",
+        "2026-09-07T01:35:01Z",
+        won=1,
+    )
+
+    frozen, fresh, split = _fresh_confirmation_split(
+        [before, at_cutoff, after]
+    )
+
+    assert [row["match_id"] for row in frozen] == ["before", "cutoff"]
+    assert [row["match_id"] for row in fresh] == ["after"]
+    assert split["cutoff_time"] == FRESH_CONFIRMATION_CUTOFF.isoformat()
+    assert split["frozen_train_points"] == 2
+    assert split["fresh_points"] == 1
+    assert split["same_timestamp_crosses_cutoff"] is False
+
+
+def test_fresh_confirmation_waits_without_post_freeze_sample_and_never_retunes():
+    rows = [
+        _row(
+            f"old-{i}",
+            f"2026-09-06T{10 + (i % 10):02d}:00:00Z",
+            won=i % 2,
+        )
+        for i in range(30)
+    ]
+
+    report = _fresh_confirmation(rows)
+
+    assert report["status"] == "WAITING_FOR_FRESH_SAMPLE"
+    assert report["fresh_sample_ready"] is False
+    assert report["frozen_prior_strength"] == FROZEN_FRESH_PRIOR_STRENGTH == 200.0
+    assert report["minimum_fresh_points_for_evaluation"] == FRESH_MIN_POINTS == 500
+    assert report["minimum_fresh_matches_for_evaluation"] == FRESH_MIN_MATCHES == 20
+    assert report["parameter_reselection_enabled"] is False
+    assert report["post_cutoff_labels_used_for_prior_mean"] is False
+    assert report["post_cutoff_labels_used_for_prior_strength"] is False
+    assert report["post_cutoff_labels_used_for_model_fit"] is False
+    assert report["promotion_gate"] is False
+    assert report["candidate_may_replace_reference"] is False
+
+
+def test_top_level_report_exposes_frozen_fresh_confirmation_contract():
+    report = evaluate([])
+    fresh = report["fresh_confirmation"]
+
+    assert report["frozen_fresh_confirmation_cutoff"] == FRESH_CONFIRMATION_CUTOFF.isoformat()
+    assert report["frozen_fresh_prior_strength"] == 200.0
+    assert report["contract"]["fresh_candidate_cutoff_is_frozen"] is True
+    assert report["contract"]["fresh_candidate_prior_strength_is_frozen"] is True
+    assert report["contract"]["post_cutoff_labels_cannot_retune_candidate"] is True
+    assert report["leakage_contract"]["fresh_confirmation_uses_only_strictly_post_cutoff_rows_for_scoring"] is True
+    assert report["leakage_contract"]["fresh_confirmation_trains_only_on_at_or_before_cutoff_rows"] is True
+    assert fresh["status"] == "WAITING_FOR_FRESH_SAMPLE"
+    assert report["signal"]["fresh_confirmation_positive"] is False
+    assert report["candidate_may_replace_reference"] is False
