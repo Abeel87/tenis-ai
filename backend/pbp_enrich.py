@@ -22,6 +22,7 @@ CACHE = ROOT / "data" / "cache" / "pbp_v7"
 RESULTS_PATH = OUT / "results.json"
 META_PATH = OUT / "meta.json"
 INDEX_PATH = CACHE / "players.json"
+TERMINAL_REFRESH_STATE_PATH = CACHE / "terminal_refresh.json"
 
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v8.3B-CurrentPBP/1.0"
@@ -33,6 +34,9 @@ LIST_LIMIT = 100
 RUN_CALL_CAP = 560
 DAILY_RESERVE = 180
 MIN_RELIABLE_MATCHES = 5
+STALE_CACHE_MIN_AGE_HOURS = 6
+STALE_CACHE_REFRESH_COOLDOWN_HOURS = 72
+MAX_STALE_CACHE_REFRESHES_PER_RUN = 24
 
 
 def _key(value: Any) -> str:
@@ -209,11 +213,143 @@ def _match_cache_path(mid: int | str) -> Path:
     return CACHE / "matches" / f"{mid}.json.gz"
 
 
-def _get_tape(api: API, mid: int | str):
+def _score_core(value: Any) -> tuple[str, str] | None:
+    if not isinstance(value, dict):
+        return None
+    sets = value.get("sets")
+    games = value.get("games")
+    if not isinstance(sets, list) or not isinstance(games, list):
+        return None
+    return json.dumps(sets, sort_keys=True), json.dumps(games, sort_keys=True)
+
+
+def _final_tape_score(payload: dict[str, Any]) -> tuple[str, str] | None:
+    rows = payload.get("tape")
+    if not isinstance(rows, list):
+        return None
+    for row in reversed(rows):
+        if not isinstance(row, dict):
+            continue
+        score = _score_core(row)
+        if score is not None:
+            return score
+    return None
+
+
+def _cache_has_terminal_stats(payload: dict[str, Any]) -> bool:
+    final_score = _final_tape_score(payload)
+    if final_score is None:
+        return False
+    profiles = payload.get("profiles")
+    if not isinstance(profiles, list):
+        return False
+    for profile in profiles:
+        if not isinstance(profile, dict):
+            continue
+        state = profile.get("input_state")
+        if not isinstance(state, dict):
+            continue
+        stats = state.get("stats")
+        if not isinstance(stats, dict) or not stats:
+            continue
+        if _score_core(state.get("score")) == final_score:
+            return True
+    return False
+
+
+def _refresh_state_entry(refresh_state: dict[str, Any], mid: int | str) -> dict[str, Any]:
+    matches = refresh_state.setdefault("matches", {})
+    if not isinstance(matches, dict):
+        matches = {}
+        refresh_state["matches"] = matches
+    key = str(mid)
+    entry = matches.get(key)
+    if not isinstance(entry, dict):
+        entry = {}
+        matches[key] = entry
+    return entry
+
+
+def _stale_cache_refresh_due(
+    api: API,
+    cached: dict[str, Any],
+    mid: int | str,
+    scheduled_time: Any,
+    now: datetime,
+    counters: dict[str, Any] | None,
+    refresh_state: dict[str, Any] | None,
+) -> bool:
+    if refresh_state is None or counters is None:
+        return False
+    if _cache_has_terminal_stats(cached):
+        return False
+    if api.calls >= api.call_cap:
+        return False
+    if int(counters.get("tape_stale_refresh_attempts") or 0) >= MAX_STALE_CACHE_REFRESHES_PER_RUN:
+        return False
+
+    scheduled = _parse_dt(scheduled_time)
+    if scheduled is None or now - scheduled < timedelta(hours=STALE_CACHE_MIN_AGE_HOURS):
+        return False
+
+    entry = _refresh_state_entry(refresh_state, mid)
+    last_attempt = _parse_dt(entry.get("last_attempt_at"))
+    if last_attempt is not None and now - last_attempt < timedelta(hours=STALE_CACHE_REFRESH_COOLDOWN_HOURS):
+        return False
+    return True
+
+
+def _get_tape(
+    api: API,
+    mid: int | str,
+    *,
+    scheduled_time: Any = None,
+    now: datetime | None = None,
+    counters: dict[str, Any] | None = None,
+    refresh_state: dict[str, Any] | None = None,
+):
     p = _match_cache_path(mid)
     cached = _read_gzip_json(p)
     if cached is not None:
+        current_now = now or datetime.now(timezone.utc)
+        if _stale_cache_refresh_due(
+            api,
+            cached,
+            mid,
+            scheduled_time,
+            current_now,
+            counters,
+            refresh_state,
+        ):
+            entry = _refresh_state_entry(refresh_state, mid)
+            entry["last_attempt_at"] = current_now.isoformat()
+            counters["tape_stale_refresh_attempts"] = int(
+                counters.get("tape_stale_refresh_attempts") or 0
+            ) + 1
+            try:
+                payload = api.get(f"/history/matches/{mid}", {"sequence": "clean"})
+                if not isinstance(payload, dict):
+                    raise ValueError("history_match_payload_not_dict")
+                _write_gzip_json(p, payload)
+                terminal = _cache_has_terminal_stats(payload)
+                counters["tape_stale_refresh_successes"] = int(
+                    counters.get("tape_stale_refresh_successes") or 0
+                ) + 1
+                counters["tape_stale_refresh_terminalized"] = int(
+                    counters.get("tape_stale_refresh_terminalized") or 0
+                ) + int(terminal)
+                entry["last_result"] = "terminal_stats" if terminal else "still_nonterminal"
+                entry["last_success_at"] = current_now.isoformat()
+                entry["terminal_stats"] = terminal
+                return payload, False
+            except Exception as exc:
+                counters["tape_stale_refresh_errors"] = int(
+                    counters.get("tape_stale_refresh_errors") or 0
+                ) + 1
+                entry["last_result"] = f"error:{type(exc).__name__}"
+                return cached, True
         return cached, True
+
     payload = api.get(f"/history/matches/{mid}", {"sequence": "clean"})
     _write_gzip_json(p, payload)
     return payload, False
@@ -489,7 +625,17 @@ def _pbp_tendency_windows(samples: list[dict], surface: str) -> dict:
     }
 
 
-def build_profile(api: API, index: dict, player: str, player_id: int | None, surface: str, as_of: datetime, now: datetime, counters: dict) -> dict:
+def build_profile(
+    api: API,
+    index: dict,
+    player: str,
+    player_id: int | None,
+    surface: str,
+    as_of: datetime,
+    now: datetime,
+    counters: dict,
+    refresh_state: dict[str, Any] | None = None,
+) -> dict:
     if player_id is None:
         return {"player": player, "matches": 0, "ready": False, "ehs": None, "quality": "N/D", "error": "player_id_unresolved"}
     try:
@@ -513,7 +659,14 @@ def build_profile(api: API, index: dict, player: str, player_id: int | None, sur
         if mid is None:
             continue
         try:
-            payload, hit = _get_tape(api, mid)
+            payload, hit = _get_tape(
+                api,
+                mid,
+                scheduled_time=summary.get("scheduled_time"),
+                now=now,
+                counters=counters,
+                refresh_state=refresh_state,
+            )
             counters["tape_cache_hits" if hit else "tape_downloads"] += 1
         except Exception:
             counters["tape_errors"] += 1
@@ -891,6 +1044,11 @@ def main() -> None:
     if not isinstance(index, dict):
         index = {"players": {}}
     index.setdefault("players", {})
+    refresh_state = _read_json(TERMINAL_REFRESH_STATE_PATH, {"matches": {}})
+    if not isinstance(refresh_state, dict):
+        refresh_state = {"matches": {}}
+    if not isinstance(refresh_state.get("matches"), dict):
+        refresh_state["matches"] = {}
 
     # Only enrich matches the base model already considers usable.
     targets = [m for m in rows if m.get("model_ready") and m.get("service_model")]
@@ -910,6 +1068,10 @@ def main() -> None:
         "tape_errors": 0,
         "match_detail_calls": 0,
         "match_detail_errors": 0,
+        "tape_stale_refresh_attempts": 0,
+        "tape_stale_refresh_successes": 0,
+        "tape_stale_refresh_terminalized": 0,
+        "tape_stale_refresh_errors": 0,
     }
     seed_ids = {}
     for k, entry in (index.get("players") or {}).items():
@@ -924,7 +1086,17 @@ def main() -> None:
         if api.calls >= api.call_cap:
             break
         as_of = _parse_dt(scheduled) or now
-        profiles[_key(name)] = build_profile(api, index, name, player_ids.get(_key(name)), surface, as_of, now, counters)
+        profiles[_key(name)] = build_profile(
+            api,
+            index,
+            name,
+            player_ids.get(_key(name)),
+            surface,
+            as_of,
+            now,
+            counters,
+            refresh_state=refresh_state,
+        )
 
     ready_matches = 0
     for m in rows:
@@ -941,6 +1113,7 @@ def main() -> None:
             ready_matches += 1
 
     _write_json(INDEX_PATH, index)
+    _write_json(TERMINAL_REFRESH_STATE_PATH, refresh_state)
     _write_json(RESULTS_PATH, rows)
 
     usage_today = usage.get("today") or {}
@@ -959,9 +1132,19 @@ def main() -> None:
             "pbp_v7_tape_downloads": counters["tape_downloads"],
             "pbp_v7_tape_cache_hits": counters["tape_cache_hits"],
             "pbp_v7_tape_errors": counters["tape_errors"],
+            "pbp_v7_stale_cache_refresh_attempts": counters["tape_stale_refresh_attempts"],
+            "pbp_v7_stale_cache_refresh_successes": counters["tape_stale_refresh_successes"],
+            "pbp_v7_stale_cache_refresh_terminalized": counters["tape_stale_refresh_terminalized"],
+            "pbp_v7_stale_cache_refresh_errors": counters["tape_stale_refresh_errors"],
+            "pbp_v7_stale_cache_refresh_cap": MAX_STALE_CACHE_REFRESHES_PER_RUN,
+            "pbp_v7_stale_cache_refresh_cooldown_hours": STALE_CACHE_REFRESH_COOLDOWN_HOURS,
             "pbp_v7_daily_limit": limits.get("per_day"),
             "pbp_v7_calls_before_run": usage_today.get("calls"),
-            "pbp_v7_note": "EHS only with >=5 reliable point-by-point matches; cache under data/cache/pbp_v7.",
+            "pbp_v7_note": (
+                "EHS only with >=5 reliable point-by-point matches; cached completed "
+                "matches without terminal stats are revalidated gradually under a "
+                "bounded per-run cap and cooldown."
+            ),
         }
     )
     _write_json(META_PATH, meta)
