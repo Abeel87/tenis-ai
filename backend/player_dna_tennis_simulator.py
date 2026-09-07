@@ -13,6 +13,7 @@ import hashlib
 import heapq
 import json
 import math
+import random
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable
@@ -35,6 +36,8 @@ CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
 CALIBRATION = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
 OUT = ROOT / "frontend" / "data" / "player_dna_current_simulation.json"
 FULL_REPORT = ROOT / "data" / "derived" / "player_dna" / "current_simulation_full.json.gz"
+PHASE5_REPORT = ROOT / "frontend" / "data" / "player_dna_phase5_tennis_state_engine.json"
+PHASE6_REPORT = ROOT / "frontend" / "data" / "player_dna_phase6_exact_dp_monte_carlo.json"
 
 VERSION = "player-dna-tennis-simulator-v1"
 MODE = "SHADOW_SIMULATION_ONLY"
@@ -1764,6 +1767,469 @@ def match_outcomes(
     return dict(exact)
 
 
+
+def _sample_set_game_level(
+    rng: random.Random,
+    *,
+    p1_hold: float,
+    p2_hold: float,
+    p1_tiebreak: float,
+    start_server: int,
+) -> dict[str, Any]:
+    """Sample one legal set using the same game/TB primitives as exact DP."""
+    if start_server not in (1, 2):
+        raise ValueError("start_server must be 1 or 2")
+
+    g1 = 0
+    g2 = 0
+    server = start_server
+    checkpoints: dict[int, bool] = {}
+
+    while True:
+        if tiebreak_should_start((g1, g2)):
+            if rng.random() < p1_tiebreak:
+                g1 = 7
+            else:
+                g2 = 7
+            return {
+                "winner": 1 if g1 > g2 else 2,
+                "score": f"{g1}:{g2}",
+                "games": g1 + g2,
+                "tiebreak": True,
+                "next_set_server": _other(server),
+                "checkpoints_equal": checkpoints,
+            }
+
+        if set_score_is_terminal((g1, g2)):
+            return {
+                "winner": 1 if g1 > g2 else 2,
+                "score": f"{g1}:{g2}",
+                "games": g1 + g2,
+                "tiebreak": False,
+                "next_set_server": server,
+                "checkpoints_equal": checkpoints,
+            }
+
+        p1_game = _game_win_probability_for_p1(p1_hold, p2_hold, server)
+        if rng.random() < p1_game:
+            g1 += 1
+        else:
+            g2 += 1
+        server = _other(server)
+
+        games_played = g1 + g2
+        if games_played in (2, 4, 6):
+            checkpoints[games_played] = g1 == g2
+
+
+def monte_carlo_match_distribution(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    *,
+    best_of: int = 3,
+    simulations: int = 10_000,
+    seed: int = 260907,
+) -> dict[str, Any]:
+    """Game-level Monte Carlo over the canonical exact-DP tennis contract.
+
+    This intentionally samples the same hold probability and the same neutral
+    tiebreak primitive used by the existing exact DP. Phase 6 uses it as an
+    implementation cross-check, not as a replacement for exact computation.
+    """
+    p1s = _clamp_probability(p1_serve_point)
+    p2s = _clamp_probability(p2_serve_point)
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if isinstance(simulations, bool) or not isinstance(simulations, int) or simulations <= 0:
+        raise ValueError("simulations must be a positive integer")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("seed must be an integer")
+
+    rng = random.Random(seed)
+    p1_hold = hold_probability(p1s)
+    p2_hold = hold_probability(p2s)
+    p1_tb = neutral_tiebreak_win_probability(p1s, p2s)
+    needed = best_of // 2 + 1
+
+    first_set_exact: dict[str, int] = defaultdict(int)
+    first_set_games: dict[int, int] = defaultdict(int)
+    match_exact: dict[str, int] = defaultdict(int)
+    total_sets: dict[str, int] = defaultdict(int)
+    total_match_games: dict[str, int] = defaultdict(int)
+    match_game_handicap: dict[str, int] = defaultdict(int)
+    early_equal = {2: 0, 4: 0, 6: 0}
+    p1_first_set_wins = 0
+    first_set_tiebreaks = 0
+    p1_match_wins = 0
+
+    for simulation_index in range(simulations):
+        # Deterministic 50/50 pre-match service-order mixture. This removes
+        # start-server sampling noise from the DP-vs-MC comparison.
+        start_server = 1 if simulation_index < (simulations + 1) // 2 else 2
+        server = start_server
+        sets1 = 0
+        sets2 = 0
+        match_games1 = 0
+        match_games2 = 0
+        set_index = 0
+
+        while sets1 < needed and sets2 < needed:
+            sampled_set = _sample_set_game_level(
+                rng,
+                p1_hold=p1_hold,
+                p2_hold=p2_hold,
+                p1_tiebreak=p1_tb,
+                start_server=server,
+            )
+            set_index += 1
+            score1, score2 = (
+                int(value) for value in str(sampled_set["score"]).split(":")
+            )
+            match_games1 += score1
+            match_games2 += score2
+
+            if set_index == 1:
+                first_set_exact[str(sampled_set["score"])] += 1
+                first_set_games[int(sampled_set["games"])] += 1
+                if int(sampled_set["winner"]) == 1:
+                    p1_first_set_wins += 1
+                if sampled_set["tiebreak"] is True:
+                    first_set_tiebreaks += 1
+                checkpoints = sampled_set["checkpoints_equal"]
+                for games in (2, 4, 6):
+                    if checkpoints.get(games) is True:
+                        early_equal[games] += 1
+
+            if int(sampled_set["winner"]) == 1:
+                sets1 += 1
+            else:
+                sets2 += 1
+            server = int(sampled_set["next_set_server"])
+
+        if sets1 == needed:
+            p1_match_wins += 1
+        match_exact[f"{sets1}:{sets2}"] += 1
+        total_sets[str(sets1 + sets2)] += 1
+        total_match_games[str(match_games1 + match_games2)] += 1
+        match_game_handicap[str(match_games1 - match_games2)] += 1
+
+    scale = 1.0 / simulations
+
+    def normalized_counts(counts: dict[Any, int]) -> dict[str, float]:
+        return {
+            str(key): value * scale
+            for key, value in sorted(counts.items(), key=lambda item: str(item[0]))
+        }
+
+    first_games_probability = {
+        int(key): value * scale for key, value in first_set_games.items()
+    }
+    over_lines = {
+        str(line): sum(
+            probability
+            for games, probability in first_games_probability.items()
+            if games > line
+        )
+        for line in (8.5, 9.5, 10.5, 11.5, 12.5)
+    }
+
+    return {
+        "mode": "SHADOW_MONTE_CARLO_CROSSCHECK_ONLY",
+        "simulations": simulations,
+        "seed": seed,
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "assumptions_match_exact_dp": {
+            "same_standard_game_hold_probability": True,
+            "same_neutral_tiebreak_probability": True,
+            "same_service_order": True,
+            "same_phase5_set_legality_predicates": True,
+        },
+        "early_equal_score": {
+            "1:1": early_equal[2] * scale,
+            "2:2": early_equal[4] * scale,
+            "3:3": early_equal[6] * scale,
+        },
+        "first_set": {
+            "p1_win": p1_first_set_wins * scale,
+            "p2_win": 1.0 - (p1_first_set_wins * scale),
+            "tiebreak": first_set_tiebreaks * scale,
+            "exact_score": normalized_counts(first_set_exact),
+            "games_distribution": normalized_counts(first_set_games),
+            "over": over_lines,
+        },
+        "match": {
+            "best_of": best_of,
+            "p1_win": p1_match_wins * scale,
+            "p2_win": 1.0 - (p1_match_wins * scale),
+            "exact_score": normalized_counts(match_exact),
+            "total_sets": normalized_counts(total_sets),
+            "total_games": normalized_counts(total_match_games),
+            "game_handicap": normalized_counts(match_game_handicap),
+        },
+    }
+
+
+def _exact_phase6_reference(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    *,
+    best_of: int,
+) -> dict[str, Any]:
+    p1s = _clamp_probability(p1_serve_point)
+    p2s = _clamp_probability(p2_serve_point)
+
+    first_set_exact: dict[str, float] = defaultdict(float)
+    first_set_games: dict[int, float] = defaultdict(float)
+    p1_first_set = 0.0
+    first_set_tiebreak = 0.0
+    for row in _neutral_set_distribution(p1s, p2s):
+        probability = float(row["probability"])
+        first_set_exact[str(row["score"])] += probability
+        first_set_games[int(row["games"])] += probability
+        if int(row["winner"]) == 1:
+            p1_first_set += probability
+        if row["tiebreak"] is True:
+            first_set_tiebreak += probability
+
+    match_exact: dict[str, float] = defaultdict(float)
+    for start_server in (1, 2):
+        for score, probability in match_outcomes(
+            p1s, p2s, best_of, start_server
+        ).items():
+            match_exact[str(score)] += 0.5 * float(probability)
+
+    needed = best_of // 2 + 1
+    p1_match = sum(
+        probability
+        for score, probability in match_exact.items()
+        if int(score.split(":")[0]) == needed
+    )
+    early = {
+        label: 0.5 * (
+            early_equal_score_probability(p1s, p2s, games, 1)
+            + early_equal_score_probability(p1s, p2s, games, 2)
+        )
+        for games, label in ((2, "1:1"), (4, "2:2"), (6, "3:3"))
+    }
+    over = {
+        str(line): sum(
+            probability
+            for games, probability in first_set_games.items()
+            if games > line
+        )
+        for line in (8.5, 9.5, 10.5, 11.5, 12.5)
+    }
+    return {
+        "early_equal_score": early,
+        "first_set": {
+            "p1_win": p1_first_set,
+            "tiebreak": first_set_tiebreak,
+            "exact_score": dict(first_set_exact),
+            "over": over,
+        },
+        "match": {
+            "p1_win": p1_match,
+            "exact_score": dict(match_exact),
+        },
+    }
+
+
+def _max_distribution_abs_error(
+    exact: dict[str, float],
+    sampled: dict[str, float],
+) -> float:
+    keys = set(exact) | set(sampled)
+    if not keys:
+        return 0.0
+    return max(abs(float(exact.get(key, 0.0)) - float(sampled.get(key, 0.0))) for key in keys)
+
+
+def compare_exact_dp_to_monte_carlo(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    *,
+    best_of: int,
+    simulations: int = 10_000,
+    seed: int = 260907,
+    tolerance_abs: float = 0.03,
+) -> dict[str, Any]:
+    """Compare exact DP and MC under identical fixed-probability assumptions."""
+    exact = _exact_phase6_reference(
+        p1_serve_point,
+        p2_serve_point,
+        best_of=best_of,
+    )
+    sampled = monte_carlo_match_distribution(
+        p1_serve_point,
+        p2_serve_point,
+        best_of=best_of,
+        simulations=simulations,
+        seed=seed,
+    )
+
+    scalar_errors = {
+        "match_p1_win": abs(
+            float(exact["match"]["p1_win"]) - float(sampled["match"]["p1_win"])
+        ),
+        "first_set_p1_win": abs(
+            float(exact["first_set"]["p1_win"])
+            - float(sampled["first_set"]["p1_win"])
+        ),
+        "first_set_tiebreak": abs(
+            float(exact["first_set"]["tiebreak"])
+            - float(sampled["first_set"]["tiebreak"])
+        ),
+        "first_set_over_10.5": abs(
+            float(exact["first_set"]["over"]["10.5"])
+            - float(sampled["first_set"]["over"]["10.5"])
+        ),
+        "early_1:1": abs(
+            float(exact["early_equal_score"]["1:1"])
+            - float(sampled["early_equal_score"]["1:1"])
+        ),
+        "early_2:2": abs(
+            float(exact["early_equal_score"]["2:2"])
+            - float(sampled["early_equal_score"]["2:2"])
+        ),
+        "early_3:3": abs(
+            float(exact["early_equal_score"]["3:3"])
+            - float(sampled["early_equal_score"]["3:3"])
+        ),
+    }
+    distribution_errors = {
+        "first_set_exact_score_max_abs": _max_distribution_abs_error(
+            exact["first_set"]["exact_score"],
+            sampled["first_set"]["exact_score"],
+        ),
+        "match_exact_score_max_abs": _max_distribution_abs_error(
+            exact["match"]["exact_score"],
+            sampled["match"]["exact_score"],
+        ),
+    }
+    all_errors = {**scalar_errors, **distribution_errors}
+    max_abs_error = max(all_errors.values())
+
+    mass_checks = {
+        "sampled_first_set_exact": math.isclose(
+            sum(float(value) for value in sampled["first_set"]["exact_score"].values()),
+            1.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ),
+        "sampled_match_exact": math.isclose(
+            sum(float(value) for value in sampled["match"]["exact_score"].values()),
+            1.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ),
+        "sampled_total_sets": math.isclose(
+            sum(float(value) for value in sampled["match"]["total_sets"].values()),
+            1.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ),
+        "sampled_total_games": math.isclose(
+            sum(float(value) for value in sampled["match"]["total_games"].values()),
+            1.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ),
+    }
+    passed = max_abs_error <= tolerance_abs and all(mass_checks.values())
+
+    return {
+        "best_of": best_of,
+        "p1_serve_point_win": float(p1_serve_point),
+        "p2_serve_point_win": float(p2_serve_point),
+        "simulations": simulations,
+        "seed": seed,
+        "tolerance_abs": tolerance_abs,
+        "errors": all_errors,
+        "max_abs_error": max_abs_error,
+        "probability_mass_checks": mass_checks,
+        "passed": passed,
+    }
+
+
+def evaluate_phase6_gate(phase5: dict[str, Any]) -> dict[str, Any]:
+    """Close Phase 6 only when exact DP and MC agree on fixed-P scenarios."""
+    phase5_ready = bool(
+        isinstance(phase5, dict)
+        and phase5.get("phase5_complete") is True
+        and phase5.get("phase6_ready") is True
+    )
+
+    scenarios = (
+        ("balanced_bo3", 0.62, 0.62, 3),
+        ("p1_serve_edge_bo3", 0.66, 0.59, 3),
+        ("p2_serve_edge_bo3", 0.59, 0.66, 3),
+        ("moderate_edge_bo5", 0.64, 0.61, 5),
+    )
+    comparisons = []
+    for index, (name, p1s, p2s, best_of) in enumerate(scenarios):
+        comparison = compare_exact_dp_to_monte_carlo(
+            p1s,
+            p2s,
+            best_of=best_of,
+            simulations=10_000,
+            seed=260907 + index,
+            tolerance_abs=0.03,
+        )
+        comparison["scenario"] = name
+        comparisons.append(comparison)
+
+    deterministic_a = monte_carlo_match_distribution(
+        0.63, 0.59, best_of=3, simulations=512, seed=606
+    )
+    deterministic_b = monte_carlo_match_distribution(
+        0.63, 0.59, best_of=3, simulations=512, seed=606
+    )
+    deterministic_seed_replay = deterministic_a == deterministic_b
+
+    phase6_complete = bool(
+        phase5_ready
+        and deterministic_seed_replay
+        and comparisons
+        and all(row.get("passed") is True for row in comparisons)
+    )
+    return {
+        "version": "player-dna-phase6-exact-dp-monte-carlo-gate-1",
+        "mode": "SHADOW_PHASE6_EXACT_DP_MONTE_CARLO",
+        "phase": "PHASE_6_EXACT_DP_MARKOV_MONTE_CARLO",
+        "status": (
+            "PHASE6_COMPLETE_EXACT_DP_MC_AGREEMENT"
+            if phase6_complete
+            else "PHASE6_GATE_NOT_COMPLETE"
+        ),
+        "phase5_ready": phase5_ready,
+        "phase6_complete": phase6_complete,
+        "phase7_ready": phase6_complete,
+        "test_simulations_per_scenario": 10_000,
+        "shadow_simulations_target": 50_000,
+        "target_simulations_when_cost_allows": 100_000,
+        "comparison_tolerance_abs": 0.03,
+        "deterministic_seed_replay": deterministic_seed_replay,
+        "comparisons": comparisons,
+        "production_influence": False,
+        "runtime_switch_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "contract": {
+            "canonical_simulator_module_reused": True,
+            "exact_dp_preferred_for_static_probabilities": True,
+            "monte_carlo_is_crosscheck_not_replacement": True,
+            "same_hold_and_tiebreak_primitives": True,
+            "same_phase5_legality_predicates": True,
+            "fixed_probability_dp_mc_agreement_required": True,
+            "history_dependent_monte_carlo_not_activated_yet": True,
+            "phase6_completion_does_not_promote_runtime_or_prod": True,
+        },
+    }
+
+
 def simulate_match(
     p1_serve_point: float,
     p2_serve_point: float,
@@ -2005,8 +2471,21 @@ def build() -> dict[str, Any]:
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         calibration_report = {}
 
+    try:
+        phase5_report = json.loads(PHASE5_REPORT.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        phase5_report = {}
+
     report = simulate_current_report(current, calibration_report=calibration_report)
     _write_reports(report)
+
+    phase6_report = evaluate_phase6_gate(phase5_report)
+    PHASE6_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    PHASE6_REPORT.write_text(
+        json.dumps(phase6_report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
     print(json.dumps({
         "version": report["version"],
         "mode": report["mode"],
@@ -2015,6 +2494,9 @@ def build() -> dict[str, Any]:
         "match_level_validation_required": report["match_level_validation_required"],
         "hold_calibration_candidate_enabled": report["hold_calibration_candidate_enabled"],
         "calibrated_candidate_matches": report["calibrated_candidate_matches"],
+        "phase6_status": phase6_report["status"],
+        "phase6_complete": phase6_report["phase6_complete"],
+        "phase7_ready": phase6_report["phase7_ready"],
         "production_influence": report["production_influence"],
     }, ensure_ascii=False))
     return report

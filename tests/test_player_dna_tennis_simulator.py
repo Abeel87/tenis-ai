@@ -8,15 +8,18 @@ from backend import player_dna_tennis_simulator as simulator
 
 from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
+    compare_exact_dp_to_monte_carlo,
     dynamic_hold_probability,
     dynamic_match_outcomes,
     dynamic_match_outcomes_from_sets,
     dynamic_score_distribution_after_games,
     dynamic_set_outcomes,
+    evaluate_phase6_gate,
     early_equal_score_probability,
     hold_probability,
     inverse_hold_probability,
     match_outcomes,
+    monte_carlo_match_distribution,
     neutral_tiebreak_win_probability,
     score_distribution_after_games,
     set_outcomes,
@@ -733,3 +736,105 @@ def test_dynamic_match_continuation_rejects_illegal_set_scores_and_preserves_ter
             start_server=1,
             sets_before=(2, 2),
         )
+
+
+
+def test_phase6_monte_carlo_is_seed_deterministic_and_probability_conserving():
+    first = monte_carlo_match_distribution(
+        0.63,
+        0.59,
+        best_of=3,
+        simulations=2_000,
+        seed=606,
+    )
+    second = monte_carlo_match_distribution(
+        0.63,
+        0.59,
+        best_of=3,
+        simulations=2_000,
+        seed=606,
+    )
+
+    assert first == second
+    assert first["mode"] == "SHADOW_MONTE_CARLO_CROSSCHECK_ONLY"
+    assert first["production_influence"] is False
+    assert first["symphony2_influence"] is False
+    assert first["superbet_playable_influence"] is False
+    assert first["auto_promote"] is False
+    assert math.isclose(
+        sum(first["first_set"]["exact_score"].values()),
+        1.0,
+        abs_tol=1e-12,
+    )
+    assert math.isclose(
+        sum(first["match"]["exact_score"].values()),
+        1.0,
+        abs_tol=1e-12,
+    )
+    assert math.isclose(
+        sum(first["match"]["total_sets"].values()),
+        1.0,
+        abs_tol=1e-12,
+    )
+    assert math.isclose(
+        sum(first["match"]["total_games"].values()),
+        1.0,
+        abs_tol=1e-12,
+    )
+
+
+@pytest.mark.parametrize(
+    ("p1s", "p2s", "best_of", "seed"),
+    [
+        (0.62, 0.62, 3, 260907),
+        (0.66, 0.59, 3, 260908),
+        (0.59, 0.66, 3, 260909),
+        (0.64, 0.61, 5, 260910),
+    ],
+)
+def test_phase6_exact_dp_and_10k_monte_carlo_agree_on_fixed_probabilities(
+    p1s,
+    p2s,
+    best_of,
+    seed,
+):
+    comparison = compare_exact_dp_to_monte_carlo(
+        p1s,
+        p2s,
+        best_of=best_of,
+        simulations=10_000,
+        seed=seed,
+        tolerance_abs=0.03,
+    )
+
+    assert comparison["passed"] is True
+    assert comparison["max_abs_error"] <= 0.03
+    assert all(comparison["probability_mass_checks"].values())
+
+
+def test_phase6_gate_closes_after_phase5_without_runtime_promotion():
+    report = evaluate_phase6_gate({
+        "phase5_complete": True,
+        "phase6_ready": True,
+    })
+
+    assert report["mode"] == "SHADOW_PHASE6_EXACT_DP_MONTE_CARLO"
+    assert report["phase6_complete"] is True
+    assert report["phase7_ready"] is True
+    assert report["deterministic_seed_replay"] is True
+    assert report["test_simulations_per_scenario"] == 10_000
+    assert report["shadow_simulations_target"] == 50_000
+    assert report["target_simulations_when_cost_allows"] == 100_000
+    assert report["production_influence"] is False
+    assert report["runtime_switch_enabled"] is False
+    assert report["symphony2_influence"] is False
+    assert report["superbet_playable_influence"] is False
+    assert len(report["comparisons"]) == 4
+    assert all(row["passed"] is True for row in report["comparisons"])
+    contract = report["contract"]
+    assert contract["canonical_simulator_module_reused"] is True
+    assert contract["exact_dp_preferred_for_static_probabilities"] is True
+    assert contract["monte_carlo_is_crosscheck_not_replacement"] is True
+    assert contract["same_phase5_legality_predicates"] is True
+    assert contract["fixed_probability_dp_mc_agreement_required"] is True
+    assert contract["phase6_completion_does_not_promote_runtime_or_prod"] is True
