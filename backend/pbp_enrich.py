@@ -250,7 +250,7 @@ def _cache_has_terminal_stats(payload: dict[str, Any]) -> bool:
         if not isinstance(state, dict):
             continue
         stats = state.get("stats")
-        if not isinstance(stats, dict):
+        if not isinstance(stats, dict) or not stats:
             continue
         if _score_core(state.get("score")) == final_score:
             return True
