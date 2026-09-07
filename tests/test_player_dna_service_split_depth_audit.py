@@ -227,3 +227,108 @@ def test_stats_capture_gap_distinguishes_input_state_without_stats_dict(monkeypa
         == 1
     )
     assert capture["reasons_account_for_all_missing_stats"] is True
+
+
+
+def _identity_only(monkeypatch):
+    monkeypatch.setattr(
+        "backend.player_dna_service_split_depth_audit.player_identity_map",
+        lambda payload: {1: {"id": 101}, 2: {"id": 202}},
+    )
+
+
+def _scaled_raw_stats():
+    side = {
+        "firstServePointsAccuracy": "15/20 (75%)",
+        "secondServePointsAccuracy": "6/10 (60%)",
+        "firstReturnPoints": "5/15 (33%)",
+        "secondReturnPoints": "4/10 (40%)",
+    }
+    return {"p1": dict(side), "p2": dict(side)}
+
+
+def test_partial_raw_validation_pairs_late_snapshot_with_terminal_truth(monkeypatch):
+    _identity_only(monkeypatch)
+
+    partial = _profile([5, 4], created_at="2026-09-06T12:00:00Z")
+    partial["input_state"]["stats"] = _scaled_raw_stats()
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:00Z")
+
+    payload = {
+        "profiles": [partial, terminal],
+        "tape": [
+            {"sets": [1, 0], "games": [5, 4]},
+            {"sets": [2, 0], "games": [6, 4]},
+        ],
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+
+    assert validation["paired_terminal_matches_with_preterminal_all_four_raw"] == 1
+    assert validation["overall"]["matches"] == 1
+    assert validation["overall"]["field_comparisons"] == 8
+    assert validation["overall"]["mean_abs_error_pp"] == 0.0
+    assert validation["overall"]["within_5pp_rate"] == 1.0
+    assert validation["overall"]["raw_count_monotonic_match_rate"] == 1.0
+
+    at90 = validation["by_minimum_game_progress"]["0.9"]
+    assert at90["matches"] == 1
+    assert at90["mean_abs_error_pp"] == 0.0
+
+    gate = validation["predeclared_future_gate"]
+    assert gate["activation_enabled"] is False
+    assert report["contract"]["partial_raw_validation_diagnostic_only"] is True
+    assert report["contract"]["partial_raw_authorized_for_canonical_history"] is False
+    assert report["contract"]["partial_raw_gate_activation_enabled"] is False
+
+
+def test_partial_raw_validation_counts_nonterminal_candidates_by_game_progress(monkeypatch):
+    _identity_only(monkeypatch)
+
+    partial = _profile([5, 4], created_at="2026-09-06T12:00:00Z")
+    partial["input_state"]["stats"] = _scaled_raw_stats()
+
+    payload = {
+        "profiles": [partial],
+        "tape": [
+            {"sets": [1, 0], "games": [5, 4]},
+            {"sets": [2, 0], "games": [6, 4]},
+        ],
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+
+    assert report["counts"]["raw_all_four_outside_terminal_proof_matches"] == 1
+    assert validation["raw_without_terminal_progress_known_matches"] == 1
+    assert (
+        validation["raw_without_terminal_candidates_by_progress"]["0.9"]["matches"]
+        == 1
+    )
+    assert (
+        validation["raw_without_terminal_candidates_by_progress"]["0.95"]["matches"]
+        == 0
+    )
+
+
+def test_partial_raw_validation_detects_nonmonotonic_counts(monkeypatch):
+    _identity_only(monkeypatch)
+
+    partial = _profile([5, 4], created_at="2026-09-06T12:00:00Z")
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:00Z")
+    partial["input_state"]["stats"]["p1"]["firstServePointsAccuracy"] = "31/41 (76%)"
+
+    payload = {
+        "profiles": [partial, terminal],
+        "tape": [
+            {"sets": [1, 0], "games": [5, 4]},
+            {"sets": [2, 0], "games": [6, 4]},
+        ],
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+
+    assert validation["overall"]["matches"] == 1
+    assert validation["overall"]["raw_count_monotonic_match_rate"] == 0.0
