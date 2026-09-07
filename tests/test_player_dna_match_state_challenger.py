@@ -190,7 +190,7 @@ def test_feature_builder_uses_exact_profiles_for_bo3_and_bo5_tasks():
     assert counts["bo5_late_set_rows"] == 3
 
 
-def _synthetic_comeback_rows(n=1200):
+def _synthetic_comeback_rows(n=2000):
     start = datetime(2025, 1, 1, tzinfo=timezone.utc)
     rows = []
     for index in range(n):
