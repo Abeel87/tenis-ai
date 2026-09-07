@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from backend.player_dna_small_sample_challenger import (
     MODE,
     PRIOR_STRENGTH_GRID,
@@ -88,7 +90,7 @@ def test_prior_means_use_only_rows_supplied_and_surface_specific_training_outcom
 
     assert priors["points_used"] == 3
     assert priors["global_serve"] == 2 / 3
-    assert priors["global_return"] == 1 / 3
+    assert priors["global_return"] == pytest.approx(1 / 3)
     assert priors["surface_serve"]["hard"] == 1.0
     assert priors["surface_return"]["hard"] == 0.0
     assert priors["surface_serve"]["clay"] == 0.0
