@@ -928,6 +928,98 @@ jobs:
           )
           PY
 
+      - name: Evaluate small-sample shrinkage challenger (SHADOW, zero network)
+        run: python backend/player_dna_small_sample_challenger.py
+
+      - name: Guard small-sample shrinkage challenger isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_small_sample_challenger.json')
+          if not p.exists():
+              raise SystemExit('player_dna_small_sample_challenger.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_SMALL_SAMPLE_SHRINKAGE_CHALLENGER_EVAL_ONLY':
+              raise SystemExit('Small-sample shrinkage challenger mode invalid')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'training_join_enabled',
+              'canonical_profile_write_enabled',
+              'simulator_influence',
+              'symphony2_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+              'promotion_gate',
+              'candidate_may_replace_reference',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Small-sample shrinkage isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'empirical_bayes_style_pseudo_point_shrinkage_only',
+              'same_reference_feature_family_except_shrunk_rates',
+              'raw_support_counts_are_transformation_inputs_not_model_features',
+              'prior_means_fit_from_outer_train_point_outcomes_only',
+              'prior_strength_selected_inside_outer_train_only',
+              'outer_holdout_never_used_for_parameter_selection',
+              'same_timestamp_matches_never_split_across_train_test',
+              'strength_grid_predeclared_before_holdout_evaluation',
+              'zero_strength_candidate_represents_no_shrinkage',
+              'small_sample_segment_reported_separately',
+              'historical_success_requires_holdout_and_three_walk_forward_folds',
+              'all_three_proper_scores_must_improve',
+              'fresh_confirmation_required_before_any_activation',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Small-sample shrinkage contract violation: {key}')
+
+          leakage = report.get('leakage_contract') or {}
+          for key in (
+              'canonical_strict_as_of_profiles_only',
+              'stable_provider_player_ids_only',
+              'current_target_match_never_contributes_to_its_own_profile',
+              'outer_test_labels_not_used_for_prior_mean',
+              'outer_test_labels_not_used_for_prior_strength',
+              'walk_forward_strength_reselected_inside_each_fold_train_only',
+          ):
+              if leakage.get(key) is not True:
+                  raise SystemExit(f'Small-sample shrinkage leakage contract violation: {key}')
+
+          grid = report.get('prior_strength_grid') or []
+          if grid != [0.0, 25.0, 50.0, 100.0, 200.0]:
+              raise SystemExit(f'Small-sample prior-strength grid drifted: {grid}')
+          if int(report.get('small_sample_match_threshold') or 0) != 5:
+              raise SystemExit('Small-sample threshold drifted')
+          if int(report.get('all_enriched_points') or 0) <= 0:
+              raise SystemExit('Small-sample shrinkage challenger produced no enriched points')
+
+          holdout = report.get('holdout') or {}
+          selection = holdout.get('strength_selection') or {}
+          if selection and selection.get('outer_test_used_for_selection') is not False:
+              raise SystemExit('Outer holdout leaked into shrinkage parameter selection')
+
+          signal = report.get('signal') or {}
+          if signal.get('fresh_confirmation_required') is not True:
+              raise SystemExit('Shrinkage historical result escaped fresh-confirmation gate')
+          if signal.get('candidate_may_replace_reference') is True:
+              raise SystemExit('Shrinkage challenger must never replace reference automatically')
+
+          print(
+              'Small-sample shrinkage challenger: '
+              f"status={signal.get('status')} "
+              f"holdout={signal.get('positive_holdout')} "
+              f"robust={signal.get('robust_walk_forward')} "
+              f"selected_strength={selection.get('selected_prior_strength')} "
+              f"points={report.get('all_enriched_points')}"
+          )
+          PY
+
       - name: Evaluate Phase-3 serve-return matchup challenger (SHADOW, zero network)
         run: python backend/player_dna_matchup_challenger.py
 
@@ -2579,6 +2671,7 @@ jobs:
             frontend/data/player_dna_pressure_challenger.json
             frontend/data/player_dna_tiebreak_challenger.json
             frontend/data/player_dna_recent_form_challenger.json
+            frontend/data/player_dna_small_sample_challenger.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json
             frontend/data/player_dna_current_dynamic_shadow.json
