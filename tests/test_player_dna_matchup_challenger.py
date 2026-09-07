@@ -113,3 +113,61 @@ def test_matchup_challenger_remains_single_family_and_shadow_only():
     assert signal["status"] == "INSUFFICIENT_MATCHUP_SHADOW_SAMPLE"
     assert signal["fresh_confirmation_required"] is True
     assert signal["candidate_may_replace_reference"] is False
+
+
+
+def test_strong_server_vs_weak_return_has_higher_matchup_dominance_than_elite_return():
+    when = "2026-09-06T10:00:00Z"
+
+    weak_return_profiles = [
+        _profile("m1", when, 1, 2, serve=0.70, ret=0.38),
+        _profile("m1", when, 2, 1, serve=0.62, ret=0.30),
+    ]
+    elite_return_profiles = [
+        _profile("m1", when, 1, 2, serve=0.70, ret=0.38),
+        _profile("m1", when, 2, 1, serve=0.62, ret=0.50),
+    ]
+
+    weak_rows, _ = enrich_feature_rows([_point("m1", when)], weak_return_profiles)
+    elite_rows, _ = enrich_feature_rows([_point("m1", when)], elite_return_profiles)
+
+    weak_matchup = weak_rows[0][FEATURE_NAME]
+    elite_matchup = elite_rows[0][FEATURE_NAME]
+
+    assert weak_matchup == 0.70 * (1.0 - 0.30)
+    assert elite_matchup == 0.70 * (1.0 - 0.50)
+    assert weak_matchup > elite_matchup
+
+
+def test_matchup_feature_is_monotone_in_server_strength_for_fixed_return():
+    when = "2026-09-06T10:00:00Z"
+    receiver_return = 0.42
+    values = []
+
+    for index, server_serve in enumerate((0.60, 0.65, 0.70), start=1):
+        match_id = f"m{index}"
+        profiles = [
+            _profile(match_id, when, 1, 2, serve=server_serve, ret=0.38),
+            _profile(match_id, when, 2, 1, serve=0.62, ret=receiver_return),
+        ]
+        rows, _ = enrich_feature_rows([_point(match_id, when)], profiles)
+        values.append(rows[0][FEATURE_NAME])
+
+    assert values[0] < values[1] < values[2]
+
+
+def test_matchup_feature_is_monotone_down_with_stronger_receiver_return():
+    when = "2026-09-06T10:00:00Z"
+    server_serve = 0.68
+    values = []
+
+    for index, receiver_return in enumerate((0.30, 0.40, 0.50), start=1):
+        match_id = f"r{index}"
+        profiles = [
+            _profile(match_id, when, 1, 2, serve=server_serve, ret=0.38),
+            _profile(match_id, when, 2, 1, serve=0.62, ret=receiver_return),
+        ]
+        rows, _ = enrich_feature_rows([_point(match_id, when)], profiles)
+        values.append(rows[0][FEATURE_NAME])
+
+    assert values[0] > values[1] > values[2]
