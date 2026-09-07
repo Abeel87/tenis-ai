@@ -282,3 +282,119 @@ def test_terminal_or_too_recent_cache_does_not_consume_refresh_budget(tmp_path, 
     assert recent_hit is True
     assert api.calls == 0
     assert counters.get("tape_stale_refresh_attempts", 0) == 0
+
+
+
+def test_historical_cache_sweep_refreshes_stale_match_without_current_profile_access(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+
+    monkeypatch.setattr(mod, "CACHE", tmp_path / "pbp")
+    cached = _cached_stats_payload([5, 4])
+    cached["match"] = {
+        "id": 123,
+        "scheduled_time": "2026-09-06T20:00:00Z",
+    }
+    refreshed = _cached_stats_payload([6, 4])
+    refreshed["match"] = {
+        "id": 123,
+        "scheduled_time": "2026-09-06T20:00:00Z",
+    }
+    path = mod._match_cache_path(123)
+    mod._write_gzip_json(path, cached)
+
+    api = RefreshAPI(response=refreshed)
+    counters = {}
+    state = {"matches": {}}
+    now = mod.datetime(2026, 9, 7, 10, 0, tzinfo=mod.timezone.utc)
+
+    summary = mod._historical_cache_refresh_sweep(
+        api,
+        now,
+        counters,
+        state,
+    )
+
+    assert summary["scanned"] == 1
+    assert summary["attempts"] == 1
+    assert api.calls == 1
+    assert counters["tape_stale_refresh_attempts"] == 1
+    assert counters["tape_stale_refresh_successes"] == 1
+    assert counters["tape_stale_refresh_terminalized"] == 1
+    assert counters["historical_cache_sweep_attempts"] == 1
+    assert state["matches"]["123"]["last_result"] == "terminal_stats"
+    assert mod._cache_has_terminal_stats(mod._read_gzip_json(path)) is True
+
+
+def test_historical_cache_sweep_fails_closed_on_missing_schedule_or_identity_mismatch(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+
+    monkeypatch.setattr(mod, "CACHE", tmp_path / "pbp")
+
+    missing_schedule = _cached_stats_payload([5, 4])
+    missing_schedule["match"] = {"id": 1}
+    mod._write_gzip_json(mod._match_cache_path(1), missing_schedule)
+
+    mismatched = _cached_stats_payload([5, 4])
+    mismatched["match"] = {
+        "id": 999,
+        "scheduled_time": "2026-09-06T20:00:00Z",
+    }
+    mod._write_gzip_json(mod._match_cache_path(2), mismatched)
+
+    api = RefreshAPI(response=_cached_stats_payload([6, 4]))
+    counters = {}
+    state = {"matches": {}}
+    now = mod.datetime(2026, 9, 7, 10, 0, tzinfo=mod.timezone.utc)
+
+    summary = mod._historical_cache_refresh_sweep(
+        api,
+        now,
+        counters,
+        state,
+    )
+
+    assert summary["scanned"] == 2
+    assert summary["attempts"] == 0
+    assert summary["missing_schedule"] == 1
+    assert summary["identity_mismatch"] == 1
+    assert api.calls == 0
+    assert counters.get("tape_stale_refresh_attempts", 0) == 0
+
+
+def test_historical_cache_sweep_is_bounded_and_persists_cursor(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+
+    monkeypatch.setattr(mod, "CACHE", tmp_path / "pbp")
+    monkeypatch.setattr(mod, "MAX_STALE_CACHE_SCAN_PER_RUN", 2)
+
+    for mid in (1, 2, 3, 4):
+        terminal = _cached_stats_payload([6, 4])
+        terminal["match"] = {
+            "id": mid,
+            "scheduled_time": "2026-09-06T20:00:00Z",
+        }
+        mod._write_gzip_json(mod._match_cache_path(mid), terminal)
+
+    api = RefreshAPI(response=None)
+    counters = {}
+    state = {"matches": {}}
+    now = mod.datetime(2026, 9, 7, 10, 0, tzinfo=mod.timezone.utc)
+
+    first = mod._historical_cache_refresh_sweep(api, now, counters, state)
+    assert first["scanned"] == 2
+    assert first["cursor_start"] == 0
+    assert first["cursor_end"] == 2
+    assert api.calls == 0
+    assert state["historical_sweep_cursor"] == 2
+
+    second = mod._historical_cache_refresh_sweep(
+        api,
+        now + mod.timedelta(hours=1),
+        counters,
+        state,
+    )
+    assert second["scanned"] == 2
+    assert second["cursor_start"] == 2
+    assert second["cursor_end"] == 0
+    assert api.calls == 0
+    assert state["historical_sweep_cursor"] == 0
