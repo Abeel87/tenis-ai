@@ -480,6 +480,49 @@ Porównanie na identycznym walk-forward:
 
 NN awansuje z SHADOW tylko wtedy, gdy poprawia kalibrację i log-loss/Brier out-of-sample. Jeśli nie — pozostaje challengerem.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 8 rozwija istniejący kanoniczny `backend/neuro_shadow_training.py` oraz
+korzysta z deterministycznej sieci z `backend/neuro_shadow_neural.py`.
+Nie powstaje drugi trener ani nowy równoległy pipeline NEURO.
+
+Porównanie model classes używa jednego wspólnego kontraktu danych i identycznych
+okien czasowych:
+
+- interpretowalny logistic baseline;
+- CatBoost;
+- obecny mały deterministyczny NN;
+- nietunowany equal-weight ensemble logistic + CatBoost + NN.
+
+Wszystkie trzy trenowane klasy dostają dokładnie ten sam feature vector, te same
+rekordy train/evaluation i match-balanced weights. Istniejące
+`catboost_probability` i `tabpfn_probability` są świadomie wyłączone z
+wektora Fazy 8, aby challenger nie oceniał własnej wcześniejszej predykcji lub
+innego modelu zamiast porównania klas na tych samych wejściach.
+
+Feature snapshot nie może zawierać final result ani bookmaker price. Settlement
+jest używany wyłącznie jako target po meczu. Braki prawdopodobieństw dostają
+neutralne 0.5 wraz z jawnym missing-mask.
+
+Walk-forward ma trzy expanding train windows 55/70/85%, rozłączne przyszłe
+okna testowe, whole-match grouping i zakaz dzielenia tego samego timestampu.
+Hyperparametry są zamrożone przed ewaluacją, a ensemble ma stałe wagi 1/3 i nie
+jest dostrajany na holdoucie.
+
+Każdy rynek osobno raportuje Brier, log-loss, ECE/calibration i pomocniczą
+accuracy dla logistic/CatBoost/NN/ensemble na dokładnie tych samych rekordach.
+NN może zostać oznaczony tylko jako **per-market review candidate**, jeśli
+powtarzalnie i agregatowo pokonuje logistic oraz CatBoost na Brier/log-loss i
+jednocześnie ma lepszy ECE. To nadal nie aktywuje runtime.
+
+Raport CI:
+`frontend/data/neuro_shadow_phase8_challenger_walk_forward.json`.
+
+Faza 8 zamyka techniczną ocenę model classes, gdy co najmniej 6 rynków ma pełne
+3/3 foldy na wspólnym kontrakcie. `phase8_complete=true / phase9_ready=true`
+nie oznacza promocji NN ani ensemble. Globalna promocja jest zawsze zabroniona
+w tym gate i pozostaje osobnym procesem Fazy 14.
+
 ---
 
 # Faza 9 — Integracja z Symfonią 2.0
