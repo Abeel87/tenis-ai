@@ -2,6 +2,7 @@ from backend.player_dna_pbp_service_split_readiness import (
     MODE,
     audit_payloads,
     inspect_payload,
+    terminal_raw_service_split_match,
 )
 
 
@@ -126,3 +127,33 @@ def test_pbp_native_split_audit_requires_stable_identity():
     item = inspect_payload(bad)
 
     assert item == {"stable_identity": False}
+
+
+
+def test_terminal_raw_service_split_match_exposes_exact_counts_only():
+    item = terminal_raw_service_split_match(_payload(), match_id="m1")
+
+    assert item is not None
+    assert item["match_id"] == "m1"
+    assert item["p1"] == 101
+    assert item["p2"] == 202
+    assert item["raw_ratios_only"] is True
+    assert item["terminal_stats_snapshot"] is True
+
+    p1 = item["contrib"][101]
+    assert p1["first_serve_matches"] == 1
+    assert p1["first_serve_wins"] == 28
+    assert p1["first_serve_points"] == 40
+    assert p1["second_serve_wins"] == 10
+    assert p1["second_serve_points"] == 20
+    assert p1["first_return_wins"] == 16
+    assert p1["first_return_points"] == 40
+    assert p1["second_return_wins"] == 11
+    assert p1["second_return_points"] == 20
+
+
+def test_terminal_raw_service_split_match_rejects_nonterminal_snapshot():
+    assert terminal_raw_service_split_match(
+        _payload(terminal=False),
+        match_id="m1",
+    ) is None
