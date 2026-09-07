@@ -12,6 +12,9 @@ def _payload(*, terminal=True, mismatch=False):
     p2_first_raw = "18/40 (45%)" if mismatch else "22/40 (55%)"
     return {
         "match": {
+            "id": "m1",
+            "scheduled_time": "2026-09-01T10:00:00Z",
+            "surface": "hard",
             "players": {
                 "p1": {"id": 101, "name": "Alpha"},
                 "p2": {"id": 202, "name": "Beta"},
