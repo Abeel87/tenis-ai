@@ -229,3 +229,60 @@ def test_unproven_set_boundary_never_becomes_pressure_hold_evidence():
     assert report["pressure_evidence"]["boundary_quality"]["set_boundary_not_yet_proven"] == 1
     assert report["pressure_readiness_any_surface"]["hold"]["1"]["targets"] == 0
     assert report["pressure_readiness_same_surface"]["hold"]["1"]["targets"] == 0
+
+
+
+def test_small_sample_shrinkage_readiness_bands_are_strict_as_of_and_diagnostic_only():
+    rows = [
+        _row(
+            f"depth-{day:02d}",
+            f"2026-08-{day:02d}T10:00:00Z",
+            1,
+            100 + day,
+            "hard",
+        )
+        for day in range(1, 12)
+    ]
+
+    report = audit_rows(rows)
+    readiness = report["small_sample_shrinkage_readiness"]
+    any_surface = readiness["any_surface_depth_bands"]
+    same_surface = readiness["same_surface_depth_bands"]
+
+    # Player 1 contributes strict-as-of depths 0..10. Each one-off opponent
+    # contributes one zero-history target.
+    assert report["player_match_targets"] == 22
+    assert any_surface["0"]["targets"] == 12
+    assert any_surface["1-2"]["targets"] == 2
+    assert any_surface["3-4"]["targets"] == 2
+    assert any_surface["5-9"]["targets"] == 5
+    assert any_surface["10+"]["targets"] == 1
+    assert same_surface == any_surface
+    assert readiness["targets_below_5_any_surface"] == 16
+    assert readiness["targets_below_5_same_surface"] == 16
+
+    policy = readiness["policy"]
+    assert policy["diagnostic_only"] is True
+    assert policy["shrinkage_activation_enabled"] is False
+    assert policy["partial_pooling_activation_enabled"] is False
+    assert policy["prior_strength_selected"] is False
+    assert policy["candidate_parameter_selection_must_use_train_only_data"] is True
+    assert policy["raw_small_sample_rate_must_not_be_promoted_directly"] is True
+    assert policy["next_gate"] == "TRAIN_ONLY_EMPIRICAL_BAYES_OR_PARTIAL_POOLING_CHALLENGER"
+
+
+def test_same_time_group_stays_zero_history_for_shrinkage_readiness():
+    rows = [
+        _row("same-a", "2026-09-01T10:00:00Z", 1, 2),
+        _row("same-b", "2026-09-01T10:00:00Z", 1, 3),
+        _row("later", "2026-09-02T10:00:00Z", 1, 4),
+    ]
+
+    report = audit_rows(rows)
+    bands = report["small_sample_shrinkage_readiness"]["any_surface_depth_bands"]
+
+    # Both same-time targets for player 1 remain at depth 0; only the later
+    # match sees the two earlier matches.
+    assert bands["0"]["targets"] == 5
+    assert bands["1-2"]["targets"] == 1
+    assert bands["3-4"]["targets"] == 0

@@ -44,6 +44,13 @@ PRESSURE_SUPPORT_METRICS = {
     "early_return_game_3": "early_return_game_3",
 }
 PRESSURE_SEGMENT_THRESHOLD = 5
+SMALL_SAMPLE_BANDS = (
+    ("0", 0, 0),
+    ("1-2", 1, 2),
+    ("3-4", 3, 4),
+    ("5-9", 5, 9),
+    ("10+", 10, None),
+)
 
 
 def _parse_utc(value: Any) -> datetime | None:
@@ -82,6 +89,16 @@ def _percentile(sorted_values: list[int], fraction: float) -> int | None:
         return None
     index = min(len(sorted_values) - 1, max(0, int((len(sorted_values) - 1) * fraction)))
     return int(sorted_values[index])
+
+
+def _sample_band(depth: int) -> str:
+    value = max(0, int(depth))
+    for label, lo, hi in SMALL_SAMPLE_BANDS:
+        if value < lo:
+            continue
+        if hi is None or value <= hi:
+            return label
+    raise AssertionError("unreachable sample-depth band")
 
 
 def _strict_atomic_game(row: dict[str, Any]) -> bool:
@@ -322,6 +339,8 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     surface_pressure_hits: dict[str, Counter[str]] = defaultdict(Counter)
     same_time_player_groups = 0
     targets = 0
+    small_sample_any_bands: Counter[str] = Counter()
+    small_sample_surface_bands: Counter[str] = Counter()
 
     for pid, history in player_matches.items():
         history.sort(key=lambda m: (m["scheduled"], m["match_id"]))
@@ -339,6 +358,8 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
             ]
             total_depth = len(prior)
             surface_depth = len(same_surface_prior)
+            small_sample_any_bands[_sample_band(total_depth)] += 1
+            small_sample_surface_bands[_sample_band(surface_depth)] += 1
             per_player_match_depth.append(total_depth)
             for threshold in THRESHOLDS:
                 if total_depth >= threshold:
@@ -382,6 +403,15 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     pressure_player_match_evidence = sum(
         1 for bucket in pressure_by_match_player.values() if sum(bucket.values()) > 0
     )
+
+    def sample_band_report(counter: Counter[str]) -> dict[str, dict[str, Any]]:
+        return {
+            label: {
+                "targets": int(counter[label]),
+                "rate": round(counter[label] / targets, 6) if targets else 0.0,
+            }
+            for label, _, _ in SMALL_SAMPLE_BANDS
+        }
 
     return {
         "version": VERSION,
@@ -436,6 +466,29 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         },
         "readiness_any_surface": readiness(total_threshold_hits),
         "readiness_same_surface": readiness(surface_threshold_hits),
+        "small_sample_shrinkage_readiness": {
+            "any_surface_depth_bands": sample_band_report(small_sample_any_bands),
+            "same_surface_depth_bands": sample_band_report(small_sample_surface_bands),
+            "targets_below_5_any_surface": int(
+                small_sample_any_bands["0"]
+                + small_sample_any_bands["1-2"]
+                + small_sample_any_bands["3-4"]
+            ),
+            "targets_below_5_same_surface": int(
+                small_sample_surface_bands["0"]
+                + small_sample_surface_bands["1-2"]
+                + small_sample_surface_bands["3-4"]
+            ),
+            "policy": {
+                "diagnostic_only": True,
+                "shrinkage_activation_enabled": False,
+                "partial_pooling_activation_enabled": False,
+                "prior_strength_selected": False,
+                "candidate_parameter_selection_must_use_train_only_data": True,
+                "raw_small_sample_rate_must_not_be_promoted_directly": True,
+                "next_gate": "TRAIN_ONLY_EMPIRICAL_BAYES_OR_PARTIAL_POOLING_CHALLENGER",
+            },
+        },
         "pressure_evidence": {
             "player_match_evidence_cells": pressure_player_match_evidence,
             "counts": dict(global_pressure),
@@ -460,9 +513,9 @@ def audit_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         ),
         "same_time_player_groups": same_time_player_groups,
         "note": (
-            "Evidence only. No minimum-history or pressure-support threshold is activated here. "
-            "The next gate may choose candidates only from measured leakage-safe coverage and "
-            "must validate them out of sample before any profile/model activation."
+            "Evidence only. No minimum-history, pressure-support or shrinkage threshold is activated here. "
+            "Small-sample depth bands quantify where raw rates need a separate train-only shrinkage/partial-pooling "
+            "challenger. Any candidate must be validated out of sample before profile/model activation."
         ),
     }
 
