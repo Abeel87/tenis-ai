@@ -304,6 +304,32 @@ Z pojedynczego P punktu budujemy legalny tenisowy state machine:
 
 Testy muszą obejmować skrajne stany i brak stanów niemożliwych.
 
+## Stan realizacji / gate zamknięcia
+
+Kanoniczny moduł Fazy 5 to `backend/player_dna_tennis_state_engine.py`.
+Jest probability-free: bierze legalny stan przed punktem + zwycięzcę jednego
+punktu i zwraca dokładnie jeden legalny kolejny stan.
+
+Kontrakt obejmuje:
+
+- standardowe game z deuce/advantage;
+- tie-break przy 6:6, pierwszy do 7 z przewagą 2;
+- oficjalną kolejność serwowania w tie-breaku: 1 punkt + bloki po 2;
+- ciągłość serwowania między game'ami i setami;
+- BO3 / BO5 i terminalność meczu;
+- jawne completed set scores;
+- fail-closed dla stanów niemożliwych.
+
+`player_dna_tennis_simulator.py` współdzieli z tym modułem kanoniczne
+predykaty legalności seta / 6:6 oraz rotację zawodnika, więc nie utrzymujemy
+drugiej równoległej definicji tych reguł.
+
+Faza 5 zamyka się wyłącznie gdy CI potwierdzi skrajne stany, serve-order,
+extended tie-break, BO3/BO5 terminality, brak nielegalnych set scores w exact DP
+oraz `phase5_complete=true`, `phase6_ready=true`.
+
+Domknięcie Fazy 5 nie oznacza PROD/Symfonia/PLAYABLE.
+
 ---
 
 # Faza 6 — Exact DP / Markov + Monte Carlo
