@@ -162,3 +162,77 @@ def test_joint_probability_is_order_invariant_for_supported_legs():
     assert supported_forward == supported_reverse == 3
     assert forward is not None and reverse is not None
     assert abs(forward - reverse) < 1e-12
+
+
+
+def test_set2_same_family_joint_is_exact_not_marginal_product():
+    match = _match()
+    legs = [
+        {"market": "set2_winner", "pick": "A"},
+        {"market": "set2_total", "pick": "over", "line": 8.5},
+    ]
+
+    joint, supported = joint_probability(match, legs)
+    p_winner = marginal_probability(match, legs[0])
+    p_total = marginal_probability(match, legs[1])
+
+    assert supported == 2
+    assert joint is not None
+    assert p_winner is not None and p_total is not None
+    assert 0.0 <= joint <= min(p_winner, p_total) + 1e-12
+    assert abs(joint - p_winner * p_total) > 1e-6
+
+
+def test_match_family_new_market_joint_uses_one_exact_family_distribution():
+    match = _match()
+    legs = [
+        {"market": "match_winner", "pick": "A"},
+        {"market": "match_total", "pick": "over", "line": 20.5},
+        {
+            "market": "player_total_games",
+            "player": "A",
+            "pick": "over",
+            "line": 10.5,
+        },
+    ]
+
+    joint, supported = joint_probability(match, legs)
+    marginals = [marginal_probability(match, leg) for leg in legs]
+
+    assert supported == 3
+    assert joint is not None
+    assert all(value is not None for value in marginals)
+    assert 0.0 <= joint <= min(marginals) + 1e-12
+    independent_product = marginals[0] * marginals[1] * marginals[2]
+    assert abs(joint - independent_product) > 1e-6
+
+
+def test_cross_family_supported_legs_never_get_fake_joint():
+    match = _match()
+    set1_leg = {"market": "set1_winner", "pick": "A"}
+    set2_leg = {"market": "set2_winner", "pick": "A"}
+
+    assert marginal_probability(match, set1_leg) is not None
+    assert marginal_probability(match, set2_leg) is not None
+
+    joint, supported = joint_probability(match, [set1_leg, set2_leg])
+
+    # Both legs are individually supported, but they do not share one currently
+    # proven bounded state family. Returning None is safer than multiplying
+    # marginals and pretending independence.
+    assert supported == 2
+    assert joint is None
+
+
+def test_set2_and_match_family_supported_legs_remain_joint_unsupported():
+    match = _match()
+    set2_leg = {"market": "set2_total", "pick": "over", "line": 8.5}
+    match_leg = {"market": "match_total", "pick": "over", "line": 20.5}
+
+    assert marginal_probability(match, set2_leg) is not None
+    assert marginal_probability(match, match_leg) is not None
+
+    joint, supported = joint_probability(match, [set2_leg, match_leg])
+
+    assert supported == 2
+    assert joint is None
