@@ -8,7 +8,14 @@ from backend.player_dna_match_state_readiness import (
 )
 
 
-def _payload(sequence, *, p1=101, p2=202, match_id="m1"):
+def _payload(
+    sequence,
+    *,
+    p1=101,
+    p2=202,
+    match_id="m1",
+    match_format=None,
+):
     sets = [0, 0]
     tape = [
         {
@@ -33,36 +40,42 @@ def _payload(sequence, *, p1=101, p2=202, match_id="m1"):
         "games": [6, 4],
         "points": ["0", "0"],
     }
+    inferred_format = (
+        "BO5" if max(sets) == 3 else "BO3"
+    )
+    winner = sequence[-1] if sequence else None
     return {
         "match": {
             "id": match_id,
             "scheduled_time": "2026-09-01T10:00:00Z",
             "surface": "hard",
+            "format": match_format or inferred_format,
+            "status": "completed",
+            "outcome": "completed",
+            "event_status": "Finished",
+            "winner": winner,
+            "withdrew": None,
+            "score": final_score,
             "players": {
                 "p1": {"id": p1, "name": "Alpha"},
                 "p2": {"id": p2, "name": "Beta"},
             },
         },
-        "profiles": [
-            {
-                "created_at": "2026-09-01T13:00:00Z",
-                "input_state": {
-                    "score": final_score,
-                    "stats": {"p1": {}, "p2": {}},
-                },
-            }
-        ],
+        # Match-state semantics deliberately do not depend on stats profiles.
+        "profiles": [],
         "tape": tape,
     }
 
 
-def test_exact_sequence_proves_comeback_only_from_atomic_set_order():
+def test_exact_sequence_proves_comeback_from_provider_terminal_match_and_atomic_set_order():
     payload = _payload([1, 2, 2])
 
     item = inspect_payload(payload)
 
     assert item["stable_identity"] is True
-    assert item["terminal_score_match"] is True
+    assert item["provider_format"] is True
+    assert item["provider_completed_match"] is True
+    assert item["provider_match_score_matches_final_tape"] is True
     assert item["legal_completed_match"] is True
     assert item["exact_set_winner_sequence"] is True
     assert item["best_of"] == 3
@@ -74,7 +87,30 @@ def test_exact_sequence_proves_comeback_only_from_atomic_set_order():
     assert item["comeback_after_losing_first_set"] is True
 
 
-def test_set_sequence_rejects_jump_even_when_final_score_is_legal():
+def test_match_state_does_not_require_terminal_stats_profile():
+    payload = _payload([1, 1])
+    payload["profiles"] = [
+        {
+            "created_at": "2026-09-01T11:00:00Z",
+            "input_state": {
+                "score": {
+                    "sets": [1, 0],
+                    "games": [3, 2],
+                },
+                "stats": {"p1": {}, "p2": {}},
+            },
+        }
+    ]
+
+    item = inspect_payload(payload)
+
+    assert item["provider_completed_match"] is True
+    assert item["provider_match_score_matches_final_tape"] is True
+    assert item["legal_completed_match"] is True
+    assert item["exact_set_winner_sequence"] is True
+
+
+def test_set_sequence_rejects_jump_even_when_provider_terminal_score_is_legal():
     payload = _payload([1, 1])
     payload["tape"] = [
         {"sets": [0, 0], "games": [0, 0], "points": ["0", "0"]},
@@ -83,19 +119,60 @@ def test_set_sequence_rejects_jump_even_when_final_score_is_legal():
 
     assert _exact_set_winner_sequence(payload) is None
     item = inspect_payload(payload)
-    assert item["terminal_score_match"] is True
+    assert item["provider_match_score_matches_final_tape"] is True
     assert item["legal_completed_match"] is True
     assert item["exact_set_winner_sequence"] is False
 
 
-def test_terminal_stats_score_mismatch_fails_before_match_state_use():
+def test_provider_match_score_mismatch_fails_before_match_state_use():
     payload = _payload([1, 2, 2])
-    payload["profiles"][0]["input_state"]["score"]["sets"] = [1, 1]
+    payload["match"]["score"]["sets"] = [1, 1]
 
     item = inspect_payload(payload)
 
-    assert item["terminal_score_match"] is False
+    assert item["provider_match_score_matches_final_tape"] is False
     assert "exact_set_winner_sequence" not in item
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("status", "live"),
+        ("outcome", "retired"),
+        ("event_status", "Retired"),
+        ("withdrew", 2),
+    ],
+)
+def test_noncompleted_or_retired_provider_match_fails_closed(field, value):
+    payload = _payload([1, 1])
+    payload["match"][field] = value
+
+    item = inspect_payload(payload)
+
+    assert item["provider_completed_match"] is False
+    assert "exact_set_winner_sequence" not in item
+
+
+def test_declared_bo5_does_not_treat_two_sets_as_terminal():
+    payload = _payload([1, 1], match_format="BO5")
+
+    item = inspect_payload(payload)
+
+    assert item["provider_completed_match"] is True
+    assert item["provider_match_score_matches_final_tape"] is True
+    assert item["legal_completed_match"] is False
+    assert item["best_of"] == 5
+
+
+def test_provider_winner_must_match_terminal_set_score():
+    payload = _payload([1, 2, 2])
+    payload["match"]["winner"] = 1
+
+    item = inspect_payload(payload)
+
+    assert item["legal_completed_match"] is False
+    assert item["provider_winner_side"] == 1
+    assert item["final_sets"] == [1, 2]
 
 
 def test_audit_reports_comeback_and_exact_bo5_late_set_readiness_without_activation():
@@ -106,6 +183,9 @@ def test_audit_reports_comeback_and_exact_bo5_late_set_readiness_without_activat
     report = audit_payloads([bo3_comeback, bo3_straight, bo5])
 
     assert report["mode"] == MODE
+    assert report["matches_with_provider_format"] == 3
+    assert report["provider_completed_matches"] == 3
+    assert report["matches_with_terminal_score_proof"] == 3
     assert report["matches_with_exact_set_sequence"] == 3
     assert report["format_coverage"]["bo3_exact_matches"] == 2
     assert report["format_coverage"]["bo5_exact_matches"] == 1
@@ -135,14 +215,21 @@ def test_audit_reports_comeback_and_exact_bo5_late_set_readiness_without_activat
     assert report["superbet_playable_influence"] is False
 
 
-def test_audit_contract_requires_full_set_order_proof_and_separate_gate():
+def test_audit_contract_uses_provider_terminal_proof_and_separate_profile_gate():
     report = audit_payloads([])
     contract = report["contract"]
 
     assert contract["pbp_native_provider_ids_only"] is True
     assert contract["historical_csv_id_namespace_not_used"] is True
     assert contract["name_or_fuzzy_join_forbidden"] is True
-    assert contract["latest_stats_score_must_match_final_tape_score"] is True
+    assert contract["provider_format_bo3_or_bo5_required"] is True
+    assert contract["provider_status_completed_required"] is True
+    assert contract["provider_outcome_completed_required"] is True
+    assert contract["provider_withdrawal_or_retirement_rejected"] is True
+    assert contract["provider_winner_required"] is True
+    assert contract["provider_match_score_must_match_final_tape_score"] is True
+    assert contract["provider_winner_must_match_terminal_set_score"] is True
+    assert contract["terminal_stats_snapshot_not_required_for_match_state_semantics"] is True
     assert contract["legal_completed_match_score_required"] is True
     assert contract["full_set_winner_sequence_from_zero_required"] is True
     assert contract["atomic_plus_one_set_transitions_only"] is True
