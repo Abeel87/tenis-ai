@@ -432,6 +432,37 @@ Przykład kryterium promocji:
 - brak regresji w stabilności i coverage;
 - wyniki potwierdzone na kilku kolejnych oknach czasowych.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 7 rozwija kanoniczne `player_dna_market_backtest.py` oraz
+`player_dna_market_walk_forward.py`; nie powstaje równoległy backtester.
+
+Walidacja raportuje dla każdego binarnego rynku osobno:
+
+- absolutne Brier i log-loss dla reference oraz dynamic lean candidate;
+- reliability/calibration bins i ECE;
+- coverage względem wszystkich settled labels dostępnych dla reference;
+- sample size i stałe confidence buckets;
+- istniejące diagnostyki tour / surface / tour+surface;
+- osobne diagnostyki formatu BO3 i BO5, również gdy próbka któregoś formatu
+  jest jeszcze niewystarczająca.
+
+Walk-forward nadal używa tych samych trzech expanding chronological folds,
+tych samych progów supportu i nigdy nie dzieli meczów o tym samym timestampie.
+Dodanie metryk Fazy 7 nie obniża ani nie retunuje istniejących progów.
+
+Raport CI zamknięcia:
+`frontend/data/player_dna_phase7_calibration_walk_forward.json`.
+
+**Zamknięcie Fazy 7 oznacza kompletność infrastruktury walidacyjnej, nie
+promocję modelu.** Raport rozdziela `phase7_complete/phase8_ready` od
+`promotion_evidence_sufficient`. Jeżeli istniejący walk-forward ma za mało
+wspartych foldów albo mieszany wynik, werdykt pozostaje
+`EVIDENCE_INSUFFICIENT_NO_PROMOTION`.
+
+Niezależnie od jakości historycznego wyniku ten gate nie może sam aktywować
+PROD, Symfonii 2.0 ani PLAYABLE. Promocja pozostaje osobnym procesem z Fazy 14.
+
 ---
 
 # Faza 8 — Neuro / NN jako challenger, nie król z automatu
