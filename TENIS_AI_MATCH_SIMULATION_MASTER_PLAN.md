@@ -365,6 +365,34 @@ Jedna wspólna dystrybucja scenariuszy meczu, z której liczymy:
 - dokładnie 1 wygrany set;
 - dowolne wspierane kombinacje.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 6 rozwija istniejący kanoniczny
+`backend/player_dna_tennis_simulator.py`; nie powstaje drugi symulator.
+
+Dla stałych prawdopodobieństw punktowych exact DP pozostaje preferowanym
+źródłem prawdy. Monte Carlo jest niezależnym obliczeniowo cross-checkiem na tym
+samym kontrakcie: używa tej samej transformacji point -> hold, tej samej
+neutralnej polityki tie-breaku, tej samej kolejności serwowania oraz
+kanonicznych predykatów legalności Fazy 5.
+
+Gate porównuje DP i Monte Carlo na czterech scenariuszach BO3/BO5 przy
+`10_000` symulacji na scenariusz. Sprawdzane są m.in. winner, first-set
+winner, tie-break, over 10.5, 1:1/2:2/3:3 oraz rozkłady exact score.
+Dodatkowo wymagamy pełnego zachowania masy prawdopodobieństwa i
+deterministycznego replay przy stałym seedzie.
+
+Raport CI:
+`frontend/data/player_dna_phase6_exact_dp_monte_carlo.json`.
+
+Skala pozostaje zgodna z planem: `10k` dla gate/test, `50k` jako target
+SHADOW i `100k+` dopiero gdy koszt/runtime na to pozwala. History-dependent
+Monte Carlo nie jest jeszcze aktywowane tylko dlatego, że mechanizm MC istnieje.
+
+Faza 6 zamyka się wyłącznie gdy CI ustawi
+`phase6_complete=true` i `phase7_ready=true`. Nie oznacza to żadnej
+promocji do PROD, Symfonii 2.0 ani PLAYABLE.
+
 ---
 
 # Faza 7 — Kalibracja i walk-forward backtest
