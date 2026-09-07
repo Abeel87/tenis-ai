@@ -437,11 +437,132 @@ def _composition_utility(selection: tuple[dict, ...], joint: float) -> float:
     return 100.0 * max(0.0, 0.48 * geometric + 0.22 * weakest + 0.22 * joint_equivalent + 0.08 * support_quality - complexity_penalty)
 
 
+def _composition_dependency_diagnostics(
+    match: dict,
+    selection: tuple[dict, ...],
+    joint: float,
+    outcomes: list[dict],
+) -> dict:
+    """Describe exact shared-state dependence without changing composition rank.
+
+    The diagnostics are intentionally threshold-free. They expose conditional
+    state survival and pairwise overlap so future redundancy/conflict gates can
+    be calibrated from evidence instead of hand-picked rules.
+    """
+    legs = list(selection)
+    marginals: list[float | None] = [
+        marginal_probability(match, leg, outcomes)
+        for leg in legs
+    ]
+    per_leg = []
+    for index, leg in enumerate(legs):
+        others = legs[:index] + legs[index + 1:]
+        if not others:
+            others_joint = 1.0
+        elif len(others) == 1:
+            others_joint = marginal_probability(match, others[0], outcomes)
+        else:
+            others_joint, supported = joint_probability(match, others, outcomes)
+            if supported != len(others):
+                others_joint = None
+
+        conditional = (
+            float(joint) / float(others_joint)
+            if others_joint is not None and float(others_joint) > 0.0
+            else None
+        )
+        if conditional is not None:
+            conditional = max(0.0, min(1.0, conditional))
+        marginal = marginals[index]
+        lift = (
+            conditional / float(marginal)
+            if conditional is not None and marginal is not None and float(marginal) > 0.0
+            else None
+        )
+        information = (
+            -math.log(conditional)
+            if conditional is not None and conditional > 0.0
+            else None
+        )
+        per_leg.append({
+            "selection_id": _selection_id(leg),
+            "label": leg.get("label") or _label(leg),
+            "state_marginal_probability": round(float(marginal) * 100.0, 3) if marginal is not None else None,
+            "joint_without_leg_probability": round(float(others_joint) * 100.0, 3) if others_joint is not None else None,
+            "conditional_probability_given_other_legs": round(conditional * 100.0, 3) if conditional is not None else None,
+            "conditional_lift_vs_marginal": round(lift, 6) if lift is not None else None,
+            "conditional_information_nats": round(information, 6) if information is not None else None,
+            "joint_mass_removed_by_leg_pp": round((float(others_joint) - float(joint)) * 100.0, 3)
+            if others_joint is not None else None,
+        })
+
+    pairs = []
+    for left_index, right_index in combinations(range(len(legs)), 2):
+        left = legs[left_index]
+        right = legs[right_index]
+        pair_joint, supported = joint_probability(match, [left, right], outcomes)
+        left_p = marginals[left_index]
+        right_p = marginals[right_index]
+        smaller = (
+            min(float(left_p), float(right_p))
+            if left_p is not None and right_p is not None
+            else None
+        )
+        overlap = (
+            float(pair_joint) / smaller
+            if pair_joint is not None and smaller is not None and smaller > 0.0
+            else None
+        )
+        if overlap is not None:
+            overlap = max(0.0, min(1.0, overlap))
+        independence = (
+            float(left_p) * float(right_p)
+            if left_p is not None and right_p is not None
+            else None
+        )
+        lift = (
+            float(pair_joint) / independence
+            if pair_joint is not None and independence is not None and independence > 0.0
+            else None
+        )
+        pairs.append({
+            "left_selection_id": _selection_id(left),
+            "right_selection_id": _selection_id(right),
+            "exact_pair_joint_probability": round(float(pair_joint) * 100.0, 3)
+            if pair_joint is not None and supported == 2 else None,
+            "overlap_of_smaller_leg": round(overlap, 6) if overlap is not None and supported == 2 else None,
+            "lift_vs_independence": round(lift, 6) if lift is not None and supported == 2 else None,
+        })
+
+    weakest_supervised = min(
+        legs,
+        key=lambda leg: _num(leg.get("operator_model_probability"), 101.0),
+    )
+    state_candidates = [
+        (leg, marginal)
+        for leg, marginal in zip(legs, marginals)
+        if marginal is not None
+    ]
+    weakest_state = min(state_candidates, key=lambda item: item[1])[0] if state_candidates else None
+    return {
+        "status": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY",
+        "ranking_influence": False,
+        "threshold_classification_enabled": False,
+        "joint_probability": round(float(joint) * 100.0, 3),
+        "weakest_supervised_leg_selection_id": _selection_id(weakest_supervised),
+        "weakest_state_leg_selection_id": _selection_id(weakest_state) if weakest_state is not None else None,
+        "per_leg": per_leg,
+        "pairs": pairs,
+    }
+
+
 def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) -> dict:
     pool = [x for x in scored if x.get("state_supported") is True and _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0][:TOP_POOL]
     out = {}
     for n in range(2, 7):
         best = None
+        best_combo = None
+        best_joint = None
         for combo in combinations(pool, n):
             if not _compatible(combo):
                 continue
@@ -452,7 +573,12 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
                 "joint_status": "EXACT_SHARED_STATE", "state_version": STATE_VERSION, "selection": [dict(x) for x in combo]}
             if best is None or candidate["score"] > best["score"]:
                 best = candidate
-        if best:
+                best_combo = combo
+                best_joint = joint
+        if best and best_combo is not None and best_joint is not None:
+            best["dependency_diagnostics"] = _composition_dependency_diagnostics(
+                match, best_combo, best_joint, outcomes
+            )
             out[str(n)] = best
     return out
 
@@ -490,6 +616,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
+        "composition_dependency_diagnostics_policy": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY_NO_RANKING_INFLUENCE",
         "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
