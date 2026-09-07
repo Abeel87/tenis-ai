@@ -420,3 +420,96 @@ def test_nonterminal_raw_candidates_are_counted_by_tape_point_coverage(monkeypat
     assert validation["raw_without_terminal_tape_coverage_known_matches"] == 1
     assert candidates["0.95"]["matches"] == 1
     assert candidates["0.98"]["matches"] == 0
+
+
+
+def _timed_final_tape():
+    return [
+        {
+            "sets": [1, 0],
+            "games": [5, 4],
+            "points": [40, 30],
+            "timestamp": "2026-09-06T12:09:55Z",
+        },
+        {
+            "sets": [2, 0],
+            "games": [6, 4],
+            "points": [0, 0],
+            "timestamp": "2026-09-06T12:10:00Z",
+        },
+    ]
+
+
+def test_post_final_point_raw_snapshot_is_validated_against_terminal_truth(monkeypatch):
+    _identity_only(monkeypatch)
+
+    candidate = _profile([5, 4], created_at="2026-09-06T12:10:05Z")
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:20Z")
+
+    payload = {
+        "profiles": [candidate, terminal],
+        "tape": _timed_final_tape(),
+    }
+
+    report = audit_payloads([payload])
+    timing = report["post_final_point_timing_validation"]
+
+    assert timing["paired_nonterminal_after_tape_matches"] == 1
+    assert timing["overall"]["matches"] == 1
+    assert timing["overall"]["field_comparisons"] == 8
+    assert timing["overall"]["mean_abs_error_pp"] == 0.0
+    assert timing["overall"]["exact_raw_count_field_rate"] == 1.0
+    assert timing["overall"]["all_raw_counts_exact_match_rate"] == 1.0
+    assert timing["overall"]["raw_count_monotonic_match_rate"] == 1.0
+    assert timing["by_minimum_seconds_after_last_tape"]["5"]["matches"] == 1
+    assert timing["by_minimum_seconds_after_last_tape"]["15"]["matches"] == 0
+    assert (
+        timing["terminal_raw_profile_timing"]["median_seconds_after_last_tape"]
+        == 20.0
+    )
+    assert report["contract"]["post_final_point_timing_diagnostic_only"] is True
+    assert (
+        report["contract"]["post_final_point_snapshot_authorized_for_history"]
+        is False
+    )
+
+
+def test_pre_final_point_raw_snapshot_is_not_post_final_candidate(monkeypatch):
+    _identity_only(monkeypatch)
+
+    candidate = _profile([5, 4], created_at="2026-09-06T12:09:59Z")
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:20Z")
+
+    report = audit_payloads([
+        {
+            "profiles": [candidate, terminal],
+            "tape": _timed_final_tape(),
+        }
+    ])
+    timing = report["post_final_point_timing_validation"]
+
+    assert timing["paired_nonterminal_after_tape_matches"] == 0
+    assert timing["overall"]["matches"] == 0
+
+
+def test_nonterminal_only_post_final_raw_is_counted_as_candidate(monkeypatch):
+    _identity_only(monkeypatch)
+
+    candidate = _profile([5, 4], created_at="2026-09-06T12:10:30Z")
+
+    report = audit_payloads([
+        {
+            "profiles": [candidate],
+            "tape": _timed_final_tape(),
+        }
+    ])
+    timing = report["post_final_point_timing_validation"]
+    candidates = timing[
+        "raw_without_terminal_candidates_by_minimum_seconds_after_last_tape"
+    ]
+
+    assert report["counts"]["raw_all_four_outside_terminal_proof_matches"] == 1
+    assert timing["raw_without_terminal_timing_known_matches"] == 1
+    assert candidates["0"]["matches"] == 1
+    assert candidates["30"]["matches"] == 1
+    assert candidates["60"]["matches"] == 0
