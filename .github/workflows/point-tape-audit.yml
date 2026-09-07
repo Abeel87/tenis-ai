@@ -312,6 +312,86 @@ jobs:
           )
           PY
 
+      - name: Audit comeback + BO5 stamina match-state readiness (SHADOW, zero network)
+        run: python backend/player_dna_match_state_readiness.py
+
+      - name: Guard comeback + BO5 stamina readiness isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_match_state_readiness.json')
+          if not p.exists():
+              raise SystemExit('player_dna_match_state_readiness.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_MATCH_STATE_READINESS_AUDIT_ONLY':
+              raise SystemExit('Match-state readiness mode invalid')
+          if report.get('gate') != 'AUDIT_ONLY_NO_PROFILE_BUILD':
+              raise SystemExit('Match-state readiness crossed profile-build gate')
+          if int(report.get('network_calls') or 0) != 0:
+              raise SystemExit('Match-state readiness unexpectedly used network')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'profile_build_enabled',
+              'training_join_enabled',
+              'simulator_callback_activation_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Match-state readiness isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'pbp_native_provider_ids_only',
+              'historical_csv_id_namespace_not_used',
+              'name_or_fuzzy_join_forbidden',
+              'latest_stats_score_must_match_final_tape_score',
+              'legal_completed_match_score_required',
+              'full_set_winner_sequence_from_zero_required',
+              'atomic_plus_one_set_transitions_only',
+              'retirement_or_incomplete_scores_rejected',
+              'comeback_means_match_win_after_observed_first_set_loss',
+              'bo5_stamina_evidence_uses_only_exact_completed_bo5',
+              'profile_build_requires_separate_gate',
+              'chronological_backtest_required_after_profile_gate',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Match-state readiness contract violation: {key}')
+
+          if int(report.get('matches_seen') or 0) <= 0:
+              raise SystemExit('Match-state readiness found no restored PBP matches')
+          if int(report.get('matches_with_exact_set_sequence') or 0) <= 0:
+              raise SystemExit('Match-state readiness found no exact set-order proof')
+
+          comeback = report.get('comeback_readiness') or {}
+          stamina = report.get('bo5_stamina_readiness') or {}
+          if comeback.get('profile_build_enabled') is not False:
+              raise SystemExit('Comeback profile was activated by readiness audit')
+          if comeback.get('predictive_signal_proven') is not False:
+              raise SystemExit('Comeback readiness claimed predictive signal')
+          if stamina.get('profile_build_enabled') is not False:
+              raise SystemExit('BO5 stamina profile was activated by readiness audit')
+          if stamina.get('predictive_signal_proven') is not False:
+              raise SystemExit('BO5 stamina readiness claimed predictive signal')
+
+          print(
+              'Match-state readiness: '
+              f"matches={report.get('matches_seen')} "
+              f"exact_sequences={report.get('matches_with_exact_set_sequence')} "
+              f"comeback_exposures={comeback.get('first_set_loss_player_exposures')} "
+              f"comebacks={comeback.get('comeback_wins_after_first_set_loss')} "
+              f"bo5={stamina.get('exact_bo5_matches')} "
+              f"bo5_late={stamina.get('late_set_player_exposures')} "
+              f"comeback_design={(report.get('readiness') or {}).get('comeback_profile_design_sample_available')} "
+              f"stamina_design={(report.get('readiness') or {}).get('bo5_stamina_profile_design_sample_available')}"
+          )
+          PY
+
       - name: Build leakage-safe Player DNA shadow profiles (zero network)
         run: python backend/player_dna_shadow_profiles.py
 
@@ -2706,6 +2786,7 @@ jobs:
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_service_split_source_readiness.json
             frontend/data/player_dna_pbp_service_split_readiness.json
+            frontend/data/player_dna_match_state_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_matchup_challenger.json
