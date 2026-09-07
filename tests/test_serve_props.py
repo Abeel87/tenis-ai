@@ -5,7 +5,7 @@ import pandas as pd
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"backend"))
 
-from serve_props import normalize_serve_props, poisson_over, _history_windows, _profile
+from serve_props import normalize_serve_props, poisson_over, _history_windows, _profile, _side_model
 
 
 def raw_rows():
@@ -75,3 +75,45 @@ def test_serve_props_ui_is_explicitly_uncalibrated_lab():
     assert "const uc=" not in js
     assert "?'strong'" not in js
     assert "?'lean'" not in js
+
+
+
+def _ace_profile(*, ace_rate, allow_rate, ready=True):
+    return {
+        "ace_per_service_game": ace_rate,
+        "aces_allowed_per_return_game": allow_rate,
+        "df_per_service_game": 0.20,
+        "ready_aces": ready,
+        "ready_df": True,
+        "ace_matches": 12,
+        "df_matches": 12,
+        "allow_matches": 12,
+        "match_games": 22.0,
+    }
+
+
+def test_master_plan_high_ace_server_scores_higher_vs_weak_returner():
+    match = {"expected_match_games": 22.0}
+    server = _ace_profile(ace_rate=0.80, allow_rate=0.30)
+    weak_returner = _ace_profile(ace_rate=0.40, allow_rate=0.70)
+    strong_returner = _ace_profile(ace_rate=0.40, allow_rate=0.20)
+
+    weak = _side_model(match, server, weak_returner, "p1", None)
+    strong = _side_model(match, server, strong_returner, "p1", None)
+
+    assert weak["aces"]["ready"] is True
+    assert strong["aces"]["ready"] is True
+    assert weak["aces"]["mean"] > strong["aces"]["mean"]
+
+
+def test_ace_mean_is_monotone_in_server_ace_rate_for_fixed_returner():
+    match = {"expected_match_games": 22.0}
+    returner = _ace_profile(ace_rate=0.40, allow_rate=0.45)
+
+    means = []
+    for rate in (0.40, 0.60, 0.80):
+        server = _ace_profile(ace_rate=rate, allow_rate=0.30)
+        result = _side_model(match, server, returner, "p1", None)
+        means.append(result["aces"]["mean"])
+
+    assert means[0] < means[1] < means[2]
