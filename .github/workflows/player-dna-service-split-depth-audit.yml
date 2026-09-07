@@ -69,6 +69,9 @@ jobs:
               'raw_numerator_denominator_required': True,
               'nonterminal_raw_evidence_used_for_production': False,
               'raw_outside_terminal_is_diagnostic_only': True,
+              'alternate_raw_container_scan_diagnostic_only': True,
+              'alternate_raw_container_authorized_for_history': False,
+              'stats_capture_gap_diagnostic_only': True,
               'training_join_enabled': False,
               'scorer_activation_enabled': False,
               'runtime_activation_enabled': False,
@@ -98,6 +101,20 @@ jobs:
           if selector_only > terminal:
               raise SystemExit('selector-only recovery cannot exceed terminal raw coverage')
 
+          capture = report.get('stats_capture_gap') or {}
+          missing_stats = int(counts.get('matches_without_stats_profiles') or 0)
+          if int(capture.get('matches_without_stats_profiles') or 0) != missing_stats:
+              raise SystemExit('stats-capture gap count disagrees with depth funnel')
+          if capture.get('reasons_account_for_all_missing_stats') is not True:
+              raise SystemExit('stats-capture reasons do not account for missing stats')
+          if capture.get('alternate_raw_accounts_for_all_missing_stats') is not True:
+              raise SystemExit('alternate-raw scan does not account for missing stats')
+
+          alternate = capture.get('alternate_raw_evidence') or {}
+          alternate_total = sum(int(value or 0) for value in alternate.values())
+          if alternate_total != missing_stats:
+              raise SystemExit('alternate-raw evidence buckets disagree with missing stats')
+
           print(
               'Service-split depth: '
               f"seen={counts.get('matches_seen')} "
@@ -105,6 +122,11 @@ jobs:
               f"raw_any={raw_any} "
               f"terminal_all4={terminal} "
               f"raw_without_terminal={comparison.get('raw_all_four_outside_terminal_proof_matches')} "
+              f"no_stats={missing_stats} "
+              f"no_profiles={(capture.get('no_stats_capture_reasons') or {}).get('no_profile_entries')} "
+              f"alt_raw_all4={alternate.get('all_four_raw_cached_elsewhere')} "
+              f"alt_raw_partial={alternate.get('partial_raw_cached_elsewhere')} "
+              f"alt_raw_none={alternate.get('no_raw_stats_like_container_found')} "
               f"dominant_gap={funnel.get('dominant_observed_gap')}"
           )
           PY
