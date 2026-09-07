@@ -10,7 +10,9 @@ from backend.player_dna_tennis_simulator import (
     calibrated_hold_probability,
     dynamic_hold_probability,
     dynamic_match_outcomes,
+    dynamic_match_outcomes_from_sets,
     dynamic_score_distribution_after_games,
+    dynamic_set_outcomes,
     early_equal_score_probability,
     hold_probability,
     inverse_hold_probability,
@@ -597,3 +599,137 @@ def test_match_win_probability_moves_monotonically_with_p1_serve_strength():
     strong = _neutral_match_win_probability(0.66, 0.57)
 
     assert 0.0 < weak < medium < strong < 1.0
+
+
+
+def _p1_match_win_from_exact_scores(exact, needed):
+    return sum(
+        probability
+        for score, probability in exact.items()
+        if int(score.split(":")[0]) == needed
+    )
+
+
+def test_master_plan_favorite_can_have_high_first_set_win_but_weak_comeback_profile():
+    def point_callback(state):
+        sets = tuple(state["sets"])
+        if sets == (0, 0):
+            return 0.70 if state["server"] == 1 else 0.56
+        if sets[0] < sets[1]:
+            return 0.50 if state["server"] == 1 else 0.68
+        return 0.62 if state["server"] == 1 else 0.60
+
+    def tiebreak_callback(state):
+        sets = tuple(state["sets"])
+        if sets == (0, 0):
+            return 0.80
+        if sets[0] < sets[1]:
+            return 0.20
+        return 0.55
+
+    first_set_rows = []
+    for start_server in (1, 2):
+        for row in dynamic_set_outcomes(
+            point_callback,
+            tiebreak_callback,
+            start_server=start_server,
+            sets_before=(0, 0),
+            best_of=3,
+        ):
+            first_set_rows.append((0.5 * float(row["probability"]), row))
+
+    p1_first_set_win = sum(
+        mass for mass, row in first_set_rows if int(row["winner"]) == 1
+    )
+    p1_first_set_loss = 1.0 - p1_first_set_win
+    assert p1_first_set_win > 0.5
+    assert p1_first_set_loss > 0.0
+
+    comeback = 0.0
+    for mass, row in first_set_rows:
+        if int(row["winner"]) != 2:
+            continue
+        continuation = dynamic_match_outcomes_from_sets(
+            point_callback,
+            tiebreak_callback,
+            best_of=3,
+            start_server=int(row["next_set_server"]),
+            sets_before=(0, 1),
+        )
+        conditional_weight = mass / p1_first_set_loss
+        comeback += conditional_weight * _p1_match_win_from_exact_scores(
+            continuation,
+            needed=2,
+        )
+
+    assert comeback < 0.5
+    assert p1_first_set_win > comeback
+
+
+def test_master_plan_bo5_stamina_advantage_changes_late_match_distribution():
+    def baseline_point(state):
+        return 0.62
+
+    def baseline_tiebreak(_state):
+        return 0.5
+
+    def stamina_point(state):
+        sets_completed = sum(state["sets"])
+        if sets_completed < 2:
+            return 0.62
+        return 0.68 if state["server"] == 1 else 0.56
+
+    def stamina_tiebreak(state):
+        return 0.5 if sum(state["sets"]) < 2 else 0.75
+
+    baseline_p1 = 0.0
+    stamina_p1 = 0.0
+    for start_server in (1, 2):
+        baseline = dynamic_match_outcomes(
+            baseline_point,
+            baseline_tiebreak,
+            best_of=5,
+            start_server=start_server,
+        )
+        stamina = dynamic_match_outcomes(
+            stamina_point,
+            stamina_tiebreak,
+            best_of=5,
+            start_server=start_server,
+        )
+        baseline_p1 += 0.5 * _p1_match_win_from_exact_scores(
+            baseline,
+            needed=3,
+        )
+        stamina_p1 += 0.5 * _p1_match_win_from_exact_scores(
+            stamina,
+            needed=3,
+        )
+
+    assert math.isclose(baseline_p1, 0.5, abs_tol=1e-9)
+    assert stamina_p1 > baseline_p1
+
+
+def test_dynamic_match_continuation_rejects_illegal_set_scores_and_preserves_terminal_mass():
+    def point_callback(_state):
+        return 0.62
+
+    def tiebreak_callback(_state):
+        return 0.5
+
+    assert dynamic_match_outcomes_from_sets(
+        point_callback,
+        tiebreak_callback,
+        best_of=3,
+        start_server=1,
+        sets_before=(2, 0),
+    ) == {"2:0": 1.0}
+
+    with pytest.raises(ValueError):
+        dynamic_match_outcomes_from_sets(
+            point_callback,
+            tiebreak_callback,
+            best_of=3,
+            start_server=1,
+            sets_before=(2, 2),
+        )
