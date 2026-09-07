@@ -693,3 +693,78 @@ def test_service_split_support_readiness_counts_prior_matches_not_points():
     assert first["1"]["targets"] > 0
     assert first["3"]["targets"] > 0
     assert first["5"]["targets"] == 0
+
+
+
+def _trend_fixture_rows(*, rising: bool):
+    rows = []
+    # 20 strict prior matches + one target. Each prior match contributes one
+    # P1 service point, so the rolling serve rates are exact and transparent.
+    for day in range(1, 21):
+        if rising:
+            winner = 2 if day <= 15 else 1
+        else:
+            winner = 1 if day <= 15 else 2
+        rows.append(
+            _point(
+                f"trend-{day:02d}",
+                f"2026-08-{day:02d}T10:00:00Z",
+                1,
+                2,
+                1,
+                winner,
+                surface="hard",
+            )
+        )
+    rows.append(
+        _point(
+            "trend-target",
+            "2026-08-21T10:00:00Z",
+            1,
+            3,
+            1,
+            1,
+            surface="hard",
+        )
+    )
+    return rows
+
+
+def test_master_plan_rising_l5_vs_weaker_l20_is_exposed_without_activation():
+    snapshots, summary = build_snapshots_from_rows(
+        _trend_fixture_rows(rising=True)
+    )
+    target = _snapshot(snapshots, "trend-target", 1)
+    rolling = target["rolling_prior"]["all_surface"]
+    trend = rolling["trend"]
+
+    assert rolling["windows"]["L5"]["serve_win_rate"] == 1.0
+    assert rolling["windows"]["L20"]["serve_win_rate"] == 0.25
+    assert trend["serve_l5_minus_l20"] == 0.75
+
+    # The long baseline remains the canonical prior; the trend is diagnostic.
+    assert target["overall_prior"]["serve_win_rate"] == 0.25
+    policy = target["rolling_prior"]["policy"]
+    assert policy["raw_windows_are_diagnostic_only"] is True
+    assert policy["training_join_enabled"] is False
+    assert policy["shrinkage_activation_enabled"] is False
+    assert policy["long_baseline_remains_overall_prior"] is True
+    assert summary["features"]["rolling_prior"]["training_join_enabled"] is False
+
+
+def test_master_plan_falling_l5_vs_strong_l20_is_exposed_without_activation():
+    snapshots, _ = build_snapshots_from_rows(
+        _trend_fixture_rows(rising=False)
+    )
+    target = _snapshot(snapshots, "trend-target", 1)
+    rolling = target["rolling_prior"]["all_surface"]
+    trend = rolling["trend"]
+
+    assert rolling["windows"]["L5"]["serve_win_rate"] == 0.0
+    assert rolling["windows"]["L20"]["serve_win_rate"] == 0.75
+    assert trend["serve_l5_minus_l20"] == -0.75
+
+    # No hidden recency replacement of the baseline is allowed.
+    assert target["overall_prior"]["serve_win_rate"] == 0.75
+    assert target["rolling_prior"]["policy"]["training_join_enabled"] is False
+    assert target["rolling_prior"]["policy"]["shrinkage_activation_enabled"] is False
