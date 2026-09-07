@@ -332,3 +332,91 @@ def test_partial_raw_validation_detects_nonmonotonic_counts(monkeypatch):
 
     assert validation["overall"]["matches"] == 1
     assert validation["overall"]["raw_count_monotonic_match_rate"] == 0.0
+
+
+
+def _tape_with_score_changes(count=120, final_games=(6, 4)):
+    rows = []
+    for i in range(count + 1):
+        rows.append({
+            "sets": [1, 0] if i < count else [2, 0],
+            "games": [5, 4] if i < count else list(final_games),
+            "points": [i, 0],
+        })
+    return rows
+
+
+def _late_raw_stats_95pct():
+    side = {
+        "firstServePointsAccuracy": "29/38 (76%)",
+        "secondServePointsAccuracy": "11/19 (58%)",
+        "firstReturnPoints": "10/30 (33%)",
+        "secondReturnPoints": "8/20 (40%)",
+    }
+    return {"p1": dict(side), "p2": dict(side)}
+
+
+def test_tape_point_coverage_calibrates_terminal_raw_denominators(monkeypatch):
+    _identity_only(monkeypatch)
+
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:00Z")
+    payload = {
+        "profiles": [terminal],
+        "tape": _tape_with_score_changes(120),
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+    calibration = validation["tape_point_coverage_calibration"]
+
+    assert calibration["matches"] == 1
+    assert calibration["median_terminal_service_denominator_to_tape_events"] == 1.0
+    assert calibration["within_5pct_of_one_rate"] == 1.0
+    assert calibration["within_10pct_of_one_rate"] == 1.0
+    assert report["contract"]["tape_point_coverage_diagnostic_only"] is True
+    assert report["contract"]["tape_point_coverage_authorized_as_terminal_proof"] is False
+
+
+def test_partial_raw_validation_bins_by_tape_point_coverage(monkeypatch):
+    _identity_only(monkeypatch)
+
+    partial = _profile([5, 4], created_at="2026-09-06T12:00:00Z")
+    partial["input_state"]["stats"] = _late_raw_stats_95pct()
+    terminal = _profile([6, 4], created_at="2026-09-06T12:10:00Z")
+
+    payload = {
+        "profiles": [partial, terminal],
+        "tape": _tape_with_score_changes(120),
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+
+    assert validation["by_minimum_tape_point_coverage"]["0.95"]["matches"] == 1
+    assert validation["by_minimum_tape_point_coverage"]["0.98"]["matches"] == 0
+    assert (
+        validation["overall"]["matches"]
+        == 1
+    )
+
+
+def test_nonterminal_raw_candidates_are_counted_by_tape_point_coverage(monkeypatch):
+    _identity_only(monkeypatch)
+
+    partial = _profile([5, 4], created_at="2026-09-06T12:00:00Z")
+    partial["input_state"]["stats"] = _late_raw_stats_95pct()
+
+    payload = {
+        "profiles": [partial],
+        "tape": _tape_with_score_changes(120),
+    }
+
+    report = audit_payloads([payload])
+    validation = report["partial_raw_terminal_validation"]
+    candidates = validation[
+        "raw_without_terminal_candidates_by_tape_point_coverage"
+    ]
+
+    assert validation["raw_without_terminal_tape_coverage_known_matches"] == 1
+    assert candidates["0.95"]["matches"] == 1
+    assert candidates["0.98"]["matches"] == 0
