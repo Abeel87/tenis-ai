@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from backend.player_dna_shadow_profiles import build_snapshots_from_rows
 
 
@@ -545,3 +547,149 @@ def test_current_card_exclusion_also_blocks_pressure_history():
     assert later["rolling_prior"]["all_surface"]["windows"]["L5"]["service_games"] == 1
     assert summary["excluded_current_history_matches"] == 1
     assert summary["pressure_profiles"]["scorer_feature_activation_enabled"] is False
+
+
+
+def _service_split_match(match_id, when, p1, p2, surface="hard"):
+    scheduled = datetime.fromisoformat(when.replace("Z", "+00:00")).astimezone(timezone.utc)
+    return {
+        "match_id": match_id,
+        "scheduled": scheduled,
+        "surface": surface,
+        "p1": p1,
+        "p2": p2,
+        "raw_ratios_only": True,
+        "terminal_stats_snapshot": True,
+        "stable_pbp_provider_ids": True,
+        "contrib": {
+            p1: {
+                "first_serve_matches": 1,
+                "first_serve_points": 40,
+                "first_serve_wins": 28,
+                "second_serve_matches": 1,
+                "second_serve_points": 20,
+                "second_serve_wins": 10,
+                "first_return_matches": 1,
+                "first_return_points": 35,
+                "first_return_wins": 14,
+                "second_return_matches": 1,
+                "second_return_points": 18,
+                "second_return_wins": 9,
+            },
+            p2: {
+                "first_serve_matches": 1,
+                "first_serve_points": 35,
+                "first_serve_wins": 21,
+                "second_serve_matches": 1,
+                "second_serve_points": 18,
+                "second_serve_wins": 9,
+                "first_return_matches": 1,
+                "first_return_points": 40,
+                "first_return_wins": 12,
+                "second_return_matches": 1,
+                "second_return_points": 20,
+                "second_return_wins": 10,
+            },
+        },
+    }
+
+
+def test_canonical_profile_includes_terminal_pbp_service_splits_only_from_prior_match():
+    rows = [
+        _point("m1", "2026-09-01T10:00:00Z", 1, 2, 1, 1),
+        _point("m2", "2026-09-02T10:00:00Z", 1, 3, 1, 1),
+    ]
+    splits = [
+        _service_split_match("m1", "2026-09-01T10:00:00Z", 1, 2),
+        _service_split_match("m2", "2026-09-02T10:00:00Z", 1, 3),
+    ]
+
+    snapshots, summary = build_snapshots_from_rows(
+        rows,
+        service_split_matches=splits,
+    )
+
+    first = _snapshot(snapshots, "m1", 1)
+    target = _snapshot(snapshots, "m2", 1)
+
+    assert first["overall_prior"]["first_serve_matches"] == 0
+    assert first["overall_prior"]["first_serve_win_rate"] is None
+
+    assert target["overall_prior"]["first_serve_matches"] == 1
+    assert target["overall_prior"]["first_serve_points"] == 40
+    assert target["overall_prior"]["first_serve_wins"] == 28
+    assert target["overall_prior"]["first_serve_win_rate"] == 0.7
+    assert target["overall_prior"]["second_serve_win_rate"] == 0.5
+    assert target["overall_prior"]["first_return_win_rate"] == 0.4
+    assert target["overall_prior"]["second_return_win_rate"] == 0.5
+
+    contract = summary["service_split_profiles"]
+    assert contract["included_in_canonical_profiles"] is True
+    assert contract["stable_pbp_provider_ids_only"] is True
+    assert contract["historical_csv_id_namespace_used"] is False
+    assert contract["raw_ratios_only"] is True
+    assert contract["training_join_enabled"] is False
+    assert contract["scorer_feature_activation_enabled"] is False
+
+
+def test_canonical_service_splits_preserve_same_timestamp_isolation():
+    when = "2026-09-01T10:00:00Z"
+    rows = [
+        _point("m1", when, 1, 2, 1, 1),
+        _point("m2", when, 1, 3, 1, 1),
+        _point("later", "2026-09-02T10:00:00Z", 1, 4, 1, 1),
+    ]
+    splits = [
+        _service_split_match("m1", when, 1, 2),
+        _service_split_match("m2", when, 1, 3),
+    ]
+
+    snapshots, _ = build_snapshots_from_rows(rows, service_split_matches=splits)
+
+    assert _snapshot(snapshots, "m1", 1)["overall_prior"]["first_serve_matches"] == 0
+    assert _snapshot(snapshots, "m2", 1)["overall_prior"]["first_serve_matches"] == 0
+    assert _snapshot(snapshots, "later", 1)["overall_prior"]["first_serve_matches"] == 2
+
+
+def test_canonical_service_split_join_rejects_identity_time_or_surface_mismatch():
+    rows = [
+        _point("m1", "2026-09-01T10:00:00Z", 1, 2, 1, 1, surface="hard"),
+        _point("m2", "2026-09-02T10:00:00Z", 1, 3, 1, 1, surface="hard"),
+    ]
+    bad = _service_split_match(
+        "m1",
+        "2026-09-01T10:00:00Z",
+        1,
+        999,
+        surface="hard",
+    )
+
+    snapshots, summary = build_snapshots_from_rows(
+        rows,
+        service_split_matches=[bad],
+    )
+
+    target = _snapshot(snapshots, "m2", 1)
+    assert target["overall_prior"]["first_serve_matches"] == 0
+    assert summary["source_counts"]["service_split_identity_time_surface_mismatch"] == 1
+
+
+def test_service_split_support_readiness_counts_prior_matches_not_points():
+    rows = [
+        _point("m1", "2026-09-01T10:00:00Z", 1, 2, 1, 1),
+        _point("m2", "2026-09-02T10:00:00Z", 1, 3, 1, 1),
+        _point("m3", "2026-09-03T10:00:00Z", 1, 4, 1, 1),
+        _point("m4", "2026-09-04T10:00:00Z", 1, 5, 1, 1),
+    ]
+    splits = [
+        _service_split_match("m1", "2026-09-01T10:00:00Z", 1, 2),
+        _service_split_match("m2", "2026-09-02T10:00:00Z", 1, 3),
+        _service_split_match("m3", "2026-09-03T10:00:00Z", 1, 4),
+    ]
+
+    _, summary = build_snapshots_from_rows(rows, service_split_matches=splits)
+
+    first = summary["service_split_readiness_any_surface"]["first_serve"]
+    assert first["1"]["targets"] > 0
+    assert first["3"]["targets"] > 0
+    assert first["5"]["targets"] == 0
