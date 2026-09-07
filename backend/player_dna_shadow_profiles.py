@@ -132,6 +132,30 @@ def _project(stats: dict[str, int] | None) -> dict[str, Any]:
         "return_points": count("return_points"),
         "return_wins": count("return_wins"),
         "return_win_rate": _rate(count("return_wins"), count("return_points")),
+        "first_serve_matches": count("first_serve_matches"),
+        "first_serve_points": count("first_serve_points"),
+        "first_serve_wins": count("first_serve_wins"),
+        "first_serve_win_rate": _rate(
+            count("first_serve_wins"), count("first_serve_points")
+        ),
+        "second_serve_matches": count("second_serve_matches"),
+        "second_serve_points": count("second_serve_points"),
+        "second_serve_wins": count("second_serve_wins"),
+        "second_serve_win_rate": _rate(
+            count("second_serve_wins"), count("second_serve_points")
+        ),
+        "first_return_matches": count("first_return_matches"),
+        "first_return_points": count("first_return_points"),
+        "first_return_wins": count("first_return_wins"),
+        "first_return_win_rate": _rate(
+            count("first_return_wins"), count("first_return_points")
+        ),
+        "second_return_matches": count("second_return_matches"),
+        "second_return_points": count("second_return_points"),
+        "second_return_wins": count("second_return_wins"),
+        "second_return_win_rate": _rate(
+            count("second_return_wins"), count("second_return_points")
+        ),
         "tiebreak_points": count("tiebreak_points"),
         "tiebreak_wins": count("tiebreak_wins"),
         "tiebreak_win_rate": _rate(count("tiebreak_wins"), count("tiebreak_points")),
@@ -235,6 +259,10 @@ def _rolling_family(history: list[dict[str, int]]) -> dict[str, Any]:
     rate_fields = {
         "serve": "serve_win_rate",
         "return": "return_win_rate",
+        "first_serve": "first_serve_win_rate",
+        "second_serve": "second_serve_win_rate",
+        "first_return": "first_return_win_rate",
+        "second_return": "second_return_win_rate",
         "hold": "hold_rate",
         "break": "break_rate",
         "bp_save": "bp_save_rate",
@@ -335,6 +363,25 @@ def _strict_atomic_game(row: dict[str, Any]) -> bool:
         and row.get("atomic_transition") is True
         and row.get("atomic_reason") == "atomic_game_boundary"
     )
+
+
+def _service_split_contract() -> dict[str, Any]:
+    return {
+        "included_in_canonical_profiles": True,
+        "shadow_only": True,
+        "source": "terminal Live Tennis PBP stats raw numerator/denominator ratios",
+        "stable_pbp_provider_ids_only": True,
+        "historical_csv_id_namespace_used": False,
+        "name_or_fuzzy_join_forbidden": True,
+        "terminal_stats_snapshot_required": True,
+        "raw_ratios_only": True,
+        "rounded_derived_rates_used_for_profile_counts": False,
+        "same_timestamp_matches_never_count_as_prior": True,
+        "raw_support_counts_accompany_every_rate": True,
+        "training_join_enabled": False,
+        "scorer_feature_activation_enabled": False,
+        "matchup_feature_activation_enabled": False,
+    }
 
 
 def _pressure_contract() -> dict[str, Any]:
