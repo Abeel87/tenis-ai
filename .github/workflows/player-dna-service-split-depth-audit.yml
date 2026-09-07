@@ -76,18 +76,18 @@ jobs:
                   raise SystemExit(f'diagnostic isolation violation: {key}={contract.get(key)!r}')
 
           comparison = report.get('comparison') or {}
+          counts = report.get('counts') or {}
           if comparison.get('safe_selection_change_proven') is not False:
               raise SystemExit('coverage audit must not authorize selector change')
-
-          if int(report.get('matches_seen') or 0) <= 0:
+          if int(counts.get('matches_seen') or 0) <= 0:
               raise SystemExit('service-split depth audit found no restored PBP matches')
 
           print(
               'Service-split depth: '
-              f"seen={report.get('matches_seen')} "
-              f"latest_all4={comparison.get('current_latest_terminal_all_four_raw')} "
-              f"any_terminal_all4={comparison.get('any_terminal_all_four_raw')} "
-              f"recoverable={comparison.get('potentially_recoverable')} "
+              f"seen={counts.get('matches_seen')} "
+              f"latest_all4={comparison.get('current_latest_terminal_all_four_raw_matches')} "
+              f"any_terminal_all4={comparison.get('any_terminal_all_four_raw_matches')} "
+              f"recoverable={comparison.get('potentially_recoverable_matches')} "
               f"multiplier={comparison.get('recovery_multiplier')}"
           )
           PY
