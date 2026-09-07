@@ -23,6 +23,7 @@ on:
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
+      - 'backend/player_dna_matchup_engine.py'
       - 'backend/player_dna_opponent_context_audit.py'
       - 'backend/player_dna_opponent_adjustment_audit.py'
       - 'backend/player_dna_pressure_challenger.py'
@@ -57,6 +58,7 @@ on:
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
+      - 'tests/test_player_dna_matchup_engine.py'
       - 'tests/test_player_dna_opponent_context_audit.py'
       - 'tests/test_player_dna_opponent_adjustment_audit.py'
       - 'tests/test_player_dna_pressure_challenger.py'
@@ -105,7 +107,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -1464,6 +1466,101 @@ jobs:
 
       - name: Train + evaluate Player DNA point scorer (SHADOW, zero network)
         run: python backend/player_dna_point_scorer.py
+
+      - name: Close Phase-3 canonical matchup gate (SHADOW, zero network)
+        run: python backend/player_dna_matchup_engine.py
+
+      - name: Guard Phase-3 canonical matchup closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_phase3_matchup_engine.json')
+          if not p.exists():
+              raise SystemExit('player_dna_phase3_matchup_engine.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PHASE3_CANONICAL_MATCHUP':
+              raise SystemExit('Phase-3 matchup engine mode invalid')
+          if report.get('phase') != 'PHASE_3_MATCHUP_ENGINE':
+              raise SystemExit('Phase-3 matchup engine phase drifted')
+          if report.get('phase3_complete') is not True:
+              raise SystemExit(f"Phase-3 matchup gate not complete: {report.get('status')}")
+          if report.get('phase4_ready') is not True:
+              raise SystemExit('Phase-3 gate did not authorize starting Phase 4')
+
+          for key in (
+              'production_influence',
+              'runtime_prediction_change',
+              'training_join_change',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-3 closure activation violation: {key}')
+
+          approved = report.get('approved_core') or {}
+          if approved.get('pre_match_profile_main_effects') is not True:
+              raise SystemExit('Phase-3 lost proven pre-match profile main effects')
+          if approved.get('lean_point_state_walk_forward_robust_for_phase4') is not True:
+              raise SystemExit('Phase-4 lean point-state baseline is not robust')
+          if approved.get('canonical_feature_vector') != [
+              'server_overall_serve_rate',
+              'receiver_overall_return_rate',
+              'server_surface_serve_rate',
+              'receiver_surface_return_rate',
+              'server_overall_matches',
+              'receiver_overall_matches',
+              'server_surface_matches',
+              'receiver_surface_matches',
+          ]:
+              raise SystemExit('Canonical Phase-3 scorer feature vector drifted')
+
+          candidates = report.get('excluded_optional_candidates') or {}
+          expected = {
+              'serve_return_nonlinear',
+              'opponent_strength',
+              'pressure_profiles',
+              'tiebreak_profiles',
+              'recent_form_l5',
+              'comeback_bo3',
+              'bo5_late_set_stamina_proxy',
+          }
+          if set(candidates) != expected:
+              raise SystemExit(f'Phase-3 optional candidate set drifted: {set(candidates)}')
+          for name, item in candidates.items():
+              if item.get('active') is not False:
+                  raise SystemExit(f'Unproven Phase-3 candidate became active: {name}')
+
+          shrinkage = report.get('small_sample_shrinkage') or {}
+          if shrinkage.get('active') is not False:
+              raise SystemExit('Small-sample shrinkage activated before explicit gate')
+          if shrinkage.get('blocked_pending_fresh_confirmation') is not True:
+              raise SystemExit('Small-sample shrinkage lost fresh-confirmation block')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'single_canonical_matchup_feature_builder',
+              'current_shadow_uses_same_pre_match_feature_contract',
+              'failed_optional_interactions_are_not_composed_together',
+              'no_post_hoc_interaction_screen',
+              'historically_robust_shrinkage_still_requires_fresh_confirmation',
+              'phase4_may_start_from_proven_main_effects_and_lean_score_state',
+              'phase3_completion_does_not_promote_runtime_or_prod',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-3 matchup contract violation: {key}')
+
+          print(
+              'Phase-3 matchup closure: '
+              f"status={report.get('status')} "
+              f"phase4_ready={report.get('phase4_ready')} "
+              f"optional={[(k, v.get('status')) for k, v in candidates.items()]} "
+              f"shrinkage={shrinkage.get('historical_status')}/"
+              f"{shrinkage.get('fresh_confirmation_status')}"
+          )
+          PY
 
       - name: Score current card with Player DNA (SHADOW, zero network)
         run: python backend/player_dna_current_shadow.py
@@ -3017,6 +3114,7 @@ jobs:
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_matchup_challenger.json
+            frontend/data/player_dna_phase3_matchup_engine.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
