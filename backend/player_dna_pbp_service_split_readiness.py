@@ -118,6 +118,30 @@ def _rate(value: Any) -> float | None:
     return number if math.isfinite(number) and 0.0 <= number <= 1.0 else None
 
 
+def _ratio_counts(value: Any) -> tuple[int, int] | None:
+    """Parse an observed raw numerator/denominator pair as exact counts."""
+    if not isinstance(value, str) or "/" not in value:
+        return None
+    left, right = value.strip().split("/", 1)
+    try:
+        numerator = float(left.strip())
+        denominator_text = right.split(" ", 1)[0].split("(", 1)[0].strip()
+        denominator = float(denominator_text)
+    except (TypeError, ValueError):
+        return None
+    if (
+        not math.isfinite(numerator)
+        or not math.isfinite(denominator)
+        or denominator <= 0
+        or numerator < 0
+        or numerator > denominator
+        or abs(numerator - round(numerator)) > 1e-9
+        or abs(denominator - round(denominator)) > 1e-9
+    ):
+        return None
+    return int(round(numerator)), int(round(denominator))
+
+
 def _score_core(value: Any) -> tuple[str, str] | None:
     if not isinstance(value, dict):
         return None
@@ -191,6 +215,72 @@ def _split_value(
     if derived_value is not None:
         return derived_value, "derived_rate", agreement
     return None, None, agreement
+
+
+def terminal_raw_service_split_match(
+    payload: dict[str, Any],
+    match_id: Any = None,
+) -> dict[str, Any] | None:
+    """Return leakage-safe exact service-split counts for one completed PBP match.
+
+    Only raw numerator/denominator fields from a terminal stats snapshot are
+    allowed. Rounded derived rates are intentionally excluded from canonical
+    count aggregation.
+    """
+    identities = player_identity_map(payload)
+    if not identities:
+        return None
+
+    profile = _latest_stats_profile(payload)
+    if profile is None:
+        return None
+    state = profile.get("input_state") if isinstance(profile.get("input_state"), dict) else {}
+    stats = state.get("stats") if isinstance(state.get("stats"), dict) else {}
+    final_score = _final_tape_score(payload)
+    snapshot_score = _score_core(state.get("score"))
+    if final_score is None or snapshot_score is None or final_score != snapshot_score:
+        return None
+
+    match = payload.get("match") if isinstance(payload.get("match"), dict) else {}
+    scheduled = _parse_utc(match.get("scheduled_time"))
+    if scheduled is None:
+        return None
+    surface = str(match.get("surface") or "unknown").strip().casefold() or "unknown"
+
+    contributions: dict[int, dict[str, int]] = {}
+    for side_no, side in ((1, "p1"), (2, "p2")):
+        identity = identities.get(side_no) or {}
+        player_id = identity.get("id")
+        if isinstance(player_id, bool) or not isinstance(player_id, int):
+            return None
+        raw_side = stats.get(side) if isinstance(stats.get(side), dict) else {}
+        contribution: dict[str, int] = {}
+        for field in SPLIT_FIELDS:
+            counts = _ratio_counts(raw_side.get(RAW_KEYS[field]))
+            if counts is None:
+                continue
+            wins, points = counts
+            prefix = field.removesuffix("_win_rate")
+            contribution[f"{prefix}_matches"] = 1
+            contribution[f"{prefix}_wins"] = wins
+            contribution[f"{prefix}_points"] = points
+        contributions[player_id] = contribution
+
+    if not any(contributions.values()):
+        return None
+
+    resolved_match_id = match_id if match_id is not None else match.get("id")
+    return {
+        "match_id": str(resolved_match_id or "").strip(),
+        "scheduled": scheduled,
+        "surface": surface,
+        "p1": int(identities[1]["id"]),
+        "p2": int(identities[2]["id"]),
+        "contrib": contributions,
+        "raw_ratios_only": True,
+        "terminal_stats_snapshot": True,
+        "stable_pbp_provider_ids": True,
+    }
 
 
 def inspect_payload(payload: dict[str, Any]) -> dict[str, Any]:
