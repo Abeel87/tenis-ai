@@ -1042,15 +1042,12 @@ def evaluate_walk_forward(
             "format_diagnostics": format_diagnostics,
         })
 
-        matched_ids = (
-            set(profile_predictions)
-            & set(dynamic_predictions)
-            & set(labels)
-        )
-        for match_id in matched_ids:
+        reference_ids = set(profile_predictions) & set(labels)
+        for match_id in reference_ids:
             aggregate_profile[match_id] = profile_predictions[match_id]
-            aggregate_dynamic[match_id] = dynamic_predictions[match_id]
             aggregate_labels[match_id] = labels[match_id]
+            if match_id in dynamic_predictions:
+                aggregate_dynamic[match_id] = dynamic_predictions[match_id]
 
     aggregate_comparison = _dynamic_lean_comparison(
         aggregate_profile,
