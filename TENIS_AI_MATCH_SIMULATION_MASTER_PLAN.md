@@ -480,6 +480,56 @@ Porównanie na identycznym walk-forward:
 
 NN awansuje z SHADOW tylko wtedy, gdy poprawia kalibrację i log-loss/Brier out-of-sample. Jeśli nie — pozostaje challengerem.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 8 nie tworzy nowej równoległej ścieżki runtime. Kanoniczny
+`backend/neuro_shadow_training.py` dostaje evaluator
+`SHADOW_PHASE8_CHALLENGER_WALK_FORWARD_ONLY`, który czyta wyłącznie
+append-only `neuro_shadow_history_v935.json`.
+
+Porównanie używa trzech expanding chronological folds:
+`0.55→0.70`, `0.70→0.85`, `0.85→1.00`. Jednostką splitu jest cały
+`match_id`; mecze o tym samym timestampie nigdy nie są dzielone między train
+i evaluation.
+
+Każdy challenger dostaje ten sam zestaw rekordów i tę samą rodzinę cech:
+
+- state probability z istniejącej wspólnej dystrybucji;
+- jej logit;
+- BO3/BO5;
+- surface;
+- stałe efekty rynku i market-specific slope dla state logit.
+
+Celowo **nie** używamy jako cech `base_probability`, `current_probability`,
+`catboost_probability`, `tabpfn_probability` ani
+`adaptive_probability`. W szczególności CatBoost w Fazie 8 jest trenowany od
+zera na tej samej macierzy co logistic/NN — nie wolno mu podawać jego własnej
+historycznej predykcji jako wejścia. Kurs operatora i wynik końcowy są zakazane
+jako feature.
+
+Na identycznych foldach porównujemy:
+
+- nieuczony `state_reference`;
+- ważony match-balanced logistic baseline z market fixed effects;
+- deterministyczny CatBoost;
+- mały NN;
+- stały equal-weight ensemble logistic + CatBoost + NN, bez strojenia wag na
+  evaluation.
+
+Raportuje się Brier, log-loss, ECE/reliability i wyniki per-market. Gate wymaga
+tej samej liczby rekordów evaluation dla wszystkich pięciu tracków.
+
+Raport CI:
+`frontend/data/neuro_shadow_phase8_challenger_walk_forward.json`.
+
+`phase8_complete=true / phase9_ready=true` oznacza, że porównanie zostało
+wykonane poprawnie na wszystkich wymaganych foldach. **Nie oznacza to promocji
+NN.** Osobny `nn_promotion_evidence_sufficient` wymaga poprawy Brier i
+log-loss względem logistic baseline oraz state reference, braku pogorszenia
+kalibracji i co najmniej 2/3 dodatnich foldów. Nawet wtedy ten gate może tylko
+wydać `NN_EVIDENCE_READY_FOR_AUDIT_REVIEW`; nie może zmienić runtime,
+Symfonii 2.0 ani PLAYABLE. Faktyczna promocja nadal należy wyłącznie do Fazy 14.
+
 ---
 
 # Faza 9 — Integracja z Symfonią 2.0
