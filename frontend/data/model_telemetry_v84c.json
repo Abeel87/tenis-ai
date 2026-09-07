@@ -1,6 +1,6 @@
 {
   "version": "v8.4C",
-  "generated_at": "2026-09-07T20:05:27.503187+00:00",
+  "generated_at": "2026-09-07T20:24:55.899931+00:00",
   "status": "ACTIVE",
   "selection_threshold": 65.0,
   "models": {
@@ -10617,7 +10617,7 @@
   },
   "player_model_shadow_v89": {
     "version": "v8.9",
-    "generated_at": "2026-09-07T20:05:31.605003+00:00",
+    "generated_at": "2026-09-07T20:25:00.562768+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -10766,15 +10766,15 @@
       "accuracy_delta_pp": -1.9,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 702,
-    "frozen_feature_snapshots_added": 32,
+    "current_scored_signals": 709,
+    "frozen_feature_snapshots_added": 0,
     "historical_feature_snapshots_added": 0,
     "historical_backfill_matches_skipped": 0,
     "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
   },
   "ensemble_player_learning_v891": {
     "version": "v8.9.1",
-    "generated_at": "2026-09-07T20:05:42.912330+00:00",
+    "generated_at": "2026-09-07T20:25:12.140672+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -12276,12 +12276,12 @@
       "accuracy_delta_pp": 0.2,
       "reason": "shadow_only_manual_gate"
     },
-    "current_scored_signals": 702,
+    "current_scored_signals": 709,
     "note": "Ensemble + Player Learning uczy udziału Player Intelligence z historii, rynku, nawierzchni i jakości profilu. Działa wyłącznie w SHADOW i nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score."
   },
   "surface_elo_integration_v893": {
     "version": "v8.9.3",
-    "generated_at": "2026-09-07T20:05:50.178525+00:00",
+    "generated_at": "2026-09-07T20:25:19.588932+00:00",
     "mode": "SHADOW",
     "status": "ACTIVE_SHADOW",
     "production_influence": false,
@@ -12293,9 +12293,9 @@
       "scale": 400.0,
       "surface_shrink_n": 12.0,
       "decay_half_life_days": 720.0,
-      "events": 20678,
-      "players": 1674,
-      "player_surface_timelines": 3014,
+      "events": 20820,
+      "players": 1678,
+      "player_surface_timelines": 3018,
       "rows_with_both_surface_history": 2782
     },
     "training": {
@@ -12323,11 +12323,11 @@
       },
       "catboost_player_elo": {
         "n": 522,
-        "selected_n": 299,
-        "accuracy": 70.6,
-        "brier": 0.22652,
-        "log_loss": 0.64692,
-        "avg_probability": 62.4
+        "selected_n": 304,
+        "accuracy": 69.7,
+        "brier": 0.23079,
+        "log_loss": 0.65651,
+        "avg_probability": 63.1
       },
       "ensemble_player": {
         "n": 522,
@@ -12341,8 +12341,8 @@
         "n": 522,
         "selected_n": 270,
         "accuracy": 72.2,
-        "brier": 0.21928,
-        "log_loss": 0.62991,
+        "brier": 0.21925,
+        "log_loss": 0.62984,
         "avg_probability": 59.1
       },
       "tabpfn": {
@@ -12367,16 +12367,16 @@
         "status": "watch",
         "production_influence": false,
         "auto_promotion": false,
-        "brier_gain": -0.00227,
-        "log_loss_gain": -0.00583,
-        "accuracy_delta_pp": 0.7
+        "brier_gain": -0.00654,
+        "log_loss_gain": -0.01542,
+        "accuracy_delta_pp": -0.2
       },
       "ensemble_player_elo": {
         "status": "watch",
         "production_influence": false,
         "auto_promotion": false,
-        "brier_gain": 0.00079,
-        "log_loss_gain": 0.00176,
+        "brier_gain": 0.00082,
+        "log_loss_gain": 0.00183,
         "accuracy_delta_pp": 0.9
       },
       "tabpfn_elo": {
