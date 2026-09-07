@@ -48,10 +48,11 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT = ROOT / "frontend" / "data" / "player_dna_service_split_depth_audit.json"
 
-VERSION = "player-dna-service-split-depth-audit-v5"
+VERSION = "player-dna-service-split-depth-audit-v6"
 MODE = "SHADOW_DIAGNOSTIC_ONLY"
 PARTIAL_PROGRESS_THRESHOLDS = (0.50, 0.75, 0.90, 0.95)
 TAPE_POINT_COVERAGE_THRESHOLDS = (0.90, 0.95, 0.98, 1.00)
+POST_FINAL_LAG_THRESHOLDS_SECONDS = (0, 5, 15, 30, 60)
 
 RAW_SLOTS = tuple(
     f"{side}_{field}"
@@ -298,6 +299,30 @@ def _profile_tape_point_coverage(
     return round(service_points / tape_events, 6)
 
 
+def _last_ordered_tape_timestamp(payload: dict[str, Any]) -> datetime | None:
+    rows = payload.get("tape")
+    if not isinstance(rows, list):
+        return None
+    for row in reversed(rows):
+        if not isinstance(row, dict):
+            continue
+        timestamp = _parse_utc(row.get("timestamp"))
+        if timestamp is not None:
+            return timestamp
+    return None
+
+
+def _profile_seconds_after_last_tape(
+    profile: dict[str, Any],
+    payload: dict[str, Any],
+) -> float | None:
+    created = _parse_utc(profile.get("created_at"))
+    last_tape = _last_ordered_tape_timestamp(payload)
+    if created is None or last_tape is None:
+        return None
+    return round((created - last_tape).total_seconds(), 3)
+
+
 def _profile_game_progress(
     profile: dict[str, Any],
     payload: dict[str, Any],
@@ -353,6 +378,7 @@ def _partial_against_terminal(
     denominator_fractions: list[float] = []
     comparisons = 0
     monotonic = True
+    exact_count_fields = 0
 
     for slot in RAW_SLOTS:
         left = candidate_counts.get(slot)
@@ -366,6 +392,7 @@ def _partial_against_terminal(
         comparisons += 1
         errors_pp.append(abs(cw / cp - tw / tp) * 100.0)
         denominator_fractions.append(cp / tp)
+        exact_count_fields += int((cw, cp) == (tw, tp))
         if cw > tw or cp > tp:
             monotonic = False
 
@@ -403,12 +430,109 @@ def _partial_against_terminal(
         ),
         "within_2pp_fields": sum(1 for value in errors_pp if value <= 2.0),
         "within_5pp_fields": sum(1 for value in errors_pp if value <= 5.0),
+        "exact_raw_count_fields": exact_count_fields,
+        "all_raw_counts_exact": bool(
+            comparisons == len(RAW_SLOTS)
+            and exact_count_fields == len(RAW_SLOTS)
+        ),
         "raw_counts_monotonic_to_terminal": bool(comparisons and monotonic),
         "min_denominator_fraction_of_terminal": (
             round(min(denominator_fractions), 6)
             if denominator_fractions
             else None
         ),
+    }
+
+
+def _post_final_point_against_terminal(
+    payload: dict[str, Any],
+    profiles: list[dict[str, Any]],
+    final_score: tuple[str, str] | None,
+) -> dict[str, Any] | None:
+    terminal_raw = [
+        profile
+        for profile in profiles
+        if _profile_is_terminal(profile, final_score)
+        and _profile_has_all_four_raw_both(profile)
+    ]
+    if not terminal_raw:
+        return None
+
+    terminal = terminal_raw[-1]
+    terminal_index = profiles.index(terminal)
+    last_tape = _last_ordered_tape_timestamp(payload)
+    terminal_lag = _profile_seconds_after_last_tape(terminal, payload)
+    if last_tape is None:
+        return {
+            "paired_terminal_raw_match": True,
+            "last_tape_timestamp_present": False,
+            "terminal_profile_seconds_after_last_tape": terminal_lag,
+            "has_preterminal_after_last_tape_raw": False,
+        }
+
+    candidates = []
+    for profile in profiles[:terminal_index]:
+        if _profile_is_terminal(profile, final_score):
+            continue
+        if not _profile_has_all_four_raw_both(profile):
+            continue
+        lag = _profile_seconds_after_last_tape(profile, payload)
+        if lag is None or lag < 0:
+            continue
+        candidates.append((lag, profile))
+
+    if not candidates:
+        return {
+            "paired_terminal_raw_match": True,
+            "last_tape_timestamp_present": True,
+            "terminal_profile_seconds_after_last_tape": terminal_lag,
+            "has_preterminal_after_last_tape_raw": False,
+        }
+
+    candidate_lag, candidate = candidates[-1]
+    candidate_counts = _profile_raw_counts(candidate)
+    terminal_counts = _profile_raw_counts(terminal)
+    errors_pp: list[float] = []
+    exact_count_fields = 0
+    comparisons = 0
+    monotonic = True
+
+    for slot in RAW_SLOTS:
+        left = candidate_counts.get(slot)
+        right = terminal_counts.get(slot)
+        if left is None or right is None:
+            continue
+        cw, cp = left
+        tw, tp = right
+        if cp <= 0 or tp <= 0:
+            continue
+        comparisons += 1
+        errors_pp.append(abs(cw / cp - tw / tp) * 100.0)
+        exact_count_fields += int((cw, cp) == (tw, tp))
+        if cw > tw or cp > tp:
+            monotonic = False
+
+    return {
+        "paired_terminal_raw_match": True,
+        "last_tape_timestamp_present": True,
+        "terminal_profile_seconds_after_last_tape": terminal_lag,
+        "has_preterminal_after_last_tape_raw": True,
+        "candidate_seconds_after_last_tape": candidate_lag,
+        "field_comparisons": comparisons,
+        "mean_abs_error_pp": (
+            round(sum(errors_pp) / len(errors_pp), 6)
+            if errors_pp
+            else None
+        ),
+        "max_abs_error_pp": round(max(errors_pp), 6) if errors_pp else None,
+        "within_2pp_fields": sum(1 for value in errors_pp if value <= 2.0),
+        "within_5pp_fields": sum(1 for value in errors_pp if value <= 5.0),
+        "exact_raw_count_fields": exact_count_fields,
+        "all_raw_counts_exact": bool(
+            comparisons == len(RAW_SLOTS)
+            and exact_count_fields == len(RAW_SLOTS)
+        ),
+        "raw_counts_monotonic_to_terminal": bool(comparisons and monotonic),
     }
 
 
@@ -474,6 +598,11 @@ def inspect_snapshot_depth(payload: dict[str, Any]) -> dict[str, Any]:
         profiles,
         final_score,
     )
+    post_final_validation = _post_final_point_against_terminal(
+        payload,
+        profiles,
+        final_score,
+    )
 
     any_raw_slots: set[str] = set()
     terminal_raw_slots: set[str] = set()
@@ -526,7 +655,18 @@ def inspect_snapshot_depth(payload: dict[str, Any]) -> dict[str, Any]:
             if terminal_raw
             else None
         ),
+        "latest_raw_profile_seconds_after_last_tape": (
+            _profile_seconds_after_last_tape(latest_raw_profile, payload)
+            if latest_raw_profile is not None
+            else None
+        ),
+        "terminal_raw_profile_seconds_after_last_tape": (
+            _profile_seconds_after_last_tape(terminal_raw[-1], payload)
+            if terminal_raw
+            else None
+        ),
         "partial_vs_terminal_validation": partial_validation,
+        "post_final_point_validation": post_final_validation,
         "any_raw_slots": sorted(any_raw_slots),
         "terminal_raw_slots": sorted(terminal_raw_slots),
         "score_gap_kind": _score_gap_kind(profiles, final_score),
@@ -555,6 +695,12 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
     }
     raw_without_terminal_tape_coverage_known = 0
     terminal_tape_coverages: list[float] = []
+    terminal_profile_lags: list[float] = []
+    post_final_point_rows: list[dict[str, Any]] = []
+    raw_without_terminal_timing = {
+        threshold: 0 for threshold in POST_FINAL_LAG_THRESHOLDS_SECONDS
+    }
+    raw_without_terminal_timing_known = 0
 
     for payload in payloads:
         if not isinstance(payload, dict):
@@ -642,6 +788,26 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
         if isinstance(terminal_tape_coverage, (int, float)) and not isinstance(terminal_tape_coverage, bool):
             terminal_tape_coverages.append(float(terminal_tape_coverage))
 
+        terminal_lag = item.get("terminal_raw_profile_seconds_after_last_tape")
+        if isinstance(terminal_lag, (int, float)) and not isinstance(terminal_lag, bool):
+            terminal_profile_lags.append(float(terminal_lag))
+
+        if has_raw_anywhere and not has_terminal_raw:
+            candidate_lag = item.get("latest_raw_profile_seconds_after_last_tape")
+            if isinstance(candidate_lag, (int, float)) and not isinstance(candidate_lag, bool):
+                raw_without_terminal_timing_known += 1
+                for threshold in POST_FINAL_LAG_THRESHOLDS_SECONDS:
+                    raw_without_terminal_timing[threshold] += int(
+                        float(candidate_lag) >= float(threshold)
+                    )
+
+        post_final = item.get("post_final_point_validation")
+        if (
+            isinstance(post_final, dict)
+            and post_final.get("has_preterminal_after_last_tape_raw") is True
+        ):
+            post_final_point_rows.append(post_final)
+
         paired = item.get("partial_vs_terminal_validation")
         if isinstance(paired, dict) and paired.get("has_preterminal_all_four_raw") is True:
             paired_partial_rows.append(paired)
@@ -728,6 +894,10 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             1 for row in rows
             if row.get("raw_counts_monotonic_to_terminal") is True
         )
+        exact_fields = sum(int(row.get("exact_raw_count_fields") or 0) for row in rows)
+        all_exact = sum(
+            1 for row in rows if row.get("all_raw_counts_exact") is True
+        )
         return {
             "matches": len(rows),
             "field_comparisons": comparisons,
@@ -738,6 +908,8 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             ),
             "within_2pp_rate": rate(within2, comparisons),
             "within_5pp_rate": rate(within5, comparisons),
+            "exact_raw_count_field_rate": rate(exact_fields, comparisons),
+            "all_raw_counts_exact_match_rate": rate(all_exact, len(rows)),
             "raw_count_monotonic_match_rate": rate(monotonic, len(rows)),
         }
 
@@ -773,6 +945,37 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             return None
         index = int(round((len(values) - 1) * q))
         return round(values[index], 6)
+
+    post_final_by_lag: dict[str, Any] = {}
+    for threshold in POST_FINAL_LAG_THRESHOLDS_SECONDS:
+        rows = [
+            row for row in post_final_point_rows
+            if isinstance(row.get("candidate_seconds_after_last_tape"), (int, float))
+            and not isinstance(row.get("candidate_seconds_after_last_tape"), bool)
+            and float(row["candidate_seconds_after_last_tape"]) >= float(threshold)
+        ]
+        post_final_by_lag[str(threshold)] = {
+            "minimum_seconds_after_last_tape": threshold,
+            **paired_validation_summary(rows),
+        }
+
+    terminal_profile_lags_sorted = sorted(terminal_profile_lags)
+    terminal_profile_timing = {
+        "matches": len(terminal_profile_lags_sorted),
+        "median_seconds_after_last_tape": percentile(
+            terminal_profile_lags_sorted, 0.50
+        ),
+        "p10_seconds_after_last_tape": percentile(
+            terminal_profile_lags_sorted, 0.10
+        ),
+        "p90_seconds_after_last_tape": percentile(
+            terminal_profile_lags_sorted, 0.90
+        ),
+        "at_or_after_last_tape_rate": rate(
+            sum(1 for value in terminal_profile_lags_sorted if value >= 0),
+            len(terminal_profile_lags_sorted),
+        ),
+    }
 
     tape_terminal_calibration = {
         "matches": len(terminal_tape_coverages_sorted),
@@ -837,6 +1040,8 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "partial_raw_gate_activation_enabled": False,
             "tape_point_coverage_diagnostic_only": True,
             "tape_point_coverage_authorized_as_terminal_proof": False,
+            "post_final_point_timing_diagnostic_only": True,
+            "post_final_point_snapshot_authorized_for_history": False,
             "training_join_enabled": False,
             "scorer_activation_enabled": False,
             "runtime_activation_enabled": False,
@@ -935,6 +1140,31 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 ),
             },
         },
+        "post_final_point_timing_validation": {
+            "terminal_raw_profile_timing": terminal_profile_timing,
+            "paired_nonterminal_after_tape_matches": len(post_final_point_rows),
+            "overall": paired_validation_summary(post_final_point_rows),
+            "by_minimum_seconds_after_last_tape": post_final_by_lag,
+            "raw_without_terminal_timing_known_matches": (
+                raw_without_terminal_timing_known
+            ),
+            "raw_without_terminal_candidates_by_minimum_seconds_after_last_tape": {
+                str(threshold): {
+                    "minimum_seconds_after_last_tape": threshold,
+                    "matches": int(raw_without_terminal_timing[threshold]),
+                    "rate_of_timing_known_raw_without_terminal": rate(
+                        int(raw_without_terminal_timing[threshold]),
+                        raw_without_terminal_timing_known,
+                    ),
+                }
+                for threshold in POST_FINAL_LAG_THRESHOLDS_SECONDS
+            },
+            "note": (
+                "Provider profile created_at is compared to the last parseable "
+                "timestamp in provider tape order. This is diagnostic timing "
+                "evidence only; it does not override score-based terminal proof."
+            ),
+        },
         "score_gap_kinds": dict(
             sorted(score_gap_kinds.items(), key=lambda item: item[0])
         ),
@@ -1009,6 +1239,9 @@ def main() -> None:
         f"progress90={(report['partial_raw_terminal_validation']['raw_without_terminal_candidates_by_progress'] or {}).get('0.9', {}).get('matches', 0)} "
         f"tape95={(report['partial_raw_terminal_validation']['raw_without_terminal_candidates_by_tape_point_coverage'] or {}).get('0.95', {}).get('matches', 0)} "
         f"terminal_tape10={report['partial_raw_terminal_validation']['tape_point_coverage_calibration']['within_10pct_of_one_rate']} "
+        f"post_final_pairs={report['post_final_point_timing_validation']['paired_nonterminal_after_tape_matches']} "
+        f"post_final_exact={report['post_final_point_timing_validation']['overall']['all_raw_counts_exact_match_rate']} "
+        f"post_final_candidates={(report['post_final_point_timing_validation']['raw_without_terminal_candidates_by_minimum_seconds_after_last_tape'] or {}).get('0', {}).get('matches', 0)} "
         f"dominant_gap={funnel['dominant_observed_gap']}"
     )
 
