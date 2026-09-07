@@ -1,3 +1,5 @@
+import pytest
+
 from backend.player_dna_match_state_profiles import (
     MODE,
     _contributions,
@@ -115,8 +117,8 @@ def test_bo5_late_and_deciding_set_counts_use_set_three_plus_and_set_five_only()
     assert p2["bo5_late_set_exposures"] == 3
     assert p1["bo5_late_set_wins"] == 2
     assert p2["bo5_late_set_wins"] == 1
-    assert p1["bo5_late_set_win_rate"] == 2 / 3
-    assert p2["bo5_late_set_win_rate"] == 1 / 3
+    assert p1["bo5_late_set_win_rate"] == pytest.approx(2 / 3, abs=1e-6)
+    assert p2["bo5_late_set_win_rate"] == pytest.approx(1 / 3, abs=1e-6)
     assert p1["bo5_deciding_set_exposures"] == 1
     assert p2["bo5_deciding_set_exposures"] == 1
     assert p1["bo5_deciding_set_wins"] == 1
