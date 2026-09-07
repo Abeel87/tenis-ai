@@ -77,6 +77,8 @@ jobs:
               'partial_raw_gate_activation_enabled': False,
               'tape_point_coverage_diagnostic_only': True,
               'tape_point_coverage_authorized_as_terminal_proof': False,
+              'post_final_point_timing_diagnostic_only': True,
+              'post_final_point_snapshot_authorized_for_history': False,
               'training_join_enabled': False,
               'scorer_activation_enabled': False,
               'runtime_activation_enabled': False,
@@ -142,6 +144,18 @@ jobs:
           if contract.get('tape_point_coverage_authorized_as_terminal_proof') is not False:
               raise SystemExit('tape point coverage was authorized as terminal proof')
 
+          timing = report.get('post_final_point_timing_validation') or {}
+          timing_candidates = timing.get(
+              'raw_without_terminal_candidates_by_minimum_seconds_after_last_tape'
+          ) or {}
+          for threshold, item in timing_candidates.items():
+              if int((item or {}).get('matches') or 0) > raw_without_terminal:
+                  raise SystemExit(
+                      f'post-final timing candidate count exceeds source gap at {threshold}'
+                  )
+          if contract.get('post_final_point_snapshot_authorized_for_history') is not False:
+              raise SystemExit('post-final timing snapshot was authorized as history')
+
           print(
               'Service-split depth: '
               f"seen={counts.get('matches_seen')} "
@@ -164,6 +178,12 @@ jobs:
               f"tape95_within5={((partial.get('by_minimum_tape_point_coverage') or {}).get('0.95') or {}).get('within_5pp_rate')} "
               f"tape95_candidates={(tape_candidates.get('0.95') or {}).get('matches')} "
               f"terminal_tape10={tape_calibration.get('within_10pct_of_one_rate')} "
+              f"post_final_pairs={timing.get('paired_nonterminal_after_tape_matches')} "
+              f"post_final_mae={(timing.get('overall') or {}).get('mean_abs_error_pp')} "
+              f"post_final_within5={(timing.get('overall') or {}).get('within_5pp_rate')} "
+              f"post_final_exact={(timing.get('overall') or {}).get('all_raw_counts_exact_match_rate')} "
+              f"post_final_candidates={(timing_candidates.get('0') or {}).get('matches')} "
+              f"post_final_30s={(timing_candidates.get('30') or {}).get('matches')} "
               f"dominant_gap={funnel.get('dominant_observed_gap')}"
           )
           PY
