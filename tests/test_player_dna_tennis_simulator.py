@@ -535,3 +535,65 @@ def test_trajectory_summary_publishes_same_semantic_contract_identity():
         == trajectory_simulator_contract_fingerprint()
     )
     assert trajectory["contract"]["contract_id"] == trajectory["semantic_contract_id"]
+
+
+
+def _neutral_match_win_probability(p1_serve_point, p2_serve_point, best_of=3):
+    needed = best_of // 2 + 1
+    probability = 0.0
+    for start_server in (1, 2):
+        exact = match_outcomes(
+            p1_serve_point,
+            p2_serve_point,
+            best_of,
+            start_server,
+        )
+        probability += 0.5 * sum(
+            mass
+            for score, mass in exact.items()
+            if int(score.split(":")[0]) == needed
+        )
+    return probability
+
+
+def _neutral_first_set_shape_metrics(p1_serve_point, p2_serve_point):
+    tiebreak = 0.0
+    over_10_5 = 0.0
+    for start_server in (1, 2):
+        for row in set_outcomes(
+            p1_serve_point,
+            p2_serve_point,
+            start_server,
+        ):
+            mass = 0.5 * float(row["probability"])
+            if row["tiebreak"]:
+                tiebreak += mass
+            if int(row["games"]) > 10.5:
+                over_10_5 += mass
+    return tiebreak, over_10_5
+
+
+def test_master_plan_similar_strong_servers_raise_tiebreak_and_long_set_shape():
+    low_tiebreak, low_long = _neutral_first_set_shape_metrics(0.58, 0.58)
+    high_tiebreak, high_long = _neutral_first_set_shape_metrics(0.68, 0.68)
+
+    assert high_tiebreak > low_tiebreak
+    assert high_long > low_long
+
+    low_three_all = 0.5 * (
+        early_equal_score_probability(0.58, 0.58, 6, 1)
+        + early_equal_score_probability(0.58, 0.58, 6, 2)
+    )
+    high_three_all = 0.5 * (
+        early_equal_score_probability(0.68, 0.68, 6, 1)
+        + early_equal_score_probability(0.68, 0.68, 6, 2)
+    )
+    assert high_three_all > low_three_all
+
+
+def test_match_win_probability_moves_monotonically_with_p1_serve_strength():
+    weak = _neutral_match_win_probability(0.60, 0.57)
+    medium = _neutral_match_win_probability(0.63, 0.57)
+    strong = _neutral_match_win_probability(0.66, 0.57)
+
+    assert 0.0 < weak < medium < strong < 1.0
