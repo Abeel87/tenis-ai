@@ -7,6 +7,7 @@ Superbet PLAYABLE rows are used only as an exact settlement source (and by the
 learning module as training data); legacy Symphony outcomes are never imported.
 """
 
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -20,7 +21,7 @@ CURRENT = DATA / "symphony2_current.json"
 BASE_HISTORY = DATA / "history.json"
 HISTORY = DATA / "symphony2_history.json"
 STATS = DATA / "symphony2_stats.json"
-VERSION = "symphony2-tracker-1"
+VERSION = "symphony2-tracker-2"
 
 
 def _read(path: Path, fallback):
@@ -154,6 +155,8 @@ def capture(current: dict, history_doc: dict) -> tuple[dict, int]:
             })
         if not valid or len(legs) < 2:
             continue
+        dependency = comp.get("dependency_diagnostics")
+        frozen_dependency = deepcopy(dependency) if isinstance(dependency, dict) else None
         rows.append({
             "prediction_id": pid,
             "version": VERSION,
@@ -168,6 +171,11 @@ def capture(current: dict, history_doc: dict) -> tuple[dict, int]:
             "joint_probability": comp.get("joint_probability"),
             "joint_status": comp.get("joint_status"),
             "selection": legs,
+            "dependency_diagnostics": frozen_dependency,
+            "dependency_evidence_status": (
+                "FROZEN_PREMATCH_EXACT_SHARED_STATE"
+                if frozen_dependency is not None else "NOT_AVAILABLE"
+            ),
             "result": "pending",
         })
         seen.add(pid)
@@ -243,6 +251,23 @@ def performance_stats(history_doc: dict) -> dict:
             "settled": len(subset), "hits": h, "misses": len(subset) - h,
             "accuracy": round(100.0 * h / len(subset), 2) if subset else None,
         }
+
+    diagnostic_entries = [
+        x for x in entries
+        if isinstance(x.get("dependency_diagnostics"), dict)
+    ]
+    diagnostic_settled = [
+        x for x in diagnostic_entries
+        if x.get("result") in {"hit", "miss"}
+    ]
+    diagnostic_pairs = sum(
+        len((x.get("dependency_diagnostics") or {}).get("pairs") or [])
+        for x in diagnostic_entries
+    )
+    diagnostic_settled_pairs = sum(
+        len((x.get("dependency_diagnostics") or {}).get("pairs") or [])
+        for x in diagnostic_settled
+    )
     return {
         "history_version": VERSION,
         "predictions_total": len(entries),
@@ -256,6 +281,15 @@ def performance_stats(history_doc: dict) -> dict:
         "legs_misses": len(legs) - leg_hits,
         "leg_accuracy": round(100.0 * leg_hits / len(legs), 2) if legs else None,
         "by_leg_count": by_legs,
+        "dependency_evidence": {
+            "predictions_with_frozen_diagnostics": len(diagnostic_entries),
+            "settled_predictions_with_frozen_diagnostics": len(diagnostic_settled),
+            "pair_observations_frozen": diagnostic_pairs,
+            "settled_pair_observations": diagnostic_settled_pairs,
+            "prospective_only": True,
+            "threshold_calibration_enabled": False,
+            "ranking_influence": False,
+        },
         "legacy_symphony_stats_used": False,
     }
 
