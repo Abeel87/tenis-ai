@@ -19,11 +19,18 @@ from typing import Any, Iterable
 
 try:
     from backend.atomic_point_transition import game_point_flags, point_token
+    from backend.player_dna_pbp_service_split_readiness import (
+        terminal_raw_service_split_match,
+    )
 except ModuleNotFoundError:  # direct execution compatibility
     from atomic_point_transition import game_point_flags, point_token
+    from player_dna_pbp_service_split_readiness import (
+        terminal_raw_service_split_match,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
+PBP_CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT_DIR = ROOT / "data" / "derived" / "player_dna"
 OUT_JSONL = OUT_DIR / "profile_snapshots.jsonl.gz"
 OUT_SUMMARY = ROOT / "frontend" / "data" / "player_dna_shadow_profile_summary.json"
@@ -46,6 +53,10 @@ ACCUMULATE_KEYS = (
     "early_return_game_1", "early_return_game_1_breaks",
     "early_return_game_2", "early_return_game_2_breaks",
     "early_return_game_3", "early_return_game_3_breaks",
+    "first_serve_matches", "first_serve_points", "first_serve_wins",
+    "second_serve_matches", "second_serve_points", "second_serve_wins",
+    "first_return_matches", "first_return_points", "first_return_wins",
+    "second_return_matches", "second_return_points", "second_return_wins",
 )
 
 
@@ -72,6 +83,28 @@ def iter_point_rows(path: Path = POINTS) -> Iterable[dict[str, Any]]:
                 continue
             if isinstance(row, dict):
                 yield row
+
+
+def iter_service_split_matches(
+    cache_dir: Path = PBP_CACHE,
+) -> Iterable[dict[str, Any]]:
+    """Yield terminal raw PBP service-split contributions keyed by provider match."""
+    if not cache_dir.exists():
+        return
+    for path in sorted(cache_dir.glob("*.json.gz")):
+        try:
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        item = terminal_raw_service_split_match(
+            payload,
+            match_id=path.name.removesuffix(".json.gz"),
+        )
+        if item is not None:
+            yield item
 
 
 def _empty_stats() -> dict[str, int]:
