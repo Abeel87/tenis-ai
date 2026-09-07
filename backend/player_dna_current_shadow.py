@@ -36,6 +36,7 @@ try:
         build_current_target_profiles,
         iter_point_rows,
     )
+    from backend.player_dna_matchup_engine import scorer_feature_row
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
         CATEGORICAL,
@@ -55,6 +56,7 @@ except ModuleNotFoundError:  # direct execution
         build_current_target_profiles,
         iter_point_rows,
     )
+    from player_dna_matchup_engine import scorer_feature_row
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "frontend" / "data" / "results.json"
@@ -151,25 +153,8 @@ def _serve_feature_row(
     server_profile: dict[str, Any],
     receiver_profile: dict[str, Any],
 ) -> dict[str, Any]:
-    so = server_profile.get("overall_prior") if isinstance(server_profile.get("overall_prior"), dict) else {}
-    ro = receiver_profile.get("overall_prior") if isinstance(receiver_profile.get("overall_prior"), dict) else {}
-    ss = server_profile.get("same_surface_prior") if isinstance(server_profile.get("same_surface_prior"), dict) else {}
-    rs = receiver_profile.get("same_surface_prior") if isinstance(receiver_profile.get("same_surface_prior"), dict) else {}
-    best_of = target.get("best_of")
-    return {
-        "match_id": str(target.get("id")),
-        "surface": str(target.get("surface") or "unknown").strip().lower(),
-        "tour": str(target.get("tour") or "unknown").strip().upper(),
-        "match_format": f"BO{int(best_of)}" if isinstance(best_of, int) and not isinstance(best_of, bool) else "unknown",
-        "server_overall_serve_rate": so.get("serve_win_rate"),
-        "receiver_overall_return_rate": ro.get("return_win_rate"),
-        "server_surface_serve_rate": ss.get("serve_win_rate"),
-        "receiver_surface_return_rate": rs.get("return_win_rate"),
-        "server_overall_matches": int(so.get("matches") or 0),
-        "receiver_overall_matches": int(ro.get("matches") or 0),
-        "server_surface_matches": int(ss.get("matches") or 0),
-        "receiver_surface_matches": int(rs.get("matches") or 0),
-    }
+    """Compatibility wrapper around the canonical Phase-3 matchup builder."""
+    return scorer_feature_row(target, server_profile, receiver_profile)
 
 
 def build_current_scores(

@@ -205,6 +205,27 @@ Przykładowe interakcje:
 
 Wynik Matchup Engine ma zawierać bazowe prawdopodobieństwa punktowe i korekty kontekstowe z uncertainty.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 3 jest uznana za domkniętą tylko wtedy, gdy CI wygeneruje
+`frontend/data/player_dna_phase3_matchup_engine.json` z
+`phase3_complete=true` i `phase4_ready=true`.
+
+Kanoniczny builder to `backend/player_dna_matchup_engine.py`. Bieżący
+`player_dna_current_shadow.py` pobiera z niego dokładnie ten sam pre-match
+feature vector, więc konsolidacja nie może zmienić istniejących predykcji.
+
+Aktualny zatwierdzony rdzeń Matchup Engine to osobne main effects:
+serve/return overall + same-surface oraz ich raw support. Nie składamy na siłę
+pełnego kompozytu z rodzin, które nie przeszły robust walk-forward. Nonlinear
+serve-return, opponent-strength, pressure, TB, recent form, comeback i BO5
+stamina pozostają nieaktywne. Small-sample shrinkage ma historyczny sygnał, ale
+pozostaje zablokowany do świeżego confirmation gate.
+
+Domknięcie Fazy 3 nie oznacza promocji do PROD, Symfonii ani PLAYABLE. Oznacza,
+że Faza 4 może startować z jednym kanonicznym pre-match matchup contract i
+zwalidowanym lean point-state baseline.
+
 ---
 
 # Faza 4 — Point Probability Engine
