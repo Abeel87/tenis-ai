@@ -350,7 +350,14 @@ jobs:
               'pbp_native_provider_ids_only',
               'historical_csv_id_namespace_not_used',
               'name_or_fuzzy_join_forbidden',
-              'latest_stats_score_must_match_final_tape_score',
+              'provider_format_bo3_or_bo5_required',
+              'provider_status_completed_required',
+              'provider_outcome_completed_required',
+              'provider_withdrawal_or_retirement_rejected',
+              'provider_winner_required',
+              'provider_match_score_must_match_final_tape_score',
+              'provider_winner_must_match_terminal_set_score',
+              'terminal_stats_snapshot_not_required_for_match_state_semantics',
               'legal_completed_match_score_required',
               'full_set_winner_sequence_from_zero_required',
               'atomic_plus_one_set_transitions_only',
@@ -382,6 +389,8 @@ jobs:
           print(
               'Match-state readiness: '
               f"matches={report.get('matches_seen')} "
+              f"completed={report.get('provider_completed_matches')} "
+              f"terminal={report.get('matches_with_terminal_score_proof')} "
               f"exact_sequences={report.get('matches_with_exact_set_sequence')} "
               f"comeback_exposures={comeback.get('first_set_loss_player_exposures')} "
               f"comebacks={comeback.get('comeback_wins_after_first_set_loss')} "
