@@ -66,6 +66,16 @@ INTERACTIONS = {
     "tiebreak_vs_tiebreak": ("tiebreak_win_rate", "tiebreak_win_rate"),
 }
 
+# Service-split rates have their own raw prior-match support counts. They must
+# not borrow generic Player DNA match support, otherwise one split observation
+# could masquerade as a 3/5-match service-split profile.
+FIELD_SUPPORT_MATCH_KEYS = {
+    "first_serve_win_rate": "first_serve_matches",
+    "second_serve_win_rate": "second_serve_matches",
+    "first_return_win_rate": "first_return_matches",
+    "second_return_win_rate": "second_return_matches",
+}
+
 # Master-plan matchup families that are not yet represented by a reliable
 # canonical pre-match Player DNA field pair. This is an explicit readiness gap,
 # not a claim that the raw source can never support them.
@@ -237,6 +247,17 @@ def _profile(row: dict[str, Any], context: str) -> dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
+def _field_support_matches(profile: dict[str, Any], field: str) -> int:
+    support_key = FIELD_SUPPORT_MATCH_KEYS.get(field)
+    if support_key is None:
+        support_key = "matches"
+    try:
+        value = int(profile.get(support_key) or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, value)
+
+
 def _direction_ready(
     attacker: dict[str, Any],
     defender: dict[str, Any],
@@ -248,8 +269,8 @@ def _direction_ready(
     left = _profile(attacker, context)
     right = _profile(defender, context)
     return bool(
-        int(left.get("matches") or 0) >= threshold
-        and int(right.get("matches") or 0) >= threshold
+        _field_support_matches(left, left_field) >= threshold
+        and _field_support_matches(right, right_field) >= threshold
         and _finite_rate(left.get(left_field)) is not None
         and _finite_rate(right.get(right_field)) is not None
     )
