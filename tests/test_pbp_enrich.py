@@ -398,3 +398,63 @@ def test_historical_cache_sweep_is_bounded_and_persists_cursor(tmp_path, monkeyp
     assert second["cursor_end"] == 0
     assert api.calls == 0
     assert state["historical_sweep_cursor"] == 0
+
+
+
+def test_historical_cache_sweep_reports_budget_block_without_advancing_cursor(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+
+    monkeypatch.setattr(mod, "CACHE", tmp_path / "pbp")
+    cached = _cached_stats_payload([5, 4])
+    cached["match"] = {
+        "id": 123,
+        "scheduled_time": "2026-09-06T20:00:00Z",
+    }
+    mod._write_gzip_json(mod._match_cache_path(123), cached)
+
+    api = RefreshAPI(response=_cached_stats_payload([6, 4]), call_cap=0)
+    counters = {}
+    state = {"matches": {}, "historical_sweep_cursor": 0}
+    now = mod.datetime(2026, 9, 7, 10, 0, tzinfo=mod.timezone.utc)
+
+    summary = mod._historical_cache_refresh_sweep(
+        api,
+        now,
+        counters,
+        state,
+    )
+
+    assert summary["scanned"] == 0
+    assert summary["attempts"] == 0
+    assert summary["budget_remaining_start"] == 0
+    assert summary["budget_blocked"] is True
+    assert summary["stop_reason"] == "api_budget_exhausted"
+    assert summary["cursor_start"] == 0
+    assert summary["cursor_end"] == 0
+    assert state["historical_sweep_cursor"] == 0
+    assert counters["historical_cache_sweep_budget_remaining_start"] == 0
+    assert counters["historical_cache_sweep_budget_blocked"] == 1
+    assert api.calls == 0
+
+
+def test_historical_cache_sweep_reports_no_cache_files_separately(tmp_path, monkeypatch):
+    import pbp_enrich as mod
+
+    monkeypatch.setattr(mod, "CACHE", tmp_path / "pbp")
+    api = RefreshAPI(response=None, call_cap=0)
+    counters = {}
+    state = {"matches": {}}
+    now = mod.datetime(2026, 9, 7, 10, 0, tzinfo=mod.timezone.utc)
+
+    summary = mod._historical_cache_refresh_sweep(
+        api,
+        now,
+        counters,
+        state,
+    )
+
+    assert summary["total_files"] == 0
+    assert summary["scanned"] == 0
+    assert summary["budget_blocked"] is False
+    assert summary["stop_reason"] == "no_cache_files"
+    assert counters["historical_cache_sweep_budget_blocked"] == 0
