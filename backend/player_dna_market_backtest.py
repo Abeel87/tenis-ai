@@ -26,16 +26,18 @@ import numpy as np
 import pandas as pd
 
 try:
+    from backend.player_dna_point_probability_engine import (
+        fit_point_probability_model,
+        point_probability_feature_row_from_prematch,
+        predict_server_point_probability,
+        prematch_feature_with_rank,
+    )
     from backend.player_dna_point_scorer import (
-        LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
-        RANK_NUMERIC,
         _cohort,
         _fit_logistic_newton,
         _predict_logistic,
         build_feature_rows,
-        lean_state_features_from_simulation_state,
-        predict_logistic_row,
         split_chronological_by_match,
     )
     from backend.player_dna_tennis_simulator import (
@@ -50,16 +52,18 @@ try:
         trajectory_simulator_contract_fingerprint,
     )
 except ModuleNotFoundError:  # direct execution
+    from player_dna_point_probability_engine import (
+        fit_point_probability_model,
+        point_probability_feature_row_from_prematch,
+        predict_server_point_probability,
+        prematch_feature_with_rank,
+    )
     from player_dna_point_scorer import (
-        LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
-        RANK_NUMERIC,
         _cohort,
         _fit_logistic_newton,
         _predict_logistic,
         build_feature_rows,
-        lean_state_features_from_simulation_state,
-        predict_logistic_row,
         split_chronological_by_match,
     )
     from player_dna_tennis_simulator import (
@@ -432,11 +436,13 @@ def _serve_feature_with_rank(
     server_rank: float | None,
     receiver_rank: float | None,
 ) -> dict[str, Any]:
-    return {
-        **_serve_feature(server, receiver),
-        "server_rank": server_rank,
-        "receiver_rank": receiver_rank,
-    }
+    """Compatibility wrapper around the canonical Phase-4 pre-match row."""
+    return prematch_feature_with_rank(
+        server,
+        receiver,
+        server_rank=server_rank,
+        receiver_rank=receiver_rank,
+    )
 
 
 def _dynamic_candidate_simulation(
@@ -466,11 +472,8 @@ def _dynamic_candidate_simulation(
         if cached is not None:
             return cached
         base = p1_base if state.get("server") == 1 else p2_base
-        row = {
-            **base,
-            **lean_state_features_from_simulation_state(state),
-        }
-        probability = predict_logistic_row(lean_model, row)
+        row = point_probability_feature_row_from_prematch(base, state)
+        probability = predict_server_point_probability(lean_model, row)
         cache[key] = probability
         return probability
 
@@ -1536,10 +1539,7 @@ def evaluate_backtest(
 
     train_frame = pd.DataFrame(train)
     model = _fit_logistic_newton(train_frame, list(PROFILE_NUMERIC))
-    lean_model = _fit_logistic_newton(
-        train_frame,
-        list(PROFILE_NUMERIC) + list(RANK_NUMERIC) + list(LEAN_STATE_NUMERIC),
-    )
+    lean_model = fit_point_probability_model(train_frame)
     pairs = _snapshot_pairs(profile_rows)
     predictions, prediction_counts = _predict_match_simulations(holdout_ids, pairs, model)
     rank_context, rank_counts = _rank_context_by_match(point_rows)
