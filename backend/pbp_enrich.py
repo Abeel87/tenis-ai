@@ -410,13 +410,19 @@ def _historical_cache_refresh_sweep(
     paths = sorted(match_dir.glob("*.json.gz")) if match_dir.exists() else []
     total = len(paths)
     if total == 0:
+        budget_remaining_start = max(0, int(api.call_cap) - int(api.calls))
         counters["historical_cache_sweep_scanned"] = 0
         counters["historical_cache_sweep_total_files"] = 0
+        counters["historical_cache_sweep_budget_remaining_start"] = budget_remaining_start
+        counters["historical_cache_sweep_budget_blocked"] = 0
         return {
             "scanned": 0,
             "total_files": 0,
             "cursor_start": 0,
             "cursor_end": 0,
+            "budget_remaining_start": budget_remaining_start,
+            "budget_blocked": False,
+            "stop_reason": "no_cache_files",
         }
 
     try:
