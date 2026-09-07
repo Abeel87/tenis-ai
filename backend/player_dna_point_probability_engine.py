@@ -113,6 +113,17 @@ def prematch_feature_with_rank(
     return row
 
 
+def point_probability_feature_row_from_prematch(
+    prematch_row: dict[str, Any],
+    simulation_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Add the validated lean pre-point score state to a canonical pre-match row."""
+    return {
+        **prematch_row,
+        **lean_state_features_from_simulation_state(simulation_state),
+    }
+
+
 def point_probability_feature_row(
     server_profile: dict[str, Any],
     receiver_profile: dict[str, Any],
@@ -126,15 +137,15 @@ def point_probability_feature_row(
     The state adapter accepts standard-game states only and raises on tiebreak or
     malformed tennis state, preserving the scorer's validated lean-state contract.
     """
-    return {
-        **prematch_feature_with_rank(
+    return point_probability_feature_row_from_prematch(
+        prematch_feature_with_rank(
             server_profile,
             receiver_profile,
             server_rank=server_rank,
             receiver_rank=receiver_rank,
         ),
-        **lean_state_features_from_simulation_state(simulation_state),
-    }
+        simulation_state,
+    )
 
 
 def fit_point_probability_model(training: pd.DataFrame) -> dict[str, Any]:
