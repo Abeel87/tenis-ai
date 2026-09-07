@@ -1,0 +1,100 @@
+name: Player DNA Service Split Depth Audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/player_dna_service_split_depth_audit.py'
+      - 'tests/test_player_dna_service_split_depth_audit.py'
+      - '.github/workflows/player-dna-service-split-depth-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Restore tennis history + PBP cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-player-dna-service-split-depth-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Test service-split depth audit
+        run: python -m pytest -q tests/test_player_dna_service_split_depth_audit.py
+
+      - name: Audit service-split snapshot depth (SHADOW, zero network)
+        run: python backend/player_dna_service_split_depth_audit.py
+
+      - name: Guard diagnostic isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_service_split_depth_audit.json')
+          if not p.exists():
+              raise SystemExit('player_dna_service_split_depth_audit.json was not generated')
+
+          report = json.loads(p.read_text(encoding='utf-8'))
+          if report.get('mode') != 'SHADOW_DIAGNOSTIC_ONLY':
+              raise SystemExit('service-split depth audit mode invalid')
+
+          contract = report.get('contract') or {}
+          expected = {
+              'diagnostic_only': True,
+              'canonical_profile_selection_changed': False,
+              'historical_csv_namespace_used': False,
+              'name_or_fuzzy_join_used': False,
+              'stable_pbp_identity_required_for_future_use': True,
+              'final_tape_score_required_for_terminal_evidence': True,
+              'raw_numerator_denominator_required': True,
+              'training_join_enabled': False,
+              'scorer_activation_enabled': False,
+              'runtime_activation_enabled': False,
+          }
+          for key, value in expected.items():
+              if contract.get(key) is not value:
+                  raise SystemExit(f'diagnostic isolation violation: {key}={contract.get(key)!r}')
+
+          comparison = report.get('comparison') or {}
+          if comparison.get('safe_selection_change_proven') is not False:
+              raise SystemExit('coverage audit must not authorize selector change')
+
+          if int(report.get('matches_seen') or 0) <= 0:
+              raise SystemExit('service-split depth audit found no restored PBP matches')
+
+          print(
+              'Service-split depth: '
+              f"seen={report.get('matches_seen')} "
+              f"latest_all4={comparison.get('current_latest_terminal_all_four_raw')} "
+              f"any_terminal_all4={comparison.get('any_terminal_all_four_raw')} "
+              f"recoverable={comparison.get('potentially_recoverable')} "
+              f"multiplier={comparison.get('recovery_multiplier')}"
+          )
+          PY
+
+      - name: Upload service-split depth report
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-dna-service-split-depth-audit
+          path: frontend/data/player_dna_service_split_depth_audit.json
+          if-no-files-found: error
