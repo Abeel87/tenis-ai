@@ -1507,45 +1507,66 @@ def dynamic_set_outcomes(
     return outcomes
 
 
-def dynamic_match_outcomes(
+def dynamic_match_outcomes_from_sets(
     point_probability: PointProbabilityCallback,
     tiebreak_probability: TiebreakProbabilityCallback,
     *,
     best_of: int,
     start_server: int,
+    sets_before: tuple[int, int],
     hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
     set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] | None = None,
 ) -> dict[str, float]:
-    """Exact match-score DP over the dynamic SHADOW set primitive."""
+    """Exact dynamic match-score continuation from a proven pre-set score.
+
+    This is a SHADOW DP primitive only. It does not invent comeback/stamina
+    features; it merely allows an already-defined state-dependent point
+    callback to be evaluated from an explicit sets-before state.
+    """
     if best_of not in (3, 5):
         raise ValueError("best_of must be 3 or 5")
     if start_server not in (1, 2):
         raise ValueError("start_server must be 1 or 2")
+    if (
+        not isinstance(sets_before, tuple)
+        or len(sets_before) != 2
+        or any(
+            isinstance(v, bool) or not isinstance(v, int) or v < 0
+            for v in sets_before
+        )
+    ):
+        raise ValueError("sets_before must be a non-negative integer pair")
 
     needed = best_of // 2 + 1
-    states: dict[tuple[int, int, int], float] = {(0, 0, start_server): 1.0}
+    s1, s2 = sets_before
+    if s1 > needed or s2 > needed or (s1 >= needed and s2 >= needed):
+        raise ValueError("sets_before is not a legal match score")
+    if s1 >= needed or s2 >= needed:
+        return {f"{s1}:{s2}": 1.0}
+
+    states: dict[tuple[int, int, int], float] = {(s1, s2, start_server): 1.0}
     exact: dict[str, float] = defaultdict(float)
 
     while states:
         nxt: dict[tuple[int, int, int], float] = defaultdict(float)
-        for (s1, s2, server), mass in states.items():
-            if s1 >= needed or s2 >= needed:
-                exact[f"{s1}:{s2}"] += mass
+        for (live_s1, live_s2, server), mass in states.items():
+            if live_s1 >= needed or live_s2 >= needed:
+                exact[f"{live_s1}:{live_s2}"] += mass
                 continue
 
             for set_row in dynamic_set_outcomes(
                 point_probability,
                 tiebreak_probability,
                 start_server=server,
-                sets_before=(s1, s2),
+                sets_before=(live_s1, live_s2),
                 best_of=best_of,
                 hold_cache=hold_cache,
                 set_cache=set_cache,
             ):
                 if int(set_row["winner"]) == 1:
-                    ns1, ns2 = s1 + 1, s2
+                    ns1, ns2 = live_s1 + 1, live_s2
                 else:
-                    ns1, ns2 = s1, s2 + 1
+                    ns1, ns2 = live_s1, live_s2 + 1
                 nxt[(ns1, ns2, int(set_row["next_set_server"]))] += (
                     mass * float(set_row["probability"])
                 )
@@ -1555,6 +1576,27 @@ def dynamic_match_outcomes(
     if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
         raise AssertionError(f"dynamic match probability mass drift: {total}")
     return dict(exact)
+
+
+def dynamic_match_outcomes(
+    point_probability: PointProbabilityCallback,
+    tiebreak_probability: TiebreakProbabilityCallback,
+    *,
+    best_of: int,
+    start_server: int,
+    hold_cache: dict[tuple[int, tuple[int, int], tuple[int, int], int], float] | None = None,
+    set_cache: dict[tuple[int, tuple[int, int], int], list[dict[str, Any]]] | None = None,
+) -> dict[str, float]:
+    """Exact match-score DP from 0:0 over the dynamic SHADOW set primitive."""
+    return dynamic_match_outcomes_from_sets(
+        point_probability,
+        tiebreak_probability,
+        best_of=best_of,
+        start_server=start_server,
+        sets_before=(0, 0),
+        hold_cache=hold_cache,
+        set_cache=set_cache,
+    )
 
 
 def set_outcomes(
