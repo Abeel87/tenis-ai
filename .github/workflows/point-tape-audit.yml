@@ -24,6 +24,7 @@ on:
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
       - 'backend/player_dna_matchup_engine.py'
+      - 'backend/player_dna_point_probability_engine.py'
       - 'backend/player_dna_opponent_context_audit.py'
       - 'backend/player_dna_opponent_adjustment_audit.py'
       - 'backend/player_dna_pressure_challenger.py'
@@ -59,6 +60,7 @@ on:
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
       - 'tests/test_player_dna_matchup_engine.py'
+      - 'tests/test_player_dna_point_probability_engine.py'
       - 'tests/test_player_dna_opponent_context_audit.py'
       - 'tests/test_player_dna_opponent_adjustment_audit.py'
       - 'tests/test_player_dna_pressure_challenger.py'
@@ -107,7 +109,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -1559,6 +1561,133 @@ jobs:
               f"optional={[(k, v.get('status')) for k, v in candidates.items()]} "
               f"shrinkage={shrinkage.get('historical_status')}/"
               f"{shrinkage.get('fresh_confirmation_status')}"
+          )
+          PY
+
+      - name: Close Phase-4 canonical point probability gate (SHADOW, zero network)
+        run: python backend/player_dna_point_probability_engine.py
+
+      - name: Guard Phase-4 canonical point probability closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_phase4_point_probability_engine.json')
+          if not p.exists():
+              raise SystemExit('player_dna_phase4_point_probability_engine.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PHASE4_POINT_PROBABILITY_ENGINE':
+              raise SystemExit('Phase-4 point probability mode invalid')
+          if report.get('phase') != 'PHASE_4_POINT_PROBABILITY_ENGINE':
+              raise SystemExit('Phase-4 point probability phase drifted')
+          if report.get('phase4_complete') is not True:
+              raise SystemExit(f"Phase-4 point probability gate not complete: {report.get('status')}")
+          if report.get('phase5_ready') is not True:
+              raise SystemExit('Phase-4 gate did not authorize starting Phase 5')
+
+          for key in (
+              'production_influence',
+              'runtime_switch_enabled',
+              'training_pipeline_replaced',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-4 activation violation: {key}')
+
+          evidence = report.get('evidence') or {}
+          for key in (
+              'holdout_positive_all_primary_proper_scores',
+              'robust_three_fold_walk_forward',
+              'lean_superior_to_full_stateful_three_of_three',
+              'score_before_only',
+              'feature_contract_exact',
+              'dropped_state_groups_exact',
+          ):
+              if evidence.get(key) is not True:
+                  raise SystemExit(f'Phase-4 evidence gate failed: {key}')
+
+          expected_features = [
+              'server_overall_serve_rate',
+              'receiver_overall_return_rate',
+              'server_surface_serve_rate',
+              'receiver_surface_return_rate',
+              'server_overall_matches',
+              'receiver_overall_matches',
+              'server_surface_matches',
+              'receiver_surface_matches',
+              'server_rank',
+              'receiver_rank',
+              'server_point_stage_before',
+              'receiver_point_stage_before',
+              'deuce_before',
+              'server_advantage_before',
+              'receiver_advantage_before',
+              'server_game_point_before',
+              'break_point_against_server_before',
+              'sets_completed_before',
+              'set_diff_server_before',
+              'current_set_games_total_before',
+              'current_set_game_diff_server_before',
+              'late_set_before',
+              'deciding_set_before',
+          ]
+          if report.get('canonical_numeric_features') != expected_features:
+              raise SystemExit('Phase-4 canonical numeric feature vector drifted')
+
+          excluded = report.get('excluded_until_separate_gate') or {}
+          expected_excluded = {
+              'tiebreak_state',
+              'prior_momentum',
+              'recent_form_l5',
+              'opponent_adjustment',
+              'nonlinear_serve_return_interaction',
+              'pressure_profile_interactions',
+              'tiebreak_profile_interactions',
+              'comeback_match_state_profiles',
+              'bo5_stamina_match_state_profiles',
+              'first_second_serve_return_split_scoring',
+              'neural_network',
+          }
+          if set(excluded) != expected_excluded:
+              raise SystemExit(f'Phase-4 excluded family set drifted: {set(excluded)}')
+          for name, blocked in excluded.items():
+              if blocked is not True:
+                  raise SystemExit(f'Unvalidated Phase-4 family escaped gate: {name}')
+
+          uncertainty = report.get('uncertainty_policy') or {}
+          if uncertainty.get('raw_support_counts_required') is not True:
+              raise SystemExit('Phase-4 lost raw support requirement')
+          if uncertainty.get('arbitrary_confidence_bucket_forbidden') is not True:
+              raise SystemExit('Phase-4 introduced arbitrary confidence bucket')
+          if uncertainty.get('small_sample_shrinkage_active') is not False:
+              raise SystemExit('Phase-4 activated shrinkage before fresh confirmation')
+          if uncertainty.get('small_sample_shrinkage_waits_for_fresh_confirmation') is not True:
+              raise SystemExit('Phase-4 shrinkage lost fresh-confirmation gate')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'single_canonical_point_probability_api',
+              'interpretable_logistic_baseline_first',
+              'phase3_matchup_contract_is_input',
+              'provider_rank_context_is_input',
+              'pre_point_lean_score_state_only',
+              'no_score_after_feature',
+              'no_current_point_outcome_feature',
+              'tiebreak_policy_remains_external_until_validated',
+              'unproven_optional_families_are_not_composed',
+              'phase4_completion_does_not_promote_runtime_or_prod',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-4 point probability contract violation: {key}')
+
+          print(
+              'Phase-4 point probability closure: '
+              f"status={report.get('status')} "
+              f"phase5_ready={report.get('phase5_ready')} "
+              f"features={len(report.get('canonical_numeric_features') or [])}"
           )
           PY
 
@@ -3115,6 +3244,7 @@ jobs:
             frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_matchup_challenger.json
             frontend/data/player_dna_phase3_matchup_engine.json
+            frontend/data/player_dna_phase4_point_probability_engine.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
