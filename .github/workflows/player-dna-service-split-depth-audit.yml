@@ -67,6 +67,8 @@ jobs:
               'stable_pbp_identity_required_for_future_use': True,
               'final_tape_score_required_for_terminal_evidence': True,
               'raw_numerator_denominator_required': True,
+              'nonterminal_raw_evidence_used_for_production': False,
+              'raw_outside_terminal_is_diagnostic_only': True,
               'training_join_enabled': False,
               'scorer_activation_enabled': False,
               'runtime_activation_enabled': False,
@@ -77,18 +79,33 @@ jobs:
 
           comparison = report.get('comparison') or {}
           counts = report.get('counts') or {}
+          funnel = report.get('depth_funnel') or {}
+
           if comparison.get('safe_selection_change_proven') is not False:
               raise SystemExit('coverage audit must not authorize selector change')
+          if comparison.get('safe_terminal_relaxation_proven') is not False:
+              raise SystemExit('coverage audit must not authorize terminal relaxation')
           if int(counts.get('matches_seen') or 0) <= 0:
               raise SystemExit('service-split depth audit found no restored PBP matches')
+          if funnel.get('funnel_accounts_for_all_stable_matches') is not True:
+              raise SystemExit('service-split depth funnel does not account for stable matches')
+
+          terminal = int(comparison.get('any_terminal_all_four_raw_matches') or 0)
+          raw_any = int(comparison.get('any_profile_all_four_raw_matches') or 0)
+          selector_only = int(comparison.get('potentially_recoverable_matches') or 0)
+          if terminal > raw_any:
+              raise SystemExit('terminal raw coverage cannot exceed raw coverage')
+          if selector_only > terminal:
+              raise SystemExit('selector-only recovery cannot exceed terminal raw coverage')
 
           print(
               'Service-split depth: '
               f"seen={counts.get('matches_seen')} "
-              f"latest_all4={comparison.get('current_latest_terminal_all_four_raw_matches')} "
-              f"any_terminal_all4={comparison.get('any_terminal_all_four_raw_matches')} "
-              f"recoverable={comparison.get('potentially_recoverable_matches')} "
-              f"multiplier={comparison.get('recovery_multiplier')}"
+              f"stats={counts.get('matches_with_stats_profiles')} "
+              f"raw_any={raw_any} "
+              f"terminal_all4={terminal} "
+              f"raw_without_terminal={comparison.get('raw_all_four_outside_terminal_proof_matches')} "
+              f"dominant_gap={funnel.get('dominant_observed_gap')}"
           )
           PY
 
