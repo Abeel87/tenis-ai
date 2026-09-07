@@ -430,11 +430,15 @@ def _historical_cache_refresh_sweep(
     invalid_payload = 0
     attempted_here = 0
     scan_limit = min(total, MAX_STALE_CACHE_SCAN_PER_RUN)
+    budget_remaining_start = max(0, int(api.call_cap) - int(api.calls))
+    stop_reason = "cache_cycle_complete" if scan_limit == total else "scan_cap_reached"
 
     for offset in range(scan_limit):
         if api.calls >= api.call_cap:
+            stop_reason = "api_budget_exhausted"
             break
         if int(counters.get("tape_stale_refresh_attempts") or 0) >= MAX_STALE_CACHE_REFRESHES_PER_RUN:
+            stop_reason = "refresh_attempt_cap_reached"
             break
 
         index = (cursor_start + offset) % total
@@ -482,6 +486,10 @@ def _historical_cache_refresh_sweep(
     counters["historical_cache_sweep_missing_schedule"] = missing_schedule
     counters["historical_cache_sweep_identity_mismatch"] = identity_mismatch
     counters["historical_cache_sweep_invalid_payload"] = invalid_payload
+    counters["historical_cache_sweep_budget_remaining_start"] = budget_remaining_start
+    counters["historical_cache_sweep_budget_blocked"] = int(
+        stop_reason == "api_budget_exhausted"
+    )
 
     return {
         "scanned": scanned,
@@ -492,6 +500,9 @@ def _historical_cache_refresh_sweep(
         "missing_schedule": missing_schedule,
         "identity_mismatch": identity_mismatch,
         "invalid_payload": invalid_payload,
+        "budget_remaining_start": budget_remaining_start,
+        "budget_blocked": stop_reason == "api_budget_exhausted",
+        "stop_reason": stop_reason,
     }
 
 def _first_set_state(row: dict) -> tuple[int, int] | None:
@@ -1217,6 +1228,8 @@ def main() -> None:
         "historical_cache_sweep_missing_schedule": 0,
         "historical_cache_sweep_identity_mismatch": 0,
         "historical_cache_sweep_invalid_payload": 0,
+        "historical_cache_sweep_budget_remaining_start": 0,
+        "historical_cache_sweep_budget_blocked": 0,
     }
     seed_ids = {}
     for k, entry in (index.get("players") or {}).items():
@@ -1272,6 +1285,7 @@ def main() -> None:
 
     usage_today = usage.get("today") or {}
     limits = usage.get("limits") or {}
+    quota_allocation = usage.get("quota_v83b") or {}
     meta.update(
         {
             "pbp_v7_mode": "basic-point-by-point",
@@ -1299,10 +1313,17 @@ def main() -> None:
             "pbp_v7_historical_cache_sweep_missing_schedule": counters["historical_cache_sweep_missing_schedule"],
             "pbp_v7_historical_cache_sweep_identity_mismatch": counters["historical_cache_sweep_identity_mismatch"],
             "pbp_v7_historical_cache_sweep_invalid_payload": counters["historical_cache_sweep_invalid_payload"],
+            "pbp_v7_historical_cache_sweep_budget_remaining_start": historical_sweep.get("budget_remaining_start"),
+            "pbp_v7_historical_cache_sweep_budget_blocked": historical_sweep.get("budget_blocked"),
+            "pbp_v7_historical_cache_sweep_stop_reason": historical_sweep.get("stop_reason"),
             "pbp_v7_historical_cache_sweep_cursor_start": historical_sweep.get("cursor_start"),
             "pbp_v7_historical_cache_sweep_cursor_end": historical_sweep.get("cursor_end"),
             "pbp_v7_daily_limit": limits.get("per_day"),
             "pbp_v7_calls_before_run": usage_today.get("calls"),
+            "pbp_v7_quota_budget": quota_allocation.get("budget"),
+            "pbp_v7_quota_reason": quota_allocation.get("reason"),
+            "pbp_v7_quota_role_spent_today": quota_allocation.get("role_spent_today"),
+            "pbp_v7_quota_remaining_before": quota_allocation.get("remaining_before"),
             "pbp_v7_note": (
                 "EHS only with >=5 reliable point-by-point matches; cached completed "
                 "matches without terminal stats are revalidated gradually under a "
