@@ -255,6 +255,37 @@ Nie zakładamy automatycznie „momentum”, presji czy zmęczenia. Efekt musi z
 
 `P(server wins next point | server, returner, surface, score_state, set_state, form, uncertainty)`
 
+## Stan realizacji / gate zamknięcia
+
+Kanoniczny baseline Fazy 4 to `backend/player_dna_point_probability_engine.py`.
+Nie powstaje drugi równoległy scorer. Moduł konsoliduje już zwalidowany lean
+logistic baseline i jest używany przez SHADOW dynamic backtest/current-card path.
+
+Aktywny zestaw wejść SHADOW:
+
+- Phase-3 serve/return main effects overall + same-surface;
+- provider rank context;
+- pre-point lean score state: point pressure + set/match state.
+
+Świadomie wyłączone do osobnych gate'ów pozostają: tiebreak state, prior
+momentum, recent form L5, opponent adjustment, nonlinear matchup, pressure/TB
+profile interactions, comeback, BO5 stamina, first/second split scoring i NN.
+
+Faza 4 jest zamknięta dopiero, gdy CI potwierdzi:
+
+- dodatni holdout na Brier + match-equal Brier + log-loss;
+- dodatnie 3/3 expanding walk-forward;
+- lean state lepszy od pełnego stateful w 3/3 foldów;
+- wyłącznie score-before, bez score-after/current-point leakage;
+- dokładny feature contract;
+- `phase4_complete=true` i `phase5_ready=true`.
+
+Uncertainty nie dostaje arbitralnego confidence score. Publikujemy raw support i
+flagi progów diagnostycznych. Historyczny small-sample shrinkage pozostaje OFF
+do świeżego confirmation gate.
+
+Domknięcie Fazy 4 nadal nie oznacza PROD/Symfonia/PLAYABLE.
+
 ---
 
 # Faza 5 — Game / Set / Match Engine

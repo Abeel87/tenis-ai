@@ -23,6 +23,9 @@ from typing import Any, Iterable
 import pandas as pd
 
 try:
+    from backend.player_dna_point_probability_engine import (
+        fit_point_probability_model,
+    )
     from backend.player_dna_market_backtest import (
         BINARY_MARKETS,
         MIN_PRIOR_MATCHES,
@@ -31,17 +34,16 @@ try:
         _snapshot_pairs,
     )
     from backend.player_dna_point_scorer import (
-        LEAN_STATE_NUMERIC,
-        PROFILE_NUMERIC,
-        RANK_NUMERIC,
         _cohort,
-        _fit_logistic_newton,
         _model_meta,
         build_feature_rows,
     )
     from backend.player_dna_shadow_profiles import build_current_target_profiles
     from backend.player_dna_tennis_simulator import simulate_match
 except ModuleNotFoundError:  # direct execution
+    from player_dna_point_probability_engine import (
+        fit_point_probability_model,
+    )
     from player_dna_market_backtest import (
         BINARY_MARKETS,
         MIN_PRIOR_MATCHES,
@@ -50,11 +52,7 @@ except ModuleNotFoundError:  # direct execution
         _snapshot_pairs,
     )
     from player_dna_point_scorer import (
-        LEAN_STATE_NUMERIC,
-        PROFILE_NUMERIC,
-        RANK_NUMERIC,
         _cohort,
-        _fit_logistic_newton,
         _model_meta,
         build_feature_rows,
     )
@@ -273,10 +271,7 @@ def build_current_dynamic_shadow(
         return base
 
     training = pd.DataFrame(training_rows)
-    lean_model = _fit_logistic_newton(
-        training,
-        list(PROFILE_NUMERIC) + list(RANK_NUMERIC) + list(LEAN_STATE_NUMERIC),
-    )
+    lean_model = fit_point_probability_model(training)
     fit = _model_meta(lean_model)
     if fit.get("converged") is not True:
         base["status"] = "BLOCKED_LEAN_MODEL_DID_NOT_CONVERGE"
