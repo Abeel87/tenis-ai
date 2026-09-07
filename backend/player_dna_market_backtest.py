@@ -110,6 +110,14 @@ BINARY_MARKETS = (
     "early_3:3",
 )
 
+CONFIDENCE_BUCKETS = (
+    ("0.50-0.60", 0.50, 0.60),
+    ("0.60-0.70", 0.60, 0.70),
+    ("0.70-0.80", 0.70, 0.80),
+    ("0.80-0.90", 0.80, 0.90),
+    ("0.90-1.00", 0.90, 1.000001),
+)
+
 
 def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
     if not path.exists():
@@ -741,6 +749,57 @@ def _dynamic_lean_comparison(
     matched_ids = sorted(
         set(profile_predictions) & set(dynamic_predictions) & set(labels)
     )
+
+    reference_label_ids = sorted(set(profile_predictions) & set(labels))
+    absolute_binary = {}
+    for market in BINARY_MARKETS:
+        eligible_ids = [
+            match_id
+            for match_id in reference_label_ids
+            if isinstance(labels[match_id].get(market), bool)
+        ]
+        reference_records: list[tuple[float, int]] = []
+        candidate_records: list[tuple[float, int]] = []
+        for match_id in eligible_ids:
+            actual = int(labels[match_id][market])
+            reference_probability = _binary_probability(
+                profile_predictions[match_id]["simulation"],
+                market,
+            )
+            if reference_probability is not None and math.isfinite(reference_probability):
+                reference_records.append((float(reference_probability), actual))
+
+            candidate_prediction = dynamic_predictions.get(match_id)
+            if not isinstance(candidate_prediction, dict):
+                continue
+            candidate_probability = _binary_probability(
+                candidate_prediction["simulation"],
+                market,
+            )
+            if candidate_probability is not None and math.isfinite(candidate_probability):
+                candidate_records.append((float(candidate_probability), actual))
+
+        reference_metrics = binary_absolute_metrics(
+            reference_records,
+            eligible_labels=len(eligible_ids),
+        )
+        candidate_metrics = binary_absolute_metrics(
+            candidate_records,
+            eligible_labels=len(eligible_ids),
+        )
+        reference_coverage = reference_metrics.get("coverage")
+        candidate_coverage = candidate_metrics.get("coverage")
+        absolute_binary[market] = {
+            "coverage_denominator": "PROFILE_REFERENCE_ELIGIBLE_SETTLED_LABELS",
+            "reference_profile_only": reference_metrics,
+            "dynamic_lean_candidate": candidate_metrics,
+            "coverage_delta_vs_reference": (
+                round(float(candidate_coverage) - float(reference_coverage), 6)
+                if reference_coverage is not None and candidate_coverage is not None
+                else None
+            ),
+        }
+
     binary = {}
     for market in BINARY_MARKETS:
         records = []
@@ -844,6 +903,7 @@ def _dynamic_lean_comparison(
         "prediction_counts": prediction_counts,
         "rank_context_counts": rank_counts,
         "binary_markets_vs_profile_only": binary,
+        "absolute_binary_diagnostics": absolute_binary,
         "categorical_markets_vs_profile_only": categorical,
         "summary": {
             "binary_markets_evaluated_ge_100": len(evaluated_binary),
@@ -884,6 +944,115 @@ def _calibration_bins(records: list[tuple[float, int]], bins: int = 10) -> list[
             "gap": round(abs(mean_p - rate), 6),
         })
     return out
+
+
+def _confidence_bucket_metrics(
+    records: list[tuple[float, int]],
+) -> list[dict[str, Any]]:
+    rows = []
+    for label, lo, hi in CONFIDENCE_BUCKETS:
+        selected = []
+        for probability, actual in records:
+            probability = _clip(probability)
+            confidence = max(probability, 1.0 - probability)
+            if lo <= confidence < hi:
+                selected.append((probability, int(actual), confidence))
+        if not selected:
+            rows.append({
+                "bucket": label,
+                "n": 0,
+                "mean_confidence": None,
+                "accuracy": None,
+                "brier": None,
+                "log_loss": None,
+            })
+            continue
+
+        probs = np.asarray([row[0] for row in selected], dtype=float)
+        y = np.asarray([row[1] for row in selected], dtype=float)
+        confidence = np.asarray([row[2] for row in selected], dtype=float)
+        accuracy = np.mean((probs >= 0.5) == (y >= 0.5))
+        brier = np.mean(np.square(probs - y))
+        log_loss = np.mean(
+            -(y * np.log(probs) + (1.0 - y) * np.log(1.0 - probs))
+        )
+        rows.append({
+            "bucket": label,
+            "n": int(len(selected)),
+            "mean_confidence": round(float(confidence.mean()), 6),
+            "accuracy": round(float(accuracy), 6),
+            "brier": round(float(brier), 6),
+            "log_loss": round(float(log_loss), 6),
+        })
+    return rows
+
+
+def binary_absolute_metrics(
+    records: list[tuple[float, int]],
+    *,
+    eligible_labels: int,
+) -> dict[str, Any]:
+    """Absolute calibration/coverage diagnostics without changing promotion gates."""
+    eligible = max(0, int(eligible_labels))
+    if eligible == 0:
+        return {
+            "eligible_labels": 0,
+            "n": 0,
+            "coverage": None,
+            "positive_rate": None,
+            "mean_probability": None,
+            "brier": None,
+            "log_loss": None,
+            "accuracy_0.5": None,
+            "ece_10_bin": None,
+            "calibration_bins": [],
+            "confidence_buckets": _confidence_bucket_metrics([]),
+            "status": "NO_ELIGIBLE_LABELS",
+        }
+
+    clean = [
+        (_clip(probability), int(actual))
+        for probability, actual in records
+        if math.isfinite(float(probability))
+    ]
+    if not clean:
+        return {
+            "eligible_labels": eligible,
+            "n": 0,
+            "coverage": 0.0,
+            "positive_rate": None,
+            "mean_probability": None,
+            "brier": None,
+            "log_loss": None,
+            "accuracy_0.5": None,
+            "ece_10_bin": None,
+            "calibration_bins": [],
+            "confidence_buckets": _confidence_bucket_metrics([]),
+            "status": "NO_PREDICTIONS",
+        }
+
+    probs = np.asarray([probability for probability, _actual in clean], dtype=float)
+    y = np.asarray([actual for _probability, actual in clean], dtype=float)
+    brier = float(np.mean(np.square(probs - y)))
+    log_loss = float(
+        np.mean(-(y * np.log(probs) + (1.0 - y) * np.log(1.0 - probs)))
+    )
+    calibration = _calibration_bins(clean)
+    ece = sum((row["n"] / len(y)) * row["gap"] for row in calibration)
+    return {
+        "eligible_labels": eligible,
+        "n": int(len(clean)),
+        "coverage": round(len(clean) / eligible, 6),
+        "positive_rate": round(float(y.mean()), 6),
+        "mean_probability": round(float(probs.mean()), 6),
+        "brier": round(brier, 6),
+        "log_loss": round(log_loss, 6),
+        "accuracy_0.5": round(float(np.mean((probs >= 0.5) == (y >= 0.5))), 6),
+        "ece_10_bin": round(float(ece), 6),
+        "calibration_bins": calibration,
+        "confidence_buckets": _confidence_bucket_metrics(clean),
+        "status": "EVALUATED",
+    }
 
 
 def binary_metrics(
