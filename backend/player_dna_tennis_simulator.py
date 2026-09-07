@@ -17,6 +17,19 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    from backend.player_dna_tennis_state_engine import (
+        other_player,
+        set_score_is_terminal,
+        tiebreak_should_start,
+    )
+except ModuleNotFoundError:  # direct execution compatibility
+    from player_dna_tennis_state_engine import (
+        other_player,
+        set_score_is_terminal,
+        tiebreak_should_start,
+    )
+
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT = ROOT / "frontend" / "data" / "player_dna_current_shadow.json"
 CALIBRATION = ROOT / "frontend" / "data" / "player_dna_hold_calibration_audit.json"
@@ -189,7 +202,8 @@ def neutral_tiebreak_win_probability(p1_serve_point: float, p2_serve_point: floa
 
 
 def _other(server: int) -> int:
-    return 2 if server == 1 else 1
+    """Compatibility wrapper around the canonical Phase-5 serve-order helper."""
+    return other_player(server)
 
 
 def _game_win_probability_for_p1(p1_hold: float, p2_hold: float, server: int) -> float:
@@ -258,7 +272,7 @@ def _top_first_set_game_paths(
         neg_mass, _serial, g1, g2, server, path = heapq.heappop(heap)
         mass = -neg_mass
 
-        if g1 == 6 and g2 == 6:
+        if tiebreak_should_start((g1, g2)):
             for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
                 score = "7:6" if winner == 1 else "6:7"
                 out.append({
@@ -273,7 +287,7 @@ def _top_first_set_game_paths(
             out = out[:limit]
             continue
 
-        if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+        if set_score_is_terminal((g1, g2)):
             out.append({
                 "final_score": f"{g1}:{g2}",
                 "winner": 1 if g1 > g2 else 2,
@@ -335,7 +349,7 @@ def _representative_set_progression(
             tuple[float, tuple[str, ...]],
         ] = {}
         for (g1, g2, server), (mass, progression) in states.items():
-            if g1 == 6 and g2 == 6:
+            if tiebreak_should_start((g1, g2)):
                 next_set_server = _other(server)
                 for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
                     score = "7:6" if winner == 1 else "6:7"
@@ -357,7 +371,7 @@ def _representative_set_progression(
                         best = candidate
                 continue
 
-            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+            if set_score_is_terminal((g1, g2)):
                 score = f"{g1}:{g2}"
                 if score == final_score:
                     candidate = {
@@ -1061,7 +1075,7 @@ def _top_full_match_game_paths(
             })
             continue
 
-        if g1 == 6 and g2 == 6:
+        if tiebreak_should_start((g1, g2)):
             next_set_server = _other(server)
             for winner, probability in ((1, p1_tb), (2, 1.0 - p1_tb)):
                 final_score = "7:6" if winner == 1 else "6:7"
@@ -1086,7 +1100,7 @@ def _top_full_match_game_paths(
                 )
             continue
 
-        if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+        if set_score_is_terminal((g1, g2)):
             set_winner = 1 if g1 > g2 else 2
             final_score = f"{g1}:{g2}"
             ns1 = s1 + (1 if set_winner == 1 else 0)
@@ -1441,7 +1455,7 @@ def dynamic_set_outcomes(
             if mass <= 0.0:
                 continue
 
-            if g1 == 6 and g2 == 6:
+            if tiebreak_should_start((g1, g2)):
                 p1_tb = _clamp_probability(
                     tiebreak_probability(
                         {
@@ -1473,7 +1487,7 @@ def dynamic_set_outcomes(
                 })
                 continue
 
-            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+            if set_score_is_terminal((g1, g2)):
                 outcomes.append({
                     "winner": 1 if g1 > g2 else 2,
                     "score": f"{g1}:{g2}",
@@ -1621,7 +1635,7 @@ def set_outcomes(
             if mass <= 0.0:
                 continue
 
-            if g1 == 6 and g2 == 6:
+            if tiebreak_should_start((g1, g2)):
                 next_set_server = _other(server)
                 outcomes.append({
                     "winner": 1,
@@ -1641,7 +1655,7 @@ def set_outcomes(
                 })
                 continue
 
-            if (g1 >= 6 or g2 >= 6) and abs(g1 - g2) >= 2:
+            if set_score_is_terminal((g1, g2)):
                 outcomes.append({
                     "winner": 1 if g1 > g2 else 2,
                     "score": f"{g1}:{g2}",
