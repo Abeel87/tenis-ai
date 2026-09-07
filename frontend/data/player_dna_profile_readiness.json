@@ -98,6 +98,63 @@
       "rate": 0.000845
     }
   },
+  "small_sample_shrinkage_readiness": {
+    "any_surface_depth_bands": {
+      "0": {
+        "targets": 1974,
+        "rate": 0.277872
+      },
+      "1-2": {
+        "targets": 2108,
+        "rate": 0.296734
+      },
+      "3-4": {
+        "targets": 1269,
+        "rate": 0.178632
+      },
+      "5-9": {
+        "targets": 1476,
+        "rate": 0.20777
+      },
+      "10+": {
+        "targets": 277,
+        "rate": 0.038992
+      }
+    },
+    "same_surface_depth_bands": {
+      "0": {
+        "targets": 2322,
+        "rate": 0.326858
+      },
+      "1-2": {
+        "targets": 2225,
+        "rate": 0.313204
+      },
+      "3-4": {
+        "targets": 1197,
+        "rate": 0.168497
+      },
+      "5-9": {
+        "targets": 1178,
+        "rate": 0.165822
+      },
+      "10+": {
+        "targets": 182,
+        "rate": 0.025619
+      }
+    },
+    "targets_below_5_any_surface": 5351,
+    "targets_below_5_same_surface": 5744,
+    "policy": {
+      "diagnostic_only": true,
+      "shrinkage_activation_enabled": false,
+      "partial_pooling_activation_enabled": false,
+      "prior_strength_selected": false,
+      "candidate_parameter_selection_must_use_train_only_data": true,
+      "raw_small_sample_rate_must_not_be_promoted_directly": true,
+      "next_gate": "TRAIN_ONLY_EMPIRICAL_BAYES_OR_PARTIAL_POOLING_CHALLENGER"
+    }
+  },
   "pressure_evidence": {
     "player_match_evidence_cells": 7100,
     "counts": {
@@ -1388,5 +1445,5 @@
     }
   },
   "same_time_player_groups": 0,
-  "note": "Evidence only. No minimum-history or pressure-support threshold is activated here. The next gate may choose candidates only from measured leakage-safe coverage and must validate them out of sample before any profile/model activation."
+  "note": "Evidence only. No minimum-history, pressure-support or shrinkage threshold is activated here. Small-sample depth bands quantify where raw rates need a separate train-only shrinkage/partial-pooling challenger. Any candidate must be validated out of sample before profile/model activation."
 }
