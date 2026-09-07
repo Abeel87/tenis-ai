@@ -632,6 +632,14 @@ def build_snapshots_from_rows(
     snapshots: list[dict[str, Any]] = []
     readiness_any = Counter()
     readiness_surface = Counter()
+    service_split_readiness_any = {
+        field: Counter()
+        for field in ("first_serve", "second_serve", "first_return", "second_return")
+    }
+    service_split_readiness_surface = {
+        field: Counter()
+        for field in ("first_serve", "second_serve", "first_return", "second_return")
+    }
     same_time_groups = 0
 
     for scheduled, group_iter in groupby(matches, key=lambda m: m["scheduled"]):
@@ -651,6 +659,14 @@ def build_snapshots_from_rows(
                 for threshold in THRESHOLDS:
                     readiness_any[threshold] += int(overall_snapshot["matches"] >= threshold)
                     readiness_surface[threshold] += int(surface_snapshot["matches"] >= threshold)
+                    for field in service_split_readiness_any:
+                        support_key = f"{field}_matches"
+                        service_split_readiness_any[field][threshold] += int(
+                            int(overall_snapshot.get(support_key) or 0) >= threshold
+                        )
+                        service_split_readiness_surface[field][threshold] += int(
+                            int(surface_snapshot.get(support_key) or 0) >= threshold
+                        )
 
                 snapshots.append({
                     "version": VERSION,
@@ -720,6 +736,32 @@ def build_snapshots_from_rows(
             }
             for threshold in THRESHOLDS
         },
+        "service_split_readiness_any_surface": {
+            field: {
+                str(threshold): {
+                    "targets": int(service_split_readiness_any[field][threshold]),
+                    "rate": (
+                        round(service_split_readiness_any[field][threshold] / targets, 6)
+                        if targets else 0.0
+                    ),
+                }
+                for threshold in THRESHOLDS
+            }
+            for field in service_split_readiness_any
+        },
+        "service_split_readiness_same_surface": {
+            field: {
+                str(threshold): {
+                    "targets": int(service_split_readiness_surface[field][threshold]),
+                    "rate": (
+                        round(service_split_readiness_surface[field][threshold] / targets, 6)
+                        if targets else 0.0
+                    ),
+                }
+                for threshold in THRESHOLDS
+            }
+            for field in service_split_readiness_surface
+        },
         "features": {
             "overall_prior": list(_project(None).keys()),
             "same_surface_prior": list(_project(None).keys()),
@@ -736,6 +778,7 @@ def build_snapshots_from_rows(
             },
         },
         "pressure_profiles": _pressure_contract(),
+        "service_split_profiles": _service_split_contract(),
         "note": (
             "SHADOW evidence only. Raw support counts accompany every rate. "
             "No minimum-history threshold, training join or production influence is activated."
