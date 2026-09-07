@@ -1,8 +1,12 @@
+import gzip
+import json
+
 import pandas as pd
 
 from backend.player_dna_service_split_source_readiness import (
     MODE,
     audit_history,
+    audit_identity_namespace,
 )
 
 
@@ -117,3 +121,52 @@ def test_empty_service_split_audit_stays_audit_only():
     assert report["runtime_scoring_enabled"] is False
     assert report["profile_build_enabled"] is False
     assert report["training_join_enabled"] is False
+
+
+
+def test_cross_source_id_namespace_uses_names_only_as_diagnostic_evidence(tmp_path):
+    payload = {
+        "match": {
+            "players": {
+                "p1": {"id": 101, "name": "Alpha"},
+                "p2": {"id": 202, "name": "Beta"},
+            }
+        }
+    }
+    with gzip.open(tmp_path / "m1.json.gz", "wt", encoding="utf-8") as handle:
+        json.dump(payload, handle)
+
+    report = audit_identity_namespace(pd.DataFrame([_row()]), tmp_path)
+
+    assert report["historical_unique_stable_ids"] == 2
+    assert report["pbp_unique_stable_ids"] == 2
+    assert report["shared_numeric_ids"] == 2
+    assert report["shared_ids_with_exact_normalized_name_agreement"] == 2
+    assert report["shared_ids_with_name_mismatch"] == 0
+    assert report["diagnostic_name_matching_only"] is True
+    assert report["name_matching_used_for_join"] is False
+    assert report["fuzzy_matching_used"] is False
+    assert report["direct_id_join_authorized"] is False
+    # Tiny synthetic sample must not satisfy the real compatibility gate.
+    assert report["id_namespace_evidence_strong"] is False
+
+
+def test_cross_source_id_namespace_detects_same_numeric_id_name_conflict(tmp_path):
+    payload = {
+        "match": {
+            "players": {
+                "p1": {"id": 101, "name": "Different Person"},
+                "p2": {"id": 999, "name": "Other"},
+            }
+        }
+    }
+    with gzip.open(tmp_path / "m1.json.gz", "wt", encoding="utf-8") as handle:
+        json.dump(payload, handle)
+
+    report = audit_identity_namespace(pd.DataFrame([_row()]), tmp_path)
+
+    assert report["shared_numeric_ids"] == 1
+    assert report["shared_ids_with_exact_normalized_name_agreement"] == 0
+    assert report["shared_ids_with_name_mismatch"] == 1
+    assert report["exact_normalized_name_agreement_rate"] == 0.0
+    assert report["id_namespace_evidence_strong"] is False
