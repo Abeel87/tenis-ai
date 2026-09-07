@@ -401,7 +401,10 @@ def _pressure_contract() -> dict[str, Any]:
     }
 
 
-def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def _prepare_matches(
+    rows: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     matches: dict[str, dict[str, Any]] = {}
     counters = Counter()
 
@@ -520,6 +523,61 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
 
         counters["strict_rows_used"] += 1
 
+    # Attach PBP-native terminal raw service splits to the exact same provider
+    # match/identity/time records already accepted by the point profile pipeline.
+    # This is not a fuzzy/name join and never creates a second profile timeline.
+    split_index: dict[str, dict[str, Any]] = {}
+    for item in service_split_matches or ():
+        if not isinstance(item, dict):
+            continue
+        counters["service_split_source_matches_seen"] += 1
+        match_id = str(item.get("match_id") or "").strip()
+        if not match_id:
+            counters["service_split_source_missing_match_id"] += 1
+            continue
+        if match_id in split_index:
+            counters["service_split_source_duplicate_match_id"] += 1
+            continue
+        split_index[match_id] = item
+
+    for match_id, entry in matches.items():
+        item = split_index.get(match_id)
+        if item is None:
+            continue
+        same_identity_time = bool(
+            item.get("scheduled") == entry.get("scheduled")
+            and item.get("p1") == entry.get("p1")
+            and item.get("p2") == entry.get("p2")
+        )
+        source_surface = str(item.get("surface") or "unknown").strip().casefold()
+        target_surface = str(entry.get("surface") or "unknown").strip().casefold()
+        same_surface = source_surface == target_surface
+        if not same_identity_time or not same_surface:
+            counters["service_split_identity_time_surface_mismatch"] += 1
+            continue
+
+        fields_added = 0
+        for pid in (entry["p1"], entry["p2"]):
+            source = (item.get("contrib") or {}).get(pid)
+            if not isinstance(source, dict):
+                counters["service_split_missing_player_contribution"] += 1
+                continue
+            target = entry["contrib"][pid]
+            for key, value in source.items():
+                if key not in ACCUMULATE_KEYS:
+                    continue
+                try:
+                    number = int(value)
+                except (TypeError, ValueError):
+                    continue
+                if number < 0:
+                    continue
+                target[key] += number
+                fields_added += int(number > 0)
+        if fields_added:
+            counters["service_split_matches_joined"] += 1
+            counters["service_split_fields_added"] += fields_added
+
     valid = []
     for entry in matches.values():
         serve_seen: Counter[int] = Counter()
@@ -556,8 +614,14 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
     counters["strict_matches"] = len(valid)
     return valid, dict(counters)
 
-def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    matches, source_counts = _prepare_matches(rows)
+def build_snapshots_from_rows(
+    rows: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    matches, source_counts = _prepare_matches(
+        rows,
+        service_split_matches=service_split_matches,
+    )
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
@@ -684,9 +748,13 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
 def build_current_target_profiles(
     point_rows: Iterable[dict[str, Any]],
     targets: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Build SHADOW as-of profiles for current card using stable provider IDs only."""
-    historical, source_counts = _prepare_matches(point_rows)
+    historical, source_counts = _prepare_matches(
+        point_rows,
+        service_split_matches=service_split_matches,
+    )
 
     normalized_targets = []
     rejected = Counter()
@@ -915,7 +983,10 @@ def build_current_target_profiles(
     return snapshots, summary
 
 def build() -> dict[str, Any]:
-    snapshots, summary = build_snapshots_from_rows(iter_point_rows() or ())
+    snapshots, summary = build_snapshots_from_rows(
+        iter_point_rows() or (),
+        service_split_matches=iter_service_split_matches() or (),
+    )
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     OUT_SUMMARY.parent.mkdir(parents=True, exist_ok=True)
 
