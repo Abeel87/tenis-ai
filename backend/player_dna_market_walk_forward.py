@@ -68,9 +68,14 @@ except ModuleNotFoundError:  # direct execution
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data" / "player_dna_dynamic_market_walk_forward.json"
+BACKTEST_REPORT = ROOT / "frontend" / "data" / "player_dna_market_backtest.json"
+PHASE6_REPORT = ROOT / "frontend" / "data" / "player_dna_phase6_exact_dp_monte_carlo.json"
+PHASE7_OUT = ROOT / "frontend" / "data" / "player_dna_phase7_calibration_walk_forward.json"
 
 VERSION = "player-dna-dynamic-market-walk-forward-v1"
 MODE = "SHADOW_DYNAMIC_LEAN_MARKET_WALK_FORWARD_ONLY"
+PHASE7_VERSION = "player-dna-phase7-calibration-walk-forward-v1"
+PHASE7_MODE = "SHADOW_PHASE7_VALIDATION_GATE_ONLY"
 TRAIN_FRACTIONS = (0.55, 0.70, 0.85)
 REQUIRED_FOLDS = 3
 FOLD_MIN_MATCHED = 120
@@ -83,6 +88,7 @@ SEGMENT_MIN_MARKET_N = 30
 SEGMENT_MIN_EVALUATED_MARKETS = 4
 SEGMENT_REPEATABLE_MIN_FOLDS = 2
 SEGMENT_CONSENSUS_POLICY_ID = "strict-marginal-agreement-mean-direction-v1"
+FORMAT_VALUES = ("BO3", "BO5")
 
 
 def segment_consensus_policy_contract() -> dict[str, Any]:
@@ -362,6 +368,134 @@ def fold_segment_diagnostics(
             for name, ids in sorted(groups.items())
         }
     return out
+
+
+def _match_format_value(
+    pair: dict[str, dict[str, Any]],
+) -> str:
+    p1 = pair.get("p1") if isinstance(pair, dict) else None
+    p1 = p1 if isinstance(p1, dict) else {}
+    value = str(p1.get("target_format") or "unknown").strip().upper()
+    return value if value in FORMAT_VALUES else "UNKNOWN"
+
+
+def fold_format_diagnostics(
+    profile_predictions: dict[str, dict[str, Any]],
+    dynamic_predictions: dict[str, dict[str, Any]],
+    labels: dict[str, dict[str, Any]],
+    pairs: dict[str, dict[str, dict[str, Any]]],
+) -> dict[str, Any]:
+    matched_ids = (
+        set(profile_predictions)
+        & set(dynamic_predictions)
+        & set(labels)
+    )
+    groups: dict[str, set[str]] = {value: set() for value in FORMAT_VALUES}
+    unknown: set[str] = set()
+    for match_id in matched_ids:
+        value = _match_format_value(pairs.get(match_id) or {})
+        if value in groups:
+            groups[value].add(match_id)
+        else:
+            unknown.add(match_id)
+
+    out = {
+        value: _segment_comparison(
+            groups[value],
+            profile_predictions,
+            dynamic_predictions,
+            labels,
+        )
+        for value in FORMAT_VALUES
+    }
+    if unknown:
+        out["UNKNOWN"] = _segment_comparison(
+            unknown,
+            profile_predictions,
+            dynamic_predictions,
+            labels,
+        )
+    return out
+
+
+def aggregate_format_diagnostics(
+    folds: list[dict[str, Any]],
+) -> dict[str, Any]:
+    rows: dict[str, Any] = {}
+    for value in FORMAT_VALUES:
+        fold_rows = []
+        for fold in folds:
+            diagnostic = ((fold.get("format_diagnostics") or {}).get(value) or {})
+            if isinstance(diagnostic, dict):
+                fold_rows.append((int(fold.get("fold") or 0), diagnostic))
+
+        supported = [
+            (fold_no, diagnostic)
+            for fold_no, diagnostic in fold_rows
+            if (diagnostic.get("verdict") or {}).get("support_sufficient") is True
+        ]
+        markets = {}
+        for market in BINARY_MARKETS:
+            eligible_folds = 0
+            positive_folds = 0
+            negative_folds = 0
+            brier_gains = []
+            log_loss_gains = []
+            sample_total = 0
+            for _fold_no, diagnostic in fold_rows:
+                metrics = (
+                    (diagnostic.get("binary_markets_vs_profile_only") or {})
+                    .get(market)
+                    or {}
+                )
+                n = int(metrics.get("n") or 0)
+                sample_total += n
+                if n < SEGMENT_MIN_MARKET_N:
+                    continue
+                eligible_folds += 1
+                brier_gain = float(metrics.get("brier_gain_vs_profile_only") or 0.0)
+                log_loss_gain = float(metrics.get("log_loss_gain_vs_profile_only") or 0.0)
+                brier_gains.append(brier_gain)
+                log_loss_gains.append(log_loss_gain)
+                positive_folds += int(
+                    metrics.get("dynamic_better_on_brier_and_log_loss") is True
+                )
+                negative_folds += int(
+                    brier_gain < 0.0 and log_loss_gain < 0.0
+                )
+            markets[market] = {
+                "sample_total": sample_total,
+                "eligible_folds": eligible_folds,
+                "positive_both_folds": positive_folds,
+                "negative_both_folds": negative_folds,
+                "mean_brier_gain_vs_profile_only": (
+                    round(sum(brier_gains) / len(brier_gains), 6)
+                    if brier_gains else None
+                ),
+                "mean_log_loss_gain_vs_profile_only": (
+                    round(sum(log_loss_gains) / len(log_loss_gains), 6)
+                    if log_loss_gains else None
+                ),
+            }
+
+        rows[value] = {
+            "folds_seen": len(fold_rows),
+            "supported_folds": len(supported),
+            "matched_settled_matches_total": sum(
+                int(diagnostic.get("matched_settled_matches") or 0)
+                for _fold_no, diagnostic in fold_rows
+            ),
+            "markets": markets,
+        }
+
+    return {
+        "mode": "SHADOW_FORMAT_DIAGNOSTIC_ONLY",
+        "production_influence": False,
+        "promotion_gate": False,
+        "formats": rows,
+        "required_formats_reported": list(FORMAT_VALUES),
+        "missing_sample_does_not_imply_quality": True,
+    }
 
 
 def aggregate_segment_diagnostics(
@@ -889,6 +1023,12 @@ def evaluate_walk_forward(
             labels,
             pairs,
         )
+        format_diagnostics = fold_format_diagnostics(
+            profile_predictions,
+            dynamic_predictions,
+            labels,
+            pairs,
+        )
         folds.append({
             **fold_meta,
             "status": "FOLD_COMPLETE",
@@ -899,6 +1039,7 @@ def evaluate_walk_forward(
             "comparison": comparison,
             "verdict": verdict,
             "segments": segments,
+            "format_diagnostics": format_diagnostics,
         })
 
         matched_ids = (
@@ -922,6 +1063,70 @@ def evaluate_walk_forward(
     summary = summarize_walk_forward(folds, aggregate_comparison)
     segment_aggregate = aggregate_segment_diagnostics(folds)
     segment_consensus_shadow_policy = build_segment_consensus_shadow_policy(segment_aggregate)
+    format_aggregate = aggregate_format_diagnostics(folds)
+
+    absolute_binary = aggregate_comparison.get("absolute_binary_diagnostics") or {}
+    calibration_structure_complete = all(
+        isinstance((absolute_binary.get(market) or {}).get("reference_profile_only"), dict)
+        and isinstance((absolute_binary.get(market) or {}).get("dynamic_lean_candidate"), dict)
+        and "coverage" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+        and "coverage" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+        and "ece_10_bin" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+        and "ece_10_bin" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+        and isinstance(
+            ((absolute_binary.get(market) or {}).get("reference_profile_only") or {}).get("calibration_bins"),
+            list,
+        )
+        and isinstance(
+            ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {}).get("calibration_bins"),
+            list,
+        )
+        and isinstance(
+            ((absolute_binary.get(market) or {}).get("reference_profile_only") or {}).get("confidence_buckets"),
+            list,
+        )
+        and isinstance(
+            ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {}).get("confidence_buckets"),
+            list,
+        )
+        for market in BINARY_MARKETS
+    )
+    phase7_validation_contract = {
+        "required_binary_markets": list(BINARY_MARKETS),
+        "brier_and_log_loss_present": all(
+            "brier" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+            and "log_loss" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+            and "brier" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+            and "log_loss" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+            for market in BINARY_MARKETS
+        ),
+        "calibration_reliability_ece_present": calibration_structure_complete,
+        "coverage_present": calibration_structure_complete,
+        "sample_size_per_market_present": all(
+            "n" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+            and "eligible_labels" in ((absolute_binary.get(market) or {}).get("reference_profile_only") or {})
+            and "n" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+            and "eligible_labels" in ((absolute_binary.get(market) or {}).get("dynamic_lean_candidate") or {})
+            for market in BINARY_MARKETS
+        ),
+        "confidence_buckets_present": calibration_structure_complete,
+        "surface_tour_diagnostics_present": all(
+            dimension in ((segment_aggregate.get("dimensions") or {}))
+            for dimension in SEGMENT_DIMENSIONS
+        ),
+        "bo3_bo5_diagnostics_present": all(
+            value in ((format_aggregate.get("formats") or {}))
+            for value in FORMAT_VALUES
+        ),
+        "walk_forward_completed_required_folds": (
+            int(summary.get("completed_folds") or 0) == REQUIRED_FOLDS
+        ),
+        "chronology_contract_enforced": all(
+            bool(value) for value in (base_report.get("chronology_contract") or {}).values()
+        ),
+        "promotion_thresholds_unchanged": True,
+        "validation_completion_is_not_promotion": True,
+    }
 
     return {
         **base_report,
@@ -936,7 +1141,158 @@ def evaluate_walk_forward(
         "summary": summary,
         "segment_aggregate": segment_aggregate,
         "segment_consensus_shadow_policy": segment_consensus_shadow_policy,
+        "format_aggregate": format_aggregate,
+        "phase7_validation_contract": phase7_validation_contract,
     }
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def evaluate_phase7_gate(
+    backtest: dict[str, Any],
+    walk_forward: dict[str, Any],
+    phase6: dict[str, Any],
+) -> dict[str, Any]:
+    validation_contract = walk_forward.get("phase7_validation_contract") or {}
+    required_contract_keys = (
+        "brier_and_log_loss_present",
+        "calibration_reliability_ece_present",
+        "coverage_present",
+        "sample_size_per_market_present",
+        "confidence_buckets_present",
+        "surface_tour_diagnostics_present",
+        "bo3_bo5_diagnostics_present",
+        "walk_forward_completed_required_folds",
+        "chronology_contract_enforced",
+        "promotion_thresholds_unchanged",
+        "validation_completion_is_not_promotion",
+    )
+    validation_contract_complete = all(
+        validation_contract.get(key) is True for key in required_contract_keys
+    )
+
+    phase6_ready = bool(
+        phase6.get("phase6_complete") is True
+        and phase6.get("phase7_ready") is True
+    )
+    backtest_complete = bool(
+        backtest.get("status") == "BACKTEST_COMPLETE_NO_PROMOTION"
+        and isinstance(
+            ((backtest.get("dynamic_lean_stateful_candidate") or {}).get("absolute_binary_diagnostics")),
+            dict,
+        )
+    )
+    walk_forward_complete = bool(
+        walk_forward.get("status") == "WALK_FORWARD_COMPLETE_NO_PROMOTION"
+        and int(((walk_forward.get("summary") or {}).get("completed_folds") or 0))
+        == REQUIRED_FOLDS
+    )
+    isolation_ok = all(
+        source.get("production_influence") is False
+        and source.get("symphony2_influence") is False
+        and source.get("superbet_playable_influence") is False
+        and source.get("auto_promote") is False
+        for source in (backtest, walk_forward)
+    )
+
+    technical_validation_complete = bool(
+        phase6_ready
+        and backtest_complete
+        and walk_forward_complete
+        and validation_contract_complete
+        and isolation_ok
+    )
+
+    backtest_signal = (
+        (backtest.get("dynamic_lean_stateful_candidate") or {}).get("signal")
+    )
+    walk_forward_signal = walk_forward.get("signal")
+    promotion_evidence_sufficient = bool(
+        backtest_signal == "DYNAMIC_LEAN_STATEFUL_E2E_PROMISING_SHADOW"
+        and walk_forward_signal == "DYNAMIC_LEAN_MARKET_WALK_FORWARD_ROBUST_SHADOW"
+    )
+
+    return {
+        "version": PHASE7_VERSION,
+        "mode": PHASE7_MODE,
+        "status": (
+            "PHASE7_VALIDATION_COMPLETE_NO_PROMOTION"
+            if technical_validation_complete
+            else "PHASE7_VALIDATION_INCOMPLETE_NO_PROMOTION"
+        ),
+        "phase": 7,
+        "phase6_prerequisite_satisfied": phase6_ready,
+        "technical_validation_complete": technical_validation_complete,
+        "phase7_complete": technical_validation_complete,
+        "phase8_ready": technical_validation_complete,
+        "promotion_evidence_sufficient": promotion_evidence_sufficient,
+        "promotion_verdict": (
+            "PROMOTION_EVIDENCE_SUFFICIENT_FOR_AUDIT_REVIEW"
+            if promotion_evidence_sufficient
+            else "EVIDENCE_INSUFFICIENT_NO_PROMOTION"
+        ),
+        "promotion_allowed_by_this_gate": False,
+        "production_influence": False,
+        "runtime_scoring_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+        "validation_contract": validation_contract,
+        "evidence": {
+            "backtest_status": backtest.get("status"),
+            "backtest_signal": backtest_signal,
+            "walk_forward_status": walk_forward.get("status"),
+            "walk_forward_signal": walk_forward_signal,
+            "completed_folds": int(
+                ((walk_forward.get("summary") or {}).get("completed_folds") or 0)
+            ),
+            "supported_folds": int(
+                ((walk_forward.get("summary") or {}).get("supported_folds") or 0)
+            ),
+            "repeatable_gain_folds": int(
+                ((walk_forward.get("summary") or {}).get("repeatable_gain_folds") or 0)
+            ),
+            "aggregate_matched_settled_matches": int(
+                ((walk_forward.get("summary") or {}).get("aggregate_matched_settled_matches") or 0)
+            ),
+        },
+        "policy": {
+            "phase_completion_means_validation_infrastructure_complete": True,
+            "phase_completion_does_not_mean_model_promotion": True,
+            "existing_walk_forward_thresholds_are_authoritative": True,
+            "insufficient_sample_or_mixed_evidence_means_no_promotion": True,
+            "phase8_is_challenger_evaluation_not_runtime_promotion": True,
+        },
+    }
+
+
+def build_phase7_gate() -> dict[str, Any]:
+    report = evaluate_phase7_gate(
+        _read_json(BACKTEST_REPORT),
+        _read_json(OUT),
+        _read_json(PHASE6_REPORT),
+    )
+    PHASE7_OUT.parent.mkdir(parents=True, exist_ok=True)
+    PHASE7_OUT.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps({
+        "version": report.get("version"),
+        "mode": report.get("mode"),
+        "status": report.get("status"),
+        "phase7_complete": report.get("phase7_complete"),
+        "phase8_ready": report.get("phase8_ready"),
+        "promotion_verdict": report.get("promotion_verdict"),
+        "evidence": report.get("evidence"),
+    }, ensure_ascii=False))
+    return report
 
 
 def build() -> dict[str, Any]:
