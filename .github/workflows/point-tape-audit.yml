@@ -428,6 +428,8 @@ jobs:
 
           expected_interactions = {
               'serve_vs_return',
+              'first_serve_vs_first_return',
+              'second_serve_vs_second_return',
               'hold_vs_break',
               'bp_save_vs_conversion',
               'deuce_serve_vs_return',
@@ -442,8 +444,6 @@ jobs:
               raise SystemExit(f'Matchup interaction set drifted: {sorted(interactions)}')
 
           required_gaps = {
-              'first_serve_vs_first_return',
-              'second_serve_vs_second_return',
               'ace_vs_contact_return',
               'double_fault_vs_return_pressure',
               'after_break_response',
@@ -469,12 +469,27 @@ jobs:
           if int(serve_at1.get('ready_directions') or 0) <= 0:
               raise SystemExit('Matchup readiness found no usable serve-vs-return directions')
 
+          first_at3 = (
+              (((report.get('coverage') or {}).get('overall') or {})
+              .get('first_serve_vs_first_return') or {})
+              .get('by_threshold') or {}
+          ).get('3') or {}
+          second_at3 = (
+              (((report.get('coverage') or {}).get('overall') or {})
+              .get('second_serve_vs_second_return') or {})
+              .get('by_threshold') or {}
+          ).get('3') or {}
+
           print(
               'Matchup readiness: '
               f"paired_matches={report.get('paired_matches')} "
               f"directions={report.get('directional_matchups')} "
               f"serve_at1={serve_at1.get('ready_directions')} "
-              f"serve_at1_rate={serve_at1.get('rate')}"
+              f"serve_at1_rate={serve_at1.get('rate')} "
+              f"first_split_at3={first_at3.get('ready_directions')} "
+              f"first_split_at3_rate={first_at3.get('rate')} "
+              f"second_split_at3={second_at3.get('ready_directions')} "
+              f"second_split_at3_rate={second_at3.get('rate')}"
           )
           PY
 

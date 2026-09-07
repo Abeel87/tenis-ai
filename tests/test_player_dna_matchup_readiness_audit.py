@@ -10,6 +10,14 @@ def _prior(matches=5, *, complete=True):
         "matches": matches,
         "serve_win_rate": 0.66,
         "return_win_rate": 0.38,
+        "first_serve_matches": matches,
+        "first_serve_win_rate": 0.71,
+        "second_serve_matches": matches,
+        "second_serve_win_rate": 0.52,
+        "first_return_matches": matches,
+        "first_return_win_rate": 0.34,
+        "second_return_matches": matches,
+        "second_return_win_rate": 0.49,
         "hold_rate": 0.82,
         "break_rate": 0.24,
         "bp_save_rate": 0.61,
@@ -122,9 +130,30 @@ def test_matchup_readiness_is_phase3_audit_only_and_lists_master_plan_gaps():
     ):
         assert contract[key] is True
 
-    assert "first_serve_vs_first_return" in NOT_CANONICALLY_AVAILABLE
-    assert "second_serve_vs_second_return" in NOT_CANONICALLY_AVAILABLE
+    assert "first_serve_vs_first_return" in INTERACTIONS
+    assert "second_serve_vs_second_return" in INTERACTIONS
+    assert "first_serve_vs_first_return" not in NOT_CANONICALLY_AVAILABLE
+    assert "second_serve_vs_second_return" not in NOT_CANONICALLY_AVAILABLE
     assert "ace_vs_contact_return" in NOT_CANONICALLY_AVAILABLE
     assert "double_fault_vs_return_pressure" in NOT_CANONICALLY_AVAILABLE
     assert "first_set_vs_first_set" in NOT_CANONICALLY_AVAILABLE
     assert "stamina_long_match_bo5" in NOT_CANONICALLY_AVAILABLE
+
+
+
+def test_matchup_readiness_requires_service_split_specific_prior_match_support():
+    rows = [
+        _row("m1", "2026-09-06T10:00:00Z", 1, 2, overall=5, surface=5),
+        _row("m1", "2026-09-06T10:00:00Z", 2, 1, overall=5, surface=5),
+    ]
+    # Generic Player DNA support stays at five, but first-serve split support
+    # is deliberately only one match. It must fail the @5 split gate.
+    rows[0]["overall_prior"]["first_serve_matches"] = 1
+
+    report = audit_profile_snapshots(rows)
+
+    first = report["coverage"]["overall"]["first_serve_vs_first_return"]["by_threshold"]["5"]
+    second = report["coverage"]["overall"]["second_serve_vs_second_return"]["by_threshold"]["5"]
+
+    assert first["ready_directions"] == 1
+    assert second["ready_directions"] == 2
