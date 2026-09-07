@@ -37,6 +37,7 @@ MIN_RELIABLE_MATCHES = 5
 STALE_CACHE_MIN_AGE_HOURS = 6
 STALE_CACHE_REFRESH_COOLDOWN_HOURS = 72
 MAX_STALE_CACHE_REFRESHES_PER_RUN = 24
+MAX_STALE_CACHE_SCAN_PER_RUN = 240
 
 
 def _key(value: Any) -> str:
@@ -299,6 +300,57 @@ def _stale_cache_refresh_due(
     return True
 
 
+def _refresh_cached_tape_if_due(
+    api: API,
+    mid: int | str,
+    cached: dict[str, Any],
+    path: Path,
+    *,
+    scheduled_time: Any,
+    now: datetime,
+    counters: dict[str, Any],
+    refresh_state: dict[str, Any],
+):
+    if not _stale_cache_refresh_due(
+        api,
+        cached,
+        mid,
+        scheduled_time,
+        now,
+        counters,
+        refresh_state,
+    ):
+        return cached, True
+
+    entry = _refresh_state_entry(refresh_state, mid)
+    entry["last_attempt_at"] = now.isoformat()
+    counters["tape_stale_refresh_attempts"] = int(
+        counters.get("tape_stale_refresh_attempts") or 0
+    ) + 1
+    try:
+        payload = api.get(f"/history/matches/{mid}", {"sequence": "clean"})
+        if not isinstance(payload, dict):
+            raise ValueError("history_match_payload_not_dict")
+        _write_gzip_json(path, payload)
+        terminal = _cache_has_terminal_stats(payload)
+        counters["tape_stale_refresh_successes"] = int(
+            counters.get("tape_stale_refresh_successes") or 0
+        ) + 1
+        counters["tape_stale_refresh_terminalized"] = int(
+            counters.get("tape_stale_refresh_terminalized") or 0
+        ) + int(terminal)
+        entry["last_result"] = "terminal_stats" if terminal else "still_nonterminal"
+        entry["last_success_at"] = now.isoformat()
+        entry["terminal_stats"] = terminal
+        return payload, False
+    except Exception as exc:
+        counters["tape_stale_refresh_errors"] = int(
+            counters.get("tape_stale_refresh_errors") or 0
+        ) + 1
+        entry["last_result"] = f"error:{type(exc).__name__}"
+        return cached, True
+
+
 def _get_tape(
     api: API,
     mid: int | str,
@@ -312,48 +364,135 @@ def _get_tape(
     cached = _read_gzip_json(p)
     if cached is not None:
         current_now = now or datetime.now(timezone.utc)
-        if _stale_cache_refresh_due(
-            api,
-            cached,
-            mid,
-            scheduled_time,
-            current_now,
-            counters,
-            refresh_state,
-        ):
-            entry = _refresh_state_entry(refresh_state, mid)
-            entry["last_attempt_at"] = current_now.isoformat()
-            counters["tape_stale_refresh_attempts"] = int(
-                counters.get("tape_stale_refresh_attempts") or 0
-            ) + 1
-            try:
-                payload = api.get(f"/history/matches/{mid}", {"sequence": "clean"})
-                if not isinstance(payload, dict):
-                    raise ValueError("history_match_payload_not_dict")
-                _write_gzip_json(p, payload)
-                terminal = _cache_has_terminal_stats(payload)
-                counters["tape_stale_refresh_successes"] = int(
-                    counters.get("tape_stale_refresh_successes") or 0
-                ) + 1
-                counters["tape_stale_refresh_terminalized"] = int(
-                    counters.get("tape_stale_refresh_terminalized") or 0
-                ) + int(terminal)
-                entry["last_result"] = "terminal_stats" if terminal else "still_nonterminal"
-                entry["last_success_at"] = current_now.isoformat()
-                entry["terminal_stats"] = terminal
-                return payload, False
-            except Exception as exc:
-                counters["tape_stale_refresh_errors"] = int(
-                    counters.get("tape_stale_refresh_errors") or 0
-                ) + 1
-                entry["last_result"] = f"error:{type(exc).__name__}"
-                return cached, True
+        if counters is not None and refresh_state is not None:
+            return _refresh_cached_tape_if_due(
+                api,
+                mid,
+                cached,
+                p,
+                scheduled_time=scheduled_time,
+                now=current_now,
+                counters=counters,
+                refresh_state=refresh_state,
+            )
         return cached, True
 
     payload = api.get(f"/history/matches/{mid}", {"sequence": "clean"})
     _write_gzip_json(p, payload)
     return payload, False
 
+
+def _cached_match_identity_and_time(
+    payload: dict[str, Any],
+) -> tuple[Any, Any]:
+    match = payload.get("match") if isinstance(payload.get("match"), dict) else {}
+    if not match:
+        data = payload.get("data")
+        if isinstance(data, dict) and isinstance(data.get("match"), dict):
+            match = data["match"]
+    return match.get("id"), match.get("scheduled_time")
+
+
+def _historical_cache_refresh_sweep(
+    api: API,
+    now: datetime,
+    counters: dict[str, Any],
+    refresh_state: dict[str, Any],
+) -> dict[str, Any]:
+    """Revalidate old cached matches independently of today's player targets.
+
+    Current-profile work runs first. This bounded sweep then spends only the
+    remaining PBP budget, so historical cache repair cannot starve the live
+    operator-facing refresh. A persisted cursor avoids rescanning the whole
+    cache every run.
+    """
+    match_dir = CACHE / "matches"
+    paths = sorted(match_dir.glob("*.json.gz")) if match_dir.exists() else []
+    total = len(paths)
+    if total == 0:
+        counters["historical_cache_sweep_scanned"] = 0
+        counters["historical_cache_sweep_total_files"] = 0
+        return {
+            "scanned": 0,
+            "total_files": 0,
+            "cursor_start": 0,
+            "cursor_end": 0,
+        }
+
+    try:
+        cursor_start = int(refresh_state.get("historical_sweep_cursor") or 0) % total
+    except (TypeError, ValueError):
+        cursor_start = 0
+
+    scanned = 0
+    missing_schedule = 0
+    identity_mismatch = 0
+    invalid_payload = 0
+    attempted_here = 0
+    scan_limit = min(total, MAX_STALE_CACHE_SCAN_PER_RUN)
+
+    for offset in range(scan_limit):
+        if api.calls >= api.call_cap:
+            break
+        if int(counters.get("tape_stale_refresh_attempts") or 0) >= MAX_STALE_CACHE_REFRESHES_PER_RUN:
+            break
+
+        index = (cursor_start + offset) % total
+        cache_path = paths[index]
+        scanned += 1
+        cached = _read_gzip_json(cache_path)
+        if not isinstance(cached, dict):
+            invalid_payload += 1
+            continue
+
+        name = cache_path.name
+        if not name.endswith(".json.gz"):
+            invalid_payload += 1
+            continue
+        mid = name[:-8]
+        payload_mid, scheduled_time = _cached_match_identity_and_time(cached)
+        if payload_mid is not None and str(payload_mid) != str(mid):
+            identity_mismatch += 1
+            continue
+        if _parse_dt(scheduled_time) is None:
+            missing_schedule += 1
+            continue
+
+        before = int(counters.get("tape_stale_refresh_attempts") or 0)
+        _refresh_cached_tape_if_due(
+            api,
+            mid,
+            cached,
+            cache_path,
+            scheduled_time=scheduled_time,
+            now=now,
+            counters=counters,
+            refresh_state=refresh_state,
+        )
+        after = int(counters.get("tape_stale_refresh_attempts") or 0)
+        attempted_here += max(0, after - before)
+
+    cursor_end = (cursor_start + scanned) % total if total else 0
+    refresh_state["historical_sweep_cursor"] = cursor_end
+    refresh_state["historical_sweep_last_at"] = now.isoformat()
+
+    counters["historical_cache_sweep_scanned"] = scanned
+    counters["historical_cache_sweep_total_files"] = total
+    counters["historical_cache_sweep_attempts"] = attempted_here
+    counters["historical_cache_sweep_missing_schedule"] = missing_schedule
+    counters["historical_cache_sweep_identity_mismatch"] = identity_mismatch
+    counters["historical_cache_sweep_invalid_payload"] = invalid_payload
+
+    return {
+        "scanned": scanned,
+        "total_files": total,
+        "cursor_start": cursor_start,
+        "cursor_end": cursor_end,
+        "attempts": attempted_here,
+        "missing_schedule": missing_schedule,
+        "identity_mismatch": identity_mismatch,
+        "invalid_payload": invalid_payload,
+    }
 
 def _first_set_state(row: dict) -> tuple[int, int] | None:
     games = row.get("games")
@@ -1072,6 +1211,12 @@ def main() -> None:
         "tape_stale_refresh_successes": 0,
         "tape_stale_refresh_terminalized": 0,
         "tape_stale_refresh_errors": 0,
+        "historical_cache_sweep_scanned": 0,
+        "historical_cache_sweep_total_files": 0,
+        "historical_cache_sweep_attempts": 0,
+        "historical_cache_sweep_missing_schedule": 0,
+        "historical_cache_sweep_identity_mismatch": 0,
+        "historical_cache_sweep_invalid_payload": 0,
     }
     seed_ids = {}
     for k, entry in (index.get("players") or {}).items():
@@ -1097,6 +1242,15 @@ def main() -> None:
             counters,
             refresh_state=refresh_state,
         )
+
+    # Current profiles keep priority. Only after they have used what they need
+    # do we spend remaining PBP budget on the broad historical cache.
+    historical_sweep = _historical_cache_refresh_sweep(
+        api,
+        now,
+        counters,
+        refresh_state,
+    )
 
     ready_matches = 0
     for m in rows:
@@ -1138,12 +1292,22 @@ def main() -> None:
             "pbp_v7_stale_cache_refresh_errors": counters["tape_stale_refresh_errors"],
             "pbp_v7_stale_cache_refresh_cap": MAX_STALE_CACHE_REFRESHES_PER_RUN,
             "pbp_v7_stale_cache_refresh_cooldown_hours": STALE_CACHE_REFRESH_COOLDOWN_HOURS,
+            "pbp_v7_historical_cache_sweep_scan_cap": MAX_STALE_CACHE_SCAN_PER_RUN,
+            "pbp_v7_historical_cache_sweep_scanned": counters["historical_cache_sweep_scanned"],
+            "pbp_v7_historical_cache_sweep_total_files": counters["historical_cache_sweep_total_files"],
+            "pbp_v7_historical_cache_sweep_attempts": counters["historical_cache_sweep_attempts"],
+            "pbp_v7_historical_cache_sweep_missing_schedule": counters["historical_cache_sweep_missing_schedule"],
+            "pbp_v7_historical_cache_sweep_identity_mismatch": counters["historical_cache_sweep_identity_mismatch"],
+            "pbp_v7_historical_cache_sweep_invalid_payload": counters["historical_cache_sweep_invalid_payload"],
+            "pbp_v7_historical_cache_sweep_cursor_start": historical_sweep.get("cursor_start"),
+            "pbp_v7_historical_cache_sweep_cursor_end": historical_sweep.get("cursor_end"),
             "pbp_v7_daily_limit": limits.get("per_day"),
             "pbp_v7_calls_before_run": usage_today.get("calls"),
             "pbp_v7_note": (
                 "EHS only with >=5 reliable point-by-point matches; cached completed "
                 "matches without terminal stats are revalidated gradually under a "
-                "bounded per-run cap and cooldown."
+                "bounded per-run cap and cooldown; a bounded cursor sweep repairs "
+                "historical cache even when today's target set yields no profiles."
             ),
         }
     )
