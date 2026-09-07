@@ -134,7 +134,10 @@ def _cached_stats_payload(profile_games, *, final_games=(6, 4)):
                 "created_at": "2026-09-06T20:00:00Z",
                 "input_state": {
                     "score": {"sets": [2, 0] if list(profile_games) == list(final_games) else [1, 0], "games": list(profile_games)},
-                    "stats": {"p1": {}, "p2": {}},
+                    "stats": {
+                        "p1": {"firstServePointsAccuracy": "30/40 (75%)"},
+                        "p2": {"firstServePointsAccuracy": "28/40 (70%)"},
+                    },
                 },
             }
         ],
