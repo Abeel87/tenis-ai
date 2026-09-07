@@ -1786,6 +1786,80 @@ jobs:
       - name: Simulate raw + hold-calibrated Player DNA markets (SHADOW, zero network)
         run: python backend/player_dna_tennis_simulator.py
 
+      - name: Guard Phase-6 exact DP plus Monte Carlo closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_phase6_exact_dp_monte_carlo.json')
+          if not p.exists():
+              raise SystemExit('player_dna_phase6_exact_dp_monte_carlo.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PHASE6_EXACT_DP_MONTE_CARLO':
+              raise SystemExit('Phase-6 simulator gate mode invalid')
+          if report.get('phase') != 'PHASE_6_EXACT_DP_MARKOV_MONTE_CARLO':
+              raise SystemExit('Phase-6 simulator phase drifted')
+          if report.get('phase5_ready') is not True:
+              raise SystemExit('Phase-6 gate lost Phase-5 prerequisite')
+          if report.get('phase6_complete') is not True:
+              raise SystemExit(f"Phase-6 gate not complete: {report.get('status')}")
+          if report.get('phase7_ready') is not True:
+              raise SystemExit('Phase-6 gate did not authorize Phase 7')
+          if report.get('deterministic_seed_replay') is not True:
+              raise SystemExit('Phase-6 Monte Carlo is not deterministic for a fixed seed')
+          if int(report.get('test_simulations_per_scenario') or 0) != 10000:
+              raise SystemExit('Phase-6 test scale must remain 10k simulations per scenario')
+          if int(report.get('shadow_simulations_target') or 0) != 50000:
+              raise SystemExit('Phase-6 SHADOW target drifted from 50k')
+
+          for key in (
+              'production_influence',
+              'runtime_switch_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-6 activation violation: {key}')
+
+          comparisons = report.get('comparisons') or []
+          if len(comparisons) != 4:
+              raise SystemExit(f'Phase-6 scenario coverage invalid: {len(comparisons)}')
+          for row in comparisons:
+              if row.get('passed') is not True:
+                  raise SystemExit(
+                      f"Phase-6 DP/MC mismatch for {row.get('scenario')}: "
+                      f"max_abs_error={row.get('max_abs_error')}"
+                  )
+              if float(row.get('max_abs_error') or 0.0) > float(report.get('comparison_tolerance_abs') or 0.0):
+                  raise SystemExit(f"Phase-6 tolerance breach for {row.get('scenario')}")
+              mass = row.get('probability_mass_checks') or {}
+              if not mass or not all(value is True for value in mass.values()):
+                  raise SystemExit(f"Phase-6 probability mass drift for {row.get('scenario')}")
+
+          contract = report.get('contract') or {}
+          for key in (
+              'canonical_simulator_module_reused',
+              'exact_dp_preferred_for_static_probabilities',
+              'monte_carlo_is_crosscheck_not_replacement',
+              'same_hold_and_tiebreak_primitives',
+              'same_phase5_legality_predicates',
+              'fixed_probability_dp_mc_agreement_required',
+              'history_dependent_monte_carlo_not_activated_yet',
+              'phase6_completion_does_not_promote_runtime_or_prod',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-6 simulator contract violation: {key}')
+
+          print(
+              'Phase-6 DP/MC closure: '
+              f"status={report.get('status')} "
+              f"phase7_ready={report.get('phase7_ready')} "
+              f"max_error={max(float(row.get('max_abs_error') or 0.0) for row in comparisons):.6f}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -3320,6 +3394,7 @@ jobs:
             frontend/data/player_dna_phase3_matchup_engine.json
             frontend/data/player_dna_phase4_point_probability_engine.json
             frontend/data/player_dna_phase5_tennis_state_engine.json
+            frontend/data/player_dna_phase6_exact_dp_monte_carlo.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
