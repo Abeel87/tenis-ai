@@ -150,3 +150,80 @@ def test_audit_funnel_counts_missing_stats_as_separate_stage(monkeypatch):
     assert funnel["funnel_accounting_matches"] == 1
     assert funnel["funnel_accounts_for_all_stable_matches"] is True
     assert report["score_gap_kinds"]["no_stats_profile"] == 1
+
+
+
+def test_stats_capture_gap_finds_cached_raw_outside_profile_path(monkeypatch):
+    _patch_identity_and_final(monkeypatch)
+
+    payload = {
+        "match": {
+            "scheduled_time": "2026-09-06T10:00:00Z",
+            "surface": "Hard",
+        },
+        "profiles": [],
+        "provider_archive": {
+            "late_stats": _raw_stats(),
+        },
+    }
+
+    report = audit_payloads([payload])
+    capture = report["stats_capture_gap"]
+
+    assert capture["matches_without_stats_profiles"] == 1
+    assert capture["no_stats_capture_reasons"]["no_profile_entries"] == 1
+    assert capture["reasons_account_for_all_missing_stats"] is True
+    assert (
+        capture["alternate_raw_evidence"]["all_four_raw_cached_elsewhere"]
+        == 1
+    )
+    assert capture["alternate_raw_accounts_for_all_missing_stats"] is True
+    assert capture["alternate_raw_max_slots_histogram"]["8"] == 1
+    assert capture["by_surface"]["hard"]["stable_matches"] == 1
+    assert capture["by_surface"]["hard"]["with_stats_profiles"] == 0
+    assert capture["by_surface"]["hard"]["stats_profile_rate"] == 0.0
+    assert capture["by_scheduled_month"]["2026-09"]["without_stats_profiles"] == 1
+    assert report["contract"]["alternate_raw_container_scan_diagnostic_only"] is True
+    assert report["contract"]["alternate_raw_container_authorized_for_history"] is False
+
+
+def test_stats_capture_gap_distinguishes_profile_without_input_state(monkeypatch):
+    _patch_identity_and_final(monkeypatch)
+
+    report = audit_payloads([
+        {
+            "profiles": [
+                {"created_at": "2026-09-06T12:00:00Z"},
+            ],
+        }
+    ])
+    capture = report["stats_capture_gap"]
+
+    assert capture["no_stats_capture_reasons"]["profiles_without_input_state"] == 1
+    assert (
+        capture["alternate_raw_evidence"]["no_raw_stats_like_container_found"]
+        == 1
+    )
+    assert capture["alternate_raw_max_slots_histogram"]["0"] == 1
+
+
+def test_stats_capture_gap_distinguishes_input_state_without_stats_dict(monkeypatch):
+    _patch_identity_and_final(monkeypatch)
+
+    report = audit_payloads([
+        {
+            "profiles": [
+                {
+                    "created_at": "2026-09-06T12:00:00Z",
+                    "input_state": {"score": _score([6, 3])},
+                },
+            ],
+        }
+    ])
+    capture = report["stats_capture_gap"]
+
+    assert (
+        capture["no_stats_capture_reasons"]["input_state_without_stats_dict"]
+        == 1
+    )
+    assert capture["reasons_account_for_all_missing_stats"] is True
