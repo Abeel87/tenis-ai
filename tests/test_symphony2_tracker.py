@@ -39,6 +39,7 @@ def _current():
                             {
                                 "left_selection_id": "a",
                                 "right_selection_id": "b",
+                                "exact_pair_joint_probability": 42.0,
                                 "redundancy_score": 0.6,
                                 "conflict_score": 0.4,
                             }
@@ -191,3 +192,83 @@ def test_legacy_history_without_dependency_block_remains_valid():
     assert entry["dependency_evidence_status"] == "NOT_AVAILABLE"
     evidence = performance_stats(doc)["dependency_evidence"]
     assert evidence["predictions_with_frozen_diagnostics"] == 0
+
+
+
+def test_prospective_pair_calibration_uses_frozen_exact_joint_and_settled_results():
+    current = _current()
+    current["matches"][0]["compositions"]["2"]["joint_probability"] = 42.0
+    doc, _ = capture(current, {})
+    base = [{
+        "id": 123,
+        "playable_autolearn_signals_v912": [
+            {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
+            {"market": "set1_total", "pick": "under", "line": 10.5, "result": "hit"},
+        ],
+    }]
+
+    settled, _ = settle(doc, base)
+    calibration = performance_stats(settled)["dependency_evidence"]["settlement_calibration"]
+
+    assert calibration["status"] == "PROSPECTIVE_SETTLEMENT_CALIBRATION_DIAGNOSTIC_ONLY"
+    assert calibration["prospective_only"] is True
+    assert calibration["threshold_selection_enabled"] is False
+    assert calibration["ranking_influence"] is False
+
+    composition = calibration["composition_joint"]
+    assert composition["settled"] == 1
+    assert composition["hits"] == 1
+    assert composition["observed_hit_rate"] == 100.0
+    assert composition["mean_predicted_probability"] == 42.0
+    assert composition["brier"] == 0.3364
+
+    pair = calibration["exact_pair_joint"]
+    assert pair["settled"] == 1
+    assert pair["hits"] == 1
+    assert pair["observed_hit_rate"] == 100.0
+    assert pair["mean_predicted_probability"] == 42.0
+    assert pair["brier"] == 0.3364
+
+    bucket = calibration["by_redundancy_decile"]["0.6-0.7"]
+    assert bucket["settled"] == 1
+    assert bucket["hits"] == 1
+    assert calibration["score_source"] == "FROZEN_PREMATCH_EXACT_SHARED_STATE"
+
+
+def test_pair_calibration_marks_joint_miss_when_either_settled_leg_misses():
+    doc, _ = capture(_current(), {})
+    base = [{
+        "id": 123,
+        "playable_autolearn_signals_v912": [
+            {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
+            {"market": "set1_total", "pick": "under", "line": 10.5, "result": "miss"},
+        ],
+    }]
+
+    settled, _ = settle(doc, base)
+    pair = performance_stats(settled)["dependency_evidence"]["settlement_calibration"]["exact_pair_joint"]
+
+    assert pair["settled"] == 1
+    assert pair["hits"] == 0
+    assert pair["misses"] == 1
+    assert pair["observed_hit_rate"] == 0.0
+    assert pair["mean_predicted_probability"] == 42.0
+    assert pair["brier"] == 0.1764
+
+
+def test_pair_calibration_excludes_void_or_pending_leg_pairs():
+    doc, _ = capture(_current(), {})
+    base = [{
+        "id": 123,
+        "playable_autolearn_signals_v912": [
+            {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
+            {"market": "set1_total", "pick": "under", "line": 10.5, "result": "void"},
+        ],
+    }]
+
+    settled, _ = settle(doc, base)
+    calibration = performance_stats(settled)["dependency_evidence"]["settlement_calibration"]
+
+    assert settled["entries"][0]["result"] == "hit"
+    assert calibration["exact_pair_joint"]["settled"] == 0
+    assert calibration["by_redundancy_decile"] == {}
