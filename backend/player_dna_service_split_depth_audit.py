@@ -48,8 +48,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT = ROOT / "frontend" / "data" / "player_dna_service_split_depth_audit.json"
 
-VERSION = "player-dna-service-split-depth-audit-v3"
+VERSION = "player-dna-service-split-depth-audit-v4"
 MODE = "SHADOW_DIAGNOSTIC_ONLY"
+PARTIAL_PROGRESS_THRESHOLDS = (0.50, 0.75, 0.90, 0.95)
 
 RAW_SLOTS = tuple(
     f"{side}_{field}"
@@ -204,6 +205,141 @@ def _profile_has_all_four_raw_both(profile: dict[str, Any]) -> bool:
     return len(_profile_raw_slots(profile)) == len(RAW_SLOTS)
 
 
+def _profile_raw_counts(profile: dict[str, Any]) -> dict[str, tuple[int, int]]:
+    state = (
+        profile.get("input_state")
+        if isinstance(profile.get("input_state"), dict)
+        else {}
+    )
+    stats = state.get("stats") if isinstance(state.get("stats"), dict) else {}
+    out: dict[str, tuple[int, int]] = {}
+    for side in ("p1", "p2"):
+        raw_side = stats.get(side) if isinstance(stats.get(side), dict) else {}
+        for field in SPLIT_FIELDS:
+            counts = _ratio_counts(raw_side.get(RAW_KEYS[field]))
+            if counts is not None:
+                out[f"{side}_{field}"] = counts
+    return out
+
+
+def _sum_nonnegative_ints(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return max(0, value)
+    if isinstance(value, list):
+        return sum(_sum_nonnegative_ints(item) for item in value)
+    return 0
+
+
+def _final_tape_score_object(payload: dict[str, Any]) -> dict[str, Any] | None:
+    rows = payload.get("tape")
+    if not isinstance(rows, list):
+        return None
+    for row in reversed(rows):
+        if isinstance(row, dict) and _score_core(row) is not None:
+            return row
+    return None
+
+
+def _profile_game_progress(
+    profile: dict[str, Any],
+    payload: dict[str, Any],
+) -> float | None:
+    state = (
+        profile.get("input_state")
+        if isinstance(profile.get("input_state"), dict)
+        else {}
+    )
+    score = state.get("score") if isinstance(state.get("score"), dict) else None
+    final = _final_tape_score_object(payload)
+    if score is None or final is None:
+        return None
+    current_games = _sum_nonnegative_ints(score.get("games"))
+    final_games = _sum_nonnegative_ints(final.get("games"))
+    if final_games <= 0:
+        return None
+    return round(current_games / final_games, 6)
+
+
+def _partial_against_terminal(
+    payload: dict[str, Any],
+    profiles: list[dict[str, Any]],
+    final_score: tuple[str, str] | None,
+) -> dict[str, Any] | None:
+    terminal_raw = [
+        profile
+        for profile in profiles
+        if _profile_is_terminal(profile, final_score)
+        and _profile_has_all_four_raw_both(profile)
+    ]
+    if not terminal_raw:
+        return None
+
+    terminal = terminal_raw[-1]
+    terminal_index = profiles.index(terminal)
+    candidates = [
+        profile
+        for profile in profiles[:terminal_index]
+        if not _profile_is_terminal(profile, final_score)
+        and _profile_has_all_four_raw_both(profile)
+    ]
+    if not candidates:
+        return {
+            "paired_terminal_raw_match": True,
+            "has_preterminal_all_four_raw": False,
+        }
+
+    candidate = candidates[-1]
+    candidate_counts = _profile_raw_counts(candidate)
+    terminal_counts = _profile_raw_counts(terminal)
+    errors_pp: list[float] = []
+    denominator_fractions: list[float] = []
+    comparisons = 0
+    monotonic = True
+
+    for slot in RAW_SLOTS:
+        left = candidate_counts.get(slot)
+        right = terminal_counts.get(slot)
+        if left is None or right is None:
+            continue
+        cw, cp = left
+        tw, tp = right
+        if cp <= 0 or tp <= 0:
+            continue
+        comparisons += 1
+        errors_pp.append(abs(cw / cp - tw / tp) * 100.0)
+        denominator_fractions.append(cp / tp)
+        if cw > tw or cp > tp:
+            monotonic = False
+
+    progress = _profile_game_progress(candidate, payload)
+    return {
+        "paired_terminal_raw_match": True,
+        "has_preterminal_all_four_raw": True,
+        "profile_game_progress": progress,
+        "field_comparisons": comparisons,
+        "mean_abs_error_pp": (
+            round(sum(errors_pp) / len(errors_pp), 6)
+            if errors_pp
+            else None
+        ),
+        "max_abs_error_pp": (
+            round(max(errors_pp), 6)
+            if errors_pp
+            else None
+        ),
+        "within_2pp_fields": sum(1 for value in errors_pp if value <= 2.0),
+        "within_5pp_fields": sum(1 for value in errors_pp if value <= 5.0),
+        "raw_counts_monotonic_to_terminal": bool(comparisons and monotonic),
+        "min_denominator_fraction_of_terminal": (
+            round(min(denominator_fractions), 6)
+            if denominator_fractions
+            else None
+        ),
+    }
+
+
 def _score_gap_kind(
     profiles: list[dict[str, Any]],
     final_score: tuple[str, str] | None,
@@ -260,6 +396,12 @@ def inspect_snapshot_depth(payload: dict[str, Any]) -> dict[str, Any]:
         for profile in terminal_profiles
         if _profile_has_all_four_raw_both(profile)
     ]
+    latest_raw_profile = raw_profiles[-1] if raw_profiles else None
+    partial_validation = _partial_against_terminal(
+        payload,
+        profiles,
+        final_score,
+    )
 
     any_raw_slots: set[str] = set()
     terminal_raw_slots: set[str] = set()
@@ -297,6 +439,12 @@ def inspect_snapshot_depth(payload: dict[str, Any]) -> dict[str, Any]:
             and _profile_is_terminal(latest, final_score)
             and _profile_has_all_four_raw_both(latest)
         ),
+        "latest_raw_profile_game_progress": (
+            _profile_game_progress(latest_raw_profile, payload)
+            if latest_raw_profile is not None
+            else None
+        ),
+        "partial_vs_terminal_validation": partial_validation,
         "any_raw_slots": sorted(any_raw_slots),
         "terminal_raw_slots": sorted(terminal_raw_slots),
         "score_gap_kind": _score_gap_kind(profiles, final_score),
@@ -315,6 +463,11 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
     alternate_raw_max_slot_histogram = Counter()
     stats_capture_by_surface: dict[str, Counter] = {}
     stats_capture_by_month: dict[str, Counter] = {}
+    paired_partial_rows: list[dict[str, Any]] = []
+    raw_without_terminal_progress = {
+        threshold: 0 for threshold in PARTIAL_PROGRESS_THRESHOLDS
+    }
+    raw_without_terminal_progress_known = 0
 
     for payload in payloads:
         if not isinstance(payload, dict):
@@ -382,6 +535,18 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
         counts["raw_all_four_outside_terminal_proof_matches"] += int(
             has_raw_anywhere and not has_terminal_raw
         )
+        if has_raw_anywhere and not has_terminal_raw:
+            progress = item.get("latest_raw_profile_game_progress")
+            if isinstance(progress, (int, float)) and not isinstance(progress, bool):
+                raw_without_terminal_progress_known += 1
+                for threshold in PARTIAL_PROGRESS_THRESHOLDS:
+                    raw_without_terminal_progress[threshold] += int(
+                        float(progress) >= threshold
+                    )
+
+        paired = item.get("partial_vs_terminal_validation")
+        if isinstance(paired, dict) and paired.get("has_preterminal_all_four_raw") is True:
+            paired_partial_rows.append(paired)
         counts["recoverable_if_latest_rule_is_only_blocker"] += int(
             has_terminal_raw
             and not item["latest_terminal_all_four_raw_both"]
@@ -450,6 +615,47 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             }
         return out
 
+    def paired_validation_summary(
+        rows: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        comparisons = sum(int(row.get("field_comparisons") or 0) for row in rows)
+        weighted_error = sum(
+            float(row.get("mean_abs_error_pp") or 0.0)
+            * int(row.get("field_comparisons") or 0)
+            for row in rows
+        )
+        within2 = sum(int(row.get("within_2pp_fields") or 0) for row in rows)
+        within5 = sum(int(row.get("within_5pp_fields") or 0) for row in rows)
+        monotonic = sum(
+            1 for row in rows
+            if row.get("raw_counts_monotonic_to_terminal") is True
+        )
+        return {
+            "matches": len(rows),
+            "field_comparisons": comparisons,
+            "mean_abs_error_pp": (
+                round(weighted_error / comparisons, 6)
+                if comparisons
+                else None
+            ),
+            "within_2pp_rate": rate(within2, comparisons),
+            "within_5pp_rate": rate(within5, comparisons),
+            "raw_count_monotonic_match_rate": rate(monotonic, len(rows)),
+        }
+
+    partial_validation_by_progress: dict[str, Any] = {}
+    for threshold in PARTIAL_PROGRESS_THRESHOLDS:
+        rows = [
+            row for row in paired_partial_rows
+            if isinstance(row.get("profile_game_progress"), (int, float))
+            and not isinstance(row.get("profile_game_progress"), bool)
+            and float(row["profile_game_progress"]) >= threshold
+        ]
+        partial_validation_by_progress[str(threshold)] = {
+            "minimum_profile_game_progress": threshold,
+            **paired_validation_summary(rows),
+        }
+
     raw_slot_coverage = {
         slot: {
             "matches_with_raw_in_any_stats_profile": int(
@@ -486,6 +692,9 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "alternate_raw_container_scan_diagnostic_only": True,
             "alternate_raw_container_authorized_for_history": False,
             "stats_capture_gap_diagnostic_only": True,
+            "partial_raw_validation_diagnostic_only": True,
+            "partial_raw_authorized_for_canonical_history": False,
+            "partial_raw_gate_activation_enabled": False,
             "training_join_enabled": False,
             "scorer_activation_enabled": False,
             "runtime_activation_enabled": False,
@@ -533,6 +742,38 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 "They are not terminally proven and cannot enter canonical history "
                 "without a separate semantics/timing gate."
             ),
+        },
+        "partial_raw_terminal_validation": {
+            "paired_terminal_matches_with_preterminal_all_four_raw": len(
+                paired_partial_rows
+            ),
+            "overall": paired_validation_summary(paired_partial_rows),
+            "by_minimum_game_progress": partial_validation_by_progress,
+            "raw_without_terminal_progress_known_matches": (
+                raw_without_terminal_progress_known
+            ),
+            "raw_without_terminal_candidates_by_progress": {
+                str(threshold): {
+                    "minimum_profile_game_progress": threshold,
+                    "matches": int(raw_without_terminal_progress[threshold]),
+                    "rate_of_progress_known_raw_without_terminal": rate(
+                        int(raw_without_terminal_progress[threshold]),
+                        raw_without_terminal_progress_known,
+                    ),
+                }
+                for threshold in PARTIAL_PROGRESS_THRESHOLDS
+            },
+            "predeclared_future_gate": {
+                "minimum_paired_matches": 50,
+                "minimum_within_5pp_rate": 0.95,
+                "maximum_mean_abs_error_pp": 2.5,
+                "minimum_raw_count_monotonic_match_rate": 0.99,
+                "activation_enabled": False,
+                "note": (
+                    "These criteria are evidence requirements for a separate "
+                    "future PR only. This audit never promotes partial snapshots."
+                ),
+            },
         },
         "score_gap_kinds": dict(
             sorted(score_gap_kinds.items(), key=lambda item: item[0])
@@ -604,6 +845,8 @@ def main() -> None:
         f"raw_without_terminal={comparison['raw_all_four_outside_terminal_proof_matches']} "
         f"no_stats={report['stats_capture_gap']['matches_without_stats_profiles']} "
         f"alt_raw_all4={(report['stats_capture_gap']['alternate_raw_evidence'] or {}).get('all_four_raw_cached_elsewhere', 0)} "
+        f"paired_partial={report['partial_raw_terminal_validation']['paired_terminal_matches_with_preterminal_all_four_raw']} "
+        f"progress90={(report['partial_raw_terminal_validation']['raw_without_terminal_candidates_by_progress'] or {}).get('0.9', {}).get('matches', 0)} "
         f"dominant_gap={funnel['dominant_observed_gap']}"
     )
 
