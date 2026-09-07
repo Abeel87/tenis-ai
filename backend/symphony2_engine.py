@@ -492,6 +492,7 @@ def _composition_dependency_diagnostics(
             "conditional_probability_given_other_legs": round(conditional * 100.0, 3) if conditional is not None else None,
             "conditional_lift_vs_marginal": round(lift, 6) if lift is not None else None,
             "conditional_information_nats": round(information, 6) if information is not None else None,
+            "marginal_information_gain_nats": round(information, 6) if information is not None else None,
             "joint_mass_removed_by_leg_pp": round((float(others_joint) - float(joint)) * 100.0, 3)
             if others_joint is not None else None,
         })
@@ -525,13 +526,19 @@ def _composition_dependency_diagnostics(
             if pair_joint is not None and independence is not None and independence > 0.0
             else None
         )
+        pair_exact = pair_joint is not None and supported == 2
+        redundancy_score = overlap if pair_exact else None
+        conflict_score = (1.0 - overlap) if pair_exact and overlap is not None else None
         pairs.append({
             "left_selection_id": _selection_id(left),
             "right_selection_id": _selection_id(right),
             "exact_pair_joint_probability": round(float(pair_joint) * 100.0, 3)
-            if pair_joint is not None and supported == 2 else None,
-            "overlap_of_smaller_leg": round(overlap, 6) if overlap is not None and supported == 2 else None,
-            "lift_vs_independence": round(lift, 6) if lift is not None and supported == 2 else None,
+            if pair_exact else None,
+            "overlap_of_smaller_leg": round(overlap, 6) if overlap is not None and pair_exact else None,
+            "redundancy_score": round(redundancy_score, 6) if redundancy_score is not None else None,
+            "conflict_score": round(conflict_score, 6) if conflict_score is not None else None,
+            "score_semantics": "NORMALIZED_EXACT_PAIR_OVERLAP_AXIS",
+            "lift_vs_independence": round(lift, 6) if lift is not None and pair_exact else None,
         })
 
     weakest_supervised = min(
@@ -544,13 +551,30 @@ def _composition_dependency_diagnostics(
         if marginal is not None
     ]
     weakest_state = min(state_candidates, key=lambda item: item[1])[0] if state_candidates else None
+
+    per_leg_by_id = {row["selection_id"]: row for row in per_leg}
+    weakest_supervised_id = _selection_id(weakest_supervised)
+    weakest_state_id = _selection_id(weakest_state) if weakest_state is not None else None
+    weakest_supervised_impact = per_leg_by_id.get(weakest_supervised_id, {}).get("joint_mass_removed_by_leg_pp")
+    weakest_state_impact = (
+        per_leg_by_id.get(weakest_state_id, {}).get("joint_mass_removed_by_leg_pp")
+        if weakest_state_id is not None else None
+    )
     return {
         "status": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY",
         "ranking_influence": False,
         "threshold_classification_enabled": False,
         "joint_probability": round(float(joint) * 100.0, 3),
-        "weakest_supervised_leg_selection_id": _selection_id(weakest_supervised),
-        "weakest_state_leg_selection_id": _selection_id(weakest_state) if weakest_state is not None else None,
+        "weakest_supervised_leg_selection_id": weakest_supervised_id,
+        "weakest_supervised_leg_joint_mass_removed_pp": weakest_supervised_impact,
+        "weakest_state_leg_selection_id": weakest_state_id,
+        "weakest_state_leg_joint_mass_removed_pp": weakest_state_impact,
+        "dependency_score_semantics": {
+            "redundancy_score": "exact_pair_joint / min(pair_marginals); 1 means full containment",
+            "conflict_score": "1 - redundancy_score; 1 means zero shared exact state mass",
+            "marginal_information_gain_nats": "-log(P(leg | all other legs))",
+            "thresholds_enabled": False,
+        },
         "per_leg": per_leg,
         "pairs": pairs,
     }
