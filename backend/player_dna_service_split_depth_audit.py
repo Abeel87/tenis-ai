@@ -48,9 +48,10 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT = ROOT / "frontend" / "data" / "player_dna_service_split_depth_audit.json"
 
-VERSION = "player-dna-service-split-depth-audit-v4"
+VERSION = "player-dna-service-split-depth-audit-v5"
 MODE = "SHADOW_DIAGNOSTIC_ONLY"
 PARTIAL_PROGRESS_THRESHOLDS = (0.50, 0.75, 0.90, 0.95)
+TAPE_POINT_COVERAGE_THRESHOLDS = (0.90, 0.95, 0.98, 1.00)
 
 RAW_SLOTS = tuple(
     f"{side}_{field}"
@@ -242,6 +243,61 @@ def _final_tape_score_object(payload: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def _tape_score_change_event_count(payload: dict[str, Any]) -> int:
+    rows = payload.get("tape")
+    if not isinstance(rows, list):
+        return 0
+    clean = [row for row in rows if isinstance(row, dict)]
+    events = 0
+    for index in range(1, len(clean)):
+        before = clean[index - 1]
+        after = clean[index]
+        before_sig = (
+            repr(before.get("sets")),
+            repr(before.get("games")),
+            repr(before.get("points")),
+        )
+        after_sig = (
+            repr(after.get("sets")),
+            repr(after.get("games")),
+            repr(after.get("points")),
+        )
+        if before_sig != after_sig:
+            events += 1
+    return events
+
+
+def _service_denominator_total(profile: dict[str, Any]) -> int | None:
+    counts = _profile_raw_counts(profile)
+    keys = (
+        "p1_first_serve_win_rate",
+        "p1_second_serve_win_rate",
+        "p2_first_serve_win_rate",
+        "p2_second_serve_win_rate",
+    )
+    values = []
+    for key in keys:
+        item = counts.get(key)
+        if item is None:
+            return None
+        _, points = item
+        if points < 0:
+            return None
+        values.append(points)
+    return sum(values)
+
+
+def _profile_tape_point_coverage(
+    profile: dict[str, Any],
+    payload: dict[str, Any],
+) -> float | None:
+    service_points = _service_denominator_total(profile)
+    tape_events = _tape_score_change_event_count(payload)
+    if service_points is None or tape_events <= 0:
+        return None
+    return round(service_points / tape_events, 6)
+
+
 def _profile_game_progress(
     profile: dict[str, Any],
     payload: dict[str, Any],
@@ -314,10 +370,26 @@ def _partial_against_terminal(
             monotonic = False
 
     progress = _profile_game_progress(candidate, payload)
+    tape_events = _tape_score_change_event_count(payload)
+    candidate_service_points = _service_denominator_total(candidate)
+    terminal_service_points = _service_denominator_total(terminal)
     return {
         "paired_terminal_raw_match": True,
         "has_preterminal_all_four_raw": True,
         "profile_game_progress": progress,
+        "tape_score_change_events": tape_events,
+        "candidate_service_denominator_points": candidate_service_points,
+        "terminal_service_denominator_points": terminal_service_points,
+        "candidate_tape_point_coverage": (
+            round(candidate_service_points / tape_events, 6)
+            if candidate_service_points is not None and tape_events > 0
+            else None
+        ),
+        "terminal_tape_point_coverage": (
+            round(terminal_service_points / tape_events, 6)
+            if terminal_service_points is not None and tape_events > 0
+            else None
+        ),
         "field_comparisons": comparisons,
         "mean_abs_error_pp": (
             round(sum(errors_pp) / len(errors_pp), 6)
@@ -444,6 +516,16 @@ def inspect_snapshot_depth(payload: dict[str, Any]) -> dict[str, Any]:
             if latest_raw_profile is not None
             else None
         ),
+        "latest_raw_profile_tape_point_coverage": (
+            _profile_tape_point_coverage(latest_raw_profile, payload)
+            if latest_raw_profile is not None
+            else None
+        ),
+        "terminal_raw_tape_point_coverage": (
+            _profile_tape_point_coverage(terminal_raw[-1], payload)
+            if terminal_raw
+            else None
+        ),
         "partial_vs_terminal_validation": partial_validation,
         "any_raw_slots": sorted(any_raw_slots),
         "terminal_raw_slots": sorted(terminal_raw_slots),
@@ -468,6 +550,11 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
         threshold: 0 for threshold in PARTIAL_PROGRESS_THRESHOLDS
     }
     raw_without_terminal_progress_known = 0
+    raw_without_terminal_tape_coverage = {
+        threshold: 0 for threshold in TAPE_POINT_COVERAGE_THRESHOLDS
+    }
+    raw_without_terminal_tape_coverage_known = 0
+    terminal_tape_coverages: list[float] = []
 
     for payload in payloads:
         if not isinstance(payload, dict):
@@ -543,6 +630,17 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
                     raw_without_terminal_progress[threshold] += int(
                         float(progress) >= threshold
                     )
+            tape_coverage = item.get("latest_raw_profile_tape_point_coverage")
+            if isinstance(tape_coverage, (int, float)) and not isinstance(tape_coverage, bool):
+                raw_without_terminal_tape_coverage_known += 1
+                for threshold in TAPE_POINT_COVERAGE_THRESHOLDS:
+                    raw_without_terminal_tape_coverage[threshold] += int(
+                        float(tape_coverage) >= threshold
+                    )
+
+        terminal_tape_coverage = item.get("terminal_raw_tape_point_coverage")
+        if isinstance(terminal_tape_coverage, (int, float)) and not isinstance(terminal_tape_coverage, bool):
+            terminal_tape_coverages.append(float(terminal_tape_coverage))
 
         paired = item.get("partial_vs_terminal_validation")
         if isinstance(paired, dict) and paired.get("has_preterminal_all_four_raw") is True:
@@ -656,6 +754,48 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             **paired_validation_summary(rows),
         }
 
+    partial_validation_by_tape_coverage: dict[str, Any] = {}
+    for threshold in TAPE_POINT_COVERAGE_THRESHOLDS:
+        rows = [
+            row for row in paired_partial_rows
+            if isinstance(row.get("candidate_tape_point_coverage"), (int, float))
+            and not isinstance(row.get("candidate_tape_point_coverage"), bool)
+            and float(row["candidate_tape_point_coverage"]) >= threshold
+        ]
+        partial_validation_by_tape_coverage[str(threshold)] = {
+            "minimum_candidate_tape_point_coverage": threshold,
+            **paired_validation_summary(rows),
+        }
+
+    terminal_tape_coverages_sorted = sorted(terminal_tape_coverages)
+    def percentile(values: list[float], q: float) -> float | None:
+        if not values:
+            return None
+        index = int(round((len(values) - 1) * q))
+        return round(values[index], 6)
+
+    tape_terminal_calibration = {
+        "matches": len(terminal_tape_coverages_sorted),
+        "median_terminal_service_denominator_to_tape_events": percentile(
+            terminal_tape_coverages_sorted, 0.50
+        ),
+        "p10": percentile(terminal_tape_coverages_sorted, 0.10),
+        "p90": percentile(terminal_tape_coverages_sorted, 0.90),
+        "within_5pct_of_one_rate": rate(
+            sum(1 for value in terminal_tape_coverages_sorted if 0.95 <= value <= 1.05),
+            len(terminal_tape_coverages_sorted),
+        ),
+        "within_10pct_of_one_rate": rate(
+            sum(1 for value in terminal_tape_coverages_sorted if 0.90 <= value <= 1.10),
+            len(terminal_tape_coverages_sorted),
+        ),
+        "note": (
+            "Serve denominators are p1+p2 first/second-serve point denominators. "
+            "Tape events count every provider row-to-row tennis-score change. "
+            "This is calibration evidence only, not a terminal-proof rule."
+        ),
+    }
+
     raw_slot_coverage = {
         slot: {
             "matches_with_raw_in_any_stats_profile": int(
@@ -695,6 +835,8 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             "partial_raw_validation_diagnostic_only": True,
             "partial_raw_authorized_for_canonical_history": False,
             "partial_raw_gate_activation_enabled": False,
+            "tape_point_coverage_diagnostic_only": True,
+            "tape_point_coverage_authorized_as_terminal_proof": False,
             "training_join_enabled": False,
             "scorer_activation_enabled": False,
             "runtime_activation_enabled": False,
@@ -749,6 +891,8 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
             ),
             "overall": paired_validation_summary(paired_partial_rows),
             "by_minimum_game_progress": partial_validation_by_progress,
+            "tape_point_coverage_calibration": tape_terminal_calibration,
+            "by_minimum_tape_point_coverage": partial_validation_by_tape_coverage,
             "raw_without_terminal_progress_known_matches": (
                 raw_without_terminal_progress_known
             ),
@@ -763,11 +907,27 @@ def audit_payloads(payloads: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 }
                 for threshold in PARTIAL_PROGRESS_THRESHOLDS
             },
+            "raw_without_terminal_tape_coverage_known_matches": (
+                raw_without_terminal_tape_coverage_known
+            ),
+            "raw_without_terminal_candidates_by_tape_point_coverage": {
+                str(threshold): {
+                    "minimum_candidate_tape_point_coverage": threshold,
+                    "matches": int(raw_without_terminal_tape_coverage[threshold]),
+                    "rate_of_tape_coverage_known_raw_without_terminal": rate(
+                        int(raw_without_terminal_tape_coverage[threshold]),
+                        raw_without_terminal_tape_coverage_known,
+                    ),
+                }
+                for threshold in TAPE_POINT_COVERAGE_THRESHOLDS
+            },
             "predeclared_future_gate": {
                 "minimum_paired_matches": 50,
                 "minimum_within_5pp_rate": 0.95,
                 "maximum_mean_abs_error_pp": 2.5,
                 "minimum_raw_count_monotonic_match_rate": 0.99,
+                "minimum_terminal_tape_calibration_matches": 100,
+                "minimum_terminal_tape_within_10pct_rate": 0.95,
                 "activation_enabled": False,
                 "note": (
                     "These criteria are evidence requirements for a separate "
@@ -847,6 +1007,8 @@ def main() -> None:
         f"alt_raw_all4={(report['stats_capture_gap']['alternate_raw_evidence'] or {}).get('all_four_raw_cached_elsewhere', 0)} "
         f"paired_partial={report['partial_raw_terminal_validation']['paired_terminal_matches_with_preterminal_all_four_raw']} "
         f"progress90={(report['partial_raw_terminal_validation']['raw_without_terminal_candidates_by_progress'] or {}).get('0.9', {}).get('matches', 0)} "
+        f"tape95={(report['partial_raw_terminal_validation']['raw_without_terminal_candidates_by_tape_point_coverage'] or {}).get('0.95', {}).get('matches', 0)} "
+        f"terminal_tape10={report['partial_raw_terminal_validation']['tape_point_coverage_calibration']['within_10pct_of_one_rate']} "
         f"dominant_gap={funnel['dominant_observed_gap']}"
     )
 
