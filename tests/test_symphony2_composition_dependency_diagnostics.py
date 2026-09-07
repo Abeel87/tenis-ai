@@ -135,7 +135,7 @@ def test_weakest_leg_impact_is_exposed_without_affecting_ranking():
     match = _match()
     outcomes = build_outcomes(match)
     winner = _row("match_winner", "Alpha", 68.0)
-    total = _row("match_total", "over", 20.5, 57.0)
+    total = _row("match_total", "over", 57.0, line=20.5)
     combo = (winner, total)
 
     joint, supported = joint_probability(match, list(combo), outcomes)
