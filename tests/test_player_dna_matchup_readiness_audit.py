@@ -141,13 +141,14 @@ def test_matchup_readiness_is_phase3_audit_only_and_lists_master_plan_gaps():
 
 
 
-def test_matchup_readiness_requires_service_split_rates_but_uses_existing_match_threshold():
+def test_matchup_readiness_requires_service_split_specific_prior_match_support():
     rows = [
         _row("m1", "2026-09-06T10:00:00Z", 1, 2, overall=5, surface=5),
         _row("m1", "2026-09-06T10:00:00Z", 2, 1, overall=5, surface=5),
     ]
-    rows[0]["overall_prior"]["first_serve_win_rate"] = None
-    rows[0]["overall_prior"]["first_serve_matches"] = 0
+    # Generic Player DNA support stays at five, but first-serve split support
+    # is deliberately only one match. It must fail the @5 split gate.
+    rows[0]["overall_prior"]["first_serve_matches"] = 1
 
     report = audit_profile_snapshots(rows)
 
