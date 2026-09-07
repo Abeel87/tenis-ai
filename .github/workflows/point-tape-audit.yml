@@ -999,6 +999,47 @@ jobs:
           if int(report.get('all_enriched_points') or 0) <= 0:
               raise SystemExit('Small-sample shrinkage challenger produced no enriched points')
 
+          if report.get('frozen_fresh_confirmation_cutoff') != '2026-09-07T01:35:00+00:00':
+              raise SystemExit('Small-sample fresh confirmation cutoff drifted')
+          if float(report.get('frozen_fresh_prior_strength') or -1) != 200.0:
+              raise SystemExit('Small-sample frozen fresh prior strength drifted')
+
+          for key in (
+              'fresh_candidate_cutoff_is_frozen',
+              'fresh_candidate_prior_strength_is_frozen',
+              'post_cutoff_labels_cannot_retune_candidate',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Small-sample fresh contract violation: {key}')
+
+          for key in (
+              'fresh_confirmation_uses_only_strictly_post_cutoff_rows_for_scoring',
+              'fresh_confirmation_trains_only_on_at_or_before_cutoff_rows',
+          ):
+              if leakage.get(key) is not True:
+                  raise SystemExit(f'Small-sample fresh leakage violation: {key}')
+
+          fresh = report.get('fresh_confirmation') or {}
+          if fresh.get('parameter_reselection_enabled') is not False:
+              raise SystemExit('Fresh confirmation unexpectedly retunes the candidate')
+          for key in (
+              'post_cutoff_labels_used_for_prior_mean',
+              'post_cutoff_labels_used_for_prior_strength',
+              'post_cutoff_labels_used_for_model_fit',
+              'production_influence',
+              'runtime_scoring_enabled',
+              'promotion_gate',
+              'candidate_may_replace_reference',
+          ):
+              if fresh.get(key) is not False:
+                  raise SystemExit(f'Fresh confirmation isolation violation: {key}')
+          if fresh.get('status') not in {
+              'WAITING_FOR_FRESH_SAMPLE',
+              'FRESH_CONFIRMATION_POSITIVE_SHADOW',
+              'FRESH_CONFIRMATION_MIXED_OR_NEGATIVE_SHADOW',
+          }:
+              raise SystemExit(f"Fresh confirmation status invalid: {fresh.get('status')}")
+
           holdout = report.get('holdout') or {}
           selection = holdout.get('strength_selection') or {}
           if selection and selection.get('outer_test_used_for_selection') is not False:
@@ -1016,6 +1057,8 @@ jobs:
               f"holdout={signal.get('positive_holdout')} "
               f"robust={signal.get('robust_walk_forward')} "
               f"selected_strength={selection.get('selected_prior_strength')} "
+              f"fresh={fresh.get('status')} "
+              f"fresh_points={(fresh.get('split') or {}).get('fresh_points')} "
               f"points={report.get('all_enriched_points')}"
           )
           PY
