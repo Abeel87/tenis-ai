@@ -19,6 +19,7 @@ on:
       - 'backend/player_dna_pbp_service_split_readiness.py'
       - 'backend/player_dna_match_state_readiness.py'
       - 'backend/player_dna_match_state_profiles.py'
+      - 'backend/player_dna_match_state_challenger.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
@@ -52,6 +53,7 @@ on:
       - 'tests/test_player_dna_pbp_service_split_readiness.py'
       - 'tests/test_player_dna_match_state_readiness.py'
       - 'tests/test_player_dna_match_state_profiles.py'
+      - 'tests/test_player_dna_match_state_challenger.py'
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
@@ -103,7 +105,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -511,6 +513,107 @@ jobs:
               f"comeback@3={(readiness.get('comeback_overall') or {}).get('3')} "
               f"bo5late@1={(readiness.get('bo5_late_set_overall') or {}).get('1')} "
               f"bo5late@3={(readiness.get('bo5_late_set_overall') or {}).get('3')}"
+          )
+          PY
+
+      - name: Evaluate comeback + BO5 match-state challenger (SHADOW, zero network)
+        run: python backend/player_dna_match_state_challenger.py
+
+      - name: Guard comeback + BO5 challenger isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_match_state_challenger.json')
+          if not p.exists():
+              raise SystemExit('player_dna_match_state_challenger.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_MATCH_STATE_CHALLENGER_EVAL_ONLY':
+              raise SystemExit('Match-state challenger mode invalid')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'training_join_enabled',
+              'canonical_profile_write_enabled',
+              'canonical_point_scorer_feature_activation_enabled',
+              'simulator_callback_activation_enabled',
+              'symphony2_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+              'promotion_gate',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Match-state challenger activation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'canonical_strict_as_of_match_state_profiles_only',
+              'stable_provider_player_ids_only',
+              'no_name_or_fuzzy_join',
+              'bo3_comeback_is_primary_comeback_task',
+              'bo5_excluded_from_comeback_task_to_avoid_format_duration_confound',
+              'bo5_late_set_means_set_three_and_later',
+              'player_profile_family_is_overall_prior_only',
+              'same_surface_player_profile_excluded_from_primary_challenger',
+              'surface_is_context_prior_only',
+              'context_prior_fit_from_train_labels_only',
+              'fixed_half_half_player_blend',
+              'only_pseudo_count_strength_is_selected',
+              'strength_grid_predeclared',
+              'strength_selected_inside_outer_train_only',
+              'outer_holdout_never_used_for_strength_selection',
+              'same_timestamp_matches_never_split',
+              'walk_forward_uses_expanding_train_and_disjoint_test_windows',
+              'all_three_proper_scores_required_for_positive_fold',
+              'historical_signal_requires_positive_holdout_and_three_positive_folds',
+              'incremental_over_current_scorer_not_yet_tested',
+              'fresh_confirmation_required_before_any_activation',
+              'bo5_late_set_rate_remains_descriptive_stamina_proxy',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Match-state challenger contract violation: {key}')
+
+          grid = report.get('strength_grid') or []
+          if grid != [0.0, 1.0, 3.0, 5.0, 10.0, 20.0]:
+              raise SystemExit(f'Match-state challenger strength grid drift: {grid}')
+
+          tasks = report.get('tasks') or {}
+          if set(tasks) != {'comeback_bo3', 'bo5_late_set'}:
+              raise SystemExit(f'Match-state challenger task family drift: {set(tasks)}')
+
+          counts = report.get('build_counts') or {}
+          if int(counts.get('comeback_bo3_rows') or 0) <= 0:
+              raise SystemExit('Match-state challenger found no BO3 comeback rows')
+          if int(counts.get('bo5_late_set_rows') or 0) <= 0:
+              raise SystemExit('Match-state challenger found no BO5 late-set rows')
+          if int(counts.get('exact_matches_missing_profile_pair') or 0) != 0:
+              raise SystemExit('Match-state challenger lost exact profile pairs')
+
+          for task_name, task in tasks.items():
+              signal = task.get('signal') or {}
+              if signal.get('incremental_over_current_scorer_tested') is not False:
+                  raise SystemExit(f'{task_name} falsely claimed incremental scorer test')
+              if signal.get('fresh_confirmation_tested') is not False:
+                  raise SystemExit(f'{task_name} falsely claimed fresh confirmation')
+              if signal.get('feature_activation_authorized') is not False:
+                  raise SystemExit(f'{task_name} authorized feature activation')
+
+              holdout = task.get('holdout') or {}
+              selected = holdout.get('selected_strength')
+              if selected is not None and float(selected) not in {
+                  0.0, 1.0, 3.0, 5.0, 10.0, 20.0
+              }:
+                  raise SystemExit(f'{task_name} selected strength outside frozen grid')
+
+          print(
+              'Match-state challenger: '
+              f"comeback_rows={counts.get('comeback_bo3_rows')} "
+              f"bo5_rows={counts.get('bo5_late_set_rows')} "
+              f"comeback={(tasks.get('comeback_bo3') or {}).get('signal')} "
+              f"bo5={(tasks.get('bo5_late_set') or {}).get('signal')}"
           )
           PY
 
@@ -2910,6 +3013,7 @@ jobs:
             frontend/data/player_dna_pbp_service_split_readiness.json
             frontend/data/player_dna_match_state_readiness.json
             frontend/data/player_dna_match_state_profile_summary.json
+            frontend/data/player_dna_match_state_challenger.json
             frontend/data/player_dna_shadow_profile_summary.json
             frontend/data/player_dna_matchup_readiness_audit.json
             frontend/data/player_dna_matchup_challenger.json
