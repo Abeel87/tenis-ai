@@ -561,6 +561,8 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
     out = {}
     for n in range(2, 7):
         best = None
+        best_combo = None
+        best_joint = None
         for combo in combinations(pool, n):
             if not _compatible(combo):
                 continue
@@ -568,11 +570,15 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
             if joint is None or supported_count != n:
                 continue
             candidate = {"legs": n, "score": round(_composition_utility(combo, joint), 2), "joint_probability": round(joint * 100.0, 3),
-                "joint_status": "EXACT_SHARED_STATE", "state_version": STATE_VERSION, "selection": [dict(x) for x in combo],
-                "dependency_diagnostics": _composition_dependency_diagnostics(match, combo, joint, outcomes)}
+                "joint_status": "EXACT_SHARED_STATE", "state_version": STATE_VERSION, "selection": [dict(x) for x in combo]}
             if best is None or candidate["score"] > best["score"]:
                 best = candidate
-        if best:
+                best_combo = combo
+                best_joint = joint
+        if best and best_combo is not None and best_joint is not None:
+            best["dependency_diagnostics"] = _composition_dependency_diagnostics(
+                match, best_combo, best_joint, outcomes
+            )
             out[str(n)] = best
     return out
 
