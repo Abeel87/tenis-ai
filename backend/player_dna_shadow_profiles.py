@@ -19,11 +19,18 @@ from typing import Any, Iterable
 
 try:
     from backend.atomic_point_transition import game_point_flags, point_token
+    from backend.player_dna_pbp_service_split_readiness import (
+        terminal_raw_service_split_match,
+    )
 except ModuleNotFoundError:  # direct execution compatibility
     from atomic_point_transition import game_point_flags, point_token
+    from player_dna_pbp_service_split_readiness import (
+        terminal_raw_service_split_match,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 POINTS = ROOT / "data" / "derived" / "player_dna" / "point_events.jsonl.gz"
+PBP_CACHE = ROOT / "data" / "cache" / "pbp_v7" / "matches"
 OUT_DIR = ROOT / "data" / "derived" / "player_dna"
 OUT_JSONL = OUT_DIR / "profile_snapshots.jsonl.gz"
 OUT_SUMMARY = ROOT / "frontend" / "data" / "player_dna_shadow_profile_summary.json"
@@ -46,6 +53,10 @@ ACCUMULATE_KEYS = (
     "early_return_game_1", "early_return_game_1_breaks",
     "early_return_game_2", "early_return_game_2_breaks",
     "early_return_game_3", "early_return_game_3_breaks",
+    "first_serve_matches", "first_serve_points", "first_serve_wins",
+    "second_serve_matches", "second_serve_points", "second_serve_wins",
+    "first_return_matches", "first_return_points", "first_return_wins",
+    "second_return_matches", "second_return_points", "second_return_wins",
 )
 
 
@@ -74,6 +85,28 @@ def iter_point_rows(path: Path = POINTS) -> Iterable[dict[str, Any]]:
                 yield row
 
 
+def iter_service_split_matches(
+    cache_dir: Path = PBP_CACHE,
+) -> Iterable[dict[str, Any]]:
+    """Yield terminal raw PBP service-split contributions keyed by provider match."""
+    if not cache_dir.exists():
+        return
+    for path in sorted(cache_dir.glob("*.json.gz")):
+        try:
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        item = terminal_raw_service_split_match(
+            payload,
+            match_id=path.name.removesuffix(".json.gz"),
+        )
+        if item is not None:
+            yield item
+
+
 def _empty_stats() -> dict[str, int]:
     return {
         "matches": 0,
@@ -99,6 +132,30 @@ def _project(stats: dict[str, int] | None) -> dict[str, Any]:
         "return_points": count("return_points"),
         "return_wins": count("return_wins"),
         "return_win_rate": _rate(count("return_wins"), count("return_points")),
+        "first_serve_matches": count("first_serve_matches"),
+        "first_serve_points": count("first_serve_points"),
+        "first_serve_wins": count("first_serve_wins"),
+        "first_serve_win_rate": _rate(
+            count("first_serve_wins"), count("first_serve_points")
+        ),
+        "second_serve_matches": count("second_serve_matches"),
+        "second_serve_points": count("second_serve_points"),
+        "second_serve_wins": count("second_serve_wins"),
+        "second_serve_win_rate": _rate(
+            count("second_serve_wins"), count("second_serve_points")
+        ),
+        "first_return_matches": count("first_return_matches"),
+        "first_return_points": count("first_return_points"),
+        "first_return_wins": count("first_return_wins"),
+        "first_return_win_rate": _rate(
+            count("first_return_wins"), count("first_return_points")
+        ),
+        "second_return_matches": count("second_return_matches"),
+        "second_return_points": count("second_return_points"),
+        "second_return_wins": count("second_return_wins"),
+        "second_return_win_rate": _rate(
+            count("second_return_wins"), count("second_return_points")
+        ),
         "tiebreak_points": count("tiebreak_points"),
         "tiebreak_wins": count("tiebreak_wins"),
         "tiebreak_win_rate": _rate(count("tiebreak_wins"), count("tiebreak_points")),
@@ -202,6 +259,10 @@ def _rolling_family(history: list[dict[str, int]]) -> dict[str, Any]:
     rate_fields = {
         "serve": "serve_win_rate",
         "return": "return_win_rate",
+        "first_serve": "first_serve_win_rate",
+        "second_serve": "second_serve_win_rate",
+        "first_return": "first_return_win_rate",
+        "second_return": "second_return_win_rate",
         "hold": "hold_rate",
         "break": "break_rate",
         "bp_save": "bp_save_rate",
@@ -304,6 +365,25 @@ def _strict_atomic_game(row: dict[str, Any]) -> bool:
     )
 
 
+def _service_split_contract() -> dict[str, Any]:
+    return {
+        "included_in_canonical_profiles": True,
+        "shadow_only": True,
+        "source": "terminal Live Tennis PBP stats raw numerator/denominator ratios",
+        "stable_pbp_provider_ids_only": True,
+        "historical_csv_id_namespace_used": False,
+        "name_or_fuzzy_join_forbidden": True,
+        "terminal_stats_snapshot_required": True,
+        "raw_ratios_only": True,
+        "rounded_derived_rates_used_for_profile_counts": False,
+        "same_timestamp_matches_never_count_as_prior": True,
+        "raw_support_counts_accompany_every_rate": True,
+        "training_join_enabled": False,
+        "scorer_feature_activation_enabled": False,
+        "matchup_feature_activation_enabled": False,
+    }
+
+
 def _pressure_contract() -> dict[str, Any]:
     return {
         "included_in_canonical_profiles": True,
@@ -321,7 +401,10 @@ def _pressure_contract() -> dict[str, Any]:
     }
 
 
-def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, int]]:
+def _prepare_matches(
+    rows: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     matches: dict[str, dict[str, Any]] = {}
     counters = Counter()
 
@@ -440,6 +523,61 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
 
         counters["strict_rows_used"] += 1
 
+    # Attach PBP-native terminal raw service splits to the exact same provider
+    # match/identity/time records already accepted by the point profile pipeline.
+    # This is not a fuzzy/name join and never creates a second profile timeline.
+    split_index: dict[str, dict[str, Any]] = {}
+    for item in service_split_matches or ():
+        if not isinstance(item, dict):
+            continue
+        counters["service_split_source_matches_seen"] += 1
+        match_id = str(item.get("match_id") or "").strip()
+        if not match_id:
+            counters["service_split_source_missing_match_id"] += 1
+            continue
+        if match_id in split_index:
+            counters["service_split_source_duplicate_match_id"] += 1
+            continue
+        split_index[match_id] = item
+
+    for match_id, entry in matches.items():
+        item = split_index.get(match_id)
+        if item is None:
+            continue
+        same_identity_time = bool(
+            item.get("scheduled") == entry.get("scheduled")
+            and item.get("p1") == entry.get("p1")
+            and item.get("p2") == entry.get("p2")
+        )
+        source_surface = str(item.get("surface") or "unknown").strip().casefold()
+        target_surface = str(entry.get("surface") or "unknown").strip().casefold()
+        same_surface = source_surface == target_surface
+        if not same_identity_time or not same_surface:
+            counters["service_split_identity_time_surface_mismatch"] += 1
+            continue
+
+        fields_added = 0
+        for pid in (entry["p1"], entry["p2"]):
+            source = (item.get("contrib") or {}).get(pid)
+            if not isinstance(source, dict):
+                counters["service_split_missing_player_contribution"] += 1
+                continue
+            target = entry["contrib"][pid]
+            for key, value in source.items():
+                if key not in ACCUMULATE_KEYS:
+                    continue
+                try:
+                    number = int(value)
+                except (TypeError, ValueError):
+                    continue
+                if number < 0:
+                    continue
+                target[key] += number
+                fields_added += int(number > 0)
+        if fields_added:
+            counters["service_split_matches_joined"] += 1
+            counters["service_split_fields_added"] += fields_added
+
     valid = []
     for entry in matches.values():
         serve_seen: Counter[int] = Counter()
@@ -476,8 +614,14 @@ def _prepare_matches(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any
     counters["strict_matches"] = len(valid)
     return valid, dict(counters)
 
-def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    matches, source_counts = _prepare_matches(rows)
+def build_snapshots_from_rows(
+    rows: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    matches, source_counts = _prepare_matches(
+        rows,
+        service_split_matches=service_split_matches,
+    )
 
     overall: dict[int, dict[str, int]] = defaultdict(_empty_stats)
     by_surface: dict[int, dict[str, dict[str, int]]] = defaultdict(lambda: defaultdict(_empty_stats))
@@ -488,6 +632,14 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
     snapshots: list[dict[str, Any]] = []
     readiness_any = Counter()
     readiness_surface = Counter()
+    service_split_readiness_any = {
+        field: Counter()
+        for field in ("first_serve", "second_serve", "first_return", "second_return")
+    }
+    service_split_readiness_surface = {
+        field: Counter()
+        for field in ("first_serve", "second_serve", "first_return", "second_return")
+    }
     same_time_groups = 0
 
     for scheduled, group_iter in groupby(matches, key=lambda m: m["scheduled"]):
@@ -507,6 +659,14 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
                 for threshold in THRESHOLDS:
                     readiness_any[threshold] += int(overall_snapshot["matches"] >= threshold)
                     readiness_surface[threshold] += int(surface_snapshot["matches"] >= threshold)
+                    for field in service_split_readiness_any:
+                        support_key = f"{field}_matches"
+                        service_split_readiness_any[field][threshold] += int(
+                            int(overall_snapshot.get(support_key) or 0) >= threshold
+                        )
+                        service_split_readiness_surface[field][threshold] += int(
+                            int(surface_snapshot.get(support_key) or 0) >= threshold
+                        )
 
                 snapshots.append({
                     "version": VERSION,
@@ -576,6 +736,32 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
             }
             for threshold in THRESHOLDS
         },
+        "service_split_readiness_any_surface": {
+            field: {
+                str(threshold): {
+                    "targets": int(service_split_readiness_any[field][threshold]),
+                    "rate": (
+                        round(service_split_readiness_any[field][threshold] / targets, 6)
+                        if targets else 0.0
+                    ),
+                }
+                for threshold in THRESHOLDS
+            }
+            for field in service_split_readiness_any
+        },
+        "service_split_readiness_same_surface": {
+            field: {
+                str(threshold): {
+                    "targets": int(service_split_readiness_surface[field][threshold]),
+                    "rate": (
+                        round(service_split_readiness_surface[field][threshold] / targets, 6)
+                        if targets else 0.0
+                    ),
+                }
+                for threshold in THRESHOLDS
+            }
+            for field in service_split_readiness_surface
+        },
         "features": {
             "overall_prior": list(_project(None).keys()),
             "same_surface_prior": list(_project(None).keys()),
@@ -592,6 +778,7 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
             },
         },
         "pressure_profiles": _pressure_contract(),
+        "service_split_profiles": _service_split_contract(),
         "note": (
             "SHADOW evidence only. Raw support counts accompany every rate. "
             "No minimum-history threshold, training join or production influence is activated."
@@ -604,9 +791,13 @@ def build_snapshots_from_rows(rows: Iterable[dict[str, Any]]) -> tuple[list[dict
 def build_current_target_profiles(
     point_rows: Iterable[dict[str, Any]],
     targets: Iterable[dict[str, Any]],
+    service_split_matches: Iterable[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Build SHADOW as-of profiles for current card using stable provider IDs only."""
-    historical, source_counts = _prepare_matches(point_rows)
+    historical, source_counts = _prepare_matches(
+        point_rows,
+        service_split_matches=service_split_matches,
+    )
 
     normalized_targets = []
     rejected = Counter()
@@ -835,7 +1026,10 @@ def build_current_target_profiles(
     return snapshots, summary
 
 def build() -> dict[str, Any]:
-    snapshots, summary = build_snapshots_from_rows(iter_point_rows() or ())
+    snapshots, summary = build_snapshots_from_rows(
+        iter_point_rows() or (),
+        service_split_matches=iter_service_split_matches() or (),
+    )
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     OUT_SUMMARY.parent.mkdir(parents=True, exist_ok=True)
 
