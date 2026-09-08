@@ -263,3 +263,36 @@ def test_phase3_stays_closed_after_positive_fresh_confirmation_without_activatio
     assert report["phase4_ready"] is True
     assert report["production_influence"] is False
     assert report["runtime_prediction_change"] is False
+
+def test_phase3_stays_closed_when_optional_shrinkage_is_historically_rejected():
+    reports = _reports()
+    reports["small_sample"]["signal"]["status"] = "SMALL_SAMPLE_SHRINKAGE_NOT_ROBUST_ENOUGH"
+    reports["small_sample"]["fresh_confirmation"] = {
+        "status": "FRESH_CONFIRMATION_POSITIVE_SHADOW",
+    }
+
+    report = evaluate_phase3_reports(reports)
+
+    shrinkage = report["small_sample_shrinkage"]
+    assert report["phase3_complete"] is True
+    assert report["phase4_ready"] is True
+    assert shrinkage["historically_rejected"] is True
+    assert shrinkage["fresh_confirmation_positive"] is True
+    assert shrinkage["active"] is False
+    assert shrinkage["blocked_pending_fresh_confirmation"] is False
+    assert shrinkage["fresh_confirmation_satisfied"] is False
+    assert shrinkage["explicit_activation_required"] is False
+    assert report["production_influence"] is False
+    assert report["runtime_prediction_change"] is False
+
+
+def test_phase3_fails_closed_when_shrinkage_historical_status_is_unknown():
+    reports = _reports()
+    reports["small_sample"]["signal"]["status"] = "UNKNOWN_SHRINKAGE_STATE"
+
+    report = evaluate_phase3_reports(reports)
+
+    assert report["phase3_complete"] is False
+    assert report["phase4_ready"] is False
+    assert report["status"] == "PHASE3_GATE_NOT_COMPLETE"
+
