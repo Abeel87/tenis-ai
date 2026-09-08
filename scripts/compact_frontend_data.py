@@ -19,6 +19,20 @@ TARGETS = (
     DATA / 'symphony2_stats.json',
 )
 
+# These fields are prediction-time diagnostics duplicated beside the canonical
+# frozen values. Once a match is settled, downstream learning uses score,
+# model_scores, result, market identity and adaptive_prod_v79.final_score;
+# Model Telemetry only needs dynamic_weighting.active for the historical
+# Dynamic Ensemble track. Keeping the full per-segment explanation forever
+# made history.json grow without adding training information.
+SETTLED_AUTOLEARN_REDUNDANT_FIELDS = {
+    'raw_score', 'uncapped_score', 'learned_score', 'final_score', 'delta',
+    'cap_pp', 'applied', 'action', 'lesson', 'similar_n',
+    'historical_accuracy', 'evidence', 'components', 'ensemble_raw',
+    'adaptive_delta_pp', 'local_weights',
+}
+DYNAMIC_HISTORY_KEYS = ('version', 'active', 'status', 'reason', 'max_shift')
+
 
 def _path_label(path: Path) -> str:
     try:
@@ -41,6 +55,83 @@ def _compact_json(path: Path, data) -> dict:
         'saved_bytes': before - after,
         'saved_pct': round((before - after) * 100 / before, 1) if before else 0.0,
     }
+
+
+def _compact_dynamic_history(policy):
+    if not isinstance(policy, dict):
+        return policy
+    return {
+        key: policy.get(key)
+        for key in DYNAMIC_HISTORY_KEYS
+        if policy.get(key) is not None
+    }
+
+
+def prune_history_payload(path: Path) -> dict:
+    """Bound settled AutoLearn history without removing learning evidence.
+
+    Pending/upcoming forecasts remain byte-for-byte structurally complete so the
+    frozen prediction-time evidence is available until settlement. For settled
+    rows we remove only duplicated explanatory fields and retain a compact
+    Dynamic Ensemble policy sufficient for historical telemetry.
+
+    Preserved canonical learning/settlement inputs include:
+    - market/pick/line/checkpoint/key/score/result;
+    - model_scores and generator_selected;
+    - adaptive_prod_v79 (including final_score);
+    - all non-AutoLearn history layers, including Player Intelligence and
+      exact Superbet/Symphony training evidence.
+    """
+    if not path.exists():
+        return {'path': _path_label(path), 'status': 'missing'}
+
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(data, list):
+        return {'path': _path_label(path), 'status': 'skipped-non-list'}
+
+    removed_fields = 0
+    compacted_dynamic = 0
+    settled_signals = 0
+
+    for entry in data:
+        if not isinstance(entry, dict) or entry.get('status') not in ('settled', 'void'):
+            continue
+        rows = entry.get('autolearn_signals_v84')
+        if not isinstance(rows, list):
+            continue
+        compacted_rows = []
+        for raw in rows:
+            if not isinstance(raw, dict):
+                compacted_rows.append(raw)
+                continue
+            signal = dict(raw)
+            settled_signals += 1
+
+            policy = signal.get('dynamic_weighting')
+            if isinstance(policy, dict):
+                compact = _compact_dynamic_history(policy)
+                if compact != policy:
+                    compacted_dynamic += 1
+                signal['dynamic_weighting'] = compact
+
+            for key in SETTLED_AUTOLEARN_REDUNDANT_FIELDS:
+                if key in signal:
+                    signal.pop(key, None)
+                    removed_fields += 1
+
+            compacted_rows.append(signal)
+        entry['autolearn_signals_v84'] = compacted_rows
+
+    report = _compact_json(path, data)
+    report.update({
+        'policy': 'SETTLED_AUTOLEARN_SUFFICIENT_STATE_KEEP_TRAINING_AND_SETTLEMENT',
+        'settled_autolearn_signals': settled_signals,
+        'compacted_dynamic_policies': compacted_dynamic,
+        'removed_redundant_fields': removed_fields,
+        'training_evidence_removed': False,
+        'pending_forecasts_changed': False,
+    })
+    return report
 
 
 def prune_symphony2_publication(path: Path) -> dict:
@@ -94,6 +185,8 @@ def compact(path: Path) -> dict:
         return {'path': _path_label(path), 'status': 'missing'}
     if path.name == 'symphony2_current.json':
         return prune_symphony2_publication(path)
+    if path.name == 'history.json':
+        return prune_history_payload(path)
     data = json.loads(path.read_text(encoding='utf-8'))
     return _compact_json(path, data)
 
