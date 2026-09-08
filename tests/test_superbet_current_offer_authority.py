@@ -191,3 +191,43 @@ def test_mapping_cannot_override_core_offer_policy_owner():
     assert "base.REFRESH_HOURS=" not in text
     assert "base.MONTHLY_REQUEST_CAP=" not in text
     assert "base._requested_bookmaker_payload(row)" in text
+
+
+
+def test_direct_cache_freshness_uses_actual_offer_check_time_not_hourly_report_time():
+    now = datetime(2026, 9, 8, 10, 0, tzinfo=timezone.utc)
+    checked = now - timedelta(hours=3)
+    availability = {
+        "generated_at": now.isoformat(),
+        "fixtures": [{
+            "fixture_id": "f1",
+            "p1": "A",
+            "p2": "B",
+            "start_time": (now + timedelta(hours=2)).isoformat(),
+            "bookmaker": "superbet.pl",
+            "suspended": False,
+            "offer_checked_at": checked.isoformat(),
+            "operator_offer_source": "odds_by_fixture_cache",
+            "canonical_selections": [{
+                "market": "match_winner",
+                "pick": "A",
+                "line": None,
+                "operator_available": True,
+                "operator_line_verified": True,
+            }],
+        }],
+    }
+
+    rows, matched = core.prepare_results([{
+        "id": "m1",
+        "p1": "A",
+        "p2": "B",
+        "scheduled_time": (now + timedelta(hours=2)).isoformat(),
+    }], availability, now=now)
+
+    assert matched == 1
+    operator = rows[0]["superbet_market_v91"]
+    assert operator["source_generated_at"] == checked.isoformat()
+    assert operator["source_age_hours"] == 3.0
+    assert operator["status"] == "CACHE_STALE"
+    assert operator["operator_verified"] is False
