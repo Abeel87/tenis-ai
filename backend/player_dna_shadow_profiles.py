@@ -11,6 +11,8 @@ these profiles.
 
 import gzip
 import json
+import sys
+import time
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import groupby
@@ -38,6 +40,21 @@ OUT_SUMMARY = ROOT / "frontend" / "data" / "player_dna_shadow_profile_summary.js
 VERSION = "player-dna-shadow-profiles-v1"
 THRESHOLDS = (1, 3, 5, 10)
 ROLLING_WINDOWS = (5, 10, 20)
+
+
+def _process_peak_rss_bytes() -> int | None:
+    """Best-effort process high-water RSS for Phase-13 observability."""
+    try:
+        import resource
+    except ImportError:
+        return None
+    try:
+        value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    except (ValueError, OSError):
+        return None
+    return value if sys.platform == "darwin" else value * 1024
+
+
 ACCUMULATE_KEYS = (
     "serve_points", "serve_wins", "return_points", "return_wins",
     "tiebreak_points", "tiebreak_wins",
@@ -1026,18 +1043,37 @@ def build_current_target_profiles(
     return snapshots, summary
 
 def build() -> dict[str, Any]:
+    total_started = time.perf_counter()
+    build_started = time.perf_counter()
     snapshots, summary = build_snapshots_from_rows(
         iter_point_rows() or (),
         service_split_matches=iter_service_split_matches() or (),
     )
+    profile_build_seconds = time.perf_counter() - build_started
+    peak_after_build = _process_peak_rss_bytes()
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     OUT_SUMMARY.parent.mkdir(parents=True, exist_ok=True)
 
+    write_started = time.perf_counter()
     with gzip.open(OUT_JSONL, "wt", encoding="utf-8") as handle:
         for row in snapshots:
             handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    profile_write_seconds = time.perf_counter() - write_started
 
     summary["dataset_path"] = str(OUT_JSONL.relative_to(ROOT))
+    summary["phase13_performance_observation"] = {
+        "measurement_mode": "IN_PLACE_CANONICAL_BUILD_OBSERVATION",
+        "profile_build_seconds": profile_build_seconds,
+        "profile_write_seconds": profile_write_seconds,
+        "total_seconds": time.perf_counter() - total_started,
+        "process_peak_rss_bytes_after_build": peak_after_build,
+        "process_peak_rss_bytes_after_write": _process_peak_rss_bytes(),
+        "input_scan_included_in_profile_build_seconds": True,
+        "canonical_builder_unchanged": True,
+        "performance_thresholds_enforced": False,
+        "production_influence": False,
+    }
     OUT_SUMMARY.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False))
     return summary

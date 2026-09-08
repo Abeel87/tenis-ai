@@ -21,6 +21,7 @@ on:
       - 'backend/player_dna_match_state_profiles.py'
       - 'backend/player_dna_match_state_challenger.py'
       - 'backend/player_dna_shadow_profiles.py'
+      - 'backend/player_dna_phase13_performance.py'
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
       - 'backend/player_dna_matchup_engine.py'
@@ -60,6 +61,7 @@ on:
       - 'tests/test_player_dna_match_state_profiles.py'
       - 'tests/test_player_dna_match_state_challenger.py'
       - 'tests/test_player_dna_shadow_profiles.py'
+      - 'tests/test_player_dna_phase13_performance.py'
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
       - 'tests/test_player_dna_matchup_engine.py'
@@ -117,7 +119,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_phase13_performance.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -2600,6 +2602,143 @@ jobs:
           )
           PY
 
+      - name: Measure Phase-13 real pipeline performance (SHADOW, zero network)
+        run: python backend/player_dna_phase13_performance.py
+
+      - name: Guard Phase-13 observational performance closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_phase13_performance.json')
+          if not p.exists():
+              raise SystemExit('player_dna_phase13_performance.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PHASE13_PERFORMANCE_AUDIT_ONLY':
+              raise SystemExit('Phase-13 performance mode invalid')
+          if int(report.get('phase') or 0) != 13:
+              raise SystemExit('Phase-13 phase drifted')
+          if report.get('status') != 'PHASE13_MEASUREMENTS_COMPLETE_NO_PERFORMANCE_THRESHOLDS':
+              raise SystemExit(f"Phase-13 measurements incomplete: {report.get('status')}")
+          if report.get('phase13_complete') is not True:
+              raise SystemExit('Phase-13 did not close')
+          if report.get('phase14_ready') is not True:
+              raise SystemExit('Phase-13 did not authorize Phase 14')
+
+          prerequisite = report.get('prerequisite') or {}
+          if prerequisite.get('phase12_complete') is not True:
+              raise SystemExit('Phase-13 lost Phase-12 prerequisite')
+          if prerequisite.get('phase13_ready') is not True:
+              raise SystemExit('Phase-12 did not authorize Phase 13')
+
+          cache_join = report.get('cache_and_join') or {}
+          strict_rows = int(cache_join.get('strict_context_ready_point_rows') or 0)
+          joined_rows = int(cache_join.get('scorer_joined_rows') or 0)
+          if strict_rows <= 0:
+              raise SystemExit('Phase-13 measured no strict Player DNA point rows')
+          if joined_rows != strict_rows:
+              raise SystemExit(
+                  f'Phase-13 scorer join coverage regressed: {joined_rows}/{strict_rows}'
+              )
+          if float(cache_join.get('scorer_join_coverage') or 0.0) != 1.0:
+              raise SystemExit('Phase-13 scorer join coverage is not 1.0')
+          if cache_join.get('nearest_or_fuzzy_join_used') is not False:
+              raise SystemExit('Phase-13 allowed a non-exact cache/profile join')
+
+          profile = report.get('profile_build') or {}
+          if profile.get('source') != 'CANONICAL_PLAYER_DNA_SHADOW_PROFILES_BUILD':
+              raise SystemExit('Phase-13 profile benchmark is not canonical')
+          if int(profile.get('profile_snapshots') or 0) <= 0:
+              raise SystemExit('Phase-13 observed no profile snapshots')
+          if float(profile.get('canonical_build_seconds') or 0.0) <= 0.0:
+              raise SystemExit('Phase-13 canonical profile build time was not measured')
+          if float(profile.get('canonical_total_seconds') or 0.0) <= 0.0:
+              raise SystemExit('Phase-13 canonical profile total time was not measured')
+          if int(profile.get('process_peak_rss_bytes_after_build') or 0) <= 0:
+              raise SystemExit('Phase-13 canonical profile memory was not measured')
+          if profile.get('second_profile_builder_created') is not False:
+              raise SystemExit('Phase-13 created a second profile builder path')
+
+          matchup = report.get('matchup') or {}
+          if matchup.get('source') != 'CANONICAL_PHASE3_BUILD_MATCHUP_PACKET':
+              raise SystemExit('Phase-13 matchup benchmark is not canonical')
+          if matchup.get('real_profile_snapshot_pair') is not True:
+              raise SystemExit('Phase-13 matchup did not use a real reciprocal profile pair')
+          if int(matchup.get('iterations') or 0) <= 0:
+              raise SystemExit('Phase-13 matchup timing missing')
+          if float(matchup.get('total_seconds') or 0.0) <= 0.0:
+              raise SystemExit('Phase-13 matchup elapsed time missing')
+          if matchup.get('absolute_latency_gate_enabled') is not False:
+              raise SystemExit('Phase-13 enabled an arbitrary matchup latency gate')
+
+          simulation = report.get('simulation') or {}
+          rows = simulation.get('benchmarks') or []
+          if [int(row.get('simulations') or 0) for row in rows] != [10000, 50000, 100000]:
+              raise SystemExit('Phase-13 simulation benchmark sizes drifted')
+          if any(float(row.get('seconds') or 0.0) <= 0.0 for row in rows):
+              raise SystemExit('Phase-13 simulation timing missing')
+          if any(int(row.get('process_peak_rss_bytes_after_stage') or 0) <= 0 for row in rows):
+              raise SystemExit('Phase-13 simulation memory observation missing')
+          if any(row.get('absolute_latency_gate_enabled') is not False for row in rows):
+              raise SystemExit('Phase-13 enabled an arbitrary simulation latency gate')
+          if simulation.get('deterministic_seed_replay') is not True:
+              raise SystemExit('Phase-13 deterministic seed replay failed')
+          if simulation.get('monte_carlo_replacement_of_exact_dp') is not False:
+              raise SystemExit('Phase-13 benchmark replaced canonical exact DP semantics')
+
+          runtime = report.get('ci_runtime_cost') or {}
+          if float(runtime.get('phase13_step_wall_seconds') or 0.0) <= 0.0:
+              raise SystemExit('Phase-13 CI/runtime cost was not measured')
+          if int(runtime.get('process_peak_rss_bytes_after_phase13') or 0) <= 0:
+              raise SystemExit('Phase-13 CI/runtime memory was not measured')
+          if runtime.get('currency_cost') is not None:
+              raise SystemExit('Phase-13 invented a runner currency cost')
+          if runtime.get('currency_cost_status') != 'NOT_ESTIMATED_WITHOUT_RUNNER_PRICE_CONTRACT':
+              raise SystemExit('Phase-13 runner cost policy drifted')
+
+          if report.get('performance_thresholds_enforced') is not False:
+              raise SystemExit('Phase-13 invented an absolute performance threshold')
+          if report.get('benchmark_results_observational_only') is not True:
+              raise SystemExit('Phase-13 benchmark stopped being observational')
+          if report.get('no_arbitrary_latency_or_memory_limit') is not True:
+              raise SystemExit('Phase-13 introduced an arbitrary latency/memory limit')
+
+          for key in (
+              'production_influence',
+              'runtime_prediction_change',
+              'symphony2_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-13 isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'canonical_profile_builder_measured_in_place',
+              'canonical_matchup_builder_reused',
+              'canonical_monte_carlo_reused',
+              'current_cache_and_join_counters_reused',
+              'absolute_performance_thresholds_require_future_data_driven_gate',
+              'determinism_is_correctness_not_speed_threshold',
+              'phase13_completion_is_measurement_completeness_not_promotion',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-13 contract violation: {key}')
+
+          print(
+              'Phase-13 closure: '
+              f"strict={strict_rows} joined={joined_rows} "
+              f"profiles={profile.get('profile_snapshots')} "
+              f"profile_s={profile.get('canonical_build_seconds')} "
+              f"matchup_us={matchup.get('mean_microseconds_per_matchup')} "
+              f"simulation_s={[(row.get('simulations'), row.get('seconds')) for row in rows]} "
+              f"phase14_ready={report.get('phase14_ready')}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -4140,6 +4279,7 @@ jobs:
             frontend/data/symphony2_phase9_player_dna_shared_state.json
             frontend/data/symphony2_phase10_bet_builder_dependency.json
             frontend/data/player_dna_phase12_master_regression.json
+            frontend/data/player_dna_phase13_performance.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
