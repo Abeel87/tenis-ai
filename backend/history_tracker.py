@@ -25,6 +25,79 @@ except ImportError:
 
 GREEN_THRESHOLD = 72.0
 MODEL_VERSION = 'v7.8D-calibration-guard'
+HISTORY_MAX_ENTRIES = 2500
+HISTORY_TARGET_BYTES = 48 * 1024 * 1024
+TERMINAL_HISTORY_STATUSES = {'settled', 'void'}
+
+
+def compact_history_size(entries: list[dict]) -> int:
+    """UTF-8 byte size of the public compact JSON representation."""
+    return len(json.dumps(entries, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+
+
+def retain_history(
+    entries: list[dict],
+    max_entries: int = HISTORY_MAX_ENTRIES,
+    max_compact_bytes: int = HISTORY_TARGET_BYTES,
+) -> list[dict]:
+    """Bound public history without discarding unresolved settlement work.
+
+    The old policy capped history only by match count. As each match accumulated
+    more SHADOW/learning layers, 2500 rows eventually exceeded the runtime's
+    emergency 50 MiB payload ceiling. This policy keeps the same newest-first
+    retention semantics but also enforces a byte budget on the *compact* JSON
+    representation.
+
+    Pending/upcoming/unknown statuses are protected. When either limit is
+    exceeded we discard only the oldest terminal (settled/void) entries.
+    """
+    ordered = sorted(
+        [entry for entry in entries if isinstance(entry, dict)],
+        key=lambda entry: entry.get('scheduled_time') or '',
+        reverse=True,
+    )
+    if not ordered:
+        return []
+
+    sizes = [
+        len(json.dumps(entry, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+        for entry in ordered
+    ]
+    keep = [True] * len(ordered)
+    kept_count = len(ordered)
+
+    # Preserve the legacy 2500-entry ceiling, but never sacrifice an unresolved
+    # match merely to satisfy the count cap.
+    if max_entries > 0 and kept_count > max_entries:
+        for idx in range(len(ordered) - 1, -1, -1):
+            if kept_count <= max_entries:
+                break
+            if str(ordered[idx].get('status') or '').casefold() in TERMINAL_HISTORY_STATUSES:
+                keep[idx] = False
+                kept_count -= 1
+
+    def current_bytes() -> int:
+        selected_sizes = [sizes[i] for i, flag in enumerate(keep) if flag]
+        return 2 + sum(selected_sizes) + max(0, len(selected_sizes) - 1)
+
+    total_bytes = current_bytes()
+    if max_compact_bytes > 0 and total_bytes > max_compact_bytes:
+        for idx in range(len(ordered) - 1, -1, -1):
+            if total_bytes <= max_compact_bytes:
+                break
+            if not keep[idx]:
+                continue
+            if str(ordered[idx].get('status') or '').casefold() not in TERMINAL_HISTORY_STATUSES:
+                continue
+            # Removing one element removes its JSON bytes and one list comma
+            # whenever at least one other element remains.
+            keep[idx] = False
+            total_bytes -= sizes[idx]
+            if kept_count > 1:
+                total_bytes -= 1
+            kept_count -= 1
+
+    return [entry for idx, entry in enumerate(ordered) if keep[idx]]
 VOID_RE = re.compile(r'\b(RET|W/O|WO|DEF|ABD|ABN)\b', re.I)
 SET_RE = re.compile(r'(\d+)\s*[-:]\s*(\d+)')
 
