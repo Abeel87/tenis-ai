@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Measure history top-level fields
+      - name: Measure history payload
         run: |
           python - <<'PY'
           import json
@@ -25,10 +25,20 @@ jobs:
           for e in h:
               if not isinstance(e,dict): continue
               for k,v in e.items():
-                  totals[k]+=len(json.dumps(v,ensure_ascii=False,separators=(',',':')).encode('utf-8'))
+                  totals[k]+=len(json.dumps(v,ensure_ascii=False,separators=(',',':')).encode())
                   present[k]+=1
-          print('ENTRIES',len(h))
-          print('FILE_MB',round(p.stat().st_size/(1024*1024),3))
-          for k,n in totals.most_common(40):
-              print('FIELD',k,'MB',round(n/(1024*1024),3),'PRESENT',present[k],'AVG_KB',round(n/max(1,present[k])/1024,2))
+          print('ENTRIES',len(h),'FILE_MB',round(p.stat().st_size/(1024*1024),3))
+          for k,n in totals.most_common(15):
+              print('TOP',k,round(n/(1024*1024),3),present[k])
+          for layer in ('autolearn_signals_v84','playable_autolearn_signals_v912','player_intelligence_signals_v85','learning_signals_v79b','superbet_candidate_signals_v925'):
+              nested=Counter(); rows=0
+              for e in h:
+                  for s in (e.get(layer) or []) if isinstance(e,dict) else []:
+                      if not isinstance(s,dict): continue
+                      rows+=1
+                      for k,v in s.items():
+                          nested[k]+=len(json.dumps(v,ensure_ascii=False,separators=(',',':')).encode())
+              print('LAYER',layer,'ROWS',rows)
+              for k,n in nested.most_common(20):
+                  print('NESTED',layer,k,round(n/(1024*1024),3))
           PY
