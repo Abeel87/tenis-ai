@@ -675,6 +675,53 @@ Plan UI:
 - rozkład wyników seta/meczu;
 - prawdopodobieństwo rynków z tej samej dystrybucji.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 11 nie tworzy nowej matematyki Player DNA. UI odczytuje istniejący
+`player_intelligence_v85` oraz istniejącą trajektorię
+`player_dna_current_simulation`.
+
+Warstwa prezentacji ma dwa poziomy:
+
+- **Prosty** — domyślny dla każdego konta; pokazuje wniosek, trend, próbkę,
+  nawierzchnię, jakość danych, najważniejsze przewagi oraz scenariusze w
+  normalnym języku;
+- **Techniczny** — dostępny wyłącznie dla roli `admin`; pokazuje dodatkowo
+  RAW, adjusted, volatility, coverage, n, dokładne matchup edges oraz techniczne
+  oznaczenia SHADOW.
+
+Istniejący kontrakt ról pozostaje jeden:
+`admin / moderator / user`.
+Moderator i user nie mogą przełączyć aplikacji na tryb techniczny. Wylogowanie
+lub brak potwierdzonej roli zawsze sprowadza widok do prostego.
+
+Techniczny profil pokazuje bez nowych obliczeń:
+
+- `raw` z historycznego okna;
+- `adjusted` z backendu = recency weighting + siła przeciwników + shrinkage
+  do priory nawierzchni;
+- `volatility`, `n`, `coverage` i quality jako jawny evidence uncertainty;
+- matchup edge osobno dla overall, serve↔return, return↔serve i form;
+- trend L5 vs poprzednie 5 z backendu.
+
+UI nie produkuje własnego confidence score ani własnego probability model.
+Scenariusze nadal pochodzą z tej samej symulacji Player DNA i zachowują
+prawdopodobieństwo oraz warunek pierwszego serwującego.
+
+Gate Fazy 11 jest statyczno-regresyjny w
+`tests/test_phase11_readable_ui.py` i pełnym `Tenis AI UI & Project Health`.
+Zamknięcie wymaga:
+
+- domyślnego trybu prostego;
+- admin-only przełącznika Prosty ↔ Techniczny;
+- braku technicznego przełącznika dla moderator/user;
+- trendu, L5/L10/L20, sample, surface, reasons;
+- RAW → adjusted → matchup diagnostics w trybie technicznym;
+- uncertainty opartego wyłącznie o opublikowane volatility/sample/coverage;
+- top scenariuszy i checkpointów 2/4/6 gemów z istniejącej trajektorii;
+- braku wpływu UI na modele, Symfonię 2.0 i PLAYABLE;
+- `phase11_complete=true` i `phase12_ready=true` po zielonym CI.
+
 ---
 
 # Faza 12 — Test cases obowiązkowe

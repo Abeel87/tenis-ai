@@ -165,7 +165,7 @@
   }
 
   async function signOut(){try{await client.auth.signOut()}finally{closeModal()}}
-  async function loadProfile(user){if(!user){currentProfile=null;return}const {data,error}=await client.from('profiles').select('id,username,avatar_url,bio,last_seen_at,created_at').eq('id',user.id).maybeSingle();if(error){console.warn('Tenis AI profile:',error.message);currentProfile=null;return}currentProfile=data||null}
+  async function loadProfile(user){if(!user){currentProfile=null;return}const {data,error}=await client.from('profiles').select('id,username,avatar_url,bio,last_seen_at,created_at,role').eq('id',user.id).maybeSingle();if(error){console.warn('Tenis AI profile:',error.message);currentProfile=null;return}currentProfile=data||null}
   async function touchPresence(){if(!client||!currentUser)return;try{await client.from('profiles').update({last_seen_at:new Date().toISOString()}).eq('id',currentUser.id)}catch{}}
   function startHeartbeat(){clearInterval(heartbeat);if(!currentUser)return;touchPresence();heartbeat=setInterval(()=>{touchPresence();refreshCommunityStats()},60000)}
   async function refreshCommunityStats(){

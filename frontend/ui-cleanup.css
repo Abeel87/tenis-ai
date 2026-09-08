@@ -12,3 +12,54 @@
 /* Old technical blocks live under one PRO disclosure. */
 #pc882-legacy>summary b{color:#dff8ff}
 #pc882-legacy>summary span{max-width:62%;line-height:1.25}
+
+
+/* Phase 11 — one global readability mode.
+   SIMPLE is the safe/default surface for every role.
+   TECHNICAL can only be activated by ui-organizer after it sees role=admin. */
+.tenis-ui-mode-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:38px;
+  padding:6px 9px;
+  border:1px solid rgba(92,210,238,.22);
+  border-radius:11px;
+  background:rgba(4,26,38,.88);
+  color:#e9fbff;
+  cursor:pointer;
+}
+.tenis-ui-mode-toggle>span:first-child{font-size:15px}
+.tenis-ui-mode-toggle>span:last-child{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+.tenis-ui-mode-toggle b{font-size:10px}
+.tenis-ui-mode-toggle small{font-size:8px;color:#80a4b3;margin-top:3px}
+
+html:not([data-tenis-ui-mode]) .phase11-technical,
+html:not([data-tenis-ui-mode]) .v853-technical-block,
+html:not([data-tenis-ui-mode]) .v853-technical-inline,
+html[data-tenis-ui-mode="simple"] .v853-technical-block,
+html[data-tenis-ui-mode="simple"] .v853-technical-inline,
+html[data-tenis-ui-mode="simple"] .phase11-technical,
+html[data-tenis-ui-mode="simple"] [data-tech-only="1"]{
+  display:none!important;
+}
+html[data-tenis-ui-mode="technical"] .phase11-simple-only{
+  display:none!important;
+}
+html[data-tenis-ui-mode="technical"] .phase11-technical{
+  display:block;
+}
+html[data-tenis-ui-mode="simple"] .phase11-simple-only{
+  display:block;
+}
+
+.v853-mode-switch [hidden]{display:none!important}
+
+@media(max-width:720px){
+  .tenis-ui-mode-toggle{
+    min-width:42px;
+    padding:6px 7px;
+    justify-content:center;
+  }
+  .tenis-ui-mode-toggle>span:last-child{display:none}
+}

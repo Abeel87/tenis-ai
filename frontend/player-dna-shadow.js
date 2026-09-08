@@ -800,8 +800,13 @@
     if(trajectory.status!=='SHADOW_TRAJECTORY_FOUNDATION'){
       return `
         <header class="pds-trajectory-head">
-          <div><b>🧬 Player DNA · przebieg meczu</b><small>SHADOW trajectory</small></div>
-          <span class="pds-status collecting">CZEKA NA RAPORT</span>
+          <div>
+            <b class="phase11-simple-only">🧬 Przewidywany przebieg meczu</b>
+            <b class="phase11-technical">🧬 Player DNA · przebieg meczu</b>
+            <small class="phase11-simple-only">Scenariusze pojawią się po przeliczeniu meczu.</small>
+            <small class="phase11-technical">SHADOW trajectory</small>
+          </div>
+          <span class="pds-status collecting"><span class="phase11-simple-only">CZEKA NA DANE</span><span class="phase11-technical">CZEKA NA RAPORT</span></span>
         </header>
         <div class="pds-empty">Dla tego meczu nie ma jeszcze opublikowanej trajektorii Player DNA.</div>`;
     }
@@ -813,10 +818,12 @@
     return `
       <header class="pds-trajectory-head">
         <div>
-          <b>🧬 Player DNA · mapa przebiegu meczu</b>
-          <small>ranking scenariuszy, nie jeden pewny skrypt</small>
+          <b class="phase11-simple-only">🧬 Najbardziej prawdopodobny przebieg</b>
+          <b class="phase11-technical">🧬 Player DNA · mapa przebiegu meczu</b>
+          <small class="phase11-simple-only">Kilka możliwych scenariuszy — nie jeden pewny wynik.</small>
+          <small class="phase11-technical">ranking scenariuszy, nie jeden pewny skrypt</small>
         </div>
-        <span class="pds-status collecting">SHADOW</span>
+        <span class="pds-status collecting"><span class="phase11-simple-only">TRYB TESTOWY</span><span class="phase11-technical">SHADOW</span></span>
       </header>
 
       <div class="pds-checkpoints">
@@ -830,7 +837,11 @@
         ${conditionedScenario(conditioned.p2_serves_first,'p2',row.p1,row.p2)}
       </div>
 
-      <p class="pds-foot">
+      <p class="pds-foot phase11-simple-only">
+        To są możliwe scenariusze, a nie pewny wynik. Pierwszy serwujący jest przed meczem nieznany,
+        dlatego pokazujemy osobno oba warianty rozpoczęcia.
+      </p>
+      <p class="pds-foot phase11-technical">
         Pierwszy serwujący jest przed meczem nieznany, dlatego pokazujemy oba warunki osobno.
         Prawdopodobieństwo głównego scenariusza dotyczy rodziny wyniku meczu przy wskazanym pierwszym serwisie.
         Przebieg gem po gemie jest reprezentatywną ścieżką tej rodziny; dokładne pełne ścieżki pozostają diagnostyką SHADOW.
