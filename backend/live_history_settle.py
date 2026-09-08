@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
 
-from api_quota import quota_budget, record_calls
+from api_quota import quota_budget, record_calls, request_interval_seconds
 from history_tracker import history_stats
 from signal_settlement import settle_signal_live, settle_layers, reconcile_settled, SIGNAL_LAYERS
 from shadow_lab_v78e6 import SHADOW_STATS_PATH, build_shadow_stats
@@ -24,7 +25,7 @@ BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v7.8E5-RetirementSettlement/1.0"
 MIN_AGE_MINUTES = 75
 RETRY_HOURS = 2
-MAX_CALLS_PER_RUN = 40
+MAX_CALLS_PER_RUN = 48
 DAILY_RESERVE = 150
 SETTLEMENT_VERSION = "v7.8E5-retirement-partial"
 
@@ -56,25 +57,6 @@ def _obj(payload):
         return {}
     d = payload.get("data")
     return d if isinstance(d, dict) else payload
-
-
-def _usage_remaining(key: str):
-    try:
-        r = requests.get(
-            BASE_URL + "/usage",
-            headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
-            timeout=(7, 18),
-        )
-        r.raise_for_status()
-        u = r.json() or {}
-        today = u.get("today") or {}
-        limits = u.get("limits") or {}
-        rem = today.get("remaining_day")
-        if rem is None and isinstance(limits.get("per_day"), (int, float)) and isinstance(today.get("calls"), (int, float)):
-            rem = int(limits["per_day"]) - int(today["calls"])
-        return int(rem) if isinstance(rem, (int, float)) else None
-    except Exception:
-        return None
 
 
 def _score_sets(match: dict):
@@ -243,14 +225,23 @@ def main():
 
     budget,quota_usage = quota_budget("history_settle", MAX_CALLS_PER_RUN) if key and candidates else (0,{})
     remaining = ((quota_usage.get("today") or {}).get("remaining_day"))
+    per_minute = ((quota_usage.get("limits") or {}).get("per_minute") or 60)
+    min_interval = request_interval_seconds(per_minute, utilization=0.90)
+    last_call_monotonic = 0.0
     calls = settled = voided = retired = not_ready = errors = migrated = 0
 
-    for _, idx, e, migration in candidates[:budget]:
+    for _, idx, e, migration in candidates:
+        if calls >= budget:
+            break
         mid = e.get("match_id")
         rec = state["matches"].setdefault(str(mid), {})
         rec["last_checked_at"] = now.isoformat()
         rec["checks"] = int(rec.get("checks") or 0) + 1
         try:
+            if last_call_monotonic > 0 and min_interval > 0:
+                wait = min_interval - (time.monotonic() - last_call_monotonic)
+                if wait > 0:
+                    time.sleep(wait)
             r = requests.get(
                 BASE_URL + f"/matches/{mid}",
                 headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
@@ -258,6 +249,25 @@ def main():
             )
             calls += 1
             record_calls("history_settle",1)
+            last_call_monotonic = time.monotonic()
+            if r.status_code == 429 and calls < budget:
+                try:
+                    retry = min(30, max(1, int(float(r.headers.get("Retry-After", "2") or 2))))
+                except (TypeError, ValueError):
+                    retry = 2
+                time.sleep(retry)
+                if last_call_monotonic > 0 and min_interval > 0:
+                    wait = min_interval - (time.monotonic() - last_call_monotonic)
+                    if wait > 0:
+                        time.sleep(wait)
+                r = requests.get(
+                    BASE_URL + f"/matches/{mid}",
+                    headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
+                    timeout=(7, 22),
+                )
+                calls += 1
+                record_calls("history_settle",1)
+                last_call_monotonic = time.monotonic()
             rec["last_status_code"] = r.status_code
             if r.status_code != 200:
                 errors += 1
