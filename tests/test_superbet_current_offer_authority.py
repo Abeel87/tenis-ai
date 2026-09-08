@@ -279,3 +279,11 @@ def test_all_active_superbet_provider_layers_reject_generic_bookmaker_fallback()
             if token in text:
                 offenders.append(f"{name}:{token}")
     assert not offenders, f"generic/foreign Superbet fallback returned: {offenders}"
+
+
+
+def test_context_keeps_strict_parser_version_as_cache_invalidation_owner():
+    text = (ROOT / "backend" / "superbet_market_context.py").read_text(encoding="utf-8")
+    assert 'availability["runtime_adapter_version"]=STRICT_FIXTURE_LINE_VERSION' in text
+    assert 'availability["runtime_adapter_version"]=VERSION' not in text
+    assert context.STRICT_FIXTURE_LINE_VERSION != context.VERSION
