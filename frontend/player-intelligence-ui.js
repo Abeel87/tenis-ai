@@ -29,15 +29,33 @@ UI-only. No direct fetch, no MutationObserver, no interval.
   .pi851-progress{height:5px;margin:.58rem 0;border-radius:999px;background:rgba(85,117,128,.18);overflow:hidden}.pi851-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#49dfff,#b9ff61)}.pi851-learning p{margin:0;color:#849ca7;font-size:.67rem;line-height:1.45}.pi851-learning p b{color:#ffcf8c}
   .pi851-metrics header,.pi851-surfaces header{display:flex;justify-content:space-between;gap:.5rem;align-items:center;margin-bottom:.5rem}.pi851-metrics header b,.pi851-surfaces header b{color:#eafaff}.pi851-metrics header span,.pi851-surfaces header span{font-size:.61rem;color:#6f8996}.pi851-metrics-table{display:grid;gap:.32rem}.pi851-metrics-table>div{display:grid;grid-template-columns:1.3fr repeat(5,.72fr);gap:.32rem;align-items:center;padding:.42rem .48rem;border-radius:8px;background:rgba(50,163,188,.045)}.pi851-metrics-table b{color:#def8ff;font-size:.68rem}.pi851-metrics-table span{color:#8da7b2;font-size:.62rem;text-align:right}
   .pi851-surfaces>div{display:flex;flex-wrap:wrap;gap:.4rem}.pi851-surfaces>div>span{display:flex;gap:.35rem;align-items:center;padding:.38rem .5rem;border-radius:9px;background:rgba(52,171,198,.055)}.pi851-surfaces b{color:#dff7ff}.pi851-surfaces em{font-style:normal;color:#baff61}.pi851-surfaces small{color:#718b97}.pi851-surfaces p{margin:0;color:#758f9b;font-size:.67rem}
-  @media(max-width:720px){.pi851-card-strip{margin:.5rem .55rem .15rem}.pi851-card-compare span{font-size:.64rem}.pi851-detail{margin:.65rem .55rem .9rem;padding:.72rem}.pi851-detail-head{flex-direction:column}.pi851-verdict-grid{grid-template-columns:1fr 1fr}.pi851-player-heads{grid-template-columns:1fr}.pi851-learning-grid{grid-template-columns:1fr 1fr}.pi851-metrics-table>div{grid-template-columns:1.2fr repeat(2,.7fr)}.pi851-metrics-table>div span:nth-of-type(n+3){display:none}}
+  .pi851-reasons-wrap{margin-top:.7rem;padding:.62rem;border:1px solid rgba(66,202,232,.12);border-radius:12px;background:rgba(54,172,199,.035)}.pi851-reasons-wrap>header{display:flex;justify-content:space-between;gap:.5rem;margin-bottom:.45rem}.pi851-reasons-wrap>header b{color:#e8fbff}.pi851-reasons-wrap>header small{color:#7895a1;font-size:.62rem}
+  .pi851-confidence{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.65rem}.pi851-confidence>div{padding:.55rem;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.065)}.pi851-confidence b{display:block;color:#eafaff}.pi851-confidence span,.pi851-confidence small{display:block;margin-top:.2rem;color:#809aa6;font-size:.64rem;line-height:1.35}
+  .pi851-tech-panel{margin-top:.75rem;padding:.65rem;border:1px solid rgba(85,185,255,.18);border-radius:13px;background:rgba(5,18,32,.84)}.pi851-tech-panel>summary{cursor:pointer;color:#9fdcff;font-size:.7rem;font-weight:800}.pi851-tech-note{margin:.5rem 0;color:#7f9aa8;font-size:.64rem;line-height:1.45}
+  .pi851-tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}.pi851-tech-player{padding:.55rem;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.055)}.pi851-tech-player>header{display:flex;justify-content:space-between;gap:.4rem;margin-bottom:.4rem}.pi851-tech-player>header b{color:#eefbff}.pi851-tech-player>header small{color:#7e98a4}.pi851-tech-metric{display:grid;grid-template-columns:1.1fr .75fr auto .75fr;gap:.35rem;align-items:center;padding:.36rem 0;border-top:1px solid rgba(255,255,255,.045)}.pi851-tech-metric:first-of-type{border-top:0}.pi851-tech-metric span{color:#7f98a3;font-size:.62rem}.pi851-tech-metric b{color:#def6ff;text-align:center;font-size:.68rem}.pi851-tech-metric i{font-style:normal;color:#5c7a87;font-size:.62rem}.pi851-tech-metric small{grid-column:1/-1;color:#6f8995;font-size:.58rem}
+  .pi851-matchup-tech{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-top:.55rem}.pi851-matchup-tech span{padding:.45rem;border-radius:9px;background:rgba(76,163,255,.05);border:1px solid rgba(76,163,255,.11)}.pi851-matchup-tech small{display:block;color:#718d9b;font-size:.58rem}.pi851-matchup-tech b{display:block;margin-top:.1rem;color:#e7f7ff}
+  @media(max-width:720px){.pi851-card-strip{margin:.5rem .55rem .15rem}.pi851-card-compare span{font-size:.64rem}.pi851-detail{margin:.65rem .55rem .9rem;padding:.72rem}.pi851-detail-head{flex-direction:column}.pi851-verdict-grid{grid-template-columns:1fr 1fr}.pi851-player-heads,.pi851-tech-grid{grid-template-columns:1fr}.pi851-confidence{grid-template-columns:1fr}.pi851-matchup-tech{grid-template-columns:1fr 1fr}.pi851-learning-grid{grid-template-columns:1fr 1fr}.pi851-metrics-table>div{grid-template-columns:1.2fr repeat(2,.7fr)}.pi851-metrics-table>div span:nth-of-type(n+3){display:none}}
   `;
   if(!document.querySelector('#pi851-style')){const st=document.createElement('style');st.id='pi851-style';st.textContent=STYLE;document.head.appendChild(st)}
 
   function profile(m,side){return m?.player_intelligence_v85?.profiles?.[side]||{}}
   function ix(p,k){return num(p?.indexes?.[k])}
   function sample(p,w){return Number(p?.windows?.[String(w)]?.sample_matches||0)}
-  function metric(p,k,w='10'){const v=num(p?.windows?.[String(w)]?.metrics?.[k]?.adjusted);return v==null?null:(Math.abs(v)<=1?v*100:v)}
+  function pack(p,k,w='10'){return p?.windows?.[String(w)]?.metrics?.[k]||{}}
+  function asPct(v){const x=num(v);return x==null?null:(Math.abs(x)<=1?x*100:x)}
+  function metric(p,k,w='10'){return asPct(pack(p,k,w)?.adjusted)}
+  function rawMetric(p,k,w='10'){return asPct(pack(p,k,w)?.raw)}
+  function volatility(p,k,w='10'){return asPct(pack(p,k,w)?.volatility)}
+  function metricN(p,k,w='10'){return Number(pack(p,k,w)?.n||0)}
   function trend(p,k){const v=num(p?.trend?.[k]);return v==null?null:v}
+  function qualityText(q){
+    const key=String(q||'N/D').toUpperCase();
+    if(key==='HIGH')return 'wysoka';
+    if(key==='MEDIUM')return 'średnia';
+    if(key==='LOW')return 'niska';
+    return 'brak oceny';
+  }
+  function coverageText(p){const x=num(p?.coverage);return x==null?'N/D':pct(Math.abs(x)<=1?x*100:x)}
   function matchFromEncoded(raw){let wanted=String(raw||'');try{wanted=decodeURIComponent(wanted)}catch{}return rows().find(m=>key(m)===wanted)||null}
   function verdict(m){const mu=m?.player_intelligence_v85?.matchup||{},edge=num(mu.edge_p1),q=mu.quality||'N/D';if(edge==null)return{lead:'Profil N/D',sub:'Za mało porównywalnych danych',q};if(Math.abs(edge)<2)return{lead:'Matchup równy',sub:`różnica ${signed(edge)}`,q};const name=edge>0?m.p1:m.p2;return{lead:`${name} ma przewagę`,sub:`profil ${signed(Math.abs(edge))}`,q}}
 
@@ -45,9 +63,71 @@ UI-only. No direct fetch, no MutationObserver, no interval.
 
   function trendText(p){const a=[['forma',trend(p,'won')],['hold',trend(p,'hold_rate')],['return',trend(p,'return_points_won')]].filter(([,v])=>v!=null);return a.length?`Trend L5 vs poprzednie 5: ${a.map(([k,v])=>`${k} ${v>0?'+':''}${v.toFixed(1)} pp`).join(' · ')}`:'Trend L5 vs poprzednie 5: N/D'}
   function row(label,a,b,pc=false){const f=x=>num(x)==null?'—':pc?pct(x):String(Math.round(x)),av=num(a),bv=num(b);return `<div class="pi851-compare-row"><span>${esc(label)}</span><b class="${av!=null&&bv!=null&&av>bv?'win':''}">${f(a)}</b><i>↔</i><b class="${av!=null&&bv!=null&&bv>av?'win':''}">${f(b)}</b></div>`}
-  function playerMeta(name,p){const rank=p?.windows?.['10']?.latest_rank??p?.windows?.['5']?.latest_rank;return `<div class="pi851-player-meta"><div><b>${esc(name)}</b><em>${esc(p?.quality||'N/D')}</em></div><span>Ranking ${rank??'—'} · próbka ${sample(p,20)}</span><span>L5/L10/L20: ${sample(p,5)}/${sample(p,10)}/${sample(p,20)} · fallback 24m: ${p?.fallback_used?'TAK':'NIE'}</span><small>${esc(trendText(p))}</small></div>`}
+  function playerMeta(name,p){const rank=p?.windows?.['10']?.latest_rank??p?.windows?.['5']?.latest_rank;return `<div class="pi851-player-meta"><div><b>${esc(name)}</b><em>${esc(qualityText(p?.quality))}</em></div><span>Ranking ${rank??'—'} · próbka L20: ${sample(p,20)}</span><span>L5/L10/L20: ${sample(p,5)}/${sample(p,10)}/${sample(p,20)} · pokrycie ${coverageText(p)}</span><small>${esc(trendText(p))}</small></div>`}
 
-  function details(m){const pi=m?.player_intelligence_v85||{},mu=pi.matchup||{},p1=profile(m,'p1'),p2=profile(m,'p2');if(!pi.version)return'';const v=verdict(m),reasons=(mu.reasons||[]).slice(0,3).map(r=>{const e=num(r.edge_p1);if(e==null)return'';return `<span>${esc(r.factor||'czynnik')}: <b>${esc(e>0?m.p1:m.p2)}</b> ${signed(Math.abs(e))}</span>`}).join('');return `<section class="pi851-detail" data-pi851-detail><header class="pi851-detail-head"><div><span>🧬 PLAYER INTELLIGENCE v8.5</span><b>${esc(v.lead)}</b><small>${esc(v.sub)}</small></div><em>SHADOW · ${esc(v.q)}</em></header><div class="pi851-verdict-grid"><span><small>Nawierzchnia</small><b>${esc(String(pi.surface||m.surface||'—').toUpperCase())}</b></span><span><small>Format</small><b>${mu.best_of?`BO${mu.best_of}`:'N/D'}</b></span><span><small>Edge P1</small><b>${signed(mu.edge_p1)}</b></span><span><small>Jakość</small><b>${esc(v.q)}</b></span></div><div class="pi851-player-heads">${playerMeta(m.p1,p1)}${playerMeta(m.p2,p2)}</div><div class="pi851-compare"><div class="pi851-compare-labels"><b>${esc(m.p1)}</b><span>vs</span><b>${esc(m.p2)}</b></div>${row('Profil łączny',ix(p1,'overall'),ix(p2,'overall'))}${row('Serwis',ix(p1,'serve'),ix(p2,'serve'))}${row('Return',ix(p1,'return'),ix(p2,'return'))}${row('Forma',ix(p1,'form'),ix(p2,'form'))}${row('Mental',ix(p1,'mental'),ix(p2,'mental'))}${row('Hold',metric(p1,'hold_rate'),metric(p2,'hold_rate'),true)}${row('Pkt return',metric(p1,'return_points_won'),metric(p2,'return_points_won'),true)}${row('Win rate',metric(p1,'won'),metric(p2,'won'),true)}${row('Wygrany 1. set',metric(p1,'first_set_won'),metric(p2,'first_set_won'),true)}</div>${reasons?`<div class="pi851-reasons">${reasons}</div>`:''}<p class="pi851-note">Tylko ta sama nawierzchnia. Główne okno 12 miesięcy; 24 miesiące wyłącznie jako fallback. Indeksy 0–100 opisują profil, nie prawdopodobieństwo wygranej.</p></section>`}
+  function techMetric(label,p,key){
+    const raw=rawMetric(p,key),adj=metric(p,key),vol=volatility(p,key),n=metricN(p,key);
+    return `<div class="pi851-tech-metric"><span>${esc(label)}</span><b>${raw==null?'—':pct(raw)}</b><i>→</i><b>${adj==null?'—':pct(adj)}</b><small>RAW → korekta rywal/świeżość/shrinkage · n=${n} · zmienność ${vol==null?'—':pct(vol)}</small></div>`;
+  }
+
+  function techProfile(name,p){
+    return `<section class="pi851-tech-player"><header><b>${esc(name)}</b><small>jakość ${esc(qualityText(p?.quality))} · coverage ${coverageText(p)}</small></header>${techMetric('Hold',p,'hold_rate')}${techMetric('Pkt return',p,'return_points_won')}${techMetric('Win rate',p,'won')}${techMetric('1. set',p,'first_set_won')}</section>`;
+  }
+
+  function matchupTech(mu,m){
+    return `<div class="pi851-matchup-tech"><span><small>Profil łączny P1</small><b>${signed(mu?.edge_p1)}</b></span><span><small>Serwis P1 ↔ return P2</small><b>${signed(mu?.serve_edge_p1)}</b></span><span><small>Return P1 ↔ serwis P2</small><b>${signed(mu?.return_edge_p1)}</b></span><span><small>Forma P1 ↔ P2</small><b>${signed(mu?.form_edge_p1)}</b></span></div>`;
+  }
+
+  function confidenceBox(name,p){
+    return `<div><b>${esc(name)}</b><span>Jakość danych: ${esc(qualityText(p?.quality))}</span><span>Próbka L20: ${sample(p,20)} · pokrycie: ${coverageText(p)}</span><small>Zmienność hold: ${volatility(p,'hold_rate')==null?'—':pct(volatility(p,'hold_rate'))} · return: ${volatility(p,'return_points_won')==null?'—':pct(volatility(p,'return_points_won'))}</small></div>`;
+  }
+
+  function details(m){
+    const pi=m?.player_intelligence_v85||{},mu=pi.matchup||{},p1=profile(m,'p1'),p2=profile(m,'p2');
+    if(!pi.version)return'';
+    const v=verdict(m);
+    const reasons=(mu.reasons||[]).slice(0,3).map(r=>{const e=num(r.edge_p1);if(e==null)return'';return `<span>${esc(r.factor||'czynnik')}: <b>${esc(e>0?m.p1:m.p2)}</b> ${signed(Math.abs(e))}</span>`}).join('');
+    return `<section class="pi851-detail" data-pi851-detail>
+      <header class="pi851-detail-head">
+        <div>
+          <span class="phase11-simple-only">🧬 Analiza zawodników</span>
+          <span class="phase11-technical">🧬 PLAYER INTELLIGENCE v8.5</span>
+          <b>${esc(v.lead)}</b>
+          <small class="phase11-simple-only">Wniosek z profilu na tej nawierzchni; to nie jest kurs ani gwarancja wyniku.</small>
+          <small class="phase11-technical">${esc(v.sub)} · SHADOW diagnostic only</small>
+        </div>
+        <em><span class="phase11-simple-only">TRYB TESTOWY</span><span class="phase11-technical">SHADOW</span> · ${esc(qualityText(v.q))}</em>
+      </header>
+      <div class="pi851-verdict-grid">
+        <span><small>Nawierzchnia</small><b>${esc(String(pi.surface||m.surface||'—').toUpperCase())}</b></span>
+        <span><small>Format</small><b>${mu.best_of?`BO${mu.best_of}`:'N/D'}</b></span>
+        <span><small>Jakość danych</small><b>${esc(qualityText(v.q))}</b></span>
+        <span class="phase11-technical"><small>Matchup edge P1</small><b>${signed(mu.edge_p1)}</b></span>
+      </div>
+      <div class="pi851-player-heads">${playerMeta(m.p1,p1)}${playerMeta(m.p2,p2)}</div>
+      <div class="pi851-confidence">${confidenceBox(m.p1,p1)}${confidenceBox(m.p2,p2)}</div>
+      <div class="pi851-compare">
+        <div class="pi851-compare-labels"><b>${esc(m.p1)}</b><span>vs</span><b>${esc(m.p2)}</b></div>
+        ${row('Siła profilu',ix(p1,'overall'),ix(p2,'overall'))}
+        ${row('Serwis',ix(p1,'serve'),ix(p2,'serve'))}
+        ${row('Return',ix(p1,'return'),ix(p2,'return'))}
+        ${row('Forma',ix(p1,'form'),ix(p2,'form'))}
+        ${row('Mental',ix(p1,'mental'),ix(p2,'mental'))}
+        ${row('Hold',metric(p1,'hold_rate'),metric(p2,'hold_rate'),true)}
+        ${row('Pkt return',metric(p1,'return_points_won'),metric(p2,'return_points_won'),true)}
+        ${row('Wygrany 1. set',metric(p1,'first_set_won'),metric(p2,'first_set_won'),true)}
+      </div>
+      ${reasons?`<section class="pi851-reasons-wrap"><header><b>Dlaczego?</b><small>największe różnice w matchupie</small></header><div class="pi851-reasons">${reasons}</div></section>`:''}
+      <details class="phase11-technical pi851-tech-panel">
+        <summary>Dane techniczne · RAW → korekta profilu → matchup</summary>
+        <p class="pi851-tech-note">Adjusted pochodzi z backendu: recency weighting + siła rywali + shrinkage do priory nawierzchni. Volatility, n i coverage są dowodem niepewności; UI nie tworzy własnego confidence score.</p>
+        <div class="pi851-tech-grid">${techProfile(m.p1,p1)}${techProfile(m.p2,p2)}</div>
+        ${matchupTech(mu,m)}
+      </details>
+      <p class="pi851-note phase11-simple-only">Profil bierze pod uwagę tę samą nawierzchnię, świeżość wyników i jakość rywali. Im mniejsza próbka lub większa zmienność, tym ostrożniej czytaj przewagę.</p>
+      <p class="pi851-note phase11-technical">L5/L10/L20 · same-surface only · 12m primary / 24m fallback · indeksy 0–100 nie są P(win).</p>
+    </section>`;
+  }
 
   function decorateCards(){document.querySelectorAll('.p751-match-card').forEach(c=>{if(c.querySelector('.pi851-card-strip'))return;const m=matchFromEncoded(c.getAttribute('data-p751-open'));if(!m)return;const h=cardStrip(m),f=c.querySelector('footer');if(h)(f?f.insertAdjacentHTML('beforebegin',h):c.insertAdjacentHTML('beforeend',h))})}
   function injectDetail(m){const h=document.querySelector('.p751-detail-screen');if(!m||!h||h.querySelector('[data-pi851-detail]'))return;const x=details(m),head=h.querySelector('.dc87')||h.querySelector('.p751-matchup')||h.querySelector('.p751-detail-header');if(x)(head?head.insertAdjacentHTML('afterend',x):h.insertAdjacentHTML('afterbegin',x))}
