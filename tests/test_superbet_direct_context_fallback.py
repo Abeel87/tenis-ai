@@ -121,6 +121,7 @@ def test_direct_fallback_adds_price_free_fixture_only_when_current_provider_miss
     assert fixture["p1"] == "Tommy Paul"
     assert fixture["p2"] == "Alexander Bublik"
     assert fixture["operator_offer_source"] == context.DIRECT_SOURCE
+    assert fixture["offer_checked_at"] == now.isoformat()
     assert fixture["direct_source"] is True
     assert fixture["prices_used"] is False
     assert len(fixture["canonical_selections"]) == 2
@@ -179,6 +180,51 @@ def test_existing_current_provider_fixture_wins_over_direct(monkeypatch, tmp_pat
     assert merged["direct_fallback"]["canonical_context_activation"] is False
     assert merged["direct_fallback"]["downstream_playable_eligibility"] is False
 
+
+
+def test_fresh_direct_replaces_stale_provider_fixture(monkeypatch, tmp_path):
+    now = datetime(2026, 9, 4, 16, 30, tzinfo=timezone.utc)
+    _write_sidecar(monkeypatch, tmp_path, _direct_sidecar(now))
+    stale_checked = now - timedelta(hours=context.DIRECT_MAX_AGE_HOURS + 0.2)
+    stale = {
+        "fixture_id": "oddspapi-stale",
+        "p1": "Alexander Bublik",
+        "p2": "Tommy Paul",
+        "start_time": "2026-09-04T16:30:00Z",
+        "offer_checked_at": stale_checked.isoformat(),
+        "operator_offer_source": "odds_by_fixture_cache",
+        "suspended": False,
+        "canonical_selections": [
+            {
+                "market": "match_total",
+                "pick": "over",
+                "line": 39.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+            }
+        ],
+    }
+    availability = {
+        "generated_at": now.isoformat(),
+        "refresh_status": "OK",
+        "fixtures": [stale],
+        "contains_prices": False,
+        "prices_used": False,
+    }
+
+    merged = context._overlay_direct_fallback([_app_match()], availability, now=now)
+
+    assert len(merged["fixtures"]) == 1
+    fixture = merged["fixtures"][0]
+    assert fixture["fixture_id"] == "14809301"
+    assert fixture["operator_offer_source"] == context.DIRECT_SOURCE
+    assert fixture["offer_checked_at"] == now.isoformat()
+    diag = merged["direct_fallback"]
+    assert diag["existing_provider_preferred"] == 0
+    assert diag["stale_provider_replaced"] == 1
+    assert diag["fallback_fixtures_added"] == 1
+    assert diag["canonical_context_activation"] is True
 
 def test_stale_or_unsafe_direct_sidecar_never_enters_canonical_availability(monkeypatch, tmp_path):
     now = datetime(2026, 9, 4, 16, 30, tzinfo=timezone.utc)
