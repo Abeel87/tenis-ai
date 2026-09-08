@@ -30,10 +30,7 @@ def _num(value):
 
 
 def _superbet_markets(row: dict) -> dict:
-    bookmaker_odds = row.get("bookmakerOdds") or {}
-    book = bookmaker_odds.get(base.BOOKMAKER)
-    if not isinstance(book, dict):
-        book = next((value for key, value in bookmaker_odds.items() if "superbet" in str(key).casefold() and isinstance(value, dict)), None)
+    book = base._requested_bookmaker_payload(row)
     markets = (book or {}).get("markets") if isinstance(book, dict) else None
     return markets if isinstance(markets, dict) else {}
 
