@@ -253,3 +253,29 @@ def test_direct_cache_freshness_uses_actual_offer_check_time_not_hourly_report_t
     assert operator["source_age_hours"] == 3.0
     assert operator["status"] == "CACHE_STALE"
     assert operator["operator_verified"] is False
+
+
+
+def test_all_active_superbet_provider_layers_reject_generic_bookmaker_fallback():
+    backend = ROOT / "backend"
+    active = (
+        "superbet_market_core.py",
+        "superbet_market_mapping.py",
+        "superbet_market_context.py",
+        "superbet_market_audit.py",
+        "superbet_fixture_matching.py",
+        "superbet_line_coverage.py",
+        "superbet_playable.py",
+    )
+    forbidden = (
+        '"superbet" in str(',
+        "'superbet' in str(",
+        "bookmaker_odds.items() if \"superbet\"",
+    )
+    offenders = []
+    for name in active:
+        text = (backend / name).read_text(encoding="utf-8")
+        for token in forbidden:
+            if token in text:
+                offenders.append(f"{name}:{token}")
+    assert not offenders, f"generic/foreign Superbet fallback returned: {offenders}"
