@@ -29,7 +29,7 @@ def test_backfill_workflow_uses_same_canonical_policy_namespace():
     )
     assert "API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.12'" in workflow
     assert "API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.45'" in workflow
-    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '36'" in workflow
+    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '120'" in workflow
     lines = {line.strip() for line in workflow.splitlines()}
     assert not any(line.startswith("HISTORY_BACKFILL_DAILY_FRACTION:") for line in lines)
     assert not any(line.startswith("HISTORY_BACKFILL_HARD_RESERVE_FRACTION:") for line in lines)
@@ -63,6 +63,18 @@ def test_no_active_consumer_keeps_private_usage_owner():
         text = (ROOT / rel).read_text(encoding="utf-8")
         assert "def _usage_remaining" not in text, rel
         assert 'BASE_URL + "/usage"' not in text, rel
+
+
+def test_raw_api_cache_survives_unrelated_late_guard_failure():
+    workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "Save tennis history + PBP cache" in workflow
+    assert "always() && hashFiles('data/cache/*.csv.gz') != ''" in workflow
+    save_pos = workflow.index("Save tennis history + PBP cache")
+    publish_pos = workflow.index("Commit refreshed JSON")
+    assert save_pos < publish_pos
+
 
 
 def test_autolearn_calibration_guard_workflow_markers_remain_ordered():

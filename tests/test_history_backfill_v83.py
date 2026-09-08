@@ -1,7 +1,9 @@
 from datetime import date, datetime, timedelta, timezone
 
 import backend.history_backfill_v83 as backfill
+from backend.api_quota import DEFAULT_POLICIES
 from backend.history_backfill_v83 import (
+    DEFAULT_RUN_CAP,
     DEFAULT_STOP_DATE,
     _candidate_ok,
     _interval_due,
@@ -12,6 +14,11 @@ from backend.history_backfill_v83 import (
 def test_backfill_has_no_second_quota_policy_owner():
     assert not hasattr(backfill, "compute_backfill_budget")
     assert not hasattr(backfill, "_usage")
+
+
+def test_backfill_requester_matches_canonical_background_run_cap():
+    assert DEFAULT_RUN_CAP == 120
+    assert DEFAULT_RUN_CAP == DEFAULT_POLICIES["history_backfill"]["run_cap"]
 
 
 def test_candidate_requires_complete_from_start_singles():

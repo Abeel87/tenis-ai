@@ -56,7 +56,7 @@ DEFAULT_POLICIES = {
     },
     "history_backfill": {
         "daily_fraction": 0.12,
-        "run_cap": 36,
+        "run_cap": 120,
         "reserve_fraction": 0.45,
         "fallback": 0,
         "priority": "background",

@@ -105,8 +105,40 @@ def test_pro_capacity_run_caps_keep_global_daily_safety_buffer():
     assert DEFAULT_POLICIES["pbp_current"]["run_cap"] == 180
     assert DEFAULT_POLICIES["pbp_tracker"]["run_cap"] == 36
     assert DEFAULT_POLICIES["history_settle"]["run_cap"] == 48
-    assert DEFAULT_POLICIES["history_backfill"]["run_cap"] == 36
+    assert DEFAULT_POLICIES["history_backfill"]["run_cap"] == 120
     assert sum(p["daily_fraction"] for p in DEFAULT_POLICIES.values()) == 0.87
+
+
+def test_history_backfill_pro_capacity_remains_hard_capped_daily():
+    policy = DEFAULT_POLICIES["history_backfill"]
+    assert policy["daily_fraction"] == 0.12
+    assert policy["run_cap"] == 120
+    assert policy["reserve_fraction"] == 0.45
+
+    start = compute_budget(
+        per_day=10000,
+        remaining=9000,
+        role_spent=0,
+        requested=500,
+        daily_fraction=policy["daily_fraction"],
+        run_cap=policy["run_cap"],
+        reserve_fraction=policy["reserve_fraction"],
+    )
+    assert start["budget"] == 120
+    assert start["daily_cap"] == 1200
+    assert start["reserve"] == 4500
+
+    almost_spent = compute_budget(
+        per_day=10000,
+        remaining=7000,
+        role_spent=1190,
+        requested=500,
+        daily_fraction=policy["daily_fraction"],
+        run_cap=policy["run_cap"],
+        reserve_fraction=policy["reserve_fraction"],
+    )
+    assert almost_spent["budget"] == 10
+    assert almost_spent["cap_left"] == 10
 
 
 def test_provider_pacing_keeps_headroom_below_documented_rpm():
