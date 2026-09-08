@@ -7,8 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "backend"))
 
 from compact_frontend_data import prune_history_payload
+from model_telemetry_v84c import collect_rows
 
 
 def _autolearn_signal():
@@ -119,6 +121,9 @@ def test_settled_autolearn_compaction_keeps_training_sufficient_state(tmp_path):
     assert saved[0]["superbet_candidate_signals_v925"] == data[0]["superbet_candidate_signals_v925"]
     assert report["training_evidence_removed"] is False
     assert report["pending_forecasts_changed"] is False
+
+    telemetry_models = {row["model"] for row in collect_rows(saved)}
+    assert {"current", "catboost", "tabpfn", "ensemble", "adaptive_prod", "dynamic", "generator"} <= telemetry_models
 
 
 def test_pending_autolearn_snapshot_is_not_pruned(tmp_path):
