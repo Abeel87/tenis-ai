@@ -170,3 +170,30 @@ def test_cross_source_id_namespace_detects_same_numeric_id_name_conflict(tmp_pat
     assert report["shared_ids_with_name_mismatch"] == 1
     assert report["exact_normalized_name_agreement_rate"] == 0.0
     assert report["id_namespace_evidence_strong"] is False
+
+
+def test_master_plan_high_ace_rate_vs_weak_returner_cannot_fake_contact_adjustment_without_source():
+    raw = pd.DataFrame([
+        _row(
+            w_ace=18,
+            l_ace=1,
+            w_svpt=64,
+            l_svpt=58,
+        )
+    ])
+    report = audit_history(raw)
+    readiness = report["derived_matchup_source_readiness"]
+
+    # Raw ace tendency is measurable, but "weak returner/contact" adjustment is
+    # not established by this source. The system must fail closed rather than
+    # treating a high ace count as opponent-adjusted evidence.
+    assert readiness["ace_tendency"]["source_ready"] is True
+    assert readiness["ace_tendency"]["canonical_match_rows"] == 1
+    assert readiness["ace_vs_contact_return"]["source_ready"] is False
+    assert "contact" in readiness["ace_vs_contact_return"]["reason"].casefold()
+
+    assert report["runtime_scoring_enabled"] is False
+    assert report["profile_build_enabled"] is False
+    assert report["training_join_enabled"] is False
+    assert report["symphony2_influence"] is False
+    assert report["superbet_playable_influence"] is False
