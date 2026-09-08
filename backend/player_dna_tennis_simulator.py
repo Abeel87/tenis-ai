@@ -1682,6 +1682,166 @@ def set_outcomes(
     return outcomes
 
 
+
+def shared_match_state_outcomes(
+    p1_serve_point: float,
+    p2_serve_point: float,
+    *,
+    best_of: int = 3,
+    start_server: int | None = None,
+) -> list[dict[str, Any]]:
+    """Exact whole-match shared state for downstream SHADOW joint diagnostics.
+
+    The state keeps the first two exact set scores plus full-match sufficient
+    statistics. Later sets are aggregated only by match score, player games,
+    total games and set-to-nil status, which is enough for the currently
+    supported Symphony market predicates without exploding the state space.
+
+    ``start_server=None`` is the pre-match 50/50 mixture used elsewhere by the
+    simulator. Nothing in this primitive authorizes runtime or PLAYABLE use.
+    """
+    p1s = _clamp_probability(p1_serve_point)
+    p2s = _clamp_probability(p2_serve_point)
+    if best_of not in (3, 5):
+        raise ValueError("best_of must be 3 or 5")
+    if start_server not in (None, 1, 2):
+        raise ValueError("start_server must be 1, 2 or None")
+
+    needed = best_of // 2 + 1
+    starting_servers = (1, 2) if start_server is None else (start_server,)
+    start_weight = 0.5 if start_server is None else 1.0
+    set_cache = {
+        server: set_outcomes(p1s, p2s, server)
+        for server in (1, 2)
+    }
+
+    # s1, s2, server, set1a, set1b, set2a, set2b,
+    # p1_games, p2_games, any_set_to_nil -> probability
+    frontier: dict[
+        tuple[int, int, int, int, int, int, int, int, int, bool],
+        float,
+    ] = defaultdict(float)
+    for server in starting_servers:
+        frontier[(0, 0, server, -1, -1, -1, -1, 0, 0, False)] += start_weight
+
+    terminal: dict[
+        tuple[int, int, int, int, int, int, int, int, bool],
+        float,
+    ] = defaultdict(float)
+
+    while frontier:
+        nxt: dict[
+            tuple[int, int, int, int, int, int, int, int, int, bool],
+            float,
+        ] = defaultdict(float)
+
+        for state, mass in frontier.items():
+            (
+                sets1,
+                sets2,
+                server,
+                set1a,
+                set1b,
+                set2a,
+                set2b,
+                p1_games,
+                p2_games,
+                any_nil,
+            ) = state
+            if mass <= 0.0:
+                continue
+
+            if sets1 >= needed or sets2 >= needed:
+                terminal[
+                    (
+                        sets1,
+                        sets2,
+                        set1a,
+                        set1b,
+                        set2a,
+                        set2b,
+                        p1_games,
+                        p2_games,
+                        any_nil,
+                    )
+                ] += mass
+                continue
+
+            set_index = sets1 + sets2 + 1
+            for row in set_cache[server]:
+                score1, score2 = (
+                    int(value) for value in str(row["score"]).split(":")
+                )
+                winner = int(row["winner"])
+                next_sets1 = sets1 + int(winner == 1)
+                next_sets2 = sets2 + int(winner == 2)
+                next_set1a, next_set1b = set1a, set1b
+                next_set2a, next_set2b = set2a, set2b
+                if set_index == 1:
+                    next_set1a, next_set1b = score1, score2
+                elif set_index == 2:
+                    next_set2a, next_set2b = score1, score2
+
+                nxt[
+                    (
+                        next_sets1,
+                        next_sets2,
+                        int(row["next_set_server"]),
+                        next_set1a,
+                        next_set1b,
+                        next_set2a,
+                        next_set2b,
+                        p1_games + score1,
+                        p2_games + score2,
+                        bool(any_nil or score1 == 0 or score2 == 0),
+                    )
+                ] += mass * float(row["probability"])
+
+        frontier = nxt
+
+    total = sum(terminal.values())
+    if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AssertionError(f"shared match state probability mass drift: {total}")
+
+    rows = []
+    for key, probability in terminal.items():
+        (
+            sets1,
+            sets2,
+            set1a,
+            set1b,
+            set2a,
+            set2b,
+            p1_games,
+            p2_games,
+            any_nil,
+        ) = key
+        set1 = (set1a, set1b)
+        set2 = (set2a, set2b) if set2a >= 0 and set2b >= 0 else None
+        rows.append({
+            "sets": (sets1, sets2),
+            "set_count": sets1 + sets2,
+            "winner": 1 if sets1 > sets2 else 2,
+            "set1": set1,
+            "set1_winner": 1 if set1a > set1b else 2,
+            "set1_tiebreak": set(set1) == {6, 7},
+            "set2": set2,
+            "set2_winner": (
+                1 if set2 is not None and set2a > set2b
+                else 2 if set2 is not None
+                else None
+            ),
+            "set2_tiebreak": bool(set2 is not None and set(set2) == {6, 7}),
+            "p1_games": p1_games,
+            "p2_games": p2_games,
+            "total_games": p1_games + p2_games,
+            "any_set_to_nil": any_nil,
+            "prob": probability / total,
+        })
+
+    return rows
+
+
 def early_equal_score_probability(
     p1_serve_point: float,
     p2_serve_point: float,
