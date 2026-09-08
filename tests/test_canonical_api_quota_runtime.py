@@ -29,7 +29,7 @@ def test_backfill_workflow_uses_same_canonical_policy_namespace():
     )
     assert "API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.12'" in workflow
     assert "API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.45'" in workflow
-    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '36'" in workflow
+    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '120'" in workflow
     lines = {line.strip() for line in workflow.splitlines()}
     assert not any(line.startswith("HISTORY_BACKFILL_DAILY_FRACTION:") for line in lines)
     assert not any(line.startswith("HISTORY_BACKFILL_HARD_RESERVE_FRACTION:") for line in lines)
