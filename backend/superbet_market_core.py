@@ -722,10 +722,12 @@ def refresh_availability(results: list[dict], now=None):
                 continue
 
             match_kind = None
+            matched_discovered = None
             for discovered in discovered_matches:
                 same, kind = _same_discovered_fixture(discovered, row)
                 if same:
                     match_kind = kind
+                    matched_discovered = discovered
                     break
             if match_kind is None:
                 continue
@@ -736,15 +738,18 @@ def refresh_availability(results: list[dict], now=None):
                 pair_time_matches += 1
             item = _sanitize_fixture(row, market_meta)
             if item:
+                discovered_id = str((matched_discovered or {}).get("fixtureId") or "")
+                if discovered_id:
+                    item["discovered_fixture_id"] = discovered_id
                 sanitized.append(item)
 
-        bulk_covered_discovered_ids = set()
-        for item in sanitized:
-            if not isinstance(item, dict):
-                continue
-            fixture_id = str(item.get("fixture_id") or "")
-            if fixture_id:
-                bulk_covered_discovered_ids.add(fixture_id)
+        bulk_covered_discovered_ids = {
+            str(item.get("discovered_fixture_id") or item.get("fixture_id") or "")
+            for item in sanitized
+            if isinstance(item, dict)
+            and (item.get("discovered_fixture_id") or item.get("fixture_id")) is not None
+        }
+        bulk_covered_discovered_ids.discard("")
 
         # Exact-current recovery: directly query matched fixture IDs not covered
         # by a real current superbet.pl row in the tournament batch.
