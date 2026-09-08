@@ -180,15 +180,22 @@ def _candidate_review_ready_markets(history: list[dict]) -> set[str]:
     return {_norm(x) for x in (stats.get("review_ready_markets") or []) if _norm(x)}
 
 
-def _candidate_row_allowed(raw: dict, allowed_markets: set[str]) -> bool:
-    market = _norm(raw.get("market"))
+def _frozen_operator_row_allowed(raw: dict) -> bool:
+    """Admit only immutable exact Superbet evidence into Symphony training."""
     numeric_line = _num(raw.get("line")) is not None
     return bool(
-        market in allowed_markets
-        and _norm(raw.get("operator")) == "superbet.pl"
+        _norm(raw.get("operator")) == "superbet.pl"
         and raw.get("operator_line_verified") is True
         and (not numeric_line or raw.get("fixture_line_verified") is True)
         and _norm(raw.get("result")) in {"hit", "miss"}
+    )
+
+
+def _candidate_row_allowed(raw: dict, allowed_markets: set[str]) -> bool:
+    market = _norm(raw.get("market"))
+    return bool(
+        market in allowed_markets
+        and _frozen_operator_row_allowed(raw)
     )
 
 
@@ -213,7 +220,10 @@ def _history_layer(entry: dict, candidate_markets: set[str] | None = None) -> li
         for raw in rows:
             if not isinstance(raw, dict):
                 continue
-            if key == CANDIDATE_LAYER and not _candidate_row_allowed(raw, allowed):
+            if key == CANDIDATE_LAYER:
+                if not _candidate_row_allowed(raw, allowed):
+                    continue
+            elif not _frozen_operator_row_allowed(raw):
                 continue
             signal_key = _history_signal_key(raw)
             candidate = (_history_signal_richness(raw), source_rank, raw)
@@ -453,8 +463,8 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "market_support": dict(sorted(support.items())),
         "training_source_counts": dict(sorted(source_counts.items())),
         "candidate_review_ready_markets": sorted(candidate_markets),
-        "history_layer_policy": "UNION_EXACT_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
-        "candidate_gate_policy": "REVIEW_READY_ONLY; EXACT_OPERATOR_VERIFIED; NO_PLAYABLE_STATS_MUTATION",
+        "history_layer_policy": "UNION_FIXTURE_PROVEN_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
+        "candidate_gate_policy": "REVIEW_READY_ONLY; EXACT_OPERATOR_VERIFIED; NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION",
         "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
