@@ -95,6 +95,7 @@ def test_legacy_direct_cache_is_rechecked_under_exact_bookmaker_contract():
 
     exact = dict(legacy, bookmaker_key="superbet.pl")
     assert core._direct_offer_due(exact, "within_4h", now) is False
+    assert core._direct_offer_due(exact, "within_1h_retry", now) is True
 
 
 def test_direct_fixture_recovers_current_offer_when_tournament_bulk_is_stale(monkeypatch):
