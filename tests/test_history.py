@@ -8,8 +8,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
 from history_tracker import (
     MODEL_VERSION,
-    archive_predictions, extract_green_signals, history_stats, is_current_match,
-    parse_final_row, settle_signal,
+    archive_predictions, compact_history_size, extract_green_signals, history_stats,
+    is_current_match, parse_final_row, retain_history, settle_signal,
 )
 
 
@@ -107,3 +107,50 @@ def test_history_stats_excludes_void_and_unverifiable():
     assert stats['overall']['hits'] == 1
     assert stats['overall']['accuracy'] == 50.0
     assert stats['excluded_signals'] == 2
+
+
+def test_history_retention_drops_oldest_terminal_rows_to_byte_budget():
+    entries = [
+        {
+            'match_key': 'newest', 'scheduled_time': '2026-09-08T12:00:00Z',
+            'status': 'settled', 'payload': 'x' * 900,
+        },
+        {
+            'match_key': 'middle', 'scheduled_time': '2026-09-07T12:00:00Z',
+            'status': 'settled', 'payload': 'y' * 900,
+        },
+        {
+            'match_key': 'oldest', 'scheduled_time': '2026-09-06T12:00:00Z',
+            'status': 'settled', 'payload': 'z' * 900,
+        },
+    ]
+    budget = compact_history_size(entries[:2])
+    kept = retain_history(entries, max_entries=10, max_compact_bytes=budget)
+
+    assert [entry['match_key'] for entry in kept] == ['newest', 'middle']
+    assert compact_history_size(kept) <= budget
+
+
+def test_history_retention_never_drops_unresolved_rows_for_size_or_count():
+    entries = [
+        {
+            'match_key': 'newest-settled', 'scheduled_time': '2026-09-08T12:00:00Z',
+            'status': 'settled', 'payload': 'x' * 900,
+        },
+        {
+            'match_key': 'old-pending', 'scheduled_time': '2026-01-01T12:00:00Z',
+            'status': 'pending', 'payload': 'p' * 900,
+        },
+        {
+            'match_key': 'oldest-settled', 'scheduled_time': '2025-12-31T12:00:00Z',
+            'status': 'settled', 'payload': 'z' * 900,
+        },
+    ]
+    budget = compact_history_size([entries[0], entries[1]])
+    kept = retain_history(entries, max_entries=2, max_compact_bytes=budget)
+    keys = {entry['match_key'] for entry in kept}
+
+    assert 'old-pending' in keys
+    assert 'newest-settled' in keys
+    assert 'oldest-settled' not in keys
+    assert compact_history_size(kept) <= budget
