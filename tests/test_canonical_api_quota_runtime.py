@@ -63,3 +63,19 @@ def test_no_active_consumer_keeps_private_usage_owner():
         text = (ROOT / rel).read_text(encoding="utf-8")
         assert "def _usage_remaining" not in text, rel
         assert 'BASE_URL + "/usage"' not in text, rel
+
+
+def test_autolearn_calibration_guard_workflow_markers_remain_ordered():
+    workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(
+        encoding="utf-8"
+    )
+    markers = (
+        "AutoLearn Hotfix Guard v8.4A.1",
+        "AutoLearn Calibration Guard v8.4A.2",
+        "Final API quota report v8.3B",
+    )
+    positions = []
+    for marker in markers:
+        assert marker in workflow, marker
+        positions.append(workflow.index(marker))
+    assert positions == sorted(positions)
