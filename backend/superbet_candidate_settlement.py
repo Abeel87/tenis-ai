@@ -187,8 +187,10 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
         ctx = (match or {}).get("superbet_market_v91") or {}
         if not (
             isinstance(ctx, dict)
+            and ctx.get("operator") == "superbet.pl"
             and ctx.get("operator_verified") is True
             and ctx.get("status") == "VERIFIED"
+            and ctx.get("suspended") is not True
         ):
             out.append(entry)
             continue
