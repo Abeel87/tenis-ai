@@ -10,17 +10,28 @@ unsupported rather than approximated as independent.
 """
 
 from collections import defaultdict
+import json
+import math
+from pathlib import Path
 
 try:
     from . import symphony2_state_core as _core
+    from .player_dna_tennis_simulator import (
+        inverse_hold_probability,
+        shared_match_state_outcomes,
+    )
 except ImportError:
     import symphony2_state_core as _core
+    from player_dna_tennis_simulator import (
+        inverse_hold_probability,
+        shared_match_state_outcomes,
+    )
 
 for _name in dir(_core):
     if not _name.startswith("__"):
         globals()[_name] = getattr(_core, _name)
 
-VERSION = "symphony2-state-3"
+VERSION = "symphony2-state-4"
 
 SET1_FAMILY = {
     "set1_winner", "set1_total", "set1_exact_score", "set1_tiebreak",
@@ -48,10 +59,241 @@ NEW_MARKETS = {
 }
 SUPPORTED_MARKETS = set(_core.SUPPORTED_MARKETS) | NEW_MARKETS
 
+PHASE9_SHARED_MARKETS = SET1_FAMILY | SET2_FAMILY | MATCH_FAMILY
+ROOT = Path(__file__).resolve().parents[1]
+PHASE8_REPORT = ROOT / "frontend" / "data" / "neuro_shadow_phase8_challenger_walk_forward.json"
+PHASE9_OUT = ROOT / "frontend" / "data" / "symphony2_phase9_player_dna_shared_state.json"
+PHASE9_VERSION = "symphony2-phase9-player-dna-shared-state-v1"
+PHASE9_MODE = "SHADOW_PLAYER_DNA_SHARED_STATE_INTEGRATION_ONLY"
+
 
 def build_outcomes(match: dict) -> list[dict]:
     """Preserve the bounded original shared state for all legacy markets."""
     return _core.build_outcomes(match)
+
+
+
+def build_player_dna_shared_outcomes(match: dict) -> list[dict]:
+    """Build one exact whole-match Player DNA state-space from current service holds.
+
+    This is a Phase-9 SHADOW integration surface. The existing Symphony state
+    remains the runtime/ranking source until a later promotion decision.
+    """
+    holds = _core._service_holds(match)
+    if not holds:
+        return []
+    h1, h2 = holds
+    try:
+        p1s = inverse_hold_probability(float(h1))
+        p2s = inverse_hold_probability(float(h2))
+    except (TypeError, ValueError):
+        return []
+    return shared_match_state_outcomes(
+        p1s,
+        p2s,
+        best_of=_best_of(match),
+        start_server=None,
+    )
+
+
+def player_dna_marginal_probability(
+    match: dict,
+    selection: dict,
+    outcomes: list[dict] | None = None,
+):
+    market = _core._market(selection.get("market"))
+    if market not in PHASE9_SHARED_MARKETS:
+        return None
+    states = outcomes if outcomes is not None else build_player_dna_shared_outcomes(match)
+    pred = predicate(match, selection)
+    if pred is None or not states:
+        return None
+    try:
+        return sum(float(row["prob"]) for row in states if pred(row))
+    except (KeyError, TypeError):
+        return None
+
+
+def player_dna_joint_probability(
+    match: dict,
+    selections: list[dict],
+    outcomes: list[dict] | None = None,
+):
+    if not selections:
+        return None, 0
+    markets = [_core._market(selection.get("market")) for selection in selections]
+    supported_market_count = sum(market in PHASE9_SHARED_MARKETS for market in markets)
+    if supported_market_count != len(selections):
+        return None, supported_market_count
+
+    states = outcomes if outcomes is not None else build_player_dna_shared_outcomes(match)
+    preds = [predicate(match, selection) for selection in selections]
+    supported = sum(pred is not None for pred in preds)
+    if not states or supported != len(selections):
+        return None, supported
+    try:
+        joint = sum(
+            float(row["prob"])
+            for row in states
+            if all(pred(row) for pred in preds)
+        )
+    except (KeyError, TypeError):
+        return None, supported
+    return joint, len(preds)
+
+
+def phase9_shared_state_contract() -> dict:
+    return {
+        "mode": PHASE9_MODE,
+        "source": "CANONICAL_PLAYER_DNA_TENNIS_SIMULATOR",
+        "source_state_builder": "shared_match_state_outcomes",
+        "pre_match_start_server_policy": "NEUTRAL_50_50",
+        "same_state_for_set1_set2_and_match_markets": True,
+        "cross_family_joint_uses_single_state_mass": True,
+        "independence_product_forbidden": True,
+        "existing_symphony_runtime_state_replaced": False,
+        "ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "auto_promote": False,
+        "supported_markets": sorted(PHASE9_SHARED_MARKETS),
+    }
+
+
+def evaluate_phase9_gate(phase8_report: dict) -> dict:
+    match = {
+        "p1": "Phase9 A",
+        "p2": "Phase9 B",
+        "best_of": 3,
+        "service_model": {"p1_hold": 0.78, "p2_hold": 0.74},
+        "first_set_win": {"Phase9 A": 0.56, "Phase9 B": 0.44},
+        "second_set_win": {"Phase9 A": 0.55, "Phase9 B": 0.45},
+        "third_set_win": {"Phase9 A": 0.54, "Phase9 B": 0.46},
+    }
+    legs = [
+        {"market": "set1_winner", "pick": "Phase9 A"},
+        {"market": "set2_total", "pick": "over", "line": 8.5},
+        {"market": "match_winner", "pick": "Phase9 A"},
+    ]
+
+    phase8_ready = bool(
+        phase8_report.get("phase8_complete") is True
+        and phase8_report.get("phase9_ready") is True
+    )
+    states = build_player_dna_shared_outcomes(match)
+    mass = sum(float(row.get("prob") or 0.0) for row in states)
+    marginals = [
+        player_dna_marginal_probability(match, leg, states)
+        for leg in legs
+    ]
+    joint, supported = player_dna_joint_probability(match, legs, states)
+    legacy_joint, legacy_supported = joint_probability(match, legs)
+    independent_product = (
+        math.prod(float(value) for value in marginals)
+        if all(value is not None for value in marginals)
+        else None
+    )
+    exact_joint_valid = bool(
+        joint is not None
+        and supported == len(legs)
+        and all(value is not None for value in marginals)
+        and 0.0 <= float(joint) <= min(float(value) for value in marginals) + 1e-12
+    )
+    non_independence = bool(
+        exact_joint_valid
+        and independent_product is not None
+        and abs(float(joint) - independent_product) > 1e-6
+    )
+    legacy_fail_closed = bool(
+        legacy_joint is None and legacy_supported == len(legs)
+    )
+    normalized = bool(states and math.isclose(mass, 1.0, rel_tol=0.0, abs_tol=1e-9))
+    contract = phase9_shared_state_contract()
+    isolation = all(
+        contract.get(key) is False
+        for key in (
+            "existing_symphony_runtime_state_replaced",
+            "ranking_influence",
+            "operator_model_probability_influence",
+            "production_influence",
+            "playable_influence",
+            "auto_promote",
+        )
+    )
+    complete = bool(
+        phase8_ready
+        and normalized
+        and exact_joint_valid
+        and non_independence
+        and legacy_fail_closed
+        and isolation
+    )
+
+    return {
+        "version": PHASE9_VERSION,
+        "mode": PHASE9_MODE,
+        "status": (
+            "PHASE9_SHARED_STATE_INTEGRATION_COMPLETE_NO_PROMOTION"
+            if complete
+            else "PHASE9_SHARED_STATE_INTEGRATION_INCOMPLETE_NO_PROMOTION"
+        ),
+        "phase": 9,
+        "phase8_prerequisite_satisfied": phase8_ready,
+        "phase9_complete": complete,
+        "phase10_ready": complete,
+        "shared_state_contract": contract,
+        "evidence": {
+            "shared_state_outcomes": len(states),
+            "probability_mass": round(mass, 12),
+            "cross_family_markets": [leg["market"] for leg in legs],
+            "cross_family_supported": supported,
+            "cross_family_joint_probability": (
+                round(float(joint), 12) if joint is not None else None
+            ),
+            "cross_family_marginals": [
+                round(float(value), 12) if value is not None else None
+                for value in marginals
+            ],
+            "independence_product": (
+                round(float(independent_product), 12)
+                if independent_product is not None
+                else None
+            ),
+            "joint_differs_from_independence": non_independence,
+            "legacy_cross_family_joint": legacy_joint,
+            "legacy_cross_family_supported": legacy_supported,
+            "legacy_path_still_fails_closed": legacy_fail_closed,
+        },
+        "promotion_allowed_by_this_gate": False,
+        "production_influence": False,
+        "runtime_ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "symphony2_current_ranking_replaced": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+    }
+
+
+def build_phase9_gate() -> dict:
+    try:
+        phase8 = json.loads(PHASE8_REPORT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        phase8 = {}
+    report = evaluate_phase9_gate(phase8 if isinstance(phase8, dict) else {})
+    PHASE9_OUT.parent.mkdir(parents=True, exist_ok=True)
+    PHASE9_OUT.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps({
+        "version": report.get("version"),
+        "status": report.get("status"),
+        "phase9_complete": report.get("phase9_complete"),
+        "phase10_ready": report.get("phase10_ready"),
+        "evidence": report.get("evidence"),
+    }, ensure_ascii=False))
+    return report
 
 
 def _best_of(match: dict) -> int:
