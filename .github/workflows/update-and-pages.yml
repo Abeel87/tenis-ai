@@ -226,7 +226,9 @@ jobs:
             exit 1
           fi
       - name: Save tennis history + PBP cache
-        if: ${{ hashFiles('data/cache/*.csv.gz') != '' }}
+        # Raw/API cache and canonical quota state must survive later guard failures.
+        # Published frontend/data is still committed only after every guard passes.
+        if: ${{ always() && hashFiles('data/cache/*.csv.gz') != '' }}
         uses: actions/cache/save@v4
         with:
           path: data/cache
