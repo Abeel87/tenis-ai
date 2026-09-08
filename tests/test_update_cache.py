@@ -84,3 +84,37 @@ def test_fetch_fixtures_preserves_provider_rank_context(monkeypatch):
     assert len(rows) == 1
     assert rows[0]['p1_rank'] == 12
     assert rows[0]['p2_rank'] == 34
+
+
+
+def test_fetch_fixtures_fails_closed_without_erasing_current_analysis_on_quota_exhaustion(monkeypatch):
+    monkeypatch.setenv('LIVE_TENNIS_API_KEY', 'test-key')
+    monkeypatch.setattr('update.quota_budget', lambda *args, **kwargs: (0, {'limits': {'per_minute': 300}}))
+
+    def must_not_call(*args, **kwargs):
+        raise AssertionError('fixture endpoint must not be called with zero quota budget')
+
+    monkeypatch.setattr('update.requests.get', must_not_call)
+
+    rows, mode = fetch_fixtures()
+    assert rows is None
+    assert mode == 'quota-safe-skip'
+
+
+def test_fetch_fixtures_terminal_429_is_safe_skip(monkeypatch):
+    class RateLimited:
+        status_code = 429
+        headers = {}
+
+        def raise_for_status(self):
+            raise AssertionError('terminal 429 must be handled before raise_for_status')
+
+    monkeypatch.setenv('LIVE_TENNIS_API_KEY', 'test-key')
+    monkeypatch.setattr('update.quota_budget', lambda *args, **kwargs: (1, {'limits': {'per_minute': 300}}))
+    monkeypatch.setattr('update.request_interval_seconds', lambda *args, **kwargs: 0.0)
+    monkeypatch.setattr('update.requests.get', lambda *args, **kwargs: RateLimited())
+    monkeypatch.setattr('update.record_calls', lambda *args, **kwargs: None)
+
+    rows, mode = fetch_fixtures()
+    assert rows is None
+    assert mode == 'rate-limit-safe-skip'
