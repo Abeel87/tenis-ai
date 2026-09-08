@@ -1,62 +1,17 @@
 from datetime import date, datetime, timedelta, timezone
 
+import backend.history_backfill_v83 as backfill
 from backend.history_backfill_v83 import (
     DEFAULT_STOP_DATE,
     _candidate_ok,
     _interval_due,
     _parse_date,
-    compute_backfill_budget,
 )
 
 
-def test_budget_keeps_hard_reserve():
-    p = compute_backfill_budget(
-        per_day=1000,
-        remaining_day=700,
-        spent_today=0,
-        daily_fraction=0.12,
-        hard_reserve_fraction=0.45,
-        run_cap=18,
-    )
-    assert p["daily_cap"] == 120
-    assert p["hard_reserve"] == 450
-    assert p["remote_budget"] == 18
-
-
-def test_budget_stops_before_current_match_reserve():
-    p = compute_backfill_budget(
-        per_day=1000,
-        remaining_day=449,
-        spent_today=0,
-        daily_fraction=0.12,
-        hard_reserve_fraction=0.45,
-        run_cap=18,
-    )
-    assert p["remote_budget"] == 0
-    assert p["reason"] == "hard_reserve"
-
-
-def test_budget_has_own_daily_cap():
-    p = compute_backfill_budget(
-        per_day=1000,
-        remaining_day=900,
-        spent_today=120,
-        daily_fraction=0.12,
-        hard_reserve_fraction=0.45,
-        run_cap=18,
-    )
-    assert p["remote_budget"] == 0
-    assert p["reason"] == "daily_backfill_cap"
-
-
-def test_budget_fails_closed_when_usage_unknown():
-    p = compute_backfill_budget(
-        per_day=None,
-        remaining_day=None,
-        spent_today=0,
-    )
-    assert p["remote_budget"] == 0
-    assert p["reason"] == "usage_unknown"
+def test_backfill_has_no_second_quota_policy_owner():
+    assert not hasattr(backfill, "compute_backfill_budget")
+    assert not hasattr(backfill, "_usage")
 
 
 def test_candidate_requires_complete_from_start_singles():
