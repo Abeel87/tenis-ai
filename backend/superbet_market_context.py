@@ -354,6 +354,20 @@ def _direct_fixture_from_sidecar(row: dict) -> dict | None:
     }
 
 
+def _provider_fixture_is_fresh(fixture: dict, availability: dict, now: datetime) -> bool:
+    """Fresh provider evidence may block Direct; stale evidence may not."""
+    if not isinstance(fixture, dict):
+        return False
+    stamp = fixture.get("offer_checked_at") or (
+        availability.get("generated_at") if isinstance(availability, dict) else None
+    )
+    generated = base._parse_dt(stamp)
+    if generated is None:
+        return False
+    age_hours = (now - generated).total_seconds() / 3600
+    return 0 <= age_hours <= DIRECT_MAX_AGE_HOURS
+
+
 def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) -> dict:
     """Add fresh Direct fixtures only where current canonical provider has no safe match."""
     now = now or datetime.now(timezone.utc)
@@ -366,6 +380,7 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         "sidecar_matches_seen": 0,
         "fallback_fixtures_added": 0,
         "existing_provider_preferred": 0,
+        "stale_provider_replaced": 0,
         "unsafe_sidecar_matches_rejected": 0,
         "suppressed_direct_handicap_variants": 0,
         "prices_in_canonical_availability": False,
@@ -443,7 +458,7 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
             continue
 
         existing = fixture_matching.select_cached_fixture(app_match, fixtures)
-        if existing is not None:
+        if existing is not None and _provider_fixture_is_fresh(existing, availability, now):
             diagnostic["existing_provider_preferred"] += 1
             continue
 
@@ -451,7 +466,22 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         if oriented is None:
             diagnostic["unsafe_sidecar_matches_rejected"] += 1
             continue
-        fixtures.append(dict(oriented))
+
+        if existing is not None:
+            kept = []
+            removed = 0
+            for candidate in fixtures:
+                overlaps = fixture_matching.select_cached_fixture(app_match, [candidate]) is not None
+                if overlaps and not _provider_fixture_is_fresh(candidate, availability, now):
+                    removed += 1
+                    continue
+                kept.append(candidate)
+            fixtures = kept
+            diagnostic["stale_provider_replaced"] += removed
+
+        oriented = dict(oriented)
+        oriented["offer_checked_at"] = sidecar.get("generated_at")
+        fixtures.append(oriented)
         diagnostic["fallback_fixtures_added"] += 1
         diagnostic["suppressed_direct_handicap_variants"] += int(
             oriented.get("suppressed_direct_handicap_variants") or 0
