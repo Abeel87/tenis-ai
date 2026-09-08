@@ -100,8 +100,10 @@ def test_candidate_shadow_captures_verified_later_set_markets_without_playable_e
         "p2": "Beta Player",
         "scheduled_time": "2026-09-01T10:00:00Z",
         "superbet_market_v91": {
+            "operator": "superbet.pl",
             "operator_verified": True,
             "status": "VERIFIED",
+            "suspended": False,
             "canonical_selections": [
                 {"market": "set2_total", "pick": "over", "line": 8.5,
                  "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True},
