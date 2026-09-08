@@ -157,6 +157,15 @@ def evaluate_lifecycle(
                 "auto_promote",
             ),
         ),
+        "hold_walk_forward_isolated": _all_false(
+            hold_walk_forward,
+            (
+                "production_influence",
+                "symphony2_influence",
+                "superbet_playable_influence",
+                "auto_integrate",
+            ),
+        ),
         "prospective_isolated": _all_false(
             prospective,
             (
@@ -393,8 +402,7 @@ def evaluate_lifecycle(
     }
 
     lifecycle_safety_complete = bool(
-        phase13.get("phase13_complete") is True
-        and phase13.get("phase14_ready") is True
+        common_ready
         and list(LIFECYCLE) == ["OFFLINE", "SHADOW", "AUDYT", "CANARY", "PROD"]
         and rollback.get("required") is True
         and promotion_policy["audyt_to_canary"]["requires_manual_approval"] is True
