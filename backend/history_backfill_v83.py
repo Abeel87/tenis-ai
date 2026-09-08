@@ -11,9 +11,9 @@ from typing import Any
 import requests
 
 try:
-    from .api_quota_v83b import quota_budget, record_calls
+    from .api_quota import quota_budget, record_calls, request_interval_seconds
 except ImportError:  # uruchomienie jako python backend/history_backfill_v83.py
-    from api_quota_v83b import quota_budget, record_calls
+    from api_quota import quota_budget, record_calls, request_interval_seconds
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -29,7 +29,7 @@ UA = "TenisAI-v8.3B-HistoricalBackfill/1.0"
 DEFAULT_STOP_DATE = date(2023, 1, 1)
 DEFAULT_DAILY_FRACTION = 0.12
 DEFAULT_HARD_RESERVE_FRACTION = 0.45
-DEFAULT_RUN_CAP = 18
+DEFAULT_RUN_CAP = 36
 DEFAULT_MIN_INTERVAL_HOURS = 3.0
 DEFAULT_MAX_CACHE_MB = 900.0
 LIST_LIMIT = 200
@@ -145,90 +145,6 @@ def _match_cache_path(mid: int | str) -> Path:
     return MATCH_CACHE / f"{mid}.json.gz"
 
 
-def _usage_numbers(payload: dict) -> tuple[int | None, int | None, int]:
-    today = (payload or {}).get("today") or {}
-    limits = (payload or {}).get("limits") or {}
-    per_day = limits.get("per_day")
-    remaining = today.get("remaining_day")
-    calls = today.get("calls")
-    try:
-        per_day = int(per_day)
-    except (TypeError, ValueError):
-        per_day = None
-    if remaining is None and per_day is not None:
-        try:
-            remaining = per_day - int(calls)
-        except (TypeError, ValueError):
-            remaining = None
-    try:
-        remaining = int(remaining) if remaining is not None else None
-    except (TypeError, ValueError):
-        remaining = None
-
-    per_minute = (
-        limits.get("per_minute")
-        or limits.get("requests_per_minute")
-        or limits.get("rpm")
-        or 60
-    )
-    try:
-        per_minute = max(1, int(per_minute))
-    except (TypeError, ValueError):
-        per_minute = 60
-    return per_day, remaining, per_minute
-
-
-def compute_backfill_budget(
-    *,
-    per_day: int | None,
-    remaining_day: int | None,
-    spent_today: int,
-    daily_fraction: float = DEFAULT_DAILY_FRACTION,
-    hard_reserve_fraction: float = DEFAULT_HARD_RESERVE_FRACTION,
-    run_cap: int = DEFAULT_RUN_CAP,
-) -> dict:
-    """Pure quota policy used by tests and runtime.
-
-    The returned remote_budget EXCLUDES the /usage request that has already happened.
-    Backfill only gets quota above the hard reserve and below its own daily allowance.
-    """
-    if not per_day or per_day <= 0 or remaining_day is None:
-        return {
-            "remote_budget": 0,
-            "daily_cap": 0,
-            "hard_reserve": 0,
-            "reason": "usage_unknown",
-        }
-    daily_cap = max(0, int(per_day * max(0.0, min(0.5, daily_fraction))))
-    hard_reserve = max(1, int(per_day * max(0.25, min(0.9, hard_reserve_fraction))))
-    own_left = max(0, daily_cap - max(0, int(spent_today)))
-    room = max(0, int(remaining_day) - hard_reserve)
-    remote_budget = max(0, min(int(run_cap), own_left, room))
-    reason = "ok" if remote_budget > 0 else (
-        "daily_backfill_cap" if own_left <= 0 else "hard_reserve"
-    )
-    return {
-        "remote_budget": remote_budget,
-        "daily_cap": daily_cap,
-        "hard_reserve": hard_reserve,
-        "reason": reason,
-    }
-
-
-def _usage(key: str) -> dict | None:
-    try:
-        r = requests.get(
-            BASE_URL + "/usage",
-            headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
-            timeout=(7, 18),
-        )
-        r.raise_for_status()
-        data = r.json()
-        return data if isinstance(data, dict) else None
-    except Exception:
-        return None
-
-
 class API:
     def __init__(self, key: str, call_cap: int, per_minute: int):
         self.key = key
@@ -236,8 +152,8 @@ class API:
         self.calls = 0
         self.session = requests.Session()
         self.headers = {"Authorization": f"Bearer {key}", "User-Agent": UA}
-        # A little slower than the documented limit. Current-match jobs run before us.
-        self.min_interval = max(0.0, 60.0 / max(1, int(per_minute)) * 1.05)
+        # Shared central pacing leaves provider headroom for retries/adjacent stages.
+        self.min_interval = request_interval_seconds(per_minute, utilization=0.90)
         self.last_call_monotonic = 0.0
         self.rate_limited = False
 
