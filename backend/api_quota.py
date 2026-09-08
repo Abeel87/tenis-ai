@@ -46,8 +46,8 @@ DEFAULT_POLICIES = {
     },
     "history_settle": {
         # Settlement must not starve while finished matches are waiting.
-        # 18% keeps total planned managed spend at 83% of the daily allowance,
-        # leaving a 17% global safety buffer while allowing same-day backlog drain.
+        # 18% keeps total planned managed spend at 87% of the daily allowance,
+        # leaving a 13% global safety buffer while allowing same-day backlog drain.
         "daily_fraction": 0.18,
         "run_cap": 48,
         "reserve_fraction": 0.12,
