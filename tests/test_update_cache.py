@@ -76,6 +76,10 @@ def test_fetch_fixtures_preserves_provider_rank_context(monkeypatch):
             }
 
     monkeypatch.setenv('LIVE_TENNIS_API_KEY', 'test-key')
+    # This unit test verifies provider ranking context only. Isolate it from the
+    # canonical persistent quota manager so pytest cannot mutate frontend/data.
+    monkeypatch.setattr('update.quota_budget', lambda *args, **kwargs: (1, {'limits': {'per_minute': 300}}))
+    monkeypatch.setattr('update.request_interval_seconds', lambda *args, **kwargs: 0.0)
     monkeypatch.setattr('update.requests.get', lambda *args, **kwargs: Response())
     monkeypatch.setattr('update.record_calls', lambda *args, **kwargs: None)
 
