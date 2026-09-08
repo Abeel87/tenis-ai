@@ -523,7 +523,7 @@ def _stamp_alias() -> dict:
     availability=dict(availability);audit=dict(availability.get("raw_family_audit_v923") or {})
     if audit:
         audit["version"]=VERSION;availability["raw_family_audit_v924"]=audit
-    availability["market_mapping_version"]=VERSION;availability["runtime_adapter_version"]=VERSION;availability["fixture_discovery_contract"]={"bookmaker_neutral":True,"has_odds_filter":False,"bookmaker_filter":False,"operator_offer_checked_later":True};availability["fixture_line_contract"]={"version":STRICT_FIXTURE_LINE_VERSION,"current_fixture_evidence_required":True,"active_fixture_market_id_metadata_allowed":True,"catalogue_fallback_allowed":False,"model_line_fallback_allowed":False,"nearest_line_fallback_allowed":False,"prices_used":False};base._write(base.AVAILABILITY,availability);return audit
+    availability["market_mapping_version"]=VERSION;availability["runtime_adapter_version"]=STRICT_FIXTURE_LINE_VERSION;availability["fixture_discovery_contract"]={"bookmaker_neutral":True,"has_odds_filter":False,"bookmaker_filter":False,"operator_offer_checked_later":True};availability["fixture_line_contract"]={"version":STRICT_FIXTURE_LINE_VERSION,"current_fixture_evidence_required":True,"active_fixture_market_id_metadata_allowed":True,"catalogue_fallback_allowed":False,"model_line_fallback_allowed":False,"nearest_line_fallback_allowed":False,"prices_used":False};base._write(base.AVAILABILITY,availability);return audit
 
 
 def prepare() -> dict:
