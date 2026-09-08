@@ -139,7 +139,9 @@ def test_playable_line_market_requires_explicit_operator_line_verification():
     match = {
         "superbet_market_v91": {
             "status": "VERIFIED",
+            "operator": "superbet.pl",
             "operator_verified": True,
+            "suspended": False,
             "canonical_selections": [
                 {"market": "set1_total", "pick": "over", "line": 9.5, "operator_available": True},
                 {"market": "match_winner", "pick": "Alpha", "operator_available": True},
@@ -159,7 +161,8 @@ def test_candidate_evidence_requires_future_snapshot_and_verified_numeric_line()
         "scheduled_time": future, "status": "pending", "p1": "A", "p2": "B",
     }]
     base_ctx = {
-        "status": "VERIFIED", "operator_verified": True,
+        "status": "VERIFIED", "operator": "superbet.pl",
+        "operator_verified": True, "suspended": False,
         "canonical_selections": [
             {"market": "set_handicap", "pick": "A", "line": -1.5,
              "operator_available": True, "operator_line_verified": False,
