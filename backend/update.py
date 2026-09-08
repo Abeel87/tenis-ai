@@ -1,5 +1,5 @@
 from __future__ import annotations
-import io, json, os, sqlite3
+import io, json, os, sqlite3, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from api_quota_v83b import record_calls
+from api_quota import quota_budget, record_calls, request_interval_seconds
 from model import normalize_matches, analyse_match
 from history_hygiene_v78a import clean_history
 from prediction_integrity_v78a import apply_pre_output_guards
@@ -217,11 +217,42 @@ def fetch_fixtures():
     headers={'Authorization':f'Bearer {key}','User-Agent':UA}
     base={'status':'upcoming','from':str(today),'to':str(today+timedelta(days=days-1)),'limit':200}
 
-    rows=[]; seen=set(); offset=0
-    for _ in range(10):
+    budget,usage=quota_budget('fixtures',12)
+    if budget<=0:
+        return None,'quota-safe-skip'
+    per_minute=((usage.get('limits') or {}).get('per_minute') or 60)
+    min_interval=request_interval_seconds(per_minute,utilization=0.90)
+
+    rows=[]; seen=set(); offset=0; calls=0; last_call_monotonic=0.0
+    while calls<budget:
+        if last_call_monotonic>0 and min_interval>0:
+            wait=min_interval-(time.monotonic()-last_call_monotonic)
+            if wait>0:
+                time.sleep(wait)
         params={**base,'offset':offset}
         r=requests.get('https://api.livetennisapi.com/api/public/v1/matches',params=params,headers=headers,timeout=(7,18))
+        calls+=1
         record_calls('fixtures',1)
+        last_call_monotonic=time.monotonic()
+        status=getattr(r,'status_code',200)
+        if status==429 and calls<budget:
+            try:
+                response_headers=getattr(r,'headers',{}) or {}
+                retry=min(30,max(1,int(float(response_headers.get('Retry-After','2') or 2))))
+            except (TypeError,ValueError):
+                retry=2
+            time.sleep(retry)
+            if last_call_monotonic>0 and min_interval>0:
+                wait=min_interval-(time.monotonic()-last_call_monotonic)
+                if wait>0:
+                    time.sleep(wait)
+            r=requests.get('https://api.livetennisapi.com/api/public/v1/matches',params=params,headers=headers,timeout=(7,18))
+            calls+=1
+            record_calls('fixtures',1)
+            last_call_monotonic=time.monotonic()
+            status=getattr(r,'status_code',200)
+        if status==429:
+            return None,'rate-limit-safe-skip'
         r.raise_for_status()
         payload=r.json(); page=payload.get('data',[]) or []; meta=payload.get('meta',{}) or {}
         for m in page:
@@ -309,6 +340,18 @@ def main():
     long_df=normalize_matches(hist)
     save_sqlite(long_df)
     fixtures,mode=fetch_fixtures()
+    if fixtures is None:
+        meta=_load_existing_meta()
+        reason='fixture_rate_limit_safe_skip' if mode=='rate-limit-safe-skip' else 'fixture_quota_safe_skip'
+        meta.update({
+            'fixtures_mode':mode,
+            'fixtures_quota_safe_skip':True,
+            'fixtures_refresh_degraded_reason':reason,
+            'updated_at':now.isoformat(),
+        })
+        _write_json(OUT/'meta.json',meta)
+        print(json.dumps({'degraded':True,'reason':reason},ensure_ascii=False,indent=2))
+        return
     analysed=[add_joint_builder(apply_pre_output_guards(analyse_match(long_df,m))) for m in fixtures]
 
     prediction_history=load_prediction_history(HISTORY_PATH)

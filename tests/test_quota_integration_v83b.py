@@ -13,7 +13,7 @@ def test_central_quota_manager_is_wired_into_api_consumers():
     }
     for rel, marker in expected.items():
         text = (ROOT / rel).read_text(encoding="utf-8")
-        assert marker in text, f"missing v8.3B quota wiring in {rel}"
+        assert marker in text, f"missing canonical quota wiring in {rel}"
 
 
 def test_fixture_ids_are_forwarded_to_pbp_to_avoid_detail_calls():
@@ -24,7 +24,7 @@ def test_fixture_ids_are_forwarded_to_pbp_to_avoid_detail_calls():
 
 def test_workflow_starts_guard_before_current_match_update():
     text = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
-    begin = text.index("Central API Quota Guard v8.3B")
+    begin = text.index("Central API Quota Guard")
     update = text.index("- name: Update analysis")
     backfill = text.index("Historical backfill v8.3B")
     assert begin < update < backfill

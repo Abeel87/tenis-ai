@@ -43,10 +43,10 @@ jobs:
           restore-keys: |
             tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-
             tennis-history-${{ runner.os }}-
-      - name: Central API Quota Guard v8.3B
+      - name: Central API Quota Guard
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
-        run: python backend/api_quota_v83b.py begin
+        run: python backend/api_quota.py begin
       - name: Update analysis
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
@@ -103,9 +103,9 @@ jobs:
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           HISTORY_BACKFILL_ENABLED: '1'
-          HISTORY_BACKFILL_DAILY_FRACTION: '0.12'
-          HISTORY_BACKFILL_HARD_RESERVE_FRACTION: '0.45'
-          HISTORY_BACKFILL_RUN_CAP: '18'
+          API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.12'
+          API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.45'
+          API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '36'
           HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '3'
           HISTORY_BACKFILL_MAX_CACHE_MB: '900'
         run: python backend/history_backfill_v83.py
@@ -200,8 +200,8 @@ jobs:
         run: python scripts/verify_v84e11.py
       - name: Model Trend Monitor Guard v8.4E2
         run: python scripts/verify_v84e2.py
-      - name: Final API quota report v8.3B
-        run: python backend/api_quota_v83b.py report
+      - name: Final API quota report
+        run: python backend/api_quota.py report
       - name: Superbet PLAYABLE PROJECT frontend + stats
         run: python backend/superbet_playable.py project
       - name: Superbet PLAYABLE Guard

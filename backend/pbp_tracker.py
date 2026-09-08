@@ -5,6 +5,7 @@ import json
 import math
 import os
 import re
+import time
 import unicodedata
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -13,7 +14,7 @@ from typing import Any
 
 import requests
 
-from api_quota_v83b import quota_budget, record_calls
+from api_quota import quota_budget, record_calls, request_interval_seconds
 from pbp_enrich import extract_first_set_games, _source_weight
 try:
     from .game_state_tracking_v84e1 import settle_from_states as settle_e1_game_state
@@ -38,7 +39,7 @@ UA = "TenisAI-v7.3-PBP-Validation/1.0"
 CAPTURE_CUTOFF_MINUTES = 5
 MIN_SETTLE_AGE_MINUTES = 90
 RETRY_HOURS = 6
-MAX_REMOTE_SETTLES_PER_RUN = 18
+MAX_REMOTE_SETTLES_PER_RUN = 36
 DAILY_RESERVE = 120
 GREEN = 0.72
 
@@ -250,22 +251,10 @@ def _base_settled_ids(base_history):
             if e.get("match_id") is not None and e.get("status") in ("settled", "void")}
 
 
-def _usage_remaining(key: str):
-    try:
-        r = requests.get(BASE_URL + "/usage", headers={"Authorization": f"Bearer {key}", "User-Agent": UA}, timeout=(7,18))
-        r.raise_for_status()
-        u = r.json() or {}; today=u.get("today") or {}; limits=u.get("limits") or {}
-        rem=today.get("remaining_day")
-        if rem is None and isinstance(limits.get("per_day"),(int,float)) and isinstance(today.get("calls"),(int,float)):
-            rem=int(limits["per_day"])-int(today["calls"])
-        return int(rem) if isinstance(rem,(int,float)) else None
-    except Exception:
-        return None
-
-
 def settle(entries: list[dict], base_history: list[dict], key: str, now: datetime):
     confirmed=_base_settled_ids(base_history)
     remote_budget=0; usage_checked=False; remote_calls=0; settled_n=0; out=[]
+    min_interval=0.0; last_call_monotonic=0.0
     for entry in entries:
         if entry.get("status")=="settled":
             out.append(entry); continue
@@ -283,15 +272,38 @@ def settle(entries: list[dict], base_history: list[dict], key: str, now: datetim
         if not key or not (str(mid) in confirmed or now-scheduled >= timedelta(hours=6)):
             out.append(entry); continue
         if not usage_checked:
-            remote_budget,_quota=quota_budget("pbp_tracker", MAX_REMOTE_SETTLES_PER_RUN); usage_checked=True
+            remote_budget,_quota=quota_budget("pbp_tracker", MAX_REMOTE_SETTLES_PER_RUN)
+            per_minute=((_quota.get("limits") or {}).get("per_minute") or 60)
+            min_interval=request_interval_seconds(per_minute,utilization=0.90)
+            usage_checked=True
         if remote_calls>=remote_budget:
             out.append(entry); continue
         entry=dict(entry); entry["last_attempt_at"]=now.isoformat()
         try:
+            if last_call_monotonic>0 and min_interval>0:
+                wait=min_interval-(time.monotonic()-last_call_monotonic)
+                if wait>0:
+                    time.sleep(wait)
             r=requests.get(BASE_URL+f"/history/matches/{mid}",params={"sequence":"clean"},
                            headers={"Authorization":f"Bearer {key}","User-Agent":UA},timeout=(7,25))
             remote_calls+=1
             record_calls("pbp_tracker",1)
+            last_call_monotonic=time.monotonic()
+            if r.status_code==429 and remote_calls<remote_budget:
+                try:
+                    retry=min(30,max(1,int(float(r.headers.get("Retry-After","2") or 2))))
+                except (TypeError,ValueError):
+                    retry=2
+                time.sleep(retry)
+                if last_call_monotonic>0 and min_interval>0:
+                    wait=min_interval-(time.monotonic()-last_call_monotonic)
+                    if wait>0:
+                        time.sleep(wait)
+                r=requests.get(BASE_URL+f"/history/matches/{mid}",params={"sequence":"clean"},
+                               headers={"Authorization":f"Bearer {key}","User-Agent":UA},timeout=(7,25))
+                remote_calls+=1
+                record_calls("pbp_tracker",1)
+                last_call_monotonic=time.monotonic()
             if r.status_code!=200:
                 out.append(entry); continue
             payload=r.json(); got=settle_one(entry,payload,now)
