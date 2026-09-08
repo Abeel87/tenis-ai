@@ -234,9 +234,11 @@ def fetch_fixtures():
         calls+=1
         record_calls('fixtures',1)
         last_call_monotonic=time.monotonic()
-        if getattr(r,'status_code',200)==429 and calls<budget:
+        status=getattr(r,'status_code',200)
+        if status==429 and calls<budget:
             try:
-                retry=min(30,max(1,int(float(r.headers.get('Retry-After','2') or 2))))
+                response_headers=getattr(r,'headers',{}) or {}
+                retry=min(30,max(1,int(float(response_headers.get('Retry-After','2') or 2))))
             except (TypeError,ValueError):
                 retry=2
             time.sleep(retry)
@@ -248,6 +250,9 @@ def fetch_fixtures():
             calls+=1
             record_calls('fixtures',1)
             last_call_monotonic=time.monotonic()
+            status=getattr(r,'status_code',200)
+        if status==429:
+            return None,'rate-limit-safe-skip'
         r.raise_for_status()
         payload=r.json(); page=payload.get('data',[]) or []; meta=payload.get('meta',{}) or {}
         for m in page:
@@ -337,13 +342,15 @@ def main():
     fixtures,mode=fetch_fixtures()
     if fixtures is None:
         meta=_load_existing_meta()
+        reason='fixture_rate_limit_safe_skip' if mode=='rate-limit-safe-skip' else 'fixture_quota_safe_skip'
         meta.update({
             'fixtures_mode':mode,
             'fixtures_quota_safe_skip':True,
+            'fixtures_refresh_degraded_reason':reason,
             'updated_at':now.isoformat(),
         })
         _write_json(OUT/'meta.json',meta)
-        print(json.dumps({'degraded':True,'reason':'fixture_quota_safe_skip'},ensure_ascii=False,indent=2))
+        print(json.dumps({'degraded':True,'reason':reason},ensure_ascii=False,indent=2))
         return
     analysed=[add_joint_builder(apply_pre_output_guards(analyse_match(long_df,m))) for m in fixtures]
 
