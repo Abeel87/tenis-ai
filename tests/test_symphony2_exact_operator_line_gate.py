@@ -1,11 +1,20 @@
 from backend.symphony2_engine import _current_offer
 
 
-def _match(selections, *, operator_verified=True, status="VERIFIED"):
+def _match(
+    selections,
+    *,
+    operator="superbet.pl",
+    operator_verified=True,
+    status="VERIFIED",
+    suspended=False,
+):
     return {
         "superbet_market_v91": {
+            "operator": operator,
             "operator_verified": operator_verified,
             "status": status,
+            "suspended": suspended,
             "canonical_selections": selections,
         }
     }
@@ -17,6 +26,7 @@ def _line(line, *, verified, available=True, **extra):
         "pick": "over",
         "line": line,
         "operator_available": available,
+        "operator_line_verified": verified,
         "fixture_line_verified": verified,
         **extra,
     }
