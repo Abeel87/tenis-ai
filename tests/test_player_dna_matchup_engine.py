@@ -244,7 +244,7 @@ def test_phase3_gate_fails_closed_when_required_evidence_is_missing():
     assert report["status"] == "PHASE3_GATE_NOT_COMPLETE"
 
 
-def test_phase3_gate_does_not_activate_shrinkage_even_after_historical_success():
+def test_phase3_stays_closed_after_positive_fresh_confirmation_without_activation():
     reports = _reports()
     reports["small_sample"]["fresh_confirmation"] = {
         "status": "FRESH_CONFIRMATION_POSITIVE_SHADOW",
@@ -252,10 +252,14 @@ def test_phase3_gate_does_not_activate_shrinkage_even_after_historical_success()
 
     report = evaluate_phase3_reports(reports)
 
-    assert report["small_sample_shrinkage"]["active"] is False
-    assert report["small_sample_shrinkage"][
-        "blocked_pending_fresh_confirmation"
-    ] is False
-    # A separate activation PR would be required; this closure gate does not
-    # silently convert fresh confirmation into an active scorer feature.
-    assert report["phase3_complete"] is False
+    shrinkage = report["small_sample_shrinkage"]
+    assert shrinkage["active"] is False
+    assert shrinkage["blocked_pending_fresh_confirmation"] is False
+    assert shrinkage["fresh_confirmation_satisfied"] is True
+    assert shrinkage["explicit_activation_required"] is True
+    # Positive fresh confirmation satisfies the evidence gate but must never
+    # silently activate the scorer feature. Phase-3 closure itself stays valid.
+    assert report["phase3_complete"] is True
+    assert report["phase4_ready"] is True
+    assert report["production_influence"] is False
+    assert report["runtime_prediction_change"] is False

@@ -1550,8 +1550,26 @@ jobs:
           shrinkage = report.get('small_sample_shrinkage') or {}
           if shrinkage.get('active') is not False:
               raise SystemExit('Small-sample shrinkage activated before explicit gate')
-          if shrinkage.get('blocked_pending_fresh_confirmation') is not True:
-              raise SystemExit('Small-sample shrinkage lost fresh-confirmation block')
+          if shrinkage.get('historical_status') != (
+              'SMALL_SAMPLE_SHRINKAGE_ROBUST_HISTORICAL_SIGNAL_REQUIRES_FRESH_CONFIRMATION'
+          ):
+              raise SystemExit('Small-sample shrinkage historical evidence drifted')
+
+          fresh_status = shrinkage.get('fresh_confirmation_status')
+          if fresh_status == 'FRESH_CONFIRMATION_POSITIVE_SHADOW':
+              if shrinkage.get('blocked_pending_fresh_confirmation') is not False:
+                  raise SystemExit('Positive fresh confirmation still marked pending')
+              if shrinkage.get('fresh_confirmation_satisfied') is not True:
+                  raise SystemExit('Positive fresh confirmation was not acknowledged')
+              if shrinkage.get('explicit_activation_required') is not True:
+                  raise SystemExit('Positive fresh confirmation bypassed explicit activation gate')
+          else:
+              if shrinkage.get('blocked_pending_fresh_confirmation') is not True:
+                  raise SystemExit('Small-sample shrinkage lost fresh-confirmation block')
+              if shrinkage.get('fresh_confirmation_satisfied') is not False:
+                  raise SystemExit('Pending fresh confirmation incorrectly marked satisfied')
+              if shrinkage.get('explicit_activation_required') is not False:
+                  raise SystemExit('Explicit activation requested before fresh confirmation')
 
           contract = report.get('contract') or {}
           for key in (
@@ -1560,6 +1578,8 @@ jobs:
               'failed_optional_interactions_are_not_composed_together',
               'no_post_hoc_interaction_screen',
               'historically_robust_shrinkage_still_requires_fresh_confirmation',
+              'positive_fresh_confirmation_never_auto_activates_shrinkage',
+              'positive_fresh_confirmation_does_not_reopen_phase3',
               'phase4_may_start_from_proven_main_effects_and_lean_score_state',
               'phase3_completion_does_not_promote_runtime_or_prod',
           ):

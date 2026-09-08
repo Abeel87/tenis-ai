@@ -219,8 +219,11 @@ Aktualny zatwierdzony rdzeń Matchup Engine to osobne main effects:
 serve/return overall + same-surface oraz ich raw support. Nie składamy na siłę
 pełnego kompozytu z rodzin, które nie przeszły robust walk-forward. Nonlinear
 serve-return, opponent-strength, pressure, TB, recent form, comeback i BO5
-stamina pozostają nieaktywne. Small-sample shrinkage ma historyczny sygnał, ale
-pozostaje zablokowany do świeżego confirmation gate.
+stamina pozostają nieaktywne. Small-sample shrinkage ma historyczny sygnał i pozostaje nieaktywny.
+Przed świeżym confirmation gate jest jawnie zablokowany jako oczekujący na
+potwierdzenie. Po pozytywnym fresh confirmation gate Faza 3 nie może cofać się
+do stanu niekompletnego: potwierdzenie spełnia gate dowodowy, ale shrinkage nadal
+pozostaje OFF i może zostać aktywowany wyłącznie osobnym, jawnym PR-em promocji.
 
 Domknięcie Fazy 3 nie oznacza promocji do PROD, Symfonii ani PLAYABLE. Oznacza,
 że Faza 4 może startować z jednym kanonicznym pre-match matchup contract i
@@ -281,8 +284,9 @@ Faza 4 jest zamknięta dopiero, gdy CI potwierdzi:
 - `phase4_complete=true` i `phase5_ready=true`.
 
 Uncertainty nie dostaje arbitralnego confidence score. Publikujemy raw support i
-flagi progów diagnostycznych. Historyczny small-sample shrinkage pozostaje OFF
-do świeżego confirmation gate.
+flagi progów diagnostycznych. Small-sample shrinkage pozostaje OFF przed i po
+fresh confirmation; pozytywne potwierdzenie jedynie spełnia gate dowodowy.
+Aktywacja wymaga osobnego PR-u i nie może nastąpić automatycznie.
 
 Domknięcie Fazy 4 nadal nie oznacza PROD/Symfonia/PLAYABLE.
 
