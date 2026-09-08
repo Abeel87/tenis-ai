@@ -798,6 +798,52 @@ Mierzymy:
 
 Profile historyczne powinny być cache'owane/precomputed, a przed meczem liczymy przede wszystkim matchup i dystrybucję.
 
+## Gate pomiarowy Fazy 13
+
+Faza 13 jest **obserwacyjnym benchmarkiem aktualnego realnego pipeline'u**.
+Nie ustalamy arbitralnego limitu czasu ani pamięci przed pomiarem i nie
+zmieniamy progów modeli po to, żeby benchmark był zielony.
+
+Pomiar profili jest dopięty bezpośrednio do kanonicznego
+`backend/player_dna_shadow_profiles.py`. Dzięki temu mierzymy ten sam builder,
+ten sam strict provider-backed point dataset, ten sam exact service-split join
+i te same leakage-safe snapshots, a nie drugą ścieżkę benchmarkową.
+
+Pozostałe pomiary wykonuje
+`backend/player_dna_phase13_performance.py`, który:
+
+- bierze aktualne liczniki point dataset / scorer join z artefaktów tego samego
+  przebiegu CI;
+- mierzy kanoniczny `build_matchup_packet()` na realnej parze reciprocal
+  profile snapshots;
+- mierzy istniejący
+  `monte_carlo_match_distribution()` dla 10k / 50k / 100k;
+- powtarza 10k z identycznym seedem i wymaga identycznego wyniku;
+- raportuje peak RSS i rzeczywisty czas kroku CI, ale nie zgaduje kosztu w
+  walucie bez jawnego kontraktu ceny runnera;
+- pozostaje SHADOW-only i nie zmienia runtime, Symfonii 2.0 ani PLAYABLE.
+
+Raport CI:
+`frontend/data/player_dna_phase13_performance.json`.
+
+Faza 13 zamyka się dopiero, gdy:
+
+- Faza 12 jest kompletna i `phase13_ready=true`;
+- aktualne strict/context-ready point rows mają pełny existing scorer join
+  coverage 1.0;
+- czas kanonicznej budowy profili został rzeczywiście zmierzony;
+- matchup jest zmierzony przez kanoniczny builder na realnych snapshotach;
+- istniejący Monte Carlo ma pomiary 10k / 50k / 100k;
+- fixed-seed replay jest deterministyczny;
+- koszt runtime jest raportowany jako wall time / pamięć, bez wymyślonej ceny;
+- nie istnieje żaden absolutny performance threshold w tym gate;
+- brak wpływu na PROD, runtime scoring, Symfonię 2.0 i PLAYABLE;
+- `phase13_complete=true / phase14_ready=true`.
+
+Dopiero po zebraniu kolejnych porównywalnych obserwacji można osobnym,
+data-driven gate'em zaproponować limity wydajności. Sam fakt, że jeden przebieg
+jest szybki lub wolny, nie jest warunkiem promocji.
+
 ---
 
 # Faza 14 — Promotion policy
