@@ -147,17 +147,89 @@ def test_training_does_not_invent_line_from_raw_fields():
     assert rows[0]["line"] == 21.5
 
 
-def test_current_offer_rejects_line_without_fixture_verification():
+def test_current_offer_requires_exact_operator_availability_and_both_line_proofs():
     match = {"superbet_market_v91": {
-        "operator_verified": True, "status": "VERIFIED",
+        "operator": "superbet.pl",
+        "operator_verified": True,
+        "status": "VERIFIED",
+        "suspended": False,
         "canonical_selections": [
-            {"market": "match_total", "pick": "over", "line": 15.5, "operator_available": True},
-            {"market": "match_total", "pick": "over", "line": 21.5, "operator_available": True, "fixture_line_verified": True},
+            {
+                "market": "match_total", "pick": "over", "line": 15.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": False,
+            },
+            {
+                "market": "match_total", "pick": "over", "line": 18.5,
+                "operator_available": True,
+                "operator_line_verified": False,
+                "fixture_line_verified": True,
+            },
+            {
+                "market": "match_total", "pick": "over", "line": 20.5,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+            },
+            {
+                "market": "match_total", "pick": "over", "line": 21.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+            },
         ],
     }}
     rows = engine._current_offer(match)
     assert len(rows) == 1
     assert rows[0]["line"] == 21.5
+
+
+def test_current_offer_treats_set_handicap_as_numeric_line_market():
+    match = {"superbet_market_v91": {
+        "operator": "superbet.pl",
+        "operator_verified": True,
+        "status": "VERIFIED",
+        "suspended": False,
+        "canonical_selections": [
+            {
+                "market": "set_handicap", "pick": "A", "line": -1.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": False,
+            },
+            {
+                "market": "set_handicap", "pick": "A", "line": -2.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+            },
+        ],
+    }}
+    rows = engine._current_offer(match)
+    assert len(rows) == 1
+    assert rows[0]["market"] == "set_handicap"
+    assert rows[0]["line"] == -2.5
+
+
+def test_current_offer_rejects_wrong_operator_or_suspended_context():
+    base = {
+        "operator": "superbet.pl",
+        "operator_verified": True,
+        "status": "VERIFIED",
+        "suspended": False,
+        "canonical_selections": [{
+            "market": "match_winner",
+            "pick": "A",
+            "operator_available": True,
+        }],
+    }
+    assert len(engine._current_offer({"superbet_market_v91": dict(base)})) == 1
+    assert engine._current_offer({
+        "superbet_market_v91": {**base, "operator": "superbet.ro"}
+    }) == []
+    assert engine._current_offer({
+        "superbet_market_v91": {**base, "suspended": True}
+    }) == []
 
 
 def test_current_symphony_feed_excludes_started_fixture_but_keeps_future_fixture():
