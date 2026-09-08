@@ -22,6 +22,7 @@ on:
       - 'backend/player_dna_match_state_challenger.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_phase13_performance.py'
+      - 'backend/player_dna_phase14_lifecycle.py'
       - 'backend/player_dna_matchup_readiness_audit.py'
       - 'backend/player_dna_matchup_challenger.py'
       - 'backend/player_dna_matchup_engine.py'
@@ -62,6 +63,7 @@ on:
       - 'tests/test_player_dna_match_state_challenger.py'
       - 'tests/test_player_dna_shadow_profiles.py'
       - 'tests/test_player_dna_phase13_performance.py'
+      - 'tests/test_player_dna_phase14_lifecycle.py'
       - 'tests/test_player_dna_matchup_readiness_audit.py'
       - 'tests/test_player_dna_matchup_challenger.py'
       - 'tests/test_player_dna_matchup_engine.py'
@@ -119,7 +121,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_phase13_performance.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_phase13_performance.py tests/test_player_dna_phase14_lifecycle.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -2742,6 +2744,166 @@ jobs:
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
+      - name: Close Phase-14 promotion lifecycle policy (SHADOW, zero network)
+        run: python backend/player_dna_phase14_lifecycle.py
+
+      - name: Guard Phase-14 safe lifecycle closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = Path('frontend/data')
+          p = data / 'player_dna_phase14_lifecycle.json'
+          if not p.exists():
+              raise SystemExit('player_dna_phase14_lifecycle.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'PHASE14_PROMOTION_LIFECYCLE_POLICY_ONLY':
+              raise SystemExit('Phase-14 lifecycle mode invalid')
+          if int(report.get('phase') or 0) != 14:
+              raise SystemExit('Phase-14 phase drifted')
+          if report.get('phase13_prerequisite_satisfied') is not True:
+              raise SystemExit('Phase-14 lost Phase-13 prerequisite')
+          if report.get('phase14_complete') is not True:
+              raise SystemExit(f"Phase-14 lifecycle incomplete: {report.get('status')}")
+          if report.get('master_plan_complete') is not True:
+              raise SystemExit('Phase-14 did not close the master plan lifecycle')
+          if report.get('status') not in {
+              'PHASE14_LIFECYCLE_COMPLETE_KEEP_SHADOW',
+              'PHASE14_LIFECYCLE_COMPLETE_MANUAL_CANARY_REVIEW_AVAILABLE',
+          }:
+              raise SystemExit(f"Phase-14 status invalid: {report.get('status')}")
+
+          policy = report.get('promotion_policy') or {}
+          if policy.get('lifecycle') != ['OFFLINE', 'SHADOW', 'AUDYT', 'CANARY', 'PROD']:
+              raise SystemExit('Phase-14 lifecycle order drifted')
+          if policy.get('single_good_coupon_or_single_good_run_can_promote') is not False:
+              raise SystemExit('Phase-14 allowed one good result to promote')
+          if policy.get('existing_thresholds_are_authoritative') is not True:
+              raise SystemExit('Phase-14 stopped respecting existing thresholds')
+          if policy.get('new_thresholds_added_for_phase14') is not False:
+              raise SystemExit('Phase-14 introduced new promotion thresholds')
+
+          audit_to_canary = policy.get('audyt_to_canary') or {}
+          canary_to_prod = policy.get('canary_to_prod') or {}
+          if audit_to_canary.get('requires_manual_approval') is not True:
+              raise SystemExit('Phase-14 canary review lost manual approval')
+          if audit_to_canary.get('requires_bounded_canary_plan') is not True:
+              raise SystemExit('Phase-14 canary lost bounded plan requirement')
+          if audit_to_canary.get('phase14_itself_can_activate_canary') is not False:
+              raise SystemExit('Phase-14 may not activate CANARY')
+          if canary_to_prod.get('requires_manual_approval') is not True:
+              raise SystemExit('Phase-14 PROD transition lost manual approval')
+          if canary_to_prod.get('requires_separate_canary_evidence') is not True:
+              raise SystemExit('Phase-14 PROD transition lost separate canary evidence')
+          if canary_to_prod.get('requires_rollback_drill_confirmed') is not True:
+              raise SystemExit('Phase-14 PROD transition lost rollback drill')
+          if canary_to_prod.get('phase14_itself_can_activate_prod') is not False:
+              raise SystemExit('Phase-14 may not activate PROD')
+
+          rollback = report.get('rollback') or {}
+          if rollback.get('required') is not True:
+              raise SystemExit('Phase-14 rollback is not mandatory')
+          if rollback.get('immutable_last_known_good_prod_reference_required') is not True:
+              raise SystemExit('Phase-14 rollback lost immutable PROD reference')
+          if rollback.get('candidate_artifact_fingerprint_required') is not True:
+              raise SystemExit('Phase-14 rollback lost candidate fingerprint')
+          if 'set_candidate_canary_traffic_to_zero' not in (rollback.get('canary_to_shadow') or []):
+              raise SystemExit('Phase-14 CANARY -> SHADOW rollback path incomplete')
+          if 'restore_immutable_last_known_good_prod_artifact_and_routing' not in (rollback.get('prod_to_last_known_good') or []):
+              raise SystemExit('Phase-14 PROD rollback path incomplete')
+          if rollback.get('new_numeric_rollback_thresholds_introduced') is not False:
+              raise SystemExit('Phase-14 invented rollback thresholds')
+
+          if report.get('current_deployment_stage') != 'SHADOW':
+              raise SystemExit('Phase-14 must leave current deployment in SHADOW')
+          for key in (
+              'canary_active',
+              'prod_activation_performed',
+              'production_influence',
+              'runtime_switch_enabled',
+              'symphony2_ranking_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-14 unsafe activation/influence: {key}')
+
+          if report.get('legacy_shadow_promotion_v942_authoritative') is not False:
+              raise SystemExit('Legacy v942 gate became promotion authority')
+          if report.get('canonical_promotion_authority') != 'backend/player_dna_phase14_lifecycle.py':
+              raise SystemExit('Phase-14 canonical authority drifted')
+
+          lanes = report.get('lanes') or {}
+          required_lanes = {
+              'player_dna_hold_calibrated_simulator',
+              'player_dna_dynamic_lean',
+              'neuro_model_class_challenger',
+              'symphony2_player_dna_shared_state',
+          }
+          if set(lanes) != required_lanes:
+              raise SystemExit(f'Phase-14 lane set drifted: {sorted(lanes)}')
+          for name, lane in lanes.items():
+              if lane.get('current_deployment_stage') != 'SHADOW':
+                  raise SystemExit(f'Phase-14 lane escaped SHADOW: {name}')
+              if lane.get('canary_active') is not False:
+                  raise SystemExit(f'Phase-14 lane activated CANARY: {name}')
+              if lane.get('prod_active') is not False:
+                  raise SystemExit(f'Phase-14 lane activated PROD: {name}')
+              if lane.get('auto_promote') is not False:
+                  raise SystemExit(f'Phase-14 lane enabled auto promotion: {name}')
+
+          hold_wf = json.loads(
+              (data / 'player_dna_hold_walk_forward.json').read_text(encoding='utf-8')
+          )
+          hold_lane = lanes['player_dna_hold_calibrated_simulator']
+          if (hold_wf.get('aggregate') or {}).get('robust') is not True:
+              if hold_lane.get('manual_canary_review_eligible') is not False:
+                  raise SystemExit('Non-robust hold walk-forward incorrectly reached canary review')
+
+          phase7 = json.loads(
+              (data / 'player_dna_phase7_calibration_walk_forward.json').read_text(encoding='utf-8')
+          )
+          dynamic_lane = lanes['player_dna_dynamic_lean']
+          if phase7.get('promotion_evidence_sufficient') is not True:
+              if dynamic_lane.get('manual_canary_review_eligible') is not False:
+                  raise SystemExit('Insufficient Phase-7 evidence incorrectly reached canary review')
+
+          neuro_lane = lanes['neuro_model_class_challenger']
+          if neuro_lane.get('manual_canary_review_eligible') is not False:
+              raise SystemExit('Neuro cannot reach canary without its separate prospective gate')
+          shared_lane = lanes['symphony2_player_dna_shared_state']
+          if shared_lane.get('manual_canary_review_eligible') is not False:
+              raise SystemExit('Shared state cannot reach canary without ranking-impact gate')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'phase14_completion_means_safe_lifecycle_defined_not_model_promoted',
+              'failed_or_incomplete_evidence_keeps_candidate_in_shadow',
+              'manual_canary_review_is_not_canary_activation',
+              'canary_activation_requires_separate_explicit_change',
+              'prod_activation_requires_separate_explicit_change',
+              'bookmaker_availability_never_deletes_model_math',
+              'playable_exact_current_superbet_line_contract_unchanged',
+              'nearest_line_substitution_forbidden',
+              'player_dna_simulator_neuro_remain_shadow_without_separate_gate',
+              'no_parallel_vxxx_promotion_authority_created',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-14 contract violation: {key}')
+
+          print(
+              'Phase-14 lifecycle closure: '
+              f"status={report.get('status')} "
+              f"stage={report.get('current_deployment_stage')} "
+              f"manual_canary_review={report.get('manual_canary_review_candidates')} "
+              f"canary_active={report.get('canary_active')} "
+              f"prod={report.get('prod_activation_performed')} "
+              f"master_plan_complete={report.get('master_plan_complete')}"
+          )
+          PY
+
       - name: Require real cached tapes and strict trainable point rows
         run: |
           python - <<'PY'
@@ -4280,6 +4442,7 @@ jobs:
             frontend/data/symphony2_phase10_bet_builder_dependency.json
             frontend/data/player_dna_phase12_master_regression.json
             frontend/data/player_dna_phase13_performance.json
+            frontend/data/player_dna_phase14_lifecycle.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json

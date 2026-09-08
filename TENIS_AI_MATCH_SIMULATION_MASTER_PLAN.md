@@ -852,7 +852,8 @@ Każda nowa warstwa przechodzi:
 
 `OFFLINE -> SHADOW -> AUDYT -> CANARY -> PROD`
 
-Brak promocji tylko dlatego, że pojedynczy kupon wygląda dobrze.
+Brak promocji tylko dlatego, że pojedynczy kupon albo pojedynczy przebieg wygląda
+dobrze.
 
 Minimalne wymagania promocji:
 
@@ -864,6 +865,131 @@ Minimalne wymagania promocji:
 - observability;
 - rollback path;
 - brak równoległego starego aktywnego pipeline'u po migracji.
+
+## Kanoniczny lifecycle Fazy 14
+
+Jedynym kanonicznym policy/gate dla Player DNA / simulator / Neuro jest:
+
+`backend/player_dna_phase14_lifecycle.py`
+
+Nie tworzymy kolejnej wersji `vXXX`. Istniejący
+`shadow_promotion_gate_v942.py` może pozostać historycznym, read-only
+diagnostykiem, ale **nie jest authority do promocji**.
+
+Faza 14 składa istniejące dowody zamiast wymyślać nowe progi:
+
+- Phase 7 — calibration / dynamic walk-forward;
+- Phase 8 — identyczne foldy model-class challengerów Neuro;
+- Phase 9 — Player DNA whole-match shared state;
+- Phase 10 — dependency diagnostics;
+- Phase 12 — obowiązkowe regresje;
+- Phase 13 — realny benchmark + deterministyczność;
+- hold-calibration walk-forward;
+- prospective immutable evidence ledger.
+
+Nie zmieniamy istniejących progów ani minimalnych prób. Jeżeli któryś istniejący
+gate nie jest gotowy albo sygnał nie jest wystarczająco robust, wynik Fazy 14
+jest fail-closed: kandydat **zostaje SHADOW**.
+
+### Oddzielne lane'y promocji
+
+Lifecycle ocenia osobno:
+
+1. `PLAYER_DNA_HOLD_CALIBRATED_SIMULATOR`;
+2. `PLAYER_DNA_DYNAMIC_LEAN`;
+3. `NEURO_MODEL_CLASS_CHALLENGER`;
+4. `SYMPHONY2_PLAYER_DNA_SHARED_STATE`.
+
+Techniczne zamknięcie wcześniejszych faz nie oznacza, że każdy lane może wejść
+do CANARY. Neuro wymaga osobnego prospective/canary gate, a shared-state wymaga
+osobnego out-of-sample ranking-impact/canary gate. Do ich powstania pozostają
+SHADOW nawet wtedy, gdy ich techniczne fazy są zielone.
+
+### AUDYT -> CANARY
+
+Faza 14 **nie uruchamia CANARY**. Może najwyżej wystawić:
+
+`AUDIT_READY_FOR_MANUAL_BOUNDED_CANARY_REVIEW`
+
+i tylko dla konkretnego lane'u, którego wszystkie istniejące evidence gate'y są
+zielone.
+
+Przejście do CANARY wymaga osobnej, jawnej zmiany oraz:
+
+- ręcznej akceptacji;
+- bounded-canary plan;
+- zamrożonego baseline;
+- fingerprintu artefaktu kandydata;
+- aktywnego observability;
+- działającego rollback path.
+
+`manual_canary_review_eligible=true` nie oznacza
+`canary_active=true`.
+
+### CANARY -> PROD
+
+PROD wymaga osobnego evidence z faktycznego CANARY. Faza 14 sama nie może
+włączyć PROD.
+
+Przed PROD wymagane są:
+
+- brak regresji istniejących gate'ów;
+- osobne wyniki canary względem zamrożonego baseline;
+- ręczna akceptacja;
+- potwierdzony rollback drill;
+- plan usunięcia starej aktywnej ścieżki po udanej migracji.
+
+### Rollback
+
+Rollback jest obowiązkowym elementem lifecycle.
+
+CANARY -> SHADOW:
+
+- ruch kandydata do zera;
+- wyłączenie wpływu runtime;
+- powrót do SHADOW-only collection;
+- obecny PROD pozostaje nietknięty;
+- dowody zostają do postmortem.
+
+PROD -> last-known-good:
+
+- natychmiastowe wyłączenie kandydata;
+- przywrócenie immutable last-known-good PROD artifact + routing;
+- sprawdzenie health i exact-current-Superbet-line guardów;
+- kandydat wraca do SHADOW;
+- przed następnym CANARY audyt zaczyna się ponownie.
+
+Rollback uruchamia regresja istniejących gate'ów, drift provenance/kontraktu,
+utrata deterministyczności/observability, regresja exact-line/PLAYABLE guardów
+albo pogorszenie evidence w bounded CANARY. Faza 14 nie dodaje nowych
+arbitralnych limitów liczbowych do rollbacku.
+
+### Gate zamknięcia master planu
+
+Raport CI:
+
+`frontend/data/player_dna_phase14_lifecycle.json`
+
+Faza 14 jest kompletna, gdy:
+
+- `phase13_complete=true / phase14_ready=true`;
+- lifecycle ma dokładnie
+  `OFFLINE -> SHADOW -> AUDYT -> CANARY -> PROD`;
+- rollback jest jawny;
+- manual approval jest obowiązkowe przed CANARY i PROD;
+- pojedynczy dobry wynik nie może promować;
+- brak nowych progów wymyślonych dla Fazy 14;
+- `canary_active=false`;
+- `prod_activation_performed=false`;
+- Player DNA / simulator / Neuro pozostają bez wpływu na PROD / Symphony2 /
+  PLAYABLE bez osobnego gate'u;
+- `phase14_complete=true`;
+- `master_plan_complete=true`.
+
+**Ważne:** `master_plan_complete=true` znaczy, że bezpieczna infrastruktura i
+polityka lifecycle są kompletne. Nie znaczy, że którykolwiek model został
+promowany do CANARY albo PROD. Przy niepełnym evidence prawidłowym końcowym
+stanem jest `PHASE14_LIFECYCLE_COMPLETE_KEEP_SHADOW`.
 
 ---
 
