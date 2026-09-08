@@ -271,6 +271,44 @@ def test_v925_capture_freezes_candidates_as_non_playable_and_excludes_pbp_only()
     assert rows[0]["result"] == "pending"
 
 
+def test_v925_candidate_freeze_rejects_wrong_operator_or_suspended_context():
+    now = datetime.now(timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_id": 1,
+        "p1": "Player A",
+        "p2": "Player B",
+        "scheduled_time": future,
+        "status": "pending",
+    }]
+    match = _match()
+    match["scheduled_time"] = future
+    match["superbet_market_v91"]["coverage_shadow_signals"] = [{
+        "key": "candidate|exact_sets|3",
+        "market": "exact_sets",
+        "pick": "3",
+        "score": 74.0,
+    }]
+    match["superbet_market_v91"]["canonical_selections"].append({
+        "market": "exact_sets",
+        "pick": "3",
+        "operator_available": True,
+        "operator_line_verified": True,
+    })
+
+    wrong_operator = deepcopy(match)
+    wrong_operator["superbet_market_v91"]["operator"] = "superbet.ro"
+    frozen, info = capture_candidates(history, [wrong_operator], now=now)
+    assert info["captured"] == 0
+    assert not frozen[0].get(V925_LAYER)
+
+    suspended = deepcopy(match)
+    suspended["superbet_market_v91"]["suspended"] = True
+    frozen, info = capture_candidates(history, [suspended], now=now)
+    assert info["captured"] == 0
+    assert not frozen[0].get(V925_LAYER)
+
+
 def test_v925_numeric_candidate_requires_fixture_proof_and_preserves_direct_source():
     now = datetime.now(timezone.utc)
     future = (now + timedelta(hours=2)).isoformat()
