@@ -63,3 +63,14 @@ def test_no_active_consumer_keeps_private_usage_owner():
         text = (ROOT / rel).read_text(encoding="utf-8")
         assert "def _usage_remaining" not in text, rel
         assert 'BASE_URL + "/usage"' not in text, rel
+
+
+def test_raw_api_cache_survives_unrelated_late_guard_failure():
+    workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "Save tennis history + PBP cache" in workflow
+    assert "always() && hashFiles('data/cache/*.csv.gz') != ''" in workflow
+    save_pos = workflow.index("Save tennis history + PBP cache")
+    publish_pos = workflow.index("Commit refreshed JSON")
+    assert save_pos < publish_pos
