@@ -5,6 +5,7 @@ from pathlib import Path
 
 from backend import superbet_market_core as core
 from backend import superbet_market_mapping as mapping
+from backend import superbet_market_context as context
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,6 +83,26 @@ def test_requested_bookmaker_identity_is_exact_superbet_pl_only():
         "bookmakerOdds": {"superbet": generic},
     }, _market_meta()) is None
 
+
+
+
+def test_canonical_context_sanitizer_cannot_reintroduce_generic_superbet():
+    generic = _book(_winner_markets())
+    exact = _book(_winner_markets())
+    row = {
+        "fixtureId": "f-context",
+        "participant1Name": "A",
+        "participant2Name": "B",
+        "startTime": "2026-09-08T12:00:00Z",
+        "bookmakerOdds": {"superbet": generic},
+    }
+    assert context.mapped_sanitize(row, _market_meta()) is None
+
+    row["bookmakerOdds"]["superbet.pl"] = exact
+    sanitized = context.mapped_sanitize(row, _market_meta())
+    assert sanitized is not None
+    assert sanitized["bookmaker"] == "superbet.pl"
+    assert {s["market"] for s in sanitized["canonical_selections"]} == {"match_winner"}
 
 def test_legacy_direct_cache_is_rechecked_under_exact_bookmaker_contract():
     now = datetime(2026, 9, 8, 10, 0, tzinfo=timezone.utc)
