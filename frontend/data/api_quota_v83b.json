@@ -1,17 +1,17 @@
 {
   "version": "v8.3B",
-  "updated_at": "2026-09-08T09:27:28.011314+00:00",
+  "updated_at": "2026-09-08T12:29:37.356968+00:00",
   "status": "ready",
   "quota_day": "2026-09-08",
   "daily_limit": 10000,
-  "calls_at_begin": 962,
-  "remaining_at_begin": 9038,
-  "managed_calls_this_run": 128,
-  "remaining_estimate": 8910,
+  "calls_at_begin": 1784,
+  "remaining_at_begin": 8216,
+  "managed_calls_this_run": 258,
+  "remaining_estimate": 7958,
   "per_minute": 300,
   "categories": {
     "fixtures": {
-      "calls": 9,
+      "calls": 12,
       "policy": {
         "daily_fraction": 0.08,
         "run_cap": 12,
@@ -21,40 +21,40 @@
       }
     },
     "pbp_current": {
-      "calls": 231,
+      "calls": 411,
       "policy": {
         "daily_fraction": 0.42,
-        "run_cap": 90,
+        "run_cap": 180,
         "reserve_fraction": 0.2,
         "fallback": 12,
         "priority": "critical-current"
       }
     },
     "pbp_tracker": {
-      "calls": 50,
+      "calls": 55,
       "policy": {
         "daily_fraction": 0.07,
-        "run_cap": 18,
+        "run_cap": 36,
         "reserve_fraction": 0.15,
         "fallback": 2,
         "priority": "settlement"
       }
     },
     "history_settle": {
-      "calls": 52,
+      "calls": 86,
       "policy": {
         "daily_fraction": 0.18,
-        "run_cap": 24,
+        "run_cap": 48,
         "reserve_fraction": 0.12,
         "fallback": 2,
         "priority": "settlement"
       }
     },
     "history_backfill": {
-      "calls": 0,
+      "calls": 36,
       "policy": {
-        "daily_fraction": 0.08,
-        "run_cap": 18,
+        "daily_fraction": 0.12,
+        "run_cap": 120,
         "reserve_fraction": 0.45,
         "fallback": 0,
         "priority": "background"
@@ -62,16 +62,17 @@
     }
   },
   "last_allocation": {
-    "role": "history_settle",
-    "requested": 40,
-    "budget": 24,
+    "role": "history_backfill",
+    "requested": 36,
+    "budget": 36,
     "reason": "ok",
-    "remaining_before": 8931,
-    "role_spent_today": 31,
-    "daily_cap": 1800,
-    "reserve": 1200,
-    "priority": "settlement",
-    "at": "2026-09-08T09:25:12.780365+00:00"
+    "remaining_before": 7994,
+    "role_spent_today": 0,
+    "daily_cap": 1200,
+    "reserve": 4500,
+    "priority": "background",
+    "at": "2026-09-08T12:27:50.446727+00:00"
   },
+  "canonical_module": "backend/api_quota.py",
   "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
 }
