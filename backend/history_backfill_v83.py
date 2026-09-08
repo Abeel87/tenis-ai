@@ -27,7 +27,7 @@ BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v8.3B-HistoricalBackfill/1.0"
 
 DEFAULT_STOP_DATE = date(2023, 1, 1)
-DEFAULT_RUN_CAP = 36
+DEFAULT_RUN_CAP = 120
 DEFAULT_MIN_INTERVAL_HOURS = 3.0
 DEFAULT_MAX_CACHE_MB = 900.0
 LIST_LIMIT = 200
