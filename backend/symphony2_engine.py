@@ -16,11 +16,29 @@ from pathlib import Path
 
 try:
     from .symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
-    from .symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
+    from .symphony2_state import (
+        VERSION as STATE_VERSION,
+        build_outcomes,
+        build_player_dna_shared_outcomes,
+        joint_probability,
+        marginal_probability,
+        player_dna_joint_probability,
+        player_dna_marginal_probability,
+        phase9_shared_state_contract,
+    )
     from .superbet_playable import signal_signature
 except ImportError:
     from symphony2_learning import feature_row, train_operator_line_model, VERSION as LEARNING_VERSION, FULL_SUPPORT_ROWS
-    from symphony2_state import build_outcomes, marginal_probability, joint_probability, VERSION as STATE_VERSION
+    from symphony2_state import (
+        VERSION as STATE_VERSION,
+        build_outcomes,
+        build_player_dna_shared_outcomes,
+        joint_probability,
+        marginal_probability,
+        player_dna_joint_probability,
+        player_dna_marginal_probability,
+        phase9_shared_state_contract,
+    )
     from superbet_playable import signal_signature
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -291,13 +309,23 @@ def _cohere_ou_line_ladders(rows: list[dict]) -> list[dict]:
     return rows
 
 
-def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
+def _score_offer(
+    match: dict,
+    model,
+    outcomes: list[dict],
+    phase9_outcomes: list[dict] | None = None,
+) -> list[dict]:
     models = _model_index(match)
     rows = []
     for selection in _current_offer(match):
         sig = signal_signature(selection)
         merged = _merge_model_features(selection, models.get(sig))
         state_p = marginal_probability(match, selection, outcomes) if outcomes else None
+        phase9_p = (
+            player_dna_marginal_probability(match, selection, phase9_outcomes)
+            if phase9_outcomes
+            else None
+        )
         merged["state_probability"] = state_p * 100.0 if state_p is not None else -1.0
         features = feature_row(match, merged)
         diagnostics = model.predict_diagnostics(features) if model.ready else None
@@ -316,6 +344,10 @@ def _score_offer(match: dict, model, outcomes: list[dict]) -> list[dict]:
             "learning_reliability": round(diagnostics["reliability"], 4) if diagnostics else None,
             "market_calibrator_used": bool(diagnostics["market_calibrator"]) if diagnostics else False,
             "state_probability": round(state_p * 100.0, 2) if state_p is not None else None,
+            "player_dna_shared_state_probability_shadow": (
+                round(phase9_p * 100.0, 2) if phase9_p is not None else None
+            ),
+            "player_dna_shared_state_supported_shadow": phase9_p is not None,
             "existing_model_evidence": _existing_evidence(merged), "learning_support_rows": support,
             "state_supported": state_p is not None, "learning_model_ready": model.ready,
             "probability_kind": "SUPERVISED_OPERATOR_LINE_P_HIT",
@@ -580,6 +612,95 @@ def _composition_dependency_diagnostics(
     }
 
 
+
+def _phase9_shadow_shared_state_diagnostics(
+    match: dict,
+    scored: list[dict],
+    phase9_outcomes: list[dict],
+) -> dict:
+    contract = phase9_shared_state_contract()
+    supported_rows = [
+        row
+        for row in scored
+        if row.get("player_dna_shared_state_supported_shadow") is True
+    ]
+    pool = supported_rows[:TOP_POOL]
+    pairs = []
+    cross_family_exact = 0
+
+    def family(market: str) -> str:
+        market = _market(market)
+        if market.startswith("set1_"):
+            return "set1"
+        if market.startswith("set2_"):
+            return "set2"
+        return "match"
+
+    for left, right in combinations(pool, 2):
+        if not _compatible((left, right)):
+            continue
+        left_market = _market(left.get("market"))
+        right_market = _market(right.get("market"))
+        left_family = family(left_market)
+        right_family = family(right_market)
+        if left_family == right_family:
+            continue
+
+        joint, supported = player_dna_joint_probability(
+            match,
+            [left, right],
+            phase9_outcomes,
+        )
+        if joint is None or supported != 2:
+            continue
+        left_p = player_dna_marginal_probability(match, left, phase9_outcomes)
+        right_p = player_dna_marginal_probability(match, right, phase9_outcomes)
+        if left_p is None or right_p is None:
+            continue
+        independent = float(left_p) * float(right_p)
+        cross_family_exact += 1
+        pairs.append({
+            "left_selection_id": _selection_id(left),
+            "right_selection_id": _selection_id(right),
+            "left_market": left_market,
+            "right_market": right_market,
+            "left_family": left_family,
+            "right_family": right_family,
+            "left_marginal_probability": round(float(left_p) * 100.0, 3),
+            "right_marginal_probability": round(float(right_p) * 100.0, 3),
+            "exact_joint_probability": round(float(joint) * 100.0, 3),
+            "independence_product_probability": round(independent * 100.0, 3),
+            "joint_minus_independence_pp": round(
+                (float(joint) - independent) * 100.0,
+                3,
+            ),
+            "joint_source": "PLAYER_DNA_SINGLE_WHOLE_MATCH_SHARED_STATE",
+        })
+
+    return {
+        "mode": contract["mode"],
+        "status": (
+            "SHADOW_SHARED_STATE_AVAILABLE"
+            if phase9_outcomes
+            else "SHADOW_SHARED_STATE_UNAVAILABLE"
+        ),
+        "shared_state_outcomes": len(phase9_outcomes),
+        "shared_state_probability_mass": round(
+            sum(float(row.get("prob") or 0.0) for row in phase9_outcomes),
+            12,
+        ),
+        "supported_offer_selections": len(supported_rows),
+        "cross_family_exact_pairs": cross_family_exact,
+        "cross_family_pairs": pairs,
+        "contract": contract,
+        "ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "recommended_leg_count_influence": False,
+        "production_influence": False,
+        "playable_influence": False,
+    }
+
+
 def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) -> dict:
     pool = [x for x in scored if x.get("state_supported") is True and _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0][:TOP_POOL]
     out = {}
@@ -616,17 +737,24 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         if not isinstance(match, dict) or not _operator_context(match) or not _is_current_pre_match_fixture(match, generated_at_dt):
             continue
         outcomes = build_outcomes(match)
-        scored = _score_offer(match, model, outcomes)
+        phase9_outcomes = build_player_dna_shared_outcomes(match)
+        scored = _score_offer(match, model, outcomes, phase9_outcomes)
         all_scored.extend(scored)
         fixture_count += 1
         selection_count += len(scored)
         actionable_count += sum(1 for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0)
         state_supported_count += sum(1 for x in scored if x.get("state_supported") is True)
         comps = _best_compositions(match, scored, outcomes) if model.ready and outcomes else {}
+        phase9_shadow = _phase9_shadow_shared_state_diagnostics(
+            match,
+            scored,
+            phase9_outcomes,
+        )
         matches.append({"match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
             "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"), "p1": match.get("p1"), "p2": match.get("p2"),
             "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"), "surface": match.get("surface"), "best_of": match.get("best_of"),
             "offer_selections": len(scored), "shared_state_outcomes": len(outcomes), "scored_selections": scored, "compositions": comps,
+            "phase9_player_dna_shared_state_shadow": phase9_shadow,
             "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None})
     generated_at = generated_at_dt.isoformat()
     probability_diagnostics = _probability_diagnostics(all_scored)
@@ -641,6 +769,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
         "composition_dependency_diagnostics_policy": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY_NO_RANKING_INFLUENCE",
+        "phase9_player_dna_shared_state_policy": "SHADOW_ONLY; CROSS_FAMILY_EXACT_JOINT; NO_RANKING_OR_P_FINAL_INFLUENCE",
         "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats
