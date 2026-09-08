@@ -69,6 +69,27 @@ Dla rynków obsługiwanych przez tę samą dystrybucję liczymy:
 
 Iloczyn marginalnych prawdopodobieństw nie jest pokazywany jako joint. Jeżeli którejś nogi nie umiemy osadzić w tym samym state-space, nie dostaje ona fałszywego joint i nie wchodzi do kompozycji exact-state.
 
+### Phase 9 — Player DNA whole-match shared state (SHADOW)
+
+Player DNA udostępnia dodatkowy, kanoniczny whole-match sufficient state z
+`player_dna_tennis_simulator.py`. Ten state zachowuje wspólnie set 1, set 2,
+wynik meczu, liczbę setów, P1/P2 total games, total games i set-to-nil przy
+legalnym serve order.
+
+Na obecnym etapie jest to **SHADOW integration only**:
+
+- może liczyć exact joint między rodzinami set1 / set2 / match;
+- joint pochodzi z sumy jednej wspólnej dystrybucji Player DNA;
+- nie jest używany jako iloczyn marginalnych P;
+- nie zastępuje dotychczasowego runtime `joint_probability`;
+- nie zmienia supervised `P_final`;
+- nie zmienia rankingu kompozycji ani `recommended_leg_count`;
+- nie wpływa na PLAYABLE.
+
+Symfonia może publikować ten wynik jako diagnostykę i porównanie zależności,
+ale jego ewentualna promocja do rankingu podlega osobnej polityce
+OFFLINE -> SHADOW -> AUDYT -> CANARY -> PROD.
+
 ## Generator
 
 Generator dostaje **wyłącznie aktualne, dokładne selekcje Superbet z P_final**.
