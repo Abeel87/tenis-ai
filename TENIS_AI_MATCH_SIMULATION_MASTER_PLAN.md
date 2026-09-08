@@ -220,10 +220,14 @@ serve/return overall + same-surface oraz ich raw support. Nie składamy na sił�
 pełnego kompozytu z rodzin, które nie przeszły robust walk-forward. Nonlinear
 serve-return, opponent-strength, pressure, TB, recent form, comeback i BO5
 stamina pozostają nieaktywne. Small-sample shrinkage ma historyczny sygnał i pozostaje nieaktywny.
-Przed świeżym confirmation gate jest jawnie zablokowany jako oczekujący na
-potwierdzenie. Po pozytywnym fresh confirmation gate Faza 3 nie może cofać się
-do stanu niekompletnego: potwierdzenie spełnia gate dowodowy, ale shrinkage nadal
-pozostaje OFF i może zostać aktywowany wyłącznie osobnym, jawnym PR-em promocji.
+Historyczny holdout i walk-forward są zamrożone na danych o
+`scheduled_time <= FRESH_CONFIRMATION_CUTOFF`; dane po cutoff nie mogą ponownie
+stroić ani zmieniać statusu historycznego gate'u i służą wyłącznie do świeżego
+confirmation. Przed świeżym confirmation gate shrinkage jest jawnie zablokowany
+jako oczekujący na potwierdzenie. Po pozytywnym fresh confirmation gate Faza 3
+nie może cofać się do stanu niekompletnego: potwierdzenie spełnia gate dowodowy,
+ale shrinkage nadal pozostaje OFF i może zostać aktywowany wyłącznie osobnym,
+jawnym PR-em promocji.
 
 Domknięcie Fazy 3 nie oznacza promocji do PROD, Symfonii ani PLAYABLE. Oznacza,
 że Faza 4 może startować z jednym kanonicznym pre-match matchup contract i

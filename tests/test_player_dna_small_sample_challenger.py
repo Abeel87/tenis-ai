@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+import backend.player_dna_small_sample_challenger as challenger
 from backend.player_dna_small_sample_challenger import (
     FRESH_CONFIRMATION_CUTOFF,
     FRESH_MIN_MATCHES,
@@ -191,6 +192,49 @@ def test_fresh_confirmation_cutoff_is_strict_and_same_timestamp_stays_frozen_tra
     assert split["frozen_train_points"] == 2
     assert split["fresh_points"] == 1
     assert split["same_timestamp_crosses_cutoff"] is False
+
+
+def test_historical_gate_never_consumes_post_cutoff_labels(monkeypatch):
+    before = _row("before", "2026-09-07T01:34:59Z", won=1)
+    at_cutoff = _row("cutoff", "2026-09-07T01:35:00Z", won=0)
+    after_a = _row("after-a", "2026-09-07T01:35:01Z", won=1)
+    after_b = _row("after-b", "2026-09-07T02:00:00Z", won=0)
+    rows = [before, at_cutoff, after_a, after_b]
+
+    seen = {}
+
+    def fake_split(historical_rows):
+        seen["outer"] = [row["match_id"] for row in historical_rows]
+        return [], [], {"policy": "test"}
+
+    def fake_walk(historical_rows):
+        seen["walk"] = [row["match_id"] for row in historical_rows]
+        return {"robust_positive_all_three_folds": True}
+
+    def fake_fresh(all_rows):
+        seen["fresh"] = [row["match_id"] for row in all_rows]
+        return {"status": "FRESH_CONFIRMATION_POSITIVE_SHADOW"}
+
+    monkeypatch.setattr(challenger, "split_chronological_by_match", fake_split)
+    monkeypatch.setattr(
+        challenger,
+        "_evaluate_outer",
+        lambda *_args, **_kwargs: {"positive_all_proper_scores": True},
+    )
+    monkeypatch.setattr(challenger, "_walk_forward", fake_walk)
+    monkeypatch.setattr(challenger, "_fresh_confirmation", fake_fresh)
+
+    report = challenger.evaluate(rows)
+
+    assert seen["outer"] == ["before", "cutoff"]
+    assert seen["walk"] == ["before", "cutoff"]
+    assert seen["fresh"] == ["before", "cutoff", "after-a", "after-b"]
+    assert report["historical_evidence_split"]["frozen_train_points"] == 2
+    assert report["historical_evidence_split"]["fresh_points"] == 2
+    assert report["contract"]["historical_evidence_frozen_at_fresh_cutoff"] is True
+    assert report["leakage_contract"][
+        "post_cutoff_labels_not_used_for_historical_holdout_or_walk_forward"
+    ] is True
 
 
 def test_fresh_confirmation_waits_without_post_freeze_sample_and_never_retunes():

@@ -721,9 +721,10 @@ def _fresh_confirmation(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    train_rows, holdout_rows, split = split_chronological_by_match(rows)
+    historical_rows, _fresh_rows, historical_evidence_split = _fresh_confirmation_split(rows)
+    train_rows, holdout_rows, split = split_chronological_by_match(historical_rows)
     outer = _evaluate_outer(train_rows, holdout_rows)
-    walk_forward = _walk_forward(rows)
+    walk_forward = _walk_forward(historical_rows)
     fresh_confirmation = _fresh_confirmation(rows)
 
     holdout_positive = bool(outer.get("positive_all_proper_scores") is True)
@@ -735,6 +736,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "phase": "PHASE_1_SMALL_SAMPLE_UNCERTAINTY_GATE",
         "label": "server_won",
         "split": split,
+        "historical_evidence_split": historical_evidence_split,
         "all_enriched_points": len(rows),
         "prior_strength_grid": list(PRIOR_STRENGTH_GRID),
         "inner_train_fraction": INNER_TRAIN_FRACTION,
@@ -770,6 +772,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "fresh_confirmation_required_before_any_activation": True,
             "fresh_candidate_cutoff_is_frozen": True,
             "fresh_candidate_prior_strength_is_frozen": True,
+            "historical_evidence_frozen_at_fresh_cutoff": True,
             "post_cutoff_labels_cannot_retune_candidate": True,
         },
         "leakage_contract": {
@@ -779,6 +782,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "outer_test_labels_not_used_for_prior_mean": True,
             "outer_test_labels_not_used_for_prior_strength": True,
             "walk_forward_strength_reselected_inside_each_fold_train_only": True,
+            "post_cutoff_labels_not_used_for_historical_holdout_or_walk_forward": True,
             "fresh_confirmation_uses_only_strictly_post_cutoff_rows_for_scoring": True,
             "fresh_confirmation_trains_only_on_at_or_before_cutoff_rows": True,
         },
