@@ -294,10 +294,23 @@ def evaluate_phase3_reports(reports: dict[str, dict[str, Any]]) -> dict[str, Any
         else {}
     )
     shrinkage_fresh_status = shrinkage_fresh.get("status")
-    shrinkage_activation_blocked = bool(
+    shrinkage_historical_gate = bool(
         small_status
         == "SMALL_SAMPLE_SHRINKAGE_ROBUST_HISTORICAL_SIGNAL_REQUIRES_FRESH_CONFIRMATION"
-        and shrinkage_fresh_status != "FRESH_CONFIRMATION_POSITIVE_SHADOW"
+    )
+    shrinkage_fresh_confirmation_positive = bool(
+        shrinkage_fresh_status == "FRESH_CONFIRMATION_POSITIVE_SHADOW"
+    )
+    shrinkage_activation_blocked = bool(
+        shrinkage_historical_gate
+        and not shrinkage_fresh_confirmation_positive
+    )
+    shrinkage_safe_for_phase3 = bool(
+        shrinkage_historical_gate
+        and (
+            shrinkage_activation_blocked
+            or shrinkage_fresh_confirmation_positive
+        )
     )
 
     reports_present = {
@@ -313,7 +326,7 @@ def evaluate_phase3_reports(reports: dict[str, dict[str, Any]]) -> dict[str, Any
         all_required_reports_present
         and pre_match_base_signal
         and all(not row["active"] for row in excluded_candidates.values())
-        and shrinkage_activation_blocked
+        and shrinkage_safe_for_phase3
     )
 
     return {
@@ -340,6 +353,8 @@ def evaluate_phase3_reports(reports: dict[str, dict[str, Any]]) -> dict[str, Any
             "fresh_confirmation_status": shrinkage_fresh_status,
             "active": False,
             "blocked_pending_fresh_confirmation": shrinkage_activation_blocked,
+            "fresh_confirmation_satisfied": shrinkage_fresh_confirmation_positive,
+            "explicit_activation_required": shrinkage_fresh_confirmation_positive,
         },
         "production_influence": False,
         "runtime_prediction_change": False,
@@ -352,14 +367,17 @@ def evaluate_phase3_reports(reports: dict[str, dict[str, Any]]) -> dict[str, Any
             "failed_optional_interactions_are_not_composed_together": True,
             "no_post_hoc_interaction_screen": True,
             "historically_robust_shrinkage_still_requires_fresh_confirmation": True,
+            "positive_fresh_confirmation_never_auto_activates_shrinkage": True,
+            "positive_fresh_confirmation_does_not_reopen_phase3": True,
             "phase4_may_start_from_proven_main_effects_and_lean_score_state": True,
             "phase3_completion_does_not_promote_runtime_or_prod": True,
         },
         "note": (
             "Phase 3 closes by preserving the proven pre-match serve/return main "
             "effects and explicitly rejecting optional interaction families that "
-            "failed robust historical gates. It does not force a full composite "
-            "of individually non-robust features."
+            "failed robust historical gates. Positive fresh confirmation for "
+            "small-sample shrinkage satisfies its evidence gate but never activates "
+            "the feature automatically; activation still requires an explicit PR."
         ),
     }
 
