@@ -23,6 +23,7 @@ from backend.player_dna_tennis_simulator import (
     neutral_tiebreak_win_probability,
     score_distribution_after_games,
     set_outcomes,
+    shared_match_state_outcomes,
     set_shape_family,
     simulate_current_report,
     simulate_match,
@@ -838,3 +839,58 @@ def test_phase6_gate_closes_after_phase5_without_runtime_promotion():
     assert contract["same_phase5_legality_predicates"] is True
     assert contract["fixed_probability_dp_mc_agreement_required"] is True
     assert contract["phase6_completion_does_not_promote_runtime_or_prod"] is True
+
+
+@pytest.mark.parametrize("best_of", [3, 5])
+def test_phase9_shared_match_state_is_normalized_and_legal(best_of):
+    rows = shared_match_state_outcomes(0.63, 0.59, best_of=best_of)
+
+    assert rows
+    assert math.isclose(
+        sum(float(row["prob"]) for row in rows),
+        1.0,
+        abs_tol=1e-9,
+    )
+    needed = best_of // 2 + 1
+    for row in rows:
+        s1, s2 = row["sets"]
+        assert (s1 == needed) ^ (s2 == needed)
+        assert row["winner"] == (1 if s1 > s2 else 2)
+        assert row["set_count"] == s1 + s2
+        assert row["total_games"] == row["p1_games"] + row["p2_games"]
+        assert isinstance(row["set1"], tuple)
+        assert isinstance(row["set2"], tuple)
+        assert sum(row["set1"]) >= 6
+        assert sum(row["set2"]) >= 6
+
+
+def test_phase9_neutral_start_server_is_exact_half_mixture():
+    neutral = shared_match_state_outcomes(0.63, 0.59, best_of=3)
+    p1_first = shared_match_state_outcomes(
+        0.63, 0.59, best_of=3, start_server=1
+    )
+    p2_first = shared_match_state_outcomes(
+        0.63, 0.59, best_of=3, start_server=2
+    )
+
+    def aggregate(rows):
+        out = {}
+        for row in rows:
+            key = (
+                row["sets"],
+                row["set1"],
+                row["set2"],
+                row["p1_games"],
+                row["p2_games"],
+                row["any_set_to_nil"],
+            )
+            out[key] = out.get(key, 0.0) + float(row["prob"])
+        return out
+
+    n = aggregate(neutral)
+    a = aggregate(p1_first)
+    b = aggregate(p2_first)
+    assert set(n) == set(a) | set(b)
+    for key in n:
+        expected = 0.5 * a.get(key, 0.0) + 0.5 * b.get(key, 0.0)
+        assert math.isclose(n[key], expected, abs_tol=1e-12)

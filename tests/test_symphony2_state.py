@@ -1,4 +1,12 @@
-from backend.symphony2_state import build_outcomes, marginal_probability, joint_probability
+from backend.symphony2_state import (
+    build_outcomes,
+    build_player_dna_shared_outcomes,
+    evaluate_phase9_gate,
+    joint_probability,
+    marginal_probability,
+    player_dna_joint_probability,
+    player_dna_marginal_probability,
+)
 
 
 def _match():
@@ -236,3 +244,78 @@ def test_set2_and_match_family_supported_legs_remain_joint_unsupported():
 
     assert supported == 2
     assert joint is None
+
+
+def test_phase9_player_dna_shared_state_enables_exact_cross_family_joint():
+    match = _match()
+    states = build_player_dna_shared_outcomes(match)
+    legs = [
+        {"market": "set1_winner", "pick": "A"},
+        {"market": "set2_total", "pick": "over", "line": 8.5},
+        {"market": "match_winner", "pick": "A"},
+    ]
+
+    legacy_joint, legacy_supported = joint_probability(match, legs)
+    phase9_joint, phase9_supported = player_dna_joint_probability(
+        match, legs, states
+    )
+    marginals = [
+        player_dna_marginal_probability(match, leg, states)
+        for leg in legs
+    ]
+
+    assert legacy_supported == 3
+    assert legacy_joint is None
+    assert phase9_supported == 3
+    assert phase9_joint is not None
+    assert all(value is not None for value in marginals)
+    assert 0.0 <= phase9_joint <= min(marginals) + 1e-12
+    assert abs(
+        phase9_joint - marginals[0] * marginals[1] * marginals[2]
+    ) > 1e-6
+
+
+def test_phase9_joint_equals_direct_mass_from_one_shared_state_space():
+    match = _match()
+    states = build_player_dna_shared_outcomes(match)
+    legs = [
+        {"market": "set1_total", "pick": "over", "line": 8.5},
+        {"market": "set2_winner", "pick": "B"},
+        {"market": "match_total", "pick": "over", "line": 20.5},
+    ]
+
+    joint, supported = player_dna_joint_probability(match, legs, states)
+    predicates = [
+        __import__("backend.symphony2_state", fromlist=["predicate"]).predicate(
+            match, leg
+        )
+        for leg in legs
+    ]
+    direct = sum(
+        row["prob"]
+        for row in states
+        if all(pred(row) for pred in predicates)
+    )
+
+    assert supported == 3
+    assert joint is not None
+    assert abs(joint - direct) < 1e-12
+
+
+def test_phase9_gate_closes_without_promoting_shared_state_to_runtime():
+    gate = evaluate_phase9_gate({
+        "phase8_complete": True,
+        "phase9_ready": True,
+    })
+
+    assert gate["status"] == "PHASE9_SHARED_STATE_INTEGRATION_COMPLETE_NO_PROMOTION"
+    assert gate["phase9_complete"] is True
+    assert gate["phase10_ready"] is True
+    assert gate["evidence"]["joint_differs_from_independence"] is True
+    assert gate["evidence"]["legacy_path_still_fails_closed"] is True
+    assert gate["promotion_allowed_by_this_gate"] is False
+    assert gate["production_influence"] is False
+    assert gate["runtime_ranking_influence"] is False
+    assert gate["operator_model_probability_influence"] is False
+    assert gate["symphony2_current_ranking_replaced"] is False
+    assert gate["superbet_playable_influence"] is False
