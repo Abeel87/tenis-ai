@@ -234,7 +234,7 @@ def fetch_fixtures():
         calls+=1
         record_calls('fixtures',1)
         last_call_monotonic=time.monotonic()
-        if r.status_code==429 and calls<budget:
+        if getattr(r,'status_code',200)==429 and calls<budget:
             try:
                 retry=min(30,max(1,int(float(r.headers.get('Retry-After','2') or 2))))
             except (TypeError,ValueError):
