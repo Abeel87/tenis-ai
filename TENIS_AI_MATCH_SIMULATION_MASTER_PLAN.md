@@ -614,6 +614,46 @@ Dla kombinacji liczymy:
 
 Dodatkowy eksperyment SHADOW: jeśli mamy obserwacje zmiany kursu Bet Builder przy dokładaniu nóg, porównać reakcję operatora z naszą zależnością. Nie używać kursu operatora jako etykiety prawdy o wyniku.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 10 rozwija istniejący kanoniczny `backend/symphony2_engine.py`.
+Nie powstaje osobny generator Bet Builder ani nowa Symfonia.
+
+Diagnostyka zależności używa wyłącznie Phase-9 Player DNA whole-match shared
+state. Dla dowolnej wspieranej kombinacji 2+ nóg raportuje:
+
+- exact joint P z jednej wspólnej dystrybucji;
+- `P(leg | wszystkie pozostałe nogi)` jako conditional contribution;
+- continuous redundancy score = exact pair joint / mniejszy marginal;
+- continuous conflict score = 1 - redundancy score;
+- weakest-state-leg oraz jego wpływ na usuwaną joint mass;
+- marginal information gain `-log(P(leg | pozostałe nogi))`;
+- exact containment i exact conflict jako własności matematyczne, bez ręcznych progów.
+
+Żaden z tych score'ów nie zmienia obecnego `_best_compositions()`, utility,
+`P_final`, rankingu ani `recommended_leg_count`. Phase-10 output pozostaje
+SHADOW i jest publikowany jako diagnostyka bieżącej dokładnej oferty Superbet.
+
+Nie znaleziono wiarygodnego historycznego zbioru obserwacji zmian kursu Bet
+Builder przy dokładaniu nóg. Eksperyment operator-price ma więc jawny status
+`NOT_AVAILABLE_NO_OBSERVED_BUILDER_PRICE_DELTAS`. Nie tworzymy syntetycznych
+kursów ani nie używamy kursu operatora jako targetu, etykiety prawdy lub sygnału
+rankingowego.
+
+Raport CI:
+`frontend/data/symphony2_phase10_bet_builder_dependency.json`.
+
+Faza 10 zamyka się dopiero, gdy CI potwierdzi:
+
+- Phase 9 jako prerequisite;
+- kompletną diagnostykę exact joint/conditional/redundancy/conflict/weakest-leg/information gain;
+- przypadek matematycznej redundancji o score 1;
+- przypadek matematycznego konfliktu o conflict score 1;
+- różnicę exact joint od independence product;
+- brak arbitralnych progów klasyfikacyjnych;
+- brak wpływu na `P_final`, ranking, `recommended_leg_count`, PROD i PLAYABLE;
+- `phase10_complete=true / phase11_ready=true`.
+
 ---
 
 # Faza 11 — UI diagnostyczne

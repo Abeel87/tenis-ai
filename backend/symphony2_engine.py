@@ -47,7 +47,12 @@ RESULTS = DATA / "results.json"
 HISTORY = DATA / "history.json"
 CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
+PHASE9_REPORT = DATA / "symphony2_phase9_player_dna_shared_state.json"
+PHASE10_OUT = DATA / "symphony2_phase10_bet_builder_dependency.json"
 VERSION = "symphony2-runtime-6"
+PHASE10_VERSION = "symphony2-phase10-bet-builder-dependency-v1"
+PHASE10_MODE = "SHADOW_BET_BUILDER_DEPENDENCY_DIAGNOSTIC_ONLY"
+PHASE10_EXACT_EPS = 1e-12
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
@@ -613,6 +618,501 @@ def _composition_dependency_diagnostics(
 
 
 
+
+def _phase10_dependency_diagnostics(
+    match: dict,
+    selections: list[dict] | tuple[dict, ...],
+    phase9_outcomes: list[dict],
+) -> dict:
+    """Exact dependency diagnostics from one Player DNA shared state-space.
+
+    This is deliberately diagnostic-only. Scores are continuous and no
+    arbitrary threshold turns them into runtime reject/accept decisions.
+    """
+    legs = list(selections)
+    if len(legs) < 2 or not phase9_outcomes:
+        return {
+            "status": "UNSUPPORTED_OR_EMPTY",
+            "legs": len(legs),
+            "ranking_influence": False,
+            "threshold_classification_enabled": False,
+        }
+
+    marginals = [
+        player_dna_marginal_probability(match, leg, phase9_outcomes)
+        for leg in legs
+    ]
+    joint, supported = player_dna_joint_probability(
+        match,
+        legs,
+        phase9_outcomes,
+    )
+    if (
+        joint is None
+        or supported != len(legs)
+        or any(value is None for value in marginals)
+    ):
+        return {
+            "status": "UNSUPPORTED_OR_EMPTY",
+            "legs": len(legs),
+            "supported_legs": supported,
+            "ranking_influence": False,
+            "threshold_classification_enabled": False,
+        }
+
+    exact_joint = float(joint)
+    per_leg = []
+    for index, leg in enumerate(legs):
+        others = legs[:index] + legs[index + 1:]
+        if len(others) == 1:
+            others_joint = player_dna_marginal_probability(
+                match,
+                others[0],
+                phase9_outcomes,
+            )
+        else:
+            others_joint, others_supported = player_dna_joint_probability(
+                match,
+                others,
+                phase9_outcomes,
+            )
+            if others_supported != len(others):
+                others_joint = None
+
+        conditional = (
+            exact_joint / float(others_joint)
+            if others_joint is not None and float(others_joint) > PHASE10_EXACT_EPS
+            else None
+        )
+        if conditional is not None:
+            conditional = max(0.0, min(1.0, conditional))
+        marginal = float(marginals[index])
+        lift = (
+            conditional / marginal
+            if conditional is not None and marginal > PHASE10_EXACT_EPS
+            else None
+        )
+        information = (
+            -math.log(conditional)
+            if conditional is not None and conditional > PHASE10_EXACT_EPS
+            else None
+        )
+        removed = (
+            float(others_joint) - exact_joint
+            if others_joint is not None
+            else None
+        )
+        per_leg.append({
+            "selection_id": _selection_id(leg),
+            "label": leg.get("label") or _label(leg),
+            "market": _market(leg.get("market")),
+            "state_marginal_probability": round(marginal * 100.0, 6),
+            "joint_without_leg_probability": (
+                round(float(others_joint) * 100.0, 6)
+                if others_joint is not None
+                else None
+            ),
+            "conditional_probability_given_other_legs": (
+                round(conditional * 100.0, 6)
+                if conditional is not None
+                else None
+            ),
+            "conditional_zero": bool(
+                conditional is not None
+                and conditional <= PHASE10_EXACT_EPS
+            ),
+            "conditional_lift_vs_marginal": (
+                round(lift, 9) if lift is not None else None
+            ),
+            "marginal_information_gain_nats": (
+                round(information, 9) if information is not None else None
+            ),
+            "joint_mass_removed_by_leg_pp": (
+                round(max(0.0, removed) * 100.0, 6)
+                if removed is not None
+                else None
+            ),
+        })
+
+    pairs = []
+    for left_index, right_index in combinations(range(len(legs)), 2):
+        left = legs[left_index]
+        right = legs[right_index]
+        pair_joint, pair_supported = player_dna_joint_probability(
+            match,
+            [left, right],
+            phase9_outcomes,
+        )
+        left_p = float(marginals[left_index])
+        right_p = float(marginals[right_index])
+        pair_exact = pair_joint is not None and pair_supported == 2
+        smaller = min(left_p, right_p)
+        overlap = (
+            float(pair_joint) / smaller
+            if pair_exact and smaller > PHASE10_EXACT_EPS
+            else None
+        )
+        if overlap is not None:
+            overlap = max(0.0, min(1.0, overlap))
+        independence = left_p * right_p
+        lift = (
+            float(pair_joint) / independence
+            if pair_exact and independence > PHASE10_EXACT_EPS
+            else None
+        )
+        exact_containment = bool(
+            pair_exact
+            and abs(float(pair_joint) - smaller) <= PHASE10_EXACT_EPS
+        )
+        exact_conflict = bool(
+            pair_exact and float(pair_joint) <= PHASE10_EXACT_EPS
+        )
+        pairs.append({
+            "left_selection_id": _selection_id(left),
+            "right_selection_id": _selection_id(right),
+            "left_market": _market(left.get("market")),
+            "right_market": _market(right.get("market")),
+            "exact_pair_joint_probability": (
+                round(float(pair_joint) * 100.0, 6)
+                if pair_exact
+                else None
+            ),
+            "independence_product_probability": round(
+                independence * 100.0,
+                6,
+            ),
+            "joint_minus_independence_pp": (
+                round((float(pair_joint) - independence) * 100.0, 6)
+                if pair_exact
+                else None
+            ),
+            "redundancy_score": (
+                round(overlap, 9) if overlap is not None else None
+            ),
+            "conflict_score": (
+                round(1.0 - overlap, 9) if overlap is not None else None
+            ),
+            "lift_vs_independence": (
+                round(lift, 9) if lift is not None else None
+            ),
+            "exact_containment": exact_containment,
+            "exact_conflict": exact_conflict,
+            "runtime_semantic_redundancy": _semantic_redundancy(left, right),
+        })
+
+    state_candidates = [
+        (leg, float(marginal))
+        for leg, marginal in zip(legs, marginals)
+    ]
+    weakest_leg, weakest_marginal = min(
+        state_candidates,
+        key=lambda item: item[1],
+    )
+    weakest_id = _selection_id(weakest_leg)
+    per_leg_by_id = {row["selection_id"]: row for row in per_leg}
+    weakest_impact = (
+        per_leg_by_id.get(weakest_id, {}).get(
+            "joint_mass_removed_by_leg_pp"
+        )
+    )
+
+    redundancy_rows = [
+        row for row in pairs if row.get("redundancy_score") is not None
+    ]
+    conflict_rows = [
+        row for row in pairs if row.get("conflict_score") is not None
+    ]
+    strongest_redundancy = (
+        max(redundancy_rows, key=lambda row: row["redundancy_score"])
+        if redundancy_rows else None
+    )
+    strongest_conflict = (
+        max(conflict_rows, key=lambda row: row["conflict_score"])
+        if conflict_rows else None
+    )
+
+    return {
+        "status": "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC",
+        "mode": PHASE10_MODE,
+        "legs": len(legs),
+        "joint_probability": round(exact_joint * 100.0, 6),
+        "joint_source": "PLAYER_DNA_SINGLE_WHOLE_MATCH_SHARED_STATE",
+        "independence_product_forbidden_as_joint": True,
+        "weakest_state_leg_selection_id": weakest_id,
+        "weakest_state_leg_marginal_probability": round(
+            weakest_marginal * 100.0,
+            6,
+        ),
+        "weakest_state_leg_joint_mass_removed_pp": weakest_impact,
+        "strongest_redundancy_pair": strongest_redundancy,
+        "strongest_conflict_pair": strongest_conflict,
+        "per_leg": per_leg,
+        "pairs": pairs,
+        "dependency_score_semantics": {
+            "redundancy_score": (
+                "exact_pair_joint / min(pair_marginals); "
+                "1 means mathematical containment"
+            ),
+            "conflict_score": (
+                "1 - redundancy_score; 1 means zero shared exact state mass"
+            ),
+            "marginal_information_gain_nats": (
+                "-log(P(leg | all other legs)); null only for zero/undefined "
+                "conditional probability"
+            ),
+            "weakest_leg_impact": (
+                "joint probability mass removed by the lowest-marginal leg"
+            ),
+            "thresholds_enabled": False,
+        },
+        "ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "recommended_leg_count_influence": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "auto_promote": False,
+        "threshold_classification_enabled": False,
+    }
+
+
+def _phase10_operator_price_reaction_experiment() -> dict:
+    return {
+        "status": "NOT_AVAILABLE_NO_OBSERVED_BUILDER_PRICE_DELTAS",
+        "observed_builder_price_delta_rows": 0,
+        "used_as_truth_label": False,
+        "used_for_model_training": False,
+        "used_for_ranking": False,
+        "gate_required": False,
+        "policy": (
+            "If exact Bet Builder price-change observations are collected later, "
+            "compare them descriptively with shared-state dependence only; "
+            "operator price is never a ground-truth outcome label."
+        ),
+    }
+
+
+def _phase10_shadow_dependency_summary(
+    match: dict,
+    scored: list[dict],
+    phase9_outcomes: list[dict],
+) -> dict:
+    supported = [
+        row
+        for row in scored
+        if row.get("player_dna_shared_state_supported_shadow") is True
+    ]
+    # Keep runtime cost bounded: one representative pair and one triple from
+    # the already probability-sorted exact Superbet offer.
+    pair_report = None
+    triple_report = None
+    for combo in combinations(supported[:6], 2):
+        candidate = _phase10_dependency_diagnostics(
+            match,
+            combo,
+            phase9_outcomes,
+        )
+        if candidate.get("status") == "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC":
+            pair_report = candidate
+            break
+    for combo in combinations(supported[:6], 3):
+        candidate = _phase10_dependency_diagnostics(
+            match,
+            combo,
+            phase9_outcomes,
+        )
+        if candidate.get("status") == "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC":
+            triple_report = candidate
+            break
+
+    return {
+        "mode": PHASE10_MODE,
+        "status": (
+            "SHADOW_DEPENDENCY_DIAGNOSTICS_AVAILABLE"
+            if pair_report is not None
+            else "SHADOW_DEPENDENCY_DIAGNOSTICS_UNAVAILABLE"
+        ),
+        "supported_offer_selections": len(supported),
+        "representative_pair": pair_report,
+        "representative_triple": triple_report,
+        "operator_price_reaction_experiment": (
+            _phase10_operator_price_reaction_experiment()
+        ),
+        "ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "recommended_leg_count_influence": False,
+        "production_influence": False,
+        "playable_influence": False,
+        "auto_promote": False,
+    }
+
+
+def evaluate_phase10_gate(phase9_report: dict) -> dict:
+    match = {
+        "p1": "Phase10 A",
+        "p2": "Phase10 B",
+        "best_of": 3,
+        "service_model": {"p1_hold": 0.78, "p2_hold": 0.74},
+        "first_set_win": {"Phase10 A": 0.56, "Phase10 B": 0.44},
+        "second_set_win": {"Phase10 A": 0.55, "Phase10 B": 0.45},
+        "third_set_win": {"Phase10 A": 0.54, "Phase10 B": 0.46},
+    }
+    states = build_player_dna_shared_outcomes(match)
+    phase9_ready = bool(
+        phase9_report.get("phase9_complete") is True
+        and phase9_report.get("phase10_ready") is True
+    )
+
+    correlated_legs = [
+        {"market": "set1_winner", "pick": "Phase10 A"},
+        {"market": "set2_total", "pick": "over", "line": 8.5},
+        {"market": "match_winner", "pick": "Phase10 A"},
+    ]
+    redundant_legs = [
+        {"market": "exact_match_score", "pick": "2:0"},
+        {"market": "total_sets", "pick": "under", "line": 2.5},
+    ]
+    conflict_legs = [
+        {"market": "exact_match_score", "pick": "2:0"},
+        {"market": "total_sets", "pick": "over", "line": 2.5},
+    ]
+
+    correlated = _phase10_dependency_diagnostics(
+        match,
+        correlated_legs,
+        states,
+    )
+    redundant = _phase10_dependency_diagnostics(
+        match,
+        redundant_legs,
+        states,
+    )
+    conflict = _phase10_dependency_diagnostics(
+        match,
+        conflict_legs,
+        states,
+    )
+
+    correlated_pairs = correlated.get("pairs") or []
+    redundancy_pair = (redundant.get("pairs") or [{}])[0]
+    conflict_pair = (conflict.get("pairs") or [{}])[0]
+    exact_metrics_complete = bool(
+        correlated.get("status")
+        == "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC"
+        and len(correlated.get("per_leg") or []) == 3
+        and correlated_pairs
+        and correlated.get("joint_probability") is not None
+        and correlated.get("weakest_state_leg_selection_id")
+        and all(
+            row.get("conditional_probability_given_other_legs") is not None
+            and row.get("joint_mass_removed_by_leg_pp") is not None
+            for row in correlated.get("per_leg") or []
+        )
+        and any(
+            row.get("marginal_information_gain_nats") is not None
+            for row in correlated.get("per_leg") or []
+        )
+    )
+    redundancy_identified = bool(
+        redundant.get("status")
+        == "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC"
+        and redundancy_pair.get("exact_containment") is True
+        and abs(float(redundancy_pair.get("redundancy_score") or 0.0) - 1.0)
+        <= 1e-9
+    )
+    conflict_identified = bool(
+        conflict.get("status")
+        == "EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC"
+        and conflict_pair.get("exact_conflict") is True
+        and abs(float(conflict_pair.get("conflict_score") or 0.0) - 1.0)
+        <= 1e-9
+    )
+    independence_not_used = bool(
+        correlated.get("independence_product_forbidden_as_joint") is True
+        and any(
+            abs(float(row.get("joint_minus_independence_pp") or 0.0)) > 1e-6
+            for row in correlated_pairs
+        )
+    )
+    isolation = all(
+        correlated.get(key) is False
+        for key in (
+            "ranking_influence",
+            "operator_model_probability_influence",
+            "recommended_leg_count_influence",
+            "production_influence",
+            "playable_influence",
+            "auto_promote",
+            "threshold_classification_enabled",
+        )
+    )
+    price_experiment = _phase10_operator_price_reaction_experiment()
+    price_policy_safe = bool(
+        price_experiment.get("used_as_truth_label") is False
+        and price_experiment.get("used_for_model_training") is False
+        and price_experiment.get("used_for_ranking") is False
+    )
+    complete = bool(
+        phase9_ready
+        and states
+        and exact_metrics_complete
+        and redundancy_identified
+        and conflict_identified
+        and independence_not_used
+        and isolation
+        and price_policy_safe
+    )
+
+    return {
+        "version": PHASE10_VERSION,
+        "mode": PHASE10_MODE,
+        "status": (
+            "PHASE10_DEPENDENCY_DIAGNOSTICS_COMPLETE_NO_PROMOTION"
+            if complete
+            else "PHASE10_DEPENDENCY_DIAGNOSTICS_INCOMPLETE_NO_PROMOTION"
+        ),
+        "phase": 10,
+        "phase9_prerequisite_satisfied": phase9_ready,
+        "phase10_complete": complete,
+        "phase11_ready": complete,
+        "evidence": {
+            "shared_state_outcomes": len(states),
+            "correlated_three_leg": correlated,
+            "exact_redundancy_case": redundant,
+            "exact_conflict_case": conflict,
+            "exact_metrics_complete": exact_metrics_complete,
+            "redundancy_identified": redundancy_identified,
+            "conflict_identified": conflict_identified,
+            "independence_product_not_used_as_joint": independence_not_used,
+        },
+        "operator_price_reaction_experiment": price_experiment,
+        "promotion_allowed_by_this_gate": False,
+        "production_influence": False,
+        "runtime_ranking_influence": False,
+        "operator_model_probability_influence": False,
+        "recommended_leg_count_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
+    }
+
+
+def build_phase10_gate() -> dict:
+    phase9 = _read(PHASE9_REPORT, {})
+    report = evaluate_phase10_gate(
+        phase9 if isinstance(phase9, dict) else {}
+    )
+    _write(PHASE10_OUT, report)
+    print(json.dumps({
+        "version": report.get("version"),
+        "status": report.get("status"),
+        "phase10_complete": report.get("phase10_complete"),
+        "phase11_ready": report.get("phase11_ready"),
+        "price_experiment": report.get(
+            "operator_price_reaction_experiment"
+        ),
+    }, ensure_ascii=False))
+    return report
+
+
 def _phase9_shadow_shared_state_diagnostics(
     match: dict,
     scored: list[dict],
@@ -750,11 +1250,17 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             scored,
             phase9_outcomes,
         )
+        phase10_shadow = _phase10_shadow_dependency_summary(
+            match,
+            scored,
+            phase9_outcomes,
+        )
         matches.append({"match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
             "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"), "p1": match.get("p1"), "p2": match.get("p2"),
             "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"), "surface": match.get("surface"), "best_of": match.get("best_of"),
             "offer_selections": len(scored), "shared_state_outcomes": len(outcomes), "scored_selections": scored, "compositions": comps,
             "phase9_player_dna_shared_state_shadow": phase9_shadow,
+            "phase10_bet_builder_dependency_shadow": phase10_shadow,
             "recommended_leg_count": int(max(comps.items(), key=lambda x: x[1]["score"])[0]) if comps else None})
     generated_at = generated_at_dt.isoformat()
     probability_diagnostics = _probability_diagnostics(all_scored)
@@ -770,6 +1276,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
         "composition_dependency_diagnostics_policy": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY_NO_RANKING_INFLUENCE",
         "phase9_player_dna_shared_state_policy": "SHADOW_ONLY; CROSS_FAMILY_EXACT_JOINT; NO_RANKING_OR_P_FINAL_INFLUENCE",
+        "phase10_dependency_policy": "SHADOW_ONLY; EXACT_JOINT_CONDITIONAL_REDUNDANCY_CONFLICT_INFORMATION; NO_RANKING_OR_P_FINAL_INFLUENCE",
         "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats

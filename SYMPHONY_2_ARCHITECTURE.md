@@ -90,6 +90,38 @@ Symfonia może publikować ten wynik jako diagnostykę i porównanie zależnośc
 ale jego ewentualna promocja do rankingu podlega osobnej polityce
 OFFLINE -> SHADOW -> AUDYT -> CANARY -> PROD.
 
+### Phase 10 — Bet Builder dependency diagnostics (SHADOW)
+
+Na Phase-9 Player DNA whole-match shared state działa dodatkowa warstwa
+diagnostyczna zależności Bet Builder. Nie jest to nowy generator i nie zmienia
+obecnego rankingu.
+
+Dla wspieranej kombinacji liczymy z tej samej exact state distribution:
+
+- exact joint probability;
+- conditional contribution każdej nogi;
+- continuous redundancy score;
+- continuous conflict score;
+- weakest-leg impact na joint mass;
+- marginal information gain;
+- exact containment / exact conflict bez arbitralnego thresholdingu.
+
+`redundancy_score = exact_pair_joint / min(pair_marginals)`.
+Wartość 1 oznacza matematyczne zawieranie się jednego zdarzenia w drugim.
+`conflict_score = 1 - redundancy_score`; wartość 1 oznacza zero wspólnej
+masy stanów.
+
+Te diagnostyki mają:
+`ranking_influence=false`,
+`operator_model_probability_influence=false`,
+`recommended_leg_count_influence=false`,
+`playable_influence=false`.
+
+Nie mamy obecnie wiarygodnego historycznego zbioru exact Bet Builder
+price-delta observations. Operator-price experiment jest więc jawnie
+`NOT_AVAILABLE` i nie używa kursu bukmachera jako etykiety prawdy, targetu
+treningowego ani sygnału rankingowego.
+
 ## Generator
 
 Generator dostaje **wyłącznie aktualne, dokładne selekcje Superbet z P_final**.
