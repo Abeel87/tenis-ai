@@ -6,27 +6,100 @@
   'use strict';
   const VERSION = 'v8.5.3';
   const RUNTIME_FIX = 'v8.8.19';
-  const KEY = 'tenis-ai-v853-stats-mode';
+  const KEY = 'tenis-ai-ui-detail-mode';
+  const LEGACY_KEY = 'tenis-ai-v853-stats-mode';
   let timer = null;
+
+  function accountRole() {
+    const direct = window.tenisAIAccount?.profile?.role;
+    const community = window.tenisAICommunityHub?.profile?.role;
+    return String(direct || community || 'user').toLowerCase();
+  }
+
+  function isAdmin() {
+    return accountRole() === 'admin';
+  }
 
   function savedMode() {
     try {
-      const value = localStorage.getItem(KEY);
-      return value === 'pro' ? 'pro' : 'simple';
+      const current = localStorage.getItem(KEY);
+      if (current === 'technical' || current === 'simple') return current;
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      return legacy === 'pro' ? 'technical' : 'simple';
     } catch {
       return 'simple';
     }
   }
 
-  function setMode(mode) {
-    const next = mode === 'pro' ? 'pro' : 'simple';
-    document.documentElement.dataset.tenisStatsMode = next;
-    try { localStorage.setItem(KEY, next); } catch {}
+  function ensureAdminModeToggle() {
+    const host = document.querySelector('.header-actions');
+    if (!host) return null;
+    let button = document.querySelector('#tenis-ui-mode-toggle');
+    if (!isAdmin()) {
+      button?.remove();
+      return null;
+    }
+    if (!button) {
+      button = document.createElement('button');
+      button.id = 'tenis-ui-mode-toggle';
+      button.type = 'button';
+      button.className = 'tenis-ui-mode-toggle';
+      button.setAttribute('aria-label', 'Przełącz poziom szczegółowości aplikacji');
+      const refresh = host.querySelector('#refresh');
+      if (refresh) host.insertBefore(button, refresh);
+      else host.append(button);
+      button.addEventListener('click', () => {
+        const current = document.documentElement.dataset.tenisUiMode || 'simple';
+        setMode(current === 'technical' ? 'simple' : 'technical');
+      });
+    }
+    const technical = document.documentElement.dataset.tenisUiMode === 'technical';
+    button.innerHTML = technical
+      ? '<span>🛠️</span><span><b>Widok</b><small>Techniczny</small></span>'
+      : '<span>👁️</span><span><b>Widok</b><small>Prosty</small></span>';
+    button.setAttribute('aria-pressed', technical ? 'true' : 'false');
+    return button;
+  }
+
+  function setMode(mode, options = {}) {
+    const requested = mode === 'pro' || mode === 'technical' ? 'technical' : 'simple';
+    const next = isAdmin() && requested === 'technical' ? 'technical' : 'simple';
+    const statsMode = next === 'technical' ? 'pro' : 'simple';
+    document.documentElement.dataset.tenisUiMode = next;
+    document.documentElement.dataset.tenisStatsMode = statsMode;
+
+    if (options.persist !== false && isAdmin()) {
+      try {
+        localStorage.setItem(KEY, next);
+        localStorage.setItem(LEGACY_KEY, statsMode);
+      } catch {}
+    }
+
     document.querySelectorAll('[data-v853-mode]').forEach(button => {
-      const active = button.dataset.v853Mode === next;
+      const buttonMode = button.dataset.v853Mode === 'pro' ? 'technical' : 'simple';
+      const active = buttonMode === next;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      if (buttonMode === 'technical') button.hidden = !isAdmin();
     });
+
+    ensureAdminModeToggle();
+    window.dispatchEvent(new CustomEvent('tenis-ai-ui-mode-change', {
+      detail: {mode: next, role: accountRole(), admin: isAdmin()}
+    }));
+    return next;
+  }
+
+  function syncRoleAndMode() {
+    const requested = isAdmin() ? savedMode() : 'simple';
+    setMode(requested, {persist: false});
+    const bar = document.querySelector('#v853-stats-toolbar');
+    if (bar) {
+      const copy = bar.querySelector('.v853-toolbar-copy small');
+      if (copy) copy.textContent = isAdmin()
+        ? 'Tryb prosty do normalnego używania; techniczny pokazuje pełną diagnostykę.'
+        : 'Najważniejsze informacje bez technicznego szumu.';
+    }
   }
 
   function proxyLabels(root = document) {
@@ -63,12 +136,12 @@
       bar.className = 'v853-stats-toolbar';
       bar.innerHTML = `
         <div class="v853-toolbar-copy">
-          <b>🧭 Widok statystyk</b>
-          <small>Najważniejsze na wierzchu, diagnostyka dopiero w PRO.</small>
+          <b>🧭 Poziom szczegółowości</b>
+          <small>Najważniejsze informacje bez technicznego szumu.</small>
         </div>
         <div class="v853-mode-switch" role="group" aria-label="Poziom szczegółowości">
-          <button type="button" data-v853-mode="simple">Przejrzysty</button>
-          <button type="button" data-v853-mode="pro">PRO</button>
+          <button type="button" data-v853-mode="simple">Prosty</button>
+          <button type="button" data-v853-mode="pro">Techniczny</button>
         </div>
         <div id="v853-trend-summary" class="v853-trend-summary"></div>`;
       bar.querySelectorAll('[data-v853-mode]').forEach(button => {
@@ -169,7 +242,7 @@
     if (!app || !pc) return;
 
     const bar = ensureToolbar(app);
-    setMode(document.documentElement.dataset.tenisStatsMode || savedMode());
+    syncRoleAndMode();
     proxyLabels(app);
 
     document.querySelector('#pi85-stats')?.classList.add('v853-primary-block');
@@ -190,7 +263,9 @@
     timer = setTimeout(organize, delay);
   }
 
-  document.documentElement.dataset.tenisStatsMode = savedMode();
+  document.documentElement.dataset.tenisUiMode = 'simple';
+  document.documentElement.dataset.tenisStatsMode = 'simple';
+  ensureAdminModeToggle();
 
   try {
     if (typeof renderStats === 'function' && !renderStats.__v853Organized) {
@@ -204,6 +279,12 @@
       renderStats = wrapped;
     }
   } catch {}
+
+  window.addEventListener('tenis-ai-auth-change', () => {
+    setTimeout(syncRoleAndMode, 0);
+    setTimeout(syncRoleAndMode, 120);
+  });
+  window.addEventListener('pageshow', () => setTimeout(syncRoleAndMode, 0));
 
   document.addEventListener('tenis-ai:stats-ready', () => schedule(0));
   document.addEventListener('tenis-ai:stats-dashboard-ready', () => schedule(0));
@@ -222,6 +303,9 @@
     runtimeFix: RUNTIME_FIX,
     organize,
     setMode,
-    schedule
+    schedule,
+    syncRoleAndMode,
+    isAdmin,
+    accountRole
   });
 })();
