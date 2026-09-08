@@ -625,6 +625,7 @@ def refresh_availability(results: list[dict], now=None):
             quota,
             sportId=SPORT_ID_TENNIS,
             **{"from": date_from, "to": date_to},
+            statusId=0,
             language="en",
         )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
