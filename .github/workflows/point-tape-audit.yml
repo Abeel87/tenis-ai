@@ -40,6 +40,8 @@ on:
       - 'backend/player_dna_hold_calibration.py'
       - 'backend/player_dna_hold_walk_forward.py'
       - 'backend/player_dna_prospective_validation.py'
+      - 'backend/symphony2_state.py'
+      - 'backend/symphony2_engine.py'
       - 'backend/player_identity_audit.py'
       - 'backend/player_identity.py'
       - 'tests/test_point_tape_schema.py'
@@ -77,6 +79,8 @@ on:
       - 'tests/test_player_dna_hold_calibration.py'
       - 'tests/test_player_dna_hold_walk_forward.py'
       - 'tests/test_player_dna_prospective_validation.py'
+      - 'tests/test_symphony2_phase9_shared_state.py'
+      - 'tests/test_symphony2_phase10_dependency.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/point-tape-audit.yml'
 
@@ -2249,6 +2253,149 @@ jobs:
           )
           PY
 
+      - name: Close Phase-10 Bet Builder dependency gate (SHADOW, zero network)
+        run: python -c "from backend.symphony2_engine import build_phase10_gate; build_phase10_gate()"
+
+      - name: Guard Phase-10 Bet Builder dependency closure
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          from pathlib import Path
+
+          p = Path('frontend/data/symphony2_phase10_bet_builder_dependency.json')
+          if not p.exists():
+              raise SystemExit('symphony2_phase10_bet_builder_dependency.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_BET_BUILDER_DEPENDENCY_DIAGNOSTIC_ONLY':
+              raise SystemExit('Phase-10 mode invalid')
+          if int(report.get('phase') or 0) != 10:
+              raise SystemExit('Phase-10 phase drifted')
+          if report.get('status') != 'PHASE10_DEPENDENCY_DIAGNOSTICS_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Phase-10 incomplete: {report.get('status')}")
+          if report.get('phase9_prerequisite_satisfied') is not True:
+              raise SystemExit('Phase-10 lost Phase-9 prerequisite')
+          if report.get('phase10_complete') is not True:
+              raise SystemExit('Phase-10 did not close')
+          if report.get('phase11_ready') is not True:
+              raise SystemExit('Phase-10 did not authorize Phase 11')
+
+          for key in (
+              'promotion_allowed_by_this_gate',
+              'production_influence',
+              'runtime_ranking_influence',
+              'operator_model_probability_influence',
+              'recommended_leg_count_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-10 isolation violation: {key}')
+
+          evidence = report.get('evidence') or {}
+          if int(evidence.get('shared_state_outcomes') or 0) <= 0:
+              raise SystemExit('Phase-10 shared state missing')
+          for key in (
+              'exact_metrics_complete',
+              'redundancy_identified',
+              'conflict_identified',
+              'independence_product_not_used_as_joint',
+          ):
+              if evidence.get(key) is not True:
+                  raise SystemExit(f'Phase-10 evidence failed: {key}')
+
+          correlated = evidence.get('correlated_three_leg') or {}
+          if correlated.get('status') != 'EXACT_PLAYER_DNA_DEPENDENCY_DIAGNOSTIC':
+              raise SystemExit('Phase-10 correlated three-leg diagnostic missing')
+          if int(correlated.get('legs') or 0) != 3:
+              raise SystemExit('Phase-10 three-leg diagnostic size drifted')
+          if correlated.get('joint_source') != 'PLAYER_DNA_SINGLE_WHOLE_MATCH_SHARED_STATE':
+              raise SystemExit('Phase-10 joint source drifted')
+          if correlated.get('independence_product_forbidden_as_joint') is not True:
+              raise SystemExit('Phase-10 allowed independence-product joint')
+          if correlated.get('threshold_classification_enabled') is not False:
+              raise SystemExit('Phase-10 enabled arbitrary dependency thresholds')
+          if correlated.get('weakest_state_leg_selection_id') is None:
+              raise SystemExit('Phase-10 weakest-leg diagnostic missing')
+          if correlated.get('weakest_state_leg_joint_mass_removed_pp') is None:
+              raise SystemExit('Phase-10 weakest-leg impact missing')
+
+          per_leg = correlated.get('per_leg') or []
+          if len(per_leg) != 3:
+              raise SystemExit('Phase-10 per-leg diagnostic incomplete')
+          for row in per_leg:
+              for key in (
+                  'state_marginal_probability',
+                  'joint_without_leg_probability',
+                  'conditional_probability_given_other_legs',
+                  'joint_mass_removed_by_leg_pp',
+              ):
+                  if row.get(key) is None:
+                      raise SystemExit(f'Phase-10 per-leg metric missing: {key}')
+          if not any(row.get('marginal_information_gain_nats') is not None for row in per_leg):
+              raise SystemExit('Phase-10 marginal information gain missing')
+
+          pairs = correlated.get('pairs') or []
+          if len(pairs) != 3:
+              raise SystemExit('Phase-10 pair diagnostics incomplete')
+          for row in pairs:
+              for key in (
+                  'exact_pair_joint_probability',
+                  'independence_product_probability',
+                  'joint_minus_independence_pp',
+                  'redundancy_score',
+                  'conflict_score',
+              ):
+                  if row.get(key) is None:
+                      raise SystemExit(f'Phase-10 pair metric missing: {key}')
+              score = float(row.get('redundancy_score'))
+              conflict = float(row.get('conflict_score'))
+              if not math.isclose(score + conflict, 1.0, rel_tol=0.0, abs_tol=1e-9):
+                  raise SystemExit('Phase-10 redundancy/conflict axis drifted')
+
+          redundant = evidence.get('exact_redundancy_case') or {}
+          redundant_pair = (redundant.get('pairs') or [{}])[0]
+          if redundant_pair.get('exact_containment') is not True:
+              raise SystemExit('Phase-10 exact redundancy not identified')
+          if not math.isclose(
+              float(redundant_pair.get('redundancy_score') or 0.0),
+              1.0,
+              rel_tol=0.0,
+              abs_tol=1e-9,
+          ):
+              raise SystemExit('Phase-10 exact redundancy score drifted')
+
+          conflict = evidence.get('exact_conflict_case') or {}
+          conflict_pair = (conflict.get('pairs') or [{}])[0]
+          if conflict_pair.get('exact_conflict') is not True:
+              raise SystemExit('Phase-10 exact conflict not identified')
+          if not math.isclose(
+              float(conflict_pair.get('conflict_score') or 0.0),
+              1.0,
+              rel_tol=0.0,
+              abs_tol=1e-9,
+          ):
+              raise SystemExit('Phase-10 exact conflict score drifted')
+
+          prices = report.get('operator_price_reaction_experiment') or {}
+          if prices.get('status') != 'NOT_AVAILABLE_NO_OBSERVED_BUILDER_PRICE_DELTAS':
+              raise SystemExit('Phase-10 invented operator Bet Builder price evidence')
+          if int(prices.get('observed_builder_price_delta_rows') or 0) != 0:
+              raise SystemExit('Phase-10 unexpected Bet Builder price-delta rows')
+          for key in ('used_as_truth_label', 'used_for_model_training', 'used_for_ranking'):
+              if prices.get(key) is not False:
+                  raise SystemExit(f'Phase-10 unsafe operator price use: {key}')
+
+          print(
+              'Phase-10 Bet Builder dependency closure: '
+              f"status={report.get('status')} "
+              f"joint={correlated.get('joint_probability')} "
+              f"phase11_ready={report.get('phase11_ready')} "
+              f"price_experiment={prices.get('status')}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -3787,6 +3934,7 @@ jobs:
             frontend/data/player_dna_phase7_calibration_walk_forward.json
             frontend/data/neuro_shadow_phase8_challenger_walk_forward.json
             frontend/data/symphony2_phase9_player_dna_shared_state.json
+            frontend/data/symphony2_phase10_bet_builder_dependency.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
