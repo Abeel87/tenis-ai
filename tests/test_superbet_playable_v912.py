@@ -30,6 +30,8 @@ def _selection(market, pick, line=None, checkpoint=None, score=75.0):
     }
     if line is not None:
         row["line"] = line
+        row["fixture_line_verified"] = True
+        row["operator_line_source"] = "oddspapi_fixture_market"
     if checkpoint is not None:
         row["checkpoint"] = checkpoint
     model = {
@@ -117,6 +119,12 @@ def test_normal_match_view_preserves_raw_ladders_and_exposes_playable_separately
     lines = {x.get("line") for x in view["superbet_playable_v912"]["signals"] if x.get("market") == "match_total"}
     assert 20.5 in lines
     assert 18.5 not in lines
+    exact = next(
+        row for row in view["superbet_playable_v912"]["signals"]
+        if row.get("market") == "match_total" and row.get("line") == 20.5
+    )
+    assert exact["operator_line_verified"] is True
+    assert exact["fixture_line_verified"] is True
 
 
 def test_model_generated_individual_aces_and_df_remain_raw_analysis_only():
@@ -185,6 +193,12 @@ def test_v925_candidate_market_families_settle_only_from_valid_final_evidence():
 
 def test_v925_capture_freezes_candidates_as_non_playable_and_excludes_pbp_only():
     match = _match()
+    match["superbet_market_v91"]["canonical_selections"].append({
+        "market": "exact_sets",
+        "pick": "3",
+        "operator_available": True,
+        "operator_line_verified": True,
+    })
     match["superbet_market_v91"]["coverage_shadow_signals"] = [
         {
             "key": "candidate|exact_sets|3",
@@ -214,6 +228,98 @@ def test_v925_capture_freezes_candidates_as_non_playable_and_excludes_pbp_only()
     assert rows[0]["operator_playable"] is False
     assert rows[0]["candidate_for_playable"] is True
     assert rows[0]["result"] == "pending"
+
+
+def test_v925_numeric_candidate_requires_fixture_proof_and_preserves_direct_source():
+    now = datetime.now(timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_id": 1,
+        "p1": "Player A",
+        "p2": "Player B",
+        "scheduled_time": future,
+        "status": "pending",
+    }]
+
+    def build_match(fixture_verified: bool, include_canonical: bool = True):
+        match = _match()
+        match["scheduled_time"] = future
+        evidence = {
+            "market": "match_game_handicap",
+            "pick": "Player A",
+            "line": -1.5,
+            "operator_available": True,
+            "operator_line_verified": True,
+            "fixture_line_verified": fixture_verified,
+            "operator_line_source": "superbet_direct_selected_shadow",
+            "operator_offer_source": "superbet_direct_selected_shadow",
+            "direct_source": True,
+        }
+        if include_canonical:
+            match["superbet_market_v91"]["canonical_selections"].append(dict(evidence))
+        match["superbet_market_v91"]["model_signals"].append({
+            **evidence,
+            "key": "direct|match_game_handicap|a|-1.5",
+            "score": 74.0,
+        })
+        return match
+
+    blocked, blocked_info = capture_candidates(
+        history,
+        [build_match(False)],
+        now=now,
+    )
+    assert blocked_info["captured"] == 0
+    assert not blocked[0].get(V925_LAYER)
+
+    absent, absent_info = capture_candidates(
+        history,
+        [build_match(True, include_canonical=False)],
+        now=now,
+    )
+    assert absent_info["captured"] == 0
+    assert not absent[0].get(V925_LAYER)
+
+    frozen, info = capture_candidates(
+        history,
+        [build_match(True)],
+        now=now,
+    )
+    assert info["captured"] == 1
+    row = frozen[0][V925_LAYER][0]
+    assert row["market"] == "match_game_handicap"
+    assert row["fixture_line_verified"] is True
+    assert row["operator_line_verified"] is True
+    assert row["operator_line_source"] == "superbet_direct_selected_shadow"
+    assert row["operator_offer_source"] == "superbet_direct_selected_shadow"
+    assert row["direct_source"] is True
+
+
+def test_v925_stats_quarantine_legacy_numeric_lines_without_fixture_proof():
+    legacy_rows = [{
+        "market": "set2_total",
+        "pick": "over",
+        "line": 8.5,
+        "score": 75.0,
+        "result": "hit",
+        "operator": "superbet.pl",
+        "operator_line_verified": True,
+    } for _ in range(40)]
+
+    legacy_stats = build_candidate_stats([{V925_LAYER: legacy_rows}])
+    assert legacy_stats["line_provenance_quarantined_rows"] == 40
+    assert "set2_total" not in legacy_stats["by_market"]
+    assert "set2_total" not in legacy_stats["review_ready_markets"]
+
+    proven_rows = [
+        {**row, "fixture_line_verified": True}
+        for row in legacy_rows
+    ]
+    proven_stats = build_candidate_stats([{V925_LAYER: proven_rows}])
+    assert proven_stats["line_provenance_quarantined_rows"] == 0
+    assert proven_stats["by_market"]["set2_total"]["promotion_sample"] == 40
+    assert proven_stats["by_market"]["set2_total"]["review_ready"] is True
+    assert "set2_total" in proven_stats["review_ready_markets"]
 
 
 def test_v925_promotion_gate_reports_readiness_but_never_auto_promotes():
@@ -282,6 +388,25 @@ def test_master_plan_playable_requires_exact_verified_current_superbet_line():
         for row in blocked["superbet_playable_v912"]["signals"]
     )
 
+    # A separately marked operator line is still not exact-current evidence
+    # unless its fixture-level provenance is explicitly verified.
+    missing_fixture_proof = deepcopy(original)
+    for row in missing_fixture_proof["superbet_market_v91"]["canonical_selections"]:
+        if row.get("market") == "match_total" and row.get("line") == 20.5:
+            row["fixture_line_verified"] = False
+    for row in missing_fixture_proof["superbet_market_v91"]["model_signals"]:
+        if row.get("market") == "match_total" and row.get("line") == 20.5:
+            row["fixture_line_verified"] = False
+
+    blocked_fixture, fixture_info = project_match_for_display(missing_fixture_proof)
+    assert fixture_info["active"] is True
+    assert not any(
+        row.get("market") == "match_total"
+        for row in blocked_fixture["superbet_playable_v912"]["signals"]
+    )
+
     # RAW model ladder is still preserved; bookmaker filtering never erases it.
     assert "18.5" in blocked["match_over_under"]
     assert "20.5" in blocked["match_over_under"]
+    assert "18.5" in blocked_fixture["match_over_under"]
+    assert "20.5" in blocked_fixture["match_over_under"]

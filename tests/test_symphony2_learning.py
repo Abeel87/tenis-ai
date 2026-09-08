@@ -29,6 +29,23 @@ def _match():
     }
 
 
+def test_candidate_numeric_line_requires_fixture_level_provenance():
+    allowed = {"set2_total"}
+    base = {
+        "market": "set2_total",
+        "pick": "over",
+        "line": 8.5,
+        "result": "hit",
+        "operator": "superbet.pl",
+        "operator_line_verified": True,
+    }
+    assert learning._candidate_row_allowed(base, allowed) is False
+    assert learning._candidate_row_allowed(
+        {**base, "fixture_line_verified": True},
+        allowed,
+    ) is True
+
+
 def test_training_rows_use_exact_frozen_operator_line():
     rows = learning.build_training_rows([_entry(line=21.5), _entry(result="miss", line=22.5)])
     assert [r["line"] for r in rows] == [21.5, 22.5]

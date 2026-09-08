@@ -182,10 +182,12 @@ def _candidate_review_ready_markets(history: list[dict]) -> set[str]:
 
 def _candidate_row_allowed(raw: dict, allowed_markets: set[str]) -> bool:
     market = _norm(raw.get("market"))
+    numeric_line = _num(raw.get("line")) is not None
     return bool(
         market in allowed_markets
         and _norm(raw.get("operator")) == "superbet.pl"
         and raw.get("operator_line_verified") is True
+        and (not numeric_line or raw.get("fixture_line_verified") is True)
         and _norm(raw.get("result")) in {"hit", "miss"}
     )
 

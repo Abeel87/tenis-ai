@@ -97,8 +97,10 @@ def test_most_aces_probability_is_visible_but_stays_shadow_not_playable():
 
 def test_adapter_appends_missing_signals_but_never_overwrites_an_existing_one():
     match = _match()
-    s1 = {"market": "match_game_handicap", "pick": "Player One", "line": -2.5, "operator_available": True}
-    s2 = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5, "operator_available": True}
+    s1 = {"market": "match_game_handicap", "pick": "Player One", "line": -2.5,
+          "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
+    s2 = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5,
+          "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
     existing = dict(s1)
     existing.update({"key": cov._selection_key(s1), "score": 77.0, "label": "already calculated"})
     match["superbet_market_v91"] = {
@@ -123,7 +125,8 @@ def test_adapter_appends_missing_signals_but_never_overwrites_an_existing_one():
 def test_missing_evidence_stays_operator_only_instead_of_getting_a_fake_probability():
     match = _match()
     match.pop("exact_first_set")
-    selection = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5, "operator_available": True}
+    selection = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5,
+                 "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
     match["superbet_market_v91"] = {"canonical_selections": [selection], "model_signals": []}
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]

@@ -58,6 +58,9 @@ def test_new_audited_families_get_model_probability_but_stay_display_only():
     ]
     for row in selections:
         row.update({"operator_available": True, "operator_line_verified": True})
+        if row.get("line") is not None:
+            row["fixture_line_verified"] = True
+            row["operator_line_source"] = "oddspapi_fixture_market"
     match["superbet_market_v91"] = {"canonical_selections": selections, "model_signals": [], "prices_used": False}
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
@@ -70,6 +73,64 @@ def test_new_audited_families_get_model_probability_but_stay_display_only():
     assert ctx["coverage_adapter_version"] == "v9.2.4"
     assert all(row["symphony_actionable"] is False for row in ctx["coverage_shadow_signals"])
     assert all("PENDING_SETTLEMENT" in row["coverage_status"] for row in ctx["coverage_shadow_signals"])
+
+
+def test_derived_handicap_preserves_direct_line_provenance():
+    match = _match()
+    direct_source = "superbet_direct_selected_shadow"
+    selection = {
+        "market": "match_game_handicap",
+        "pick": "Player One",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+        "operator_line_source": direct_source,
+        "operator_offer_source": direct_source,
+        "direct_source": True,
+    }
+    match["superbet_market_v91"] = {
+        "canonical_selections": [selection],
+        "model_signals": [],
+        "prices_used": False,
+    }
+
+    out = cov.enrich_match(match)
+    signals = out["superbet_market_v91"]["model_signals"]
+
+    assert len(signals) == 1
+    signal = signals[0]
+    assert signal["operator_line_source"] == direct_source
+    assert signal["operator_offer_source"] == direct_source
+    assert signal["operator_line_verified"] is True
+    assert signal["fixture_line_verified"] is True
+    assert signal["direct_source"] is True
+
+
+def test_derived_numeric_line_stays_uncovered_without_fixture_line_proof():
+    match = _match()
+    selection = {
+        "market": "match_game_handicap",
+        "pick": "Player One",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": False,
+        "operator_line_source": "superbet_direct_selected_shadow",
+    }
+    match["superbet_market_v91"] = {
+        "canonical_selections": [selection],
+        "model_signals": [],
+        "prices_used": False,
+    }
+
+    out = cov.enrich_match(match)
+    ctx = out["superbet_market_v91"]
+
+    assert ctx["model_signals"] == []
+    assert ctx["coverage_shadow_signals"] == []
+    assert ctx["display_covered_count"] == 0
+    assert ctx["operator_only_count"] == 1
 
 
 def test_second_set_checkpoint_probability_is_a_real_path_marginal_not_terminal_guess():
