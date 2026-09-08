@@ -14,7 +14,7 @@ from typing import Any
 
 import requests
 
-from api_quota_v83b import quota_budget, record_calls
+from api_quota import quota_budget, record_calls, request_interval_seconds
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -89,27 +89,40 @@ def _parse_dt(value):
 
 
 class API:
-    def __init__(self, key: str, call_cap: int = RUN_CALL_CAP):
+    def __init__(self, key: str, call_cap: int = RUN_CALL_CAP, per_minute: int = 60):
         self.key = key
         self.calls = 0
         self.call_cap = max(0, int(call_cap))
         self.session = requests.Session()
         self.headers = {"Authorization": f"Bearer {key}", "User-Agent": UA}
+        self.min_interval = request_interval_seconds(per_minute, utilization=0.90)
+        self.last_call_monotonic = 0.0
+
+    def _pace(self):
+        if self.last_call_monotonic <= 0 or self.min_interval <= 0:
+            return
+        wait = self.min_interval - (time.monotonic() - self.last_call_monotonic)
+        if wait > 0:
+            time.sleep(wait)
 
     def get(self, path: str, params: dict | None = None):
         if self.calls >= self.call_cap:
             raise RuntimeError("pbp_run_budget_exhausted")
+        self._pace()
         r = self.session.get(BASE_URL + path, params=params, headers=self.headers, timeout=(7, 25))
         self.calls += 1
         record_calls("pbp_current", 1)
+        self.last_call_monotonic = time.monotonic()
         if r.status_code == 429:
             retry = min(10, max(1, int(float(r.headers.get("Retry-After", "2") or 2))))
             time.sleep(retry)
             if self.calls >= self.call_cap:
                 raise RuntimeError("pbp_run_budget_exhausted")
+            self._pace()
             r = self.session.get(BASE_URL + path, params=params, headers=self.headers, timeout=(7, 25))
             self.calls += 1
             record_calls("pbp_current", 1)
+            self.last_call_monotonic = time.monotonic()
         r.raise_for_status()
         return r.json()
 
@@ -1194,7 +1207,8 @@ def main() -> None:
         return
 
     budget, usage = _usage_budget(key)
-    api = API(key, budget)
+    per_minute = ((usage.get("limits") or {}).get("per_minute") or 60)
+    api = API(key, budget, per_minute)
     CACHE.mkdir(parents=True, exist_ok=True)
     index = _read_json(INDEX_PATH, {"players": {}})
     if not isinstance(index, dict):
