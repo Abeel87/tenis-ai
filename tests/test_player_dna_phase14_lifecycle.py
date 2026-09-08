@@ -76,6 +76,10 @@ def _base_reports(*, hold_robust=False, prospective_robust=False, dynamic_robust
     }
     hold_walk_forward = {
         "status": "WALK_FORWARD_COMPLETE_NO_INTEGRATION",
+        "production_influence": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_integrate": False,
         "signal": (
             "HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW"
             if hold_robust
@@ -230,3 +234,17 @@ def test_phase14_defines_explicit_rollback_without_new_numeric_thresholds():
     assert report["promotion_policy"][
         "single_good_coupon_or_single_good_run_can_promote"
     ] is False
+
+
+def test_phase14_cannot_close_if_a_prior_isolation_contract_regresses():
+    reports = _base_reports()
+    reports["phase10"]["superbet_playable_influence"] = True
+
+    report = evaluate_lifecycle(**reports)
+
+    assert report["phase14_complete"] is False
+    assert report["master_plan_complete"] is False
+    assert report["status"] == "PHASE14_LIFECYCLE_INCOMPLETE"
+    assert report["isolation"]["phase10_isolated"] is False
+    assert report["canary_active"] is False
+    assert report["prod_activation_performed"] is False
