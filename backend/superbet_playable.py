@@ -45,7 +45,7 @@ STRICT_MARKETS = {
 }
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
-    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 PLAYER_MARKETS = {"player_total_games", "player_aces", "player_double_faults"}
@@ -138,6 +138,7 @@ def operator_context_active(match: dict) -> bool:
     ctx = match.get("superbet_market_v91") or {}
     return bool(
         isinstance(ctx, dict)
+        and ctx.get("operator") == OPERATOR
         and ctx.get("operator_verified") is True
         and ctx.get("status") == "VERIFIED"
         and ctx.get("suspended") is not True
@@ -282,6 +283,8 @@ def _projection_signals(match: dict) -> list[dict]:
 
     out: dict[tuple, dict] = {}
     for raw in _current_autolearn_signals(match):
+        if _market(raw.get("market")) not in STRICT_MARKETS:
+            continue
         sig = signal_signature(raw)
         available = availability.get(sig)
         if available is None:
@@ -302,6 +305,8 @@ def _projection_signals(match: dict) -> list[dict]:
         out[sig] = item
 
     for sig, operator_signal in operator_model_signals(match).items():
+        if _market(operator_signal.get("market")) not in STRICT_MARKETS:
+            continue
         if sig not in availability or sig in out:
             continue
         score = _num(operator_signal.get("score"))
