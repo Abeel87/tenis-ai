@@ -542,6 +542,59 @@ Symfonia nadal:
 
 Nie dopasowujemy model-line do nearest Superbet line.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 9 nie zmienia operator-first ani obecnego runtime rankingu Symfonii 2.0.
+Kanoniczny `backend/player_dna_tennis_simulator.py` publikuje teraz exact
+whole-match sufficient state przez `shared_match_state_outcomes()`.
+
+Wspólny stan:
+
+- zachowuje dokładny set 1 i set 2;
+- zachowuje wynik meczu, liczbę setów, P1/P2 total games i total games;
+- zachowuje set-to-nil;
+- respektuje legalny Phase-5 serve order między setami;
+- dla pre-match używa jawnej neutralnej mieszaniny 50/50 pierwszego serwującego;
+- ma pełną masę prawdopodobieństwa równą 1.
+
+`backend/symphony2_state.py` wystawia osobne Phase-9 SHADOW API:
+
+- `build_player_dna_shared_outcomes`;
+- `player_dna_marginal_probability`;
+- `player_dna_joint_probability`.
+
+Dzięki temu set1 + set2 + match mogą być liczone z **jednego tego samego state-space**.
+Cross-family joint jest sumą masy wspólnych stanów spełniających wszystkie nogi,
+nigdy iloczynem marginalnych P.
+
+Istniejące `joint_probability()` pozostaje bez zmian i nadal fail-closed zwraca
+brak joint dla cross-family, dopóki Phase-9 state nie przejdzie późniejszej
+polityki promocji. To świadomie chroni aktualny ranking.
+
+`backend/symphony2_engine.py` pokazuje Phase-9 state wyłącznie jako SHADOW
+diagnostykę:
+
+- `player_dna_shared_state_probability_shadow` per dokładna selekcja;
+- exact cross-family pair joint z jednego Player DNA state-space;
+- jawne porównanie exact joint vs independence product;
+- `ranking_influence=false`;
+- `operator_model_probability_influence=false`;
+- `recommended_leg_count_influence=false`;
+- brak wpływu na PROD i PLAYABLE.
+
+Raport CI:
+`frontend/data/symphony2_phase9_player_dna_shared_state.json`.
+
+Faza 9 zamyka się dopiero, gdy CI potwierdzi:
+
+- Phase 8 jako prerequisite;
+- normalizację shared state;
+- exact cross-family joint dla set1 + set2 + match;
+- różnicę joint vs independence product;
+- niezmienione fail-closed zachowanie obecnego runtime;
+- brak wpływu na `P_final`, ranking i PLAYABLE;
+- `phase9_complete=true / phase10_ready=true`.
+
 ---
 
 # Faza 10 — Bet Builder correlation / redundancy
