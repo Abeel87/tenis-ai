@@ -79,7 +79,9 @@ def _match():
         },
         "superbet_market_v91": {
             "status": "VERIFIED",
+            "operator": "superbet.pl",
             "operator_verified": True,
+            "suspended": False,
             "canonical_selections": [a20, u20, sw1, sw2, st],
             "model_signals": [m20, mu20, msw1, msw2, mst],
         },
@@ -134,6 +136,45 @@ def test_model_generated_individual_aces_and_df_remain_raw_analysis_only():
     assert view["serve_props_v72"] == raw_props
     assert "1.5" in view["serve_props_v72"]["p1"]["aces"]["lines"]
     assert not any(x.get("market") in {"player_aces", "player_double_faults"} for x in view["superbet_playable_v912"]["signals"])
+
+
+def test_wrong_operator_identity_is_fail_closed_at_playable_boundary():
+    original = _match()
+    original["superbet_market_v91"]["operator"] = "superbet.ro"
+    raw = deepcopy(original["autolearn_v84"])
+
+    view, info = project_match_for_display(original)
+
+    assert info["active"] is False
+    assert view["autolearn_v84"] == raw
+    assert view["superbet_playable_v912"]["signals"] == []
+
+
+def test_set_handicap_signature_keeps_exact_numeric_line_and_is_not_playable_without_promotion():
+    a = {
+        "market": "set_handicap",
+        "pick": "Player A",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    b = {**a, "line": -2.5}
+    assert signal_signature(a) != signal_signature(b)
+
+    original = _match()
+    original["superbet_market_v91"]["canonical_selections"].extend([a, b])
+    original["superbet_market_v91"]["model_signals"].append({
+        **a,
+        "key": "set-handicap-a",
+        "score": 80.0,
+    })
+    view, _ = project_match_for_display(original)
+
+    assert not any(
+        row.get("market") == "set_handicap"
+        for row in view["superbet_playable_v912"]["signals"]
+    )
 
 
 def test_unverified_operator_context_is_fail_closed_but_raw_stays_available():
