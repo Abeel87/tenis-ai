@@ -27,8 +27,6 @@ BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v8.3B-HistoricalBackfill/1.0"
 
 DEFAULT_STOP_DATE = date(2023, 1, 1)
-DEFAULT_DAILY_FRACTION = 0.12
-DEFAULT_HARD_RESERVE_FRACTION = 0.45
 DEFAULT_RUN_CAP = 36
 DEFAULT_MIN_INTERVAL_HOURS = 3.0
 DEFAULT_MAX_CACHE_MB = 900.0
@@ -291,19 +289,8 @@ def run_backfill(now: datetime | None = None) -> dict:
         50.0,
         5000.0,
     )
-    daily_fraction = _float_env(
-        "HISTORY_BACKFILL_DAILY_FRACTION",
-        DEFAULT_DAILY_FRACTION,
-        0.01,
-        0.40,
-    )
-    reserve_fraction = _float_env(
-        "HISTORY_BACKFILL_HARD_RESERVE_FRACTION",
-        DEFAULT_HARD_RESERVE_FRACTION,
-        0.25,
-        0.90,
-    )
-    run_cap = _int_env("HISTORY_BACKFILL_RUN_CAP", DEFAULT_RUN_CAP, 1, 120)
+    # Quota ownership is canonical: backend/api_quota.py.
+    run_cap = _int_env("API_QUOTA_HISTORY_BACKFILL_RUN_CAP", DEFAULT_RUN_CAP, 1, 240)
 
     CACHE.mkdir(parents=True, exist_ok=True)
     MATCH_CACHE.mkdir(parents=True, exist_ok=True)
