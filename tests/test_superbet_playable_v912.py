@@ -241,3 +241,47 @@ def test_playable_stats_ui_is_explicit_when_operator_feed_is_unverified():
     assert "feedActive=matches>0" in js
     assert "nie jest to stan oferty na żywo" in js
     assert "brak bieżących danych nie oznacza skuteczności 0%" in js
+
+
+def test_master_plan_playable_requires_exact_verified_current_superbet_line():
+    original = _match()
+
+    # RAW/model can still expose its own neighboring 18.5 ladder, but the
+    # operator currently offers only exact 20.5 for match_total.
+    view, info = project_match_for_display(original)
+    assert info["active"] is True
+    playable_match_totals = [
+        row
+        for row in view["superbet_playable_v912"]["signals"]
+        if row.get("market") == "match_total"
+    ]
+    assert {row.get("line") for row in playable_match_totals} == {20.5}
+    assert not any(row.get("line") == 18.5 for row in playable_match_totals)
+
+    raw_18 = next(
+        row
+        for row in original["autolearn_v84"]["signals"]
+        if row.get("market") == "match_total" and row.get("line") == 18.5
+    )
+    assert is_operator_playable_signal(view, raw_18) is False
+
+    # Even an exact numeric line must fail closed when that operator selection
+    # is not line-verified.
+    unverified = deepcopy(original)
+    for row in unverified["superbet_market_v91"]["canonical_selections"]:
+        if row.get("market") == "match_total" and row.get("line") == 20.5:
+            row["operator_line_verified"] = False
+    for row in unverified["superbet_market_v91"]["model_signals"]:
+        if row.get("market") == "match_total" and row.get("line") == 20.5:
+            row["operator_line_verified"] = False
+
+    blocked, blocked_info = project_match_for_display(unverified)
+    assert blocked_info["active"] is True
+    assert not any(
+        row.get("market") == "match_total"
+        for row in blocked["superbet_playable_v912"]["signals"]
+    )
+
+    # RAW model ladder is still preserved; bookmaker filtering never erases it.
+    assert "18.5" in blocked["match_over_under"]
+    assert "20.5" in blocked["match_over_under"]
