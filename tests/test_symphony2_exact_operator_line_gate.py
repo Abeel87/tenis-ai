@@ -88,7 +88,7 @@ def test_unverified_operator_context_is_fail_closed():
     assert _current_offer(_match([selection], status="STALE")) == []
 
 
-def test_non_line_market_can_pass_without_fixture_line_flag_but_only_from_verified_offer():
+def test_wrong_or_suspended_operator_context_is_fail_closed():\n    selection = _line(20.5, verified=True, operator_line_verified=True)\n\n    assert _current_offer(_match([selection], operator="other.example")) == []\n    assert _current_offer(_match([selection], suspended=True)) == []\n\n\ndef test_non_line_market_can_pass_without_fixture_line_flag_but_only_from_verified_offer():
     winner = {
         "market": "match_winner",
         "pick": "Player A",
