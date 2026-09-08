@@ -2156,6 +2156,99 @@ jobs:
           )
           PY
 
+      - name: Close Phase-9 Player DNA shared-state integration (SHADOW, zero network)
+        run: python -c "from backend.symphony2_state import build_phase9_gate; build_phase9_gate()"
+
+      - name: Guard Phase-9 Player DNA shared-state closure
+        run: |
+          python - <<'PY'
+          import json
+          import math
+          from pathlib import Path
+
+          p = Path('frontend/data/symphony2_phase9_player_dna_shared_state.json')
+          if not p.exists():
+              raise SystemExit('symphony2_phase9_player_dna_shared_state.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PLAYER_DNA_SHARED_STATE_INTEGRATION_ONLY':
+              raise SystemExit('Phase-9 mode invalid')
+          if int(report.get('phase') or 0) != 9:
+              raise SystemExit('Phase-9 number drifted')
+          if report.get('status') != 'PHASE9_SHARED_STATE_INTEGRATION_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Phase-9 incomplete: {report.get('status')}")
+          if report.get('phase8_prerequisite_satisfied') is not True:
+              raise SystemExit('Phase-9 lost Phase-8 prerequisite')
+          if report.get('phase9_complete') is not True:
+              raise SystemExit('Phase-9 did not close')
+          if report.get('phase10_ready') is not True:
+              raise SystemExit('Phase-9 did not authorize Phase 10')
+
+          for key in (
+              'promotion_allowed_by_this_gate',
+              'production_influence',
+              'runtime_ranking_influence',
+              'operator_model_probability_influence',
+              'symphony2_current_ranking_replaced',
+              'superbet_playable_influence',
+              'auto_promote',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-9 isolation violation: {key}')
+
+          contract = report.get('shared_state_contract') or {}
+          for key in (
+              'same_state_for_set1_set2_and_match_markets',
+              'cross_family_joint_uses_single_state_mass',
+              'independence_product_forbidden',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-9 shared-state contract failed: {key}')
+          for key in (
+              'existing_symphony_runtime_state_replaced',
+              'ranking_influence',
+              'operator_model_probability_influence',
+              'production_influence',
+              'playable_influence',
+              'auto_promote',
+          ):
+              if contract.get(key) is not False:
+                  raise SystemExit(f'Phase-9 contract isolation failed: {key}')
+          if contract.get('source') != 'CANONICAL_PLAYER_DNA_TENNIS_SIMULATOR':
+              raise SystemExit('Phase-9 lost canonical Player DNA simulator source')
+          if contract.get('pre_match_start_server_policy') != 'NEUTRAL_50_50':
+              raise SystemExit('Phase-9 start-server policy drifted')
+
+          evidence = report.get('evidence') or {}
+          if int(evidence.get('shared_state_outcomes') or 0) <= 0:
+              raise SystemExit('Phase-9 shared state empty')
+          mass = float(evidence.get('probability_mass') or 0.0)
+          if not math.isclose(mass, 1.0, rel_tol=0.0, abs_tol=1e-9):
+              raise SystemExit(f'Phase-9 shared state mass drift: {mass}')
+          if int(evidence.get('cross_family_supported') or 0) != 3:
+              raise SystemExit('Phase-9 cross-family support incomplete')
+          joint = evidence.get('cross_family_joint_probability')
+          marginals = evidence.get('cross_family_marginals') or []
+          if joint is None or len(marginals) != 3 or any(value is None for value in marginals):
+              raise SystemExit('Phase-9 exact joint evidence incomplete')
+          if not 0.0 <= float(joint) <= min(float(value) for value in marginals) + 1e-12:
+              raise SystemExit('Phase-9 exact joint outside marginal bounds')
+          if evidence.get('joint_differs_from_independence') is not True:
+              raise SystemExit('Phase-9 joint collapsed to independence product')
+          if evidence.get('legacy_path_still_fails_closed') is not True:
+              raise SystemExit('Phase-9 unexpectedly changed legacy runtime joint semantics')
+          if evidence.get('legacy_cross_family_joint') is not None:
+              raise SystemExit('Phase-9 legacy cross-family path stopped failing closed')
+
+          print(
+              'Phase-9 shared-state closure: '
+              f"status={report.get('status')} "
+              f"outcomes={evidence.get('shared_state_outcomes')} "
+              f"joint={joint} "
+              f"phase10_ready={report.get('phase10_ready')}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -3693,6 +3786,7 @@ jobs:
             frontend/data/player_dna_phase6_exact_dp_monte_carlo.json
             frontend/data/player_dna_phase7_calibration_walk_forward.json
             frontend/data/neuro_shadow_phase8_challenger_walk_forward.json
+            frontend/data/symphony2_phase9_player_dna_shared_state.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
