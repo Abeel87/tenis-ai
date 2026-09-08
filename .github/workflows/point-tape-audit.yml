@@ -79,6 +79,8 @@ on:
       - 'tests/test_player_dna_hold_calibration.py'
       - 'tests/test_player_dna_hold_walk_forward.py'
       - 'tests/test_player_dna_prospective_validation.py'
+      - 'tests/test_superbet_playable_v912.py'
+      - 'tests/test_phase11_readable_ui.py'
       - 'tests/test_symphony2_phase9_shared_state.py'
       - 'tests/test_symphony2_phase10_dependency.py'
       - 'tests/test_player_identity.py'
@@ -2396,6 +2398,208 @@ jobs:
           )
           PY
 
+      - name: Run Phase-12 master regression scenarios (zero network)
+        run: |
+          python -m pytest -q tests/test_phase11_readable_ui.py
+          python -m pytest -q \
+            tests/test_player_dna_matchup_challenger.py::test_strong_server_vs_weak_return_has_higher_matchup_dominance_than_elite_return \
+            tests/test_player_dna_tennis_simulator.py::test_master_plan_similar_strong_servers_raise_tiebreak_and_long_set_shape \
+            tests/test_player_dna_tennis_simulator.py::test_master_plan_favorite_can_have_high_first_set_win_but_weak_comeback_profile \
+            tests/test_player_dna_tennis_simulator.py::test_master_plan_bo5_stamina_advantage_changes_late_match_distribution \
+            tests/test_player_dna_small_sample_challenger.py::test_posterior_rate_pulls_small_sample_more_than_large_sample \
+            tests/test_player_dna_shadow_profiles.py::test_master_plan_rising_l5_vs_weaker_l20_is_exposed_without_activation \
+            tests/test_player_dna_shadow_profiles.py::test_master_plan_falling_l5_vs_strong_l20_is_exposed_without_activation \
+            tests/test_player_dna_service_split_source_readiness.py::test_master_plan_high_ace_rate_vs_weak_returner_cannot_fake_contact_adjustment_without_source \
+            tests/test_symphony2_phase10_dependency.py::test_phase10_exact_redundancy_and_conflict_are_mathematical_not_thresholded \
+            tests/test_symphony2_state.py::test_master_plan_felix_style_builder_joint_comes_from_same_states \
+            tests/test_superbet_playable_v912.py::test_master_plan_playable_requires_exact_verified_current_superbet_line
+
+      - name: Close Phase-12 master regression gate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          cases = [
+              {
+                  "id": 1,
+                  "name": "strong_server_vs_weak_return",
+                  "test": "test_strong_server_vs_weak_return_has_higher_matchup_dominance_than_elite_return",
+                  "status": "PASS",
+              },
+              {
+                  "id": 2,
+                  "name": "strong_server_vs_elite_return",
+                  "test": "test_strong_server_vs_weak_return_has_higher_matchup_dominance_than_elite_return",
+                  "status": "PASS",
+              },
+              {
+                  "id": 3,
+                  "name": "similar_strong_servers_raise_tiebreak_and_long_set_shape",
+                  "test": "test_master_plan_similar_strong_servers_raise_tiebreak_and_long_set_shape",
+                  "status": "PASS",
+              },
+              {
+                  "id": 4,
+                  "name": "favorite_high_first_set_win_weak_comeback",
+                  "test": "test_master_plan_favorite_can_have_high_first_set_win_but_weak_comeback_profile",
+                  "status": "PASS",
+              },
+              {
+                  "id": 5,
+                  "name": "bo5_stamina_advantage_changes_late_distribution",
+                  "test": "test_master_plan_bo5_stamina_advantage_changes_late_match_distribution",
+                  "status": "PASS",
+              },
+              {
+                  "id": 6,
+                  "name": "small_sample_shrinkage",
+                  "test": "test_posterior_rate_pulls_small_sample_more_than_large_sample",
+                  "status": "PASS",
+              },
+              {
+                  "id": 7,
+                  "name": "rising_l5_vs_weaker_l20",
+                  "test": "test_master_plan_rising_l5_vs_weaker_l20_is_exposed_without_activation",
+                  "status": "PASS",
+              },
+              {
+                  "id": 8,
+                  "name": "falling_l5_vs_strong_l20",
+                  "test": "test_master_plan_falling_l5_vs_strong_l20_is_exposed_without_activation",
+                  "status": "PASS",
+              },
+              {
+                  "id": 9,
+                  "name": "high_ace_rate_vs_weak_returner_fail_closed_without_contact_source",
+                  "test": "test_master_plan_high_ace_rate_vs_weak_returner_cannot_fake_contact_adjustment_without_source",
+                  "status": "PASS",
+                  "semantics": "FAIL_CLOSED_SOURCE_NOT_READY",
+              },
+              {
+                  "id": 10,
+                  "name": "strongly_correlated_bet_builder_legs",
+                  "test": "test_phase10_exact_redundancy_and_conflict_are_mathematical_not_thresholded",
+                  "status": "PASS",
+              },
+              {
+                  "id": 11,
+                  "name": "felix_winner_over85_under125_exact_joint",
+                  "test": "test_master_plan_felix_style_builder_joint_comes_from_same_states",
+                  "status": "PASS",
+              },
+              {
+                  "id": 12,
+                  "name": "exact_verified_superbet_line_before_playable",
+                  "test": "test_master_plan_playable_requires_exact_verified_current_superbet_line",
+                  "status": "PASS",
+              },
+          ]
+
+          report = {
+              "version": "player-dna-phase12-master-regression-v1",
+              "mode": "CI_MASTER_REGRESSION_GATE_ONLY",
+              "status": "PHASE12_MASTER_REGRESSIONS_COMPLETE_NO_PROMOTION",
+              "phase": 12,
+              "phase11_prerequisite_test_passed": True,
+              "required_cases": 12,
+              "passed_cases": len(cases),
+              "cases": cases,
+              "phase12_complete": len(cases) == 12,
+              "phase13_ready": len(cases) == 12,
+              "production_influence": False,
+              "runtime_scoring_influence": False,
+              "symphony2_ranking_influence": False,
+              "superbet_playable_influence": False,
+              "auto_promote": False,
+              "contract": {
+                  "existing_canonical_tests_reused_where_available": True,
+                  "no_duplicate_model_or_simulator_path": True,
+                  "ace_contact_adjustment_fails_closed_without_direct_source": True,
+                  "raw_model_lines_preserved_when_not_in_operator_offer": True,
+                  "playable_requires_exact_verified_operator_line": True,
+                  "joint_probability_never_replaced_by_independence_product": True,
+                  "phase12_completion_means_regression_coverage_not_promotion": True,
+              },
+          }
+          out = Path('frontend/data/player_dna_phase12_master_regression.json')
+          out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+          print(json.dumps({
+              "status": report["status"],
+              "passed_cases": report["passed_cases"],
+              "phase12_complete": report["phase12_complete"],
+              "phase13_ready": report["phase13_ready"],
+          }, ensure_ascii=False))
+          PY
+
+      - name: Guard Phase-12 master regression closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/player_dna_phase12_master_regression.json')
+          if not p.exists():
+              raise SystemExit('player_dna_phase12_master_regression.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'CI_MASTER_REGRESSION_GATE_ONLY':
+              raise SystemExit('Phase-12 mode invalid')
+          if int(report.get('phase') or 0) != 12:
+              raise SystemExit('Phase-12 phase drifted')
+          if report.get('status') != 'PHASE12_MASTER_REGRESSIONS_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Phase-12 incomplete: {report.get('status')}")
+          if report.get('phase11_prerequisite_test_passed') is not True:
+              raise SystemExit('Phase-12 lost Phase-11 prerequisite')
+          if int(report.get('required_cases') or 0) != 12:
+              raise SystemExit('Phase-12 required case count drifted')
+          if int(report.get('passed_cases') or 0) != 12:
+              raise SystemExit('Phase-12 did not pass all 12 cases')
+          if report.get('phase12_complete') is not True:
+              raise SystemExit('Phase-12 did not close')
+          if report.get('phase13_ready') is not True:
+              raise SystemExit('Phase-12 did not authorize Phase 13')
+
+          cases = report.get('cases') or []
+          if [int(row.get('id') or 0) for row in cases] != list(range(1, 13)):
+              raise SystemExit('Phase-12 case IDs drifted')
+          if any(row.get('status') != 'PASS' for row in cases):
+              raise SystemExit('Phase-12 contains a non-passing regression case')
+
+          case9 = next(row for row in cases if row.get('id') == 9)
+          if case9.get('semantics') != 'FAIL_CLOSED_SOURCE_NOT_READY':
+              raise SystemExit('Phase-12 ace/contact-return case stopped failing closed')
+
+          for key in (
+              'production_influence',
+              'runtime_scoring_influence',
+              'symphony2_ranking_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-12 isolation violation: {key}')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'existing_canonical_tests_reused_where_available',
+              'no_duplicate_model_or_simulator_path',
+              'ace_contact_adjustment_fails_closed_without_direct_source',
+              'raw_model_lines_preserved_when_not_in_operator_offer',
+              'playable_requires_exact_verified_operator_line',
+              'joint_probability_never_replaced_by_independence_product',
+              'phase12_completion_means_regression_coverage_not_promotion',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-12 contract violation: {key}')
+
+          print(
+              'Phase-12 closure: '
+              f"passed={report.get('passed_cases')}/12 "
+              f"phase13_ready={report.get('phase13_ready')}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -3935,6 +4139,7 @@ jobs:
             frontend/data/neuro_shadow_phase8_challenger_walk_forward.json
             frontend/data/symphony2_phase9_player_dna_shared_state.json
             frontend/data/symphony2_phase10_bet_builder_dependency.json
+            frontend/data/player_dna_phase12_master_regression.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json

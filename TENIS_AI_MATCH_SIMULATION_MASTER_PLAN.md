@@ -741,6 +741,47 @@ Każda większa zmiana engine'u musi przejść stałe scenariusze regresyjne:
 11. dokładny przypadek typu Felix: winner + over 8.5 + under 12.5 -> joint liczony ze wspólnej dystrybucji, nie z iloczynu;
 12. realna linia Superbet musi istnieć i być zweryfikowana, zanim stanie się PLAYABLE.
 
+## Stan realizacji / gate zamknięcia
+
+Faza 12 jest formalnym **master regression gate** i nie tworzy nowego modelu,
+symulatora ani alternatywnej ścieżki runtime. Tam, gdzie scenariusz był już
+pokryty przez kanoniczny test, gate uruchamia właśnie ten istniejący test.
+
+Obowiązkowy pakiet CI pokrywa wszystkie 12 przypadków z tej sekcji.
+W szczególności:
+
+- strong server vs weak/elite return korzysta z kanonicznego nonlinear
+  serve-return matchup challengera;
+- TB/long-set, comeback i BO5 stamina korzystają z kanonicznego simulatora;
+- small-sample korzysta z istniejącego shrinkage challengera;
+- rising/falling L5 korzysta z leakage-safe rolling Player DNA;
+- silnie skorelowane nogi i Felix-style joint korzystają z exact shared state,
+  nigdy z iloczynu marginalnych P;
+- exact current Superbet line jest wymagane przed PLAYABLE, a własne sąsiednie
+  linie modelu pozostają wyłącznie RAW.
+
+Przypadek asów jest świadomie **fail-closed**. Historyczne ace tendency jest
+mierzalne, ale obecny source audit nie potwierdza bezpośredniego
+`ace_vs_contact_return`. Dlatego wysoka średnia asów przeciw słabym
+returnerom nie może zostać nazwana opponent-adjusted tylko na podstawie
+surowych ace counts. Gate wymaga statusu źródła `source_ready=false`, dopóki
+bezpośredni contact/unreturned-return source nie zostanie potwierdzony osobnym
+gate'em.
+
+Raport CI:
+`frontend/data/player_dna_phase12_master_regression.json`.
+
+Faza 12 zamyka się dopiero, gdy:
+
+- test kontraktu Fazy 11 nadal przechodzi;
+- wszystkie 12 scenariuszy mają status PASS;
+- ace/contact-return pozostaje fail-closed przy braku źródła;
+- exact-line Superbet gate zachowuje RAW, ale nie tworzy PLAYABLE z
+  niezweryfikowanej lub sąsiedniej linii;
+- brak wpływu tego gate'u na PROD, scoring runtime, ranking Symfonii 2.0 i
+  PLAYABLE;
+- `phase12_complete=true / phase13_ready=true`.
+
 ---
 
 # Faza 13 — Wydajność
