@@ -5,11 +5,16 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
-from prune_results_payload import prune_results
-
 ROOT = Path(__file__).resolve().parents[1]
+BACKEND_DIR = ROOT / 'backend'
+for import_dir in (SCRIPT_DIR, BACKEND_DIR):
+    if str(import_dir) not in sys.path:
+        sys.path.insert(0, str(import_dir))
+
+from prune_results_payload import prune_results
+from history_tracker import HISTORY_TARGET_BYTES, compact_history_size, retain_history
+from refresh_settlement_reports import refresh as refresh_settlement_reports
+
 DATA = ROOT / 'frontend' / 'data'
 TARGETS = (
     DATA / 'results.json',
@@ -89,11 +94,42 @@ def prune_symphony2_publication(path: Path) -> dict:
     return report
 
 
+def prune_history_publication(path: Path) -> dict:
+    """Keep unresolved rows and newest terminal evidence under the public byte cap."""
+    if not path.exists():
+        return {'path': _path_label(path), 'status': 'missing'}
+    data = json.loads(path.read_text(encoding='utf-8'))
+    if not isinstance(data, list):
+        return {'path': _path_label(path), 'status': 'skipped-non-list'}
+
+    before_entries = len(data)
+    before_compact_bytes = compact_history_size(data)
+    retained = retain_history(data)
+    after_entries = len(retained)
+    report = _compact_json(path, retained)
+    report.update({
+        'retention_policy': 'KEEP_ALL_UNRESOLVED_DROP_OLDEST_TERMINAL_BY_COUNT_OR_BYTES',
+        'target_compact_bytes': HISTORY_TARGET_BYTES,
+        'before_entries': before_entries,
+        'after_entries': after_entries,
+        'dropped_terminal_entries': before_entries - after_entries,
+        'before_compact_bytes': before_compact_bytes,
+        'after_compact_bytes': compact_history_size(retained),
+        'unresolved_entries_preserved': sum(
+            1 for entry in retained
+            if str(entry.get('status') or '').casefold() not in {'settled', 'void'}
+        ),
+    })
+    return report
+
+
 def compact(path: Path) -> dict:
     if not path.exists():
         return {'path': _path_label(path), 'status': 'missing'}
     if path.name == 'symphony2_current.json':
         return prune_symphony2_publication(path)
+    if path.name == 'history.json':
+        return prune_history_publication(path)
     data = json.loads(path.read_text(encoding='utf-8'))
     return _compact_json(path, data)
 
@@ -101,10 +137,19 @@ def compact(path: Path) -> dict:
 def main() -> None:
     results_prune = prune_results(DATA / 'results.json')
     report = [compact(path) for path in TARGETS]
+    history_report = next((row for row in report if row.get('path') == 'frontend/data/history.json'), {})
+    history_reports_resynced = False
+    if int(history_report.get('dropped_terminal_entries') or 0) > 0:
+        # Retention changes the evidence snapshot, so rebuild all history-derived
+        # reports from that exact retained snapshot before publication.
+        refresh_settlement_reports(DATA)
+        history_reports_resynced = True
+
     print(json.dumps({
         'version': 'v9.4.0-safe-publication-compact',
         'targets': report,
         'results_publication_prune': results_prune,
+        'history_reports_resynced': history_reports_resynced,
         'legacy_symphony_publication': False,
         'production_math_changed': False,
     }, ensure_ascii=False, indent=2))
