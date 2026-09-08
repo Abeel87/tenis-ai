@@ -996,8 +996,6 @@ def prepare_results(results: list[dict], availability: dict, now=None):
     now = now or datetime.now(timezone.utc)
     idx = _fixture_index(availability)
     generated = _parse_dt(availability.get("generated_at") if isinstance(availability, dict) else None)
-    age_hours = (now - generated).total_seconds() / 3600 if generated else None
-    fresh = age_hours is not None and 0 <= age_hours <= REFRESH_HOURS * 1.8
     out, matched = [], 0
     for raw in results:
         if not isinstance(raw, dict):
@@ -1007,16 +1005,28 @@ def prepare_results(results: list[dict], availability: dict, now=None):
         if fixture:
             matched += 1
             selections = [dict(x) for x in (fixture.get("canonical_selections") or []) if isinstance(x, dict)]
+            source_stamp = fixture.get("offer_checked_at") or (
+                availability.get("generated_at") if isinstance(availability, dict) else None
+            )
+            source_generated = _parse_dt(source_stamp) or generated
+            source_age_hours = (
+                (now - source_generated).total_seconds() / 3600
+                if source_generated else None
+            )
+            source_fresh = (
+                source_age_hours is not None
+                and 0 <= source_age_hours <= REFRESH_HOURS * 1.8
+            )
             m["superbet_market_v91"] = {
                 "version": VERSION,
-                "status": "VERIFIED" if fresh else "CACHE_STALE",
+                "status": "VERIFIED" if source_fresh else "CACHE_STALE",
                 "operator": BOOKMAKER,
                 "fixture_id": fixture.get("fixture_id"),
                 "operator_start_time": fixture.get("start_time"),
-                "source_generated_at": availability.get("generated_at"),
+                "source_generated_at": source_stamp,
                 "source_max_age_hours": REFRESH_HOURS * 1.8,
-                "source_age_hours": round(float(age_hours or 0.0), 2) if age_hours is not None else None,
-                "operator_verified": bool(fresh and not fixture.get("suspended")),
+                "source_age_hours": round(float(source_age_hours or 0.0), 2) if source_age_hours is not None else None,
+                "operator_verified": bool(source_fresh and not fixture.get("suspended")),
                 "suspended": bool(fixture.get("suspended")),
                 "operator_offer_source": fixture.get("operator_offer_source") or "oddspapi_superbet_pl",
                 "prices_used": False,
