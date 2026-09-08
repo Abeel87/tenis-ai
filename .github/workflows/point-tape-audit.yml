@@ -2000,6 +2000,162 @@ jobs:
           )
           PY
 
+      - name: Evaluate Phase-8 NEURO model-class challengers (SHADOW, zero network)
+        run: python -c "from backend.neuro_shadow_training import build_phase8_report; build_phase8_report()"
+
+      - name: Guard Phase-8 NEURO challenger closure
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/neuro_shadow_phase8_challenger_walk_forward.json')
+          if not p.exists():
+              raise SystemExit('neuro_shadow_phase8_challenger_walk_forward.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+
+          if report.get('mode') != 'SHADOW_PHASE8_MODEL_CLASS_COMPARISON_ONLY':
+              raise SystemExit('Phase-8 NEURO mode invalid')
+          if int(report.get('phase') or 0) != 8:
+              raise SystemExit('Phase-8 NEURO phase drifted')
+          if report.get('status') != 'PHASE8_VALIDATION_COMPLETE_NO_PROMOTION':
+              raise SystemExit(f"Phase-8 validation incomplete: {report.get('status')}")
+          if report.get('phase8_complete') is not True:
+              raise SystemExit('Phase-8 did not close')
+          if report.get('phase9_ready') is not True:
+              raise SystemExit('Phase-8 did not authorize Phase 9')
+
+          for key in (
+              'production_influence',
+              'runtime_switch_enabled',
+              'playable_influence',
+              'symphony_prod_influence',
+              'superbet_playable_influence',
+              'auto_promote',
+              'promotion_allowed_by_this_gate',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'Phase-8 isolation violation: {key}={report.get(key)}')
+
+          if report.get('model_classes') != [
+              'interpretable_logistic_baseline',
+              'catboost',
+              'neural_network',
+              'equal_weight_ensemble',
+          ]:
+              raise SystemExit('Phase-8 model-class set drifted')
+
+          feature = report.get('feature_contract') or {}
+          for key in (
+              'same_feature_vector_for_logistic_catboost_nn',
+              'existing_catboost_probability_excluded_to_avoid_circular_comparison',
+              'existing_tabpfn_probability_excluded_to_avoid_model_class_leakage',
+              'bookmaker_price_features_forbidden',
+              'final_result_features_forbidden',
+              'settlement_used_only_as_target',
+              'missing_probability_inputs_imputed_neutral_with_explicit_mask',
+          ):
+              if feature.get(key) is not True:
+                  raise SystemExit(f'Phase-8 feature contract violation: {key}')
+          feature_names = feature.get('feature_names') or []
+          if 'catboost_probability' in feature_names or 'tabpfn_probability' in feature_names:
+              raise SystemExit('Phase-8 challenger comparison leaked existing model outputs')
+
+          walk = report.get('walk_forward_contract') or {}
+          if walk.get('train_fractions') != [0.55, 0.7, 0.85]:
+              raise SystemExit('Phase-8 train fractions drifted')
+          if int(walk.get('required_folds') or 0) != 3:
+              raise SystemExit('Phase-8 fold count drifted')
+          for key in (
+              'expanding_train_windows',
+              'evaluation_windows_disjoint',
+              'same_timestamp_groups_not_split',
+              'same_evaluation_rows_for_all_model_classes',
+              'hyperparameters_frozen_before_evaluation',
+              'ensemble_is_equal_weight_no_post_hoc_tuning',
+          ):
+              if walk.get(key) is not True:
+                  raise SystemExit(f'Phase-8 walk-forward contract violation: {key}')
+          if walk.get('weighting_unit') != 'match':
+              raise SystemExit('Phase-8 lost match-balanced weighting')
+
+          summary = report.get('summary') or {}
+          if summary.get('phase7_prerequisite_satisfied') is not True:
+              raise SystemExit('Phase-8 lost Phase-7 prerequisite')
+          supported = int(summary.get('supported_markets') or 0)
+          minimum = int(summary.get('minimum_supported_markets') or 0)
+          if minimum != 6 or supported < minimum:
+              raise SystemExit(f'Phase-8 supported market sample too small: {supported}/{minimum}')
+          if summary.get('technical_validation_complete') is not True:
+              raise SystemExit('Phase-8 summary did not close technical validation')
+          if summary.get('neural_global_promotion_authorized') is not False:
+              raise SystemExit('Phase-8 globally promoted neural model')
+          if summary.get('ensemble_global_promotion_authorized') is not False:
+              raise SystemExit('Phase-8 globally promoted ensemble')
+
+          markets = report.get('markets') or {}
+          supported_names = set(summary.get('supported_market_names') or [])
+          if len(supported_names) != supported:
+              raise SystemExit('Phase-8 supported market accounting drift')
+          for market in supported_names:
+              row = markets.get(market) or {}
+              if row.get('status') != 'WALK_FORWARD_COMPLETE':
+                  raise SystemExit(f'Phase-8 supported market incomplete: {market}')
+              if int(row.get('complete_folds') or 0) != 3:
+                  raise SystemExit(f'Phase-8 market missing folds: {market}')
+              folds = row.get('folds') or []
+              if len(folds) != 3:
+                  raise SystemExit(f'Phase-8 fold payload invalid: {market}')
+              for fold in folds:
+                  if fold.get('status') != 'FOLD_COMPLETE':
+                      raise SystemExit(f'Phase-8 supported fold incomplete: {market}')
+                  if fold.get('same_timestamp_split') is not False:
+                      raise SystemExit(f'Phase-8 same-timestamp leakage: {market}')
+                  if fold.get('same_eval_rows_all_models') is not True:
+                      raise SystemExit(f'Phase-8 models used different evaluation rows: {market}')
+                  models = fold.get('models') or {}
+                  if set(models) != {'logistic', 'catboost', 'neural', 'ensemble'}:
+                      raise SystemExit(f'Phase-8 model metrics incomplete: {market}')
+                  ns = {int((metrics or {}).get('n') or 0) for metrics in models.values()}
+                  if len(ns) != 1 or next(iter(ns), 0) <= 0:
+                      raise SystemExit(f'Phase-8 evaluation sample mismatch: {market}')
+                  for model_name, metrics in models.items():
+                      for metric in ('brier', 'log_loss', 'ece_10_bin'):
+                          if metrics.get(metric) is None:
+                              raise SystemExit(
+                                  f'Phase-8 metric missing {market}/{model_name}/{metric}'
+                              )
+
+          neural_candidates = set(summary.get('neural_review_candidates') or [])
+          ensemble_candidates = set(summary.get('ensemble_review_candidates') or [])
+          if not neural_candidates.issubset(supported_names):
+              raise SystemExit('Phase-8 neural review candidate outside supported markets')
+          if not ensemble_candidates.issubset(supported_names):
+              raise SystemExit('Phase-8 ensemble review candidate outside supported markets')
+
+          contract = report.get('contract') or {}
+          for key in (
+              'neural_remains_shadow_without_out_of_sample_superiority',
+              'model_class_comparison_uses_identical_walk_forward',
+              'proper_scores_and_calibration_are_primary',
+              'accuracy_is_diagnostic_only',
+              'per_market_evidence_not_global_magic_winner',
+              'phase8_completion_means_evaluation_complete_not_model_promotion',
+              'phase9_may_start_without_promoting_neural',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'Phase-8 contract violation: {key}')
+
+          print(
+              'Phase-8 NEURO closure: '
+              f"status={report.get('status')} "
+              f"supported={supported} "
+              f"neural_review={sorted(neural_candidates)} "
+              f"ensemble_review={sorted(ensemble_candidates)} "
+              f"phase9_ready={report.get('phase9_ready')}"
+          )
+          PY
+
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
         run: python backend/player_dna_prospective_validation.py
 
@@ -3536,6 +3692,7 @@ jobs:
             frontend/data/player_dna_phase5_tennis_state_engine.json
             frontend/data/player_dna_phase6_exact_dp_monte_carlo.json
             frontend/data/player_dna_phase7_calibration_walk_forward.json
+            frontend/data/neuro_shadow_phase8_challenger_walk_forward.json
             frontend/data/player_dna_opponent_context_audit.json
             frontend/data/player_dna_opponent_adjustment_audit.json
             frontend/data/player_dna_pressure_challenger.json
