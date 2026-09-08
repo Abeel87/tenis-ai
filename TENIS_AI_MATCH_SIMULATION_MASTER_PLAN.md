@@ -219,15 +219,19 @@ Aktualny zatwierdzony rdzeń Matchup Engine to osobne main effects:
 serve/return overall + same-surface oraz ich raw support. Nie składamy na siłę
 pełnego kompozytu z rodzin, które nie przeszły robust walk-forward. Nonlinear
 serve-return, opponent-strength, pressure, TB, recent form, comeback i BO5
-stamina pozostają nieaktywne. Small-sample shrinkage ma historyczny sygnał i pozostaje nieaktywny.
-Historyczny holdout i walk-forward są zamrożone na danych o
+stamina pozostają nieaktywne. Small-sample shrinkage jest opcjonalnym kandydatem
+i pozostaje nieaktywny.
+Historyczny holdout i walk-forward używają danych o
 `scheduled_time <= FRESH_CONFIRMATION_CUTOFF`; dane po cutoff nie mogą ponownie
-stroić ani zmieniać statusu historycznego gate'u i służą wyłącznie do świeżego
-confirmation. Przed świeżym confirmation gate shrinkage jest jawnie zablokowany
-jako oczekujący na potwierdzenie. Po pozytywnym fresh confirmation gate Faza 3
-nie może cofać się do stanu niekompletnego: potwierdzenie spełnia gate dowodowy,
-ale shrinkage nadal pozostaje OFF i może zostać aktywowany wyłącznie osobnym,
-jawnym PR-em promocji.
+stroić historycznego wyniku i służą wyłącznie do świeżego confirmation. Jeżeli
+historyczny wynik shrinkage jest robust, przed świeżym confirmation kandydat
+pozostaje zablokowany, a po pozytywnym confirmation może jedynie przejść do
+osobnego jawnego review aktywacji. Jeżeli późniejszy backfill danych sprzed cutoff
+sprawi, że historyczny walk-forward przestanie być robust, shrinkage jest jawnie
+odrzucony i pozostaje OFF; nie cofa to zamkniętej Fazy 3, ponieważ zatwierdzony
+rdzeń Matchup Engine nie używa shrinkage. Brak lub nieznany status historyczny
+nadal zamyka gate fail-closed. Żaden z tych stanów nie aktywuje shrinkage
+automatycznie ani nie wpływa na PROD, Symfonię lub PLAYABLE.
 
 Domknięcie Fazy 3 nie oznacza promocji do PROD, Symfonii ani PLAYABLE. Oznacza,
 że Faza 4 może startować z jednym kanonicznym pre-match matchup contract i
