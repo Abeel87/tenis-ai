@@ -16,6 +16,7 @@ def _entry(result="hit", line=21.5, market="match_total", pick="over"):
         "playable_autolearn_signals_v912": [{
             "market": market, "pick": pick, "line": line, "score": 72.0,
             "result": result, "operator": "superbet.pl", "operator_line_verified": True,
+            "fixture_line_verified": True,
             "model_scores": {"current": 70.0, "catboost": 71.0, "tabpfn": 69.0},
         }],
     }
@@ -44,6 +45,21 @@ def test_candidate_numeric_line_requires_fixture_level_provenance():
         {**base, "fixture_line_verified": True},
         allowed,
     ) is True
+
+
+def test_legacy_playable_numeric_line_without_fixture_proof_is_quarantined():
+    entry = _entry(line=21.5)
+    entry["playable_autolearn_signals_v912"][0].pop("fixture_line_verified")
+
+    assert learning.build_training_rows([entry]) == []
+
+
+def test_verified_playable_numeric_line_remains_eligible_for_training():
+    rows = learning.build_training_rows([_entry(line=21.5)])
+
+    assert len(rows) == 1
+    assert rows[0]["line"] == 21.5
+    assert rows[0]["training_source"] == "playable_frozen"
 
 
 def test_training_rows_use_exact_frozen_operator_line():
@@ -91,7 +107,7 @@ def test_history_layer_unions_unique_exact_rows_from_base_and_autolearn():
     entry["playable_signals_v912"] = [{
         "market": "match_total", "pick": "under", "line": 22.5,
         "score": 65.0, "result": "miss", "operator": "superbet.pl",
-        "operator_line_verified": True,
+        "operator_line_verified": True, "fixture_line_verified": True,
     }]
     rows = learning.build_training_rows([entry])
     assert {(r["pick"], r["line"], r["target"]) for r in rows} == {
@@ -104,7 +120,7 @@ def test_history_layer_exact_duplicate_is_kept_once_and_richer_row_wins():
     entry["playable_signals_v912"] = [{
         "market": "match_total", "pick": "over", "line": 21.5,
         "score": 61.0, "result": "hit", "operator": "superbet.pl",
-        "operator_line_verified": True,
+        "operator_line_verified": True, "fixture_line_verified": True,
     }]
     rows = learning.build_training_rows([entry])
     assert len(rows) == 1
