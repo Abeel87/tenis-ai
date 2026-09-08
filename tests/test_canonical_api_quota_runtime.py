@@ -74,3 +74,20 @@ def test_raw_api_cache_survives_unrelated_late_guard_failure():
     save_pos = workflow.index("Save tennis history + PBP cache")
     publish_pos = workflow.index("Commit refreshed JSON")
     assert save_pos < publish_pos
+
+
+
+def test_autolearn_calibration_guard_workflow_markers_remain_ordered():
+    workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(
+        encoding="utf-8"
+    )
+    markers = (
+        "AutoLearn Hotfix Guard v8.4A.1",
+        "AutoLearn Calibration Guard v8.4A.2",
+        "Final API quota report v8.3B",
+    )
+    positions = []
+    for marker in markers:
+        assert marker in workflow, marker
+        positions.append(workflow.index(marker))
+    assert positions == sorted(positions)
