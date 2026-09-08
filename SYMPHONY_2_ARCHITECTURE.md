@@ -122,6 +122,37 @@ price-delta observations. Operator-price experiment jest więc jawnie
 `NOT_AVAILABLE` i nie używa kursu bukmachera jako etykiety prawdy, targetu
 treningowego ani sygnału rankingowego.
 
+## Phase 14 — bezpieczny lifecycle promocji warstw SHADOW
+
+Player DNA, simulator, Neuro oraz Player-DNA shared state z Faz 9–10 podlegają
+jednemu kanonicznemu lifecycle:
+
+`OFFLINE -> SHADOW -> AUDYT -> CANARY -> PROD`
+
+Authority polityki:
+
+`backend/player_dna_phase14_lifecycle.py`
+
+Faza 14 **nie zmienia** bieżącego rankingu Symfonii 2.0, supervised
+`P_final`, `recommended_leg_count` ani PLAYABLE. Może jedynie stwierdzić,
+że konkretny lane ma komplet dowodów do **ręcznego bounded-canary review**.
+
+`manual_canary_review_eligible=true` nie oznacza aktywnego CANARY.
+Włączenie CANARY wymaga osobnej jawnej zmiany, bounded planu, fingerprintu
+kandydata i rollbacku. PROD wymaga dodatkowo osobnych wyników z faktycznego
+CANARY oraz ręcznej akceptacji.
+
+Dla shared-state z Faz 9–10 techniczne zamknięcie diagnostyki nie jest
+promocją. Do czasu osobnego out-of-sample ranking-impact/canary gate pozostaje:
+
+- `ranking_influence=false`;
+- `operator_model_probability_influence=false`;
+- `recommended_leg_count_influence=false`;
+- `playable_influence=false`.
+
+Stary `shadow_promotion_gate_v942.py` nie jest authority tego lifecycle.
+Nowe `vXXX` nie są tworzone.
+
 ## Generator
 
 Generator dostaje **wyłącznie aktualne, dokładne selekcje Superbet z P_final**.
