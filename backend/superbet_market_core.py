@@ -566,12 +566,9 @@ def _direct_offer_due(cache_entry: dict | None, stage: str, now: datetime):
     previous_stage = str(cache_entry.get("stage") or "")
     previous_rank = _DIRECT_STAGE_RANK.get(previous_stage, 0)
     if current_rank > previous_rank:
-        if (
-            stage == "within_1h_retry"
-            and previous_rank >= _DIRECT_STAGE_RANK["within_4h"]
-            and isinstance(cache_entry.get("offer"), dict)
-        ):
-            return False
+        # Every milestone transition is a fresh operator check. In particular,
+        # a successful <=4h offer is not recent enough for the final-hour
+        # PLAYABLE freshness contract, so <=1h must recheck it.
         return True
     if cache_entry.get("last_error"):
         attempted = _parse_dt(cache_entry.get("last_checked_at"))
