@@ -145,9 +145,31 @@ def _scheduled_utc(match: dict) -> datetime | None:
     return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
+def _known_non_prematch_status(match: dict) -> bool:
+    result = match.get("result")
+    values = [
+        match.get("event_status"),
+        match.get("feed_status"),
+        match.get("status"),
+        result.get("status") if isinstance(result, dict) else None,
+    ]
+    for value in values:
+        token = _norm(value)
+        if not token:
+            continue
+        token = re.sub(r"\bnot started\b", "", token).strip()
+        if re.search(
+            r"\b(?:live|playing|started|in progress|completed|finished|settled|retired|"
+            r"cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b",
+            token,
+        ):
+            return True
+    return False
+
+
 def pre_match_operator_context_active(match: dict, now: datetime | None = None) -> bool:
-    """Actionable PLAYABLE exists only before the scheduled fixture start."""
-    if not operator_context_active(match):
+    """Actionable PLAYABLE exists only for a known future pre-match fixture."""
+    if not operator_context_active(match) or _known_non_prematch_status(match):
         return False
     scheduled = _scheduled_utc(match)
     if scheduled is None:
