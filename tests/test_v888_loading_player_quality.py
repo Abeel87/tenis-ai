@@ -54,7 +54,8 @@ def test_symphony2_is_loaded_from_central_app_bootstrap():
     index = read("frontend/index.html")
     meta = read("frontend/app-meta.js")
     assert 'src="symphony2.js"' in index
-    assert 'href="symphony2.css"' in index
+    assert 'href="style.css"' in index
+    assert "symphony2.css" not in index
     assert "symphony2-live-ui.js" in meta
     assert "symphony2-live-ui-v201.js" not in meta
     assert "symphonyVersion:'canonical'" in meta
