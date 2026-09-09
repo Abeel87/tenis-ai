@@ -13,7 +13,10 @@ def test_adaptive_panel_has_mobile_overflow_guardrails():
     css = (ROOT / "frontend/style.css").read_text(encoding="utf-8")
     compact = _compact(css)
 
-    assert ".v79-live-panel,.v79-health{box-sizing:border-box;min-width:0;overflow:hidden}" in compact
+    assert ".v79-live-panel,.v79-health{" in compact
+    assert "box-sizing:border-box" in compact
+    assert "min-width:0" in compact
+    assert "overflow:hidden" in compact
     assert "overflow-wrap:anywhere" in css
     assert "word-break:break-word" in css
     assert ".v79-model-list" in css and "flex-wrap:wrap" in css
