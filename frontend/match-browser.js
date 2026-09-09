@@ -26,6 +26,15 @@ function topSignal(m){const s=modelSignals(m).map(x=>({...x,v:num(x?.v??x?.final
 function qualityScore(m){return (isPlayable(m)?1200:0)+(pbp(m)?180:0)+strength(m)}
 function cardMatch(card){let k=card?.dataset?.p751Open||'';try{k=decodeURIComponent(k)}catch{}return byKey(k)}
 function groupKey(group){const m=cardMatch(group.querySelector('.p751-match-card'));return m?`${String(m.tour||'')}|${String(m.tournament||'Turniej')}`:(group.querySelector('summary b')?.textContent||'group')}
+function topKey(el){return el?.getAttribute?.('data-p751-open')||''}
+function visibleCardKeys(){return new Set([...document.querySelectorAll('#app .p751-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])')].map(topKey).filter(Boolean))}
+function syncModelTop(){
+  const top=document.querySelector('#app .p751-top:not([data-playable-top-v917])');if(!top)return;
+  const visible=visibleCardKeys();let shown=0;
+  top.querySelectorAll('[data-p751-open]').forEach(button=>{const show=visible.has(topKey(button));button.hidden=!show;if(show)shown++});
+  top.hidden=shown===0;
+  const label=top.querySelector('header span');if(label)label.textContent=`${shown} najmocniejsze`;
+}
 function visibleByState(m){if(!m)return false;if(state.qualityOnly&&!hasAnalysis(m))return false;if(state.surface!=='all'&&surface(m)!==state.surface)return false;if(state.mode==='2h'&&!within2h(m))return false;if(state.mode==='80'&&strength(m)<80)return false;if(state.mode==='playable'&&!isPlayable(m))return false;if(state.mode==='pbp'&&!pbp(m))return false;return true}
 function injectStyle(){if(document.querySelector('#v945-style'))return;const s=document.createElement('style');s.id='v945-style';s.textContent=`.v945-tools{display:grid;gap:8px;margin:8px 0 12px}.v945-primary,.v945-secondary{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px}.v945-primary::-webkit-scrollbar,.v945-secondary::-webkit-scrollbar{display:none}.v945-tools button,.v945-tools select{flex:0 0 auto;border:1px solid var(--border,#334155);background:var(--panel,#101827);color:inherit;border-radius:11px;padding:9px 11px;font:inherit;font-size:13px}.v945-tools button.active{border-color:#22c55e;box-shadow:inset 0 0 0 1px #22c55e}.v945-tools select{max-width:145px}.v945-summary-best{display:block;margin-top:4px;font-size:11px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.p751-group[hidden],.p751-match-card[hidden]{display:none!important}.p751-groups{padding-bottom:92px!important}@media(max-width:700px){.p751-focus{display:none!important}.v945-tools{position:sticky;top:0;z-index:20;background:var(--bg,#08111f);padding:7px 0 5px;margin-top:0}.v945-tools button,.v945-tools select{padding:8px 10px;font-size:12px}.p751-group summary small{line-height:1.35}.p751-bottom-nav{padding-bottom:max(6px,env(safe-area-inset-bottom))}}`;document.head.appendChild(s)}
 function toolHtml(){const btn=(mode,label)=>`<button data-v945-mode="${mode}" class="${state.mode===mode?'active':''}">${label}</button>`;const surfaces=[...new Set(rowsAll().map(surface).filter(x=>x&&x!=='—'))].sort();return `<section class="v945-tools" aria-label="Filtry meczów"><div class="v945-primary">${btn('all','Wszystkie')}${btn('2h','⏱ Do 2h')}${btn('80','⭐ 80+')}${btn('playable','🎯 PLAYABLE')}${btn('pbp','🧬 PBP')}</div><div class="v945-secondary"><button data-v945-ready class="${state.qualityOnly?'active':''}">✓ Z danymi</button><button data-v945-sort>⇅ ${state.sort==='quality'?'Najlepsze':'Godzina'}</button><select data-v945-surface aria-label="Nawierzchnia"><option value="all">Wszystkie naw.</option>${surfaces.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${state.surface===x?'selected':''}>${x}</option>`).join('')}</select></div></section>`}
@@ -70,6 +79,7 @@ function decorateAndFilter(){
     if(!empty){empty=document.createElement('div');empty.className='p751-empty v945-empty';groupsWrap.appendChild(empty)}
     empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr lub wyłącz „Z danymi”.</span>';
   }else empty?.remove();
+  syncModelTop();
   queueMicrotask(()=>window.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.());
 }
 function enhance(){injectStyle();ensureTools();decorateAndFilter()}
@@ -81,5 +91,5 @@ document.addEventListener('change',e=>{if(e.target.matches('[data-v945-surface]'
 document.addEventListener('toggle',e=>{if(e.target.matches?.('#app .p751-group'))captureOpenGroups()},true);
 const oldRender=window.renderMatches;if(typeof oldRender==='function')window.renderMatches=function(){captureOpenGroups();const r=oldRender.apply(this,arguments);setTimeout(enhance,0);return r};
 window.addEventListener('pagehide',()=>{captureOpenGroups();save()});window.addEventListener('pageshow',()=>setTimeout(()=>{enhance();restoreReturnScroll()},0));setTimeout(enhance,0);
-window.TENIS_AI_MATCH_BROWSER_V945=Object.freeze({version:VERSION,hasAnalysis,within2h,qualityScore,visibleByState,enhance});
+window.TENIS_AI_MATCH_BROWSER_V945=Object.freeze({version:VERSION,hasAnalysis,within2h,qualityScore,visibleByState,syncModelTop,enhance});
 })();
