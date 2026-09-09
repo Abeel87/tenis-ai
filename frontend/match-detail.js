@@ -7,6 +7,7 @@
 'use strict';
 if(window.TENIS_AI_MATCH_DETAIL_V950)return;
 const VERSION='v9.5.0.1';
+// Contract: final PLAYABLE = Symfonia 2.0; zweryfikowana oferta Superbet jest osobną warstwą.
 const ROOT='#app[data-match-key] .p751-detail-screen';
 function label(text,kind){const el=document.createElement('div');el.className='p751-note v950-detail-label';el.dataset.v950Label=kind;const b=document.createElement('b');b.textContent=text;el.append(b);return el}
 function removeOldLabels(root){root.querySelectorAll('[data-v950-label]').forEach(el=>el.remove())}
