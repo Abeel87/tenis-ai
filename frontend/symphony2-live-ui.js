@@ -79,9 +79,7 @@
     if(e.target?.closest?.('[data-p751-open]'))setTimeout(()=>ensureDetail(true),60);
     if(e.target?.closest?.('[data-p751-nav="matches"],[data-view="matches"]'))setTimeout(()=>decorateCards(false),120);
   },true);
-
-  const style=document.createElement('style');style.textContent=`.s2-live-card-badge{display:flex;justify-content:space-between;align-items:center;gap:.55rem;margin:.55rem .75rem;padding:.52rem .65rem;border:1px solid rgba(89,226,255,.2);border-radius:10px;background:rgba(40,190,220,.06);font-size:.7rem}.s2-live-card-badge span{color:#9eddea}.s2-live-card-badge strong{color:#c8f3fa;text-align:right}.s2-live-card-badge.ready{border-color:rgba(161,255,91,.25);background:rgba(161,255,91,.055)}.s2-live-card-badge.ready strong{color:#bdff85}`;document.head.appendChild(style);
-  [80,500,1400].forEach((ms,i)=>setTimeout(()=>decorateCards(i===0),ms));
+[80,500,1400].forEach((ms,i)=>setTimeout(()=>decorateCards(i===0),ms));
   setTimeout(()=>ensureDetail(false),300);
 
   window.TENIS_AI_SYMPHONY2_LIVE_V201=Object.freeze({version:VERSION,fetchFeed,decorateCards,ensureDetail});
