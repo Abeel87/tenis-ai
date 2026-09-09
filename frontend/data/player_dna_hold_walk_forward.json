@@ -2,7 +2,7 @@
   "version": "player-dna-hold-walk-forward-v1",
   "mode": "SHADOW_WALK_FORWARD_AUDIT_ONLY",
   "status": "WALK_FORWARD_COMPLETE_NO_INTEGRATION",
-  "signal": "HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW",
+  "signal": "HOLD_CALIBRATION_WALK_FORWARD_NOT_YET_ROBUST",
   "production_influence": false,
   "symphony2_influence": false,
   "superbet_playable_influence": false,
@@ -20,18 +20,18 @@
   },
   "counts": {
     "point_join": {
-      "point_rows_seen": 542044,
-      "non_strict_rows_skipped": 41407,
-      "joined_rows": 500637,
-      "joined_rows_with_valid_score_state": 498130,
-      "profile_snapshots": 8482,
-      "state_state_rows": 542044,
-      "state_state_score_valid": 534988
+      "point_rows_seen": 555840,
+      "non_strict_rows_skipped": 42604,
+      "joined_rows": 513236,
+      "joined_rows_with_valid_score_state": 510705,
+      "profile_snapshots": 8718,
+      "state_state_rows": 555840,
+      "state_state_score_valid": 548646
     },
     "labels": {
-      "matches_seen": 4245,
-      "settled_labels": 3812,
-      "incomplete_or_unsettled": 433
+      "matches_seen": 4363,
+      "settled_labels": 3900,
+      "incomplete_or_unsettled": 463
     },
     "folds": 3
   },
@@ -40,367 +40,367 @@
       "name": "wf1",
       "status": "FOLD_COMPLETE",
       "split": {
-        "fit_cutoff": "2026-08-16T15:45:00+00:00",
-        "calibration_cutoff": "2026-08-19T12:35:00+00:00",
-        "test_cutoff": "2026-08-24T18:10:00+00:00",
-        "fit_matches": 2544,
-        "calibration_matches": 423,
-        "test_matches": 425,
+        "fit_cutoff": "2026-08-16T07:00:00+00:00",
+        "calibration_cutoff": "2026-08-19T11:00:00+00:00",
+        "test_cutoff": "2026-08-24T14:05:00+00:00",
+        "fit_matches": 2615,
+        "calibration_matches": 431,
+        "test_matches": 441,
         "same_timestamp_split": false,
         "policy": "mature-history expanding fit; adjacent calibration; disjoint 10% test windows"
       },
-      "fit_point_rows": 42251,
-      "calibration_point_rows": 11773,
-      "test_point_rows": 21158,
-      "fit_matches": 359,
-      "calibration_matches": 102,
-      "test_matches": 172,
+      "fit_point_rows": 41826,
+      "calibration_point_rows": 12903,
+      "test_point_rows": 20873,
+      "fit_matches": 357,
+      "calibration_matches": 112,
+      "test_matches": 170,
       "calibration_prediction_counts": {
-        "simulated": 102
+        "simulated": 112
       },
       "test_prediction_counts": {
-        "simulated": 172
+        "simulated": 170
       },
-      "calibration_games": 1809,
-      "test_games": 3221,
-      "settled_test_matches": 157,
-      "signal": "PROMISING",
+      "calibration_games": 1978,
+      "test_games": 3179,
+      "settled_test_matches": 162,
+      "signal": "NOT_YET_PROVEN",
       "hold_calibrator": {
-        "intercept": 0.13232962438500998,
-        "slope": 0.8031936856851131,
+        "intercept": 0.19391919088967297,
+        "slope": 0.7060450460281413,
         "l2": 0.01,
         "iterations": 4,
         "converged": true
       },
       "game_hold_test": {
         "iid_raw": {
-          "n": 3221,
-          "observed_rate": 0.720584,
-          "mean_probability": 0.730419,
-          "brier": 0.195935,
-          "log_loss": 0.579215,
-          "bias": 0.009835
+          "n": 3179,
+          "observed_rate": 0.719723,
+          "mean_probability": 0.727627,
+          "brier": 0.196133,
+          "log_loss": 0.579852,
+          "bias": 0.007904
         },
         "calibrated": {
-          "n": 3221,
-          "observed_rate": 0.720584,
-          "mean_probability": 0.718991,
-          "brier": 0.195899,
-          "log_loss": 0.579078,
-          "bias": -0.001593
+          "n": 3179,
+          "observed_rate": 0.719723,
+          "mean_probability": 0.710337,
+          "brier": 0.196318,
+          "log_loss": 0.58018,
+          "bias": -0.009386
         },
-        "brier_gain_calibrated_vs_raw": 3.6e-05,
-        "improved": true
+        "brier_gain_calibrated_vs_raw": -0.000185,
+        "improved": false
       },
       "market_comparison": {
         "match_p1_win": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.566879,
-            "mean_probability": 0.498709,
-            "brier": 0.251149,
-            "log_loss": 0.699723,
-            "bias": -0.06817
+            "n": 162,
+            "observed_rate": 0.580247,
+            "mean_probability": 0.495934,
+            "brier": 0.250854,
+            "log_loss": 0.698696,
+            "bias": -0.084313
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.566879,
-            "mean_probability": 0.498809,
-            "brier": 0.248575,
-            "log_loss": 0.692253,
-            "bias": -0.06807
+            "n": 162,
+            "observed_rate": 0.580247,
+            "mean_probability": 0.496883,
+            "brier": 0.247437,
+            "log_loss": 0.689139,
+            "bias": -0.083364
           },
-          "brier_gain_calibrated_vs_raw": 0.002574,
+          "brier_gain_calibrated_vs_raw": 0.003417,
           "improved": true
         },
         "first_set_p1_win": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.56051,
-            "mean_probability": 0.499002,
-            "brier": 0.24745,
-            "log_loss": 0.688772,
-            "bias": -0.061508
+            "n": 162,
+            "observed_rate": 0.574074,
+            "mean_probability": 0.497166,
+            "brier": 0.246538,
+            "log_loss": 0.686688,
+            "bias": -0.076908
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.56051,
-            "mean_probability": 0.499139,
-            "brier": 0.246733,
-            "log_loss": 0.686923,
-            "bias": -0.06137
+            "n": 162,
+            "observed_rate": 0.574074,
+            "mean_probability": 0.49789,
+            "brier": 0.245931,
+            "log_loss": 0.685116,
+            "bias": -0.076184
           },
-          "brier_gain_calibrated_vs_raw": 0.000717,
+          "brier_gain_calibrated_vs_raw": 0.000607,
           "improved": true
         },
         "first_set_tiebreak": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.152866,
-            "mean_probability": 0.172741,
-            "brier": 0.131572,
-            "log_loss": 0.436,
-            "bias": 0.019875
+            "n": 162,
+            "observed_rate": 0.154321,
+            "mean_probability": 0.174547,
+            "brier": 0.132575,
+            "log_loss": 0.438149,
+            "bias": 0.020226
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.152866,
-            "mean_probability": 0.165855,
-            "brier": 0.130713,
-            "log_loss": 0.432713,
-            "bias": 0.012989
+            "n": 162,
+            "observed_rate": 0.154321,
+            "mean_probability": 0.163363,
+            "brier": 0.131315,
+            "log_loss": 0.433538,
+            "bias": 0.009042
           },
-          "brier_gain_calibrated_vs_raw": 0.000859,
+          "brier_gain_calibrated_vs_raw": 0.00126,
           "improved": true
         },
         "first_set_over_8.5": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.726115,
-            "mean_probability": 0.772691,
-            "brier": 0.197633,
-            "log_loss": 0.584143,
-            "bias": 0.046576
+            "n": 162,
+            "observed_rate": 0.734568,
+            "mean_probability": 0.774393,
+            "brier": 0.192168,
+            "log_loss": 0.571674,
+            "bias": 0.039825
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.726115,
-            "mean_probability": 0.766583,
-            "brier": 0.197405,
-            "log_loss": 0.583261,
-            "bias": 0.040468
+            "n": 162,
+            "observed_rate": 0.734568,
+            "mean_probability": 0.764175,
+            "brier": 0.192363,
+            "log_loss": 0.571753,
+            "bias": 0.029607
           },
-          "brier_gain_calibrated_vs_raw": 0.000228,
-          "improved": true
+          "brier_gain_calibrated_vs_raw": -0.000195,
+          "improved": false
         },
         "first_set_over_9.5": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.484076,
-            "mean_probability": 0.542541,
-            "brier": 0.25078,
-            "log_loss": 0.694727,
-            "bias": 0.058464
+            "n": 162,
+            "observed_rate": 0.506173,
+            "mean_probability": 0.544385,
+            "brier": 0.249136,
+            "log_loss": 0.691449,
+            "bias": 0.038212
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.484076,
-            "mean_probability": 0.536975,
-            "brier": 0.250446,
-            "log_loss": 0.694036,
-            "bias": 0.052899
+            "n": 162,
+            "observed_rate": 0.506173,
+            "mean_probability": 0.535013,
+            "brier": 0.248971,
+            "log_loss": 0.691081,
+            "bias": 0.02884
           },
-          "brier_gain_calibrated_vs_raw": 0.000334,
+          "brier_gain_calibrated_vs_raw": 0.000165,
           "improved": true
         },
         "first_set_over_10.5": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.235669,
-            "mean_probability": 0.281469,
-            "brier": 0.183434,
-            "log_loss": 0.554631,
-            "bias": 0.0458
+            "n": 162,
+            "observed_rate": 0.240741,
+            "mean_probability": 0.283105,
+            "brier": 0.185594,
+            "log_loss": 0.559122,
+            "bias": 0.042364
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.235669,
-            "mean_probability": 0.276611,
-            "brier": 0.182501,
-            "log_loss": 0.552224,
-            "bias": 0.040942
+            "n": 162,
+            "observed_rate": 0.240741,
+            "mean_probability": 0.275029,
+            "brier": 0.18432,
+            "log_loss": 0.555916,
+            "bias": 0.034288
           },
-          "brier_gain_calibrated_vs_raw": 0.000933,
+          "brier_gain_calibrated_vs_raw": 0.001274,
           "improved": true
         },
         "first_set_over_11.5": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.235669,
-            "mean_probability": 0.281469,
-            "brier": 0.183434,
-            "log_loss": 0.554631,
-            "bias": 0.0458
+            "n": 162,
+            "observed_rate": 0.240741,
+            "mean_probability": 0.283105,
+            "brier": 0.185594,
+            "log_loss": 0.559122,
+            "bias": 0.042364
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.235669,
-            "mean_probability": 0.276611,
-            "brier": 0.182501,
-            "log_loss": 0.552224,
-            "bias": 0.040942
+            "n": 162,
+            "observed_rate": 0.240741,
+            "mean_probability": 0.275029,
+            "brier": 0.18432,
+            "log_loss": 0.555916,
+            "bias": 0.034288
           },
-          "brier_gain_calibrated_vs_raw": 0.000933,
+          "brier_gain_calibrated_vs_raw": 0.001274,
           "improved": true
         },
         "first_set_over_12.5": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.152866,
-            "mean_probability": 0.172741,
-            "brier": 0.131572,
-            "log_loss": 0.436,
-            "bias": 0.019875
+            "n": 162,
+            "observed_rate": 0.154321,
+            "mean_probability": 0.174547,
+            "brier": 0.132575,
+            "log_loss": 0.438149,
+            "bias": 0.020226
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.152866,
-            "mean_probability": 0.165855,
-            "brier": 0.130713,
-            "log_loss": 0.432713,
-            "bias": 0.012989
+            "n": 162,
+            "observed_rate": 0.154321,
+            "mean_probability": 0.163363,
+            "brier": 0.131315,
+            "log_loss": 0.433538,
+            "bias": 0.009042
           },
-          "brier_gain_calibrated_vs_raw": 0.000859,
+          "brier_gain_calibrated_vs_raw": 0.00126,
           "improved": true
         },
         "early_1:1": {
           "raw": {
-            "n": 157,
-            "observed_rate": 0.585987,
-            "mean_probability": 0.607506,
-            "brier": 0.242799,
-            "log_loss": 0.678557,
-            "bias": 0.021519
+            "n": 162,
+            "observed_rate": 0.58642,
+            "mean_probability": 0.609436,
+            "brier": 0.242944,
+            "log_loss": 0.678899,
+            "bias": 0.023016
           },
           "calibrated": {
-            "n": 157,
-            "observed_rate": 0.585987,
-            "mean_probability": 0.595943,
-            "brier": 0.241939,
-            "log_loss": 0.676765,
-            "bias": 0.009956
+            "n": 162,
+            "observed_rate": 0.58642,
+            "mean_probability": 0.590908,
+            "brier": 0.24168,
+            "log_loss": 0.676248,
+            "bias": 0.004489
           },
-          "brier_gain_calibrated_vs_raw": 0.00086,
+          "brier_gain_calibrated_vs_raw": 0.001264,
           "improved": true
         },
         "early_2:2": {
           "raw": {
-            "n": 156,
-            "observed_rate": 0.397436,
-            "mean_probability": 0.449968,
-            "brier": 0.235682,
-            "log_loss": 0.664213,
-            "bias": 0.052533
+            "n": 161,
+            "observed_rate": 0.403727,
+            "mean_probability": 0.452309,
+            "brier": 0.236149,
+            "log_loss": 0.665133,
+            "bias": 0.048582
           },
           "calibrated": {
-            "n": 156,
-            "observed_rate": 0.397436,
-            "mean_probability": 0.439155,
-            "brier": 0.235718,
-            "log_loss": 0.664288,
-            "bias": 0.04172
+            "n": 161,
+            "observed_rate": 0.403727,
+            "mean_probability": 0.434997,
+            "brier": 0.236509,
+            "log_loss": 0.665868,
+            "bias": 0.03127
           },
-          "brier_gain_calibrated_vs_raw": -3.6e-05,
+          "brier_gain_calibrated_vs_raw": -0.00036,
           "improved": false
         },
         "early_3:3": {
           "raw": {
-            "n": 154,
-            "observed_rate": 0.350649,
-            "mean_probability": 0.367645,
-            "brier": 0.224823,
-            "log_loss": 0.641879,
-            "bias": 0.016995
+            "n": 159,
+            "observed_rate": 0.358491,
+            "mean_probability": 0.36987,
+            "brier": 0.226574,
+            "log_loss": 0.645426,
+            "bias": 0.01138
           },
           "calibrated": {
-            "n": 154,
-            "observed_rate": 0.350649,
-            "mean_probability": 0.359208,
-            "brier": 0.225136,
-            "log_loss": 0.642426,
-            "bias": 0.008559
+            "n": 159,
+            "observed_rate": 0.358491,
+            "mean_probability": 0.356233,
+            "brier": 0.227405,
+            "log_loss": 0.647049,
+            "bias": -0.002257
           },
-          "brier_gain_calibrated_vs_raw": -0.000313,
+          "brier_gain_calibrated_vs_raw": -0.000831,
           "improved": false
         }
       },
       "summary": {
-        "duration_markets_improved": 4,
+        "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "match_winner_brier_gain_calibrated_vs_raw": 0.002574,
-        "first_set_winner_brier_gain_calibrated_vs_raw": 0.000717,
+        "match_winner_brier_gain_calibrated_vs_raw": 0.003417,
+        "first_set_winner_brier_gain_calibrated_vs_raw": 0.000607,
         "no_primary_collapse": true
       },
       "segments": {
         "surface": {
           "clay": {
-            "settled_matches": 72,
+            "settled_matches": 80,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.002169,
-            "first_set_winner_brier_gain": -0.000253,
+            "match_winner_brier_gain": 0.002135,
+            "first_set_winner_brier_gain": -0.001744,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000477,
-              "first_set_over_8.5": 0.001317,
-              "first_set_over_9.5": 0.001,
-              "first_set_over_10.5": 0.000495
+              "first_set_tiebreak": 0.00042,
+              "first_set_over_8.5": 0.001094,
+              "first_set_over_9.5": 0.00085,
+              "first_set_over_10.5": 0.000488
             }
           },
           "hard": {
-            "settled_matches": 85,
+            "settled_matches": 82,
             "duration_markets_improved": 2,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.002917,
-            "first_set_winner_brier_gain": 0.00154,
+            "match_winner_brier_gain": 0.004667,
+            "first_set_winner_brier_gain": 0.002901,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.001184,
-              "first_set_over_8.5": -0.000696,
-              "first_set_over_9.5": -0.00023,
-              "first_set_over_10.5": 0.001304
+              "first_set_tiebreak": 0.002078,
+              "first_set_over_8.5": -0.001453,
+              "first_set_over_9.5": -0.000503,
+              "first_set_over_10.5": 0.002041
             }
           }
         },
         "tour": {
           "atp": {
             "settled_matches": 20,
-            "duration_markets_improved": 2,
+            "duration_markets_improved": 1,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": -0.000465,
-            "first_set_winner_brier_gain": 0.002663,
+            "match_winner_brier_gain": -0.002877,
+            "first_set_winner_brier_gain": 0.004083,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.002832,
-              "first_set_over_8.5": -0.006315,
-              "first_set_over_9.5": -0.001034,
-              "first_set_over_10.5": 0.000116
+              "first_set_tiebreak": 0.004251,
+              "first_set_over_8.5": -0.010008,
+              "first_set_over_9.5": -0.001107,
+              "first_set_over_10.5": -0.000576
             }
           },
           "challenger": {
-            "settled_matches": 49,
+            "settled_matches": 52,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.005916,
-            "first_set_winner_brier_gain": 0.003325,
+            "match_winner_brier_gain": 0.00812,
+            "first_set_winner_brier_gain": 0.005185,
             "duration_market_gains": {
-              "first_set_tiebreak": 1.5e-05,
-              "first_set_over_8.5": 0.002681,
-              "first_set_over_9.5": 0.000286,
-              "first_set_over_10.5": 0.001724
+              "first_set_tiebreak": 0.000366,
+              "first_set_over_8.5": 0.003009,
+              "first_set_over_9.5": 6.4e-05,
+              "first_set_over_10.5": 0.003152
             }
           },
           "itf": {
-            "settled_matches": 66,
-            "duration_markets_improved": 4,
+            "settled_matches": 70,
+            "duration_markets_improved": 3,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.000753,
-            "first_set_winner_brier_gain": -0.001705,
+            "match_winner_brier_gain": -0.000165,
+            "first_set_winner_brier_gain": -0.003979,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000928,
-              "first_set_over_8.5": 0.000186,
-              "first_set_over_9.5": 0.000569,
-              "first_set_over_10.5": 0.000589
+              "first_set_tiebreak": 0.001113,
+              "first_set_over_8.5": -0.000248,
+              "first_set_over_9.5": 0.000255,
+              "first_set_over_10.5": 0.000421
             }
           },
           "wta": {
-            "settled_matches": 22,
+            "settled_matches": 20,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.003353,
-            "first_set_winner_brier_gain": 0.000407,
+            "match_winner_brier_gain": 0.010017,
+            "first_set_winner_brier_gain": 0.001279,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000738,
-              "first_set_over_8.5": 0.000837,
-              "first_set_over_9.5": 0.000975,
-              "first_set_over_10.5": 0.000945
+              "first_set_tiebreak": 0.0011,
+              "first_set_over_8.5": 0.001475,
+              "first_set_over_9.5": 0.001388,
+              "first_set_over_10.5": 0.001233
             }
           }
         }
@@ -410,285 +410,285 @@
       "name": "wf2",
       "status": "FOLD_COMPLETE",
       "split": {
-        "fit_cutoff": "2026-08-19T12:35:00+00:00",
-        "calibration_cutoff": "2026-08-24T18:10:00+00:00",
-        "test_cutoff": "2026-09-02T13:10:00+00:00",
-        "fit_matches": 2967,
-        "calibration_matches": 425,
-        "test_matches": 422,
+        "fit_cutoff": "2026-08-19T11:00:00+00:00",
+        "calibration_cutoff": "2026-08-24T14:05:00+00:00",
+        "test_cutoff": "2026-09-02T10:05:00+00:00",
+        "fit_matches": 3046,
+        "calibration_matches": 441,
+        "test_matches": 436,
         "same_timestamp_split": false,
         "policy": "mature-history expanding fit; adjacent calibration; disjoint 10% test windows"
       },
-      "fit_point_rows": 54024,
-      "calibration_point_rows": 21158,
-      "test_point_rows": 33680,
-      "fit_matches": 461,
-      "calibration_matches": 172,
-      "test_matches": 249,
+      "fit_point_rows": 54729,
+      "calibration_point_rows": 20873,
+      "test_point_rows": 35089,
+      "fit_matches": 469,
+      "calibration_matches": 170,
+      "test_matches": 260,
       "calibration_prediction_counts": {
-        "simulated": 172
+        "simulated": 170
       },
       "test_prediction_counts": {
-        "simulated": 249
+        "simulated": 260
       },
-      "calibration_games": 3221,
-      "test_games": 5095,
-      "settled_test_matches": 221,
+      "calibration_games": 3179,
+      "test_games": 5301,
+      "settled_test_matches": 225,
       "signal": "PROMISING",
       "hold_calibrator": {
-        "intercept": 0.24973549891012617,
-        "slope": 0.6944674811994764,
+        "intercept": 0.2612600762845745,
+        "slope": 0.7024020498256898,
         "l2": 0.01,
         "iterations": 4,
         "converged": true
       },
       "game_hold_test": {
         "iid_raw": {
-          "n": 5095,
-          "observed_rate": 0.741119,
-          "mean_probability": 0.747122,
-          "brier": 0.189302,
-          "log_loss": 0.564901,
-          "bias": 0.006003
+          "n": 5301,
+          "observed_rate": 0.739294,
+          "mean_probability": 0.745649,
+          "brier": 0.190203,
+          "log_loss": 0.566873,
+          "bias": 0.006355
         },
         "calibrated": {
-          "n": 5095,
-          "observed_rate": 0.741119,
-          "mean_probability": 0.732731,
-          "brier": 0.189197,
-          "log_loss": 0.564838,
-          "bias": -0.008387
+          "n": 5301,
+          "observed_rate": 0.739294,
+          "mean_probability": 0.735538,
+          "brier": 0.190018,
+          "log_loss": 0.566587,
+          "bias": -0.003756
         },
-        "brier_gain_calibrated_vs_raw": 0.000105,
+        "brier_gain_calibrated_vs_raw": 0.000185,
         "improved": true
       },
       "market_comparison": {
         "match_p1_win": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.574661,
-            "mean_probability": 0.530176,
-            "brier": 0.248045,
-            "log_loss": 0.696435,
-            "bias": -0.044485
+            "n": 225,
+            "observed_rate": 0.555556,
+            "mean_probability": 0.529926,
+            "brier": 0.252654,
+            "log_loss": 0.706012,
+            "bias": -0.02563
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.574661,
-            "mean_probability": 0.522111,
-            "brier": 0.243535,
-            "log_loss": 0.681734,
-            "bias": -0.05255
+            "n": 225,
+            "observed_rate": 0.555556,
+            "mean_probability": 0.522043,
+            "brier": 0.247022,
+            "log_loss": 0.688945,
+            "bias": -0.033513
           },
-          "brier_gain_calibrated_vs_raw": 0.00451,
+          "brier_gain_calibrated_vs_raw": 0.005632,
           "improved": true
         },
         "first_set_p1_win": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.529412,
-            "mean_probability": 0.520193,
-            "brier": 0.251167,
-            "log_loss": 0.697777,
-            "bias": -0.009218
+            "n": 225,
+            "observed_rate": 0.511111,
+            "mean_probability": 0.519931,
+            "brier": 0.252784,
+            "log_loss": 0.701066,
+            "bias": 0.00882
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.529412,
-            "mean_probability": 0.514357,
-            "brier": 0.248281,
-            "log_loss": 0.690275,
-            "bias": -0.015055
+            "n": 225,
+            "observed_rate": 0.511111,
+            "mean_probability": 0.514296,
+            "brier": 0.249543,
+            "log_loss": 0.692846,
+            "bias": 0.003185
           },
-          "brier_gain_calibrated_vs_raw": 0.002886,
+          "brier_gain_calibrated_vs_raw": 0.003241,
           "improved": true
         },
         "first_set_tiebreak": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.117647,
-            "mean_probability": 0.175336,
-            "brier": 0.107171,
-            "log_loss": 0.374068,
-            "bias": 0.057689
+            "n": 225,
+            "observed_rate": 0.115556,
+            "mean_probability": 0.174023,
+            "brier": 0.105918,
+            "log_loss": 0.37094,
+            "bias": 0.058467
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.117647,
-            "mean_probability": 0.168751,
-            "brier": 0.106094,
-            "log_loss": 0.370845,
-            "bias": 0.051104
+            "n": 225,
+            "observed_rate": 0.115556,
+            "mean_probability": 0.169766,
+            "brier": 0.104981,
+            "log_loss": 0.368349,
+            "bias": 0.054211
           },
-          "brier_gain_calibrated_vs_raw": 0.001077,
+          "brier_gain_calibrated_vs_raw": 0.000937,
           "improved": true
         },
         "first_set_over_8.5": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.705882,
-            "mean_probability": 0.775002,
-            "brier": 0.210982,
-            "log_loss": 0.615493,
-            "bias": 0.069119
+            "n": 225,
+            "observed_rate": 0.706667,
+            "mean_probability": 0.773472,
+            "brier": 0.210564,
+            "log_loss": 0.614692,
+            "bias": 0.066805
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.705882,
-            "mean_probability": 0.77083,
-            "brier": 0.210398,
-            "log_loss": 0.613308,
-            "bias": 0.064947
+            "n": 225,
+            "observed_rate": 0.706667,
+            "mean_probability": 0.772072,
+            "brier": 0.210259,
+            "log_loss": 0.613248,
+            "bias": 0.065405
           },
-          "brier_gain_calibrated_vs_raw": 0.000584,
+          "brier_gain_calibrated_vs_raw": 0.000305,
           "improved": true
         },
         "first_set_over_9.5": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.452489,
-            "mean_probability": 0.543508,
-            "brier": 0.256856,
-            "log_loss": 0.706986,
-            "bias": 0.091019
+            "n": 225,
+            "observed_rate": 0.444444,
+            "mean_probability": 0.542231,
+            "brier": 0.257817,
+            "log_loss": 0.708927,
+            "bias": 0.097787
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.452489,
-            "mean_probability": 0.540064,
-            "brier": 0.255331,
-            "log_loss": 0.703862,
-            "bias": 0.087575
+            "n": 225,
+            "observed_rate": 0.444444,
+            "mean_probability": 0.541204,
+            "brier": 0.256516,
+            "log_loss": 0.706253,
+            "bias": 0.096759
           },
-          "brier_gain_calibrated_vs_raw": 0.001525,
+          "brier_gain_calibrated_vs_raw": 0.001301,
           "improved": true
         },
         "first_set_over_10.5": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.21267,
-            "mean_probability": 0.282103,
-            "brier": 0.173536,
-            "log_loss": 0.532912,
-            "bias": 0.069433
+            "n": 225,
+            "observed_rate": 0.208889,
+            "mean_probability": 0.281159,
+            "brier": 0.17258,
+            "log_loss": 0.530986,
+            "bias": 0.07227
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.21267,
-            "mean_probability": 0.278467,
-            "brier": 0.172209,
-            "log_loss": 0.529825,
-            "bias": 0.065798
+            "n": 225,
+            "observed_rate": 0.208889,
+            "mean_probability": 0.27932,
+            "brier": 0.171166,
+            "log_loss": 0.527739,
+            "bias": 0.070431
           },
-          "brier_gain_calibrated_vs_raw": 0.001327,
+          "brier_gain_calibrated_vs_raw": 0.001414,
           "improved": true
         },
         "first_set_over_11.5": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.21267,
-            "mean_probability": 0.282103,
-            "brier": 0.173536,
-            "log_loss": 0.532912,
-            "bias": 0.069433
+            "n": 225,
+            "observed_rate": 0.208889,
+            "mean_probability": 0.281159,
+            "brier": 0.17258,
+            "log_loss": 0.530986,
+            "bias": 0.07227
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.21267,
-            "mean_probability": 0.278467,
-            "brier": 0.172209,
-            "log_loss": 0.529825,
-            "bias": 0.065798
+            "n": 225,
+            "observed_rate": 0.208889,
+            "mean_probability": 0.27932,
+            "brier": 0.171166,
+            "log_loss": 0.527739,
+            "bias": 0.070431
           },
-          "brier_gain_calibrated_vs_raw": 0.001327,
+          "brier_gain_calibrated_vs_raw": 0.001414,
           "improved": true
         },
         "first_set_over_12.5": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.117647,
-            "mean_probability": 0.175336,
-            "brier": 0.107171,
-            "log_loss": 0.374068,
-            "bias": 0.057689
+            "n": 225,
+            "observed_rate": 0.115556,
+            "mean_probability": 0.174023,
+            "brier": 0.105918,
+            "log_loss": 0.37094,
+            "bias": 0.058467
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.117647,
-            "mean_probability": 0.168751,
-            "brier": 0.106094,
-            "log_loss": 0.370845,
-            "bias": 0.051104
+            "n": 225,
+            "observed_rate": 0.115556,
+            "mean_probability": 0.169766,
+            "brier": 0.104981,
+            "log_loss": 0.368349,
+            "bias": 0.054211
           },
-          "brier_gain_calibrated_vs_raw": 0.001077,
+          "brier_gain_calibrated_vs_raw": 0.000937,
           "improved": true
         },
         "early_1:1": {
           "raw": {
-            "n": 220,
-            "observed_rate": 0.581818,
-            "mean_probability": 0.616693,
-            "brier": 0.24185,
-            "log_loss": 0.676772,
-            "bias": 0.034875
+            "n": 224,
+            "observed_rate": 0.598214,
+            "mean_probability": 0.614066,
+            "brier": 0.237416,
+            "log_loss": 0.667507,
+            "bias": 0.015852
           },
           "calibrated": {
-            "n": 220,
-            "observed_rate": 0.581818,
-            "mean_probability": 0.604076,
-            "brier": 0.241311,
-            "log_loss": 0.675555,
-            "bias": 0.022258
+            "n": 224,
+            "observed_rate": 0.598214,
+            "mean_probability": 0.605731,
+            "brier": 0.237541,
+            "log_loss": 0.6678,
+            "bias": 0.007517
           },
-          "brier_gain_calibrated_vs_raw": 0.000539,
-          "improved": true
+          "brier_gain_calibrated_vs_raw": -0.000125,
+          "improved": false
         },
         "early_2:2": {
           "raw": {
-            "n": 221,
-            "observed_rate": 0.41629,
-            "mean_probability": 0.455009,
-            "brier": 0.240552,
-            "log_loss": 0.674137,
-            "bias": 0.03872
+            "n": 225,
+            "observed_rate": 0.413333,
+            "mean_probability": 0.452877,
+            "brier": 0.24082,
+            "log_loss": 0.674666,
+            "bias": 0.039543
           },
           "calibrated": {
-            "n": 221,
-            "observed_rate": 0.41629,
-            "mean_probability": 0.443688,
-            "brier": 0.240589,
-            "log_loss": 0.674204,
-            "bias": 0.027399
+            "n": 225,
+            "observed_rate": 0.413333,
+            "mean_probability": 0.445157,
+            "brier": 0.240729,
+            "log_loss": 0.674487,
+            "bias": 0.031824
           },
-          "brier_gain_calibrated_vs_raw": -3.7e-05,
-          "improved": false
+          "brier_gain_calibrated_vs_raw": 9.1e-05,
+          "improved": true
         },
         "early_3:3": {
           "raw": {
-            "n": 216,
-            "observed_rate": 0.342593,
-            "mean_probability": 0.370237,
-            "brier": 0.225291,
-            "log_loss": 0.642805,
-            "bias": 0.027645
+            "n": 221,
+            "observed_rate": 0.334842,
+            "mean_probability": 0.36853,
+            "brier": 0.224535,
+            "log_loss": 0.64133,
+            "bias": 0.033689
           },
           "calibrated": {
-            "n": 216,
-            "observed_rate": 0.342593,
-            "mean_probability": 0.362026,
-            "brier": 0.224708,
-            "log_loss": 0.641596,
-            "bias": 0.019433
+            "n": 221,
+            "observed_rate": 0.334842,
+            "mean_probability": 0.363122,
+            "brier": 0.223466,
+            "log_loss": 0.639114,
+            "bias": 0.02828
           },
-          "brier_gain_calibrated_vs_raw": 0.000583,
+          "brier_gain_calibrated_vs_raw": 0.001069,
           "improved": true
         }
       },
       "summary": {
         "duration_markets_improved": 4,
         "duration_markets_total": 4,
-        "match_winner_brier_gain_calibrated_vs_raw": 0.00451,
-        "first_set_winner_brier_gain_calibrated_vs_raw": 0.002886,
+        "match_winner_brier_gain_calibrated_vs_raw": 0.005632,
+        "first_set_winner_brier_gain_calibrated_vs_raw": 0.003241,
         "no_primary_collapse": true
       },
       "segments": {
@@ -697,26 +697,26 @@
             "settled_matches": 72,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.003183,
-            "first_set_winner_brier_gain": 0.000217,
+            "match_winner_brier_gain": 0.005956,
+            "first_set_winner_brier_gain": 0.001989,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000852,
-              "first_set_over_8.5": 0.000393,
-              "first_set_over_9.5": 0.001896,
-              "first_set_over_10.5": 0.001038
+              "first_set_tiebreak": 0.000926,
+              "first_set_over_8.5": 7.7e-05,
+              "first_set_over_9.5": 0.002262,
+              "first_set_over_10.5": 0.001985
             }
           },
           "hard": {
-            "settled_matches": 138,
+            "settled_matches": 142,
             "duration_markets_improved": 3,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.003859,
-            "first_set_winner_brier_gain": 0.004421,
+            "match_winner_brier_gain": 0.004444,
+            "first_set_winner_brier_gain": 0.004125,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000588,
-              "first_set_over_8.5": -0.000245,
-              "first_set_over_9.5": 0.000632,
-              "first_set_over_10.5": 0.000772
+              "first_set_tiebreak": 0.000366,
+              "first_set_over_8.5": -0.000379,
+              "first_set_over_9.5": 0.000161,
+              "first_set_over_10.5": 0.000473
             }
           }
         },
@@ -725,52 +725,52 @@
             "settled_matches": 50,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": -0.003636,
-            "first_set_winner_brier_gain": -0.001723,
+            "match_winner_brier_gain": -0.003759,
+            "first_set_winner_brier_gain": -0.001923,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.002432,
-              "first_set_over_8.5": 0.001911,
-              "first_set_over_9.5": 0.00328,
-              "first_set_over_10.5": 0.003895
+              "first_set_tiebreak": 0.002258,
+              "first_set_over_8.5": 0.001611,
+              "first_set_over_9.5": 0.002927,
+              "first_set_over_10.5": 0.003611
             }
           },
           "challenger": {
-            "settled_matches": 88,
+            "settled_matches": 89,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.003038,
-            "first_set_winner_brier_gain": 0.004706,
+            "match_winner_brier_gain": 0.004672,
+            "first_set_winner_brier_gain": 0.004868,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.001528,
-              "first_set_over_8.5": 0.002002,
-              "first_set_over_9.5": 0.001797,
-              "first_set_over_10.5": 0.00131
+              "first_set_tiebreak": 0.001648,
+              "first_set_over_8.5": 0.001832,
+              "first_set_over_9.5": 0.001747,
+              "first_set_over_10.5": 0.001757
             }
           },
           "itf": {
-            "settled_matches": 26,
+            "settled_matches": 27,
             "duration_markets_improved": 3,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.009706,
-            "first_set_winner_brier_gain": -0.001444,
+            "match_winner_brier_gain": 0.013818,
+            "first_set_winner_brier_gain": 0.001658,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000918,
-              "first_set_over_8.5": -0.004094,
-              "first_set_over_9.5": 0.001746,
-              "first_set_over_10.5": 0.0013
+              "first_set_tiebreak": 0.000287,
+              "first_set_over_8.5": -0.004126,
+              "first_set_over_9.5": 0.001852,
+              "first_set_over_10.5": 0.001919
             }
           },
           "wta": {
-            "settled_matches": 57,
+            "settled_matches": 59,
             "duration_markets_improved": 0,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.011555,
-            "first_set_winner_brier_gain": 0.006094,
+            "match_winner_brier_gain": 0.01129,
+            "first_set_winner_brier_gain": 0.00589,
             "duration_market_gains": {
-              "first_set_tiebreak": -0.000735,
-              "first_set_over_8.5": -0.000633,
-              "first_set_over_9.5": -0.000534,
-              "first_set_over_10.5": -0.000885
+              "first_set_tiebreak": -0.000957,
+              "first_set_over_8.5": -0.001075,
+              "first_set_over_9.5": -0.001002,
+              "first_set_over_10.5": -0.001195
             }
           }
         }
@@ -780,326 +780,326 @@
       "name": "wf3",
       "status": "FOLD_COMPLETE",
       "split": {
-        "fit_cutoff": "2026-08-24T18:10:00+00:00",
-        "calibration_cutoff": "2026-09-02T13:10:00+00:00",
+        "fit_cutoff": "2026-08-24T14:05:00+00:00",
+        "calibration_cutoff": "2026-09-02T10:05:00+00:00",
         "test_cutoff": null,
-        "fit_matches": 3392,
-        "calibration_matches": 422,
-        "test_matches": 427,
+        "fit_matches": 3487,
+        "calibration_matches": 436,
+        "test_matches": 436,
         "same_timestamp_split": false,
         "policy": "mature-history expanding fit; adjacent calibration; disjoint 10% test windows"
       },
-      "fit_point_rows": 75182,
-      "calibration_point_rows": 33680,
-      "test_point_rows": 44344,
-      "fit_matches": 633,
-      "calibration_matches": 249,
-      "test_matches": 306,
+      "fit_point_rows": 75602,
+      "calibration_point_rows": 35089,
+      "test_point_rows": 45166,
+      "fit_matches": 639,
+      "calibration_matches": 260,
+      "test_matches": 312,
       "calibration_prediction_counts": {
-        "simulated": 249
+        "simulated": 260
       },
       "test_prediction_counts": {
-        "simulated": 306
+        "simulated": 312
       },
-      "calibration_games": 5095,
-      "test_games": 6640,
-      "settled_test_matches": 299,
+      "calibration_games": 5301,
+      "test_games": 6763,
+      "settled_test_matches": 305,
       "signal": "PROMISING",
       "hold_calibrator": {
-        "intercept": 0.42903834727338636,
-        "slope": 0.5499506583382366,
+        "intercept": 0.4173860817387114,
+        "slope": 0.5618288795318133,
         "l2": 0.01,
         "iterations": 4,
         "converged": true
       },
       "game_hold_test": {
         "iid_raw": {
-          "n": 6640,
-          "observed_rate": 0.745181,
-          "mean_probability": 0.763168,
-          "brier": 0.188029,
-          "log_loss": 0.563163,
-          "bias": 0.017987
+          "n": 6763,
+          "observed_rate": 0.74671,
+          "mean_probability": 0.761319,
+          "brier": 0.187111,
+          "log_loss": 0.560947,
+          "bias": 0.014609
         },
         "calibrated": {
-          "n": 6640,
-          "observed_rate": 0.745181,
-          "mean_probability": 0.746367,
-          "brier": 0.187827,
-          "log_loss": 0.562273,
-          "bias": 0.001186
+          "n": 6763,
+          "observed_rate": 0.74671,
+          "mean_probability": 0.745581,
+          "brier": 0.187084,
+          "log_loss": 0.560638,
+          "bias": -0.001129
         },
-        "brier_gain_calibrated_vs_raw": 0.000202,
+        "brier_gain_calibrated_vs_raw": 2.7e-05,
         "improved": true
       },
       "market_comparison": {
         "match_p1_win": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.588629,
-            "mean_probability": 0.511556,
-            "brier": 0.258242,
-            "log_loss": 0.716064,
-            "bias": -0.077073
+            "n": 305,
+            "observed_rate": 0.593443,
+            "mean_probability": 0.509019,
+            "brier": 0.259107,
+            "log_loss": 0.717576,
+            "bias": -0.084423
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.588629,
-            "mean_probability": 0.506613,
-            "brier": 0.250055,
-            "log_loss": 0.694,
-            "bias": -0.082016
+            "n": 305,
+            "observed_rate": 0.593443,
+            "mean_probability": 0.505257,
+            "brier": 0.250589,
+            "log_loss": 0.695067,
+            "bias": -0.088186
           },
-          "brier_gain_calibrated_vs_raw": 0.008187,
+          "brier_gain_calibrated_vs_raw": 0.008518,
           "improved": true
         },
         "first_set_p1_win": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.561873,
-            "mean_probability": 0.507948,
-            "brier": 0.256128,
-            "log_loss": 0.707001,
-            "bias": -0.053925
+            "n": 305,
+            "observed_rate": 0.567213,
+            "mean_probability": 0.506138,
+            "brier": 0.257751,
+            "log_loss": 0.71036,
+            "bias": -0.061075
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.561873,
-            "mean_probability": 0.504411,
-            "brier": 0.251209,
-            "log_loss": 0.695749,
-            "bias": -0.057462
+            "n": 305,
+            "observed_rate": 0.567213,
+            "mean_probability": 0.503452,
+            "brier": 0.25221,
+            "log_loss": 0.697785,
+            "bias": -0.063761
           },
-          "brier_gain_calibrated_vs_raw": 0.004919,
+          "brier_gain_calibrated_vs_raw": 0.005541,
           "improved": true
         },
         "first_set_tiebreak": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.150502,
-            "mean_probability": 0.187333,
-            "brier": 0.128115,
-            "log_loss": 0.423963,
-            "bias": 0.036832
+            "n": 305,
+            "observed_rate": 0.15082,
+            "mean_probability": 0.185868,
+            "brier": 0.127808,
+            "log_loss": 0.42292,
+            "bias": 0.035048
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.150502,
-            "mean_probability": 0.1776,
-            "brier": 0.127645,
-            "log_loss": 0.422801,
-            "bias": 0.027098
+            "n": 305,
+            "observed_rate": 0.15082,
+            "mean_probability": 0.177178,
+            "brier": 0.127656,
+            "log_loss": 0.422648,
+            "bias": 0.026359
           },
-          "brier_gain_calibrated_vs_raw": 0.00047,
+          "brier_gain_calibrated_vs_raw": 0.000152,
           "improved": true
         },
         "first_set_over_8.5": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.752508,
-            "mean_probability": 0.790643,
-            "brier": 0.183679,
-            "log_loss": 0.55273,
-            "bias": 0.038135
+            "n": 305,
+            "observed_rate": 0.754098,
+            "mean_probability": 0.789262,
+            "brier": 0.182721,
+            "log_loss": 0.55027,
+            "bias": 0.035164
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.752508,
-            "mean_probability": 0.783566,
-            "brier": 0.184443,
-            "log_loss": 0.554484,
-            "bias": 0.031057
+            "n": 305,
+            "observed_rate": 0.754098,
+            "mean_probability": 0.783044,
+            "brier": 0.183512,
+            "log_loss": 0.552315,
+            "bias": 0.028946
           },
-          "brier_gain_calibrated_vs_raw": -0.000764,
+          "brier_gain_calibrated_vs_raw": -0.000791,
           "improved": false
         },
         "first_set_over_9.5": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.478261,
-            "mean_probability": 0.558099,
-            "brier": 0.255191,
-            "log_loss": 0.703713,
-            "bias": 0.079838
+            "n": 305,
+            "observed_rate": 0.478689,
+            "mean_probability": 0.556612,
+            "brier": 0.253942,
+            "log_loss": 0.701143,
+            "bias": 0.077923
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.478261,
-            "mean_probability": 0.551597,
-            "brier": 0.253956,
-            "log_loss": 0.701112,
-            "bias": 0.073336
+            "n": 305,
+            "observed_rate": 0.478689,
+            "mean_probability": 0.551072,
+            "brier": 0.253392,
+            "log_loss": 0.699968,
+            "bias": 0.072383
           },
-          "brier_gain_calibrated_vs_raw": 0.001235,
+          "brier_gain_calibrated_vs_raw": 0.00055,
           "improved": true
         },
         "first_set_over_10.5": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.267559,
-            "mean_probability": 0.292829,
-            "brier": 0.197045,
-            "log_loss": 0.58343,
-            "bias": 0.025271
+            "n": 305,
+            "observed_rate": 0.268852,
+            "mean_probability": 0.29152,
+            "brier": 0.19678,
+            "log_loss": 0.582682,
+            "bias": 0.022667
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.267559,
-            "mean_probability": 0.28646,
-            "brier": 0.196136,
-            "log_loss": 0.581217,
-            "bias": 0.018902
+            "n": 305,
+            "observed_rate": 0.268852,
+            "mean_probability": 0.286056,
+            "brier": 0.196352,
+            "log_loss": 0.581583,
+            "bias": 0.017204
           },
-          "brier_gain_calibrated_vs_raw": 0.000909,
+          "brier_gain_calibrated_vs_raw": 0.000428,
           "improved": true
         },
         "first_set_over_11.5": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.267559,
-            "mean_probability": 0.292829,
-            "brier": 0.197045,
-            "log_loss": 0.58343,
-            "bias": 0.025271
+            "n": 305,
+            "observed_rate": 0.268852,
+            "mean_probability": 0.29152,
+            "brier": 0.19678,
+            "log_loss": 0.582682,
+            "bias": 0.022667
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.267559,
-            "mean_probability": 0.28646,
-            "brier": 0.196136,
-            "log_loss": 0.581217,
-            "bias": 0.018902
+            "n": 305,
+            "observed_rate": 0.268852,
+            "mean_probability": 0.286056,
+            "brier": 0.196352,
+            "log_loss": 0.581583,
+            "bias": 0.017204
           },
-          "brier_gain_calibrated_vs_raw": 0.000909,
+          "brier_gain_calibrated_vs_raw": 0.000428,
           "improved": true
         },
         "first_set_over_12.5": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.150502,
-            "mean_probability": 0.187333,
-            "brier": 0.128115,
-            "log_loss": 0.423963,
-            "bias": 0.036832
+            "n": 305,
+            "observed_rate": 0.15082,
+            "mean_probability": 0.185868,
+            "brier": 0.127808,
+            "log_loss": 0.42292,
+            "bias": 0.035048
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.150502,
-            "mean_probability": 0.1776,
-            "brier": 0.127645,
-            "log_loss": 0.422801,
-            "bias": 0.027098
+            "n": 305,
+            "observed_rate": 0.15082,
+            "mean_probability": 0.177178,
+            "brier": 0.127656,
+            "log_loss": 0.422648,
+            "bias": 0.026359
           },
-          "brier_gain_calibrated_vs_raw": 0.00047,
+          "brier_gain_calibrated_vs_raw": 0.000152,
           "improved": true
         },
         "early_1:1": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.625418,
-            "mean_probability": 0.634919,
-            "brier": 0.232675,
-            "log_loss": 0.658326,
-            "bias": 0.009501
+            "n": 305,
+            "observed_rate": 0.619672,
+            "mean_probability": 0.633281,
+            "brier": 0.234583,
+            "log_loss": 0.662276,
+            "bias": 0.013608
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.625418,
-            "mean_probability": 0.618714,
-            "brier": 0.23271,
-            "log_loss": 0.658117,
-            "bias": -0.006704
+            "n": 305,
+            "observed_rate": 0.619672,
+            "mean_probability": 0.6182,
+            "brier": 0.234344,
+            "log_loss": 0.661481,
+            "bias": -0.001472
           },
-          "brier_gain_calibrated_vs_raw": -3.5e-05,
-          "improved": false
+          "brier_gain_calibrated_vs_raw": 0.000239,
+          "improved": true
         },
         "early_2:2": {
           "raw": {
-            "n": 299,
-            "observed_rate": 0.474916,
-            "mean_probability": 0.471834,
-            "brier": 0.244099,
-            "log_loss": 0.681229,
-            "bias": -0.003082
+            "n": 305,
+            "observed_rate": 0.47541,
+            "mean_probability": 0.469917,
+            "brier": 0.244415,
+            "log_loss": 0.68187,
+            "bias": -0.005493
           },
           "calibrated": {
-            "n": 299,
-            "observed_rate": 0.474916,
-            "mean_probability": 0.456067,
-            "brier": 0.246528,
-            "log_loss": 0.686138,
-            "bias": -0.01885
+            "n": 305,
+            "observed_rate": 0.47541,
+            "mean_probability": 0.455512,
+            "brier": 0.246729,
+            "log_loss": 0.686545,
+            "bias": -0.019898
           },
-          "brier_gain_calibrated_vs_raw": -0.002429,
+          "brier_gain_calibrated_vs_raw": -0.002314,
           "improved": false
         },
         "early_3:3": {
           "raw": {
-            "n": 292,
-            "observed_rate": 0.393836,
-            "mean_probability": 0.384446,
-            "brier": 0.237213,
-            "log_loss": 0.667279,
-            "bias": -0.00939
+            "n": 297,
+            "observed_rate": 0.397306,
+            "mean_probability": 0.38281,
+            "brier": 0.236887,
+            "log_loss": 0.666564,
+            "bias": -0.014497
           },
           "calibrated": {
-            "n": 292,
-            "observed_rate": 0.393836,
-            "mean_probability": 0.372125,
-            "brier": 0.237918,
-            "log_loss": 0.668701,
-            "bias": -0.02171
+            "n": 297,
+            "observed_rate": 0.397306,
+            "mean_probability": 0.371689,
+            "brier": 0.238308,
+            "log_loss": 0.669462,
+            "bias": -0.025618
           },
-          "brier_gain_calibrated_vs_raw": -0.000705,
+          "brier_gain_calibrated_vs_raw": -0.001421,
           "improved": false
         }
       },
       "summary": {
         "duration_markets_improved": 3,
         "duration_markets_total": 4,
-        "match_winner_brier_gain_calibrated_vs_raw": 0.008187,
-        "first_set_winner_brier_gain_calibrated_vs_raw": 0.004919,
+        "match_winner_brier_gain_calibrated_vs_raw": 0.008518,
+        "first_set_winner_brier_gain_calibrated_vs_raw": 0.005541,
         "no_primary_collapse": true
       },
       "segments": {
         "surface": {
           "clay": {
-            "settled_matches": 91,
+            "settled_matches": 96,
             "duration_markets_improved": 3,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.015898,
-            "first_set_winner_brier_gain": 0.009149,
+            "match_winner_brier_gain": 0.015717,
+            "first_set_winner_brier_gain": 0.010314,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000665,
-              "first_set_over_8.5": -0.000964,
-              "first_set_over_9.5": 0.000911,
-              "first_set_over_10.5": 0.002101
+              "first_set_tiebreak": 0.000337,
+              "first_set_over_8.5": -0.001026,
+              "first_set_over_9.5": 7.8e-05,
+              "first_set_over_10.5": 0.001143
             }
           },
           "grass": {
             "settled_matches": 22,
             "duration_markets_improved": 3,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": -0.002101,
-            "first_set_winner_brier_gain": 0.003148,
+            "match_winner_brier_gain": -0.003181,
+            "first_set_winner_brier_gain": 0.002596,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.00171,
-              "first_set_over_8.5": 0.002097,
-              "first_set_over_9.5": 0.001845,
-              "first_set_over_10.5": -0.005183
+              "first_set_tiebreak": 0.001037,
+              "first_set_over_8.5": 0.001504,
+              "first_set_over_9.5": 0.000985,
+              "first_set_over_10.5": -0.005005
             }
           },
           "hard": {
-            "settled_matches": 186,
-            "duration_markets_improved": 3,
+            "settled_matches": 187,
+            "duration_markets_improved": 2,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.005632,
-            "first_set_winner_brier_gain": 0.003059,
+            "match_winner_brier_gain": 0.0062,
+            "first_set_winner_brier_gain": 0.003436,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000228,
-              "first_set_over_8.5": -0.001004,
-              "first_set_over_9.5": 0.001322,
-              "first_set_over_10.5": 0.001047
+              "first_set_tiebreak": -4.7e-05,
+              "first_set_over_8.5": -0.000941,
+              "first_set_over_9.5": 0.00074,
+              "first_set_over_10.5": 0.000701
             }
           }
         },
@@ -1108,52 +1108,52 @@
             "settled_matches": 61,
             "duration_markets_improved": 4,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.013431,
-            "first_set_winner_brier_gain": 0.000418,
+            "match_winner_brier_gain": 0.012993,
+            "first_set_winner_brier_gain": 0.000122,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.004325,
-              "first_set_over_8.5": 0.001807,
-              "first_set_over_9.5": 0.00877,
-              "first_set_over_10.5": 0.004258
+              "first_set_tiebreak": 0.003156,
+              "first_set_over_8.5": 0.001436,
+              "first_set_over_9.5": 0.006866,
+              "first_set_over_10.5": 0.003167
             }
           },
           "challenger": {
-            "settled_matches": 156,
-            "duration_markets_improved": 3,
+            "settled_matches": 161,
+            "duration_markets_improved": 2,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.009784,
-            "first_set_winner_brier_gain": 0.007847,
+            "match_winner_brier_gain": 0.010779,
+            "first_set_winner_brier_gain": 0.009303,
             "duration_market_gains": {
-              "first_set_tiebreak": 0.000175,
-              "first_set_over_8.5": -0.000618,
-              "first_set_over_9.5": 0.00109,
-              "first_set_over_10.5": 0.000591
+              "first_set_tiebreak": -6.2e-05,
+              "first_set_over_8.5": -0.000626,
+              "first_set_over_9.5": 0.000457,
+              "first_set_over_10.5": 6.7e-05
             }
           },
           "itf": {
-            "settled_matches": 26,
+            "settled_matches": 27,
             "duration_markets_improved": 0,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 8e-06,
-            "first_set_winner_brier_gain": 0.004332,
+            "match_winner_brier_gain": 0.00041,
+            "first_set_winner_brier_gain": 0.00377,
             "duration_market_gains": {
-              "first_set_tiebreak": -0.002727,
-              "first_set_over_8.5": -0.00379,
-              "first_set_over_9.5": -0.001884,
-              "first_set_over_10.5": -0.001673
+              "first_set_tiebreak": -0.002257,
+              "first_set_over_8.5": -0.003553,
+              "first_set_over_9.5": -0.002157,
+              "first_set_over_10.5": -0.001333
             }
           },
           "wta": {
             "settled_matches": 56,
             "duration_markets_improved": 0,
             "duration_markets_total": 4,
-            "match_winner_brier_gain": 0.001825,
-            "first_set_winner_brier_gain": 0.001938,
+            "match_winner_brier_gain": 0.001055,
+            "first_set_winner_brier_gain": 0.00148,
             "duration_market_gains": {
-              "first_set_tiebreak": -0.001421,
-              "first_set_over_8.5": -0.002564,
-              "first_set_over_9.5": -0.005119,
-              "first_set_over_10.5": -0.000654
+              "first_set_tiebreak": -0.001343,
+              "first_set_over_8.5": -0.002363,
+              "first_set_over_9.5": -0.004761,
+              "first_set_over_10.5": -0.000667
             }
           }
         }
@@ -1163,22 +1163,22 @@
   "aggregate": {
     "completed_folds": 3,
     "required_folds": 3,
-    "promising_folds": 3,
-    "game_hold_improved_folds": 3,
+    "promising_folds": 2,
+    "game_hold_improved_folds": 2,
     "duration_market_positive_folds": {
       "first_set_tiebreak": 3,
-      "first_set_over_8.5": 2,
+      "first_set_over_8.5": 1,
       "first_set_over_9.5": 3,
       "first_set_over_10.5": 3
     },
     "no_catastrophic_primary_collapse": true,
-    "robust": true
+    "robust": false
   },
   "segment_aggregate": {
     "surface": {
       "clay": {
         "folds_with_sample": 3,
-        "settled_matches_total": 235,
+        "settled_matches_total": 248,
         "duration_positive_folds": 3,
         "primary_safe_folds": 3,
         "repeatable_duration_signal": true
@@ -1192,10 +1192,10 @@
       },
       "hard": {
         "folds_with_sample": 3,
-        "settled_matches_total": 409,
-        "duration_positive_folds": 2,
+        "settled_matches_total": 411,
+        "duration_positive_folds": 1,
         "primary_safe_folds": 3,
-        "repeatable_duration_signal": true
+        "repeatable_duration_signal": false
       }
     },
     "tour": {
@@ -1208,14 +1208,14 @@
       },
       "challenger": {
         "folds_with_sample": 3,
-        "settled_matches_total": 293,
-        "duration_positive_folds": 3,
+        "settled_matches_total": 302,
+        "duration_positive_folds": 2,
         "primary_safe_folds": 3,
         "repeatable_duration_signal": true
       },
       "itf": {
         "folds_with_sample": 3,
-        "settled_matches_total": 118,
+        "settled_matches_total": 124,
         "duration_positive_folds": 2,
         "primary_safe_folds": 3,
         "repeatable_duration_signal": true
