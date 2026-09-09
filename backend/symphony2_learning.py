@@ -247,21 +247,28 @@ def _history_layer(entry: dict, candidate_markets: set[str] | None = None) -> li
     return [item[2] for item in by_key.values()]
 
 
-def build_training_rows(history: Iterable[dict]) -> list[dict]:
+def build_training_rows(
+    history: Iterable[dict],
+    candidate_markets: set[str] | None = None,
+) -> list[dict]:
     try:
         from .symphony2_state import build_outcomes, marginal_probability
     except ImportError:
         from symphony2_state import build_outcomes, marginal_probability
 
     history_rows = [x for x in (history or []) if isinstance(x, dict)]
-    candidate_markets = _candidate_review_ready_markets(history_rows)
+    allowed_candidate_markets = (
+        _candidate_review_ready_markets(history_rows)
+        if candidate_markets is None
+        else {_norm(x) for x in candidate_markets if _norm(x)}
+    )
     rows: list[dict] = []
     seen: set[tuple] = set()
     for entry in history_rows:
         captured = entry.get("captured_at") or entry.get("playable_captured_at_v912") or entry.get("scheduled_time")
         match_id = entry.get("match_id") if entry.get("match_id") is not None else entry.get("id")
         outcomes = build_outcomes(entry)
-        for signal in _history_layer(entry, candidate_markets):
+        for signal in _history_layer(entry, allowed_candidate_markets):
             if not _history_orientation_valid(entry, signal):
                 continue
             result = _norm(signal.get("result"))
@@ -427,6 +434,33 @@ class OperatorLineModel:
         return diagnostics["final"] if diagnostics is not None else None
 
 
+def _entry_capture_ts(entry: dict) -> float:
+    return _date_key(
+        entry.get("captured_at")
+        or entry.get("playable_captured_at_v912")
+        or entry.get("scheduled_time")
+    )
+
+
+def _validation_cutoff_from_canonical_rows(rows: list[dict]) -> float | None:
+    """Derive the chronological holdout boundary without candidate-gate hindsight."""
+    if len(rows) < 2:
+        return None
+    split = max(1, min(len(rows) - 1, int(round(len(rows) * (1.0 - VALIDATION_FRACTION)))))
+    return float(rows[split - 1]["captured_ts"])
+
+
+def _candidate_markets_as_of(history_rows: list[dict], cutoff_ts: float | None) -> set[str]:
+    """Resolve REVIEW_READY using only evidence available at the training cutoff."""
+    if cutoff_ts is None:
+        return set()
+    prefix = [
+        entry for entry in history_rows
+        if 0 < _entry_capture_ts(entry) <= cutoff_ts
+    ]
+    return _candidate_review_ready_markets(prefix)
+
+
 def _split_calibration_window(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     """Chronological fit/evaluation split inside the future holdout window."""
     if len(rows) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS:
@@ -441,22 +475,32 @@ def _split_calibration_window(rows: list[dict]) -> tuple[list[dict], list[dict]]
 
 def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     history_rows = [x for x in (history or []) if isinstance(x, dict)]
-    candidate_markets = _candidate_review_ready_markets(history_rows)
-    rows = build_training_rows(history_rows)
-    support = Counter(r["market"] for r in rows)
-    source_counts = Counter(r.get("training_source", "unknown") for r in rows)
-    out = OperatorLineModel(trained_rows=len(rows), market_support=dict(support), metrics={"version": VERSION})
+
+    # The validation boundary must not depend on candidate markets whose
+    # REVIEW_READY status may itself be earned by outcomes in that holdout.
+    canonical_rows = build_training_rows(history_rows, candidate_markets=set())
+    cutoff_ts = _validation_cutoff_from_canonical_rows(canonical_rows)
+    candidate_markets = _candidate_markets_as_of(history_rows, cutoff_ts)
+    rows = build_training_rows(history_rows, candidate_markets=candidate_markets)
+
+    if cutoff_ts is None:
+        train, valid = rows, []
+    else:
+        train = [r for r in rows if r["captured_ts"] <= cutoff_ts]
+        valid = [r for r in rows if r["captured_ts"] > cutoff_ts]
+
+    if len(valid) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS or len({r["target"] for r in valid}) < 2:
+        train, valid = rows, []
+
+    support = Counter(r["market"] for r in train)
+    source_counts = Counter(r.get("training_source", "unknown") for r in train)
+    out = OperatorLineModel(trained_rows=len(train), market_support=dict(support), metrics={"version": VERSION})
     if CatBoostClassifier is None:
         out.status = "catboost_unavailable"
         return out
-    if len(rows) < MIN_TRAIN_ROWS or len({r["target"] for r in rows}) < 2:
+    if len(train) < MIN_TRAIN_ROWS or len({r["target"] for r in train}) < 2:
         out.status = "insufficient_history"
         return out
-
-    split = max(1, min(len(rows) - 1, int(round(len(rows) * (1.0 - VALIDATION_FRACTION)))))
-    train, valid = rows[:split], rows[split:]
-    if len(valid) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS or len({r["target"] for r in valid}) < 2:
-        train, valid = rows, []
 
     x_train = [[r.get(name) for name in FEATURES] for r in train]
     y_train = [r["target"] for r in train]
@@ -477,8 +521,10 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "market_support": dict(sorted(support.items())),
         "training_source_counts": dict(sorted(source_counts.items())),
         "candidate_review_ready_markets": sorted(candidate_markets),
+        "candidate_gate_cutoff_ts": cutoff_ts,
+        "candidate_gate_as_of": True,
         "history_layer_policy": "UNION_FIXTURE_PROVEN_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
-        "candidate_gate_policy": "REVIEW_READY_ONLY; EXACT_OPERATOR_VERIFIED; NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION",
+        "candidate_gate_policy": "REVIEW_READY_AS_OF_TRAINING_CUTOFF_ONLY; EXACT_OPERATOR_VERIFIED; NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION",
         "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
