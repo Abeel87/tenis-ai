@@ -59,19 +59,12 @@ async function loadReport(force=false){
 }
 
 function ensureNav(){
-  const nav=document.querySelector('#p751-bottom-nav');
-  if(!nav)return false;
-  let btn=nav.querySelector('[data-p751-nav="shadow-signals"]');
-  if(!btn){
-    btn=document.createElement('button');
-    btn.type='button';
-    btn.dataset.p751Nav='shadow-signals';
-    btn.innerHTML='<span>👻</span><b>SHADOW</b>';
-    const symphony=nav.querySelector('[data-p751-nav="symphony2"]');
-    if(symphony)symphony.insertAdjacentElement('afterend',btn);
-    else nav.appendChild(btn);
+  const btn=document.querySelector('#shadow-signals-open');
+  if(!btn)return false;
+  if(btn.dataset.shadowSignalsBound!=='1'){
+    btn.dataset.shadowSignalsBound='1';
+    btn.addEventListener('click',()=>open());
   }
-  btn.onclick=()=>open();
   document.documentElement.classList.add('sh894-nav-ready');
   return true;
 }
@@ -79,9 +72,8 @@ function ensureNav(){
 function setActive(on){
   state.active=!!on;
   document.documentElement.classList.toggle('sh894-view',state.active);
-  if(state.active){
-    document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(b=>b.classList.toggle('active',b.dataset.p751Nav==='shadow-signals'));
-  }
+  const btn=document.querySelector('#shadow-signals-open');
+  if(btn){btn.classList.toggle('active',state.active);btn.setAttribute('aria-pressed',state.active?'true':'false')}
 }
 
 function models(){return Array.isArray(state.report?.models)?state.report.models:[]}
@@ -255,13 +247,12 @@ function refreshVisible(){
 }
 
 document.addEventListener('click',e=>{
-  const b=e.target?.closest?.('#p751-bottom-nav [data-p751-nav]');
-  if(!b)return;
-  if(b.dataset.p751Nav!=='shadow-signals')setActive(false);
+  if(e.target?.closest?.('.main-tabs [data-view],#symphony-open,#neuro-open'))setActive(false);
 },true);
+document.addEventListener('tenis-ai:ui-ready',ensureNav);
+document.addEventListener('tenis-ai-ui-mode-change',ensureNav);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)ensureNav()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-setTimeout(ensureNav,350);
 
 window.TENIS_AI_SHADOW_SIGNAL_CENTER_V894=Object.freeze({version:VERSION,open,render,refreshVisible,productionInfluence:false});
 })();
