@@ -157,9 +157,9 @@ def _known_non_prematch_status(match: dict) -> bool:
         token = _norm(value)
         if not token:
             continue
-        token = re.sub(r"\bnot started\b", "", token).strip()
+        token = re.sub(r"\bnot[- ]started\b", "", token).strip()
         if re.search(
-            r"\b(?:live|playing|started|in progress|completed|finished|settled|retired|"
+            r"\b(?:live|playing|started|in[- ]progress|completed|finished|settled|retired|"
             r"cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b",
             token,
         ):
