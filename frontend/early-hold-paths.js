@@ -100,17 +100,11 @@
     </section>`;
   }
 
-  function currentOverlayMatch(){
-    const o=$('#p751-match-overlay');
-    if(!o||o.hidden)return null;
-    const names=$$('.p751-matchup > b',o).map(x=>x.textContent.trim()).filter(Boolean);
-    if(names.length>=2)return findMatch(names[0],names[1]);
-    return null;
-  }
-
   function decorateOverlay(){
-    // Match Matrix owns the match-level comparison. Keep profile helpers only.
-    $('#eh771-match-compare')?.remove();
+    // Match Matrix owns match-level comparison. Keep player-profile helpers only.
+    const root=$('#app[data-match-key]');
+    if(!root)return;
+    $('#eh771-match-compare',root)?.remove();
   }
 
   function decoratePlayerProfile(){
