@@ -370,16 +370,24 @@ def test_calibrator_reports_separate_fit_and_evaluation_samples():
     assert info["evaluation_rows"] == 20
 
 
-def test_candidate_review_ready_gate_is_resolved_from_training_prefix_only(monkeypatch):
+def test_candidate_review_ready_gate_uses_only_labels_settled_by_cutoff(monkeypatch):
     history = [
-        {"captured_at": "2026-08-01T10:00:00+00:00"},
-        {"captured_at": "2026-08-02T10:00:00+00:00"},
-        {"captured_at": "2026-08-03T10:00:00+00:00"},
+        {
+            "captured_at": "2026-08-01T10:00:00+00:00",
+            "settled_at": "2026-08-01T13:00:00+00:00",
+        },
+        {
+            "captured_at": "2026-08-02T09:00:00+00:00",
+            "settled_at": "2026-08-03T13:00:00+00:00",
+        },
+        {
+            "captured_at": "2026-08-02T09:30:00+00:00",
+        },
     ]
     seen = []
 
     def fake_gate(rows):
-        seen.extend(row["captured_at"] for row in rows)
+        seen.extend(row["settled_at"] for row in rows)
         return {"set2_total"}
 
     monkeypatch.setattr(learning, "_candidate_review_ready_markets", fake_gate)
@@ -388,10 +396,7 @@ def test_candidate_review_ready_gate_is_resolved_from_training_prefix_only(monke
     markets = learning._candidate_markets_as_of(history, cutoff)
 
     assert markets == {"set2_total"}
-    assert seen == [
-        "2026-08-01T10:00:00+00:00",
-        "2026-08-02T10:00:00+00:00",
-    ]
+    assert seen == ["2026-08-01T13:00:00+00:00"]
 
 
 def test_explicit_candidate_gate_does_not_recompute_from_future_history(monkeypatch):
@@ -416,6 +421,23 @@ def test_explicit_candidate_gate_does_not_recompute_from_future_history(monkeypa
     assert learning.build_training_rows([entry], candidate_markets=set()) == []
 
 
+def test_purged_time_split_excludes_labels_unavailable_at_training_cutoff():
+    cutoff = 100.0
+    rows = [
+        {"captured_ts": 80.0, "settled_ts": 90.0, "target": 1},
+        {"captured_ts": 85.0, "settled_ts": 120.0, "target": 0},
+        {"captured_ts": 90.0, "settled_ts": 0.0, "target": 1},
+        {"captured_ts": 110.0, "settled_ts": 130.0, "target": 0},
+        {"captured_ts": 120.0, "settled_ts": 0.0, "target": 1},
+    ]
+
+    train, valid, purged = learning._purged_time_split(rows, cutoff)
+
+    assert train == [rows[0]]
+    assert valid == [rows[3]]
+    assert purged == 3
+
+
 def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch):
     canonical = []
     for i in range(300):
@@ -436,6 +458,7 @@ def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch
             "adaptive_score": 70.0,
             "target": i % 2,
             "captured_ts": float(i),
+            "settled_ts": float(i),
             "training_source": "playable_frozen",
         })
     with_candidate_holdout = list(canonical)
@@ -445,6 +468,7 @@ def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch
             "market": "set2_total",
             "line": 8.5,
             "captured_ts": float(i) + 0.1,
+            "settled_ts": float(i) + 0.1,
             "training_source": "candidate_review_ready",
         })
     with_candidate_holdout.sort(key=lambda row: row["captured_ts"])
