@@ -133,3 +133,24 @@ def test_model_only_line_flag_cannot_replace_fixture_line_proof():
     ])
 
     assert _current_offer(match) == []
+
+
+def test_set3_game_handicap_is_treated_as_numeric_line_market():
+    malformed = {
+        "market": "set3_game_handicap",
+        "pick": "Player A",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    valid = {
+        **malformed,
+        "line": -1.5,
+    }
+
+    assert _current_offer(_match([malformed])) == []
+    offer = _current_offer(_match([valid]))
+    assert len(offer) == 1
+    assert offer[0]["market"] == "set3_game_handicap"
+    assert offer[0]["line"] == -1.5

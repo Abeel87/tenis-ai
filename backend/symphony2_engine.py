@@ -56,7 +56,7 @@ PHASE10_EXACT_EPS = 1e-12
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
-    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set3_game_handicap", "set_handicap",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 MIN_ACTIONABLE_P = 0.55

@@ -5,6 +5,11 @@
 if(window.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922)return;
 const VERSION='v9.3.3';
 let queued=false;
+const LINE_MARKETS=new Set([
+  'match_total','set1_total','set2_total','set3_total','total_sets',
+  'match_game_handicap','set1_game_handicap','set2_game_handicap','set3_game_handicap','set_handicap',
+  'player_total_games','match_total_aces','player_aces','player_double_faults'
+]);
 
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const decode=v=>{try{return decodeURIComponent(String(v||''))}catch{return String(v||'')}};
@@ -36,11 +41,19 @@ function findMatch(raw){
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(k)||null}catch{return null}
 }
 function context(match){return match?.superbet_market_v91||{}}
+function currentContextActive(match){return window.TENIS_AI_PLAYABLE_UI_V917?.active?.(match)===true}
+function operatorSelectionVerified(row){
+  if(!row||typeof row!=='object'||row.operator_available!==true)return false;
+  const market=String(row.market||'').trim();
+  if(!LINE_MARKETS.has(market))return true;
+  return finite(row.line)&&row.operator_line_verified===true&&row.fixture_line_verified===true;
+}
 function rowsOf(match){
   const ctx=context(match);
-  const selections=(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(r=>r&&r.operator_available!==false);
-  const playable=Array.isArray(ctx.model_signals)?ctx.model_signals:[];
-  const shadow=Array.isArray(ctx.coverage_shadow_signals)?ctx.coverage_shadow_signals:[];
+  const current=currentContextActive(match);
+  const selections=current?(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(operatorSelectionVerified):[];
+  const playable=current&&Array.isArray(ctx.model_signals)?ctx.model_signals:[];
+  const shadow=current&&Array.isArray(ctx.coverage_shadow_signals)?ctx.coverage_shadow_signals:[];
   return {ctx,selections,playable,shadow};
 }
 function coverageKey(match){
@@ -68,7 +81,7 @@ function signalHtml(signal){
 function panelHtml(match){
   const {selections,playable,shadow}=rowsOf(match);
   const byKey=new Map([...playable,...shadow].map(r=>[key(r),r]));
-  const active=window.TENIS_AI_PLAYABLE_UI_V917?.active?.(match)===true;
+  const active=currentContextActive(match);
   const rows=selections.map(selection=>{
     const signal=byKey.get(key(selection))||null;
     return `<div class="sbmc922-line" data-sbmc922-market="${esc(selection.market||'')}"><b>${esc(marketLabel(selection))}</b><small>${esc(String(selection.market||'rynek').replaceAll('_',' '))}</small><strong class="sbmc922-value">${signalHtml(signal)}</strong></div>`;

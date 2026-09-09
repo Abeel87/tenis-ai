@@ -98,13 +98,15 @@ def _simple_match_with_operator_lines():
         "second_set_win": {"Alpha": 55.0, "Beta": 45.0},
         "third_set_win": {"Alpha": 56.0, "Beta": 44.0},
         "superbet_market_v91": {
+            "operator": "superbet.pl",
             "status": "VERIFIED",
             "operator_verified": True,
+            "suspended": False,
             "canonical_selections": [
-                {"market": "set1_total", "pick": "over", "line": 9.5, "operator_available": True},
-                {"market": "set1_total", "pick": "under", "line": 9.5, "operator_available": True},
-                {"market": "match_total", "pick": "over", "line": 21.5, "operator_available": True},
-                {"market": "match_total", "pick": "under", "line": 21.5, "operator_available": True},
+                {"market": "set1_total", "pick": "over", "line": 9.5, "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True, "operator_line_source": "test_fixture"},
+                {"market": "set1_total", "pick": "under", "line": 9.5, "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True, "operator_line_source": "test_fixture"},
+                {"market": "match_total", "pick": "over", "line": 21.5, "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True, "operator_line_source": "test_fixture"},
+                {"market": "match_total", "pick": "under", "line": 21.5, "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True, "operator_line_source": "test_fixture"},
             ],
         },
     }
@@ -153,3 +155,69 @@ def test_prepare_expiry_metadata_and_future_timestamp_fail_closed(monkeypatch):
         assert ctx['operator_verified'] is expected
         assert ctx['source_max_age_hours'] == 1.8
     assert 'superbet_market_v91' not in matches[0]
+
+
+def test_finalize_rejects_stale_or_malformed_operator_evidence_without_touching_model_raw():
+    from copy import deepcopy
+
+    base = _simple_match_with_operator_lines()
+    base["match_win"] = {"Alpha": 61.0, "Beta": 39.0}
+    base["models"] = {"raw": {"sentinel": {"probability": 0.64}}}
+    before_raw = deepcopy(base["models"])
+    valid = {
+        "market": "match_total",
+        "pick": "over",
+        "line": 21.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+        "operator_line_source": "test_fixture",
+    }
+
+    for mutate in (
+        lambda ctx: ctx.update(status="CACHE_STALE"),
+        lambda ctx: ctx.update(operator_verified=False),
+        lambda ctx: ctx.update(operator="superbet.ro"),
+        lambda ctx: ctx.update(suspended=True),
+    ):
+        match = deepcopy(base)
+        match["superbet_market_v91"]["canonical_selections"] = [dict(valid)]
+        mutate(match["superbet_market_v91"])
+        rows, ready, signals = finalize_results([match])
+        assert ready == 0
+        assert signals == 0
+        assert rows[0]["superbet_market_v91"]["model_signals"] == []
+        assert rows[0]["models"] == before_raw
+
+    for field in ("operator_available", "operator_line_verified", "fixture_line_verified"):
+        match = deepcopy(base)
+        malformed = dict(valid)
+        malformed.pop(field)
+        match["superbet_market_v91"]["canonical_selections"] = [malformed]
+        rows, ready, signals = finalize_results([match])
+        assert ready == 1
+        assert signals == 0
+        assert rows[0]["superbet_market_v91"]["available_selections_count"] == 0
+        assert rows[0]["models"] == before_raw
+
+
+def test_finalize_preserves_exact_line_provenance_instead_of_fabricating_a_source():
+    match = _simple_match_with_operator_lines()
+    match["superbet_market_v91"]["canonical_selections"] = [{
+        "market": "match_total",
+        "pick": "over",
+        "line": 21.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+        "operator_line_source": None,
+    }]
+    match = lab.enrich(match)
+    rows, ready, signals = finalize_results([match])
+    assert ready == 1
+    assert signals == 1
+    row = rows[0]["superbet_market_v91"]["model_signals"][0]
+    assert row["operator_available"] is True
+    assert row["operator_line_verified"] is True
+    assert row["fixture_line_verified"] is True
+    assert row["operator_line_source"] is None

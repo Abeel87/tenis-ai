@@ -28,6 +28,19 @@ def _match():
     }
 
 
+
+
+def _ctx(selections, model_signals=None, *, status="VERIFIED", operator_verified=True, operator="superbet.pl", suspended=False):
+    return {
+        "operator": operator,
+        "status": status,
+        "operator_verified": operator_verified,
+        "suspended": suspended,
+        "canonical_selections": list(selections),
+        "model_signals": list(model_signals or []),
+        "prices_used": False,
+    }
+
 def test_handicap_accepts_any_real_half_line_and_respects_selection_side():
     dist = {(10, 8): 0.60, (8, 10): 0.40}
     match = _match()
@@ -82,7 +95,7 @@ def test_most_aces_uses_existing_serve_props_and_exposes_draw_probability():
 def test_most_aces_probability_is_visible_but_stays_shadow_not_playable():
     match = _match()
     selection = {"market": "most_aces", "pick": "Player One", "operator_available": True}
-    match["superbet_market_v91"] = {"canonical_selections": [selection], "model_signals": []}
+    match["superbet_market_v91"] = _ctx([selection])
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     assert ctx["model_signals"] == []
@@ -103,11 +116,7 @@ def test_adapter_appends_missing_signals_but_never_overwrites_an_existing_one():
           "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
     existing = dict(s1)
     existing.update({"key": cov._selection_key(s1), "score": 77.0, "label": "already calculated"})
-    match["superbet_market_v91"] = {
-        "canonical_selections": [s1, s2],
-        "model_signals": [existing],
-        "prices_used": False,
-    }
+    match["superbet_market_v91"] = _ctx([s1, s2], [existing])
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     rows = ctx["model_signals"]
@@ -127,7 +136,7 @@ def test_missing_evidence_stays_operator_only_instead_of_getting_a_fake_probabil
     match.pop("exact_first_set")
     selection = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5,
                  "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
-    match["superbet_market_v91"] = {"canonical_selections": [selection], "model_signals": []}
+    match["superbet_market_v91"] = _ctx([selection])
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     assert ctx["model_signals"] == []
@@ -141,3 +150,60 @@ def test_adapter_source_has_no_network_client_or_request_path():
     for token in ("urlopen", "requests.get", "urllib.request", "httpx", "aiohttp"):
         assert token not in source
     assert '"external_requests":0' in source.replace(" ", "")
+
+
+def test_stale_context_is_not_counted_as_current_coverage_and_raw_is_preserved():
+    from copy import deepcopy
+
+    match = _match()
+    match["models"] = {"raw": {"sentinel": {"probability": 0.61}}}
+    before_raw = deepcopy(match["models"])
+    selection = {
+        "market": "set1_game_handicap",
+        "pick": "Player One",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    existing = {
+        **selection,
+        "key": cov._selection_key(selection),
+        "score": 77.0,
+    }
+    match["superbet_market_v91"] = _ctx(
+        [selection],
+        [existing],
+        status="CACHE_STALE",
+        operator_verified=False,
+    )
+
+    out = cov.enrich_match(match)
+    ctx = out["superbet_market_v91"]
+
+    assert ctx["canonical_selections"] == [selection]
+    assert ctx["available_selections_count"] == 0
+    assert ctx["model_signals"] == []
+    assert ctx["coverage_shadow_signals"] == []
+    assert ctx["operator_only_count"] == 0
+    assert out["models"] == before_raw
+
+
+def test_line_market_without_numeric_line_is_not_current_operator_evidence():
+    match = _match()
+    selection = {
+        "market": "set1_game_handicap",
+        "pick": "Player One",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    match["superbet_market_v91"] = _ctx([selection])
+
+    out = cov.enrich_match(match)
+    ctx = out["superbet_market_v91"]
+
+    assert ctx["available_selections_count"] == 0
+    assert ctx["model_signals"] == []
+    assert ctx["coverage_shadow_signals"] == []
