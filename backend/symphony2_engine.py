@@ -1263,6 +1263,7 @@ def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
     projected: list[dict] = []
     for raw in results or []:
         if not isinstance(raw, dict):
+            projected.append(raw)
             continue
         match = dict(raw)
         row = current_by_key.get(_match_key(raw))
@@ -1280,7 +1281,10 @@ def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
             for signal in ((comp or {}).get("selection") or [])
             if isinstance(signal, dict)
         ]
-        if len(signals) < 2:
+        if (
+            len(signals) < 2
+            or any(signal.get("fixture_line_verified") is not True for signal in signals)
+        ):
             signals = []
             comp = None
 
