@@ -39,7 +39,6 @@ STABLE_FRONTEND_RUNTIME = {
     "history-ui.js", "project-ui.js",
     "adaptive-prod-bridge.js",
     "performance-dashboard.js", "performance-center.js",
-    "ui-organizer.js",
     "superbet-playable-stats.js",
     "stats-ranking.js", "market-quality.js",
     "integrity-status.js", "model-trends.js",
@@ -71,7 +70,7 @@ RETIRED_FRONTEND_RUNTIME = {
     "integrity-v78a.js", "integrity-v78a.css", "model-trends-v84e2.js", "model-trends-v84e2.css",
     "match-time-v84e11.js", "match-time-v84e11.css", "pbp-validation-v73.js", "pbp-validation-v73.css",
     "market-lab-v741.js", "market-lab-v741.css", "logic-audit-v772.css", "calibration-v78d.css",
-    "clarity-labels.js", "navigation-tools.js", "project-ui-quality.js", "ui-cleanup.js",
+    "clarity-labels.js", "navigation-tools.js", "project-ui-quality.js", "ui-cleanup.js", "ui-organizer.js",
     "project-ui.css", "project-readability.css", "neon.css",
     "clean-core-v80.css", "symphony2.css",
 }
@@ -141,7 +140,7 @@ def test_index_boots_stable_production_runtime_chain():
     for name in (
         "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
         "registration-handler.js", "registration-ux.js", "history-ui.js", "project-ui.js",
-        "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
+        "adaptive-prod-bridge.js", "performance-dashboard.js",
         "performance-center.js", "player-intelligence-ui.js", "stats-ranking.js", "market-quality.js",
         "integrity-status.js", "match-time.js", "model-trends.js",
         "pbp-validation.js", "market-lab.js", "early-hold-paths.js", "player-trends.js", "player-analytics.js",
