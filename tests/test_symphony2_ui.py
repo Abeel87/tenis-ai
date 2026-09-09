@@ -6,6 +6,9 @@ CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
 PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
+MATCH_DETAIL = (ROOT / "frontend" / "match-detail.js").read_text(encoding="utf-8")
+ARCH = (ROOT / "SYMPHONY_2_ARCHITECTURE.md").read_text(encoding="utf-8")
+WORKFLOW = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
 
 
 def test_single_symphony2_frontend_is_loaded():
@@ -29,7 +32,8 @@ def test_stats_ui_reads_only_symphony2_stats():
 
 
 def test_symphony_hub_explains_exact_superbet_probability_contract():
-    assert "dokładną aktualną ofertę Superbet" in JS
+    assert "Finalny PLAYABLE to wyłącznie rekomendowana kompozycja" in JS
+    assert "świeżej, dokładnej ofercie Superbet" in JS
     assert "operator_model_probability" in JS
     assert "joint_probability" in JS
     assert "learning_support_rows" in JS
@@ -116,11 +120,61 @@ def test_nullable_symphony_numbers_are_not_coerced_to_zero():
 def test_symphony_actionable_ui_revalidates_prematch_at_render_time():
     assert "function rowPreMatch(row,match=null,now=Date.now())" in JS
     assert "scheduled<=Number(now)" in JS
-    assert "TENIS_AI_PLAYABLE_UI_V917?.preMatch" in JS
+    assert "TENIS_AI_PLAYABLE_UI_V917" in JS
+    assert "api.active(match,now)!==true" in JS
     assert "function currentRows(data,now=Date.now())" in JS
     assert "currentRows(data).map(m=>" in JS
     assert "currentRows(data).filter(m=>" in JS
     assert "currentRows(data).forEach(m=>" in JS
     assert "matchSymphonyHtml(row,data,match)" in JS
     assert "SYMFONIA 2.0 · NIEAKTYWNA" in JS
+    assert "Snapshot pre-match lub oferta operatora wygasła" in JS
     assert "Dane MODEL/RAW pozostają bez zmian." in JS
+
+
+
+def test_symphony2_is_documented_as_single_final_playable_authority():
+    assert "superbet_playable_v912" in ARCH
+    assert "nie jest `P_final` Symfonii 2.0" in ARCH
+    assert "nie jest authority finalnego PLAYABLE" in ARCH
+    assert "symphony2_playable" in ARCH
+    assert "AKTUALNA OFERTA SUPERBET -> SUPERVISED P(HIT) -> EXACT JOINT -> SYMFONIA 2.0 -> PLAYABLE" in ARCH
+    assert "zerowym supportem jest `N/D` / unscored" in ARCH
+
+
+def test_main_workflow_names_operator_projection_separately_from_final_playable():
+    assert "Superbet exact-offer projection INJECT current real lines" in WORKFLOW
+    assert "Superbet exact-offer projection PROJECT frontend + stats" in WORKFLOW
+    assert "Superbet exact-offer projection Guard" in WORKFLOW
+    assert "Superbet PLAYABLE PROJECT frontend + stats" not in WORKFLOW
+
+
+
+def test_match_detail_does_not_equate_verified_offer_with_final_playable():
+    assert "final PLAYABLE = Symfonia 2.0" in MATCH_DETAIL
+    assert "zweryfikowana oferta Superbet jest osobną warstwą" in MATCH_DETAIL
+    assert "SUPERBET PLAYABLE — realna, zweryfikowana oferta operatora" not in MATCH_DETAIL
+
+
+
+def test_symphony_no_composition_state_is_not_labeled_playable():
+    assert "SYMFONIA 2.0 · BRAK PLAYABLE" in JS
+    assert "SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji" not in JS
+
+
+def test_symphony2_final_playable_never_falls_back_to_another_composition():
+    assert "function finalPlayableLayer(row,match=null,data=null)" in JS
+    assert "layer.final_playable_authority!==true" in JS
+    assert "layer.playable!==true" in JS
+    assert "published!==recommended" in JS
+    assert "api.compositionPlayable(match,comp)!==true" in JS
+    assert "projected.length!==legs.length" in JS
+    assert "compositionFor(row)" not in JS
+    assert "for(const k of keys)if(row.compositions" not in JS
+
+
+def test_symphony2_alternative_sizes_are_explicitly_non_final_analysis():
+    assert "WARIANT ANALITYCZNY · NIE FINAL PLAYABLE" in JS
+    assert "FINAL PLAYABLE" in JS
+    assert "Pozostałe rozmiary kompozycji są tylko wariantami analitycznymi." in JS
+    assert "Realne linie Superbet · exact PLAYABLE" not in JS

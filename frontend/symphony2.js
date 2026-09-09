@@ -22,13 +22,30 @@
   }
   function rowPreMatch(row,match=null,now=Date.now()){
     const scheduled=Date.parse(row?.scheduled_time||'');
-    if(!Number.isFinite(scheduled)||scheduled<=Number(now))return false;
-    const guard=window.TENIS_AI_PLAYABLE_UI_V917?.preMatch;
-    if(typeof guard==='function'){
-      if(guard(row,now)!==true)return false;
-      if(match&&guard(match,now)!==true)return false;
-    }
+    if(!Number.isFinite(scheduled)||scheduled<=Number(now)||!match)return false;
+    const api=window.TENIS_AI_PLAYABLE_UI_V917;
+    if(typeof api?.preMatch!=='function'||api.preMatch(row,now)!==true||api.preMatch(match,now)!==true)return false;
+    if(typeof api?.active!=='function'||api.active(match,now)!==true)return false;
     return true;
+  }
+  function finalPlayableLayer(row,match=null,data=null){
+    if(!rowPreMatch(row,match))return null;
+    const api=window.TENIS_AI_PLAYABLE_UI_V917,layer=match?.symphony2_playable;
+    if(!layer||layer.final_playable_authority!==true||layer.playable!==true||!Array.isArray(layer.signals))return null;
+    if(data?.generated_at&&String(layer.source_generated_at||'')!==String(data.generated_at))return null;
+    const recommended=Number(row?.recommended_leg_count),published=Number(layer.recommended_leg_count);
+    if(!Number.isInteger(recommended)||recommended<2||published!==recommended)return null;
+    const comp=row?.compositions?.[String(recommended)],legs=comp?.selection;
+    if(!comp||!Array.isArray(legs)||legs.length!==recommended)return null;
+    if(typeof api?.compositionPlayable!=='function'||api.compositionPlayable(match,comp)!==true)return null;
+    const projected=api.playableSignals?.(match,100)||[],signature=api.signature;
+    if(typeof signature!=='function'||projected.length!==legs.length)return null;
+    const a=projected.map(signature).sort().join('||'),b=legs.map(signature).sort().join('||');
+    return a===b?layer:null;
+  }
+  function finalPlayableComposition(row,match=null,data=null){
+    const layer=finalPlayableLayer(row,match,data);
+    return layer?row?.compositions?.[String(row.recommended_leg_count)]||null:null;
   }
   function currentRows(data,now=Date.now()){return (data?.matches||[]).filter(row=>rowPreMatch(row,projectMatchFor(row),now))}
 
@@ -62,7 +79,7 @@
     hub.id='symphony2-hub';
     hub.className='s2-hub';
     hub.hidden=true;
-    hub.innerHTML=`<div class="s2-hub-frame"><header class="s2-hub-top"><div><b>🎼 Symfonia 2.0</b><small>Realne linie Superbet · exact PLAYABLE</small></div><button type="button" data-s2-close aria-label="Zamknij">✕</button></header><div class="s2-hub-body"></div></div>`;
+    hub.innerHTML=`<div class="s2-hub-frame"><header class="s2-hub-top"><div><b>🎼 Symfonia 2.0</b><small>Realne linie Superbet · exact-line</small></div><button type="button" data-s2-close aria-label="Zamknij">✕</button></header><div class="s2-hub-body"></div></div>`;
     document.body.appendChild(hub);
     hub.querySelector('[data-s2-close]')?.addEventListener('click',close);
     return hub;
@@ -125,8 +142,9 @@
     const support=nfmt(x?.learning_support_rows);
     return `<div class="s2-leg"><div><strong>${esc(selectionLabel(x,m))}</strong><small>${esc(marketLabel(x,m))} · dokładna linia Superbet${operatorSource(x)}${state} · historia n=${support}</small></div><div class="s2-prob">${pct(x?.operator_model_probability)}</div></div>`;
   }
-  function compositionCard(m,c){
-    return `<article class="s2-card"><div class="s2-head"><div><small>${esc(m?.tour||'')} ${m?.surface?`· ${esc(m.surface)}`:''}</small><h3>${esc(m?.p1)} <span>vs</span> ${esc(m?.p2)}</h3><div class="s2-muted">${Number(c?.legs||0)} zdarzenia · wszystkie z bieżącej oferty Superbet</div></div><div class="s2-score"><small>quality</small><strong>${Number(c?.score||0).toFixed(1)}</strong></div></div><div>${(c?.selection||[]).map(x=>leg(x,m)).join('')}</div><div class="s2-joint"><span>Wspólne P kompozycji</span><strong>${pct(c?.joint_probability)}</strong><small>${esc(c?.joint_status||'')} · policzone na tej samej dystrybucji stanów meczu</small></div></article>`;
+  function compositionCard(m,c,isFinal=false){
+    const authority=isFinal?'FINAL PLAYABLE':'WARIANT ANALITYCZNY · NIE FINAL PLAYABLE';
+    return `<article class="s2-card"><div class="s2-head"><div><small>${esc(m?.tour||'')} ${m?.surface?`· ${esc(m.surface)}`:''}</small><h3>${esc(m?.p1)} <span>vs</span> ${esc(m?.p2)}</h3><div class="s2-muted">${authority} · ${Number(c?.legs||0)} zdarzenia · wszystkie z bieżącej oferty Superbet</div></div><div class="s2-score"><small>quality</small><strong>${Number(c?.score||0).toFixed(1)}</strong></div></div><div>${(c?.selection||[]).map(x=>leg(x,m)).join('')}</div><div class="s2-joint"><span>Wspólne P kompozycji</span><strong>${pct(c?.joint_probability)}</strong><small>${esc(c?.joint_status||'')} · policzone na tej samej dystrybucji stanów meczu</small></div></article>`;
   }
   function availableLegCounts(data){
     const counts=new Set();
@@ -149,15 +167,17 @@
   }
   function renderCompositions(data,count,legs){
     const rows=currentRows(data).map(m=>{
-      const n=legs==='auto'?m?.recommended_leg_count:Number(legs);
-      return {m,c:n?m?.compositions?.[String(n)]:null};
+      const match=projectMatchFor(m),n=legs==='auto'?Number(m?.recommended_leg_count):Number(legs);
+      const c=Number.isInteger(n)&&n>0?m?.compositions?.[String(n)]:null;
+      const finalComp=finalPlayableComposition(m,match,data);
+      return {m,c,isFinal:!!c&&c===finalComp};
     }).filter(x=>x.c).sort((a,b)=>Number(b.c?.score||0)-Number(a.c?.score||0)).slice(0,count);
     if(!rows.length)return '<div class="s2-empty">Brak kompozycji spełniających próg Symfonii 2.0. Pokazujemy wyłącznie wystarczająco jakościowe selekcje z dokładnej bieżącej oferty Superbet, które można policzyć we wspólnym state-space.</div>';
-    return rows.map(x=>compositionCard(x.m,x.c)).join('');
+    return rows.map(x=>compositionCard(x.m,x.c,x.isFinal)).join('');
   }
   function hubShell(data){
     const defaultCount=Math.min(4,Math.max(1,eligibleMatchCount(data)));
-    return `<section class="s2-shell" data-symphony2-version="${VERSION}"><div class="s2-hero"><div class="s2-kicker">TENIS AI · SYMFONIA 2.0</div><h2>Symfonia 2.0</h2><p>Jedno miejsce dla PLAYABLE. Biorę dokładną aktualną ofertę Superbet, oceniam każdą selekcję modelem uczonym na historycznych realnych liniach i składam tylko spójne kombinacje z prawdziwym joint probability.</p></div>${status(data)}<div class="s2-controls"><label>Mecze<select id="s2-count">${countOptions(data)}</select></label><label>Zdarzenia / mecz<select id="s2-legs">${legOptions(data)}</select></label><button class="s2-generate" id="s2-compose" type="button">🎼 Ułóż Symfonię 2.0</button></div><div id="s2-results" class="s2-grid">${renderCompositions(data,defaultCount,'auto')}</div></section>`;
+    return `<section class="s2-shell" data-symphony2-version="${VERSION}"><div class="s2-hero"><div class="s2-kicker">TENIS AI · SYMFONIA 2.0</div><h2>Symfonia 2.0</h2><p>Finalny PLAYABLE to wyłącznie rekomendowana kompozycja opublikowana przez Symfonię 2.0 i ponownie zweryfikowana na świeżej, dokładnej ofercie Superbet. Pozostałe rozmiary kompozycji są tylko wariantami analitycznymi.</p></div>${status(data)}<div class="s2-controls"><label>Mecze<select id="s2-count">${countOptions(data)}</select></label><label>Zdarzenia / mecz<select id="s2-legs">${legOptions(data)}</select></label><button class="s2-generate" id="s2-compose" type="button">🎼 Ułóż Symfonię 2.0</button></div><div id="s2-results" class="s2-grid">${renderCompositions(data,defaultCount,'auto')}</div></section>`;
   }
   async function open(){
     const hub=ensureHub(),b=hubBody();
@@ -233,17 +253,12 @@
     const a1=norm(row.p1),a2=norm(row.p2),b1=norm(match?.p1),b2=norm(match?.p2);
     return !!a1&&!!a2&&((a1===b1&&a2===b2)||(a1===b2&&a2===b1));
   }
-  function compositionFor(row){
-    if(!row)return null;const n=row.recommended_leg_count;if(n&&row.compositions?.[String(n)])return row.compositions[String(n)];
-    const keys=Object.keys(row.compositions||{}).map(Number).filter(Number.isFinite).sort((a,b)=>b-a);
-    for(const k of keys)if(row.compositions?.[String(k)])return row.compositions[String(k)];return null;
-  }
   function matchSymphonyHtml(row,data,match=null){
-    if(!rowPreMatch(row,match))return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · NIEAKTYWNA</small><h3>Snapshot pre-match wygasł</h3><p>Po czasie rozpoczęcia meczu kompozycja nie jest już PLAYABLE. Dane MODEL/RAW pozostają bez zmian.</p></div><strong>—</strong></header></section>`;
-    const comp=compositionFor(row),offer=Number(row?.offer_selections||0),scored=(row?.scored_selections||[]).filter(x=>num(x?.operator_model_probability)!=null);
+    if(!rowPreMatch(row,match))return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · NIEAKTYWNA</small><h3>Snapshot pre-match lub oferta operatora wygasła</h3><p>Finalny PLAYABLE wymaga przyszłego meczu i świeżej, zweryfikowanej oferty Superbet. Dane MODEL/RAW pozostają bez zmian.</p></div><strong>—</strong></header></section>`;
+    const comp=finalPlayableComposition(row,match,data),offer=Number(row?.offer_selections||0),scored=(row?.scored_selections||[]).filter(x=>num(x?.operator_model_probability)!=null);
     const best=scored.sort((a,b)=>num(b.operator_model_probability)-num(a.operator_model_probability)).slice(0,3);
     if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Wyłącznie dokładne, aktualne selekcje Superbet. RAW nie jest źródłem linii PLAYABLE.</p></div><strong>${pct(comp.joint_probability)}</strong></header><div class="s2-match-legs">${(comp.selection||[]).map(x=>leg(x,row)).join('')}</div><footer>Exact shared-state joint · ${comp.legs} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;
-    return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji spełniającej próg</h3><p>Oferta Superbet jest oceniona, ale Symfonia 2.0 nie pokazuje słabszego układu jako gotowego typu.</p></div><strong>—</strong></header><div class="s2-match-summary"><span><small>Realne selekcje Superbet</small><b>${offer}</b></span><span><small>Najwyższe P(hit)</small><b>${best.length?pct(best[0].operator_model_probability):'N/D'}</b></span><span><small>Model</small><b>${esc(data?.model_status||'N/D')}</b></span></div>${best.length?`<details class="s2-match-candidates"><summary>Najmocniejsze ocenione linie · nie są PLAYABLE poniżej progu</summary>${best.map(x=>leg(x,row)).join('')}</details>`:''}</section>`;
+    return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · BRAK PLAYABLE</small><h3>Brak kompozycji spełniającej próg</h3><p>Oferta Superbet jest oceniona, ale Symfonia 2.0 nie pokazuje słabszego układu jako gotowego typu.</p></div><strong>—</strong></header><div class="s2-match-summary"><span><small>Realne selekcje Superbet</small><b>${offer}</b></span><span><small>Najwyższe P(hit)</small><b>${best.length?pct(best[0].operator_model_probability):'N/D'}</b></span><span><small>Model</small><b>${esc(data?.model_status||'N/D')}</b></span></div>${best.length?`<details class="s2-match-candidates"><summary>Najmocniejsze ocenione linie · nie są PLAYABLE poniżej progu</summary>${best.map(x=>leg(x,row)).join('')}</details>`:''}</section>`;
   }
   function cleanupLegacySymphony(scope){
     if(!scope)return;scope.querySelectorAll('[data-symphony-match-mini],.symmatch-mini').forEach(x=>x.remove());

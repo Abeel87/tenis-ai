@@ -38,6 +38,7 @@ on:
       - 'backend/neuro_shadow_runner.py'
       - 'frontend/symphony2.js'
       - 'frontend/symphony2.css'
+      - 'frontend/symphony2-live-ui.js'
       - 'frontend/superbet-model-coverage.js'
       - 'frontend/match-visibility.js'
       - 'frontend/match-browser.js'
@@ -63,6 +64,13 @@ on:
       - 'tests/test_symphony2_learning.py'
       - 'tests/test_symphony2_state.py'
       - 'tests/test_symphony2_tracker.py'
+      - 'tests/test_symphony2_exact_operator_line_gate.py'
+      - 'tests/test_symphony2_ui.py'
+      - 'tests/test_symphony2_live_ui.py'
+      - 'tests/test_canonical_playable_frontend.py'
+      - 'tests/test_playable_ui_v917.py'
+      - 'tests/test_playable_freshness_pipeline_v928.py'
+      - 'tests/test_raw_playable_separation_v922.py'
       - 'tests/test_neuro_shadow_state_v935.py'
       - 'tests/test_neuro_shadow_market_adapter_v935.py'
       - 'tests/test_neuro_shadow_features_v935.py'
@@ -135,7 +143,7 @@ jobs:
           python -m py_compile scripts/verify_superbet_market_semantics.py
 
       - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
-        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_direct_context_fallback.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_direct_context_fallback.py tests/test_match_browser_filter_coherence.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_model_coverage_ui_v922.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_symphony2_live_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py tests/test_raw_playable_separation_v922.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
 
       - name: Refresh real Superbet catalogue + map audited families
         env:
@@ -190,6 +198,28 @@ jobs:
           neuro_stats = json.loads((data/'neuro_shadow_stats_v935.json').read_text(encoding='utf-8'))
           neuro_models = json.loads((data/'neuro_shadow_neural_v936.json').read_text(encoding='utf-8'))
           assert isinstance(results, list) and results, 'results.json empty after market refresh'
+          symphony_by_id = {
+              str(row.get('id') if row.get('id') is not None else row.get('match_key')): row
+              for row in (symphony.get('matches') or [])
+              if isinstance(row, dict)
+          }
+          for match in results:
+              if not isinstance(match, dict):
+                  continue
+              layer = match.get('symphony2_playable') or {}
+              assert layer.get('final_playable_authority') is True
+              assert layer.get('authority') == 'SYMPHONY2_FINAL_PLAYABLE'
+              if layer.get('playable') is True:
+                  assert int(layer.get('playable_count') or 0) >= 2
+                  assert len(layer.get('signals') or []) == int(layer.get('playable_count') or 0)
+                  assert all(row.get('fixture_line_verified') is True for row in layer.get('signals') or [])
+                  mid = str(match.get('match_id') if match.get('match_id') is not None else match.get('id'))
+                  source = symphony_by_id.get(mid)
+                  assert source is not None
+                  recommended = source.get('recommended_leg_count')
+                  comp = (source.get('compositions') or {}).get(str(recommended))
+                  assert isinstance(comp, dict)
+                  assert layer.get('signals') == (comp.get('selection') or [])
           assert isinstance(neuro_history, list)
           assert neuro_stats.get('mode') == 'SHADOW'
           assert neuro_stats.get('production_influence') is False

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-"""Canonical Superbet PLAYABLE projection.
+"""Canonical Superbet exact-offer projection.
 
+The historical module/layer name is retained for compatibility, but this is a
+pre-Symphony operator projection, not final user-facing PLAYABLE authority.
 MODEL/RAW remains the source of model analysis. This module never rewrites raw
 model ladders or AutoLearn signals. It derives a separate, fail-closed operator
 projection from the current verified Superbet context and may freeze that
-projection into dedicated PLAYABLE history layers.
+projection into dedicated historical evidence layers.
 
 Contract:
-    DATA/MODEL RAW -> SYMPHONY / model analysis -> verified Superbet offer -> PLAYABLE
+    DATA/MODEL RAW -> verified exact Superbet offer -> PRE_SYMPHONY_EXACT_OFFER_PROJECTION
+    Final PLAYABLE authority is published later by Symphony 2.0.
 
 Bookmaker availability is never a training target and bookmaker prices are not
 used here.
@@ -398,6 +401,8 @@ def inject_match(match: dict) -> tuple[dict, dict]:
     m["superbet_playable_v912"] = {
         "version": VERSION,
         "operator": OPERATOR,
+        "role": "PRE_SYMPHONY_EXACT_OFFER_PROJECTION",
+        "final_playable_authority": False,
         "status": "PLAYABLE" if signals else (
             "NOT_PREMATCH" if operator_context_active(m) and not pre_match_operator_context_active(m) else (
                 "VERIFIED_NO_MODEL_SIGNAL" if operator_context_active(m) else "NO_VERIFIED_OPERATOR_CONTEXT"
@@ -596,6 +601,8 @@ def project():
     stats = {
         "version": VERSION,
         "operator": OPERATOR,
+        "role": "PRE_SYMPHONY_EXACT_OFFER_PROJECTION",
+        "final_playable_authority": False,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "matches": sum(1 for m in projected_results if (m.get("superbet_playable_v912") or {}).get("playable")),
         "signals": sum(int((m.get("superbet_playable_v912") or {}).get("playable_count") or 0) for m in projected_results),
@@ -629,6 +636,8 @@ def project():
     meta["superbet_playable_v912"] = {
         "version": VERSION,
         "operator": OPERATOR,
+        "role": "PRE_SYMPHONY_EXACT_OFFER_PROJECTION",
+        "final_playable_authority": False,
         "matches": stats["matches"],
         "signals": stats["signals"],
         "raw_preserved": True,

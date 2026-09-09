@@ -16,14 +16,14 @@ def test_superbet_stats_show_real_line_coverage_without_mixing_shadow_accuracy()
     assert "display_model_covered_selections" in js
     assert "operator_only_selections" in js
     assert "SHADOW służy tylko do diagnostyki/pokrycia" in js
-    assert "nie wchodzi do skuteczności PLAYABLE" in js
+    assert "nie wchodzi do skuteczności projekcji exact-line" in js
     assert "MODEL/RAW pozostaje niezależny" in js
 
 
-def test_superbet_stats_keep_existing_playable_accuracy_panel_separate():
+def test_superbet_stats_keep_exact_offer_projection_accuracy_panel_separate():
     js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
 
-    assert "Historyczna skuteczność PLAYABLE" in js
+    assert "Historyczna skuteczność projekcji exact-line" in js
     assert "To jest statystyka pokrycia realnej oferty, nie skuteczność typów" in js
     assert "superbet_playable_stats_v912.json" in js
     assert "meta.json" in js
@@ -36,9 +36,18 @@ def test_superbet_stats_read_canonical_top_level_payload_instead_of_removed_sche
     assert "const signals=Number(data?.signals||0);" in js
     assert "Object.entries(data?.history||{})" in js
     assert "raw_model_fields_preserved" in js
-    assert "Mecze PLAYABLE w raporcie" in js
-    assert "Sygnały PLAYABLE w raporcie" in js
+    assert "Mecze z projekcją exact-line" in js
+    assert "Sygnały zgodne z ofertą" in js
     assert "data?.current" not in js
     assert "data?.models" not in js
     assert "verified_superbet_matches" not in js
     assert "playable_green_signals" not in js
+
+
+
+def test_superbet_stats_do_not_present_projection_as_final_symphony_playable():
+    js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
+
+    assert "Superbet · zweryfikowana oferta" in js
+    assert "Historyczna skuteczność projekcji exact-line" in js
+    assert "🎯 Superbet PLAYABLE" not in js

@@ -177,6 +177,8 @@ def test_inject_builds_separate_operator_projection_without_mutating_raw_autolea
     assert info["active"] is True
     assert match["autolearn_v84"] == raw_auto
     projection = match["superbet_playable_v912"]
+    assert projection["role"] == "PRE_SYMPHONY_EXACT_OFFER_PROJECTION"
+    assert projection["final_playable_authority"] is False
     assert projection["raw_model_fields_preserved"] is True
     assert projection["playable"] is True
     assert any(x.get("market") == "set1_total" and x.get("line") == 8.5 for x in projection["signals"])

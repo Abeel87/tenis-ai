@@ -109,3 +109,46 @@ def test_v854_frontend_keeps_signals_fallback_for_pruned_index():
     source = (Path(__file__).resolve().parents[1] / "frontend" / "autolearn-v84.js").read_text(encoding="utf-8")
     assert "a?.by_key?.[key]" in source
     assert "(a?.signals||[]).find" in source
+
+
+def test_v854_preserves_symphony2_final_playable_projection():
+    final_layer = {
+        "version": "symphony2-engine-2",
+        "authority": "SYMPHONY2_FINAL_PLAYABLE",
+        "final_playable_authority": True,
+        "operator": "superbet.pl",
+        "playable": True,
+        "recommended_leg_count": 2,
+        "signals": [
+            {
+                "market": "set1_total",
+                "pick": "over",
+                "line": 8.5,
+                "operator_model_probability": 72.0,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+            },
+            {
+                "market": "set1_winner",
+                "pick": "Alpha",
+                "operator_model_probability": 68.0,
+                "operator_available": True,
+                "operator_line_verified": True,
+            },
+        ],
+    }
+    rows = [{
+        "id": 1,
+        "symphony2_playable": json.loads(json.dumps(final_layer)),
+        "superbet_market_v91": {
+            "operator": "superbet.pl",
+            "operator_verified": True,
+            "coverage_shadow_signals": [{"market": "diagnostic_only"}],
+        },
+    }]
+
+    prune_rows(rows)
+
+    assert rows[0]["symphony2_playable"] == final_layer
+    assert "coverage_shadow_signals" not in rows[0]["superbet_market_v91"]

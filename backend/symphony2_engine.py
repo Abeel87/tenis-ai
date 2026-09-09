@@ -93,6 +93,17 @@ def _market(value) -> str:
     return _norm(value).replace(" ", "_")
 
 
+def _match_key(row: dict) -> str:
+    value = row.get("match_id") if row.get("match_id") is not None else row.get("id")
+    if value is not None and str(value) != "":
+        return str(value)
+    return "|".join((
+        _norm(row.get("p1")),
+        _norm(row.get("p2")),
+        str(row.get("scheduled_time") or "")[:16],
+    ))
+
+
 def _scheduled_utc(match: dict) -> datetime | None:
     raw = str(match.get("scheduled_time") or "").strip()
     if not raw:
@@ -1237,6 +1248,74 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
     return out
 
 
+def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
+    """Publish final PLAYABLE from Symphony's recommended composition only.
+
+    superbet_playable_v912 remains historical pre-Symphony exact-offer
+    evidence. It is deliberately not consulted here as final authority.
+    """
+    generated_at = current.get("generated_at")
+    current_by_key = {
+        _match_key(row): row
+        for row in (current.get("matches") or [])
+        if isinstance(row, dict)
+    }
+    projected: list[dict] = []
+    for raw in results or []:
+        if not isinstance(raw, dict):
+            projected.append(raw)
+            continue
+        match = dict(raw)
+        row = current_by_key.get(_match_key(raw))
+        comp = None
+        recommended = None
+        if isinstance(row, dict):
+            recommended = row.get("recommended_leg_count")
+            if recommended is not None:
+                candidate = (row.get("compositions") or {}).get(str(recommended))
+                if isinstance(candidate, dict):
+                    comp = candidate
+
+        signals = [
+            dict(signal)
+            for signal in ((comp or {}).get("selection") or [])
+            if isinstance(signal, dict)
+        ]
+        if (
+            len(signals) < 2
+            or any(signal.get("fixture_line_verified") is not True for signal in signals)
+        ):
+            signals = []
+            comp = None
+
+        playable = comp is not None
+        match["symphony2_playable"] = {
+            "version": VERSION,
+            "authority": "SYMPHONY2_FINAL_PLAYABLE",
+            "final_playable_authority": True,
+            "operator": OPERATOR,
+            "status": (
+                "PLAYABLE"
+                if playable
+                else "NO_RECOMMENDED_COMPOSITION"
+                if row is not None
+                else "NOT_CURRENT_PREMATCH"
+            ),
+            "playable": playable,
+            "playable_count": len(signals),
+            "recommended_leg_count": int(recommended) if playable else None,
+            "score": comp.get("score") if playable else None,
+            "joint_probability": comp.get("joint_probability") if playable else None,
+            "joint_status": comp.get("joint_status") if playable else None,
+            "signals": signals,
+            "source_generated_at": generated_at,
+            "pre_symphony_operator_projection": "superbet_playable_v912",
+            "raw_model_fields_preserved": True,
+        }
+        projected.append(match)
+    return projected
+
+
 def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     model = train_operator_line_model(history)
     matches, all_scored = [], []
@@ -1264,7 +1343,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
             scored,
             phase9_outcomes,
         )
-        matches.append({"match_key": str(match.get("match_id") if match.get("match_id") is not None else match.get("id") or ""),
+        matches.append({"match_key": _match_key(match),
             "id": match.get("match_id") if match.get("match_id") is not None else match.get("id"), "p1": match.get("p1"), "p2": match.get("p2"),
             "scheduled_time": match.get("scheduled_time"), "tour": match.get("tour"), "surface": match.get("surface"), "best_of": match.get("best_of"),
             "offer_selections": len(scored), "shared_state_outcomes": len(outcomes), "scored_selections": scored, "compositions": comps,
@@ -1299,10 +1378,18 @@ def run() -> dict:
     if not isinstance(history, list):
         raise RuntimeError("history.json invalid")
     current, stats = build(results, history)
+    projected_results = _project_final_playable(results, current)
     _write(CURRENT, current)
     _write(STATS, stats)
+    _write(RESULTS, projected_results)
+    final_playable_matches = sum(
+        1
+        for match in projected_results
+        if (match.get("symphony2_playable") or {}).get("playable") is True
+    )
     return {"status": "OK", "version": VERSION, "model_status": current["model_status"], "matches": current["matches_count"],
-        "training": stats.get("training"), **{k: v for k, v in stats["current_offer"].items() if k != "probability_diagnostics"},
+        "training": stats.get("training"), "final_playable_matches": final_playable_matches,
+        **{k: v for k, v in stats["current_offer"].items() if k != "probability_diagnostics"},
         "probability_diagnostics": stats["current_offer"]["probability_diagnostics"]}
 
 
