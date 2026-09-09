@@ -48,11 +48,18 @@ function freshContext(x,now=Date.now()){
   const age=Number(now)-generated;
   return finite(maxHours)&&Number(maxHours)>0&&Number.isFinite(age)&&age>=0&&age<=Number(maxHours)*3600000;
 }
+function fallbackNonPrematchStatus(match){
+  const result=match?.result&&typeof match.result==='object'?match.result:{};
+  const raw=[match?.event_status,match?.feed_status,match?.status,result.status]
+    .map(v=>norm(v)).filter(Boolean).join(' ')
+    .replace(/\bnot started\b/g,' ');
+  return /\b(?:live|playing|started|in progress|completed|finished|settled|retired|cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b/.test(raw);
+}
 function preMatch(match,now=Date.now()){
   const scheduled=Date.parse(match?.scheduled_time||'');
   if(!Number.isFinite(scheduled)||scheduled<=Number(now))return false;
   const kind=window.TENIS_AI_MATCH_TIME?.statusKind?.(match);
-  return !kind||kind==='scheduled';
+  return kind?kind==='scheduled':!fallbackNonPrematchStatus(match);
 }
 function active(match,now=Date.now()){
   const x=context(match);
