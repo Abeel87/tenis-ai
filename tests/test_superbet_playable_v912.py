@@ -13,6 +13,7 @@ from backend.superbet_candidate_settlement import (
 from backend.superbet_playable import (
     inject_match,
     is_operator_playable_signal,
+    operator_availability,
     project_match_for_display,
     signal_signature,
 )
@@ -173,6 +174,47 @@ def test_set_handicap_signature_keeps_exact_numeric_line_and_is_not_playable_wit
 
     assert not any(
         row.get("market") == "set_handicap"
+        for row in view["superbet_playable_v912"]["signals"]
+    )
+
+
+
+
+def test_line_market_requires_numeric_line_and_set3_handicap_keeps_exact_identity_without_promotion():
+    malformed = {
+        "market": "match_total",
+        "pick": "over",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    original = _match()
+    original["superbet_market_v91"]["canonical_selections"] = [malformed]
+    assert operator_availability(original) == {}
+
+    a = {
+        "market": "set3_game_handicap",
+        "pick": "Player A",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    b = {**a, "line": -2.5}
+    assert signal_signature(a) != signal_signature(b)
+
+    original = _match()
+    original["superbet_market_v91"]["canonical_selections"].extend([a, b])
+    original["superbet_market_v91"]["model_signals"].append({
+        **a,
+        "key": "set3-handicap-a",
+        "score": 80.0,
+    })
+    view, _ = project_match_for_display(original)
+
+    assert not any(
+        row.get("market") == "set3_game_handicap"
         for row in view["superbet_playable_v912"]["signals"]
     )
 
