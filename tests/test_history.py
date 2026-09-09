@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
 from history_tracker import (
     MODEL_VERSION,
-    archive_predictions, extract_green_signals, history_stats, is_current_match,
+    archive_predictions, extract_green_signals, find_final_result, history_stats, is_current_match,
     parse_final_row, settle_signal,
 )
 
@@ -107,3 +107,49 @@ def test_history_stats_excludes_void_and_unverifiable():
     assert stats['overall']['hits'] == 1
     assert stats['overall']['accuracy'] == 50.0
     assert stats['excluded_signals'] == 2
+
+
+def test_history_fallback_rejects_conflicting_tournament_metadata():
+    entry = sample_match()
+    hist = pd.DataFrame([{
+        "winner_name": "Player One",
+        "loser_name": "Player Two",
+        "tourney_date": 20260820,
+        "tourney_name": "Different Event",
+        "score": "6-4 6-4",
+    }])
+
+    assert find_final_result(hist, entry) is None
+
+
+def test_history_fallback_accepts_compatible_tournament_name():
+    entry = sample_match()
+    entry["tournament"] = "US Open"
+    hist = pd.DataFrame([{
+        "winner_name": "Player One",
+        "loser_name": "Player Two",
+        "tourney_date": 20260820,
+        "tourney_name": "US Open Tennis Championships",
+        "score": "6-4 6-4",
+    }])
+
+    final = find_final_result(hist, entry)
+
+    assert final is not None
+    assert final["status"] == "completed"
+    assert final["winner"] == "Player One"
+
+
+def test_history_fallback_keeps_name_date_path_when_archive_has_no_tournament_metadata():
+    entry = sample_match()
+    hist = pd.DataFrame([{
+        "winner_name": "Player One",
+        "loser_name": "Player Two",
+        "tourney_date": 20260820,
+        "score": "6-4 6-4",
+    }])
+
+    final = find_final_result(hist, entry)
+
+    assert final is not None
+    assert final["status"] == "completed"
