@@ -21,20 +21,6 @@ const MODEL_IDS=[
   ['CatBoost + Player Intelligence','catboost_player']
 ];
 
-function ensureStyle(){
-  if(document.getElementById('sh895-style'))return;
-  const s=document.createElement('style');
-  s.id='sh895-style';
-  s.textContent=`
-    .sh895-chartbox{margin:8px 0;padding:8px;border:1px solid rgba(115,220,255,.12);border-radius:11px;background:rgba(3,16,25,.5)}
-    .sh895-charthead{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}.sh895-charthead b{font-size:.64rem}.sh895-charthead span{font-size:.54rem;color:#7f9da9}
-    .sh895-comparebars{display:grid;gap:4px;margin-bottom:7px}.sh895-barrow{display:grid;grid-template-columns:52px 1fr 42px;gap:6px;align-items:center}.sh895-barrow span{font-size:.54rem;color:#819ca8}.sh895-barrow i{position:relative;display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.055);overflow:hidden}.sh895-barrow i:after{content:'';position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:inherit;background:linear-gradient(90deg,#39c9ec,#baff55)}.sh895-barrow.base i:after{background:linear-gradient(90deg,#567886,#8aa4ae)}.sh895-barrow strong{font-size:.58rem;text-align:right}
-    .sh895-plots{display:grid;grid-template-columns:1fr 1fr;gap:6px}.sh895-plot{min-width:0;padding:6px;border-radius:9px;background:rgba(255,255,255,.022)}.sh895-plot header{display:flex!important;justify-content:space-between!important;align-items:center!important;gap:5px!important}.sh895-plot header b{font-size:.55rem!important}.sh895-plot header small{font-size:.48rem!important;color:#77939f!important}.sh895-plot svg{display:block;width:100%;height:48px;margin-top:3px}.sh895-gridline{stroke:rgba(255,255,255,.07);stroke-width:1}.sh895-line{fill:none;stroke:#9cff57;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.sh895-line.brier{stroke:#62d6f3}.sh895-dot{fill:#d9ff8a}.sh895-dot.brier{fill:#9beeff}.sh895-empty{display:grid;place-items:center;height:48px;color:#6f8c99;font-size:.49rem;text-align:center;line-height:1.3}.sh895-foot{display:flex;justify-content:space-between;gap:7px;margin-top:5px;font-size:.48rem;color:#718d99}.sh895-foot b{color:#dceaf0}
-    @media(max-width:390px){.sh895-plots{grid-template-columns:1fr}.sh895-barrow{grid-template-columns:48px 1fr 39px}}
-  `;
-  document.head.appendChild(s);
-}
-
 async function load(force=false){
   if(report&&!force)return report;
   if(loading&&!force)return loading;
@@ -106,8 +92,7 @@ function decorate(){
   if(!report)return false;
   const cards=[...document.querySelectorAll('#coh892-shadow .coh892-card')];
   if(!cards.length)return false;
-  ensureStyle();
-  cards.forEach(card=>{
+cards.forEach(card=>{
     const id=modelId(card);if(!id)return;
     const html=chartHtml(id);
     const existing=card.querySelector('.sh895-chartbox');
