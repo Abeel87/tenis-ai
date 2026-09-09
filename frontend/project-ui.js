@@ -311,6 +311,7 @@
       app.innerHTML=`<section class="match-browser-head">${focusBar()}</section>
         <div class="empty-state"><b>Brak meczów dla tego filtra.</b><span>Zmień filtr albo wróć do wszystkich spotkań.</span></div>`;
       bindHome();
+      document.dispatchEvent(new CustomEvent('tenis-ai:matches-rendered',{detail:{count:0,focus}}));
       return;
     }
     app.innerHTML=`<div class="match-browser">
@@ -329,6 +330,7 @@
         </section>`).join('')}</div>
     </div>`;
     bindHome();
+    document.dispatchEvent(new CustomEvent('tenis-ai:matches-rendered',{detail:{count:rows.length,focus}}));
   };
 
   function bindHome(){
@@ -660,6 +662,7 @@
     document.documentElement.dataset.tenisRoute='match';
     app.innerHTML=detailHtml(m);
     app.dataset.matchKey=String(k);
+    app.querySelector('.p751-detail-screen')?.setAttribute('data-match-key',String(k));
     bindLazySections78e23(app,m);
     window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(m);
     window.TENIS_AI_PLAYER_UI_V851?.injectDetail?.(m);
@@ -728,6 +731,7 @@
   window.addEventListener('pageshow',()=>setTimeout(bindUiMode,0));
   if(typeof view!=='undefined'&&view==='matches')renderMatches();
   document.documentElement.dataset.tenisUiReady='1';
+  document.dispatchEvent(new CustomEvent('tenis-ai:ui-ready'));
 
   window.TENIS_AI_PROJECT_UI = {
     openMatch,
