@@ -489,8 +489,15 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         train = [r for r in rows if r["captured_ts"] <= cutoff_ts]
         valid = [r for r in rows if r["captured_ts"] > cutoff_ts]
 
+    candidate_gate_as_of = bool(valid)
     if len(valid) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS or len({r["target"] for r in valid}) < 2:
+        # No holdout will be reported or calibrated. Preserve current-day
+        # production eligibility by resolving REVIEW_READY on the full history.
+        candidate_markets = _candidate_review_ready_markets(history_rows)
+        rows = build_training_rows(history_rows, candidate_markets=candidate_markets)
         train, valid = rows, []
+        cutoff_ts = None
+        candidate_gate_as_of = False
 
     support = Counter(r["market"] for r in train)
     source_counts = Counter(r.get("training_source", "unknown") for r in train)
@@ -522,7 +529,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "training_source_counts": dict(sorted(source_counts.items())),
         "candidate_review_ready_markets": sorted(candidate_markets),
         "candidate_gate_cutoff_ts": cutoff_ts,
-        "candidate_gate_as_of": True,
+        "candidate_gate_as_of": candidate_gate_as_of,
         "history_layer_policy": "UNION_FIXTURE_PROVEN_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
         "candidate_gate_policy": "REVIEW_READY_AS_OF_TRAINING_CUTOFF_ONLY; EXACT_OPERATOR_VERIFIED; NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION",
         "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
