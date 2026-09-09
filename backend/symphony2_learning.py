@@ -287,6 +287,7 @@ def build_training_rows(
             row = feature_row(entry, enriched)
             row["target"] = 1 if result == "hit" else 0
             row["captured_ts"] = _date_key(captured)
+            row["settled_ts"] = _date_key(entry.get("settled_at"))
             row["signature"] = signature
             row["training_source"] = (
                 "candidate_review_ready" if signal.get("candidate_version") is not None else "playable_frozen"
@@ -442,6 +443,10 @@ def _entry_capture_ts(entry: dict) -> float:
     )
 
 
+def _entry_settled_ts(entry: dict) -> float:
+    return _date_key(entry.get("settled_at"))
+
+
 def _validation_cutoff_from_canonical_rows(rows: list[dict]) -> float | None:
     """Derive the chronological holdout boundary without candidate-gate hindsight."""
     if len(rows) < 2:
@@ -451,14 +456,36 @@ def _validation_cutoff_from_canonical_rows(rows: list[dict]) -> float | None:
 
 
 def _candidate_markets_as_of(history_rows: list[dict], cutoff_ts: float | None) -> set[str]:
-    """Resolve REVIEW_READY using only evidence available at the training cutoff."""
+    """Resolve REVIEW_READY using only labels already settled by the cutoff."""
     if cutoff_ts is None:
         return set()
     prefix = [
         entry for entry in history_rows
-        if 0 < _entry_capture_ts(entry) <= cutoff_ts
+        if 0 < _entry_settled_ts(entry) <= cutoff_ts
     ]
     return _candidate_review_ready_markets(prefix)
+
+
+def _purged_time_split(rows: list[dict], cutoff_ts: float | None) -> tuple[list[dict], list[dict], int]:
+    """Chronological split that never trains on labels unavailable at cutoff."""
+    if cutoff_ts is None:
+        return list(rows), [], 0
+    train: list[dict] = []
+    valid: list[dict] = []
+    purged = 0
+    for row in rows:
+        captured_ts = float(row.get("captured_ts") or 0.0)
+        settled_ts = float(row.get("settled_ts") or 0.0)
+        if captured_ts <= cutoff_ts:
+            if captured_ts > 0 and 0 < settled_ts <= cutoff_ts:
+                train.append(row)
+            else:
+                purged += 1
+        elif settled_ts > 0:
+            valid.append(row)
+        else:
+            purged += 1
+    return train, valid, purged
 
 
 def _split_calibration_window(rows: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -483,21 +510,24 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     candidate_markets = _candidate_markets_as_of(history_rows, cutoff_ts)
     rows = build_training_rows(history_rows, candidate_markets=candidate_markets)
 
-    if cutoff_ts is None:
-        train, valid = rows, []
-    else:
-        train = [r for r in rows if r["captured_ts"] <= cutoff_ts]
-        valid = [r for r in rows if r["captured_ts"] > cutoff_ts]
+    train, valid, purged_rows = _purged_time_split(rows, cutoff_ts)
 
     candidate_gate_as_of = bool(valid)
-    if len(valid) < MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS or len({r["target"] for r in valid}) < 2:
-        # No holdout will be reported or calibrated. Preserve current-day
-        # production eligibility by resolving REVIEW_READY on the full history.
+    safe_split = bool(
+        len(train) >= MIN_TRAIN_ROWS
+        and len({r["target"] for r in train}) >= 2
+        and len(valid) >= MIN_CALIBRATION_FIT_ROWS + MIN_CALIBRATION_EVAL_ROWS
+        and len({r["target"] for r in valid}) >= 2
+    )
+    if not safe_split:
+        # If an honest historical holdout cannot be formed, keep current-day
+        # production training behavior but do not report misleading validation.
         candidate_markets = _candidate_review_ready_markets(history_rows)
         rows = build_training_rows(history_rows, candidate_markets=candidate_markets)
         train, valid = rows, []
         cutoff_ts = None
         candidate_gate_as_of = False
+        purged_rows = 0
 
     support = Counter(r["market"] for r in train)
     source_counts = Counter(r.get("training_source", "unknown") for r in train)
@@ -530,8 +560,15 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "candidate_review_ready_markets": sorted(candidate_markets),
         "candidate_gate_cutoff_ts": cutoff_ts,
         "candidate_gate_as_of": candidate_gate_as_of,
+        "purged_unavailable_label_rows": purged_rows,
         "history_layer_policy": "UNION_FIXTURE_PROVEN_FROZEN_PLAYABLE_PLUS_REVIEW_READY_CANDIDATE_RICHEST_DUPLICATE_WINS",
-        "candidate_gate_policy": "REVIEW_READY_AS_OF_TRAINING_CUTOFF_ONLY; EXACT_OPERATOR_VERIFIED; NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION",
+        "candidate_gate_policy": (
+            "REVIEW_READY_AS_OF_SETTLEMENT_CUTOFF_ONLY; PURGED_UNAVAILABLE_LABELS; EXACT_OPERATOR_VERIFIED; "
+            "NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION"
+            if candidate_gate_as_of else
+            "CURRENT_FULL_HISTORY_NO_HOLDOUT; EXACT_OPERATOR_VERIFIED; "
+            "NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION"
+        ),
         "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
