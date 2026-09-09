@@ -125,6 +125,7 @@ def test_known_live_or_terminal_status_is_fail_closed_even_before_scheduled_star
     for field, status in (
         ("feed_status", "live"),
         ("event_status", "in_progress"),
+        ("event_status", "in-progress"),
         ("status", "completed"),
         ("status", "retired"),
         ("status", "cancelled"),
@@ -141,11 +142,12 @@ def test_known_live_or_terminal_status_is_fail_closed_even_before_scheduled_star
         assert projected["superbet_playable_v912"]["status"] == "NOT_PREMATCH"
         assert projected["superbet_playable_v912"]["signals"] == []
 
-    scheduled_match = _match()
-    scheduled_match["feed_status"] = "not_started"
-    assert pre_match_operator_context_active(
-        scheduled_match, now=scheduled - timedelta(hours=1)
-    ) is True
+    for scheduled_status in ("not_started", "not-started"):
+        scheduled_match = _match()
+        scheduled_match["feed_status"] = scheduled_status
+        assert pre_match_operator_context_active(
+            scheduled_match, now=scheduled - timedelta(hours=1)
+        ) is True
 
 
 def test_missing_schedule_is_fail_closed_for_playable_only():
