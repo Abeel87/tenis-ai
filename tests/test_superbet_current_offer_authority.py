@@ -86,6 +86,36 @@ def test_requested_bookmaker_identity_is_exact_superbet_pl_only():
 
 
 
+
+
+def test_canonical_provider_selection_requires_explicit_price_level_active_true():
+    base_row = {
+        "fixtureId": "f-active",
+        "participant1Name": "A",
+        "participant2Name": "B",
+        "startTime": "2026-09-08T12:00:00Z",
+    }
+
+    active = _winner_markets()
+    active_row = {**base_row, "bookmakerOdds": {"superbet.pl": _book(active)}}
+    sanitized = mapping._sanitize_fixture(active_row, _market_meta())
+    assert sanitized is not None
+    assert len(sanitized["canonical_selections"]) == 2
+
+    for availability_case in ("false", "missing"):
+        markets = _winner_markets()
+        for outcome in markets["1"]["outcomes"].values():
+            for player_data in outcome["players"].values():
+                if availability_case == "false":
+                    player_data["active"] = False
+                else:
+                    player_data.pop("active", None)
+        row = {**base_row, "bookmakerOdds": {"superbet.pl": _book(markets)}}
+        out = mapping._sanitize_fixture(row, _market_meta())
+        assert out is not None
+        assert out["canonical_selections"] == []
+
+
 def test_canonical_context_sanitizer_cannot_reintroduce_generic_superbet():
     generic = _book(_winner_markets())
     exact = _book(_winner_markets())
