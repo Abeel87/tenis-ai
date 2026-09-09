@@ -88,7 +88,7 @@
   function metaFreshness(meta){
     const candidates=[];
     const add=(label,value)=>{
-      const ts=Date.parse(String(value||''));if(Number.isFinite(ts))candidates.push({label,value,ts});
+      const stampMs=Date.parse(String(value||''));if(Number.isFinite(stampMs))candidates.push({label,value,stampMs});
     };
     if(meta&&typeof meta==='object'){
       add('updated_at',meta.updated_at);
@@ -101,7 +101,7 @@
         }
       });
     }
-    return candidates.sort((a,b)=>b.ts-a.ts)[0]||null;
+    return candidates.sort((a,b)=>b.stampMs-a.stampMs)[0]||null;
   }
   function applyMetaFast(meta){
     try{
