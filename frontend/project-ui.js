@@ -113,7 +113,7 @@
   }
 
 
-  function sameMatchTotalAsTop  function sameMatchTotalAsTop(s,z){
+  function sameMatchTotalAsTop(s,z){
     if(!s||!z)return false;
 
     const line=String(z.ln||'').trim();
@@ -232,7 +232,7 @@
     </article>`;
   }
 
-  function groupRows  function groupRows(rows){
+  function groupRows(rows){
     const groups=new Map();
     rows.forEach(m=>{
       const k=`${tour(m)}|${m.tournament||'Turniej'}`;
@@ -281,7 +281,7 @@
     bindHome();
   };
 
-  function bindHome  function bindHome(){
+  function bindHome(){
     document.querySelectorAll('[data-p751-focus]').forEach(b=>b.onclick=()=>{focus=b.dataset.p751Focus;renderMatches()});
 
     document.querySelectorAll('[data-p751-open]').forEach(b=>{
@@ -627,7 +627,7 @@
   }
 
 
-  function signalPage  function signalPage(){
+  function signalPage(){
     route='signals';navActive('signals');
     const app=document.querySelector('#app');
     const rows=(typeof filteredReady==='function'?filteredReady():[]).flatMap(m=>signals(m).filter(s=>s.value>=68).map(s=>({m,s}))).sort((a,b)=>b.s.value-a.s.value).slice(0,40);
@@ -680,4 +680,4 @@
     renderMatches: () => renderMatches()
   };
 
-})();})();
+})();
