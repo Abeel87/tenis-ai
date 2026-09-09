@@ -8,7 +8,8 @@ def test_v80_is_central_version():
     assert "appVersion: 'v8.0.1'" in meta
     assert "cacheVersion: 'v801'" in meta
     assert 'clean-core-v80.js?v=801' in idx
-    assert 'clean-core-v80.css?v=801' in idx
+    assert 'href="style.css"' in idx
+    assert 'clean-core-v80.css' not in idx
     assert "tenis-ai-v801-player-profile" in sw
     assert "serviceWorker.register('sw.js?v=801')" in app
 
@@ -44,12 +45,11 @@ def test_learning_backend_is_preserved():
     for path in ['backend/adaptive_learning_v79.py','backend/specialist_learning_v79b.py','backend/calibration_guard_v78d.py','backend/shadow_lab_v78e6.py','backend/pbp_tracker.py']:
         assert (ROOT/path).exists(), path
 
-def test_active_legacy_bridges_keep_required_features():
+def test_clean_ui_keeps_required_features_without_legacy_navigation_bridge():
     ui=read('frontend/project-ui.js')
-    restore=read('frontend/navigation-tools.js')
     analytics=read('frontend/player-analytics.js')
     assert 'matchGamesPreview' in ui and 'matchGamesLines' in ui
-    assert 'Siła sygnału' in ui and 'data-p751-nav="shadow"' in ui
-    assert 'data-shadow-open' not in ui  # duplicate focus shortcut removed; nav preserved
-    assert '.p751-names > b, .p751-matchup > b' in restore
+    assert 'Najlepszy typ' in ui and 'v762-player-link' in ui
+    assert 'openMatch' in ui and 'returnScroll' in ui
+    assert not (ROOT/'frontend/navigation-tools.js').exists()
     assert 'Player Analytics PRO' in analytics

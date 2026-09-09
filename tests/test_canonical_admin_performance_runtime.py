@@ -10,9 +10,13 @@ def read(name):
 
 def test_admin_runtime_uses_stable_assets_only():
     index = read("index.html")
-    for name in ("community-admin.js", "community-admin.css", "admin-delete.js", "admin-delete.css"):
+    for name in ("community-admin.js", "admin-delete.js"):
         assert (FRONTEND / name).is_file()
         assert name in index
+    assert 'href="style.css"' in index
+    for retired_css in ("community-admin.css", "admin-delete.css"):
+        assert not (FRONTEND / retired_css).exists()
+        assert retired_css not in index
     for retired in (
         "community-admin-v74.js", "community-admin-v74.css",
         "admin-delete-v754.js", "admin-delete-v754.css",
@@ -36,9 +40,12 @@ def test_admin_roles_and_destructive_delete_stay_separate():
 def test_performance_center_is_canonical_read_only_reporting():
     index = read("index.html")
     js = read("performance-center.js")
-    assert (FRONTEND / "performance-center.css").is_file()
+    style = read("style.css")
     assert 'src="performance-center.js"' in index
-    assert 'href="performance-center.css"' in index
+    assert 'href="style.css"' in index
+    assert not (FRONTEND / "performance-center.css").exists()
+    assert ".pc12-summary" in style
+    assert ".pc12-market-grid" in style
     assert not (FRONTEND / "performance-center-v77.js").exists()
     assert not (FRONTEND / "performance-center-v77.css").exists()
     assert "read-only reporting" in js

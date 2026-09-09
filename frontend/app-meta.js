@@ -131,15 +131,10 @@
     if(document.getElementById(id))return;
     const s=document.createElement('script');s.id=id;s.src=src;s.async=false;document.body.appendChild(s);
   }
-  function loadStyle(href,id){
-    if(document.getElementById(id))return;
-    const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href=href;document.head.appendChild(l);
-  }
   function loadUxAddons(){
     loadAddon('player-intelligence-human.js','player-intelligence-human-addon');
     loadAddon('app-coherence.js','app-coherence-addon');
     loadAddon('symphony2-live-ui.js','symphony2-live-ui');
-    loadStyle('neuro-shadow.css','neuro-shadow-css');
     loadAddon('neuro-shadow.js','neuro-shadow-js');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxAddons,{once:true});else loadUxAddons();

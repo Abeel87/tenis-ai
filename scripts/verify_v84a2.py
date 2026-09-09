@@ -36,7 +36,9 @@ def main():
     req(ui, "Kalibracja Engine", "UI nie pokazuje statusu kalibracji")
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS")
-    req(index, "autolearn-v84.css?v=84a1&hf=84a3", "brak cache-bust CSS")
+    req(index, 'href="style.css"', "brak kanonicznego style.css")
+    if 'autolearn-v84.css' in index or (ROOT/'frontend/autolearn-v84.css').exists():
+        ERRORS.append("stary osobny AutoLearn CSS nie może wrócić")
     req(index, "symphony2.js", "brak aktywnej Symfonii 2.0")
     if "symphony2.js?v=210" in index or "symphony2.js?v=220" in index:
         ERRORS.append("stary pin Symfonii nadal aktywny")

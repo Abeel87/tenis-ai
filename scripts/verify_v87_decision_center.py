@@ -2,7 +2,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 UI = (ROOT / "frontend" / "model-guide.js").read_text(encoding="utf-8")
-CSS = (ROOT / "frontend" / "model-guide.css").read_text(encoding="utf-8")
+CSS_PATH = ROOT / "frontend" / "model-guide.css"
+CSS = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 
 errors: list[str] = []
@@ -58,7 +59,10 @@ need(UI, 'data-p751-lazy78e23="stats"', "zachowane statystyki graczy")
 need(UI, 'data-p751-lazy78e23="analytics"', "zachowane Player Analytics PRO")
 need(UI, 'data-p751-lazy78e23="serve"', "zachowane asy i DF")
 need(INDEX, "model-guide.js?v=87dc1", "cache bust nowego UI")
-need(INDEX, "model-guide.css?v=87dc1", "arkusz nowego UI")
+need(INDEX, 'href="style.css"', "kanoniczny arkusz UI")
+need(CSS, ".dc87", "style Centrum Decyzji w kanonicznym CSS")
+if CSS_PATH.exists():
+    errors.append("nadal jest: osobny legacy model-guide.css")
 
 for marker, label in [
     ("<table", "szeroka tabela modeli"),

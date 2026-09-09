@@ -31,30 +31,42 @@ function refreshClock(){
   const visible=new Set(visibleMatches().map(matchKey));
   const known=new Set((Array.isArray(all)?all:[]).filter(Boolean).map(matchKey));
   let removed=false;
-  document.querySelectorAll('#app .p751-match-card[data-p751-open], #app .p751-top [data-p751-open], #app .p751-signals-page [data-p751-open]').forEach(el=>{
+
+  document.querySelectorAll(
+    '#app .p751-match-card[data-p751-open], #app .signal-spotlight [data-p751-open], #app .p751-signals-page [data-p751-open]'
+  ).forEach(el=>{
     let key=el.dataset.p751Open;
     try{key=decodeURIComponent(key)}catch{}
     if(known.has(key)&&!visible.has(key)){el.remove();removed=true}
   });
+
   if(!removed)return;
-  document.querySelectorAll('#app .p751-group').forEach(group=>{
+
+  document.querySelectorAll('#app .match-group').forEach(group=>{
     const cards=group.querySelectorAll('.p751-match-card');
     if(!cards.length){group.remove();return}
-    const label=group.querySelector('summary small');
-    if(label)label.textContent=label.textContent.replace(/^\d+\s+\S+/,`${cards.length} ${cards.length===1?'mecz':'meczów'}`);
+    const label=group.querySelector(':scope > header small');
+    if(label){
+      const tail=(label.textContent.split('·').slice(1).join('·')||'').trim();
+      label.textContent=`${cards.length} ${cards.length===1?'mecz':'meczów'}${tail?' · '+tail:''}`;
+    }
   });
-  document.querySelectorAll('#app .p751-top').forEach(top=>{
+
+  document.querySelectorAll('#app .signal-spotlight').forEach(top=>{
     const n=top.querySelectorAll('[data-p751-open]').length;
     if(!n)top.remove();
     else{
-      const label=top.querySelector('header span');
-      if(label)label.textContent=label.textContent.replace(/^\d+/,String(n));
+      const label=top.querySelector('header small');
+      if(label)label.textContent=`${n} wybrane z aktualnych meczów`;
     }
   });
-  const groups=document.querySelector('#app .p751-groups');
-  if(groups&&!groups.querySelector('.p751-group'))groups.innerHTML='<div class="p751-empty"><b>Brak aktualnych meczów dla tego filtra.</b><span>Minęła planowana godzina spotkań. Odśwież dane, aby sprawdzić nowy terminarz.</span></div>';
+
+  const groups=document.querySelector('#app .match-groups');
+  if(groups&&!groups.querySelector('.match-group')){
+    groups.innerHTML='<div class="empty-state"><b>Brak aktualnych meczów dla tego filtra.</b><span>Minęła planowana godzina spotkań. Odśwież dane, aby sprawdzić nowy terminarz.</span></div>';
+  }
+
   if(typeof updateCounts==='function')updateCounts();
-  window.TENIS_AI_MATCH_BROWSER_V945?.enhance?.();
 }
 
 function refreshVisibleUi(){

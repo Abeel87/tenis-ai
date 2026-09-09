@@ -5,7 +5,8 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_history_ui_assets_exist():
     assert (ROOT/'frontend/history-ui.js').exists()
-    assert (ROOT/'frontend/history-ui.css').exists()
+    assert (ROOT/'frontend/style.css').exists()
+    assert not (ROOT/'frontend/history-ui.css').exists()
     assert not (ROOT/'frontend/ui-v75.js').exists()
     assert not (ROOT/'frontend/ui-v75.css').exists()
 

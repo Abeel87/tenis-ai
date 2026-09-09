@@ -1,4 +1,4 @@
-/* Tenis AI v7.8A — Integrity Guard + v7.8E6 Shadow Lab loader */
+/* Tenis AI v7.8A — Integrity Guard. Shadow Lab is bootstrapped canonically by index.html. */
 (() => {
   async function boot(){
     try{
@@ -15,14 +15,6 @@
       host.appendChild(el);
     }catch{}
   }
-  function bootShadowLab(){
-    if(!document.querySelector('link[data-shadow-v78e6]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.href='shadow-lab-v78e6.css';link.dataset.shadowV78e6='1';document.head.appendChild(link);
-    }
-    if(!document.querySelector('script[data-shadow-v78e6]')){
-      const script=document.createElement('script');script.src='shadow-lab-v78e6.js';script.dataset.shadowV78e6='1';document.body.appendChild(script);
-    }
-  }
-  bootShadowLab();
+
   setTimeout(boot,500);
 })();

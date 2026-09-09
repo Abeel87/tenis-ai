@@ -705,9 +705,9 @@
   }
 
   function activeDetailMatch(){
-    const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
-    if(!overlay)return null;
-    const key=String(overlay.dataset.matchKey||'');
+    const app=document.querySelector('#app[data-match-key]');
+    if(!app?.querySelector('.p751-detail-screen'))return null;
+    const key=String(app.dataset.matchKey||'');
     try{
       return window.TENIS_AI_PROJECT_UI?.findMatch?.(key)||null;
     }catch{
@@ -851,16 +851,21 @@
   }
 
   async function injectTrajectory(force=false){
-    const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
-    if(!overlay)return false;
+    const app=document.querySelector('#app[data-match-key]');
+    const screen=app?.querySelector('.p751-detail-screen');
+    if(!app||!screen)return false;
+    const key=String(app.dataset.matchKey||'');
     const match=activeDetailMatch();
     if(!match)return false;
 
     const report=await loadSimulation(force);
-    if(!document.querySelector('#p751-match-overlay:not([hidden])'))return false;
+    const currentApp=document.querySelector('#app[data-match-key]');
+    if(!currentApp||String(currentApp.dataset.matchKey||'')!==key)return false;
+    const currentScreen=currentApp.querySelector('.p751-detail-screen');
+    if(!currentScreen)return false;
     const row=simulationRow(report,match);
 
-    let panel=overlay.querySelector('#player-dna-match-trajectory');
+    let panel=currentScreen.querySelector('#player-dna-match-trajectory');
     if(!panel){
       panel=document.createElement('section');
       panel.id='player-dna-match-trajectory';
@@ -869,9 +874,9 @@
     }
     panel.innerHTML=trajectoryHTML(row);
 
-    const playerContext=overlay.querySelector('[data-pi851-detail],#pi85-detail');
-    const verdict=overlay.querySelector('.p751-verdict');
-    const matchup=overlay.querySelector('.p751-matchup');
+    const playerContext=currentScreen.querySelector('[data-pi851-detail],#pi85-detail');
+    const verdict=currentScreen.querySelector('.p751-verdict');
+    const matchup=currentScreen.querySelector('.p751-matchup');
     if(playerContext?.parentNode){
       playerContext.insertAdjacentElement('afterend',panel);
     }else if(verdict?.parentNode){
@@ -946,7 +951,7 @@
   function boot(){
     wrapProjectOpen();
     schedule(false);
-    if(document.querySelector('#p751-match-overlay:not([hidden])')){
+    if(document.querySelector('#app[data-match-key] .p751-detail-screen')){
       injectTrajectory(false).catch(()=>{});
     }
   }

@@ -329,8 +329,8 @@ function patchScenarioNote(){
 }
 
 function currentDecisionMatch(root){
-  const overlay=root?.closest?.('#p751-match-overlay')||document.querySelector('#p751-match-overlay');
-  const key=overlay?.dataset?.matchKey;
+  const app=root?.closest?.('#app[data-match-key]')||document.querySelector('#app[data-match-key]');
+  const key=app?.dataset?.matchKey;
   if(!key)return null;
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(key)||null}catch{return null}
 }

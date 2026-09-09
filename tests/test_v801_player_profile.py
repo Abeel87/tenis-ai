@@ -11,12 +11,15 @@ def test_no_old_profile_polling_or_global_observers():
     assert "observer.observe(document.documentElement" not in c
 
 def test_profile_returns_and_history_opens_postmatch():
-    r=read("frontend/navigation-tools.js"); u=read("frontend/project-ui.js"); p=read("frontend/player-search.js")
-    assert "TENIS_AI_PLAYER_PROFILE_RETURN_KEY" in r
-    assert "o.dataset.matchKey=String(k)" in u
+    u=read("frontend/project-ui.js"); p=read("frontend/player-search.js")
+    assert "returnScroll" in u
+    assert "closeMatch" in u
+    assert "app.dataset.matchKey=String(k)" in u
     assert "data-player-history-key" in p
     assert "TENIS_AI_CLEAN_CORE?.openPostMatch" in p
     assert "TENIS_AI_PROJECT_UI?.openMatch" in p
+    assert not (ROOT/"frontend/navigation-tools.js").exists()
+
 
 def test_source_history_is_real_data():
     b=read("backend/player_trends.py"); a=read("frontend/player-analytics.js")

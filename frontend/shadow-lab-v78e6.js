@@ -368,7 +368,7 @@
 
     requestAnimationFrame(()=>{
       const screen=document.querySelector(
-        '#p751-match-overlay .p751-detail-screen'
+        '#app[data-match-key] .p751-detail-screen'
       );
 
       if(!screen)return;
@@ -477,17 +477,8 @@
   function renderShadow(){
     active=true;
 
-    window.TENIS_AI_PROJECT_UI?.renderMatches?.();
-
     const app=document.querySelector('#app');
     if(!app)return;
-
-    const focus=app.querySelector('.p751-focus');
-    if(!focus)return;
-
-    [...app.children].forEach(el=>{
-      if(el!==focus)el.remove();
-    });
 
     const rows=filteredRows();
     const signalRows=rows.filter(x=>validSignals(x).length);
@@ -526,7 +517,7 @@
       }
     `;
 
-    app.appendChild(holder);
+    app.replaceChildren(holder);
 
     syncButton();
     updateTourCounts();
@@ -542,18 +533,18 @@
 
   document.addEventListener('click',e=>{
     const normalFocus=e.target.closest(
-      '.p751-focus button:not([data-shadow-open])'
+      '[data-p751-focus]:not([data-shadow-open])'
     );
 
     if(normalFocus){
       active=false;
     }
 
-    const bottom=e.target.closest(
-      '#p751-bottom-nav [data-p751-nav]'
+    const mainNav=e.target.closest(
+      '.main-tabs [data-view]'
     );
 
-    if(bottom){
+    if(mainNav){
       active=false;
     }
 

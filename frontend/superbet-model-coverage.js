@@ -20,22 +20,7 @@ const key=r=>[
   r?.line!==null&&r?.line!==undefined?r.line:'',r?.pick||''
 ].map(String).join('|');
 
-function style(){
-  if(document.getElementById('sbmc922-style'))return;
-  const s=document.createElement('style');
-  s.id='sbmc922-style';
-  s.textContent=`
-    .sbmc922-panel{margin:.65rem 0;padding:.72rem;border:1px solid rgba(81,210,245,.17);border-radius:14px;background:rgba(3,22,33,.76)}
-    .sbmc922-head{display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start;margin-bottom:.4rem}.sbmc922-head b{font-size:.8rem}.sbmc922-head span{font-size:.57rem;padding:.28rem .42rem;border:1px solid rgba(81,210,245,.18);border-radius:999px;color:#9adff0}
-    .sbmc922-note{font-size:.61rem;color:#87a2ae;line-height:1.45;margin:.25rem 0 .5rem}
-    .sbmc922-lines{display:grid;gap:.3rem;margin-top:.35rem}.sbmc922-line{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.2rem .55rem;padding:.42rem .48rem;border-radius:8px;background:rgba(255,255,255,.025)}
-    .sbmc922-line b{font-size:.65rem;overflow-wrap:anywhere}.sbmc922-line small{font-size:.56rem;color:#7897a4}.sbmc922-value{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:.08rem;min-width:92px;line-height:1.15}
-    .sbmc922-model{font-size:.67rem;color:#dfffb7;white-space:nowrap}.sbmc922-model.missing{color:#94a8b0;font-size:.59rem}.sbmc922-model.shadow{color:#e4c5ff}.sbmc922-meta{font-size:.52rem!important;color:#83a0aa!important;white-space:nowrap}
-    .sbmc922-empty{font-size:.61rem;color:#809da9;padding:.35rem 0}
-  `;
-  document.head.appendChild(s);
-}
-
+function style(){}
 function findMatch(raw){
   const k=decode(raw).replace(/^id:/,'');
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(k)||null}catch{return null}
@@ -91,34 +76,36 @@ function panelHtml(match){
 
 function annotate(){
   queued=false;style();
-  const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
-  if(!overlay)return;
-  const match=findMatch(overlay.dataset.matchKey||'');
+  const host=document.querySelector('#app[data-match-key]');
+  if(!host)return;
+  const match=findMatch(host.dataset.matchKey||'');
   if(!match)return;
-  let panel=overlay.querySelector('[data-superbet-model-coverage-v922]');
+  let panel=host.querySelector('[data-superbet-model-coverage-v922]');
   if(!panel){
     panel=document.createElement('section');
     panel.className='sbmc922-panel';
     panel.dataset.superbetModelCoverageV922='1';
-    const dc=overlay.querySelector('.dc87');
-    const screen=overlay.querySelector('.p751-detail-screen');
-    if(dc)dc.before(panel);else screen?.prepend(panel);
+    const dc=host.querySelector('.dc87');
+    const primary=host.querySelector('.match-page-primary');
+    const screen=host.querySelector('.p751-detail-screen');
+    if(dc)dc.before(panel);
+    else if(primary)primary.prepend(panel);
+    else screen?.prepend(panel);
   }
   const nextKey=coverageKey(match);
-  if(panel.dataset.coverageKey===nextKey&&panel.dataset.matchKey===String(overlay.dataset.matchKey||''))return;
+  if(panel.dataset.coverageKey===nextKey&&panel.dataset.matchKey===String(host.dataset.matchKey||''))return;
   panel.innerHTML=panelHtml(match);
   panel.dataset.coverageKey=nextKey;
-  panel.dataset.matchKey=String(overlay.dataset.matchKey||'');
+  panel.dataset.matchKey=String(host.dataset.matchKey||'');
   delete panel.dataset.rp93gReady;
+  document.dispatchEvent(new CustomEvent('tenis-ai:superbet-coverage-ready',{detail:{matchKey:String(host.dataset.matchKey||'')}}));
 }
 
 function schedule(){if(queued)return;queued=true;queueMicrotask(annotate)}
-const observer=new MutationObserver(schedule);
 function boot(){
   style();
-  observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','data-match-key']});
-  document.addEventListener('click',schedule,true);
-  document.addEventListener('visibilitychange',schedule);
+  document.addEventListener('tenis-ai:match-open',schedule);
+  document.addEventListener('tenis-ai:match-refresh',schedule);
   setTimeout(schedule,0);
 }
 

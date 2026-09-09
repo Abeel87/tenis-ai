@@ -352,9 +352,10 @@ function wrapDecisionCenter(){
   return true;
 }
 function patchOpenDecision(){
-  const overlay=document.querySelector('#p751-match-overlay:not([hidden])');
-  if(!overlay)return;
-  const match=findMatch(overlay.dataset.matchKey||'');
+  const app=document.querySelector('#app[data-match-key]');
+  const screen=app?.querySelector('.p751-detail-screen');
+  if(!app||!screen)return;
+  const match=findMatch(app.dataset.matchKey||'');
   if(!match)return;
   wrapDecisionCenter();
   window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(match);
@@ -408,9 +409,8 @@ function boot(){
   document.addEventListener('change',event=>{
     if(event.target?.matches?.('[data-v945-surface]'))schedule(80);
   },true);
-  if('MutationObserver'in window){
-    const observer=new MutationObserver(()=>schedule(50));
-    observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['hidden']});
+  for(const eventName of ['tenis-ai:matches-rendered','tenis-ai:match-open','tenis-ai:match-close','tenis-ai:match-refresh','tenis-ai:superbet-coverage-ready','tenis-ai-ui-mode-change']){
+    document.addEventListener(eventName,()=>schedule(eventName==='tenis-ai:match-open'?0:40));
   }
 }
 

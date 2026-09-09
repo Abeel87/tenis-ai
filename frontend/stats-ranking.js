@@ -8,13 +8,6 @@ const DASHBOARD_READY_EVENT='tenis-ai:stats-dashboard-ready';
 function text(node){return String(node?.textContent||'').trim()}
 
 function loadSuperbetPlayableStats(){
-  if(!document.querySelector('link[data-superbet-playable-stats]')){
-    const link=document.createElement('link');
-    link.rel='stylesheet';
-    link.href='superbet-playable-stats.css';
-    link.dataset.superbetPlayableStats='1';
-    document.head.append(link);
-  }
   if(!document.querySelector('script[data-superbet-playable-stats]')&&!window.TENIS_AI_SUPERBET_PLAYABLE_V912){
     const script=document.createElement('script');
     script.src='superbet-playable-stats.js';

@@ -34,19 +34,6 @@
     el.innerHTML=`<div class="account-message ${type} reg-msg-v752">${esc(text).replace(/\n/g,'<br>')}</div>`;
   }
 
-  function ensureStyle(){
-    if(document.querySelector('#tenis-ai-turnstile-style'))return;
-    const style=document.createElement('style');
-    style.id='tenis-ai-turnstile-style';
-    style.textContent=`
-      .turnstile-shell-v78e3{margin:12px 0 14px;max-width:100%;overflow:hidden}
-      .turnstile-shell-v78e3-label{display:flex;align-items:center;gap:7px;margin:0 0 7px;font-size:.82rem;opacity:.82}
-      .turnstile-host-v78e3{width:100%;min-height:65px}
-      .turnstile-shell-v78e3[data-verified="1"] .turnstile-shell-v78e3-label{color:var(--neon-lime,#b7ff00);opacity:1}
-    `;
-    document.head.appendChild(style);
-  }
-
   function loadTurnstile(){
     if(window.turnstile)return Promise.resolve(window.turnstile);
     if(loadPromise)return loadPromise;
@@ -93,9 +80,6 @@
   async function ensureCaptcha(){
     const f=form();
     if(!f)return;
-
-    ensureStyle();
-
     let shell=f.querySelector('.turnstile-shell-v78e3');
     if(!shell){
       shell=document.createElement('div');

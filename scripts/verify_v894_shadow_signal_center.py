@@ -10,7 +10,9 @@ sys.path.insert(0, str(ROOT))
 
 BACKEND = ROOT / "backend" / "shadow_signal_center_v894.py"
 UI = ROOT / "frontend" / "shadow-signals-v894.js"
-CSS = ROOT / "frontend" / "shadow-signals-v894.css"
+CSS = ROOT / "frontend" / "style.css"
+LEGACY_CSS = ROOT / "frontend" / "shadow-signals-v894.css"
+INDEX = ROOT / "frontend" / "index.html"
 BOOT = ROOT / "frontend" / "match-loading.js"
 REPORT = ROOT / "frontend" / "data" / "shadow_signals_v894.json"
 TREND_UI = ROOT / "frontend" / "shadow-experiment-charts-v895.js"
@@ -36,6 +38,7 @@ def main():
     backend = BACKEND.read_text(encoding="utf-8")
     ui = UI.read_text(encoding="utf-8")
     css = CSS.read_text(encoding="utf-8")
+    index = INDEX.read_text(encoding="utf-8")
     boot = BOOT.read_text(encoding="utf-8")
     wf = WORKFLOW.read_text(encoding="utf-8")
     ui_wf = UI_WORKFLOW.read_text(encoding="utf-8")
@@ -52,11 +55,15 @@ def main():
     ):
         ck(model in backend, f"feed model {model}")
 
-    ck('data-p751-nav="shadow-signals"' in ui, "dedicated SHADOW bottom-nav route")
+    ck('id="shadow-signals-open"' in index, "structural SHADOW technical control")
+    ck("#shadow-signals-open" in ui, "SHADOW binds canonical topbar control")
     ck("data/shadow_signals_v894.json" in ui, "compact SHADOW feed fetch")
     ck("0% PROD" in ui, "visible production isolation")
-    ck("repeat(8" in css and ".sh894-view" in css, "8-item mobile nav + isolated view")
-    ck("shadow-signals-v894.css?v=894" in boot, "SHADOW CSS bootstrap")
+    ck(".sh894-view" in css and ".sh894-page" in css, "SHADOW styles live in canonical stylesheet")
+    ck(not LEGACY_CSS.exists(), "retired SHADOW component stylesheet stays deleted")
+    ck("shadow-signals-v894.css" not in boot, "no SHADOW runtime stylesheet bootstrap")
+    ck("p751-bottom-nav" not in ui and "p751-bottom-nav" not in css, "no retired SHADOW bottom-nav ownership")
+    ck("MutationObserver" not in ui, "SHADOW navigation is event-driven")
     ck("shadow-signals-v894.js?v=894" in boot, "SHADOW JS bootstrap")
     ck("Shadow Signal Center v8.9.4" in wf, "data pipeline integration")
     ck("Shadow Signal Center Guard v8.9.4" in wf, "data pipeline guard")

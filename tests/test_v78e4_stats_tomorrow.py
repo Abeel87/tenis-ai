@@ -22,5 +22,6 @@ def test_v78e4_bumps_pwa_cache():
     # freezing the test to a historical Symphony cache version.
     assert "const CACHE='tenis-ai-" in sw
     assert "'symphony2.js'" in sw
-    assert "'symphony2.css'" in sw
+    assert "'style.css'" in sw
+    assert "symphony2.css" not in sw
     assert "cache.addAll(ASSETS)" not in sw

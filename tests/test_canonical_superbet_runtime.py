@@ -32,22 +32,22 @@ RETIRED_COMPATIBILITY_SHIMS = {
 STABLE_FRONTEND_RUNTIME = {
     "playable-ui.js", "playable-freshness.js", "match-browser.js", "match-visibility.js",
     "superbet-model-coverage.js", "market-segregation.js", "match-detail.js",
-    "player-intelligence-human.js", "player-intelligence-ui.js", "clarity-labels.js",
+    "player-intelligence-human.js", "player-intelligence-ui.js",
     "app-coherence.js", "symphony2-live-ui.js",
     "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
-    "registration-handler.js", "registration-ux.js", "registration-ux.css",
-    "history-ui.js", "history-ui.css", "project-ui.js", "project-ui.css", "project-readability.css",
-    "navigation-tools.js", "navigation-tools.css", "adaptive-prod-bridge.js", "adaptive-prod-bridge.css",
-    "performance-dashboard.js", "performance-dashboard.css", "performance-center.js", "performance-center.css",
-    "ui-cleanup.js", "ui-cleanup.css", "ui-organizer.js", "ui-organizer.css",
-    "superbet-playable-stats.js", "superbet-playable-stats.css",
-    "stats-ranking.js", "market-quality.js", "project-ui-quality.js",
-    "integrity-status.js", "integrity-status.css", "model-trends.js", "model-trends.css",
-    "match-time.js", "match-time.css", "pbp-validation.js", "pbp-validation.css", "market-lab.js", "market-lab.css",
-    "project-analysis.css", "calibration-status.css", "early-hold-paths.js", "early-hold-paths.css",
-    "player-trends.js", "player-trends.css", "player-analytics.js", "player-analytics.css",
-    "match-tendencies.js", "match-tendencies.css", "community-admin.js", "community-admin.css",
-    "admin-delete.js", "admin-delete.css",
+    "registration-handler.js", "registration-ux.js",
+    "history-ui.js", "project-ui.js",
+    "adaptive-prod-bridge.js",
+    "performance-dashboard.js", "performance-center.js",
+    "superbet-playable-stats.js",
+    "stats-ranking.js", "market-quality.js",
+    "integrity-status.js", "model-trends.js",
+    "match-time.js", "pbp-validation.js", "market-lab.js",
+    "early-hold-paths.js",
+    "player-trends.js", "player-analytics.js",
+    "match-tendencies.js", "community-admin.js",
+    "admin-delete.js",
+    "style.css",
 }
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
@@ -70,6 +70,9 @@ RETIRED_FRONTEND_RUNTIME = {
     "integrity-v78a.js", "integrity-v78a.css", "model-trends-v84e2.js", "model-trends-v84e2.css",
     "match-time-v84e11.js", "match-time-v84e11.css", "pbp-validation-v73.js", "pbp-validation-v73.css",
     "market-lab-v741.js", "market-lab-v741.css", "logic-audit-v772.css", "calibration-v78d.css",
+    "clarity-labels.js", "navigation-tools.js", "project-ui-quality.js", "ui-cleanup.js", "ui-organizer.js",
+    "project-ui.css", "project-readability.css", "neon.css",
+    "clean-core-v80.css", "symphony2.css",
 }
 
 
@@ -136,23 +139,25 @@ def test_index_boots_stable_production_runtime_chain():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
     for name in (
         "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
-        "registration-handler.js", "registration-ux.js", "clarity-labels.js", "history-ui.js", "project-ui.js",
-        "navigation-tools.js", "ui-organizer.js", "adaptive-prod-bridge.js", "performance-dashboard.js",
-        "performance-center.js", "player-intelligence-ui.js", "ui-cleanup.js", "stats-ranking.js", "market-quality.js",
-        "project-ui-quality.js", "integrity-status.js", "match-time.js", "model-trends.js",
+        "registration-handler.js", "registration-ux.js", "history-ui.js", "project-ui.js",
+        "adaptive-prod-bridge.js", "performance-dashboard.js",
+        "performance-center.js", "player-intelligence-ui.js", "stats-ranking.js", "market-quality.js",
+        "integrity-status.js", "match-time.js", "model-trends.js",
         "pbp-validation.js", "market-lab.js", "early-hold-paths.js", "player-trends.js", "player-analytics.js",
         "match-tendencies.js", "community-admin.js", "admin-delete.js", "match-visibility.js",
     ):
         assert f'src="{name}"' in text
-    for name in (
-        "registration-ux.css", "history-ui.css", "project-ui.css", "project-readability.css",
-        "navigation-tools.css", "ui-organizer.css", "adaptive-prod-bridge.css", "performance-dashboard.css",
-        "performance-center.css", "ui-cleanup.css", "integrity-status.css", "match-time.css", "model-trends.css",
-        "pbp-validation.css", "market-lab.css", "project-analysis.css", "calibration-status.css",
-        "early-hold-paths.css", "player-trends.css", "player-analytics.css", "match-tendencies.css",
-        "community-admin.css", "admin-delete.css",
+
+    assert text.count('rel="stylesheet"') == 1
+    assert 'href="style.css"' in text
+
+    for legacy in (
+        "clarity-labels.js", "navigation-tools.js", "project-ui-quality.js", "ui-cleanup.js",
+        "project-ui.css", "project-readability.css", "neon.css",
+        "clean-core-v80.css", "symphony2.css",
     ):
-        assert f'href="{name}"' in text
+        assert legacy not in text
+
     assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
     assert text.index('src="registration-handler.js"') < text.index('src="registration-ux.js"')
     for retired in RETIRED_FRONTEND_RUNTIME:
@@ -167,10 +172,15 @@ def test_model_trend_monitor_stays_read_only():
 
 
 def test_integrity_status_preserves_shadow_experiment_boundary():
-    text = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
-    assert "integrity_report_v78a.json" in text
-    assert "shadow-lab-v78e6.js" in text
-    assert "shadow-lab-v78e6.css" in text
+    integrity = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
+    index = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    style = (FRONTEND / "style.css").read_text(encoding="utf-8")
+    assert "integrity_report_v78a.json" in integrity
+    assert 'src="shadow-lab-v78e6.js' in index
+    assert "shadow-lab-v78e6.js" not in integrity
+    assert "shadow-lab-v78e6.css" not in integrity
+    assert "Migrated functional component rules from retired shadow-lab-v78e6.css" in style
+    assert not (FRONTEND / "shadow-lab-v78e6.css").exists()
 
 
 def test_match_time_runtime_preserves_single_formatter_contract():

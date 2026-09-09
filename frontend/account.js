@@ -57,7 +57,22 @@
   window.tenisAIAccount={get client(){return client},get user(){return currentUser},get profile(){return currentProfile},get configured(){return configured},get authReady(){return authReady},refreshStats:refreshCommunityStats};
   function openModal(){overlay.hidden=false;document.body.style.overflow='hidden';renderModal()}
   function closeModal(){overlay.hidden=true;document.body.style.overflow=''}
+  function syncAuthDocument(){
+    const state=!authReady?'pending':(currentUser&&currentProfile?'authenticated':'guest');
+    document.documentElement.dataset.tenisAuthState=state;
+    document.documentElement.dataset.tenisRole=String(currentProfile?.role||'user').toLowerCase();
+    const msg=document.querySelector('#auth-screen-message');
+    if(msg){
+      msg.textContent=state==='pending'
+        ?'Sprawdzam Twoją sesję…'
+        :state==='authenticated'
+          ?`Witaj, ${currentProfile?.username||'użytkowniku'}.`
+          :(configured?'Zaloguj się, aby wejść do aplikacji.':'Logowanie jest chwilowo niedostępne — brak konfiguracji.');
+    }
+  }
   button.onclick=openModal;closeBtn.onclick=closeModal;overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)closeModal()});
+  document.querySelector('#auth-login')?.addEventListener('click',()=>{authMode='login';openModal()});
+  document.querySelector('#auth-register')?.addEventListener('click',()=>{authMode='register';openModal()});
   function updateAccountButton(){if(currentUser&&currentProfile){button.classList.add('logged-in');button.querySelector('.account-button-avatar').textContent=initials(currentProfile.username);button.querySelector('.account-button-copy b').textContent=currentProfile.username;button.querySelector('.account-button-copy small').textContent='Online'}else{button.classList.remove('logged-in');button.querySelector('.account-button-avatar').textContent='👤';button.querySelector('.account-button-copy b').textContent=configured?'Konto':'Konta';button.querySelector('.account-button-copy small').textContent=configured?'Zaloguj':'Konfiguracja'}}
   function setupHtml(){return `<div class="account-head"><h2 id="account-modal-title">👤 Konta Tenis AI</h2><p>Frontend v6.4 jest gotowy. Zostało podłączenie projektu Supabase.</p></div><div class="account-setup"><b>Jeszcze nie połączono bazy.</b><br><br>Po utworzeniu projektu w Supabase wklejamy <code>Project URL</code> oraz <code>Publishable key</code> do <code>frontend/supabase-config.js</code>, a potem uruchamiamy przygotowany plik <code>supabase/schema.sql</code>.<br><br><b>Nigdy nie wklejamy klucza service_role do aplikacji.</b></div>`}
   function authHtml(){const login=authMode==='login';return `<div class="account-head"><h2 id="account-modal-title">${login?'🔐 Zaloguj się':'✨ Załóż konto'}</h2><p>${login?'Wejdź na swój profil Tenis AI.':'Nick będzie widoczny przy kuponach, rankingach i komentarzach.'}</p></div><div class="account-auth-tabs"><button type="button" data-auth-mode="login" class="${login?'active':''}">Logowanie</button><button type="button" data-auth-mode="register" class="${!login?'active':''}">Rejestracja</button></div><form id="account-auth-form" class="account-form">${login?'':`<label>Nick<input name="username" minlength="3" maxlength="24" autocomplete="nickname" required placeholder="Np. TenisFan87"></label>`}<label>E-mail<input name="email" type="email" autocomplete="email" required placeholder="twoj@email.pl"></label><label>Hasło<input name="password" type="password" minlength="8" autocomplete="${login?'current-password':'new-password'}" required placeholder="Minimum 8 znaków"></label>${login?'':`<label>Powtórz hasło<input name="password2" type="password" minlength="8" autocomplete="new-password" required></label>`}<button class="account-primary" type="submit">${login?'Zaloguj':'Utwórz konto'}</button></form><div id="account-form-message"></div>`}
@@ -186,7 +201,7 @@
       setChip('BŁĄD POŁĄCZENIA','setup');
     }
   }
-  async function applySession(session){currentUser=session?.user||null;await loadProfile(currentUser);authReady=true;updateAccountButton();startHeartbeat();await refreshCommunityStats();notify('tenis-ai-auth-change',{user:currentUser,profile:currentProfile,configured,authReady});if(!overlay.hidden)renderModal()}
-  async function init(){updateAccountButton();if(!configured){authReady=true;refreshCommunityStats();notify('tenis-ai-auth-change',{user:null,profile:null,configured:false,authReady:true});return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(()=>{if(!currentUser)refreshCommunityStats()},60000)}
+  async function applySession(session){currentUser=session?.user||null;await loadProfile(currentUser);authReady=true;updateAccountButton();syncAuthDocument();startHeartbeat();await refreshCommunityStats();notify('tenis-ai-auth-change',{user:currentUser,profile:currentProfile,configured,authReady});if(!overlay.hidden)renderModal()}
+  async function init(){updateAccountButton();syncAuthDocument();if(!configured){authReady=true;syncAuthDocument();refreshCommunityStats();notify('tenis-ai-auth-change',{user:null,profile:null,configured:false,authReady:true});return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(()=>{if(!currentUser)refreshCommunityStats()},60000)}
   init();
 })();
