@@ -61,7 +61,7 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 let now=Date.parse('2026-08-28T12:00:00Z');
 class Clock extends Date { static now(){return now;} }
-const selections=[{market:'set1_total',pick:'under',line:12.5},{market:'set1_tiebreak',pick:'no'}];
+const selections=[{market:'set1_total',pick:'under',line:12.5,operator_available:true,operator_line_verified:true,fixture_line_verified:true},{market:'set1_tiebreak',pick:'no',operator_available:true}];
 const match={id:1,scheduled_time:'2026-08-28T14:00:00Z',feed_status:'upcoming',
   superbet_market_v91:{operator_verified:true,status:'VERIFIED',suspended:false,
     source_generated_at:'2026-08-28T11:00:00Z',canonical_selections:selections}};
@@ -80,6 +80,13 @@ assert.equal(api.isPlayable(match,{...selections[0],line:11.5}),false);
 assert.equal(api.compositionPlayable(match,{selection:selections}),true);
 assert.equal(api.compositionPlayable(match,{selection:[selections[0]]}),false);
 assert.equal(api.compositionPlayable(match,{selection:[selections[0],{...selections[1],pick:'yes'}]}),false);
+const malformedMatch=canonical=>({...match,superbet_market_v91:{...match.superbet_market_v91,canonical_selections:canonical}});
+assert.equal(api.isPlayable(malformedMatch([{...selections[0],operator_available:undefined}]),selections[0]),false,'missing operator_available must fail closed');
+assert.equal(api.isPlayable(malformedMatch([{...selections[0],operator_available:false}]),selections[0]),false,'operator_available=false must fail closed');
+assert.equal(api.isPlayable(malformedMatch([{...selections[0],operator_line_verified:undefined}]),selections[0]),false,'missing operator_line_verified must fail closed');
+assert.equal(api.isPlayable(malformedMatch([{...selections[0],fixture_line_verified:undefined}]),selections[0]),false,'missing fixture_line_verified must fail closed');
+assert.notEqual(api.signature({market:'set_handicap',pick:'Player A',line:-1.5}),api.signature({market:'set_handicap',pick:'Player A',line:-2.5}),'set handicap signature must keep exact line');
+assert.notEqual(api.signature({market:'set3_game_handicap',pick:'Player A',line:-1.5}),api.signature({market:'set3_game_handicap',pick:'Player A',line:-2.5}),'set3 handicap signature must keep exact line');
 for(const source_generated_at of [null,'','bad','2026-08-28T12:00:01Z','2026-08-28T09:00:00Z']){
  assert.equal(api.active({...match,superbet_market_v91:{...match.superbet_market_v91,source_generated_at}}),false);
 }
