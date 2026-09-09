@@ -1,4 +1,4 @@
-/* Tenis AI v9.4.8 — one Superbet PLAYABLE gate for actionable UI.
+/* Tenis AI v9.4.8 — one Superbet exact-offer projection gate for actionable UI.
    MODEL/RAW analytics stay independent. This bridge only verifies actionable
    Superbet surfaces against the current fixture offer. It contains no Symphony
    v9.x card/feed/bootstrap logic; Symphony 2.0 owns all Symphony UI. */
@@ -192,8 +192,8 @@ function compositionPlayable(match,comp){
 function playableCardHtml(match,signals,top){
   const value=valueOf(top);
   const green=signals.filter(s=>(valueOf(s)||0)>=72).length;
-  const name=top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):(active(match)?'Brak pojedynczego typu':'Brak Superbet PLAYABLE');
-  return `<span>🎯 SUPERBET PLAYABLE</span><b>${esc(name)}</b><strong>${scoreText(value)}</strong><em>${top?`${green} zielonych PLAYABLE · linia zweryfikowana ✓`:'N/D · brak PLAYABLE · MODEL / RAW bez zmian'}</em>`;
+  const name=top?String(top.label||top.pick||top.key||'Sygnał z oferty'):(active(match)?'Brak pojedynczego typu':'Brak zweryfikowanej oferty');
+  return `<span>🎯 SUPERBET · ZWERYFIKOWANA OFERTA</span><b>${esc(name)}</b><strong>${scoreText(value)}</strong><em>${top?`${green} mocnych sygnałów w ofercie · linia zweryfikowana ✓`:'N/D · brak zweryfikowanej oferty · MODEL / RAW bez zmian'}</em>`;
 }
 function patchMatchTotalPreview(card,match,signals,top){
   let preview=card.querySelector('[data-v917-match-total-preview]');
@@ -214,7 +214,7 @@ function patchMatchTotalPreview(card,match,signals,top){
   }
   const pick=rowPick(candidate,'match_total');
   const side=pick==='over'?'OVER':pick==='under'?'UNDER':String(candidate.pick||'').toUpperCase();
-  const html=`<span>📊 Gemy · cały mecz · SUPERBET PLAYABLE</span><b>${esc(side)} ${esc(Number(line).toFixed(1).replace('.0',''))}</b><strong>${scoreText(valueOf(candidate))}</strong><em>linia Superbet ✓</em>`;
+  const html=`<span>📊 Gemy · cały mecz · SUPERBET · ZWERYFIKOWANA OFERTA</span><b>${esc(side)} ${esc(Number(line).toFixed(1).replace('.0',''))}</b><strong>${scoreText(valueOf(candidate))}</strong><em>linia Superbet ✓</em>`;
   if(preview.innerHTML!==html)preview.innerHTML=html;
 }
 function patchCard(card){
@@ -236,7 +236,7 @@ function patchCard(card){
   card.dataset.playableUiV917=active(match)?'verified':'nd';
 }
 function topBarHtml(picks){
-  return `<section class="p751-top" data-playable-top-v917="1"><header><b>⚡ Top sygnały · SUPERBET</b><span>${picks.length} najmocniejsze PLAYABLE</span></header><div>${picks.map(({match,signal,raw})=>`<button data-v917-top="1" data-p751-open="${esc(raw)}"><small>${esc(match.p1)} vs ${esc(match.p2)}</small><b>${esc(signal.label||signal.pick||signal.key||'Sygnał PLAYABLE')}</b><strong>${scoreText(valueOf(signal))}</strong><span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${(valueOf(signal)||0)>=i*18?'on':''}"></i>`).join('')}</span><small class="pc882-top-meta">SUPERBET PLAYABLE · linia zweryfikowana ✓</small></button>`).join('')}</div></section>`;
+  return `<section class="p751-top" data-playable-top-v917="1"><header><b>⚡ Top sygnały · SUPERBET</b><span>${picks.length} najmocniejsze zweryfikowane sygnały</span></header><div>${picks.map(({match,signal,raw})=>`<button data-v917-top="1" data-p751-open="${esc(raw)}"><small>${esc(match.p1)} vs ${esc(match.p2)}</small><b>${esc(signal.label||signal.pick||signal.key||'Sygnał z oferty')}</b><strong>${scoreText(valueOf(signal))}</strong><span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${(valueOf(signal)||0)>=i*18?'on':''}"></i>`).join('')}</span><small class="pc882-top-meta">SUPERBET · ZWERYFIKOWANA OFERTA · linia zweryfikowana ✓</small></button>`).join('')}</div></section>`;
 }
 function patchTopStrip(){
   // Top SUPERBET must be derived from the exact set that Match Browser leaves
@@ -286,14 +286,14 @@ function patchDecisionHeader(root,match,rows){
   if(title)title.textContent='Sygnały modelowe i realna oferta';
   const p=root.querySelector('.dc87-head p');
   if(p)p.textContent=active(match)
-    ?'MODEL / RAW pozostaje pełny. Sygnały dostępne na dokładnej linii bieżącej oferty są dodatkowo oznaczane jako SUPERBET PLAYABLE.'
-    :'Brak świeżej oferty Superbet. MODEL / RAW oraz modelowy FINAL pozostają widoczne bez zmian; żaden sygnał nie jest oznaczany jako SUPERBET PLAYABLE.';
+    ?'MODEL / RAW pozostaje pełny. Sygnały zgodne z dokładną bieżącą ofertą są oznaczane jako zweryfikowane przez Superbet; finalne P(hit) i kompozycje PLAYABLE należą do Symfonii 2.0.'
+    :'Brak świeżej oferty Superbet. MODEL / RAW oraz modelowy FINAL pozostają widoczne bez zmian; żaden sygnał nie jest oznaczany jako zgodny ze zweryfikowaną ofertą.';
   const health=root.querySelector('.dc87-health');
   if(health){
     let badge=health.querySelector('[data-v917-book]');
     if(!badge){badge=document.createElement('span');badge.dataset.v917Book='1';health.prepend(badge)}
     badge.className=active(match)?'prod':'shadow';
-    badge.textContent=active(match)?`Superbet ✓ ${playable.length} PLAYABLE`:'Superbet N/D · RAW dostępny';
+    badge.textContent=active(match)?`Superbet ✓ ${playable.length} zgodnych z ofertą`:'Superbet N/D · RAW dostępny';
   }
   const empty=root.querySelector('.dc87-empty');
   if(empty&&rows.length===0)empty.innerHTML='<b>Brak sygnałów modelowych</b>Dla tego meczu MODEL / RAW nie ma jeszcze policzonych selekcji.';
@@ -373,7 +373,7 @@ function wrapRenderMatches(){
     const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
     // project-ui's base focus=strong filter is a MODEL/RAW filter. During only
     // that synchronous base render, expose model rows through the legacy hook;
-    // immediately restore strict PLAYABLE before any Superbet patch runs.
+    // immediately restore the strict operator projection before any Superbet patch runs.
     if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
     let result;
     try{result=current.apply(this,args)}
