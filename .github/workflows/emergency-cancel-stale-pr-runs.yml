@@ -1,0 +1,64 @@
+name: Emergency cancel stale PR runs
+
+on:
+  push:
+    branches:
+      - ui/clean-rebuild-squash-base
+    paths:
+      - '.github/workflows/emergency-cancel-stale-pr-runs.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel queued and running jobs from PR 297/298
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const targets = new Set([297, 298]);
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            for (let pass = 1; pass <= 4; pass++) {
+              let cancelled = 0;
+
+              for (const status of ['queued', 'in_progress']) {
+                for (let page = 1; page <= 10; page++) {
+                  const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    event: 'pull_request',
+                    status,
+                    per_page: 100,
+                    page,
+                  });
+
+                  if (!data.workflow_runs.length) break;
+
+                  for (const run of data.workflow_runs) {
+                    const prs = run.pull_requests || [];
+                    if (!prs.some(pr => targets.has(pr.number))) continue;
+
+                    try {
+                      await github.rest.actions.cancelWorkflowRun({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        run_id: run.id,
+                      });
+                      core.info(`cancel requested: #${run.run_number} ${run.name} (run ${run.id})`);
+                      cancelled++;
+                    } catch (error) {
+                      core.warning(`cancel failed for run ${run.id}: ${error.message}`);
+                    }
+                  }
+                }
+              }
+
+              core.info(`pass ${pass}: cancel requests=${cancelled}`);
+              if (pass < 4) await sleep(5000);
+            }
