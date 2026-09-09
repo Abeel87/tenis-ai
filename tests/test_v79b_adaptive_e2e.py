@@ -87,12 +87,12 @@ def test_v79b_frontend_is_static_and_visible_before_domcontentloaded():
     idx = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
     sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
     ui = (ROOT / "frontend/adaptive-learning-v79.js").read_text(encoding="utf-8")
-    assert "Tenis AI v8.0" in idx
-    assert 'adaptive-learning-v79.css?v=80' in idx
-    assert 'adaptive-learning-v79.js?v=80' in idx
-    assert 'data-v79-adaptive="css"' in idx
+    assert "<title>Tenis AI</title>" in idx
+    assert 'id="product-shell"' in idx
+    assert 'src="adaptive-learning-v79.js' in idx
+    assert 'adaptive-learning-v79.css' not in idx
     assert 'data-v79-adaptive="js"' in idx
-    assert "tenis-ai-v801-" in sw
+    assert "tenis-ai-v801-player-profile" in sw
     assert "p751-detail-screen" in ui
     assert "v79-health" in ui
 

@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ACCOUNT = (ROOT / "frontend" / "account.js").read_text(encoding="utf-8")
 ORGANIZER = (ROOT / "frontend" / "ui-organizer.js").read_text(encoding="utf-8")
-CLEANUP_CSS = (ROOT / "frontend" / "ui-cleanup.css").read_text(encoding="utf-8")
+STYLE = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 PLAYER_UI = (ROOT / "frontend" / "player-intelligence-ui.js").read_text(encoding="utf-8")
 PLAYER_DNA_UI = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
 PLAYER_BACKEND = (ROOT / "backend" / "player_intelligence_v85.py").read_text(encoding="utf-8")
@@ -25,9 +25,9 @@ def test_phase11_simple_mode_is_default_and_technical_is_admin_only():
     assert "button?.remove();" in ORGANIZER
     assert "id = 'tenis-ui-mode-toggle'" in ORGANIZER
     assert "tenis-ai-auth-change" in ORGANIZER
-    assert "data-tenis-ui-mode" in CLEANUP_CSS
-    assert 'html[data-tenis-ui-mode="simple"] .phase11-technical' in CLEANUP_CSS
-    assert 'html[data-tenis-ui-mode="technical"] .phase11-simple-only' in CLEANUP_CSS
+    assert "data-tenis-ui-mode" in STYLE
+    assert 'html[data-tenis-ui-mode="simple"] .phase11-technical' in STYLE
+    assert 'html[data-tenis-ui-mode="technical"] .phase11-simple-only' in STYLE
 
 
 def test_phase11_player_ui_exposes_real_backend_evidence_not_new_model_math():

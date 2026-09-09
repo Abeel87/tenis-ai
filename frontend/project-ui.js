@@ -55,6 +55,12 @@
   }
   function signals(m){
     const api=modelApi();
+    if(api?.signals){
+      try{
+        return (api.signals(m,40)||[]).map(x=>({label:x.label||x.key||'Sygnał',value:Number(x.v),kind:'selected-model',market:x.market,pick:x.pick,key:x.key,source_model:activeModelId()}))
+          .filter(x=>num(x.value)!=null).sort((a,b)=>b.value-a.value);
+      }catch{}
+    }
     if(api?.allSignals){
       return modelAllSignals(m).map(x=>({label:x.label||x.key||'Sygnał',value:Number(x.v),kind:'selected-model',market:x.market,pick:x.pick,key:x.key,source_model:activeModelId()}))
         .filter(x=>num(x.value)!=null).sort((a,b)=>b.value-a.value);
@@ -87,15 +93,21 @@
   }
 
   function topStrip(rows){
-    const picks=rows.map(m=>({m,s:top(m,1)[0]})).filter(x=>x.s&&x.s.value>=72).sort((a,b)=>b.s.value-a.s.value).slice(0,3);
+    const picks=rows.map(m=>({m,s:top(m,1)[0]}))
+      .filter(x=>x.s&&x.s.value>=72)
+      .sort((a,b)=>b.s.value-a.s.value)
+      .slice(0,3);
     if(!picks.length)return '';
-    return `<section class="p751-top">
-      <header><b>⚡ Top sygnały</b><span>${picks.length} najmocniejsze</span></header>
-      <div>${picks.map(({m,s})=>`<button data-p751-open="${encodeURIComponent(key(m))}">
-        <small>${esc(m.p1)} vs ${esc(m.p2)}</small>
-        <b>${esc(s.label)}</b>
+    return `<section class="signal-spotlight">
+      <header>
+        <div><span>NAJMOCNIEJSZE TERAZ</span><b>Top sygnały</b></div>
+        <small>${picks.length} wybrane z aktualnych meczów</small>
+      </header>
+      <div class="signal-spotlight-grid">${picks.map(({m,s},i)=>`<button class="signal-spotlight-card ${i===0?'primary':''}" data-p751-open="${encodeURIComponent(key(m))}">
+        <span>${esc(tour(m))} · ${esc(tm(m))}</span>
+        <b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b>
+        <small>${esc(s.label)}</small>
         <strong>${signalText(s.value)}</strong>
-        ${signalBars(s.value)}
       </button>`).join('')}</div>
     </section>`;
   }
@@ -180,40 +192,42 @@
 
   function card(m){
     const s=top(m,1)[0],v=strength(m),st=status(m);
-    return `<article class="p751-match-card" data-p751-open="${encodeURIComponent(key(m))}" role="button" tabindex="0">
-      <div class="p751-match-meta">
-        ${window.TENIS_AI_MATCH_TIME?.badgeHtml(m)||`<span class="p751-status ${st.cls}">${esc(st.txt)}</span>`}
-        <b>${esc(tour(m))}</b>
-        <span>${esc(m.tournament||'Turniej')}</span>
-        <span>• ${esc(surf(m))}</span>
-        <time>${esc(tm(m))}</time>
-      </div>
-      ${window.TENIS_AI_MATCH_TIME?.html(m,'compact')||''}
-      <div class="p751-card-center">
-        <div class="p751-names">
-          <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b>
-          <span>VS</span>
-          <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p2)}</b>
+    const second=top(m,2)[1];
+    const playable=window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,3)||[];
+    const playableCount=Array.isArray(playable)?playable.length:0;
+    return `<article class="p751-match-card match-tile" data-p751-open="${encodeURIComponent(key(m))}" role="button" tabindex="0">
+      <header class="match-tile-head">
+        <div>
+          ${window.TENIS_AI_MATCH_TIME?.badgeHtml(m)||`<span class="match-status ${st.cls}">${esc(st.txt)}</span>`}
+          <span class="match-tour">${esc(tour(m))}</span>
+          <span class="match-time">${esc(tm(m))}</span>
         </div>
-        <div class="p751-top-pick">
-          <span>◎ Top typ</span>
-          <b>${esc(s?.label||'Brak mocnego sygnału')}</b>
-          <em>${s?signalText(s.value):'—'}</em>
+        <span class="match-surface">${esc(surf(m))}</span>
+      </header>
+      <div class="match-tile-main">
+        <div class="match-tile-copy">
+          <div class="match-tile-event">${esc(m.tournament||'Turniej')}</div>
+          <div class="match-tile-players">
+            <b class="v762-player-link" role="link" tabindex="0">${esc(m.p1)}</b>
+            <span>vs</span>
+            <b class="v762-player-link" role="link" tabindex="0">${esc(m.p2)}</b>
+          </div>
+          <div class="match-tile-pick">
+            <span>Najlepszy typ</span>
+            <b>${esc(s?.label||'Brak mocnego sygnału')}</b>
+            ${second?`<small>Alternatywa: ${esc(second.label)} · ${signalText(second.value)}</small>`:''}
+          </div>
         </div>
+        <aside class="match-tile-score">
+          <span>Siła</span>
+          <strong>${v>0?signalText(v):'—'}</strong>
+          <small>${playableCount?playableCount+' PLAYABLE':greens(m)+' mocnych'}</small>
+        </aside>
       </div>
-      <aside class="p751-strength">
-        <span>Siła sygnału</span>
-        <b>${v>0?signalText(v):'—'}</b>
-        ${signalBars(v)}
-        <small>${greens(m)} zielonych</small>
-      </aside>
-      ${matchGamesPreview(m,s)}
-      <footer>
-        <span>🧠 ${esc(activeModelName())}</span>
-        ${m.early_hold_v7?.ready?'<span>🧬 PBP OK</span>':''}
-        ${m.joint_builder_v78b?.status==='READY'?`<span>🧩 Joint ${pc(m.joint_builder_v78b.best?.joint_all_3)}</span>`:''}
-        <span>DANE ${esc(m.quality||'—')}</span>
-        <b>Analiza ›</b>
+      <footer class="match-tile-foot">
+        <span>${m.early_hold_v7?.ready?'PBP gotowe':'PBP N/D'}</span>
+        <span class="phase11-technical">Dane ${esc(m.quality||'—')}</span>
+        <b>Analiza meczu <i>→</i></b>
       </footer>
     </article>`;
   }
@@ -229,29 +243,41 @@
   }
 
   function focusBar(){
-    return `<div class="p751-focus">
+    return `<div class="match-filter-row">
       <button class="${focus==='all'?'active':''}" data-p751-focus="all">Wszystkie</button>
-      <button class="${focus==='live'?'active':''}" data-p751-focus="live">● LIVE</button>
-      <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">⭐ 80+</button>
-      <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">🧬 PBP OK</button>
+      <button class="${focus==='strong'?'active':''}" data-p751-focus="strong">Mocne 80+</button>
+      <button class="${focus==='pbp'?'active':''}" data-p751-focus="pbp">PBP gotowe</button>
+      <button class="${focus==='live'?'active':''}" data-p751-focus="live">Na żywo</button>
     </div>`;
   }
 
   renderMatches=function(){
     route='matches';
     navActive('matches');
+    document.documentElement.dataset.tenisRoute='matches';
     const app=document.querySelector('#app');
     const rows=currentRows();
     if(!rows.length){
-      app.innerHTML=`${focusBar()}<div class="p751-empty"><b>Brak meczów dla tego filtra.</b><span>Wybierz „Wszystkie” albo inny filtr.</span></div>`;
+      app.innerHTML=`<section class="match-browser-head">${focusBar()}</section>
+        <div class="empty-state"><b>Brak meczów dla tego filtra.</b><span>Zmień filtr albo wróć do wszystkich spotkań.</span></div>`;
       bindHome();
       return;
     }
-    app.innerHTML=`${focusBar()}${topStrip(rows)}
-      <div class="p751-groups">${groupRows(rows).map((g,i)=>`<details class="p751-group" ${i<4?'open':''}>
-        <summary><div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b><small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'} · ${esc([...new Set(g.rows.map(surf))].join('/'))}</small></div><i>⌄</i></summary>
-        <div class="p751-group-body">${g.rows.map(card).join('')}</div>
-      </details>`).join('')}</div>`;
+    app.innerHTML=`<div class="match-browser">
+      ${topStrip(rows)}
+      <section class="match-browser-head">
+        <div><span>LISTA MECZÓW</span><b>${rows.length} spotkań</b></div>
+        ${focusBar()}
+      </section>
+      <div class="match-groups">${groupRows(rows).map(g=>`
+        <section class="match-group">
+          <header>
+            <div><span>${esc(g.tour)}</span><b>${esc(g.name)}</b></div>
+            <small>${g.rows.length} ${g.rows.length===1?'mecz':'meczów'} · ${esc([...new Set(g.rows.map(surf))].join('/')||'—')}</small>
+          </header>
+          <div class="match-grid">${g.rows.map(card).join('')}</div>
+        </section>`).join('')}</div>
+    </div>`;
     bindHome();
   };
 
@@ -517,44 +543,87 @@
   }
 
   function detailHtml(m){
-    return `<div class="p751-detail-screen">
-      <header class="p751-detail-header">
-        <button data-p751-close aria-label="Wróć">‹</button>
-        <div><b>Szczegóły meczu</b><small>${esc(tour(m))} · ${esc(m.tournament||'Turniej')} · ${esc(surf(m))} · ${esc(dt(m))} · ${esc(tm(m))}</small></div>
+    const ss=top(m,3),best=ss[0],second=ss[1];
+    const trust=Math.round(Math.min(100,(num(m.model_confidence)||0)+(m.early_hold_v7?.ready?4:0)));
+    return `<div class="p751-detail-screen match-page">
+      <header class="match-page-top">
+        <button data-p751-close class="match-back" aria-label="Wróć">←</button>
+        <div>
+          <span>${esc(tour(m))} · ${esc(m.tournament||'Turniej')}</span>
+          <b>Analiza meczu</b>
+        </div>
+        <time>${esc(dt(m))} · ${esc(tm(m))}</time>
       </header>
-      <section class="p751-matchup">
-        <b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p1)}</b><span>VS</span><b class="v762-player-link" role="link" tabindex="0" title="Otwórz profil zawodnika">${esc(m.p2)}</b>
-        <div><em class="${m.early_hold_v7?.ready?'ok':''}">${m.early_hold_v7?.ready?'PBP OK':'PBP N/D'}</em><em>JAKOŚĆ ${Math.round(num(m.model_confidence)||0)}</em></div>
+      <section class="match-hero">
+        <div class="match-hero-meta">
+          <span>${esc(surf(m))}</span>
+          <span>${m.early_hold_v7?.ready?'PBP gotowe':'PBP N/D'}</span>
+          <span class="phase11-technical">Jakość ${trust}/100</span>
+        </div>
+        <div class="match-hero-players">
+          <b class="v762-player-link" role="link" tabindex="0">${esc(m.p1)}</b>
+          <span>vs</span>
+          <b class="v762-player-link" role="link" tabindex="0">${esc(m.p2)}</b>
+        </div>
       </section>
-      ${verdict(m)}
-      <div class="p751-acc-list">${coreMarkets(m)}${calibration78d(m)}${jointBuilder78b(m)}${lazySections78e23(m)}</div>
-      <p class="p751-disclaimer">Sygnały modelu są estymacjami analitycznymi, nie gwarancją wyniku.</p>
+      <section class="match-decision">
+        <article class="match-decision-main">
+          <span>NAJLEPSZY TYP</span>
+          <b>${esc(best?.label||'Brak mocnego sygnału')}</b>
+          <strong>${best?signalText(best.value):'—'}</strong>
+          <small>${second?`Alternatywa: ${esc(second.label)} · ${signalText(second.value)}`:'Model nie wskazał mocnej alternatywy.'}</small>
+        </article>
+        <article>
+          <span>OCENA</span>
+          <b>${(best?.value||0)>=85?'Bardzo mocny':(best?.value||0)>=72?'Mocny':'Umiarkowany'}</b>
+          <strong>${best?signalText(best.value):'—'}</strong>
+        </article>
+        <article>
+          <span>DANE</span>
+          <b>${trust>=85?'Wysokie zaufanie':trust>=65?'Średnie zaufanie':'Ostrożnie'}</b>
+          <strong>${trust||'—'}%</strong>
+        </article>
+      </section>
+      <div class="match-page-content">
+        <section class="match-page-primary">
+          <div class="section-heading"><span>RYNKI</span><b>Co warto sprawdzić</b></div>
+          ${coreMarkets(m)}
+          ${jointBuilder78b(m)}
+          ${lazySections78e23(m)}
+        </section>
+        <aside class="match-page-side">
+          <div class="section-heading"><span>KONTEKST</span><b>Kalibracja i jakość</b></div>
+          ${calibration78d(m)}
+          <p class="p751-disclaimer">Sygnały są estymacjami analitycznymi, nie gwarancją wyniku.</p>
+        </aside>
+      </div>
     </div>`;
   }
 
-  function ensureOverlay(){
-    let o=document.querySelector('#p751-match-overlay');
-    if(!o){
-      o=document.createElement('div');o.id='p751-match-overlay';o.className='p751-overlay';o.hidden=true;
-      document.body.appendChild(o);
-    }
-    return o;
-  }
+  let returnScroll=0;
   function findMatch(k){return (Array.isArray(all)?all:[]).find(m=>key(m)===k)}
   function openMatch(k){
     const m=findMatch(k);if(!m)return;
-    const o=ensureOverlay();o.hidden=true;o.dataset.matchKey=String(k);o.innerHTML=detailHtml(m);
-    bindLazySections78e23(o,m);
+    const app=document.querySelector('#app');if(!app)return;
+    returnScroll=window.scrollY||0;
+    route='match';
+    document.documentElement.dataset.tenisRoute='match';
+    app.innerHTML=detailHtml(m);
+    app.dataset.matchKey=String(k);
+    bindLazySections78e23(app,m);
     window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(m);
-    // Complete the layout before exposing it; no late panels above the scroll anchor.
     window.TENIS_AI_PLAYER_UI_V851?.injectDetail?.(m);
-    if(!o.querySelector('.dc87'))window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.();
-    o.hidden=false;document.body.classList.add('p751-modal-open');
-    o.scrollTop=0;
-    o.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
+    if(!app.querySelector('.dc87'))window.TENIS_AI_ADAPTIVE_V79?.injectProjectDetail?.();
+    window.scrollTo({top:0,behavior:'auto'});
+    app.querySelector('[data-p751-close]')?.addEventListener('click',closeMatch);
   }
   function closeMatch(){
-    const o=ensureOverlay();o.hidden=true;o.innerHTML='';delete o.dataset.matchKey;document.body.classList.remove('p751-modal-open');
+    const app=document.querySelector('#app');
+    if(app)delete app.dataset.matchKey;
+    route='matches';
+    document.documentElement.dataset.tenisRoute='matches';
+    renderMatches();
+    setTimeout(()=>window.scrollTo({top:returnScroll,behavior:'auto'}),0);
   }
 
 
@@ -578,55 +647,33 @@
   };
 
   function ensureBottomNav(){
-    if(document.querySelector('#p751-bottom-nav'))return;
-    const n=document.createElement('nav');n.id='p751-bottom-nav';n.className='p751-bottom-nav';
-    n.innerHTML=`<button data-p751-nav="matches" class="active"><span>🎾</span><b>Mecze</b></button>
-      <button data-p751-nav="signals"><span>⚡</span><b>Sygnały</b></button>
-      <button data-p751-nav="symphony2"><span>🎼</span><b>Symfonia 2.0</b></button>
-      <button data-p751-nav="shadow"><span>🧪</span><b>Odrzucone</b></button>
-      <button data-p751-nav="history"><span>◴</span><b>Historia</b></button>
-      <button data-p751-nav="community"><span>👥</span><b>Społeczność</b></button>
-      <button data-p751-nav="profile"><span>👤</span><b>Profil</b></button>`;
-    document.body.appendChild(n);
-    n.querySelector('[data-p751-nav="matches"]').onclick=()=>{
-      document.querySelector('.main-tabs [data-view="matches"]')?.click();route='matches';renderMatches();
-    };
-    n.querySelector('[data-p751-nav="signals"]').onclick=signalPage;
-    n.querySelector('[data-p751-nav="symphony2"]').onclick=()=>{
-      window.TENIS_AI_SYMPHONY2?.open?.('home');
-      route='symphony2';
-      navActive('symphony2');
-    };
-    n.querySelector('[data-p751-nav="shadow"]').onclick=async()=>{
-      await window.TENIS_AI_SHADOW_LAB?.open?.();
-      route='shadow';
-      navActive('shadow');
-    };
-    n.querySelector('[data-p751-nav="history"]').onclick=()=>{
-      document.querySelector('.main-tabs [data-view="history"]')?.click();route='history';setTimeout(()=>{renderHistory();navActive('history')},0);
-    };
-    n.querySelector('[data-p751-nav="community"]').onclick=()=>{
-      document.querySelector('#community-hub-open')?.click() || document.querySelector('[data-community-open="chat"]')?.click();
-    };
-    n.querySelector('[data-p751-nav="profile"]').onclick=()=>document.querySelector('#account-button')?.click();
+    return document.querySelector('.main-tabs');
   }
   function navActive(which){
-    ensureBottomNav();
-    document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(b=>b.classList.toggle('active',b.dataset.p751Nav===which));
+    const mapped=which==='history'?'history':which==='matches'?'matches':null;
+    if(mapped){
+      document.querySelectorAll('.main-tabs button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===mapped));
+    }
+    document.documentElement.dataset.tenisRoute=which;
   }
 
   function simplifyShell(){
-    document.documentElement.classList.add('p751-project-ui');
     window.TENIS_AI_APPLY_META?.();
-    ensureBottomNav();
+    const symphony=document.querySelector('#symphony-open');
+    if(symphony&&!symphony.dataset.boundProjectUi){
+      symphony.dataset.boundProjectUi='1';
+      symphony.addEventListener('click',()=>{
+        window.TENIS_AI_SYMPHONY2?.open?.('home');
+        route='symphony2';
+        navActive('symphony2');
+      });
+    }
   }
 
   simplifyShell();
-  setTimeout(()=>{simplifyShell();if(typeof view!=='undefined'&&view==='matches')renderMatches()},250);
-  setTimeout(()=>{if(typeof view!=='undefined'&&view==='matches')renderMatches()},1000);
+  if(typeof view!=='undefined'&&view==='matches')renderMatches();
+  document.documentElement.dataset.tenisUiReady='1';
 
-  // v7.8E8 — public bridge for Shadow Lab.
-  // Shadow uses the SAME Match Center detail overlay as normal matches.
   window.TENIS_AI_PROJECT_UI = {
     openMatch,
     findMatch,

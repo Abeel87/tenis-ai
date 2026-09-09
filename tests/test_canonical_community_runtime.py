@@ -5,7 +5,6 @@ FRONTEND = ROOT / "frontend"
 
 STABLE = {
     "community-profile-ux.js",
-    "community-profile-ux.css",
     "account-avatar.js",
     "community-member-count.js",
 }
@@ -28,6 +27,8 @@ def test_index_boots_canonical_community_runtime_only():
     text = (FRONTEND / "index.html").read_text(encoding="utf-8")
     for name in STABLE:
         assert name in text
+    assert 'href="style.css"' in text
+    assert "community-profile-ux.css" not in text
     for name in RETIRED:
         assert name not in text
 
