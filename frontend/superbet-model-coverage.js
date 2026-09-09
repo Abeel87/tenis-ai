@@ -36,9 +36,14 @@ function findMatch(raw){
   try{return window.TENIS_AI_PROJECT_UI?.findMatch?.(k)||null}catch{return null}
 }
 function context(match){return match?.superbet_market_v91||{}}
+function operatorSelectionVerified(row){
+  if(!row||typeof row!=='object'||row.operator_available!==true)return false;
+  if(!finite(row.line))return true;
+  return row.operator_line_verified===true&&row.fixture_line_verified===true;
+}
 function rowsOf(match){
   const ctx=context(match);
-  const selections=(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(r=>r&&r.operator_available!==false);
+  const selections=(Array.isArray(ctx.canonical_selections)?ctx.canonical_selections:[]).filter(operatorSelectionVerified);
   const playable=Array.isArray(ctx.model_signals)?ctx.model_signals:[];
   const shadow=Array.isArray(ctx.coverage_shadow_signals)?ctx.coverage_shadow_signals:[];
   return {ctx,selections,playable,shadow};
