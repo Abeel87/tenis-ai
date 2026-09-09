@@ -46,9 +46,9 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 47,
-        "due_within_6h": 10,
-        "overdue_6_24h": 9,
+        "upcoming": 43,
+        "due_within_6h": 8,
+        "overdue_6_24h": 14,
         "overdue_24_72h": 17,
         "overdue_gt_72h": 6,
         "unparseable_schedule": 0
@@ -57,77 +57,77 @@
         {
           "match_id": "186964",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 78.16,
+          "hours_since_scheduled": 80.47,
           "p1": "Adrienn Nagy",
           "p2": "Samira De Stefano"
         },
         {
           "match_id": "187045",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 78.16,
+          "hours_since_scheduled": 80.47,
           "p1": "Oskari Paldanius",
           "p2": "Nicolas Tepmahc"
         },
         {
           "match_id": "187083",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 78.16,
+          "hours_since_scheduled": 80.47,
           "p1": "Ivan Gakhov",
           "p2": "Oleg Prihodko"
         },
         {
           "match_id": "187084",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 78.16,
+          "hours_since_scheduled": 80.47,
           "p1": "Niels Visker",
           "p2": "Daniel Siniakov"
         },
         {
           "match_id": "187048",
           "scheduled_time": "2026-09-06T11:00:00+00:00",
-          "hours_since_scheduled": 76.66,
+          "hours_since_scheduled": 78.97,
           "p1": "Amit Vales",
           "p2": "Mathieu Scaglia"
         },
         {
           "match_id": "187074",
           "scheduled_time": "2026-09-06T12:00:00+00:00",
-          "hours_since_scheduled": 75.66,
+          "hours_since_scheduled": 77.97,
           "p1": "Mario Gonzalez Fernandez",
           "p2": "Pavel Lagutin"
         },
         {
           "match_id": "186888",
           "scheduled_time": "2026-09-07T02:00:00+00:00",
-          "hours_since_scheduled": 61.66,
+          "hours_since_scheduled": 63.97,
           "p1": "Alexis Galarneau",
           "p2": "Semen Pankin"
         },
         {
           "match_id": "187102",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 60.66,
+          "hours_since_scheduled": 62.97,
           "p1": "Enzo Aguiard",
           "p2": "Khumoyun Sultanov"
         },
         {
           "match_id": "187103",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 60.66,
+          "hours_since_scheduled": 62.97,
           "p1": "Maximus Jones",
           "p2": "Florent Bax"
         },
         {
           "match_id": "187107",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 60.66,
+          "hours_since_scheduled": 62.97,
           "p1": "Moise Kouame",
           "p2": "Kenta Miyoshi"
         }
       ]
     },
     "settlement_latency": {
-      "n": 94,
+      "n": 95,
       "median_hours": 23.483,
       "p90_hours": 46.358,
       "max_hours": 50.585,
@@ -135,7 +135,7 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 17,
+      "count": 20,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
       "samples": [
         {
@@ -157,13 +157,19 @@
           "drift_minutes": 300.0
         },
         {
-          "match_id": "188499",
+          "match_id": "188497",
+          "frozen_scheduled_time": "2026-09-10T08:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T12:00:00+00:00",
+          "drift_minutes": 240.0
+        },
+        {
+          "match_id": "188322",
           "frozen_scheduled_time": "2026-09-10T08:00:00+00:00",
           "current_scheduled_time": "2026-09-10T11:00:00+00:00",
           "drift_minutes": 180.0
         },
         {
-          "match_id": "188322",
+          "match_id": "188499",
           "frozen_scheduled_time": "2026-09-10T08:00:00+00:00",
           "current_scheduled_time": "2026-09-10T11:00:00+00:00",
           "drift_minutes": 180.0
@@ -181,22 +187,16 @@
           "drift_minutes": 120.0
         },
         {
-          "match_id": "188245",
-          "frozen_scheduled_time": "2026-09-10T07:00:00+00:00",
-          "current_scheduled_time": "2026-09-10T09:00:00+00:00",
-          "drift_minutes": 120.0
-        },
-        {
           "match_id": "188370",
           "frozen_scheduled_time": "2026-09-10T07:00:00+00:00",
           "current_scheduled_time": "2026-09-10T09:00:00+00:00",
           "drift_minutes": 120.0
         },
         {
-          "match_id": "188699",
-          "frozen_scheduled_time": "2026-09-10T01:00:00+00:00",
-          "current_scheduled_time": "2026-09-10T02:30:00+00:00",
-          "drift_minutes": 90.0
+          "match_id": "188245",
+          "frozen_scheduled_time": "2026-09-10T07:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T09:00:00+00:00",
+          "drift_minutes": 120.0
         }
       ]
     }
@@ -212,8 +212,8 @@
       },
       "631e0158e0b014c4a28f543fe074ca1f557ae04930520bd7e2e47ae2d40e842a": {
         "snapshots": 67,
-        "settled": 1,
-        "unsettled": 66
+        "settled": 2,
+        "unsettled": 65
       }
     },
     "known_generation_count": 1,
@@ -234,34 +234,34 @@
   },
   "evidence_readiness": {
     "overall": {
-      "settled": 1,
+      "settled": 2,
       "required": 150,
-      "remaining": 149,
+      "remaining": 148,
       "support_sufficient": false
     },
     "markets": {
       "first_set_tiebreak": {
-        "settled": 1,
+        "settled": 2,
         "required": 150,
-        "remaining": 149,
+        "remaining": 148,
         "support_sufficient": false
       },
       "first_set_over_8.5": {
-        "settled": 1,
+        "settled": 2,
         "required": 150,
-        "remaining": 149,
+        "remaining": 148,
         "support_sufficient": false
       },
       "first_set_over_9.5": {
-        "settled": 1,
+        "settled": 2,
         "required": 150,
-        "remaining": 149,
+        "remaining": 148,
         "support_sufficient": false
       },
       "first_set_over_10.5": {
-        "settled": 1,
+        "settled": 2,
         "required": 150,
-        "remaining": 149,
+        "remaining": 148,
         "support_sufficient": false
       }
     },
@@ -301,92 +301,129 @@
     "current_simulated_matches": 56,
     "current_eligible_by_segment": 0,
     "snapshots": 183,
-    "settled_snapshots": 94,
-    "unsettled_snapshots": 89,
+    "settled_snapshots": 95,
+    "unsettled_snapshots": 88,
     "verdict_eligible_snapshots": 67,
     "verdict_excluded_snapshots": 116,
-    "verdict_settled_snapshots": 1,
-    "verdict_unsettled_snapshots": 66,
+    "verdict_settled_snapshots": 2,
+    "verdict_unsettled_snapshots": 65,
     "label_counts": {
-      "matches_seen": 4482,
-      "settled_labels": 4007,
+      "matches_seen": 4483,
+      "settled_labels": 4008,
       "incomplete_or_unsettled": 475
     }
   },
   "evaluation": {
-    "settled_matches": 1,
+    "settled_matches": 2,
     "markets": {
       "first_set_tiebreak": {
-        "n": 1,
-        "raw_brier": 0.024419,
-        "calibrated_brier": 0.024043,
-        "brier_gain_calibrated_vs_raw": 0.000375,
-        "improved": true
+        "n": 2,
+        "raw_brier": 0.324142,
+        "calibrated_brier": 0.338702,
+        "brier_gain_calibrated_vs_raw": -0.01456,
+        "improved": false
       },
       "first_set_over_8.5": {
-        "n": 1,
-        "raw_brier": 0.574153,
-        "calibrated_brier": 0.571809,
-        "brier_gain_calibrated_vs_raw": 0.002344,
-        "improved": true
+        "n": 2,
+        "raw_brier": 0.303388,
+        "calibrated_brier": 0.305818,
+        "brier_gain_calibrated_vs_raw": -0.00243,
+        "improved": false
       },
       "first_set_over_9.5": {
-        "n": 1,
-        "raw_brier": 0.280462,
-        "calibrated_brier": 0.27915,
-        "brier_gain_calibrated_vs_raw": 0.001312,
-        "improved": true
+        "n": 2,
+        "raw_brier": 0.226915,
+        "calibrated_brier": 0.233733,
+        "brier_gain_calibrated_vs_raw": -0.006818,
+        "improved": false
       },
       "first_set_over_10.5": {
-        "n": 1,
-        "raw_brier": 0.073151,
-        "calibrated_brier": 0.072693,
-        "brier_gain_calibrated_vs_raw": 0.000458,
-        "improved": true
+        "n": 2,
+        "raw_brier": 0.273625,
+        "calibrated_brier": 0.283397,
+        "brier_gain_calibrated_vs_raw": -0.009772,
+        "improved": false
       }
     },
-    "duration_markets_improved": 4,
+    "duration_markets_improved": 0,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": 0.000375
+    "worst_market_brier_gain": -0.01456
   },
   "ledger_evaluation": {
-    "settled_matches": 94,
+    "settled_matches": 95,
     "markets": {
       "first_set_tiebreak": {
-        "n": 94,
-        "raw_brier": 0.160564,
-        "calibrated_brier": 0.16127,
-        "brier_gain_calibrated_vs_raw": -0.000707,
+        "n": 95,
+        "raw_brier": 0.165441,
+        "calibrated_brier": 0.16645,
+        "brier_gain_calibrated_vs_raw": -0.00101,
         "improved": false
       },
       "first_set_over_8.5": {
-        "n": 94,
-        "raw_brier": 0.160832,
-        "calibrated_brier": 0.161219,
-        "brier_gain_calibrated_vs_raw": -0.000388,
+        "n": 95,
+        "raw_brier": 0.159482,
+        "calibrated_brier": 0.159941,
+        "brier_gain_calibrated_vs_raw": -0.000459,
         "improved": false
       },
       "first_set_over_9.5": {
-        "n": 94,
-        "raw_brier": 0.250364,
-        "calibrated_brier": 0.248987,
-        "brier_gain_calibrated_vs_raw": 0.001376,
+        "n": 95,
+        "raw_brier": 0.249553,
+        "calibrated_brier": 0.248349,
+        "brier_gain_calibrated_vs_raw": 0.001204,
         "improved": true
       },
       "first_set_over_10.5": {
-        "n": 94,
-        "raw_brier": 0.200802,
-        "calibrated_brier": 0.200075,
-        "brier_gain_calibrated_vs_raw": 0.000727,
+        "n": 95,
+        "raw_brier": 0.203679,
+        "calibrated_brier": 0.20317,
+        "brier_gain_calibrated_vs_raw": 0.000509,
         "improved": true
       }
     },
     "duration_markets_improved": 2,
     "duration_markets_total": 4,
-    "worst_market_brier_gain": -0.000707
+    "worst_market_brier_gain": -0.00101
   },
   "segment_evaluation": {
     "tour": {
+      "challenger": {
+        "settled_matches": 1,
+        "markets": {
+          "first_set_tiebreak": {
+            "n": 1,
+            "raw_brier": 0.623866,
+            "calibrated_brier": 0.653362,
+            "brier_gain_calibrated_vs_raw": -0.029495,
+            "improved": false
+          },
+          "first_set_over_8.5": {
+            "n": 1,
+            "raw_brier": 0.032623,
+            "calibrated_brier": 0.039827,
+            "brier_gain_calibrated_vs_raw": -0.007204,
+            "improved": false
+          },
+          "first_set_over_9.5": {
+            "n": 1,
+            "raw_brier": 0.173368,
+            "calibrated_brier": 0.188316,
+            "brier_gain_calibrated_vs_raw": -0.014948,
+            "improved": false
+          },
+          "first_set_over_10.5": {
+            "n": 1,
+            "raw_brier": 0.474099,
+            "calibrated_brier": 0.494101,
+            "brier_gain_calibrated_vs_raw": -0.020003,
+            "improved": false
+          }
+        },
+        "duration_markets_improved": 0,
+        "duration_markets_total": 4,
+        "worst_market_brier_gain": -0.029495,
+        "support_sufficient": false
+      },
       "itf": {
         "settled_matches": 1,
         "markets": {
@@ -427,40 +464,40 @@
     },
     "surface": {
       "hard": {
-        "settled_matches": 1,
+        "settled_matches": 2,
         "markets": {
           "first_set_tiebreak": {
-            "n": 1,
-            "raw_brier": 0.024419,
-            "calibrated_brier": 0.024043,
-            "brier_gain_calibrated_vs_raw": 0.000375,
-            "improved": true
+            "n": 2,
+            "raw_brier": 0.324142,
+            "calibrated_brier": 0.338702,
+            "brier_gain_calibrated_vs_raw": -0.01456,
+            "improved": false
           },
           "first_set_over_8.5": {
-            "n": 1,
-            "raw_brier": 0.574153,
-            "calibrated_brier": 0.571809,
-            "brier_gain_calibrated_vs_raw": 0.002344,
-            "improved": true
+            "n": 2,
+            "raw_brier": 0.303388,
+            "calibrated_brier": 0.305818,
+            "brier_gain_calibrated_vs_raw": -0.00243,
+            "improved": false
           },
           "first_set_over_9.5": {
-            "n": 1,
-            "raw_brier": 0.280462,
-            "calibrated_brier": 0.27915,
-            "brier_gain_calibrated_vs_raw": 0.001312,
-            "improved": true
+            "n": 2,
+            "raw_brier": 0.226915,
+            "calibrated_brier": 0.233733,
+            "brier_gain_calibrated_vs_raw": -0.006818,
+            "improved": false
           },
           "first_set_over_10.5": {
-            "n": 1,
-            "raw_brier": 0.073151,
-            "calibrated_brier": 0.072693,
-            "brier_gain_calibrated_vs_raw": 0.000458,
-            "improved": true
+            "n": 2,
+            "raw_brier": 0.273625,
+            "calibrated_brier": 0.283397,
+            "brier_gain_calibrated_vs_raw": -0.009772,
+            "improved": false
           }
         },
-        "duration_markets_improved": 4,
+        "duration_markets_improved": 0,
         "duration_markets_total": 4,
-        "worst_market_brier_gain": 0.000375,
+        "worst_market_brier_gain": -0.01456,
         "support_sufficient": false
       }
     }
@@ -499,8 +536,8 @@
         },
         "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd": {
           "snapshots": 120,
-          "settled": 34,
-          "unsettled": 86
+          "settled": 35,
+          "unsettled": 85
         }
       },
       "known_generation_count": 1,
@@ -530,7 +567,7 @@
       "current_snapshot_count_before_retention": 202,
       "preserved_snapshots": 202,
       "new_snapshots": 0,
-      "newly_settled": 0,
+      "newly_settled": 1,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -554,10 +591,10 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 42,
+          "upcoming": 39,
           "due_within_6h": 6,
           "overdue_6_24h": 27,
-          "overdue_24_72h": 28,
+          "overdue_24_72h": 30,
           "overdue_gt_72h": 6,
           "unparseable_schedule": 0
         },
@@ -565,85 +602,85 @@
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 76.66,
+            "hours_since_scheduled": 78.97,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 75.66,
+            "hours_since_scheduled": 77.97,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "186888",
             "scheduled_time": "2026-09-07T02:00:00+00:00",
-            "hours_since_scheduled": 61.66,
+            "hours_since_scheduled": 63.97,
             "p1": "Alexis Galarneau",
             "p2": "Semen Pankin"
           },
           {
             "match_id": "187102",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 60.66,
+            "hours_since_scheduled": 62.97,
             "p1": "Enzo Aguiard",
             "p2": "Khumoyun Sultanov"
           },
           {
             "match_id": "187103",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 60.66,
+            "hours_since_scheduled": 62.97,
             "p1": "Maximus Jones",
             "p2": "Florent Bax"
           },
           {
             "match_id": "187107",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 60.66,
+            "hours_since_scheduled": 62.97,
             "p1": "Moise Kouame",
             "p2": "Kenta Miyoshi"
           }
         ]
       },
       "settlement_latency": {
-        "n": 93,
-        "median_hours": 23.483,
-        "p90_hours": 45.716,
+        "n": 94,
+        "median_hours": 23.475,
+        "p90_hours": 45.395,
         "max_hours": 50.585,
         "negative_latency_count": 0,
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 21,
+        "count": 23,
         "meaning": "current dynamic schedule differs from immutable frozen schedule; snapshot is never rewritten",
         "samples": [
           {
@@ -653,6 +690,12 @@
             "drift_minutes": 1830.0
           },
           {
+            "match_id": "188366",
+            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T09:00:00+00:00",
+            "drift_minutes": 1500.0
+          },
+          {
             "match_id": "188291",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
@@ -660,12 +703,6 @@
           },
           {
             "match_id": "188306",
-            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -701,19 +738,19 @@
             "drift_minutes": 480.0
           },
           {
-            "match_id": "188059",
-            "frozen_scheduled_time": "2026-09-09T09:00:00+00:00",
-            "current_scheduled_time": "2026-09-09T16:00:00+00:00",
-            "drift_minutes": 420.0
+            "match_id": "188302",
+            "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T07:00:00+00:00",
+            "drift_minutes": 300.0
           }
         ]
       }
     },
     "evidence_readiness": {
       "settled_market_observations": {
-        "settled": 136,
+        "settled": 141,
         "required": 150,
-        "remaining": 14,
+        "remaining": 9,
         "support_sufficient": false
       },
       "observed_candidate_markets": {
@@ -730,19 +767,19 @@
           "support_sufficient": false
         },
         "first_set_over_10.5": {
-          "settled": 14,
+          "settled": 15,
           "required": 30,
-          "remaining": 16,
+          "remaining": 15,
           "support_sufficient": false
         },
         "first_set_over_11.5": {
-          "settled": 14,
+          "settled": 15,
           "required": 30,
-          "remaining": 16,
+          "remaining": 15,
           "support_sufficient": false
         },
         "first_set_over_12.5": {
-          "settled": 34,
+          "settled": 35,
           "required": 30,
           "remaining": 0,
           "support_sufficient": true
@@ -766,15 +803,15 @@
           "support_sufficient": false
         },
         "first_set_tiebreak": {
-          "settled": 34,
+          "settled": 35,
           "required": 30,
           "remaining": 0,
           "support_sufficient": true
         },
         "match_p1_win": {
-          "settled": 25,
+          "settled": 26,
           "required": 30,
-          "remaining": 5,
+          "remaining": 4,
           "support_sufficient": false
         }
       },
@@ -790,30 +827,30 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 181,
-      "current_rows_with_dynamic_candidates": 46,
-      "current_dynamic_candidate_market_slots": 278,
+      "current_dynamic_matches": 170,
+      "current_rows_with_dynamic_candidates": 43,
+      "current_dynamic_candidate_market_slots": 260,
       "snapshots": 202,
-      "ledger_settled_snapshots": 93,
-      "ledger_unsettled_snapshots": 109,
+      "ledger_settled_snapshots": 94,
+      "ledger_unsettled_snapshots": 108,
       "verdict_eligible_snapshots": 120,
       "verdict_excluded_snapshots": 82,
-      "settled_snapshots": 34,
-      "unsettled_snapshots": 86,
-      "settled_market_observations": 136
+      "settled_snapshots": 35,
+      "unsettled_snapshots": 85,
+      "settled_market_observations": 141
     },
     "evaluation": {
-      "settled_matches": 34,
-      "settled_market_observations": 136,
+      "settled_matches": 35,
+      "settled_market_observations": 141,
       "markets": {
         "match_p1_win": {
-          "n": 25,
-          "profile_reference_brier": 0.257614,
-          "dynamic_candidate_brier": 0.22741,
-          "brier_gain_dynamic_vs_profile": 0.030204,
-          "profile_reference_log_loss": 0.711585,
-          "dynamic_candidate_log_loss": 0.649124,
-          "log_loss_gain_dynamic_vs_profile": 0.062461,
+          "n": 26,
+          "profile_reference_brier": 0.265539,
+          "dynamic_candidate_brier": 0.23087,
+          "brier_gain_dynamic_vs_profile": 0.034669,
+          "profile_reference_log_loss": 0.728152,
+          "dynamic_candidate_log_loss": 0.656027,
+          "log_loss_gain_dynamic_vs_profile": 0.072125,
           "dynamic_better_on_brier_and_log_loss": true
         },
         "first_set_p1_win": {
@@ -827,13 +864,13 @@
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_tiebreak": {
-          "n": 34,
-          "profile_reference_brier": 0.141088,
-          "dynamic_candidate_brier": 0.143479,
-          "brier_gain_dynamic_vs_profile": -0.00239,
-          "profile_reference_log_loss": 0.451587,
-          "dynamic_candidate_log_loss": 0.459469,
-          "log_loss_gain_dynamic_vs_profile": -0.007882,
+          "n": 35,
+          "profile_reference_brier": 0.155358,
+          "dynamic_candidate_brier": 0.158292,
+          "brier_gain_dynamic_vs_profile": -0.002934,
+          "profile_reference_log_loss": 0.484715,
+          "dynamic_candidate_log_loss": 0.494336,
+          "log_loss_gain_dynamic_vs_profile": -0.009621,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_8.5": {
@@ -843,33 +880,33 @@
           "n": 0
         },
         "first_set_over_10.5": {
-          "n": 14,
-          "profile_reference_brier": 0.199099,
-          "dynamic_candidate_brier": 0.206133,
-          "brier_gain_dynamic_vs_profile": -0.007034,
-          "profile_reference_log_loss": 0.586089,
-          "dynamic_candidate_log_loss": 0.603998,
-          "log_loss_gain_dynamic_vs_profile": -0.01791,
+          "n": 15,
+          "profile_reference_brier": 0.218382,
+          "dynamic_candidate_brier": 0.225958,
+          "brier_gain_dynamic_vs_profile": -0.007576,
+          "profile_reference_log_loss": 0.627017,
+          "dynamic_candidate_log_loss": 0.64616,
+          "log_loss_gain_dynamic_vs_profile": -0.019143,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_11.5": {
-          "n": 14,
-          "profile_reference_brier": 0.199099,
-          "dynamic_candidate_brier": 0.206133,
-          "brier_gain_dynamic_vs_profile": -0.007034,
-          "profile_reference_log_loss": 0.586089,
-          "dynamic_candidate_log_loss": 0.603998,
-          "log_loss_gain_dynamic_vs_profile": -0.01791,
+          "n": 15,
+          "profile_reference_brier": 0.218382,
+          "dynamic_candidate_brier": 0.225958,
+          "brier_gain_dynamic_vs_profile": -0.007576,
+          "profile_reference_log_loss": 0.627017,
+          "dynamic_candidate_log_loss": 0.64616,
+          "log_loss_gain_dynamic_vs_profile": -0.019143,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_12.5": {
-          "n": 34,
-          "profile_reference_brier": 0.141088,
-          "dynamic_candidate_brier": 0.143479,
-          "brier_gain_dynamic_vs_profile": -0.00239,
-          "profile_reference_log_loss": 0.451587,
-          "dynamic_candidate_log_loss": 0.459469,
-          "log_loss_gain_dynamic_vs_profile": -0.007882,
+          "n": 35,
+          "profile_reference_brier": 0.155358,
+          "dynamic_candidate_brier": 0.158292,
+          "brier_gain_dynamic_vs_profile": -0.002934,
+          "profile_reference_log_loss": 0.484715,
+          "dynamic_candidate_log_loss": 0.494336,
+          "log_loss_gain_dynamic_vs_profile": -0.009621,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "early_1:1": {
@@ -915,17 +952,17 @@
       ]
     },
     "ledger_evaluation": {
-      "settled_matches": 93,
-      "settled_market_observations": 341,
+      "settled_matches": 94,
+      "settled_market_observations": 346,
       "markets": {
         "match_p1_win": {
-          "n": 49,
-          "profile_reference_brier": 0.25798,
-          "dynamic_candidate_brier": 0.227329,
-          "brier_gain_dynamic_vs_profile": 0.030651,
-          "profile_reference_log_loss": 0.711553,
-          "dynamic_candidate_log_loss": 0.645934,
-          "log_loss_gain_dynamic_vs_profile": 0.065619,
+          "n": 50,
+          "profile_reference_brier": 0.262094,
+          "dynamic_candidate_brier": 0.22913,
+          "brier_gain_dynamic_vs_profile": 0.032964,
+          "profile_reference_log_loss": 0.720168,
+          "dynamic_candidate_log_loss": 0.649587,
+          "log_loss_gain_dynamic_vs_profile": 0.070581,
           "dynamic_better_on_brier_and_log_loss": true
         },
         "first_set_p1_win": {
@@ -939,13 +976,13 @@
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_tiebreak": {
-          "n": 93,
-          "profile_reference_brier": 0.14767,
-          "dynamic_candidate_brier": 0.148434,
-          "brier_gain_dynamic_vs_profile": -0.000764,
-          "profile_reference_log_loss": 0.469848,
-          "dynamic_candidate_log_loss": 0.472241,
-          "log_loss_gain_dynamic_vs_profile": -0.002392,
+          "n": 94,
+          "profile_reference_brier": 0.152913,
+          "dynamic_candidate_brier": 0.153896,
+          "brier_gain_dynamic_vs_profile": -0.000983,
+          "profile_reference_log_loss": 0.481989,
+          "dynamic_candidate_log_loss": 0.485087,
+          "log_loss_gain_dynamic_vs_profile": -0.003098,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_8.5": {
@@ -955,33 +992,33 @@
           "n": 0
         },
         "first_set_over_10.5": {
-          "n": 38,
-          "profile_reference_brier": 0.203454,
-          "dynamic_candidate_brier": 0.206123,
-          "brier_gain_dynamic_vs_profile": -0.002669,
-          "profile_reference_log_loss": 0.596162,
-          "dynamic_candidate_log_loss": 0.602912,
-          "log_loss_gain_dynamic_vs_profile": -0.00675,
+          "n": 39,
+          "profile_reference_brier": 0.210759,
+          "dynamic_candidate_brier": 0.213748,
+          "brier_gain_dynamic_vs_profile": -0.002989,
+          "profile_reference_log_loss": 0.611646,
+          "dynamic_candidate_log_loss": 0.619156,
+          "log_loss_gain_dynamic_vs_profile": -0.007511,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_11.5": {
-          "n": 38,
-          "profile_reference_brier": 0.203454,
-          "dynamic_candidate_brier": 0.206123,
-          "brier_gain_dynamic_vs_profile": -0.002669,
-          "profile_reference_log_loss": 0.596162,
-          "dynamic_candidate_log_loss": 0.602912,
-          "log_loss_gain_dynamic_vs_profile": -0.00675,
+          "n": 39,
+          "profile_reference_brier": 0.210759,
+          "dynamic_candidate_brier": 0.213748,
+          "brier_gain_dynamic_vs_profile": -0.002989,
+          "profile_reference_log_loss": 0.611646,
+          "dynamic_candidate_log_loss": 0.619156,
+          "log_loss_gain_dynamic_vs_profile": -0.007511,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "first_set_over_12.5": {
-          "n": 93,
-          "profile_reference_brier": 0.14767,
-          "dynamic_candidate_brier": 0.148434,
-          "brier_gain_dynamic_vs_profile": -0.000764,
-          "profile_reference_log_loss": 0.469848,
-          "dynamic_candidate_log_loss": 0.472241,
-          "log_loss_gain_dynamic_vs_profile": -0.002392,
+          "n": 94,
+          "profile_reference_brier": 0.152913,
+          "dynamic_candidate_brier": 0.153896,
+          "brier_gain_dynamic_vs_profile": -0.000983,
+          "profile_reference_log_loss": 0.481989,
+          "dynamic_candidate_log_loss": 0.485087,
+          "log_loss_gain_dynamic_vs_profile": -0.003098,
           "dynamic_better_on_brier_and_log_loss": false
         },
         "early_1:1": {
@@ -1078,17 +1115,17 @@
           "markets_better_on_brier_and_log_loss": []
         },
         "challenger": {
-          "settled_matches": 34,
-          "settled_market_observations": 136,
+          "settled_matches": 35,
+          "settled_market_observations": 141,
           "markets": {
             "match_p1_win": {
-              "n": 25,
-              "profile_reference_brier": 0.257614,
-              "dynamic_candidate_brier": 0.22741,
-              "brier_gain_dynamic_vs_profile": 0.030204,
-              "profile_reference_log_loss": 0.711585,
-              "dynamic_candidate_log_loss": 0.649124,
-              "log_loss_gain_dynamic_vs_profile": 0.062461,
+              "n": 26,
+              "profile_reference_brier": 0.265539,
+              "dynamic_candidate_brier": 0.23087,
+              "brier_gain_dynamic_vs_profile": 0.034669,
+              "profile_reference_log_loss": 0.728152,
+              "dynamic_candidate_log_loss": 0.656027,
+              "log_loss_gain_dynamic_vs_profile": 0.072125,
               "dynamic_better_on_brier_and_log_loss": true
             },
             "first_set_p1_win": {
@@ -1102,13 +1139,13 @@
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_tiebreak": {
-              "n": 34,
-              "profile_reference_brier": 0.141088,
-              "dynamic_candidate_brier": 0.143479,
-              "brier_gain_dynamic_vs_profile": -0.00239,
-              "profile_reference_log_loss": 0.451587,
-              "dynamic_candidate_log_loss": 0.459469,
-              "log_loss_gain_dynamic_vs_profile": -0.007882,
+              "n": 35,
+              "profile_reference_brier": 0.155358,
+              "dynamic_candidate_brier": 0.158292,
+              "brier_gain_dynamic_vs_profile": -0.002934,
+              "profile_reference_log_loss": 0.484715,
+              "dynamic_candidate_log_loss": 0.494336,
+              "log_loss_gain_dynamic_vs_profile": -0.009621,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_8.5": {
@@ -1118,33 +1155,33 @@
               "n": 0
             },
             "first_set_over_10.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_11.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_12.5": {
-              "n": 34,
-              "profile_reference_brier": 0.141088,
-              "dynamic_candidate_brier": 0.143479,
-              "brier_gain_dynamic_vs_profile": -0.00239,
-              "profile_reference_log_loss": 0.451587,
-              "dynamic_candidate_log_loss": 0.459469,
-              "log_loss_gain_dynamic_vs_profile": -0.007882,
+              "n": 35,
+              "profile_reference_brier": 0.155358,
+              "dynamic_candidate_brier": 0.158292,
+              "brier_gain_dynamic_vs_profile": -0.002934,
+              "profile_reference_log_loss": 0.484715,
+              "dynamic_candidate_log_loss": 0.494336,
+              "log_loss_gain_dynamic_vs_profile": -0.009621,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "early_1:1": {
@@ -1374,17 +1411,17 @@
           ]
         },
         "hard": {
-          "settled_matches": 14,
-          "settled_market_observations": 77,
+          "settled_matches": 15,
+          "settled_market_observations": 82,
           "markets": {
             "match_p1_win": {
-              "n": 14,
-              "profile_reference_brier": 0.241198,
-              "dynamic_candidate_brier": 0.226122,
-              "brier_gain_dynamic_vs_profile": 0.015076,
-              "profile_reference_log_loss": 0.670017,
-              "dynamic_candidate_log_loss": 0.649679,
-              "log_loss_gain_dynamic_vs_profile": 0.020338,
+              "n": 15,
+              "profile_reference_brier": 0.256029,
+              "dynamic_candidate_brier": 0.232204,
+              "brier_gain_dynamic_vs_profile": 0.023825,
+              "profile_reference_log_loss": 0.701505,
+              "dynamic_candidate_log_loss": 0.661608,
+              "log_loss_gain_dynamic_vs_profile": 0.039897,
               "dynamic_better_on_brier_and_log_loss": true
             },
             "first_set_p1_win": {
@@ -1398,13 +1435,13 @@
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_tiebreak": {
-              "n": 14,
-              "profile_reference_brier": 0.161404,
-              "dynamic_candidate_brier": 0.168605,
-              "brier_gain_dynamic_vs_profile": -0.007201,
-              "profile_reference_log_loss": 0.496877,
-              "dynamic_candidate_log_loss": 0.520659,
-              "log_loss_gain_dynamic_vs_profile": -0.023782,
+              "n": 15,
+              "profile_reference_brier": 0.193345,
+              "dynamic_candidate_brier": 0.201493,
+              "brier_gain_dynamic_vs_profile": -0.008148,
+              "profile_reference_log_loss": 0.571158,
+              "dynamic_candidate_log_loss": 0.597936,
+              "log_loss_gain_dynamic_vs_profile": -0.026778,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_8.5": {
@@ -1414,33 +1451,33 @@
               "n": 0
             },
             "first_set_over_10.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_11.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_12.5": {
-              "n": 14,
-              "profile_reference_brier": 0.161404,
-              "dynamic_candidate_brier": 0.168605,
-              "brier_gain_dynamic_vs_profile": -0.007201,
-              "profile_reference_log_loss": 0.496877,
-              "dynamic_candidate_log_loss": 0.520659,
-              "log_loss_gain_dynamic_vs_profile": -0.023782,
+              "n": 15,
+              "profile_reference_brier": 0.193345,
+              "dynamic_candidate_brier": 0.201493,
+              "brier_gain_dynamic_vs_profile": -0.008148,
+              "profile_reference_log_loss": 0.571158,
+              "dynamic_candidate_log_loss": 0.597936,
+              "log_loss_gain_dynamic_vs_profile": -0.026778,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "early_1:1": {
@@ -1624,17 +1661,17 @@
           ]
         },
         "challenger|hard": {
-          "settled_matches": 14,
-          "settled_market_observations": 77,
+          "settled_matches": 15,
+          "settled_market_observations": 82,
           "markets": {
             "match_p1_win": {
-              "n": 14,
-              "profile_reference_brier": 0.241198,
-              "dynamic_candidate_brier": 0.226122,
-              "brier_gain_dynamic_vs_profile": 0.015076,
-              "profile_reference_log_loss": 0.670017,
-              "dynamic_candidate_log_loss": 0.649679,
-              "log_loss_gain_dynamic_vs_profile": 0.020338,
+              "n": 15,
+              "profile_reference_brier": 0.256029,
+              "dynamic_candidate_brier": 0.232204,
+              "brier_gain_dynamic_vs_profile": 0.023825,
+              "profile_reference_log_loss": 0.701505,
+              "dynamic_candidate_log_loss": 0.661608,
+              "log_loss_gain_dynamic_vs_profile": 0.039897,
               "dynamic_better_on_brier_and_log_loss": true
             },
             "first_set_p1_win": {
@@ -1648,13 +1685,13 @@
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_tiebreak": {
-              "n": 14,
-              "profile_reference_brier": 0.161404,
-              "dynamic_candidate_brier": 0.168605,
-              "brier_gain_dynamic_vs_profile": -0.007201,
-              "profile_reference_log_loss": 0.496877,
-              "dynamic_candidate_log_loss": 0.520659,
-              "log_loss_gain_dynamic_vs_profile": -0.023782,
+              "n": 15,
+              "profile_reference_brier": 0.193345,
+              "dynamic_candidate_brier": 0.201493,
+              "brier_gain_dynamic_vs_profile": -0.008148,
+              "profile_reference_log_loss": 0.571158,
+              "dynamic_candidate_log_loss": 0.597936,
+              "log_loss_gain_dynamic_vs_profile": -0.026778,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_8.5": {
@@ -1664,33 +1701,33 @@
               "n": 0
             },
             "first_set_over_10.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_11.5": {
-              "n": 14,
-              "profile_reference_brier": 0.199099,
-              "dynamic_candidate_brier": 0.206133,
-              "brier_gain_dynamic_vs_profile": -0.007034,
-              "profile_reference_log_loss": 0.586089,
-              "dynamic_candidate_log_loss": 0.603998,
-              "log_loss_gain_dynamic_vs_profile": -0.01791,
+              "n": 15,
+              "profile_reference_brier": 0.218382,
+              "dynamic_candidate_brier": 0.225958,
+              "brier_gain_dynamic_vs_profile": -0.007576,
+              "profile_reference_log_loss": 0.627017,
+              "dynamic_candidate_log_loss": 0.64616,
+              "log_loss_gain_dynamic_vs_profile": -0.019143,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "first_set_over_12.5": {
-              "n": 14,
-              "profile_reference_brier": 0.161404,
-              "dynamic_candidate_brier": 0.168605,
-              "brier_gain_dynamic_vs_profile": -0.007201,
-              "profile_reference_log_loss": 0.496877,
-              "dynamic_candidate_log_loss": 0.520659,
-              "log_loss_gain_dynamic_vs_profile": -0.023782,
+              "n": 15,
+              "profile_reference_brier": 0.193345,
+              "dynamic_candidate_brier": 0.201493,
+              "brier_gain_dynamic_vs_profile": -0.008148,
+              "profile_reference_log_loss": 0.571158,
+              "dynamic_candidate_log_loss": 0.597936,
+              "log_loss_gain_dynamic_vs_profile": -0.026778,
               "dynamic_better_on_brier_and_log_loss": false
             },
             "early_1:1": {
@@ -1972,21 +2009,21 @@
               "support_sufficient": false
             },
             "first_set_over_10.5": {
-              "settled": 14,
+              "settled": 15,
               "required": 30,
-              "remaining": 16,
+              "remaining": 15,
               "support_sufficient": false
             },
             "first_set_over_11.5": {
-              "settled": 14,
+              "settled": 15,
               "required": 30,
-              "remaining": 16,
+              "remaining": 15,
               "support_sufficient": false
             },
             "first_set_over_12.5": {
-              "settled": 14,
+              "settled": 15,
               "required": 30,
-              "remaining": 16,
+              "remaining": 15,
               "support_sufficient": false
             },
             "first_set_p1_win": {
@@ -1996,15 +2033,15 @@
               "support_sufficient": false
             },
             "first_set_tiebreak": {
-              "settled": 14,
+              "settled": 15,
               "required": 30,
-              "remaining": 16,
+              "remaining": 15,
               "support_sufficient": false
             },
             "match_p1_win": {
-              "settled": 14,
+              "settled": 15,
               "required": 30,
-              "remaining": 16,
+              "remaining": 15,
               "support_sufficient": false
             }
           },
@@ -7137,8 +7174,15 @@
             "dynamic_candidate_probability": 0.18640942720439913
           }
         },
-        "settled": false,
-        "actual": null
+        "settled": true,
+        "actual": {
+          "match_p1_win": false,
+          "first_set_tiebreak": true,
+          "first_set_over_10.5": true,
+          "first_set_over_11.5": true,
+          "first_set_over_12.5": true
+        },
+        "settled_at": "2026-09-09T17:58:24.143616+00:00"
       },
       {
         "match_id": "188293",
@@ -9408,9 +9452,9 @@
       "settlement_regression_forbidden": true,
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
-      "previous_snapshot_count": 245,
-      "current_snapshot_count_before_retention": 247,
-      "new_snapshots": 2,
+      "previous_snapshot_count": 247,
+      "current_snapshot_count_before_retention": 250,
+      "new_snapshots": 3,
       "newly_settled": 1,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
@@ -9420,16 +9464,16 @@
       "duplicate_previous_match_ids": 0,
       "duplicate_current_match_ids": 0,
       "pruned_by_retention": 0,
-      "current_snapshot_count_after_retention": 247
+      "current_snapshot_count_after_retention": 250
     },
     "settlement_observability": {
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 43,
-          "due_within_6h": 7,
-          "overdue_6_24h": 33,
-          "overdue_24_72h": 38,
+          "upcoming": 44,
+          "due_within_6h": 8,
+          "overdue_6_24h": 31,
+          "overdue_24_72h": 40,
           "overdue_gt_72h": 9,
           "unparseable_schedule": 0
         },
@@ -9437,85 +9481,85 @@
           {
             "match_id": "186869",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 79.16,
+            "hours_since_scheduled": 81.47,
             "p1": "Cesar Bouchelaghem",
             "p2": "Aziz Dougaz"
           },
           {
             "match_id": "186940",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 79.16,
+            "hours_since_scheduled": 81.47,
             "p1": "Ryan Nijboer",
             "p2": "Martin Van Der Meerschen"
           },
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 78.16,
+            "hours_since_scheduled": 80.47,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 76.66,
+            "hours_since_scheduled": 78.97,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "186941",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 75.66,
+            "hours_since_scheduled": 77.97,
             "p1": "Eero Vasa",
             "p2": "Adrian Oetzbach"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 75.66,
+            "hours_since_scheduled": 77.97,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "187036",
             "scheduled_time": "2026-09-06T19:30:00+00:00",
-            "hours_since_scheduled": 68.16,
+            "hours_since_scheduled": 70.47,
             "p1": "Jamie Mackenzie",
             "p2": "Matias Reyniak"
           }
         ]
       },
       "settlement_latency": {
-        "n": 117,
+        "n": 118,
         "median_hours": 21.983,
-        "p90_hours": 42.785,
+        "p90_hours": 42.735,
         "max_hours": 50.585,
         "negative_latency_count": 0,
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 26,
+        "count": 25,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
         "samples": [
           {
@@ -9525,6 +9569,12 @@
             "drift_minutes": 1830.0
           },
           {
+            "match_id": "188366",
+            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T09:00:00+00:00",
+            "drift_minutes": 1500.0
+          },
+          {
             "match_id": "188291",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
@@ -9532,12 +9582,6 @@
           },
           {
             "match_id": "188306",
-            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -9573,111 +9617,111 @@
             "drift_minutes": 480.0
           },
           {
-            "match_id": "188059",
-            "frozen_scheduled_time": "2026-09-09T09:00:00+00:00",
-            "current_scheduled_time": "2026-09-09T16:00:00+00:00",
-            "drift_minutes": 420.0
+            "match_id": "188302",
+            "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T07:00:00+00:00",
+            "drift_minutes": 300.0
           }
         ]
       }
     },
     "counts": {
       "current_simulated_matches": 56,
-      "new_current_pre_match_snapshots": 2,
-      "snapshots": 247,
-      "ledger_settled_snapshots": 117,
-      "ledger_unsettled_snapshots": 130,
-      "current_generation_snapshots": 142,
+      "new_current_pre_match_snapshots": 3,
+      "snapshots": 250,
+      "ledger_settled_snapshots": 118,
+      "ledger_unsettled_snapshots": 132,
+      "current_generation_snapshots": 145,
       "evaluation_excluded_snapshots": 105,
-      "settled_snapshots": 39,
-      "unsettled_snapshots": 103
+      "settled_snapshots": 40,
+      "unsettled_snapshots": 105
     },
     "evaluation": {
-      "settled_matches": 39,
+      "settled_matches": 40,
       "checkpoint_neutral_start_server": {
         "after_2_games": {
-          "n": 39,
-          "top1": 0.641026,
+          "n": 40,
+          "top1": 0.65,
           "top3": 1.0
         },
         "after_4_games": {
-          "n": 39,
-          "top1": 0.564103,
-          "top3": 0.974359
+          "n": 40,
+          "top1": 0.575,
+          "top3": 0.975
         },
         "after_6_games": {
-          "n": 39,
-          "top1": 0.435897,
-          "top3": 0.897436
+          "n": 40,
+          "top1": 0.45,
+          "top3": 0.9
         }
       },
       "primary_storyline_match_score_conditioned_on_observed_first_server": {
-        "n": 39,
-        "top1": 0.435897,
-        "top3": 0.871795
+        "n": 40,
+        "top1": 0.425,
+        "top3": 0.875
       },
       "first_set_complete_path_conditioned_on_observed_first_server": {
-        "n": 39,
-        "top1": 0.076923,
-        "top3": 0.205128,
-        "top8": 0.358974
+        "n": 40,
+        "top1": 0.075,
+        "top3": 0.2,
+        "top8": 0.375
       },
       "match_set_sequence_conditioned_on_observed_first_server": {
-        "n": 39,
-        "top1": 0.025641,
-        "top3": 0.179487,
-        "top12": 0.230769
+        "n": 40,
+        "top1": 0.025,
+        "top3": 0.175,
+        "top12": 0.225
       },
       "full_match_game_path_conditioned_on_observed_first_server": {
-        "n": 39,
-        "top1": 0.025641,
-        "top2": 0.025641,
-        "top4": 0.025641,
-        "mean_best_prefix_fraction_top4": 0.222554
+        "n": 40,
+        "top1": 0.025,
+        "top2": 0.025,
+        "top4": 0.025,
+        "mean_best_prefix_fraction_top4": 0.222824
       }
     },
     "ledger_evaluation": {
-      "settled_matches": 117,
+      "settled_matches": 118,
       "checkpoint_neutral_start_server": {
         "after_2_games": {
-          "n": 117,
-          "top1": 0.641026,
+          "n": 118,
+          "top1": 0.644068,
           "top3": 1.0
         },
         "after_4_games": {
-          "n": 117,
-          "top1": 0.512821,
-          "top3": 0.957265
+          "n": 118,
+          "top1": 0.516949,
+          "top3": 0.957627
         },
         "after_6_games": {
-          "n": 117,
-          "top1": 0.42735,
-          "top3": 0.888889
+          "n": 118,
+          "top1": 0.432203,
+          "top3": 0.889831
         }
       },
       "primary_storyline_match_score_conditioned_on_observed_first_server": {
-        "n": 117,
-        "top1": 0.316239,
-        "top3": 0.717949
+        "n": 118,
+        "top1": 0.313559,
+        "top3": 0.720339
       },
       "first_set_complete_path_conditioned_on_observed_first_server": {
-        "n": 117,
-        "top1": 0.042735,
-        "top3": 0.111111,
-        "top8": 0.213675
+        "n": 118,
+        "top1": 0.042373,
+        "top3": 0.110169,
+        "top8": 0.220339
       },
       "match_set_sequence_conditioned_on_observed_first_server": {
-        "n": 117,
-        "top1": 0.008547,
-        "top3": 0.111111,
-        "top12": 0.25641
+        "n": 118,
+        "top1": 0.008475,
+        "top3": 0.110169,
+        "top12": 0.254237
       },
       "full_match_game_path_conditioned_on_observed_first_server": {
-        "n": 115,
-        "top1": 0.008696,
-        "top2": 0.008696,
-        "top4": 0.017391,
-        "mean_best_prefix_fraction_top4": 0.172507
+        "n": 116,
+        "top1": 0.008621,
+        "top2": 0.008621,
+        "top4": 0.017241,
+        "mean_best_prefix_fraction_top4": 0.173032
       }
     },
     "segment_diagnostics": {
@@ -9732,54 +9776,54 @@
         },
         "challenger": {
           "snapshots": 103,
-          "settled": 34,
+          "settled": 35,
           "evaluation": {
-            "settled_matches": 34,
+            "settled_matches": 35,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 34,
-                "top1": 0.676471,
+                "n": 35,
+                "top1": 0.685714,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 34,
-                "top1": 0.588235,
-                "top3": 0.970588
+                "n": 35,
+                "top1": 0.6,
+                "top3": 0.971429
               },
               "after_6_games": {
-                "n": 34,
-                "top1": 0.441176,
-                "top3": 0.882353
+                "n": 35,
+                "top1": 0.457143,
+                "top3": 0.885714
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 34,
-              "top1": 0.441176,
-              "top3": 0.882353
+              "n": 35,
+              "top1": 0.428571,
+              "top3": 0.885714
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 34,
-              "top1": 0.058824,
-              "top3": 0.205882,
-              "top8": 0.382353
+              "n": 35,
+              "top1": 0.057143,
+              "top3": 0.2,
+              "top8": 0.4
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 34,
-              "top1": 0.029412,
-              "top3": 0.205882,
-              "top12": 0.264706
+              "n": 35,
+              "top1": 0.028571,
+              "top3": 0.2,
+              "top12": 0.257143
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 34,
-              "top1": 0.029412,
-              "top2": 0.029412,
-              "top4": 0.029412,
-              "mean_best_prefix_fraction_top4": 0.228952
+              "n": 35,
+              "top1": 0.028571,
+              "top2": 0.028571,
+              "top4": 0.028571,
+              "mean_best_prefix_fraction_top4": 0.229078
             }
           }
         },
         "itf": {
-          "snapshots": 30,
+          "snapshots": 33,
           "settled": 2,
           "evaluation": {
             "settled_matches": 2,
@@ -9877,7 +9921,7 @@
       },
       "surface": {
         "clay": {
-          "snapshots": 62,
+          "snapshots": 63,
           "settled": 21,
           "evaluation": {
             "settled_matches": 21,
@@ -9925,50 +9969,50 @@
           }
         },
         "hard": {
-          "snapshots": 80,
-          "settled": 18,
+          "snapshots": 82,
+          "settled": 19,
           "evaluation": {
-            "settled_matches": 18,
+            "settled_matches": 19,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 18,
-                "top1": 0.722222,
+                "n": 19,
+                "top1": 0.736842,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 18,
-                "top1": 0.555556,
+                "n": 19,
+                "top1": 0.578947,
                 "top3": 1.0
               },
               "after_6_games": {
-                "n": 18,
-                "top1": 0.444444,
-                "top3": 0.888889
+                "n": 19,
+                "top1": 0.473684,
+                "top3": 0.894737
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 18,
-              "top1": 0.5,
-              "top3": 0.833333
+              "n": 19,
+              "top1": 0.473684,
+              "top3": 0.842105
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 18,
-              "top1": 0.055556,
-              "top3": 0.277778,
-              "top8": 0.333333
+              "n": 19,
+              "top1": 0.052632,
+              "top3": 0.263158,
+              "top8": 0.368421
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 18,
-              "top1": 0.055556,
-              "top3": 0.222222,
-              "top12": 0.277778
+              "n": 19,
+              "top1": 0.052632,
+              "top3": 0.210526,
+              "top12": 0.263158
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 18,
+              "n": 19,
               "top1": 0.0,
               "top2": 0.0,
               "top4": 0.0,
-              "mean_best_prefix_fraction_top4": 0.247208
+              "mean_best_prefix_fraction_top4": 0.246478
             }
           }
         }
@@ -10072,54 +10116,54 @@
         },
         "challenger|hard": {
           "snapshots": 50,
-          "settled": 14,
+          "settled": 15,
           "evaluation": {
-            "settled_matches": 14,
+            "settled_matches": 15,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 14,
-                "top1": 0.857143,
+                "n": 15,
+                "top1": 0.866667,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 14,
-                "top1": 0.642857,
+                "n": 15,
+                "top1": 0.666667,
                 "top3": 1.0
               },
               "after_6_games": {
-                "n": 14,
-                "top1": 0.5,
-                "top3": 0.857143
+                "n": 15,
+                "top1": 0.533333,
+                "top3": 0.866667
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 14,
-              "top1": 0.571429,
-              "top3": 0.857143
+              "n": 15,
+              "top1": 0.533333,
+              "top3": 0.866667
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 14,
-              "top1": 0.071429,
-              "top3": 0.357143,
-              "top8": 0.428571
+              "n": 15,
+              "top1": 0.066667,
+              "top3": 0.333333,
+              "top8": 0.466667
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 14,
-              "top1": 0.071429,
-              "top3": 0.285714,
-              "top12": 0.357143
+              "n": 15,
+              "top1": 0.066667,
+              "top3": 0.266667,
+              "top12": 0.333333
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 14,
+              "n": 15,
               "top1": 0.0,
               "top2": 0.0,
               "top4": 0.0,
-              "mean_best_prefix_fraction_top4": 0.29675
+              "mean_best_prefix_fraction_top4": 0.292523
             }
           }
         },
         "itf|clay": {
-          "snapshots": 9,
+          "snapshots": 10,
           "settled": 1,
           "evaluation": {
             "settled_matches": 1,
@@ -10167,7 +10211,7 @@
           }
         },
         "itf|hard": {
-          "snapshots": 21,
+          "snapshots": 23,
           "settled": 1,
           "evaluation": {
             "settled_matches": 1,
@@ -10332,54 +10376,54 @@
         },
         "challenger": {
           "snapshots": 185,
-          "settled": 93,
+          "settled": 94,
           "evaluation": {
-            "settled_matches": 93,
+            "settled_matches": 94,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 93,
-                "top1": 0.645161,
+                "n": 94,
+                "top1": 0.648936,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 93,
-                "top1": 0.505376,
-                "top3": 0.967742
+                "n": 94,
+                "top1": 0.510638,
+                "top3": 0.968085
               },
               "after_6_games": {
-                "n": 93,
-                "top1": 0.408602,
-                "top3": 0.903226
+                "n": 94,
+                "top1": 0.414894,
+                "top3": 0.904255
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 93,
-              "top1": 0.333333,
-              "top3": 0.709677
+              "n": 94,
+              "top1": 0.329787,
+              "top3": 0.712766
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 93,
-              "top1": 0.043011,
-              "top3": 0.129032,
-              "top8": 0.247312
+              "n": 94,
+              "top1": 0.042553,
+              "top3": 0.12766,
+              "top8": 0.255319
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 93,
-              "top1": 0.010753,
-              "top3": 0.129032,
-              "top12": 0.268817
+              "n": 94,
+              "top1": 0.010638,
+              "top3": 0.12766,
+              "top12": 0.265957
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 91,
-              "top1": 0.010989,
-              "top2": 0.010989,
-              "top4": 0.021978,
-              "mean_best_prefix_fraction_top4": 0.183962
+              "n": 92,
+              "top1": 0.01087,
+              "top2": 0.01087,
+              "top4": 0.021739,
+              "mean_best_prefix_fraction_top4": 0.184498
             }
           }
         },
         "itf": {
-          "snapshots": 36,
+          "snapshots": 39,
           "settled": 5,
           "evaluation": {
             "settled_matches": 5,
@@ -10525,7 +10569,7 @@
       },
       "surface": {
         "clay": {
-          "snapshots": 113,
+          "snapshots": 114,
           "settled": 57,
           "evaluation": {
             "settled_matches": 57,
@@ -10621,50 +10665,50 @@
           }
         },
         "hard": {
-          "snapshots": 133,
-          "settled": 59,
+          "snapshots": 135,
+          "settled": 60,
           "evaluation": {
-            "settled_matches": 59,
+            "settled_matches": 60,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 59,
-                "top1": 0.677966,
+                "n": 60,
+                "top1": 0.683333,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 59,
-                "top1": 0.474576,
-                "top3": 0.966102
+                "n": 60,
+                "top1": 0.483333,
+                "top3": 0.966667
               },
               "after_6_games": {
-                "n": 59,
-                "top1": 0.423729,
-                "top3": 0.881356
+                "n": 60,
+                "top1": 0.433333,
+                "top3": 0.883333
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 59,
-              "top1": 0.288136,
-              "top3": 0.661017
+              "n": 60,
+              "top1": 0.283333,
+              "top3": 0.666667
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 59,
-              "top1": 0.016949,
-              "top3": 0.118644,
-              "top8": 0.186441
+              "n": 60,
+              "top1": 0.016667,
+              "top3": 0.116667,
+              "top8": 0.2
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 59,
-              "top1": 0.016949,
-              "top3": 0.135593,
-              "top12": 0.237288
+              "n": 60,
+              "top1": 0.016667,
+              "top3": 0.133333,
+              "top12": 0.233333
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 58,
+              "n": 59,
               "top1": 0.0,
               "top2": 0.0,
               "top4": 0.0,
-              "mean_best_prefix_fraction_top4": 0.161402
+              "mean_best_prefix_fraction_top4": 0.162621
             }
           }
         }
@@ -10816,54 +10860,54 @@
         },
         "challenger|hard": {
           "snapshots": 83,
-          "settled": 37,
+          "settled": 38,
           "evaluation": {
-            "settled_matches": 37,
+            "settled_matches": 38,
             "checkpoint_neutral_start_server": {
               "after_2_games": {
-                "n": 37,
-                "top1": 0.72973,
+                "n": 38,
+                "top1": 0.736842,
                 "top3": 1.0
               },
               "after_4_games": {
-                "n": 37,
-                "top1": 0.459459,
+                "n": 38,
+                "top1": 0.473684,
                 "top3": 1.0
               },
               "after_6_games": {
-                "n": 37,
-                "top1": 0.405405,
-                "top3": 0.918919
+                "n": 38,
+                "top1": 0.421053,
+                "top3": 0.921053
               }
             },
             "primary_storyline_match_score_conditioned_on_observed_first_server": {
-              "n": 37,
-              "top1": 0.324324,
-              "top3": 0.621622
+              "n": 38,
+              "top1": 0.315789,
+              "top3": 0.631579
             },
             "first_set_complete_path_conditioned_on_observed_first_server": {
-              "n": 37,
-              "top1": 0.027027,
-              "top3": 0.189189,
-              "top8": 0.27027
+              "n": 38,
+              "top1": 0.026316,
+              "top3": 0.184211,
+              "top8": 0.289474
             },
             "match_set_sequence_conditioned_on_observed_first_server": {
-              "n": 37,
-              "top1": 0.027027,
-              "top3": 0.189189,
-              "top12": 0.243243
+              "n": 38,
+              "top1": 0.026316,
+              "top3": 0.184211,
+              "top12": 0.236842
             },
             "full_match_game_path_conditioned_on_observed_first_server": {
-              "n": 36,
+              "n": 37,
               "top1": 0.0,
               "top2": 0.0,
               "top4": 0.0,
-              "mean_best_prefix_fraction_top4": 0.198589
+              "mean_best_prefix_fraction_top4": 0.199528
             }
           }
         },
         "itf|clay": {
-          "snapshots": 12,
+          "snapshots": 13,
           "settled": 2,
           "evaluation": {
             "settled_matches": 2,
@@ -10911,7 +10955,7 @@
           }
         },
         "itf|hard": {
-          "snapshots": 24,
+          "snapshots": 26,
           "settled": 3,
           "evaluation": {
             "settled_matches": 3,
@@ -11075,46 +11119,46 @@
     "sample_readiness": {
       "status": "COLLECTING_TRAJECTORY_SAMPLE",
       "overall_settled_snapshots": {
-        "settled": 39,
+        "settled": 40,
         "required": 150,
-        "remaining": 111,
+        "remaining": 110,
         "support_sufficient": false
       },
       "primary_metrics": {
         "checkpoint_after_2_games": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         },
         "checkpoint_after_4_games": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         },
         "checkpoint_after_6_games": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         },
         "primary_storyline_match_score": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         },
         "first_set_complete_path": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         },
         "match_set_sequence": {
-          "settled": 39,
+          "settled": 40,
           "required": 150,
-          "remaining": 111,
+          "remaining": 110,
           "support_sufficient": false
         }
       },
@@ -11134,9 +11178,9 @@
           "support_sufficient": false
         },
         "challenger|hard": {
-          "settled": 14,
+          "settled": 15,
           "required": 30,
-          "remaining": 16,
+          "remaining": 15,
           "support_sufficient": false
         },
         "itf|clay": {
@@ -11191,14 +11235,14 @@
           "unsettled": 27
         },
         "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691": {
-          "snapshots": 142,
-          "settled": 39,
-          "unsettled": 103
+          "snapshots": 145,
+          "settled": 40,
+          "unsettled": 105
         }
       },
       "known_generation_count": 1,
       "legacy_unknown_snapshots": 105,
-      "current_generation_snapshots": 142,
+      "current_generation_snapshots": 145,
       "other_known_generation_snapshots": 0,
       "evaluation_excluded_snapshots": 105,
       "mixed_known_generations": false,
@@ -11225,34 +11269,34 @@
       "source_backtest_version": "player-dna-market-backtest-v1",
       "source_backtest_signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
       "historical_sample": {
-        "settled_predictions": 544,
-        "checkpoint_after_2_games_n": 543,
-        "checkpoint_after_4_games_n": 543,
-        "checkpoint_after_6_games_n": 543,
-        "first_set_complete_path_n": 543,
-        "storyline_match_score_n": 544,
-        "match_set_sequence_n": 544,
-        "full_match_game_path_n": 535
+        "settled_predictions": 545,
+        "checkpoint_after_2_games_n": 544,
+        "checkpoint_after_4_games_n": 544,
+        "checkpoint_after_6_games_n": 544,
+        "first_set_complete_path_n": 544,
+        "storyline_match_score_n": 545,
+        "match_set_sequence_n": 545,
+        "full_match_game_path_n": 536
       },
       "metrics": {
-        "checkpoint_after_2_games_top1": 0.605893,
+        "checkpoint_after_2_games_top1": 0.606618,
         "checkpoint_after_2_games_top3": 1.0,
-        "checkpoint_after_4_games_top1": 0.443831,
-        "checkpoint_after_4_games_top3": 0.909761,
-        "checkpoint_after_6_games_top1": 0.355433,
-        "checkpoint_after_6_games_top3": 0.826888,
-        "first_set_complete_path_top1": 0.029466,
-        "first_set_complete_path_top3": 0.099448,
-        "first_set_complete_path_top8": 0.20442,
-        "storyline_match_score_top1": 0.329044,
-        "storyline_match_score_top3": 0.670956,
-        "match_set_sequence_top1": 0.022059,
-        "match_set_sequence_top3": 0.071691,
-        "match_set_sequence_top12": 0.205882,
-        "full_match_game_path_top1": 0.001869,
-        "full_match_game_path_top2": 0.003738,
-        "full_match_game_path_top4": 0.005607,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.106924
+        "checkpoint_after_4_games_top1": 0.444853,
+        "checkpoint_after_4_games_top3": 0.909926,
+        "checkpoint_after_6_games_top1": 0.358456,
+        "checkpoint_after_6_games_top3": 0.827206,
+        "first_set_complete_path_top1": 0.03125,
+        "first_set_complete_path_top3": 0.090074,
+        "first_set_complete_path_top8": 0.204044,
+        "storyline_match_score_top1": 0.330275,
+        "storyline_match_score_top3": 0.673394,
+        "match_set_sequence_top1": 0.022018,
+        "match_set_sequence_top3": 0.069725,
+        "match_set_sequence_top12": 0.207339,
+        "full_match_game_path_top1": 0.001866,
+        "full_match_game_path_top2": 0.001866,
+        "full_match_game_path_top4": 0.003731,
+        "full_match_game_path_mean_top1_prefix_fraction": 0.103855
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
@@ -158403,8 +158447,76 @@
             }
           }
         },
-        "settled": false,
-        "actual": null
+        "settled": true,
+        "actual": {
+          "first_server": 1,
+          "checkpoint_scores": {
+            "2": "1:1",
+            "4": "2:2",
+            "6": "3:3"
+          },
+          "first_set_progression": [
+            "1:0",
+            "1:1",
+            "2:1",
+            "2:2",
+            "3:2",
+            "3:3",
+            "4:3",
+            "4:4",
+            "5:4",
+            "5:5",
+            "6:5",
+            "6:6",
+            "7:6"
+          ],
+          "set_score_sequence": [
+            "7:6",
+            "3:6",
+            "2:6"
+          ],
+          "set_progressions": [
+            [
+              "1:0",
+              "1:1",
+              "2:1",
+              "2:2",
+              "3:2",
+              "3:3",
+              "4:3",
+              "4:4",
+              "5:4",
+              "5:5",
+              "6:5",
+              "6:6",
+              "7:6"
+            ],
+            [
+              "0:1",
+              "0:2",
+              "0:3",
+              "1:3",
+              "1:4",
+              "2:4",
+              "2:5",
+              "3:5",
+              "3:6"
+            ],
+            [
+              "1:0",
+              "1:1",
+              "1:2",
+              "1:3",
+              "1:4",
+              "1:5",
+              "2:5",
+              "2:6"
+            ]
+          ],
+          "full_match_progression_complete": true,
+          "match_exact_score": "1:2"
+        },
+        "settled_at": "2026-09-09T17:58:24.143616+00:00"
       },
       {
         "match_id": "188293",
@@ -205954,6 +206066,807 @@
         "actual": null
       },
       {
+        "match_id": "188870",
+        "scheduled_time": "2026-09-10T08:00:00+00:00",
+        "captured_at": "2026-09-09T17:58:24.143616+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Fabrizio Andaloro",
+        "p2": "Andrea Colombo",
+        "source_model_fingerprint_sha256": "1b4a58eda60aa4ab28094a32c5deaef4d570bde8b3140a2f88b6368dee29dd48",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.6097738425491033
+              },
+              {
+                "score": "0:2",
+                "probability": 0.22154074139977847
+              },
+              {
+                "score": "2:0",
+                "probability": 0.16868541605111825
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.4465655233276883
+              },
+              {
+                "score": "1:3",
+                "probability": 0.2701794983290402
+              },
+              {
+                "score": "3:1",
+                "probability": 0.20571990865496914
+              },
+              {
+                "score": "0:4",
+                "probability": 0.04908030009996352
+              },
+              {
+                "score": "4:0",
+                "probability": 0.02845476958833886
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.3634546572777088
+              },
+              {
+                "score": "2:4",
+                "probability": 0.2719599788379601
+              },
+              {
+                "score": "4:2",
+                "probability": 0.20707560103696795
+              },
+              {
+                "score": "1:5",
+                "probability": 0.08978364955625368
+              },
+              {
+                "score": "5:1",
+                "probability": 0.05205292257219227
+              },
+              {
+                "score": "0:6",
+                "probability": 0.010873286072269539
+              },
+              {
+                "score": "6:0",
+                "probability": 0.0047999046466476476
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.018928928059269788
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "3:4",
+                    "3:5",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.018928928059269788
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "3:4",
+                    "3:5",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.018928928059269788
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "2:3",
+                    "2:4",
+                    "3:4",
+                    "3:5",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.018928928059269788
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "1:2",
+                    "1:3",
+                    "2:3",
+                    "2:4",
+                    "3:4",
+                    "3:5",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.018928928059269788
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.018909713034295703
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "5:4",
+                    "5:5",
+                    "6:5",
+                    "6:6",
+                    "6:7"
+                  ],
+                  "final_score": "6:7",
+                  "probability": 0.013487167573383264
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "4:4",
+                    "5:4",
+                    "5:5",
+                    "6:5",
+                    "6:6",
+                    "7:6"
+                  ],
+                  "final_score": "7:6",
+                  "probability": 0.011488012248615396
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.04443911531952714
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "2:6"
+                  ],
+                  "probability": 0.022933983369864255
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "4:6"
+                  ],
+                  "probability": 0.022933983369864255
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.022670138120498364
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "6:7"
+                  ],
+                  "probability": 0.019388834687625305
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "3:6"
+                  ],
+                  "probability": 0.01833177551047875
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.016022925123357266
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.015149371848018504
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "5:7"
+                  ],
+                  "probability": 0.01304440854931794
+                },
+                {
+                  "set_scores": [
+                    "5:7",
+                    "4:6"
+                  ],
+                  "probability": 0.01304440854931794
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.012574762060979749
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "2:6"
+                  ],
+                  "probability": 0.011835690009294424
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.34389944017584073
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.28445339621779847
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.2006065217107576
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.17104064189560317
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "5:4",
+                      "5:5",
+                      "6:5",
+                      "6:6",
+                      "6:7"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ]
+                  ],
+                  "probability": 0.00035990981015474456
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "5:4",
+                      "5:5",
+                      "6:5",
+                      "6:6",
+                      "6:7"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "3:5",
+                      "3:6"
+                    ]
+                  ],
+                  "probability": 0.0003599098101547445
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "5:4",
+                      "5:5",
+                      "6:5",
+                      "6:6",
+                      "6:7"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ]
+                  ],
+                  "probability": 0.00035990981015474445
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "5:4",
+                      "5:5",
+                      "6:5",
+                      "6:6",
+                      "6:7"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ]
+                  ],
+                  "probability": 0.00035990981015474445
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.026685351701644267
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.026685351701644267
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.026685351701644263
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.026685351701644263
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.02022508371098142
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.02022508371098142
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "4:5",
+                    "5:5",
+                    "5:6",
+                    "6:6",
+                    "6:7"
+                  ],
+                  "final_score": "6:7",
+                  "probability": 0.013487167573383266
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "4:5",
+                    "5:5",
+                    "5:6",
+                    "6:6",
+                    "7:6"
+                  ],
+                  "final_score": "7:6",
+                  "probability": 0.011488012248615398
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.04201634079854155
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.02576399868279747
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "2:6"
+                  ],
+                  "probability": 0.02168364635991935
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "4:6"
+                  ],
+                  "probability": 0.019388834687625305
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "6:7"
+                  ],
+                  "probability": 0.01833177551047875
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.017440059212512994
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.015149371848018504
+                },
+                {
+                  "set_scores": [
+                    "1:6",
+                    "4:6"
+                  ],
+                  "probability": 0.014425968227821124
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "3:6"
+                  ],
+                  "probability": 0.013245580346080765
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.012574762060979749
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "5:7"
+                  ],
+                  "probability": 0.012333240911362578
+                },
+                {
+                  "set_scores": [
+                    "5:7",
+                    "3:6"
+                  ],
+                  "probability": 0.012333240911362576
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.34389944017584073
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.2844533962177984
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.20060652171075757
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.17104064189560317
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "4:5",
+                      "4:6"
+                    ]
+                  ],
+                  "probability": 0.0005051251025967371
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "4:3",
+                      "4:4",
+                      "4:5",
+                      "4:6"
+                    ]
+                  ],
+                  "probability": 0.0005051251025967371
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "4:4",
+                      "4:5",
+                      "4:6"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "2:2",
+                      "2:3",
+                      "3:3",
+                      "3:4",
+                      "3:5",
+                      "3:6"
+                    ]
+                  ],
+                  "probability": 0.0005051251025967371
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "2:4",
+                      "2:5",
+                      "3:5",
+                      "3:6"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "2:2",
+                      "3:2",
+                      "3:3",
+                      "3:4",
+                      "3:5",
+                      "4:5",
+                      "4:6"
+                    ]
+                  ],
+                  "probability": 0.0005051251025967371
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
         "match_id": "188300",
         "scheduled_time": "2026-09-10T09:00:00+00:00",
         "captured_at": "2026-09-09T12:29:23.804682+00:00",
@@ -212920,6 +213833,1411 @@
         "actual": null
       },
       {
+        "match_id": "188844",
+        "scheduled_time": "2026-09-10T09:00:00+00:00",
+        "captured_at": "2026-09-09T17:58:24.143616+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "clay",
+        "p1": "Emilien Demanet",
+        "p2": "Jeffrey Von der Schulenburg",
+        "source_model_fingerprint_sha256": "1b4a58eda60aa4ab28094a32c5deaef4d570bde8b3140a2f88b6368dee29dd48",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.5791868563357958
+              },
+              {
+                "score": "0:2",
+                "probability": 0.2618475567001327
+              },
+              {
+                "score": "2:0",
+                "probability": 0.15896558696407148
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.41870691564403095
+              },
+              {
+                "score": "1:3",
+                "probability": 0.3033173264087178
+              },
+              {
+                "score": "3:1",
+                "probability": 0.18414155715859026
+              },
+              {
+                "score": "0:4",
+                "probability": 0.06856414294982921
+              },
+              {
+                "score": "4:0",
+                "probability": 0.025270057838831773
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.33894357585579293
+              },
+              {
+                "score": "2:4",
+                "probability": 0.2962141308183899
+              },
+              {
+                "score": "4:2",
+                "probability": 0.17982926312550063
+              },
+              {
+                "score": "1:5",
+                "probability": 0.11913435123740909
+              },
+              {
+                "score": "5:1",
+                "probability": 0.043908256077290125
+              },
+              {
+                "score": "0:6",
+                "probability": 0.01795335330865141
+              },
+              {
+                "score": "6:0",
+                "probability": 0.004017069576965928
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.017953353308651412
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "1:4",
+                    "1:5",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.0168078164356175
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.0168078164356175
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.016807816435617497
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.016807816435617497
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.016807816435617493
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "1:2",
+                    "1:3",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.016807816435617493
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "3:4",
+                    "3:5",
+                    "4:5",
+                    "4:6"
+                  ],
+                  "final_score": "4:6",
+                  "probability": 0.015735372020851426
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.04593570177498564
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "2:6"
+                  ],
+                  "probability": 0.029265870682111478
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "4:6"
+                  ],
+                  "probability": 0.029265870682111478
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.020703639303192207
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.020419479035876185
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "2:6"
+                  ],
+                  "probability": 0.018645435983052204
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "6:7"
+                  ],
+                  "probability": 0.01832193617847119
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "3:6"
+                  ],
+                  "probability": 0.01807046511070492
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.014428277067251204
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "5:7"
+                  ],
+                  "probability": 0.014424709985152287
+                },
+                {
+                  "set_scores": [
+                    "5:7",
+                    "4:6"
+                  ],
+                  "probability": 0.014424709985152287
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "3:6"
+                  ],
+                  "probability": 0.01319039455333309
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.43484283904481624
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.29619220512305133
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.15297440426278047
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.11599055156935181
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00032232289502526456
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "1:2",
+                      "1:3",
+                      "2:3",
+                      "2:4",
+                      "2:5",
+                      "2:6"
+                    ]
+                  ],
+                  "probability": 0.000301756666815599
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "2:5",
+                      "2:6"
+                    ]
+                  ],
+                  "probability": 0.00030175666681559897
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "1:4",
+                      "1:5",
+                      "2:5",
+                      "2:6"
+                    ]
+                  ],
+                  "probability": 0.00030175666681559897
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.025696812212624064
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.025696812212624064
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.025696812212624064
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.02405719395285284
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.024057193952852832
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.024057193952852832
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.024057193952852832
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.01795335330865141
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.04530522801602112
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "2:6"
+                  ],
+                  "probability": 0.028864192623752786
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.02104129945668795
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.020419479035876185
+                },
+                {
+                  "set_scores": [
+                    "1:6",
+                    "4:6"
+                  ],
+                  "probability": 0.01932801521117015
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "3:6"
+                  ],
+                  "probability": 0.018512769602292745
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "4:6"
+                  ],
+                  "probability": 0.018321936178471183
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "6:7"
+                  ],
+                  "probability": 0.01807046511070492
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.01693010064416047
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "5:7"
+                  ],
+                  "probability": 0.014226728877323336
+                },
+                {
+                  "set_scores": [
+                    "5:7",
+                    "3:6"
+                  ],
+                  "probability": 0.014226728877323333
+                },
+                {
+                  "set_scores": [
+                    "1:6",
+                    "2:6"
+                  ],
+                  "probability": 0.012313977404390403
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.43484283904481624
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.2961922051230514
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.15297440426278047
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.11599055156935179
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "1:5",
+                      "1:6"
+                    ]
+                  ],
+                  "probability": 0.00046134394855930816
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.0004613439485593081
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.0004613439485593081
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.0004613439485593081
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188858",
+        "scheduled_time": "2026-09-10T09:00:00+00:00",
+        "captured_at": "2026-09-09T17:58:24.143616+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Aoi Ito",
+        "p2": "Reese Brantmeier",
+        "source_model_fingerprint_sha256": "1b4a58eda60aa4ab28094a32c5deaef4d570bde8b3140a2f88b6368dee29dd48",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.5351022083118716
+              },
+              {
+                "score": "0:2",
+                "probability": 0.23837406186469265
+              },
+              {
+                "score": "2:0",
+                "probability": 0.2265237298234357
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.3943291365137468
+              },
+              {
+                "score": "1:3",
+                "probability": 0.2551089738161355
+              },
+              {
+                "score": "3:1",
+                "probability": 0.24242669612712442
+              },
+              {
+                "score": "0:4",
+                "probability": 0.05682219336987232
+              },
+              {
+                "score": "4:0",
+                "probability": 0.05131300017312089
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.3265828642707398
+              },
+              {
+                "score": "2:4",
+                "probability": 0.24337878841046026
+              },
+              {
+                "score": "4:2",
+                "probability": 0.23127965551025453
+              },
+              {
+                "score": "1:5",
+                "probability": 0.09121704346002861
+              },
+              {
+                "score": "5:1",
+                "probability": 0.08237309912323332
+              },
+              {
+                "score": "0:6",
+                "probability": 0.013544937037637473
+              },
+              {
+                "score": "6:0",
+                "probability": 0.011623612187645946
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.013544937037637473
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.012868171099503391
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.012868171099503391
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.01286817109950339
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.011623612187645944
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.009099012958179647
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.009099012958179645
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "2:5",
+                    "2:6"
+                  ],
+                  "final_score": "2:6",
+                  "probability": 0.009099012958179645
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.025432588192598842
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.020644583569212848
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "2:6"
+                  ],
+                  "probability": 0.01507318772596252
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "4:6"
+                  ],
+                  "probability": 0.01507318772596252
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.01361813279744101
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.01279083214923563
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.012472666647750643
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:2"
+                  ],
+                  "probability": 0.011627206424501099
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "6:7"
+                  ],
+                  "probability": 0.011101640586930094
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.010703441415518504
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.010222017833906851
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "3:6"
+                  ],
+                  "probability": 0.010167844912625415
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.2679666952389242
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.2585047931899188
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.24087180901833483
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.23265670255282203
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00018346531935356343
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00014957463042490095
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00014957463042490095
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00014957463042490095
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.01451921075691532
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.014519210756915318
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.014519210756915318
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.013544937037637473
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.011623612187645946
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.009753495823023529
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.009753495823023529
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.009753495823023529
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.023293369159640732
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.022966772750832816
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.01443194889895794
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "2:6"
+                  ],
+                  "probability": 0.01380533209811442
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.012935083276602123
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.012935083276602123
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.012472666647750643
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.011907409312370972
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "4:6"
+                  ],
+                  "probability": 0.011101640586930098
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.010703441415518504
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "3:6"
+                  ],
+                  "probability": 0.01027163624897295
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.010222017833906853
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.26796669523892425
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.25850479318991887
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.24087180901833485
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.23265670255282206
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00019666179553860672
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00019666179553860672
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00019666179553860672
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ]
+                  ],
+                  "probability": 0.00019666179553860672
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
         "match_id": "188685",
         "scheduled_time": "2026-09-10T23:00:00+00:00",
         "captured_at": "2026-09-09T07:21:27.850390+00:00",
@@ -217481,8 +219799,14 @@
         "first_set_over_9.5": 0.5660462118983267,
         "first_set_over_10.5": 0.2970766390073134
       },
-      "settled": false,
-      "actual": null
+      "settled": true,
+      "actual": {
+        "first_set_tiebreak": true,
+        "first_set_over_8.5": true,
+        "first_set_over_9.5": true,
+        "first_set_over_10.5": true
+      },
+      "settled_at": "2026-09-09T17:58:24.143616+00:00"
     },
     {
       "match_id": "188309",
