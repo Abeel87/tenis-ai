@@ -11,22 +11,14 @@ INDEX = ROOT / "frontend" / "index.html"
 # experiments may remain in the repository, but they are not active runtime.
 ALLOWED_VERSIONED_FRONTEND = {
     "early-hold-v7.js",
-    "early-hold-v7.css",
     "serve-props-v72.js",
-    "serve-props-v72.css",
     "adaptive-learning-v79.js",
-    "adaptive-learning-v79.css",
     "clean-core-v80.js",
-    "clean-core-v80.css",
     "autolearn-v84.js",
-    "autolearn-v84.css",
     "signal-mapping-v84d4.js",
     "dynamic-weights-v84d1.js",
-    "dynamic-weights-v84d1.css",
     "player-intelligence-v85.js",
-    "player-intelligence-v85.css",
     "shadow-lab-v78e6.js",
-    "shadow-lab-v78e6.css",
 }
 
 
