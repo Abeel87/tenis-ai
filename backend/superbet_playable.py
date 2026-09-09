@@ -45,7 +45,7 @@ STRICT_MARKETS = {
 }
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
-    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 PLAYER_MARKETS = {"player_total_games", "player_aces", "player_double_faults"}
@@ -138,11 +138,23 @@ def operator_context_active(match: dict) -> bool:
     ctx = match.get("superbet_market_v91") or {}
     return bool(
         isinstance(ctx, dict)
+        and ctx.get("operator") == OPERATOR
         and ctx.get("operator_verified") is True
         and ctx.get("status") == "VERIFIED"
         and ctx.get("suspended") is not True
         and isinstance(ctx.get("canonical_selections"), list)
     )
+
+
+def _operator_evidence_verified(row: dict, market: str) -> bool:
+    if row.get("operator_available") is not True:
+        return False
+    if market in LINE_MARKETS:
+        return (
+            row.get("operator_line_verified") is True
+            and row.get("fixture_line_verified") is True
+        )
+    return True
 
 
 def operator_availability(match: dict) -> dict:
@@ -151,10 +163,10 @@ def operator_availability(match: dict) -> dict:
     if not operator_context_active(match):
         return out
     for row in ctx.get("canonical_selections") or []:
-        if not isinstance(row, dict) or row.get("operator_available") is False:
+        if not isinstance(row, dict):
             continue
         market = _market(row.get("market"))
-        if market in LINE_MARKETS and row.get("operator_line_verified") is not True:
+        if not _operator_evidence_verified(row, market):
             continue
         out[signal_signature(row)] = row
     return out
@@ -169,7 +181,7 @@ def operator_model_signals(match: dict) -> dict:
         if not isinstance(row, dict):
             continue
         market = _market(row.get("market"))
-        if market in LINE_MARKETS and row.get("operator_line_verified") is not True:
+        if not _operator_evidence_verified(row, market):
             continue
         out[signal_signature(row)] = row
     return out
@@ -271,6 +283,8 @@ def _projection_signals(match: dict) -> list[dict]:
 
     out: dict[tuple, dict] = {}
     for raw in _current_autolearn_signals(match):
+        if _market(raw.get("market")) not in STRICT_MARKETS:
+            continue
         sig = signal_signature(raw)
         available = availability.get(sig)
         if available is None:
@@ -281,13 +295,18 @@ def _projection_signals(match: dict) -> list[dict]:
             "operator_playable": True,
             "operator_line_verified": available.get("operator_line_verified") is True
             if _market(raw.get("market")) in LINE_MARKETS else True,
+            "fixture_line_verified": available.get("fixture_line_verified") is True
+            if _market(raw.get("market")) in LINE_MARKETS else None,
             "operator_line_source": available.get("operator_line_source"),
+            "operator_offer_source": available.get("operator_offer_source"),
             "operator_projection_version": VERSION,
             "operator_projection_fallback": False,
         })
         out[sig] = item
 
     for sig, operator_signal in operator_model_signals(match).items():
+        if _market(operator_signal.get("market")) not in STRICT_MARKETS:
+            continue
         if sig not in availability or sig in out:
             continue
         score = _num(operator_signal.get("score"))
@@ -308,8 +327,12 @@ def _projection_signals(match: dict) -> list[dict]:
             "source_model": "current_operator_projection",
             "operator": OPERATOR,
             "operator_playable": True,
-            "operator_line_verified": True,
+            "operator_line_verified": operator_signal.get("operator_line_verified") is True
+            if _market(operator_signal.get("market")) in LINE_MARKETS else True,
+            "fixture_line_verified": operator_signal.get("fixture_line_verified") is True
+            if _market(operator_signal.get("market")) in LINE_MARKETS else None,
             "operator_line_source": operator_signal.get("operator_line_source"),
+            "operator_offer_source": operator_signal.get("operator_offer_source"),
             "operator_projection_version": VERSION,
             "operator_projection_fallback": True,
             "ensemble_score_kind": "not_learned_ensemble",
@@ -364,7 +387,10 @@ def _history_signal(signal: dict, source: str):
         "operator": OPERATOR,
         "operator_playable": True,
         "operator_line_verified": signal.get("operator_line_verified") is True,
+        "fixture_line_verified": signal.get("fixture_line_verified") is True
+        if _market(signal.get("market")) in LINE_MARKETS else None,
         "operator_line_source": signal.get("operator_line_source"),
+        "operator_offer_source": signal.get("operator_offer_source"),
         "tracker_version": VERSION,
     }
     score = _score(signal)

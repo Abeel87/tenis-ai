@@ -56,8 +56,19 @@ def test_candidate_shadow_captures_verified_operator_game_handicap_without_prod_
         "p2": "Beta Player",
         "scheduled_time": "2026-09-01T10:00:00Z",
         "superbet_market_v91": {
+            "operator": "superbet.pl",
             "operator_verified": True,
             "status": "VERIFIED",
+            "suspended": False,
+            "canonical_selections": [{
+                "market": "match_game_handicap",
+                "pick": "Alpha Player",
+                "line": -2.5,
+                "operator_available": True,
+                "operator_line_verified": True,
+                "fixture_line_verified": True,
+                "operator_line_source": "fixture-test",
+            }],
             "model_signals": [{
                 "key": "mh",
                 "label": "Alpha -2.5",
@@ -74,5 +85,8 @@ def test_candidate_shadow_captures_verified_operator_game_handicap_without_prod_
     assert report["captured"] == 1
     assert rows[0]["market"] == "match_game_handicap"
     assert rows[0]["line"] == -2.5
+    assert rows[0]["operator_line_verified"] is True
+    assert rows[0]["fixture_line_verified"] is True
+    assert rows[0]["operator_line_source"] == "fixture-test"
     assert rows[0]["operator_playable"] is False
     assert rows[0]["candidate_for_playable"] is True
