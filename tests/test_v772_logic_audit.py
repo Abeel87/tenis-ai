@@ -67,7 +67,8 @@ def test_history_source_and_pwa():
     # Symphony to a historical cache version.
     assert "const CACHE='tenis-ai-" in sw
     assert "'symphony2.js'" in sw
-    assert "'symphony2.css'" in sw
+    assert "'style.css'" in sw
+    assert "symphony2.css" not in sw
     assert "appVersion: 'v8.0.1'" in meta
     assert "modelVersion:'v7.8D'" in meta
     assert "modelName:'AutoLearn Ensemble + Adaptive Learning'" in meta
