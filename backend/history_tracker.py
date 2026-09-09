@@ -254,15 +254,22 @@ def find_final_result(hist: pd.DataFrame, entry: dict) -> dict | None:
     # Filter it before choosing the closest date when a compatible row exists.
     target_tournament = entry.get('tournament')
     if _key(target_tournament):
-        for col in ('tourney_name', 'tournament', 'event_name'):
-            if col not in candidates.columns:
-                continue
-            matched = candidates[candidates[col].map(
-                lambda value: _tournament_compatible(target_tournament, value)
-            )]
-            if not matched.empty:
-                candidates = matched.copy()
-                break
+        tournament_columns = [
+            col for col in ('tourney_name', 'tournament', 'event_name')
+            if col in candidates.columns
+        ]
+        if tournament_columns:
+            tournament_match = None
+            for col in tournament_columns:
+                matched = candidates[candidates[col].map(
+                    lambda value: _tournament_compatible(target_tournament, value)
+                )]
+                if not matched.empty:
+                    tournament_match = matched.copy()
+                    break
+            if tournament_match is None:
+                return None
+            candidates = tournament_match
 
     if '_delta' in candidates.columns:
         best_delta = candidates['_delta'].min()
