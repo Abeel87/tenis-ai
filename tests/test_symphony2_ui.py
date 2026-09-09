@@ -6,6 +6,7 @@ CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
 PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
+MATCH_DETAIL = (ROOT / "frontend" / "match-detail.js").read_text(encoding="utf-8")
 ARCH = (ROOT / "SYMPHONY_2_ARCHITECTURE.md").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
 
@@ -143,3 +144,10 @@ def test_main_workflow_names_operator_projection_separately_from_final_playable(
     assert "Superbet exact-offer projection PROJECT frontend + stats" in WORKFLOW
     assert "Superbet exact-offer projection Guard" in WORKFLOW
     assert "Superbet PLAYABLE PROJECT frontend + stats" not in WORKFLOW
+
+
+
+def test_match_detail_does_not_equate_verified_offer_with_final_playable():
+    assert "final PLAYABLE = Symfonia 2.0" in MATCH_DETAIL
+    assert "zweryfikowana oferta Superbet jest osobną warstwą" in MATCH_DETAIL
+    assert "SUPERBET PLAYABLE — realna, zweryfikowana oferta operatora" not in MATCH_DETAIL
