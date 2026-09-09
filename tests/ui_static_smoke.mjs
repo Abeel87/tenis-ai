@@ -43,7 +43,7 @@ const checks=[
  ['Dynamic JSON cache is canonical',sw.includes('canonicalDataRequest')&&sw.includes("url.pathname.includes('/data/')")],
  ['No old fragile cache.addAll(ASSETS)',!sw.includes('cache.addAll(ASSETS)')],
  ['Supabase version is pinned',/@supabase\/supabase-js@2\.112\.3/.test(index)],
- ['Shadow Lab remains available without legacy bottom nav',index.includes('shadow-lab-v78e6.js')&&shadow.includes('window.TENIS_AI_SHADOW_LAB')&&shadow.includes('open:openShadow')&&!ui.includes('p751-bottom-nav')],
+ ['Shadow Lab remains available on clean technical shell',index.includes('shadow-lab-v78e6.js')&&index.includes('id="shadow-open"')&&shadow.includes('window.TENIS_AI_SHADOW_LAB')&&shadow.includes('open:openShadow')&&!shadow.includes('p751-bottom-nav')&&!shadow.includes('p751-match-overlay')&&shadow.includes('class="match-grid"')],
  ['Main cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(ui)],
  ['Canonical responsive rules exist',style.includes('@media(max-width:760px)')&&style.includes('.match-grid')],
  ['Match detail is in-app, not legacy overlay',ui.includes("app.innerHTML=detailHtml(m)")&&!ui.includes('p751-match-overlay')],
