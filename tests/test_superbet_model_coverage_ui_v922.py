@@ -53,7 +53,45 @@ def test_addon_is_display_only_and_does_not_fetch_or_train():
 
 def test_full_offer_panel_is_fail_closed_on_operator_and_line_evidence():
     assert "row.operator_available!==true" in ADDON
-    assert "row.operator_line_verified===true&&row.fixture_line_verified===true" in ADDON
+    assert "const LINE_MARKETS=new Set([" in ADDON
+    assert "return finite(row.line)&&row.operator_line_verified===true&&row.fixture_line_verified===true" in ADDON
     assert ".filter(operatorSelectionVerified)" in ADDON
+    assert "const current=currentContextActive(match)" in ADDON
+    assert "const selections=current?" in ADDON
     assert "operator_available!==false" not in ADDON
+
+
+def test_full_offer_panel_runtime_rejects_missing_line_and_stale_context():
+    import shutil
+    import subprocess
+    import pytest
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node is required for runtime UI tests")
+    subprocess.run([node, "-e", r"""
+const assert=require('node:assert/strict');
+const vm=require('node:vm');
+const fs=require('node:fs');
+let current=true;
+class MutationObserver { observe(){} }
+const win={TENIS_AI_PLAYABLE_UI_V917:{active:()=>current}};
+const document={readyState:'loading',addEventListener(){}};
+const ctx=vm.createContext({window:win,document,MutationObserver,queueMicrotask,console,setTimeout:()=>0});
+vm.runInContext(fs.readFileSync('frontend/superbet-model-coverage.js','utf8'),ctx);
+const api=win.TENIS_AI_SUPERBET_MODEL_COVERAGE_V922;
+const line={market:'match_total',pick:'over',line:22.5,operator_available:true,operator_line_verified:true,fixture_line_verified:true};
+const winner={market:'match_winner',pick:'Player A',line:null,operator_available:true};
+const match=rows=>({superbet_market_v91:{canonical_selections:rows,model_signals:[],coverage_shadow_signals:[]}});
+assert.match(api.panelHtml(match([line])),/22\.5/);
+assert.match(api.panelHtml(match([winner])),/PLAYER A/);
+assert.match(api.panelHtml(match([{...line,line:null}])),/Brak dostępnych selekcji w katalogu/);
+assert.match(api.panelHtml(match([{...line,operator_available:undefined}])),/Brak dostępnych selekcji w katalogu/);
+assert.match(api.panelHtml(match([{...line,operator_line_verified:undefined}])),/Brak dostępnych selekcji w katalogu/);
+assert.match(api.panelHtml(match([{...line,fixture_line_verified:undefined}])),/Brak dostępnych selekcji w katalogu/);
+current=false;
+const stale=api.panelHtml(match([line]));
+assert.match(stale,/Brak świeżej oferty Superbet/);
+assert.ok(!stale.includes('sbmc922-line'));
+"""], cwd=ROOT, check=True)
 
