@@ -405,3 +405,29 @@ def test_direct_fallback_requires_explicit_operator_availability_and_preserves_m
         assert merged["direct_fallback"]["fallback_fixtures_added"] == 0
         assert model_match == model_before
 
+def test_direct_set3_handicap_requires_complete_line_provenance():
+    base_row = {
+        "market": "set3_game_handicap",
+        "pick": "Player A",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+        "prices_used": False,
+    }
+
+    valid = context._direct_selection_without_price(dict(base_row))
+    assert valid is not None
+    assert valid["line"] == -1.5
+    assert valid["operator_line_verified"] is True
+    assert valid["fixture_line_verified"] is True
+
+    missing_line = dict(base_row)
+    missing_line["line"] = None
+    assert context._direct_selection_without_price(missing_line) is None
+
+    for field in ("operator_line_verified", "fixture_line_verified"):
+        malformed = dict(base_row)
+        malformed.pop(field)
+        assert context._direct_selection_without_price(malformed) is None
+
