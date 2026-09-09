@@ -14,6 +14,7 @@ from backend.superbet_playable import (
     inject_match,
     is_operator_playable_signal,
     operator_availability,
+    pre_match_operator_context_active,
     project_match_for_display,
     signal_signature,
 )
@@ -56,6 +57,7 @@ def _match():
         "id": 1,
         "p1": "Player A",
         "p2": "Player B",
+        "scheduled_time": "2099-01-01T12:00:00Z",
         "model_ready": True,
         "match_over_under": {
             "18.5": {"over": 91.0, "under": 9.0},
@@ -87,6 +89,49 @@ def _match():
             "model_signals": [m20, mu20, msw1, msw2, mst],
         },
     }
+
+
+
+
+def test_playable_is_strictly_prematch_while_operator_context_and_model_raw_survive():
+    match = _match()
+    scheduled = datetime(2099, 1, 1, 12, 0, tzinfo=timezone.utc)
+
+    assert pre_match_operator_context_active(
+        match, now=scheduled - timedelta(seconds=1)
+    ) is True
+    assert pre_match_operator_context_active(match, now=scheduled) is False
+    assert pre_match_operator_context_active(
+        match, now=scheduled + timedelta(minutes=30)
+    ) is False
+
+    started = deepcopy(match)
+    started["scheduled_time"] = "2000-01-01T12:00:00Z"
+    before = deepcopy(started)
+    projected, info = inject_match(started)
+
+    assert info["operator_context_verified"] is True
+    assert info["active"] is False
+    assert info["playable"] == 0
+    assert projected["superbet_playable_v912"]["status"] == "NOT_PREMATCH"
+    assert projected["superbet_playable_v912"]["signals"] == []
+    assert started == before
+    assert projected["match_over_under"] == before["match_over_under"]
+    assert projected["autolearn_v84"] == before["autolearn_v84"]
+
+
+def test_missing_schedule_is_fail_closed_for_playable_only():
+    match = _match()
+    match.pop("scheduled_time")
+    before = deepcopy(match)
+
+    projected, info = inject_match(match)
+
+    assert info["operator_context_verified"] is True
+    assert info["active"] is False
+    assert projected["superbet_playable_v912"]["status"] == "NOT_PREMATCH"
+    assert projected["superbet_playable_v912"]["signals"] == []
+    assert match == before
 
 
 def test_signature_ignores_irrelevant_line_for_game_state():
