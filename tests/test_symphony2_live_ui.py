@@ -13,9 +13,11 @@ def test_live_recovery_exposes_symphony_on_match_cards_and_details():
     js = (ROOT / "frontend" / "symphony2-live-ui.js").read_text(encoding="utf-8")
     assert "SYMFONIA 2.0" in js
     assert "data-s2-live-card" in js
-    assert "#p751-match-overlay:not([hidden])" in js
+    assert "#app[data-match-key]" in js
+    assert "#p751-match-overlay" not in js
     assert "TENIS_AI_SYMPHONY2.renderMatchDetail" in js
     assert "data-p751-open" in js
+    assert "createElement('style')" not in js
 
 
 def test_symphony_live_ui_no_longer_owns_scenario_runtime():
