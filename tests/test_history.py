@@ -153,3 +153,19 @@ def test_history_fallback_keeps_name_date_path_when_archive_has_no_tournament_me
 
     assert final is not None
     assert final["status"] == "completed"
+
+
+def test_history_fallback_ignores_empty_tournament_metadata_instead_of_treating_it_as_conflict():
+    entry = sample_match()
+    hist = pd.DataFrame([{
+        "winner_name": "Player One",
+        "loser_name": "Player Two",
+        "tourney_date": 20260820,
+        "tourney_name": "",
+        "score": "6-4 6-4",
+    }])
+
+    final = find_final_result(hist, entry)
+
+    assert final is not None
+    assert final["status"] == "completed"
