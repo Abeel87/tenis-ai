@@ -416,6 +416,51 @@ def test_v925_numeric_candidate_requires_fixture_proof_and_preserves_direct_sour
     assert row["direct_source"] is True
 
 
+
+
+def test_v925_line_market_missing_numeric_line_is_rejected_from_capture_and_stats():
+    now = datetime.now(timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_id": 1,
+        "p1": "Player A",
+        "p2": "Player B",
+        "scheduled_time": future,
+        "status": "pending",
+    }]
+    match = _match()
+    match["scheduled_time"] = future
+    malformed = {
+        "market": "set_handicap",
+        "pick": "Player A",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    match["superbet_market_v91"]["canonical_selections"].append(dict(malformed))
+    match["superbet_market_v91"]["coverage_shadow_signals"] = [{
+        **malformed,
+        "key": "candidate|set_handicap|missing-line",
+        "score": 75.0,
+    }]
+
+    frozen, info = capture_candidates(history, [match], now=now)
+    assert info["captured"] == 0
+    assert not frozen[0].get(V925_LAYER)
+
+    stats = build_candidate_stats([{
+        V925_LAYER: [{
+            **malformed,
+            "score": 75.0,
+            "result": "hit",
+            "operator": "superbet.pl",
+        }]
+    }])
+    assert stats["line_provenance_quarantined_rows"] == 1
+    assert "set_handicap" not in stats["by_market"]
+
+
 def test_v925_stats_quarantine_legacy_numeric_lines_without_fixture_proof():
     legacy_rows = [{
         "market": "set2_total",
