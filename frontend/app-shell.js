@@ -288,35 +288,45 @@
   }
 
   function ensureSurfaceHeader(target, key, kicker, title, subtitle) {
-    if (!target || target.dataset.tenisSurfaceReady === '1') return;
+    if (!target) return;
+    let header = document.querySelector(`.tenis-surface-header[data-tenis-surface="${CSS.escape(key)}"]`);
+    if (!header) {
+      header = document.createElement('div');
+      header.className = 'tenis-surface-header';
+      header.dataset.tenisSurface = key;
+      header.innerHTML = `
+        <div>
+          <span>${escapeHtml(kicker)}</span>
+          <b>${escapeHtml(title)}</b>
+          <small>${escapeHtml(subtitle)}</small>
+        </div>`;
+    }
     target.dataset.tenisSurfaceReady = '1';
-    const header = document.createElement('div');
-    header.className = 'tenis-surface-header';
-    header.dataset.tenisSurface = key;
-    header.innerHTML = `
-      <div>
-        <span>${escapeHtml(kicker)}</span>
-        <b>${escapeHtml(title)}</b>
-        <small>${escapeHtml(subtitle)}</small>
-      </div>`;
-    target.before(header);
+    if (target.previousElementSibling !== header) target.before(header);
   }
 
   function normalizeSimpleCopy(root = document) {
-    if (technicalMode()) return;
+    const technical = technicalMode();
 
     root.querySelectorAll('.stats-hero span').forEach(el => {
-      if (el.textContent.includes('Skuteczność modelu')) el.textContent = '📊 Skuteczność typów';
+      if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : el.dataset.shellOriginal.replace('📊 Skuteczność modelu · zielone sygnały', '📊 Skuteczność typów');
     });
 
     root.querySelectorAll('.stats-note').forEach(el => {
       if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
-      el.textContent = 'Skuteczność pokazuje tylko typy, które da się jednoznacznie rozliczyć po meczu.';
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : 'Skuteczność pokazuje tylko typy, które da się jednoznacznie rozliczyć po meczu.';
     });
 
     root.querySelectorAll('.s2-kicker').forEach(el => {
       if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
-      if (/SYMPHONY/i.test(el.textContent)) el.textContent = 'SYMFONIA 2.0';
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : (/SYMPHONY/i.test(el.dataset.shellOriginal) ? 'SYMFONIA 2.0' : el.dataset.shellOriginal);
     });
 
     root.querySelectorAll('.pds-subhead, .pi851-tech-note, .pc882-note').forEach(el => {
@@ -503,8 +513,10 @@
           closeAdminCenter();
         }
         if (action === 'technical') {
-          window.TENIS_AI_UI_ORGANIZER_V853?.setMode?.('technical');
+          const next = technicalMode() ? 'simple' : 'technical';
+          window.TENIS_AI_UI_ORGANIZER_V853?.setMode?.(next);
           syncAdminCenterMeta();
+          scheduleDecorate(20);
         }
         if (action === 'symphony') {
           const target = document.querySelector('#p751-bottom-nav [data-p751-nav="symphony2"]');
@@ -525,8 +537,16 @@
   }
 
   function syncAdminCenterMeta() {
+    const technical = technicalMode();
     const mode = document.querySelector('#tenis-admin-center-mode');
-    if (mode) mode.textContent = `Widok: ${technicalMode() ? 'techniczny' : 'prosty'}`;
+    if (mode) mode.textContent = `Widok: ${technical ? 'techniczny' : 'prosty'}`;
+    const button = document.querySelector('[data-admin-action="technical"]');
+    if (button) {
+      const title = button.querySelector('b');
+      const copy = button.querySelector('small');
+      if (title) title.textContent = technical ? 'Widok prosty' : 'Tryb techniczny';
+      if (copy) copy.textContent = technical ? 'Wróć do codziennego widoku' : 'Pełna diagnostyka';
+    }
   }
 
   function openAdminCenter() {
@@ -545,6 +565,13 @@
 
   function decorateProductSurfaces() {
     if (authState() !== 'authenticated') return;
+    const app = document.querySelector('#app');
+    if (app) {
+      app.classList.toggle('tenis-stats-view', activeView() === 'stats');
+      app.classList.toggle('tenis-history-view', activeView() === 'history');
+      app.classList.toggle('tenis-coupons-view', activeView() === 'coupons');
+      app.classList.toggle('tenis-feedback-view', activeView() === 'feedback');
+    }
     decorateMatchBrowser();
     decorateStats();
     decorateHistory();
@@ -612,6 +639,10 @@
   });
   window.addEventListener('pageshow', () => setTimeout(() => { syncAll(); restoreUiState(); scheduleDecorate(80); }, 0));
   window.addEventListener('pagehide', saveUiState);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !document.querySelector('#tenis-admin-center')?.hidden) closeAdminCenter();
+  });
 
   document.addEventListener('click', event => {
     if (event.target?.closest?.('.main-tabs button[data-view]')) {
