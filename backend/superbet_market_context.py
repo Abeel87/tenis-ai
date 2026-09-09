@@ -197,7 +197,7 @@ def _direct_selection_without_price(row: dict) -> dict | None:
     if not market or pick in {None, ""}:
         return None
 
-    line_markets = set(mapping.LINE_MARKETS) | set(NEW_LINE_MARKETS)
+    line_markets = set(mapping.LINE_MARKETS) | set(NEW_LINE_MARKETS) | set(DIRECT_HANDICAP_MARKETS)
     line = row.get("line")
     if market in line_markets:
         if (
