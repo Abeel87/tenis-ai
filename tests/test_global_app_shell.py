@@ -66,3 +66,8 @@ def test_simple_match_browser_hides_only_presentation_noise():
     assert 'html[data-tenis-ui-mode="simple"] .tenis-technical-detail' in SHELL_CSS
     assert "first_set_win" not in SHELL
     assert "model_confidence" not in SHELL
+
+
+def test_app_shell_markup_has_real_line_breaks_not_literal_escape_text():
+    assert '\\n  <link rel="stylesheet" href="app-shell.css">' not in INDEX
+    assert '\\n  <script src="app-shell.js"></script>' not in INDEX
