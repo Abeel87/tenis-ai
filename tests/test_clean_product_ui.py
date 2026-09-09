@@ -136,6 +136,35 @@ def test_clean_ui_keeps_all_model_math_out_of_presentation_controller():
         assert forbidden not in PROJECT_UI
 
 
+def test_shadow_early_hold_and_integrity_use_clean_runtime_only():
+    shadow = (ROOT / "frontend" / "shadow-lab-v78e6.js").read_text(encoding="utf-8")
+    early = (ROOT / "frontend" / "early-hold-paths.js").read_text(encoding="utf-8")
+    integrity = (ROOT / "frontend" / "integrity-status.js").read_text(encoding="utf-8")
+
+    assert 'id="shadow-open"' in INDEX
+    assert "#p751-bottom-nav" not in shadow
+    assert "#p751-match-overlay" not in shadow
+    assert "data-shadow-filter" in shadow
+    assert 'class="match-grid"' in shadow
+    assert "#app[data-match-key]" in shadow
+
+    assert "p751-match-overlay" not in early
+    assert "#app[data-match-key]" in early
+
+    assert "createElement('link')" not in integrity
+    assert "shadow-lab-v78e6.css" not in integrity
+    assert "data-shadow-v78e6" not in integrity
+
+    for selector in (
+        ".shadow-summary",
+        ".shadow-match-tile",
+        ".shadow-detail-note",
+        ".eh771-player",
+        ".integrity-v78a-chip",
+    ):
+        assert selector in STYLE
+
+
 def test_dynamic_match_modules_use_clean_in_app_detail_root():
     detail = (ROOT / "frontend" / "match-detail.js").read_text(encoding="utf-8")
     coverage = (ROOT / "frontend" / "superbet-model-coverage.js").read_text(encoding="utf-8")
