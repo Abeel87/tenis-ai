@@ -26,3 +26,12 @@ def test_release_metadata_does_not_touch_model_contract_versions():
     assert has_pair(js, "productionModelVersion", "v8.4B")
     assert has_pair(js, "dynamicWeightsVersion", "v8.4D")
     assert has_pair(js, "playerIntelligenceVersion", "v8.5")
+
+
+def test_fast_boot_header_reports_newest_module_freshness_not_base_refresh_only():
+    js = read("frontend/app-meta.js")
+    assert "function metaFreshness(meta)" in js
+    assert "Najnowsze dane:" in js
+    assert "source_generated_at" in js
+    assert "freshness:metaFreshness" in js
+    assert "meta?.updated_at?'Aktualizacja:" not in js

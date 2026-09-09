@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 116,
+    "previous_snapshot_count": 183,
     "current_snapshot_count_before_retention": 183,
-    "preserved_snapshots": 116,
-    "new_snapshots": 67,
-    "newly_settled": 4,
+    "preserved_snapshots": 183,
+    "new_snapshots": 0,
+    "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -46,81 +46,81 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 67,
-        "due_within_6h": 0,
+        "upcoming": 49,
+        "due_within_6h": 18,
         "overdue_6_24h": 0,
-        "overdue_24_72h": 23,
-        "overdue_gt_72h": 0,
+        "overdue_24_72h": 17,
+        "overdue_gt_72h": 6,
         "unparseable_schedule": 0
       },
       "overdue_samples": [
         {
           "match_id": "186964",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 74.99,
           "p1": "Adrienn Nagy",
           "p2": "Samira De Stefano"
         },
         {
           "match_id": "187045",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 74.99,
           "p1": "Oskari Paldanius",
           "p2": "Nicolas Tepmahc"
         },
         {
           "match_id": "187083",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 74.99,
           "p1": "Ivan Gakhov",
           "p2": "Oleg Prihodko"
         },
         {
           "match_id": "187084",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 74.99,
           "p1": "Niels Visker",
           "p2": "Daniel Siniakov"
         },
         {
           "match_id": "187048",
           "scheduled_time": "2026-09-06T11:00:00+00:00",
-          "hours_since_scheduled": 68.36,
+          "hours_since_scheduled": 73.49,
           "p1": "Amit Vales",
           "p2": "Mathieu Scaglia"
         },
         {
           "match_id": "187074",
           "scheduled_time": "2026-09-06T12:00:00+00:00",
-          "hours_since_scheduled": 67.36,
+          "hours_since_scheduled": 72.49,
           "p1": "Mario Gonzalez Fernandez",
           "p2": "Pavel Lagutin"
         },
         {
           "match_id": "186888",
           "scheduled_time": "2026-09-07T02:00:00+00:00",
-          "hours_since_scheduled": 53.36,
+          "hours_since_scheduled": 58.49,
           "p1": "Alexis Galarneau",
           "p2": "Semen Pankin"
         },
         {
           "match_id": "187102",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 57.49,
           "p1": "Enzo Aguiard",
           "p2": "Khumoyun Sultanov"
         },
         {
           "match_id": "187103",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 57.49,
           "p1": "Maximus Jones",
           "p2": "Florent Bax"
         },
         {
           "match_id": "187107",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 57.49,
           "p1": "Moise Kouame",
           "p2": "Kenta Miyoshi"
         }
@@ -135,9 +135,70 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 0,
+      "count": 16,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
-      "samples": []
+      "samples": [
+        {
+          "match_id": "188180",
+          "frozen_scheduled_time": "2026-09-09T08:05:00+00:00",
+          "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+          "drift_minutes": 1105.0
+        },
+        {
+          "match_id": "188294",
+          "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T08:30:00+00:00",
+          "drift_minutes": 390.0
+        },
+        {
+          "match_id": "188302",
+          "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T07:00:00+00:00",
+          "drift_minutes": 300.0
+        },
+        {
+          "match_id": "188292",
+          "frozen_scheduled_time": "2026-09-09T10:00:00+00:00",
+          "current_scheduled_time": "2026-09-09T11:50:00+00:00",
+          "drift_minutes": 110.0
+        },
+        {
+          "match_id": "188309",
+          "frozen_scheduled_time": "2026-09-09T10:00:00+00:00",
+          "current_scheduled_time": "2026-09-09T11:45:00+00:00",
+          "drift_minutes": 105.0
+        },
+        {
+          "match_id": "188699",
+          "frozen_scheduled_time": "2026-09-10T01:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+          "drift_minutes": 90.0
+        },
+        {
+          "match_id": "188693",
+          "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T03:30:00+00:00",
+          "drift_minutes": 90.0
+        },
+        {
+          "match_id": "188694",
+          "frozen_scheduled_time": "2026-09-10T02:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T03:30:00+00:00",
+          "drift_minutes": 90.0
+        },
+        {
+          "match_id": "188298",
+          "frozen_scheduled_time": "2026-09-10T03:00:00+00:00",
+          "current_scheduled_time": "2026-09-10T04:00:00+00:00",
+          "drift_minutes": 60.0
+        },
+        {
+          "match_id": "188262",
+          "frozen_scheduled_time": "2026-09-09T11:00:00+00:00",
+          "current_scheduled_time": "2026-09-09T11:45:00+00:00",
+          "drift_minutes": 45.0
+        }
+      ]
     }
   },
   "hold_calibration_provenance": {
@@ -205,45 +266,8 @@
       }
     },
     "segments": {
-      "tour": {
-        "atp": {
-          "snapshots": 2,
-          "settled": 0,
-          "required": 30,
-          "remaining": 30,
-          "support_sufficient": false
-        },
-        "challenger": {
-          "snapshots": 52,
-          "settled": 0,
-          "required": 30,
-          "remaining": 30,
-          "support_sufficient": false
-        },
-        "itf": {
-          "snapshots": 13,
-          "settled": 0,
-          "required": 30,
-          "remaining": 30,
-          "support_sufficient": false
-        }
-      },
-      "surface": {
-        "clay": {
-          "snapshots": 29,
-          "settled": 0,
-          "required": 30,
-          "remaining": 30,
-          "support_sufficient": false
-        },
-        "hard": {
-          "snapshots": 38,
-          "settled": 0,
-          "required": 30,
-          "remaining": 30,
-          "support_sufficient": false
-        }
-      }
+      "tour": {},
+      "surface": {}
     },
     "segment_support_ready": false,
     "ready_for_performance_verdict": false,
@@ -258,15 +282,8 @@
     "requires_walk_forward_robust": true,
     "requires_repeatable_tour": true,
     "requires_repeatable_surface": true,
-    "supported_tours": [
-      "atp",
-      "challenger",
-      "itf"
-    ],
-    "supported_surfaces": [
-      "clay",
-      "hard"
-    ],
+    "supported_tours": [],
+    "supported_surfaces": [],
     "minimum_pre_match_lead_minutes": 5,
     "post_result_snapshot_forbidden": true,
     "hold_calibration_contract_required_for_new_snapshot": true,
@@ -275,14 +292,14 @@
   },
   "source": {
     "walk_forward_version": "player-dna-hold-walk-forward-v1",
-    "walk_forward_signal": "HOLD_CALIBRATION_WALK_FORWARD_ROBUST_SHADOW",
+    "walk_forward_signal": "HOLD_CALIBRATION_WALK_FORWARD_NOT_YET_ROBUST",
     "current_simulation_version": "player-dna-tennis-simulator-v1",
     "hold_calibration_contract_id": "player-dna-hold-calibration-strict-atomic-game",
     "hold_calibration_contract_fingerprint_sha256": "631e0158e0b014c4a28f543fe074ca1f557ae04930520bd7e2e47ae2d40e842a"
   },
   "counts": {
-    "current_simulated_matches": 73,
-    "current_eligible_by_segment": 70,
+    "current_simulated_matches": 63,
+    "current_eligible_by_segment": 0,
     "snapshots": 183,
     "settled_snapshots": 93,
     "unsettled_snapshots": 90,
@@ -291,9 +308,9 @@
     "verdict_settled_snapshots": 0,
     "verdict_unsettled_snapshots": 67,
     "label_counts": {
-      "matches_seen": 4245,
-      "settled_labels": 3812,
-      "incomplete_or_unsettled": 433
+      "matches_seen": 4363,
+      "settled_labels": 3900,
+      "incomplete_or_unsettled": 463
     }
   },
   "evaluation": {
@@ -389,14 +406,14 @@
           "unsettled": 23
         },
         "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd": {
-          "snapshots": 113,
+          "snapshots": 120,
           "settled": 34,
-          "unsettled": 79
+          "unsettled": 86
         }
       },
       "known_generation_count": 1,
       "legacy_unknown_snapshots": 82,
-      "current_generation_snapshots": 113,
+      "current_generation_snapshots": 120,
       "other_known_generation_snapshots": 0,
       "mixed_known_generations": false,
       "verdict_excluded_snapshots": 82,
@@ -417,11 +434,11 @@
       "settled_at_rewrite_forbidden": true,
       "snapshot_drop_forbidden_before_retention_cap": true,
       "retention_cap": 5000,
-      "previous_snapshot_count": 191,
-      "current_snapshot_count_before_retention": 195,
-      "preserved_snapshots": 191,
-      "new_snapshots": 4,
-      "newly_settled": 6,
+      "previous_snapshot_count": 195,
+      "current_snapshot_count_before_retention": 202,
+      "preserved_snapshots": 195,
+      "new_snapshots": 7,
+      "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -439,87 +456,87 @@
         "duplicate_current": []
       },
       "pruned_by_retention": 0,
-      "current_snapshot_count_after_retention": 195
+      "current_snapshot_count_after_retention": 202
     },
     "settlement_observability": {
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 56,
-          "due_within_6h": 9,
-          "overdue_6_24h": 6,
-          "overdue_24_72h": 31,
-          "overdue_gt_72h": 0,
+          "upcoming": 45,
+          "due_within_6h": 21,
+          "overdue_6_24h": 9,
+          "overdue_24_72h": 28,
+          "overdue_gt_72h": 6,
           "unparseable_schedule": 0
         },
         "overdue_samples": [
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 68.36,
+            "hours_since_scheduled": 73.49,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 72.49,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "186888",
             "scheduled_time": "2026-09-07T02:00:00+00:00",
-            "hours_since_scheduled": 53.36,
+            "hours_since_scheduled": 58.49,
             "p1": "Alexis Galarneau",
             "p2": "Semen Pankin"
           },
           {
             "match_id": "187102",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 57.49,
             "p1": "Enzo Aguiard",
             "p2": "Khumoyun Sultanov"
           },
           {
             "match_id": "187103",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 57.49,
             "p1": "Maximus Jones",
             "p2": "Florent Bax"
           },
           {
             "match_id": "187107",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 57.49,
             "p1": "Moise Kouame",
             "p2": "Kenta Miyoshi"
           }
@@ -540,23 +557,11 @@
           {
             "match_id": "188294",
             "frozen_scheduled_time": "2026-09-09T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T02:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188166",
-            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T03:00:00+00:00",
-            "drift_minutes": 1440.0
+            "current_scheduled_time": "2026-09-10T08:30:00+00:00",
+            "drift_minutes": 1830.0
           },
           {
             "match_id": "188291",
-            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -568,10 +573,28 @@
             "drift_minutes": 1440.0
           },
           {
+            "match_id": "188366",
+            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
+            "drift_minutes": 1440.0
+          },
+          {
             "match_id": "187811",
             "frozen_scheduled_time": "2026-09-09T09:00:00+00:00",
             "current_scheduled_time": "2026-09-10T09:00:00+00:00",
             "drift_minutes": 1440.0
+          },
+          {
+            "match_id": "188180",
+            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+            "drift_minutes": 1410.0
+          },
+          {
+            "match_id": "188166",
+            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+            "drift_minutes": 1410.0
           },
           {
             "match_id": "187807",
@@ -584,12 +607,6 @@
             "frozen_scheduled_time": "2026-09-09T15:30:00+00:00",
             "current_scheduled_time": "2026-09-09T23:30:00+00:00",
             "drift_minutes": 480.0
-          },
-          {
-            "match_id": "187810",
-            "frozen_scheduled_time": "2026-09-09T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-09T09:00:00+00:00",
-            "drift_minutes": 420.0
           },
           {
             "match_id": "188059",
@@ -681,16 +698,16 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 320,
-      "current_rows_with_dynamic_candidates": 64,
-      "current_dynamic_candidate_market_slots": 340,
-      "snapshots": 195,
+      "current_dynamic_matches": 202,
+      "current_rows_with_dynamic_candidates": 63,
+      "current_dynamic_candidate_market_slots": 328,
+      "snapshots": 202,
       "ledger_settled_snapshots": 93,
-      "ledger_unsettled_snapshots": 102,
-      "verdict_eligible_snapshots": 113,
+      "ledger_unsettled_snapshots": 109,
+      "verdict_eligible_snapshots": 120,
       "verdict_excluded_snapshots": 82,
       "settled_snapshots": 34,
-      "unsettled_snapshots": 79,
+      "unsettled_snapshots": 86,
       "settled_market_observations": 136
     },
     "evaluation": {
@@ -1116,6 +1133,7 @@
             }
           },
           "candidate_markets_seen": [
+            "early_3:3",
             "first_set_over_8.5"
           ],
           "markets_with_observations": [],
@@ -1666,6 +1684,50 @@
           "markets_with_observations": [],
           "markets_better_on_brier_and_log_loss": []
         },
+        "itf|hard": {
+          "settled_matches": 0,
+          "settled_market_observations": 0,
+          "markets": {
+            "match_p1_win": {
+              "n": 0
+            },
+            "first_set_p1_win": {
+              "n": 0
+            },
+            "first_set_tiebreak": {
+              "n": 0
+            },
+            "first_set_over_8.5": {
+              "n": 0
+            },
+            "first_set_over_9.5": {
+              "n": 0
+            },
+            "first_set_over_10.5": {
+              "n": 0
+            },
+            "first_set_over_11.5": {
+              "n": 0
+            },
+            "first_set_over_12.5": {
+              "n": 0
+            },
+            "early_1:1": {
+              "n": 0
+            },
+            "early_2:2": {
+              "n": 0
+            },
+            "early_3:3": {
+              "n": 0
+            }
+          },
+          "candidate_markets_seen": [
+            "early_3:3"
+          ],
+          "markets_with_observations": [],
+          "markets_better_on_brier_and_log_loss": []
+        },
         "wta|hard": {
           "settled_matches": 0,
           "settled_market_observations": 0,
@@ -1867,6 +1929,17 @@
           },
           "all_candidate_markets_supported": false
         },
+        "itf|hard": {
+          "candidate_markets": {
+            "early_3:3": {
+              "settled": 0,
+              "required": 30,
+              "remaining": 30,
+              "support_sufficient": false
+            }
+          },
+          "all_candidate_markets_supported": false
+        },
         "wta|hard": {
           "candidate_markets": {
             "early_2:2": {
@@ -1921,7 +1994,7 @@
           "all_candidate_markets_supported": false
         }
       },
-      "observed_tour_surface_market_cells": 29,
+      "observed_tour_surface_market_cells": 30,
       "ready_for_performance_verdict": false,
       "policy": {
         "direct_joint_segment_evidence_required": true,
@@ -8198,6 +8271,29 @@
         "actual": null
       },
       {
+        "match_id": "188205",
+        "scheduled_time": "2026-09-10T02:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Yexin Ma",
+        "p2": "Tahlia Kokkinis",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.3437214956111665,
+            "dynamic_candidate_probability": 0.32028705845355887
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
         "match_id": "188302",
         "scheduled_time": "2026-09-10T02:00:00+00:00",
         "captured_at": "2026-09-09T02:08:55.902261+00:00",
@@ -8231,6 +8327,29 @@
           "first_set_over_12.5": {
             "profile_reference_probability": 0.21669895741030754,
             "dynamic_candidate_probability": 0.1929622540730517
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188699",
+        "scheduled_time": "2026-09-10T02:30:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Kosuke Ogura",
+        "p2": "Seong Chan Hong",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.33203044348292043,
+            "dynamic_candidate_probability": 0.3329633277350933
           }
         },
         "settled": false,
@@ -8348,6 +8467,75 @@
           "first_set_over_12.5": {
             "profile_reference_probability": 0.23541389983958863,
             "dynamic_candidate_probability": 0.19411882023858287
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188693",
+        "scheduled_time": "2026-09-10T03:30:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Yufei Ren",
+        "p2": "Yuhan Wang",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.32501934494964335,
+            "dynamic_candidate_probability": 0.30429996338695164
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188694",
+        "scheduled_time": "2026-09-10T03:30:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Sijia Wei",
+        "p2": "Daria Khomutsianskaya",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.32542228157927583,
+            "dynamic_candidate_probability": 0.3109148956078415
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188736",
+        "scheduled_time": "2026-09-10T04:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Muhamad Rifqi Fitriadi",
+        "p2": "Hayden Jones",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.33615421328284767,
+            "dynamic_candidate_probability": 0.264607576659358
           }
         },
         "settled": false,
@@ -8790,6 +8978,52 @@
         "actual": null
       },
       {
+        "match_id": "188759",
+        "scheduled_time": "2026-09-10T08:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Polina Leykina",
+        "p2": "Dabin Kim",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.3150269356346749,
+            "dynamic_candidate_probability": 0.30233995777320843
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188300",
+        "scheduled_time": "2026-09-10T09:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Matilde Jorge",
+        "p2": "Greet Minnen",
+        "source_model_fingerprint_sha256": "e7fd2d18ada0aa34d070b19bff95e29a7f8f5924b850060f05ec99d6e44733fe",
+        "market_policy_source_fingerprint_sha256": "61d7c35e6cb7f9e919b3890acb3c4505235c0a47c26d12081310849108b5dccf",
+        "market_policy_contract_id": "strict-marginal-agreement-mean-direction-v1",
+        "market_policy_contract_fingerprint_sha256": "66cc5dd49975051c22f5e33acc945c5e03825dfd5e9af7706d0becedfa923fdd",
+        "market_segment_key": "itf|hard",
+        "candidate_markets": {
+          "early_3:3": {
+            "profile_reference_probability": 0.33970338403861455,
+            "dynamic_candidate_probability": 0.3205097948512531
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
         "match_id": "188321",
         "scheduled_time": "2026-09-10T09:00:00+00:00",
         "captured_at": "2026-09-09T02:08:55.902261+00:00",
@@ -9082,10 +9316,10 @@
       "settlement_regression_forbidden": true,
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
-      "previous_snapshot_count": 234,
-      "current_snapshot_count_before_retention": 242,
-      "new_snapshots": 8,
-      "newly_settled": 7,
+      "previous_snapshot_count": 242,
+      "current_snapshot_count_before_retention": 245,
+      "new_snapshots": 3,
+      "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -9094,87 +9328,87 @@
       "duplicate_previous_match_ids": 0,
       "duplicate_current_match_ids": 0,
       "pruned_by_retention": 0,
-      "current_snapshot_count_after_retention": 242
+      "current_snapshot_count_after_retention": 245
     },
     "settlement_observability": {
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 65,
-          "due_within_6h": 11,
-          "overdue_6_24h": 13,
-          "overdue_24_72h": 37,
-          "overdue_gt_72h": 0,
+          "upcoming": 46,
+          "due_within_6h": 25,
+          "overdue_6_24h": 15,
+          "overdue_24_72h": 34,
+          "overdue_gt_72h": 9,
           "unparseable_schedule": 0
         },
         "overdue_samples": [
           {
             "match_id": "186869",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 70.86,
+            "hours_since_scheduled": 75.99,
             "p1": "Cesar Bouchelaghem",
             "p2": "Aziz Dougaz"
           },
           {
             "match_id": "186940",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 70.86,
+            "hours_since_scheduled": 75.99,
             "p1": "Ryan Nijboer",
             "p2": "Martin Van Der Meerschen"
           },
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 74.99,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 68.36,
+            "hours_since_scheduled": 73.49,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "186941",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 72.49,
             "p1": "Eero Vasa",
             "p2": "Adrian Oetzbach"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 72.49,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "187036",
             "scheduled_time": "2026-09-06T19:30:00+00:00",
-            "hours_since_scheduled": 59.86,
+            "hours_since_scheduled": 64.99,
             "p1": "Jamie Mackenzie",
             "p2": "Matias Reyniak"
           }
@@ -9189,29 +9423,17 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 26,
+        "count": 27,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
         "samples": [
           {
             "match_id": "188294",
             "frozen_scheduled_time": "2026-09-09T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T02:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188166",
-            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T03:00:00+00:00",
-            "drift_minutes": 1440.0
+            "current_scheduled_time": "2026-09-10T08:30:00+00:00",
+            "drift_minutes": 1830.0
           },
           {
             "match_id": "188291",
-            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
-            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
-            "drift_minutes": 1440.0
-          },
-          {
-            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -9223,10 +9445,28 @@
             "drift_minutes": 1440.0
           },
           {
+            "match_id": "188366",
+            "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T08:00:00+00:00",
+            "drift_minutes": 1440.0
+          },
+          {
             "match_id": "187811",
             "frozen_scheduled_time": "2026-09-09T09:00:00+00:00",
             "current_scheduled_time": "2026-09-10T09:00:00+00:00",
             "drift_minutes": 1440.0
+          },
+          {
+            "match_id": "188180",
+            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+            "drift_minutes": 1410.0
+          },
+          {
+            "match_id": "188166",
+            "frozen_scheduled_time": "2026-09-09T03:00:00+00:00",
+            "current_scheduled_time": "2026-09-10T02:30:00+00:00",
+            "drift_minutes": 1410.0
           },
           {
             "match_id": "187807",
@@ -9241,12 +9481,6 @@
             "drift_minutes": 480.0
           },
           {
-            "match_id": "187810",
-            "frozen_scheduled_time": "2026-09-09T02:00:00+00:00",
-            "current_scheduled_time": "2026-09-09T09:00:00+00:00",
-            "drift_minutes": 420.0
-          },
-          {
             "match_id": "188059",
             "frozen_scheduled_time": "2026-09-09T09:00:00+00:00",
             "current_scheduled_time": "2026-09-09T16:00:00+00:00",
@@ -9256,15 +9490,15 @@
       }
     },
     "counts": {
-      "current_simulated_matches": 73,
-      "new_current_pre_match_snapshots": 8,
-      "snapshots": 242,
+      "current_simulated_matches": 63,
+      "new_current_pre_match_snapshots": 3,
+      "snapshots": 245,
       "ledger_settled_snapshots": 116,
-      "ledger_unsettled_snapshots": 126,
-      "current_generation_snapshots": 137,
+      "ledger_unsettled_snapshots": 129,
+      "current_generation_snapshots": 140,
       "evaluation_excluded_snapshots": 105,
       "settled_snapshots": 38,
-      "unsettled_snapshots": 99
+      "unsettled_snapshots": 102
     },
     "evaluation": {
       "settled_matches": 38,
@@ -9453,7 +9687,7 @@
           }
         },
         "itf": {
-          "snapshots": 25,
+          "snapshots": 28,
           "settled": 1,
           "evaluation": {
             "settled_matches": 1,
@@ -9599,7 +9833,7 @@
           }
         },
         "hard": {
-          "snapshots": 76,
+          "snapshots": 79,
           "settled": 17,
           "evaluation": {
             "settled_matches": 17,
@@ -9841,7 +10075,7 @@
           }
         },
         "itf|hard": {
-          "snapshots": 17,
+          "snapshots": 20,
           "settled": 0,
           "evaluation": {
             "settled_matches": 0,
@@ -10053,7 +10287,7 @@
           }
         },
         "itf": {
-          "snapshots": 31,
+          "snapshots": 34,
           "settled": 4,
           "evaluation": {
             "settled_matches": 4,
@@ -10295,7 +10529,7 @@
           }
         },
         "hard": {
-          "snapshots": 129,
+          "snapshots": 132,
           "settled": 58,
           "evaluation": {
             "settled_matches": 58,
@@ -10585,7 +10819,7 @@
           }
         },
         "itf|hard": {
-          "snapshots": 20,
+          "snapshots": 23,
           "settled": 2,
           "evaluation": {
             "settled_matches": 2,
@@ -10865,14 +11099,14 @@
           "unsettled": 27
         },
         "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691": {
-          "snapshots": 137,
+          "snapshots": 140,
           "settled": 38,
-          "unsettled": 99
+          "unsettled": 102
         }
       },
       "known_generation_count": 1,
       "legacy_unknown_snapshots": 105,
-      "current_generation_snapshots": 137,
+      "current_generation_snapshots": 140,
       "other_known_generation_snapshots": 0,
       "evaluation_excluded_snapshots": 105,
       "mixed_known_generations": false,
@@ -10899,34 +11133,34 @@
       "source_backtest_version": "player-dna-market-backtest-v1",
       "source_backtest_signal": "MIXED_OR_NO_MATCH_LEVEL_SIGNAL",
       "historical_sample": {
-        "settled_predictions": 520,
-        "checkpoint_after_2_games_n": 519,
-        "checkpoint_after_4_games_n": 519,
-        "checkpoint_after_6_games_n": 519,
-        "first_set_complete_path_n": 519,
-        "storyline_match_score_n": 520,
-        "match_set_sequence_n": 520,
-        "full_match_game_path_n": 512
+        "settled_predictions": 530,
+        "checkpoint_after_2_games_n": 529,
+        "checkpoint_after_4_games_n": 529,
+        "checkpoint_after_6_games_n": 529,
+        "first_set_complete_path_n": 529,
+        "storyline_match_score_n": 530,
+        "match_set_sequence_n": 530,
+        "full_match_game_path_n": 522
       },
       "metrics": {
-        "checkpoint_after_2_games_top1": 0.606936,
+        "checkpoint_after_2_games_top1": 0.610586,
         "checkpoint_after_2_games_top3": 1.0,
-        "checkpoint_after_4_games_top1": 0.450867,
-        "checkpoint_after_4_games_top3": 0.911368,
-        "checkpoint_after_6_games_top1": 0.364162,
-        "checkpoint_after_6_games_top3": 0.828516,
-        "first_set_complete_path_top1": 0.038536,
-        "first_set_complete_path_top3": 0.090559,
-        "first_set_complete_path_top8": 0.208092,
-        "storyline_match_score_top1": 0.340385,
-        "storyline_match_score_top3": 0.680769,
-        "match_set_sequence_top1": 0.023077,
-        "match_set_sequence_top3": 0.071154,
+        "checkpoint_after_4_games_top1": 0.449905,
+        "checkpoint_after_4_games_top3": 0.913043,
+        "checkpoint_after_6_games_top1": 0.362949,
+        "checkpoint_after_6_games_top3": 0.829868,
+        "first_set_complete_path_top1": 0.030246,
+        "first_set_complete_path_top3": 0.092628,
+        "first_set_complete_path_top8": 0.206049,
+        "storyline_match_score_top1": 0.335849,
+        "storyline_match_score_top3": 0.675472,
+        "match_set_sequence_top1": 0.022642,
+        "match_set_sequence_top3": 0.071698,
         "match_set_sequence_top12": 0.2,
-        "full_match_game_path_top1": 0.001953,
-        "full_match_game_path_top2": 0.001953,
-        "full_match_game_path_top4": 0.001953,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.108886
+        "full_match_game_path_top1": 0.001916,
+        "full_match_game_path_top2": 0.001916,
+        "full_match_game_path_top4": 0.005747,
+        "full_match_game_path_mean_top1_prefix_fraction": 0.101637
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
@@ -194705,6 +194939,715 @@
         "actual": null
       },
       {
+        "match_id": "188736",
+        "scheduled_time": "2026-09-10T04:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Muhamad Rifqi Fitriadi",
+        "p2": "Hayden Jones",
+        "source_model_fingerprint_sha256": "e7a379032a75af34b3c9c24ae57e30a3edc33fcf69d1de709910eb12e2693d4e",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.5720798036295646
+              },
+              {
+                "score": "2:0",
+                "probability": 0.26286243705412615
+              },
+              {
+                "score": "0:2",
+                "probability": 0.16505775931630928
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.41405027145799805
+              },
+              {
+                "score": "3:1",
+                "probability": 0.3007565827430265
+              },
+              {
+                "score": "1:3",
+                "probability": 0.1888524210744203
+              },
+              {
+                "score": "4:0",
+                "probability": 0.06909666081403443
+              },
+              {
+                "score": "0:4",
+                "probability": 0.027244063910520686
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.33615421328284767
+              },
+              {
+                "score": "4:2",
+                "probability": 0.29229997022450493
+              },
+              {
+                "score": "2:4",
+                "probability": 0.1835423070491668
+              },
+              {
+                "score": "5:1",
+                "probability": 0.11858641244985435
+              },
+              {
+                "score": "1:5",
+                "probability": 0.046757336196005944
+              },
+              {
+                "score": "6:0",
+                "probability": 0.01816291665387943
+              },
+              {
+                "score": "0:6",
+                "probability": 0.0044968441437408715
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.024814038593671223
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.024814038593671223
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.024814038593671223
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.02193842309730337
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.02193842309730337
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.02193842309730337
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.02193842309730337
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.01816291665387943
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.04274963210534095
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:2"
+                  ],
+                  "probability": 0.027467103427239015
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.020636553794124192
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.019901362956814328
+                },
+                {
+                  "set_scores": [
+                    "6:1",
+                    "6:4"
+                  ],
+                  "probability": 0.01842426481465599
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:3"
+                  ],
+                  "probability": 0.017936794261790484
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.017402854319181503
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.017150666467544862
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "7:6"
+                  ],
+                  "probability": 0.01710356708772713
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "7:5"
+                  ],
+                  "probability": 0.013795949753368985
+                },
+                {
+                  "set_scores": [
+                    "7:5",
+                    "6:3"
+                  ],
+                  "probability": 0.013795949753368978
+                },
+                {
+                  "set_scores": [
+                    "6:1",
+                    "6:2"
+                  ],
+                  "probability": 0.011837790463038202
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.4230353838605596
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.2957764385291391
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.15897620045882999
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.12221197715147117
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.0004506953148229981
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.0004506953148229981
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.000450695314822998
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.000450695314822998
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.018162916653879434
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971716
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971716
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "2:1",
+                    "3:1",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971716
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "4:1",
+                    "5:1",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971716
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971712
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "5:2",
+                    "6:2"
+                  ],
+                  "final_score": "6:2",
+                  "probability": 0.016058077314971712
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "4:4",
+                    "5:4",
+                    "6:4"
+                  ],
+                  "final_score": "6:4",
+                  "probability": 0.014197160729608494
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.043497687699409496
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.027947737279735693
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.027947737279735693
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.020249607494983664
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.019901362956814328
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:2"
+                  ],
+                  "probability": 0.01795672506673801
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.017402854319181517
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:3"
+                  ],
+                  "probability": 0.01710356708772713
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.014642699580134944
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:5"
+                  ],
+                  "probability": 0.014037358553404178
+                },
+                {
+                  "set_scores": [
+                    "7:5",
+                    "6:4"
+                  ],
+                  "probability": 0.014037358553404178
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:3"
+                  ],
+                  "probability": 0.013010592981365606
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.4230353838605597
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.29577643852913915
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.15897620045883004
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.1222119771514712
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00032989154137577084
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "2:1",
+                      "3:1",
+                      "3:2",
+                      "4:2",
+                      "5:2",
+                      "6:2"
+                    ]
+                  ],
+                  "probability": 0.00029166151989338336
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "5:2",
+                      "6:2"
+                    ]
+                  ],
+                  "probability": 0.0002916615198933833
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "4:1",
+                      "5:1",
+                      "5:2",
+                      "6:2"
+                    ]
+                  ],
+                  "probability": 0.0002916615198933833
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
         "match_id": "188245",
         "scheduled_time": "2026-09-10T07:00:00+00:00",
         "captured_at": "2026-09-09T02:08:55.902261+00:00",
@@ -204179,6 +205122,1398 @@
                     ]
                   ],
                   "probability": 0.0010028104759774803
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188759",
+        "scheduled_time": "2026-09-10T08:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Polina Leykina",
+        "p2": "Dabin Kim",
+        "source_model_fingerprint_sha256": "e7a379032a75af34b3c9c24ae57e30a3edc33fcf69d1de709910eb12e2693d4e",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.5092800232619293
+              },
+              {
+                "score": "2:0",
+                "probability": 0.2636272640405309
+              },
+              {
+                "score": "0:2",
+                "probability": 0.22709271269753978
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.37910180315766073
+              },
+              {
+                "score": "3:1",
+                "probability": 0.2685201983260807
+              },
+              {
+                "score": "1:3",
+                "probability": 0.2313075640104354
+              },
+              {
+                "score": "4:0",
+                "probability": 0.06949933434549578
+              },
+              {
+                "score": "0:4",
+                "probability": 0.05157110016032734
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.3150269356346749
+              },
+              {
+                "score": "4:2",
+                "probability": 0.2524763363762822
+              },
+              {
+                "score": "2:4",
+                "probability": 0.21748712648632396
+              },
+              {
+                "score": "5:1",
+                "probability": 0.10618386783648809
+              },
+              {
+                "score": "1:5",
+                "probability": 0.0787923932678844
+              },
+              {
+                "score": "6:0",
+                "probability": 0.01832191936614115
+              },
+              {
+                "score": "0:6",
+                "probability": 0.011711421032205264
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.01832191936614115
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.013305938726751593
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.013305938726751593
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.013305938726751593
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.011711421032205264
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.007534123942977292
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.007534123942977292
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.00753412394297729
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.02070707181351071
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.01651417167002136
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.01609161589039096
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.01465119974034938
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:2"
+                  ],
+                  "probability": 0.014031300399872385
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.01343980535526207
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:3"
+                  ],
+                  "probability": 0.011952409417565925
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.010731106360374889
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.009982717533943355
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.009982717533943355
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.009829335259261895
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "2:6"
+                  ],
+                  "probability": 0.009639375612616533
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.3055190699006584
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.27329426581340793
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.22114318416672016
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.20004348011921338
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.0003356927292593782
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00024379033644235756
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00024379033644235756
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.00024379033644235756
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "6:0"
+                  ],
+                  "final_score": "6:0",
+                  "probability": 0.018321919366141155
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.011711421032205264
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.010118412319379436
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.010118412319379436
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.010118412319379436
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.009260851945456621
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.009260851945456621
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.00926085194545662
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.02225517653813114
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.015746554590309065
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.015080310256854582
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.015080310256854582
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:3"
+                  ],
+                  "probability": 0.01465119974034938
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.014411995292246226
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.012236761930723527
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.011199666208026258
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:3"
+                  ],
+                  "probability": 0.010670008763646462
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:2"
+                  ],
+                  "probability": 0.01021855553710609
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.0099728372169142
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.009829335259261893
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "2:0",
+                  "probability": 0.30551906990065836
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.2732942658134078
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.22114318416672007
+                },
+                {
+                  "match_score": "0:2",
+                  "probability": 0.20004348011921333
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.0003356927292593783
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.00018538873462903936
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.0001853887346290393
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.0001853887346290393
+                }
+              ]
+            }
+          }
+        },
+        "settled": false,
+        "actual": null
+      },
+      {
+        "match_id": "188300",
+        "scheduled_time": "2026-09-10T09:00:00+00:00",
+        "captured_at": "2026-09-09T12:29:23.804682+00:00",
+        "captured_pre_match": true,
+        "tour": "itf",
+        "surface": "hard",
+        "p1": "Matilde Jorge",
+        "p2": "Greet Minnen",
+        "source_model_fingerprint_sha256": "e7a379032a75af34b3c9c24ae57e30a3edc33fcf69d1de709910eb12e2693d4e",
+        "source_simulator_fingerprint_sha256": "62c96303e03626352ebae02bee4df7c63c46dd0410d8c16ff971e1a144b85c15",
+        "simulator_contract_id": "player-dna-trajectory-dp-v1",
+        "simulator_contract_fingerprint_sha256": "7d12c8157cec56e68fa04b338621c37b8d61bbf916aae11fda230fe7fc9f1691",
+        "trajectory_predictions": {
+          "checkpoints_neutral_start_server": {
+            "after_2_games": [
+              {
+                "score": "1:1",
+                "probability": 0.5630341089432345
+              },
+              {
+                "score": "0:2",
+                "probability": 0.22194601792090426
+              },
+              {
+                "score": "2:0",
+                "probability": 0.2150198731358612
+              }
+            ],
+            "after_4_games": [
+              {
+                "score": "2:2",
+                "probability": 0.4124530170662269
+              },
+              {
+                "score": "1:3",
+                "probability": 0.249926356867191
+              },
+              {
+                "score": "3:1",
+                "probability": 0.24212704535227386
+              },
+              {
+                "score": "0:4",
+                "probability": 0.04926003487094635
+              },
+              {
+                "score": "4:0",
+                "probability": 0.04623354584336185
+              }
+            ],
+            "after_6_games": [
+              {
+                "score": "3:3",
+                "probability": 0.33970338403861455
+              },
+              {
+                "score": "2:4",
+                "probability": 0.24285125480607855
+              },
+              {
+                "score": "4:2",
+                "probability": 0.23527273202935672
+              },
+              {
+                "score": "1:5",
+                "probability": 0.08320523952022782
+              },
+              {
+                "score": "5:1",
+                "probability": 0.07809318986161026
+              },
+              {
+                "score": "0:6",
+                "probability": 0.010933068582251428
+              },
+              {
+                "score": "6:0",
+                "probability": 0.009941131161860689
+              }
+            ]
+          },
+          "serve_order_conditioned": {
+            "p1_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.014307765903678243
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "4:0",
+                    "5:0",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.01430776590367824
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "5:1",
+                    "6:1"
+                  ],
+                  "final_score": "6:1",
+                  "probability": 0.014307765903678238
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.0140240146187285
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.0140240146187285
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "1:1",
+                    "2:1",
+                    "2:2",
+                    "3:2",
+                    "3:3",
+                    "4:3",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.014024014618728497
+                },
+                {
+                  "progression": [
+                    "1:0",
+                    "2:0",
+                    "3:0",
+                    "3:1",
+                    "4:1",
+                    "4:2",
+                    "5:2",
+                    "5:3",
+                    "6:3"
+                  ],
+                  "final_score": "6:3",
+                  "probability": 0.014024014618728495
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.01093306858225143
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "4:6",
+                    "4:6"
+                  ],
+                  "probability": 0.029318833925557453
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:4"
+                  ],
+                  "probability": 0.024918778098860388
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "2:6"
+                  ],
+                  "probability": 0.01576967593831039
+                },
+                {
+                  "set_scores": [
+                    "2:6",
+                    "4:6"
+                  ],
+                  "probability": 0.01576967593831039
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.013030891141751776
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "6:2"
+                  ],
+                  "probability": 0.012984764036294097
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "6:7"
+                  ],
+                  "probability": 0.012916890563012524
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.012835773559248803
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:4"
+                  ],
+                  "probability": 0.012274794335434176
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "3:6"
+                  ],
+                  "probability": 0.011817211054309664
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.011742999946853664
+                },
+                {
+                  "set_scores": [
+                    "6:3",
+                    "7:6"
+                  ],
+                  "probability": 0.01111557122569995
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.26079531772040593
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.2552240886645588
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.24454773402671848
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.23943285958831667
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.00014223537748166363
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.0001422353774816636
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "5:1",
+                      "6:1"
+                    ],
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ]
+                  ],
+                  "probability": 0.0001422353774816636
+                },
+                {
+                  "sets": [
+                    [
+                      "1:0",
+                      "2:0",
+                      "3:0",
+                      "4:0",
+                      "5:0",
+                      "6:0"
+                    ],
+                    [
+                      "1:0",
+                      "1:1",
+                      "2:1",
+                      "3:1",
+                      "4:1",
+                      "5:1",
+                      "6:1"
+                    ]
+                  ],
+                  "probability": 0.0001422353774816636
+                }
+              ]
+            },
+            "p2_serves_first": {
+              "first_set_top_game_paths": [
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.015400995308040639
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.015400995308040639
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "1:5",
+                    "1:6"
+                  ],
+                  "final_score": "1:6",
+                  "probability": 0.015400995308040635
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "3:3",
+                    "3:4",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.014624484358629801
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "2:2",
+                    "2:3",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.014624484358629798
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "1:1",
+                    "1:2",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.014624484358629798
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "1:3",
+                    "1:4",
+                    "2:4",
+                    "2:5",
+                    "3:5",
+                    "3:6"
+                  ],
+                  "final_score": "3:6",
+                  "probability": 0.014624484358629798
+                },
+                {
+                  "progression": [
+                    "0:1",
+                    "0:2",
+                    "0:3",
+                    "0:4",
+                    "0:5",
+                    "0:6"
+                  ],
+                  "final_score": "0:6",
+                  "probability": 0.010933068582251427
+                }
+              ],
+              "match_top_set_paths": [
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:4"
+                  ],
+                  "probability": 0.027517513049318956
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "4:6"
+                  ],
+                  "probability": 0.026822774929801875
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "2:6"
+                  ],
+                  "probability": 0.014427124539918732
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:2"
+                  ],
+                  "probability": 0.014338921932427782
+                },
+                {
+                  "set_scores": [
+                    "6:2",
+                    "6:4"
+                  ],
+                  "probability": 0.014338921932427782
+                },
+                {
+                  "set_scores": [
+                    "4:6",
+                    "3:6"
+                  ],
+                  "probability": 0.01402655695408844
+                },
+                {
+                  "set_scores": [
+                    "6:7",
+                    "4:6"
+                  ],
+                  "probability": 0.012916890563012522
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "7:6"
+                  ],
+                  "probability": 0.012274794335434174
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "6:7"
+                  ],
+                  "probability": 0.011817211054309664
+                },
+                {
+                  "set_scores": [
+                    "6:4",
+                    "6:3"
+                  ],
+                  "probability": 0.011791124601033971
+                },
+                {
+                  "set_scores": [
+                    "3:6",
+                    "3:6"
+                  ],
+                  "probability": 0.011742999946853664
+                },
+                {
+                  "set_scores": [
+                    "7:6",
+                    "6:3"
+                  ],
+                  "probability": 0.01111557122569995
+                }
+              ],
+              "match_storylines": [
+                {
+                  "match_score": "0:2",
+                  "probability": 0.260795317720406
+                },
+                {
+                  "match_score": "1:2",
+                  "probability": 0.25522408866455887
+                },
+                {
+                  "match_score": "2:1",
+                  "probability": 0.24454773402671848
+                },
+                {
+                  "match_score": "2:0",
+                  "probability": 0.23943285958831667
+                }
+              ],
+              "full_match_top_game_paths": [
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ]
+                  ],
+                  "probability": 0.0001683801379377408
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00016838013793774075
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ],
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ]
+                  ],
+                  "probability": 0.00016838013793774075
+                },
+                {
+                  "sets": [
+                    [
+                      "0:1",
+                      "0:2",
+                      "0:3",
+                      "0:4",
+                      "0:5",
+                      "0:6"
+                    ],
+                    [
+                      "0:1",
+                      "1:1",
+                      "1:2",
+                      "1:3",
+                      "1:4",
+                      "1:5",
+                      "1:6"
+                    ]
+                  ],
+                  "probability": 0.00016838013793774075
                 }
               ]
             }
