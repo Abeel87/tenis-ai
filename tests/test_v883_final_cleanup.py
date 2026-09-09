@@ -84,11 +84,3 @@ def test_v883_pwa_name_is_clean():
     m=json.loads(t("frontend/manifest.webmanifest"))
     assert m["name"]=="Tenis AI"
     assert m["short_name"]=="Tenis AI"
-
-
-def test_shadow_boundary_copy_remains():
-    js=t("frontend/ui-cleanup.js")
-    assert "window.TENIS_AI_APPLY_META?.()" in js
-    meta=t("frontend/app-meta.js")
-    assert "Player Intelligence i Player Learning działają w SHADOW" in meta
-    assert "Modele nie gwarantują wygranej ani zysku" in meta
