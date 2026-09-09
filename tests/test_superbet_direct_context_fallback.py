@@ -151,6 +151,8 @@ def test_existing_current_provider_fixture_wins_over_direct(monkeypatch, tmp_pat
         "p1": "Alexander Bublik",
         "p2": "Tommy Paul",
         "start_time": "2026-09-04T16:30:00Z",
+        "bookmaker": "superbet.pl",
+        "bookmaker_active": True,
         "suspended": False,
         "canonical_selections": [
             {
@@ -180,6 +182,48 @@ def test_existing_current_provider_fixture_wins_over_direct(monkeypatch, tmp_pat
     assert merged["direct_fallback"]["canonical_context_activation"] is False
     assert merged["direct_fallback"]["downstream_playable_eligibility"] is False
 
+
+
+
+
+def test_fresh_but_unsafe_provider_does_not_block_valid_direct_fallback(monkeypatch, tmp_path):
+    now = datetime(2026, 9, 4, 16, 30, tzinfo=timezone.utc)
+    _write_sidecar(monkeypatch, tmp_path, _direct_sidecar(now))
+    unsafe = {
+        "fixture_id": "oddspapi-fresh-but-unsafe",
+        "p1": "Alexander Bublik",
+        "p2": "Tommy Paul",
+        "start_time": "2026-09-04T16:30:00Z",
+        "bookmaker": "superbet.pl",
+        "bookmaker_active": True,
+        "suspended": False,
+        "canonical_selections": [{
+            "market": "match_total",
+            "pick": "over",
+            "line": None,
+            "operator_available": True,
+            "operator_line_verified": True,
+            "fixture_line_verified": True,
+        }],
+    }
+    availability = {
+        "generated_at": now.isoformat(),
+        "refresh_status": "OK",
+        "fixtures": [unsafe],
+        "contains_prices": False,
+        "prices_used": False,
+    }
+
+    merged = context._overlay_direct_fallback([_app_match()], availability, now=now)
+
+    assert len(merged["fixtures"]) == 1
+    fixture = merged["fixtures"][0]
+    assert fixture["fixture_id"] == "14809301"
+    assert fixture["operator_offer_source"] == context.DIRECT_SOURCE
+    diag = merged["direct_fallback"]
+    assert diag["existing_provider_preferred"] == 0
+    assert diag["unsafe_provider_replaced"] == 1
+    assert diag["fallback_fixtures_added"] == 1
 
 
 def test_fresh_direct_replaces_stale_provider_fixture(monkeypatch, tmp_path):
