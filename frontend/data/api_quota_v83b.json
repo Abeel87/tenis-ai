@@ -1,17 +1,17 @@
 {
   "version": "v8.3B",
-  "updated_at": "2026-09-09T11:40:50.114518+00:00",
+  "updated_at": "2026-09-09T14:35:35.356666+00:00",
   "status": "ready",
   "quota_day": "2026-09-09",
   "daily_limit": 10000,
-  "calls_at_begin": 1015,
-  "remaining_at_begin": 8985,
-  "managed_calls_this_run": 26,
-  "remaining_estimate": 8959,
+  "calls_at_begin": 1042,
+  "remaining_at_begin": 8958,
+  "managed_calls_this_run": 286,
+  "remaining_estimate": 8672,
   "per_minute": 300,
   "categories": {
     "fixtures": {
-      "calls": 22,
+      "calls": 24,
       "policy": {
         "daily_fraction": 0.08,
         "run_cap": 12,
@@ -21,7 +21,7 @@
       }
     },
     "pbp_current": {
-      "calls": 487,
+      "calls": 593,
       "policy": {
         "daily_fraction": 0.42,
         "run_cap": 180,
@@ -31,7 +31,7 @@
       }
     },
     "pbp_tracker": {
-      "calls": 38,
+      "calls": 73,
       "policy": {
         "daily_fraction": 0.07,
         "run_cap": 36,
@@ -41,7 +41,7 @@
       }
     },
     "history_settle": {
-      "calls": 88,
+      "calls": 111,
       "policy": {
         "daily_fraction": 0.18,
         "run_cap": 48,
@@ -51,7 +51,7 @@
       }
     },
     "history_backfill": {
-      "calls": 360,
+      "calls": 480,
       "policy": {
         "daily_fraction": 0.12,
         "run_cap": 120,
@@ -62,16 +62,16 @@
     }
   },
   "last_allocation": {
-    "role": "pbp_current",
-    "requested": 560,
-    "budget": 180,
+    "role": "history_backfill",
+    "requested": 120,
+    "budget": 120,
     "reason": "ok",
-    "remaining_before": 8983,
-    "role_spent_today": 463,
-    "daily_cap": 4200,
-    "reserve": 2000,
-    "priority": "critical-current",
-    "at": "2026-09-09T11:38:13.422254+00:00"
+    "remaining_before": 8792,
+    "role_spent_today": 360,
+    "daily_cap": 1200,
+    "reserve": 4500,
+    "priority": "background",
+    "at": "2026-09-09T14:32:59.519110+00:00"
   },
   "canonical_module": "backend/api_quota.py",
   "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
