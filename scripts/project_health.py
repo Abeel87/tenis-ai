@@ -53,7 +53,8 @@ clean=read(frontend/'clean-core-v80.js')
 sw=read(frontend/'sw.js')
 
 required=[
-    ('clean-core-v80.css?v=801' in index,'Brak Clean Core CSS v8.0.1 w index.html.'),
+    (index.count('rel="stylesheet"') == 1 and 'href="style.css"' in index,'Frontend nie używa jednego kanonicznego style.css.'),
+    ('clean-core-v80.css' not in index,'Stary Clean Core CSS nadal jest aktywny.'),
     ('clean-core-v80.js?v=801' in index,'Brak Clean Core JS v8.0.1 w index.html.'),
     ("appVersion: 'v8.0.1'" in meta,'app-meta.js nie wskazuje v8.0.1.'),
     ('Post-Match Center' in clean or 'RAPORT PO MECZU' in clean,'Brak Post-Match Center w Clean Core.'),
@@ -95,9 +96,8 @@ analytics=read(frontend/'player-analytics.js')
 adaptive=read(frontend/'adaptive-learning-v79.js')
 clean_core=read(frontend/'clean-core-v80.js')
 
-restore=read(frontend/'navigation-tools.js')
-if 'setInterval(refresh,1200)' in restore:
-    failures.append('Stary polling UI co 1.2 s nadal istnieje.')
+if (frontend/'navigation-tools.js').exists():
+    failures.append('Stary navigation-tools.js nadal istnieje po clean rebuildzie.')
 
 if 'setInterval(inject,700)' in analytics:
     failures.append('Player Analytics nadal ma stary polling co 700 ms.')
