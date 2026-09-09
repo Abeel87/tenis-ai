@@ -4,8 +4,8 @@
   const VERSION='2.2';
   const DATA_URL='./data/symphony2_current.json';
   const STATS_URL='./data/symphony2_stats.json';
-  const NAV_SELECTOR='#p751-bottom-nav [data-p751-nav="symphony2"]';
-  let cache=null,statsCache=null,navTimer=null;
+  const TRIGGER_SELECTOR='#symphony-open';
+  let cache=null,statsCache=null;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num=v=>v==null||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
@@ -93,10 +93,8 @@
     markNav('symphony2',false);
   }
   function markNav(which='symphony2',active=true){
-    document.querySelectorAll('#p751-bottom-nav [data-p751-nav]').forEach(btn=>{
-      if(active)btn.classList.toggle('active',btn.dataset.p751Nav===which);
-      else if(btn.dataset.p751Nav===which)btn.classList.remove('active');
-    });
+    const btn=document.querySelector(TRIGGER_SELECTOR);
+    if(btn&&which==='symphony2')btn.classList.toggle('active',!!active);
   }
 
   function status(data){
@@ -198,21 +196,13 @@
   }
 
   function bindNav(){
-    const nav=document.querySelector(NAV_SELECTOR);
+    const nav=document.querySelector(TRIGGER_SELECTOR);
     if(!nav)return false;
-    if(nav.dataset.symphony2Nav!=='1'){
-      nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>';
-      nav.setAttribute('aria-label','Symfonia 2.0');
-      nav.dataset.symphony2Nav='1';
-    }
-    nav.onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();open()};
+    nav.setAttribute('aria-label','Otwórz Symfonię 2.0');
+    nav.dataset.symphony2Nav='1';
     return true;
   }
-  function scheduleNav(){
-    clearTimeout(navTimer);
-    if(bindNav())return;
-    [50,200,700,1500,3000].forEach(ms=>setTimeout(bindNav,ms));
-  }
+  function scheduleNav(){return bindNav()}
 
   function calibrationHtml(training){
     const global=training?.global_calibration||{},markets=training?.market_calibration||{};
@@ -241,10 +231,11 @@
   function scheduleStats(force=false){[0,150,600,1300].forEach((d,i)=>setTimeout(()=>renderStats(force&&i===0),d))}
 
   function currentMatch(){
-    const overlay=document.querySelector('#p751-match-overlay:not([hidden])'),screen=overlay?.querySelector('.p751-detail-screen')||document.querySelector('.p751-detail-screen');
-    const key=overlay?.dataset?.matchKey||screen?.dataset?.matchKey||'';let match=null;
+    const host=document.querySelector('#app[data-match-key]');
+    const screen=host?.querySelector('.p751-detail-screen')||null;
+    const key=host?.dataset?.matchKey||screen?.dataset?.matchKey||'';let match=null;
     try{match=key?window.TENIS_AI_PROJECT_UI?.findMatch?.(key):null}catch{}
-    return {overlay,screen,match,key};
+    return {host,screen,match,key};
   }
   function sameMatch(row,match,key){
     if(!row)return false;
@@ -266,7 +257,7 @@
     [...scope.querySelectorAll('h2,h3,h4,b,strong,span,small')].forEach(node=>{
       if(node.closest('#symphony2-match-detail,.s2-shell,#symphony2-performance,#symphony2-hub'))return;
       if(!bad.test(String(node.textContent||'').trim()))return;
-      const box=node.closest('article,section,details');if(box&&!box.matches('.p751-detail-screen,#p751-match-overlay'))box.remove();
+      const box=node.closest('article,section,details');if(box&&!box.matches('.p751-detail-screen'))box.remove();
     });
   }
   function compactSuperbet(scope){
@@ -279,7 +270,7 @@
     btn.addEventListener('click',()=>{const collapsed=root.dataset.s2OfferCollapsed==='1';root.dataset.s2OfferCollapsed=collapsed?'0':'1';btn.textContent=collapsed?'Zwiń pełną ofertę':`Pokaż pełną ofertę (${rows.length})`});root.append(btn);
   }
   async function renderMatchDetail(force=false){
-    const {overlay,screen,match,key}=currentMatch(),scope=screen||overlay;if(!scope)return false;cleanupLegacySymphony(scope);compactSuperbet(scope);
+    const {host,screen,match,key}=currentMatch(),scope=screen||host;if(!scope)return false;cleanupLegacySymphony(scope);compactSuperbet(scope);
     try{
       const data=await load(force),row=(data?.matches||[]).find(x=>sameMatch(x,match,key));scope.querySelector('#symphony2-match-detail')?.remove();if(!row)return false;
       const wrap=document.createElement('div');wrap.innerHTML=matchSymphonyHtml(row,data,match);const block=wrap.firstElementChild,raw=scope.querySelector('[data-raw-playable-separation],.v921-raw,.raw-playable-raw,.model-raw'),decision=scope.querySelector('.dc87');
@@ -289,8 +280,8 @@
   function scheduleMatch(force=false){[0,80,250,700].forEach((d,i)=>setTimeout(()=>renderMatchDetail(force&&i===0),d))}
 
   document.addEventListener('click',e=>{
-    if(e.target?.closest?.('[data-view="stats"],[data-p751-nav="stats"]'))scheduleStats(true);
-    if(e.target?.closest?.('[data-p751-open],[data-p751-focus],[data-view="matches"],[data-p751-nav="matches"]'))scheduleMatch(true);
+    if(e.target?.closest?.('[data-view="stats"]'))scheduleStats(true);
+    if(e.target?.closest?.('[data-p751-open],[data-p751-focus],[data-view="matches"]'))scheduleMatch(true);
   },true);
   document.addEventListener('tenis-ai:stats-ready',()=>scheduleStats());
   document.addEventListener('tenis-ai:stats-dashboard-ready',()=>scheduleStats());
@@ -298,13 +289,16 @@
   window.addEventListener('pageshow',scheduleNav);
 
   let mutationTimer=null;
-  const observer=new MutationObserver(()=>{
-    scheduleNav();clearTimeout(mutationTimer);mutationTimer=setTimeout(()=>{
-      const {screen,overlay}=currentMatch(),scope=screen||overlay;
-      if(scope){cleanupLegacySymphony(scope);compactSuperbet(scope);if(!scope.querySelector('#symphony2-match-detail'))renderMatchDetail(false)}
-    },80);
-  });
-  observer.observe(document.documentElement,{subtree:true,childList:true});
+  const appRoot=document.querySelector('#app');
+  if(appRoot){
+    const observer=new MutationObserver(()=>{
+      clearTimeout(mutationTimer);mutationTimer=setTimeout(()=>{
+        const {screen,host}=currentMatch(),scope=screen||host;
+        if(scope){cleanupLegacySymphony(scope);compactSuperbet(scope);if(!scope.querySelector('#symphony2-match-detail'))renderMatchDetail(false)}
+      },80);
+    });
+    observer.observe(appRoot,{subtree:true,childList:true});
+  }
 
   scheduleNav();scheduleStats();scheduleMatch();ensureHub();
   window.TENIS_AI_SYMPHONY2=Object.freeze({version:VERSION,open,close,load,loadStats,renderStats,renderMatchDetail,cleanupLegacySymphony,compactSuperbet,bindNav});
