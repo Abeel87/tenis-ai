@@ -47,6 +47,26 @@ def test_candidate_numeric_line_requires_fixture_level_provenance():
     ) is True
 
 
+
+
+def test_line_market_missing_numeric_line_is_quarantined_before_feature_encoding():
+    base = {
+        "market": "set2_total",
+        "pick": "over",
+        "line": None,
+        "result": "hit",
+        "operator": "superbet.pl",
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    assert learning._frozen_operator_row_allowed(base) is False
+    assert learning._candidate_row_allowed(base, {"set2_total"}) is False
+
+    entry = _entry(line=21.5)
+    entry["playable_autolearn_signals_v912"][0]["line"] = None
+    assert learning.build_training_rows([entry]) == []
+
+
 def test_legacy_playable_numeric_line_without_fixture_proof_is_quarantined():
     entry = _entry(line=21.5)
     entry["playable_autolearn_signals_v912"][0].pop("fixture_line_verified")

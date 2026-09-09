@@ -68,6 +68,13 @@ STRICT_ACTIONABLE_MARKETS = {
     "most_aces",
 }
 
+STRICT_OPERATOR_LINE_MARKETS = {
+    "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "set3_game_handicap", "set_handicap",
+    "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
+}
+
 
 def _read(path: Path, fallback):
     try:
@@ -1190,6 +1197,29 @@ def _signal_label(selection):
     return f"{title} · {pick}".strip(" ·")
 
 
+def _current_operator_context_verified(ctx: dict) -> bool:
+    return bool(
+        isinstance(ctx, dict)
+        and ctx.get("operator") == BOOKMAKER
+        and ctx.get("operator_verified") is True
+        and ctx.get("status") == "VERIFIED"
+        and ctx.get("suspended") is not True
+    )
+
+
+def _current_selection_evidence_verified(selection: dict) -> bool:
+    if not isinstance(selection, dict) or selection.get("operator_available") is not True:
+        return False
+    market = str(selection.get("market") or "")
+    if market not in STRICT_OPERATOR_LINE_MARKETS:
+        return True
+    return bool(
+        _line(selection.get("line")) is not None
+        and selection.get("operator_line_verified") is True
+        and selection.get("fixture_line_verified") is True
+    )
+
+
 def finalize_results(results: list[dict]):
     out, ready, signals_total = [], 0, 0
     for raw in results:
@@ -1197,7 +1227,11 @@ def finalize_results(results: list[dict]):
             continue
         m = dict(raw)
         ctx = dict(m.get("superbet_market_v91") or {})
-        selections = [x for x in (ctx.get("canonical_selections") or []) if isinstance(x, dict)]
+        context_verified = _current_operator_context_verified(ctx)
+        selections = [
+            x for x in (ctx.get("canonical_selections") or [])
+            if context_verified and _current_selection_evidence_verified(x)
+        ]
         signals = []
         for selection in selections:
             probability, source = _model_probability(m, selection)
@@ -1209,9 +1243,16 @@ def finalize_results(results: list[dict]):
                 "label": _signal_label(selection), "score": round(float(probability), 3),
                 "symphony_raw_probability": round(float(probability), 4), "symphony_market_adapter": VERSION,
                 "symphony_source": f"superbet_market_v91+{source}", "symphony_actionable": True,
-                "operator": BOOKMAKER, "operator_available": True, "operator_line_verified": True,
-                "operator_line_source": selection.get("operator_line_source") or ctx.get("operator_offer_source") or "oddspapi_superbet_pl",
-                "operator_offer_source": selection.get("operator_offer_source") or ctx.get("operator_offer_source") or "oddspapi_superbet_pl",
+                "operator": BOOKMAKER,
+                "operator_available": selection.get("operator_available") is True,
+                "operator_line_verified": selection.get("operator_line_verified") is True,
+                "fixture_line_verified": (
+                    selection.get("fixture_line_verified") is True
+                    if str(selection.get("market") or "") in STRICT_OPERATOR_LINE_MARKETS
+                    else selection.get("fixture_line_verified")
+                ),
+                "operator_line_source": selection.get("operator_line_source"),
+                "operator_offer_source": selection.get("operator_offer_source") or ctx.get("operator_offer_source"),
                 "exact_path_supported": selection.get("market") in {
                     "match_winner", "set1_winner", "set2_winner", "set3_winner", "match_total", "set1_total",
                     "total_sets", "set1_exact_score", "exact_match_score", "game_state",
@@ -1225,7 +1266,7 @@ def finalize_results(results: list[dict]):
         ctx["finalized"] = True
         ctx["prices_used"] = False
         m["superbet_market_v91"] = ctx
-        if ctx.get("operator_verified"):
+        if context_verified:
             ready += 1
         signals_total += len(signals)
         out.append(m)
