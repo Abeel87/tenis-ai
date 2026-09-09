@@ -56,7 +56,7 @@ PHASE10_EXACT_EPS = 1e-12
 OPERATOR = "superbet.pl"
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
-    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 MIN_ACTIONABLE_P = 0.55
@@ -122,7 +122,12 @@ def _operator_context(match: dict) -> dict | None:
     ctx = match.get("superbet_market_v91")
     if not isinstance(ctx, dict):
         return None
-    if ctx.get("operator_verified") is not True or ctx.get("status") != "VERIFIED":
+    if (
+        ctx.get("operator") != OPERATOR
+        or ctx.get("operator_verified") is not True
+        or ctx.get("status") != "VERIFIED"
+        or ctx.get("suspended") is True
+    ):
         return None
     return ctx
 
@@ -133,11 +138,15 @@ def _current_offer(match: dict) -> list[dict]:
         return []
     out = []
     for raw in ctx.get("canonical_selections") or []:
-        if not isinstance(raw, dict) or raw.get("operator_available") is False:
+        if not isinstance(raw, dict) or raw.get("operator_available") is not True:
             continue
         market = _market(raw.get("market"))
         if market in LINE_MARKETS:
-            if raw.get("fixture_line_verified") is not True or _num(raw.get("line")) is None:
+            if (
+                raw.get("operator_line_verified") is not True
+                or raw.get("fixture_line_verified") is not True
+                or _num(raw.get("line")) is None
+            ):
                 continue
         row = dict(raw)
         row["market"] = market
