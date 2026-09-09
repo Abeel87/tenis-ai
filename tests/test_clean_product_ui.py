@@ -45,6 +45,13 @@ def test_neuro_has_no_legacy_navigation_or_dynamic_css_bridge():
     assert not (ROOT / "frontend" / "shadow-signals-v894.js").exists()
 
 
+def test_match_loading_does_not_restore_retired_shadow_signal_center():
+    loading = (ROOT / "frontend" / "match-loading.js").read_text(encoding="utf-8")
+    assert "shadow-signals-v894.css" not in loading
+    assert "shadow-signals-v894.js" not in loading
+    assert "data-shadow-signals-v894" not in loading
+
+
 def test_legacy_dom_mutators_are_not_loaded():
     for forbidden in (
         "app-shell.js",
