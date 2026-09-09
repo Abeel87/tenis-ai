@@ -1,4 +1,4 @@
-/* Tenis AI · Superbet PLAYABLE statistics + real-line coverage */
+/* Tenis AI · Superbet exact-offer projection statistics + real-line coverage */
 (()=>{
 'use strict';
 const VERSION='v9.2.3-ui';
@@ -29,18 +29,18 @@ function coverageHtml(){
   const playableCoverage=available?100*playable/available:null;
   const displayCoverage=available?100*displayed/available:null;
   if(!coverage){
-    return `<details class="sp912-details"><summary>Pokrycie realnych linii Superbet</summary><p class="sp912-note">Raport pokrycia v9.2.2 jest chwilowo N/D. Nie wpływa to na MODEL/RAW ani na historyczną skuteczność PLAYABLE.</p></details>`;
+    return `<details class="sp912-details"><summary>Pokrycie realnych linii Superbet</summary><p class="sp912-note">Raport pokrycia v9.2.2 jest chwilowo N/D. Nie wpływa to na MODEL/RAW ani na historyczną skuteczność projekcji exact-line.</p></details>`;
   }
   return `<details class="sp912-details" data-superbet-coverage-v923="1"><summary>Pokrycie realnych linii Superbet</summary>
     <div class="sp912-grid">
       <div><span>Realne selekcje operatora</span><b>${available}</b></div>
-      <div><span>Pokryte przez PLAYABLE model</span><b>${playable} · ${pct(playableCoverage)}</b></div>
+      <div><span>Pokryte przez projekcję modelową</span><b>${playable} · ${pct(playableCoverage)}</b></div>
       <div><span>Dodatkowo pokryte SHADOW</span><b>${shadow}</b></div>
       <div><span>Pokrycie do wyświetlenia</span><b>${displayed} · ${pct(displayCoverage)}</b></div>
       <div><span>Tylko operator · bez modelu</span><b>${operatorOnly}</b></div>
       <div><span>Nowe linie bez dodatkowych API</span><b>${Number(c.signals_added||0)} + ${Number(c.shadow_signals_added||0)} SHADOW</b></div>
     </div>
-    <p class="sp912-note">To jest statystyka pokrycia realnej oferty, nie skuteczność typów. SHADOW służy tylko do diagnostyki/pokrycia i nie wchodzi do skuteczności PLAYABLE, dopóki nie ma właściwej próbki settlementu. MODEL/RAW pozostaje niezależny.</p>
+    <p class="sp912-note">To jest statystyka pokrycia realnej oferty, nie skuteczność typów. SHADOW służy tylko do diagnostyki/pokrycia i nie wchodzi do skuteczności projekcji exact-line, dopóki nie ma właściwej próbki settlementu. MODEL/RAW pozostaje niezależny.</p>
   </details>`;
 }
 function cardHtml(){
@@ -61,15 +61,15 @@ function cardHtml(){
     ? 'Liczby opisują ofertę w chwili wygenerowania raportu. Aktualna dostępność jest sprawdzana osobno przy meczu. Skuteczność obejmuje wyłącznie rozliczone sygnały z zamrożoną ofertą operatora; RAW nie jest do niej dopisywany.'
     : 'Brak zweryfikowanej oferty Superbet w tym raporcie. Historyczne rozliczenia pozostają dostępne; brak bieżących danych nie oznacza skuteczności 0%. MODEL / RAW pozostaje niezależny i widoczny.';
   return `<section id="${ID}" class="pc77-card sp912-card" data-superbet-playable-v912="1" data-feed-active="${feedActive?'1':'0'}">
-    <div class="pc77-card-head"><div><b>🎯 Superbet PLAYABLE</b><small>${esc(subtitle)}</small></div><strong>${feedActive?`${matches} MECZÓW`:'FEED N/D'}</strong></div>
+    <div class="pc77-card-head"><div><b>🎯 Superbet · zweryfikowana oferta</b><small>${esc(subtitle)}</small></div><strong>${feedActive?`${matches} MECZÓW`:'FEED N/D'}</strong></div>
     <div class="sp912-grid">
-      <div><span>Mecze PLAYABLE w raporcie</span><b>${matches}</b></div>
-      <div><span>Sygnały PLAYABLE w raporcie</span><b>${signals}</b></div>
+      <div><span>Mecze z projekcją exact-line</span><b>${matches}</b></div>
+      <div><span>Sygnały zgodne z ofertą</span><b>${signals}</b></div>
       <div><span>MODEL / RAW zachowany</span><b>${rawPreserved?'TAK':'N/D'}</b></div>
     </div>
     <p class="sp912-note">${esc(note)}</p>
     ${coverageHtml()}
-    <details class="sp912-details"><summary>Historyczna skuteczność PLAYABLE</summary><div class="sp912-models">${historyRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
+    <details class="sp912-details"><summary>Historyczna skuteczność projekcji exact-line</summary><div class="sp912-models">${historyRows||'<div class="sp912-empty">Zbieramy pierwszą próbkę.</div>'}</div></details>
   </section>`;
 }
 function render(){
