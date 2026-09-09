@@ -9,6 +9,7 @@ ACCOUNT = (ROOT / "frontend" / "account.js").read_text(encoding="utf-8")
 
 
 def test_clean_ui_uses_one_canonical_stylesheet_and_no_layered_shell():
+    assert sorted(p.name for p in (ROOT / "frontend").glob("*.css")) == ["style.css"]
     assert INDEX.count('rel="stylesheet"') == 1
     assert 'href="style.css"' in INDEX
     for forbidden in (
@@ -145,3 +146,17 @@ def test_admin_mode_is_owned_by_clean_project_controller():
     assert "setUiMode" in PROJECT_UI
     assert "syncUiMode" in PROJECT_UI
     assert 'id="tenis-ui-mode-toggle"' in INDEX
+
+
+def test_no_frontend_runtime_can_recreate_layered_visual_ownership():
+    for path in sorted((ROOT / "frontend").glob("*.js")):
+        source = path.read_text(encoding="utf-8")
+        assert "createElement('style')" not in source
+        assert 'createElement("style")' not in source
+        assert ".rel='stylesheet'" not in source
+        assert '.rel="stylesheet"' not in source
+        assert "#p751-match-overlay" not in source
+        assert "p751-bottom-nav" not in source
+        if "new MutationObserver(" in source:
+            assert "observe(document.body" not in source
+            assert "observe(document.documentElement" not in source
