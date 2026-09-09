@@ -14,7 +14,7 @@
   const REGISTER_RATE_KEY='tenis-ai-register-rate-limit-until';
   const REGISTER_ATTEMPT_COOLDOWN_MS=90*1000;
   const REGISTER_LIMIT_COOLDOWN_MS=10*60*1000;
-  let client=null,currentUser=null,currentProfile=null,authMode='login',heartbeat=null,signupBusy=false;
+  let client=null,currentUser=null,currentProfile=null,authMode='login',heartbeat=null,signupBusy=false,authReady=false;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const initials=s=>String(s||'?').trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?';
   const fmtDate=x=>{const d=new Date(x||'');return Number.isFinite(d.getTime())?d.toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'}):'—'};
@@ -54,7 +54,7 @@
       || text.includes('429');
   }
   if(configured){client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});setChip('POŁĄCZONO','online')}else setChip('WYMAGA KONFIGURACJI','setup');
-  window.tenisAIAccount={get client(){return client},get user(){return currentUser},get profile(){return currentProfile},refreshStats:refreshCommunityStats};
+  window.tenisAIAccount={get client(){return client},get user(){return currentUser},get profile(){return currentProfile},get configured(){return configured},get authReady(){return authReady},refreshStats:refreshCommunityStats};
   function openModal(){overlay.hidden=false;document.body.style.overflow='hidden';renderModal()}
   function closeModal(){overlay.hidden=true;document.body.style.overflow=''}
   button.onclick=openModal;closeBtn.onclick=closeModal;overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden)closeModal()});
@@ -186,7 +186,7 @@
       setChip('BŁĄD POŁĄCZENIA','setup');
     }
   }
-  async function applySession(session){currentUser=session?.user||null;await loadProfile(currentUser);updateAccountButton();startHeartbeat();await refreshCommunityStats();notify('tenis-ai-auth-change',{user:currentUser,profile:currentProfile});if(!overlay.hidden)renderModal()}
-  async function init(){updateAccountButton();if(!configured){refreshCommunityStats();return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(()=>{if(!currentUser)refreshCommunityStats()},60000)}
+  async function applySession(session){currentUser=session?.user||null;await loadProfile(currentUser);authReady=true;updateAccountButton();startHeartbeat();await refreshCommunityStats();notify('tenis-ai-auth-change',{user:currentUser,profile:currentProfile,configured,authReady});if(!overlay.hidden)renderModal()}
+  async function init(){updateAccountButton();if(!configured){authReady=true;refreshCommunityStats();notify('tenis-ai-auth-change',{user:null,profile:null,configured:false,authReady:true});return}const {data}=await client.auth.getSession();await applySession(data.session);client.auth.onAuthStateChange((_event,session)=>setTimeout(()=>applySession(session),0));setInterval(()=>{if(!currentUser)refreshCommunityStats()},60000)}
   init();
 })();
