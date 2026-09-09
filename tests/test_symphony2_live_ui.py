@@ -38,3 +38,13 @@ def test_live_ui_accepts_every_composition_size_from_feed():
     assert "Object.keys(row.compositions||{})" in js
     assert "recommended_leg_count" in js
     assert "['2','3','4','5','6']" not in js
+
+
+def test_live_ui_expires_stale_snapshot_exactly_at_scheduled_start():
+    js = (ROOT / "frontend" / "symphony2-live-ui.js").read_text(encoding="utf-8")
+    assert "function rowPreMatch(row,match=null,now=Date.now())" in js
+    assert "scheduled<=Number(now)" in js
+    assert "TENIS_AI_PLAYABLE_UI_V917?.preMatch" in js
+    assert "if(!rowPreMatch(row,match))return ''" in js
+    assert "SYMFONIA 2.0 · NIEAKTYWNA" in js
+    assert "Dane MODEL/RAW pozostają bez zmian." in js

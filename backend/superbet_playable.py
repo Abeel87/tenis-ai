@@ -134,6 +134,52 @@ def signal_signature(signal: dict):
     )
 
 
+def _scheduled_utc(match: dict) -> datetime | None:
+    raw = str(match.get("scheduled_time") or "").strip()
+    if not raw:
+        return None
+    try:
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
+def _known_non_prematch_status(match: dict) -> bool:
+    result = match.get("result")
+    values = [
+        match.get("event_status"),
+        match.get("feed_status"),
+        match.get("status"),
+        result.get("status") if isinstance(result, dict) else None,
+    ]
+    for value in values:
+        token = _norm(value)
+        if not token:
+            continue
+        token = re.sub(r"\bnot[- ]started\b", "", token).strip()
+        if re.search(
+            r"\b(?:live|playing|started|in[- ]progress|completed|finished|settled|retired|"
+            r"cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b",
+            token,
+        ):
+            return True
+    return False
+
+
+def pre_match_operator_context_active(match: dict, now: datetime | None = None) -> bool:
+    """Actionable PLAYABLE exists only for a known future pre-match fixture."""
+    if not operator_context_active(match) or _known_non_prematch_status(match):
+        return False
+    scheduled = _scheduled_utc(match)
+    if scheduled is None:
+        return False
+    reference = now or datetime.now(timezone.utc)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=timezone.utc)
+    return scheduled.astimezone(timezone.utc) > reference.astimezone(timezone.utc)
+
+
 def operator_context_active(match: dict) -> bool:
     ctx = match.get("superbet_market_v91") or {}
     return bool(
@@ -161,7 +207,7 @@ def _operator_evidence_verified(row: dict, market: str) -> bool:
 def operator_availability(match: dict) -> dict:
     ctx = match.get("superbet_market_v91") or {}
     out = {}
-    if not operator_context_active(match):
+    if not pre_match_operator_context_active(match):
         return out
     for row in ctx.get("canonical_selections") or []:
         if not isinstance(row, dict):
@@ -176,7 +222,7 @@ def operator_availability(match: dict) -> dict:
 def operator_model_signals(match: dict) -> dict:
     ctx = match.get("superbet_market_v91") or {}
     out = {}
-    if not operator_context_active(match):
+    if not pre_match_operator_context_active(match):
         return out
     for row in ctx.get("model_signals") or []:
         if not isinstance(row, dict):
@@ -189,7 +235,7 @@ def operator_model_signals(match: dict) -> dict:
 
 
 def is_operator_playable_signal(match: dict, signal: dict) -> bool:
-    if not operator_context_active(match) or not isinstance(signal, dict):
+    if not pre_match_operator_context_active(match) or not isinstance(signal, dict):
         return False
     if _market(signal.get("market")) not in STRICT_MARKETS:
         return False
@@ -353,7 +399,9 @@ def inject_match(match: dict) -> tuple[dict, dict]:
         "version": VERSION,
         "operator": OPERATOR,
         "status": "PLAYABLE" if signals else (
-            "VERIFIED_NO_MODEL_SIGNAL" if operator_context_active(m) else "NO_VERIFIED_OPERATOR_CONTEXT"
+            "NOT_PREMATCH" if operator_context_active(m) and not pre_match_operator_context_active(m) else (
+                "VERIFIED_NO_MODEL_SIGNAL" if operator_context_active(m) else "NO_VERIFIED_OPERATOR_CONTEXT"
+            )
         ),
         "playable": bool(signals),
         "playable_count": len(signals),
@@ -362,7 +410,8 @@ def inject_match(match: dict) -> tuple[dict, dict]:
         "raw_model_fields_preserved": True,
     }
     info = {
-        "active": operator_context_active(m),
+        "active": pre_match_operator_context_active(m),
+        "operator_context_verified": operator_context_active(m),
         "playable": len(signals),
         "raw_preserved": True,
     }
