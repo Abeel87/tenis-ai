@@ -18,8 +18,9 @@ def read(path):
 if not frontend.exists():failures.append('Brak katalogu frontend/')
 js_files=list(frontend.glob('*.js')) if frontend.exists() else []
 css_files=list(frontend.glob('*.css')) if frontend.exists() else []
-if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać.')
-if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać.')
+if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — moduły funkcjonalne są dozwolone, ale prezentacja ma jednego właściciela.')
+if [p.name for p in css_files] != ['style.css']:
+    failures.append('Frontend ma używać fizycznie dokładnie jednego CSS: frontend/style.css.')
 
 def b64url_decode(s):
     s += '=' * (-len(s)%4)
@@ -107,6 +108,20 @@ if re.search(r'observer\.observe\(document\.documentElement', adaptive):
 
 if re.search(r'observer\.observe\(document\.documentElement', clean_core):
     failures.append('Clean Core nadal obserwuje cały dokument.')
+
+# Clean rebuild contract: one visual owner, no hidden legacy DOM/CSS mutators.
+for p in js_files:
+    txt=read(p)
+    if re.search(r"createElement\(['\"]style['\"]\)", txt):
+        failures.append(f'Runtime wstrzykuje inline <style> zamiast używać style.css: {p.name}')
+    if re.search(r"\.rel\s*=\s*['\"]stylesheet['\"]", txt) or re.search(r"\.href\s*=\s*['\"][^'\"]+\.css", txt):
+        failures.append(f'Runtime doładowuje dodatkowy CSS zamiast używać style.css: {p.name}')
+    if 'new MutationObserver(' in txt and (
+        'observe(document.body' in txt or 'observe(document.documentElement' in txt
+    ):
+        failures.append(f'Runtime obserwuje globalny DOM: {p.name}')
+    if '#p751-match-overlay' in txt or 'p751-bottom-nav' in txt:
+        failures.append(f'Runtime nadal odwołuje się do wycofanego DOM clean rebuild: {p.name}')
 
 if workflows.exists():
     for wf in [*workflows.glob('*.yml'),*workflows.glob('*.yaml')]:
