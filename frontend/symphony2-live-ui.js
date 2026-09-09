@@ -11,6 +11,21 @@
   const num=v=>v==null||!Number.isFinite(Number(v))?null:Number(v);
   const pct=v=>num(v)==null?'N/D':`${Number(v).toFixed(1)}%`;
   const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ');
+  function projectMatchFor(row,key=''){
+    const keys=[key,row?.match_key,row?.match_id,row?.id].filter(v=>v!=null&&String(v)!=='').map(String);
+    for(const k of keys){try{const match=window.TENIS_AI_PROJECT_UI?.findMatch?.(k);if(match)return match}catch{}}
+    return null;
+  }
+  function rowPreMatch(row,match=null,now=Date.now()){
+    const scheduled=Date.parse(row?.scheduled_time||'');
+    if(!Number.isFinite(scheduled)||scheduled<=Number(now))return false;
+    const guard=window.TENIS_AI_PLAYABLE_UI_V917?.preMatch;
+    if(typeof guard==='function'){
+      if(guard(row,now)!==true)return false;
+      if(match&&guard(match,now)!==true)return false;
+    }
+    return true;
+  }
   let feed=null,feedPromise=null;
 
   async function fetchFeed(force=false){
@@ -36,23 +51,24 @@
     return null;
   }
   function bestProbability(row){return Math.max(-Infinity,...(row?.scored_selections||[]).map(x=>num(x.operator_model_probability)).filter(x=>x!=null))}
-  function badgeHtml(row){const comp=composition(row),best=bestProbability(row),ready=!!comp;return `<div class="s2-live-card-badge ${ready?'ready':'scored'}" data-s2-live-card="1"><span>🎼 <b>SYMFONIA 2.0</b></span><strong>${ready?`PLAYABLE · joint ${pct(comp.joint_probability)}`:(Number.isFinite(best)?`ocenione · max P(hit) ${pct(best)}`:'oferta oceniana')}</strong></div>`}
+  function badgeHtml(row,match=null){if(!rowPreMatch(row,match))return '';const comp=composition(row),best=bestProbability(row),ready=!!comp;return `<div class="s2-live-card-badge ${ready?'ready':'scored'}" data-s2-live-card="1"><span>🎼 <b>SYMFONIA 2.0</b></span><strong>${ready?`PLAYABLE · joint ${pct(comp.joint_probability)}`:(Number.isFinite(best)?`ocenione · max P(hit) ${pct(best)}`:'oferta oceniana')}</strong></div>`}
   async function decorateCards(force=false){
     const cards=[...document.querySelectorAll('.p751-match-card[data-p751-open]')];
     if(!cards.length)return;
     const data=await fetchFeed(force);if(!data)return;
     for(const card of cards){
-      const row=rowForKey(data,decodeKey(card));if(!row)continue;
-      const current=card.querySelector('[data-s2-live-card]');
-      const html=badgeHtml(row);
+      const key=decodeKey(card),row=rowForKey(data,key);if(!row)continue;
+      const current=card.querySelector('[data-s2-live-card]'),match=projectMatchFor(row,key);
+      const html=badgeHtml(row,match);
+      if(!html){current?.remove();continue}
       if(current&&current.outerHTML===html)continue;
       current?.remove();
       const footer=card.querySelector('footer');const wrap=document.createElement('div');wrap.innerHTML=html;const badge=wrap.firstElementChild;
       footer?footer.insertAdjacentElement('beforebegin',badge):card.append(badge);
     }
   }
-  function detailFallbackHtml(row,data){const comp=composition(row),best=bestProbability(row);if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Dokładne selekcje z aktualnej oferty Superbet.</p></div><strong>${pct(comp.joint_probability)}</strong></header><footer>Exact shared-state joint · ${Number(comp.legs||0)} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji powyżej progu</h3><p>Realna oferta Superbet została oceniona. Nie dokładam słabszego układu na siłę.</p></div><strong>${Number.isFinite(best)?pct(best):'—'}</strong></header><footer>${Number(row?.offer_selections||0)} realnych selekcji · model ${esc(data?.model_status||'N/D')}</footer></section>`}
-  async function ensureDetail(force=false){const overlay=document.querySelector('#p751-match-overlay:not([hidden])');if(!overlay)return;if(window.TENIS_AI_SYMPHONY2?.renderMatchDetail){try{await window.TENIS_AI_SYMPHONY2.renderMatchDetail(force)}catch{}if(overlay.querySelector('#symphony2-match-detail'))return}const data=await fetchFeed(force);if(!data)return;const row=rowForDetail(data);if(!row)return;const screen=overlay.querySelector('.p751-detail-screen')||overlay;screen.querySelector('#symphony2-match-detail')?.remove();const wrap=document.createElement('div');wrap.innerHTML=detailFallbackHtml(row,data);const block=wrap.firstElementChild;const decision=screen.querySelector('.dc87');decision?decision.insertAdjacentElement('beforebegin',block):screen.append(block)}
+  function detailFallbackHtml(row,data,match=null){if(!rowPreMatch(row,match))return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · NIEAKTYWNA</small><h3>Snapshot pre-match wygasł</h3><p>Po czasie rozpoczęcia meczu ta kompozycja nie jest już PLAYABLE. Dane MODEL/RAW pozostają bez zmian.</p></div><strong>—</strong></header></section>`;const comp=composition(row),best=bestProbability(row);if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Dokładne selekcje z aktualnej oferty Superbet.</p></div><strong>${pct(comp.joint_probability)}</strong></header><footer>Exact shared-state joint · ${Number(comp.legs||0)} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji powyżej progu</h3><p>Realna oferta Superbet została oceniona. Nie dokładam słabszego układu na siłę.</p></div><strong>${Number.isFinite(best)?pct(best):'—'}</strong></header><footer>${Number(row?.offer_selections||0)} realnych selekcji · model ${esc(data?.model_status||'N/D')}</footer></section>`}
+  async function ensureDetail(force=false){const overlay=document.querySelector('#p751-match-overlay:not([hidden])');if(!overlay)return;if(window.TENIS_AI_SYMPHONY2?.renderMatchDetail){try{await window.TENIS_AI_SYMPHONY2.renderMatchDetail(force)}catch{}if(overlay.querySelector('#symphony2-match-detail'))return}const data=await fetchFeed(force);if(!data)return;const row=rowForDetail(data);if(!row)return;const match=projectMatchFor(row,overlay?.dataset?.matchKey||'');const screen=overlay.querySelector('.p751-detail-screen')||overlay;screen.querySelector('#symphony2-match-detail')?.remove();const wrap=document.createElement('div');wrap.innerHTML=detailFallbackHtml(row,data,match);const block=wrap.firstElementChild;const decision=screen.querySelector('.dc87');decision?decision.insertAdjacentElement('beforebegin',block):screen.append(block)}
 
   document.addEventListener('click',e=>{
     if(e.target?.closest?.('[data-p751-open]'))setTimeout(()=>ensureDetail(true),60);
