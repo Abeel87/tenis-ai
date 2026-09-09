@@ -48,3 +48,10 @@ def test_live_ui_expires_stale_snapshot_exactly_at_scheduled_start():
     assert "if(!rowPreMatch(row,match))return ''" in js
     assert "SYMFONIA 2.0 · NIEAKTYWNA" in js
     assert "Dane MODEL/RAW pozostają bez zmian." in js
+
+
+
+def test_live_symphony_no_composition_state_is_not_labeled_playable():
+    js = (ROOT / "frontend" / "symphony2-live-ui.js").read_text(encoding="utf-8")
+    assert "SYMFONIA 2.0 · BRAK PLAYABLE" in js
+    assert "SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji" not in js
