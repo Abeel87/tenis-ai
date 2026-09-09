@@ -1,0 +1,66 @@
+name: Emergency cancel UI branch runs
+
+on:
+  push:
+    branches:
+      - ops/cancel-stale-ui-runs
+    paths:
+      - '.github/workflows/emergency-cancel-ui-branches.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel all active runs from stale UI branches
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const targets = new Set([
+              'ui/true-clean-rebuild-current',
+              'ui/clean-rebuild-squash-base',
+            ]);
+
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            for (let pass = 1; pass <= 5; pass++) {
+              let seen = 0;
+              let requested = 0;
+
+              for (const status of ['queued', 'in_progress']) {
+                const runs = await github.paginate(
+                  github.rest.actions.listWorkflowRunsForRepo,
+                  {
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    status,
+                    per_page: 100,
+                  }
+                );
+
+                for (const run of runs) {
+                  if (!targets.has(run.head_branch)) continue;
+                  seen++;
+
+                  try {
+                    await github.rest.actions.cancelWorkflowRun({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      run_id: run.id,
+                    });
+                    requested++;
+                    core.info(`cancel requested: ${run.name} #${run.run_number} run=${run.id} branch=${run.head_branch}`);
+                  } catch (error) {
+                    core.warning(`cancel failed for run ${run.id}: ${error.message}`);
+                  }
+                }
+              }
+
+              core.info(`pass ${pass}: active_seen=${seen} cancel_requests=${requested}`);
+              if (seen === 0) break;
+              if (pass < 5) await sleep(5000);
+            }
