@@ -111,3 +111,16 @@ def test_nullable_symphony_numbers_are_not_coerced_to_zero():
     assert "const num=v=>v==null||v===''?null:" in JS
     assert "line=num(x?.line)" in JS
     assert "return line==null?core:" in JS
+
+
+def test_symphony_actionable_ui_revalidates_prematch_at_render_time():
+    assert "function rowPreMatch(row,match=null,now=Date.now())" in JS
+    assert "scheduled<=Number(now)" in JS
+    assert "TENIS_AI_PLAYABLE_UI_V917?.preMatch" in JS
+    assert "function currentRows(data,now=Date.now())" in JS
+    assert "currentRows(data).map(m=>" in JS
+    assert "currentRows(data).filter(m=>" in JS
+    assert "currentRows(data).forEach(m=>" in JS
+    assert "matchSymphonyHtml(row,data,match)" in JS
+    assert "SYMFONIA 2.0 · NIEAKTYWNA" in JS
+    assert "Dane MODEL/RAW pozostają bez zmian." in JS
