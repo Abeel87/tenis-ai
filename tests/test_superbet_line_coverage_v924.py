@@ -127,19 +127,16 @@ def test_derived_numeric_line_stays_uncovered_without_fixture_line_proof():
         "fixture_line_verified": False,
         "operator_line_source": "superbet_direct_selected_shadow",
     }
-    match["superbet_market_v91"] = {
-        "canonical_selections": [selection],
-        "model_signals": [],
-        "prices_used": False,
-    }
+    match["superbet_market_v91"] = _ctx([selection])
 
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
 
     assert ctx["model_signals"] == []
     assert ctx["coverage_shadow_signals"] == []
+    assert ctx["available_selections_count"] == 0
     assert ctx["display_covered_count"] == 0
-    assert ctx["operator_only_count"] == 1
+    assert ctx["operator_only_count"] == 0
 
 
 def test_second_set_checkpoint_probability_is_a_real_path_marginal_not_terminal_guess():
