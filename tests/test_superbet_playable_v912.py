@@ -120,6 +120,34 @@ def test_playable_is_strictly_prematch_while_operator_context_and_model_raw_surv
     assert projected["autolearn_v84"] == before["autolearn_v84"]
 
 
+def test_known_live_or_terminal_status_is_fail_closed_even_before_scheduled_start():
+    scheduled = datetime(2099, 1, 1, 12, 0, tzinfo=timezone.utc)
+    for field, status in (
+        ("feed_status", "live"),
+        ("event_status", "in_progress"),
+        ("status", "completed"),
+        ("status", "retired"),
+        ("status", "cancelled"),
+    ):
+        match = _match()
+        match[field] = status
+        assert pre_match_operator_context_active(
+            match, now=scheduled - timedelta(hours=1)
+        ) is False
+        projected, info = inject_match(match)
+        assert info["operator_context_verified"] is True
+        assert info["active"] is False
+        assert info["playable"] == 0
+        assert projected["superbet_playable_v912"]["status"] == "NOT_PREMATCH"
+        assert projected["superbet_playable_v912"]["signals"] == []
+
+    scheduled_match = _match()
+    scheduled_match["feed_status"] = "not_started"
+    assert pre_match_operator_context_active(
+        scheduled_match, now=scheduled - timedelta(hours=1)
+    ) is True
+
+
 def test_missing_schedule_is_fail_closed_for_playable_only():
     match = _match()
     match.pop("scheduled_time")
