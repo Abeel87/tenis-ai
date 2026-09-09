@@ -23,7 +23,8 @@ def test_scope_tracks_pool_dynamic_and_global_counts():
 
 def test_protected_pins_stay_intact():
     h=read("frontend/index.html")
-    assert "autolearn-v84.css?v=84a1&hf=84a3" in h
+    assert 'href="style.css"' in h
+    assert "autolearn-v84.css" not in h
     assert 'src="symphony2.js"' in h
     assert "scenario-studio-v82a.js" not in h
     assert any(x in h for x in (

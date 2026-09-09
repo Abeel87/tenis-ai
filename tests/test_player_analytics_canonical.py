@@ -8,9 +8,9 @@ RUNTIME = (FRONTEND / "player-analytics.js").read_text(encoding="utf-8")
 
 def test_player_analytics_uses_canonical_runtime_paths():
     assert (FRONTEND / "player-analytics.js").is_file()
-    assert (FRONTEND / "player-analytics.css").is_file()
     assert 'src="player-analytics.js"' in INDEX
-    assert 'href="player-analytics.css"' in INDEX
+    assert 'href="style.css"' in INDEX
+    assert not (FRONTEND / "player-analytics.css").exists()
     assert not (FRONTEND / "player-analytics-v76.js").exists()
     assert not (FRONTEND / "player-analytics-v76.css").exists()
     assert "player-analytics-v76.js" not in INDEX

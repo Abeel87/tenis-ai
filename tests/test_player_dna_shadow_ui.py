@@ -6,9 +6,10 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_player_dna_shadow_ui_is_canonical_and_linked():
     index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
-    assert 'href="player-dna-shadow.css"' in index
+    assert 'href="style.css"' in index
+    assert 'player-dna-shadow.css' not in index
     assert 'src="player-dna-shadow.js"' in index
     assert "player-dna-shadow-v" not in index
     assert "player-dna-shadow-v" not in js
@@ -45,7 +46,7 @@ def test_player_dna_shadow_ui_is_event_driven_not_polling():
 
 def test_player_dna_shadow_ui_exposes_settlement_health_without_guessing_cancellation():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
     assert "settlement_observability" in js
     assert "LEDGER_INTEGRITY_OK" in js
@@ -59,7 +60,7 @@ def test_player_dna_shadow_ui_exposes_settlement_health_without_guessing_cancell
 
 def test_player_dna_match_detail_reads_published_trajectory_lazily_and_stays_shadow_only():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
     assert "data/player_dna_current_simulation.json" in js
     assert "loadSimulation(force=false)" in js
@@ -91,7 +92,7 @@ def test_player_dna_match_detail_prefers_storyline_families_and_keeps_exact_path
 
 def test_player_dna_shadow_ui_exposes_dynamic_prospective_ledger_without_promotion():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
     assert "dynamic_lean_evidence" in js
     assert "SHADOW_DYNAMIC_LEAN_PROSPECTIVE_LEDGER_ONLY" in js
@@ -126,7 +127,7 @@ def test_player_dna_dynamic_ui_keeps_profile_reference_as_benchmark_and_reports_
 
 def test_player_dna_shadow_ui_exposes_prospective_trajectory_evidence_without_verdict():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
     assert "trajectory_evidence" in js
     assert "SHADOW_TRAJECTORY_PROSPECTIVE_LEDGER_ONLY" in js
@@ -225,7 +226,7 @@ def test_player_dna_trajectory_ui_uses_current_simulator_generation_for_primary_
 
 def test_player_dna_dynamic_ui_exposes_direct_joint_support_and_performance_verdict():
     js = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
-    css = (ROOT / "frontend" / "player-dna-shadow.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 
     assert "direct_segment_readiness" in js
     assert "observed_tour_surface_market_cells" in js

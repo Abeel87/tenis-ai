@@ -8,7 +8,8 @@ def test_player_trends_uses_canonical_runtime_path():
     index = (FRONTEND / "index.html").read_text(encoding="utf-8")
     runtime = (FRONTEND / "player-trends.js").read_text(encoding="utf-8")
     assert 'src="player-trends.js"' in index
-    assert 'href="player-trends.css"' in index
+    assert 'href="style.css"' in index
+    assert not (FRONTEND / "player-trends.css").exists()
     assert "TENIS_AI_PLAYER_TRENDS_V81" in runtime
     assert "tendencies_v71" in runtime
     assert "early_hold_v7" in runtime

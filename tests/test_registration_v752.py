@@ -18,7 +18,8 @@ def test_registration_ux():
     assert '.focus(' not in js
     assert 'src="registration-handler.js"' in idx
     assert 'src="registration-ux.js"' in idx
-    assert 'href="registration-ux.css"' in idx
+    assert 'href="style.css"' in idx
+    assert not (ROOT/"frontend"/"registration-ux.css").exists()
     for retired in ('registration-fix-v741.js','registration-ux-v752.js','registration-ux-v752.css'):
         assert retired not in idx
         assert not (ROOT/'frontend'/retired).exists()

@@ -24,12 +24,7 @@ function marketGroup(market,label=''){
   if(/winner|wygr|match score|exact .*score|dokladny wynik|wynik meczu|wynik set|exact sets|wins a set/.test(text))return'result';
   return'special';
 }
-function style(){
-  if(document.getElementById('rp93g-style'))return;
-  const s=document.createElement('style');s.id='rp93g-style';s.textContent=`
-    .rp93g-wrap{margin-top:.42rem}.rp93g-tabs{display:flex;flex-wrap:wrap;gap:.3rem;margin:.38rem 0 .55rem}.rp93g-tab{appearance:none;border:1px solid rgba(109,213,242,.18);border-radius:999px;background:rgba(255,255,255,.025);color:#8faab5;padding:.3rem .48rem;font:inherit;font-size:.56rem;font-weight:800;line-height:1.15;min-height:30px}.rp93g-tab b{font-size:.52rem;color:#6f8d99;margin-left:.18rem}.rp93g-tab.active{border-color:rgba(186,255,97,.42);background:rgba(186,255,97,.08);color:#efffdc}.rp93g-tab.active b{color:#baff76}.rp93g-groups{display:grid;gap:.55rem}.rp93g-group{display:grid;gap:.27rem}.rp93g-group-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.15rem .12rem;color:#9bb2bc;font-size:.57rem;font-weight:850;text-transform:uppercase;letter-spacing:.035em}.rp93g-group-head b{color:#6f8d99;font-size:.53rem}.rp93g-groups[data-active="result"] .rp93g-group:not([data-rp93g-group="result"]),.rp93g-groups[data-active="games"] .rp93g-group:not([data-rp93g-group="games"]),.rp93g-groups[data-active="checkpoints"] .rp93g-group:not([data-rp93g-group="checkpoints"]),.rp93g-groups[data-active="handicap"] .rp93g-group:not([data-rp93g-group="handicap"]),.rp93g-groups[data-active="special"] .rp93g-group:not([data-rp93g-group="special"]){display:none}.rp93g-group .sbmc922-lines{margin-top:0}@media(max-width:720px){.rp93g-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.32rem}.rp93g-tab{width:100%;padding:.38rem .34rem;font-size:.57rem}.rp93g-group-head{padding-top:.08rem}}
-  `;document.head.appendChild(s);
-}
+function style(){}
 function setActive(wrapper,group){
   const allowed=new Set(FILTERS.map(([id])=>id));active=allowed.has(group)?group:'all';
   const groups=wrapper.querySelector('.rp93g-groups');if(groups)groups.dataset.active=active;
@@ -50,11 +45,15 @@ function organize(panel){
   FILTERS.filter(([id])=>id!=='all').forEach(([id,label,icon])=>{const items=byGroup.get(id)||[];if(!items.length)return;const group=document.createElement('section');group.className='rp93g-group';group.dataset.rp93gGroup=id;const head=document.createElement('div');head.className='rp93g-group-head';head.innerHTML=`<span>${icon} ${label}</span><b>${items.length}</b>`;const list=document.createElement('div');list.className='sbmc922-lines';items.forEach(row=>list.appendChild(row));group.append(head,list);groups.appendChild(group)});
   wrap.appendChild(groups);source.replaceWith(wrap);panel.dataset.rp93gReady='1';setActive(wrap,active);
 }
-function patch(){style();document.querySelectorAll('#p751-match-overlay:not([hidden]) [data-superbet-model-coverage-v922]').forEach(organize)}
+function patch(){style();document.querySelectorAll('#app[data-match-key] [data-superbet-model-coverage-v922]').forEach(organize)}
 function schedule(ms=25){clearTimeout(timer);timer=setTimeout(patch,ms)}
 document.addEventListener('click',event=>{const button=event.target?.closest?.('[data-rp93g-filter]');if(button){const wrapper=button.closest('.rp93g-wrap');if(wrapper)setActive(wrapper,button.dataset.rp93gFilter||'all');return}if(event.target?.closest?.('[data-p751-open]')){setTimeout(()=>schedule(0),60);setTimeout(()=>schedule(0),260)}},true);
-const observer=new MutationObserver(()=>schedule(20));
-function boot(){style();observer.observe(document.body,{childList:true,subtree:true});schedule(0)}
+function boot(){
+  style();
+  document.addEventListener('tenis-ai:superbet-coverage-ready',()=>schedule(0));
+  document.addEventListener('tenis-ai:match-open',()=>schedule(0));
+  schedule(0);
+}
 window.TENIS_AI_MARKET_SEGREGATION_V93G=Object.freeze({version:VERSION,patch,marketGroup,get active(){return active}});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

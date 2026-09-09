@@ -10,6 +10,7 @@ on:
       - 'backend/apply_joint_to_results.py'
       - 'scripts/compact_frontend_data.py'
       - 'frontend/symphony2.*'
+      - 'frontend/style.css'
       - 'frontend/symphony2-live-ui.js'
       - 'frontend/playable-ui.js'
       - 'frontend/playable-freshness.js'
@@ -64,7 +65,8 @@ jobs:
           for token in forbidden_ui:
               assert token not in index, token
           assert 'symphony2.js' in index
-          assert 'symphony2.css' in index
+          assert 'style.css' in index
+          assert 'symphony2.css' not in index
 
           legacy_backend = [p for p in Path('backend').glob('symphony*') if not p.name.startswith('symphony2_')]
           assert not legacy_backend, legacy_backend

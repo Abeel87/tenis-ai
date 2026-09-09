@@ -5,10 +5,13 @@ ROOT=Path(__file__).resolve().parents[1]
 
 def test_project_ui_assets():
     js=(ROOT/'frontend/project-ui.js').read_text(encoding='utf-8')
-    css=(ROOT/'frontend/project-ui.css').read_text(encoding='utf-8')
-    for x in ['Szybki werdykt','Szczegóły meczu','Top sygnały','Społeczność','Profil','openMatch','signalPage']:
+    css=(ROOT/'frontend/style.css').read_text(encoding='utf-8')
+    for x in ['Najlepszy typ','Analiza meczu','Top sygnały','openMatch','signalPage']:
         assert x in js
-    assert '.p751-overlay' in css and '.p751-bottom-nav' in css
+    assert '.match-page' in css and '.main-tabs' in css
+    assert 'p751-match-overlay' not in js
+    assert 'p751-bottom-nav' not in js
+    assert not (ROOT/'frontend/project-ui.css').exists()
     assert not (ROOT/'frontend/ui-v751.js').exists()
     assert not (ROOT/'frontend/ui-v751.css').exists()
 
