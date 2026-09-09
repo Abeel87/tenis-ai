@@ -1221,7 +1221,7 @@ def _best_compositions(match: dict, scored: list[dict], outcomes: list[dict]) ->
             if not _compatible(combo):
                 continue
             joint, supported_count = joint_probability(match, list(combo), outcomes)
-            if joint is None or supported_count != n:
+            if joint is None or joint <= 0.0 or supported_count != n:
                 continue
             candidate = {"legs": n, "score": round(_composition_utility(combo, joint), 2), "joint_probability": round(joint * 100.0, 3),
                 "joint_status": "EXACT_SHARED_STATE", "state_version": STATE_VERSION, "selection": [dict(x) for x in combo]}
