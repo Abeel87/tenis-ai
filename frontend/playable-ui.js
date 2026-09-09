@@ -1,4 +1,4 @@
-/* Tenis AI v9.4.8 — one Superbet PLAYABLE gate for actionable UI.
+/* Tenis AI v9.4.8 — Symphony-final PLAYABLE gate for actionable UI.
    MODEL/RAW analytics stay independent. This bridge only verifies actionable
    Superbet surfaces against the current fixture offer. It contains no Symphony
    v9.x card/feed/bootstrap logic; Symphony 2.0 owns all Symphony UI. */
@@ -156,22 +156,16 @@ function modelSignals(match,limit=100){
     .slice(0,Math.max(1,Number(limit)||100));
 }
 function projectionSignals(match){
-  const layer=match?.superbet_playable_v912;
-  if(!layer||typeof layer!=='object'||!Array.isArray(layer.signals))return null;
+  const layer=match?.symphony2_playable;
+  if(!layer||typeof layer!=='object'||layer.final_playable_authority!==true||layer.playable!==true||!Array.isArray(layer.signals))return[];
   return layer.signals
-    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null&&isPlayable(match,row))
+    .filter(row=>row&&typeof row==='object'&&valueOf(row)!=null&&isPlayable(match,row))
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0));
 }
 function playableSignals(match,limit=100){
   if(!active(match))return[];
   const max=Math.max(1,Number(limit)||100);
-  const projected=projectionSignals(match);
-  if(projected!==null)return projected.slice(0,max);
-  // Backward-compatible fallback only for datasets produced before the additive
-  // backend projection existed. New results use superbet_playable_v912.signals.
-  return modelSignals(match,Math.max(100,max))
-    .filter(row=>isPlayable(match,row))
-    .slice(0,max);
+  return projectionSignals(match).slice(0,max);
 }
 function scoreText(v){return finite(v)?`${Math.round(Number(v))}/100`:'N/D'}
 function decode(value){try{return decodeURIComponent(String(value||''))}catch{return String(value||'')}}
