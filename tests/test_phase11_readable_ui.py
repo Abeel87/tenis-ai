@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ACCOUNT = (ROOT / "frontend" / "account.js").read_text(encoding="utf-8")
-ORGANIZER = (ROOT / "frontend" / "ui-organizer.js").read_text(encoding="utf-8")
+PROJECT_UI = (ROOT / "frontend" / "project-ui.js").read_text(encoding="utf-8")
 STYLE = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 PLAYER_UI = (ROOT / "frontend" / "player-intelligence-ui.js").read_text(encoding="utf-8")
 PLAYER_DNA_UI = (ROOT / "frontend" / "player-dna-shadow.js").read_text(encoding="utf-8")
@@ -12,19 +12,18 @@ MASTER = (ROOT / "TENIS_AI_MATCH_SIMULATION_MASTER_PLAN.md").read_text(encoding=
 
 def test_phase11_uses_existing_three_role_profile_contract():
     assert "created_at,role" in ACCOUNT
-    assert "function accountRole()" in ORGANIZER
-    assert "window.tenisAIAccount?.profile?.role" in ORGANIZER
-    assert "window.tenisAICommunityHub?.profile?.role" in ORGANIZER
-    assert "return accountRole() === 'admin';" in ORGANIZER
+    assert "function uiRole()" in PROJECT_UI
+    assert "window.tenisAIAccount?.profile?.role" in PROJECT_UI
+    assert "window.tenisAICommunityHub?.profile?.role" in PROJECT_UI
+    assert "function isUiAdmin(){return uiRole()==='admin'}" in PROJECT_UI
 
 
 def test_phase11_simple_mode_is_default_and_technical_is_admin_only():
-    assert "document.documentElement.dataset.tenisUiMode = 'simple';" in ORGANIZER
-    assert "const next = isAdmin() && requested === 'technical' ? 'technical' : 'simple';" in ORGANIZER
-    assert "if (!isAdmin()) {" in ORGANIZER
-    assert "button?.remove();" in ORGANIZER
-    assert "id = 'tenis-ui-mode-toggle'" in ORGANIZER
-    assert "tenis-ai-auth-change" in ORGANIZER
+    assert "const next=isUiAdmin()&&mode==='technical'?'technical':'simple';" in PROJECT_UI
+    assert "document.documentElement.dataset.tenisUiMode=next;" in PROJECT_UI
+    assert "document.documentElement.dataset.tenisStatsMode=next==='technical'?'pro':'simple';" in PROJECT_UI
+    assert "document.querySelector('#tenis-ui-mode-toggle')" in PROJECT_UI
+    assert "tenis-ai-auth-change" in PROJECT_UI
     assert "data-tenis-ui-mode" in STYLE
     assert 'html[data-tenis-ui-mode="simple"] .phase11-technical' in STYLE
     assert 'html[data-tenis-ui-mode="technical"] .phase11-simple-only' in STYLE
