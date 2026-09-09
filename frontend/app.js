@@ -6,6 +6,24 @@ let secondaryDataLoaded=false;
 let filter='all';
 let view='matches';
 
+const VIEW_COPY={
+  matches:['DZISIAJ','Mecze','Najważniejsze spotkania, sygnały i rynki — bez technicznego szumu.'],
+  stats:['WYNIKI','Statystyki','Skuteczność modeli, trendy i jakość danych w jednym miejscu.'],
+  history:['ARCHIWUM','Historia','Rozliczone mecze i wcześniejsze sygnały.'],
+  coupons:['SPOŁECZNOŚĆ','Kupony','Kupony testerów i Twoje zapisane typy.'],
+  feedback:['ROZWÓJ','Pomysły','Zgłoszenia, poprawki i pomysły do kolejnych wersji.']
+};
+function updateViewChrome(){
+  const copy=VIEW_COPY[view]||VIEW_COPY.matches;
+  document.documentElement.dataset.tenisView=view;
+  const kicker=document.querySelector('#page-kicker');
+  const title=document.querySelector('#page-title');
+  const subtitle=document.querySelector('#page-subtitle');
+  if(kicker)kicker.textContent=copy[0];
+  if(title)title.textContent=copy[1];
+  if(subtitle)subtitle.textContent=copy[2];
+}
+
 const COLLAPSE_KEY='tenis-ai-v6-collapse';
 const FEEDBACK_KEY='tenis-ai-v6-feedback';
 const COUPON_KEY='tenis-ai-v6-coupons';
@@ -113,6 +131,7 @@ async function compressImage(file){if(!file)return '';const img=await createImag
 function renderCoupons(){const app=document.querySelector('#app');app.innerHTML=`<section class="community-hero"><h2>🧾 Kupony społeczności</h2><p>Wrzuć swój kupon, dopisz kurs, bukmachera i status. Reakcje i komentarze są już w widoku.</p><div class="local-note">Na razie kupony są zapisywane lokalnie na tym urządzeniu. Nie udajemy wspólnej bazy, dopóki nie podłączymy backendu.</div></section><form id="coupon-form" class="community-form coupon-form"><label>Tytuł<input name="title" maxlength="80" required placeholder="Np. Kupon na wieczór"></label><label>Bukmacher<input name="bookmaker" maxlength="50" placeholder="Np. Superbet"></label><label>Kurs<input name="odds" maxlength="20" placeholder="Np. 8.45"></label><label>Status<select name="status"><option>Grany</option><option>Wygrany</option><option>Przegrany</option><option>Cashout</option></select></label><label class="wide">Opis<textarea name="description" maxlength="600" placeholder="Co zagrałeś?"></textarea></label><label class="wide">Screen kuponu<input name="image" type="file" accept="image/*"></label><button type="submit" class="primary-btn wide">Dodaj kupon</button></form><div class="coupon-list">${couponRows.length?couponRows.slice().reverse().map(couponCard).join(''):'<div class="empty small"><b>Brak kuponów.</b><br>Dodaj pierwszy.</div>'}</div>`;document.querySelector('#coupon-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget;const fd=new FormData(form);const file=form.elements.image.files?.[0];let image='';try{image=await compressImage(file)}catch{}const row={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title:String(fd.get('title')||'').trim(),bookmaker:String(fd.get('bookmaker')||'').trim(),odds:String(fd.get('odds')||'').trim(),status:String(fd.get('status')||'Grany'),description:String(fd.get('description')||'').trim(),image,likes:0,comments:[],createdAt:new Date().toISOString()};couponRows.push(row);if(!writeLocal(COUPON_KEY,couponRows)){couponRows.pop();alert('Brak miejsca na urządzeniu. Spróbuj mniejszego screena lub usuń starszy kupon.');return}renderCoupons()};document.querySelectorAll('[data-like-coupon]').forEach(b=>b.onclick=()=>{const x=couponRows.find(v=>v.id===b.dataset.likeCoupon);if(x){x.likes=(x.likes||0)+1;writeLocal(COUPON_KEY,couponRows);renderCoupons()}});document.querySelectorAll('[data-comment-form]').forEach(f=>f.onsubmit=e=>{e.preventDefault();const x=couponRows.find(v=>v.id===f.dataset.commentForm);const input=f.querySelector('input');const text=input.value.trim();if(x&&text){x.comments=x.comments||[];x.comments.push(text);writeLocal(COUPON_KEY,couponRows);renderCoupons()}})}
 
 function render(){
+  updateViewChrome();
   const matchControls=document.querySelector('#match-controls');
   const matched=document.querySelector('#matched');
   if(matchControls)matchControls.style.display=view==='matches'?'block':'none';
@@ -129,7 +148,7 @@ async function loadSecondaryData(force=false){if(secondaryDataPromise&&!force)re
 async function load(){try{const [results,meta]=await Promise.all([safeJson('data/results.json',[]),safeJson('data/meta.json',{})]);all=results;if(view==='stats'||view==='history')await loadSecondaryData();document.querySelector('#updated').textContent=meta.updated_at?'Aktualizacja: '+new Date(meta.updated_at).toLocaleString('pl-PL'):'Aktualizacja: —';document.querySelector('#mode').textContent='Źródło: '+(meta.fixtures_mode||'—');const hm=document.querySelector('#history-mode');if(hm){const x=meta.history_mode||'—';hm.textContent=x==='degraded-previous'?'Historia: awaria źródła · poprzednie dane':x==='cache'?'Historia: cache':x==='fresh'?'Historia: świeża':x==='fresh+cache'?'Historia: cache + świeże':'Historia: '+x}updateCounts();render()}catch(e){document.querySelector('#app').innerHTML='<div class="empty">Nie udało się wczytać danych.</div>'}}
 
 document.querySelectorAll('#tour-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tour-nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderMatches()});
-document.querySelectorAll('.main-tabs button').forEach(b=>b.onclick=async()=>{document.querySelectorAll('.main-tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;if(view==='stats'||view==='history')await loadSecondaryData();render()});
+document.querySelectorAll('.main-tabs button[data-view]').forEach(b=>b.onclick=async()=>{document.querySelectorAll('.main-tabs button[data-view]').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;if(view==='stats'||view==='history')await loadSecondaryData();render()});
 document.querySelector('#collapse-all').onclick=()=>setAllDetails(false);
 document.querySelector('#expand-all').onclick=()=>setAllDetails(true);
 document.querySelector('#refresh').onclick=async()=>{if(view==='stats'||view==='history')secondaryDataLoaded=false;await load()};
