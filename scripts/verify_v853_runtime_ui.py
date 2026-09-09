@@ -47,7 +47,10 @@ def verify_visible_version_contract():
 
 def verify_clean_ui_contract():
     html = read("frontend/index.html")
+    css_files = sorted(p.name for p in (ROOT / "frontend").glob("*.css"))
 
+    if css_files != ["style.css"]:
+        errors.append(f"frontend/: clean rebuild musi mieć fizycznie jeden CSS, znaleziono {css_files}")
     if html.count('rel="stylesheet"') != 1 or 'href="style.css"' not in html:
         errors.append("frontend/index.html: clean rebuild musi używać jednego kanonicznego style.css")
 
@@ -162,6 +165,17 @@ need("frontend/project-ui.js", "tenis-ai:match-open", "jawny cykl życia ekranu 
 forbid("frontend/superbet-model-coverage.js", "new MutationObserver(", "globalny observer pokrycia Superbet")
 forbid("frontend/market-segregation.js", "new MutationObserver(", "globalny observer grupowania rynków")
 forbid("frontend/market-segregation.js", "observe(document.body", "body-wide observer grupowania rynków")
+
+for js_path in sorted((ROOT / "frontend").glob("*.js")):
+    text = js_path.read_text(encoding="utf-8")
+    if re.search(r"createElement\(['\"]style['\"]\)", text):
+        errors.append(f"{js_path.relative_to(ROOT)}: runtime wstrzykuje inline <style>")
+    if re.search(r"\.rel\s*=\s*['\"]stylesheet['\"]", text) or re.search(r"\.href\s*=\s*['\"][^'\"]+\.css", text):
+        errors.append(f"{js_path.relative_to(ROOT)}: runtime doładowuje dodatkowy stylesheet")
+    if "new MutationObserver(" in text and ("observe(document.body" in text or "observe(document.documentElement" in text):
+        errors.append(f"{js_path.relative_to(ROOT)}: globalny MutationObserver clean UI")
+    if "#p751-match-overlay" in text or "p751-bottom-nav" in text:
+        errors.append(f"{js_path.relative_to(ROOT)}: odwołanie do wycofanego DOM clean rebuild")
 
 for retired_file in (
     "frontend/app-shell.css",
