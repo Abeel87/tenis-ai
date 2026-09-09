@@ -226,7 +226,7 @@ def _direct_selection_without_price(row: dict) -> dict | None:
             else None
         ),
         "main_line": False,
-        "operator_available": row.get("operator_available") is not False,
+        "operator_available": row.get("operator_available") is True,
         "operator_line_verified": row.get("operator_line_verified") is True,
         "fixture_line_verified": row.get("fixture_line_verified") is True,
         "operator_line_source": DIRECT_SOURCE,

@@ -363,3 +363,45 @@ def test_malformed_direct_handicap_variant_is_suppressed_before_canonical_contex
         for row in fixture["canonical_selections"]
     )
     assert {row["market"] for row in fixture["canonical_selections"]} == {"match_total"}
+
+
+def test_direct_fallback_requires_explicit_operator_availability_and_preserves_model_raw(monkeypatch, tmp_path):
+    now = datetime(2026, 9, 4, 16, 30, tzinfo=timezone.utc)
+
+    for availability_case in ("false", "missing"):
+        sidecar = _direct_sidecar(now)
+        match = sidecar["matches"][0]
+        selection = dict(match["canonical_selections"][0])
+        match["canonical_selections"] = [selection]
+        if availability_case == "false":
+            selection["operator_available"] = False
+        else:
+            selection.pop("operator_available", None)
+        _write_sidecar(monkeypatch, tmp_path, sidecar)
+
+        model_match = _app_match()
+        model_match["models"] = {
+            "raw": {
+                "match_total": {
+                    "line": 41.5,
+                    "probability": 0.64,
+                }
+            }
+        }
+        model_before = json.loads(json.dumps(model_match))
+        merged = context._overlay_direct_fallback(
+            [model_match],
+            {
+                "generated_at": now.isoformat(),
+                "refresh_status": "OK",
+                "fixtures": [],
+                "contains_prices": False,
+                "prices_used": False,
+            },
+            now=now,
+        )
+
+        assert merged["fixtures"] == []
+        assert merged["direct_fallback"]["fallback_fixtures_added"] == 0
+        assert model_match == model_before
+
