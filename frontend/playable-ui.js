@@ -10,7 +10,7 @@ const VERSION='v9.4.8';
 const WRAP='__tenisAiPlayableUiV923';
 const LINE_MARKETS=new Set([
   'match_total','set1_total','set2_total','set3_total','total_sets',
-  'match_game_handicap','set1_game_handicap','set2_game_handicap',
+  'match_game_handicap','set1_game_handicap','set2_game_handicap','set3_game_handicap','set_handicap',
   'player_total_games','match_total_aces','player_aces','player_double_faults'
 ]);
 const PLAYER_MARKETS=new Set(['player_total_games','player_aces','player_double_faults']);
@@ -111,11 +111,17 @@ function signature(row){
   const player=rowPlayer(row,market);
   return [market,rowPick(row,market),line==null?'':Number(line).toFixed(6),checkpoint||0,player].join('¦');
 }
+function operatorEvidenceVerified(row){
+  if(!row||typeof row!=='object'||row.operator_available!==true)return false;
+  const market=canonicalMarket(row.market);
+  if(!LINE_MARKETS.has(market))return true;
+  return rowLine(row,market)!=null&&row.operator_line_verified===true&&row.fixture_line_verified===true;
+}
 function availability(match){
   const out=new Map();
   if(!active(match))return out;
   for(const row of context(match).canonical_selections||[]){
-    if(!row||typeof row!=='object'||row.operator_available===false)continue;
+    if(!operatorEvidenceVerified(row))continue;
     out.set(signature(row),row);
   }
   return out;
@@ -140,7 +146,7 @@ function projectionSignals(match){
   const layer=match?.superbet_playable_v912;
   if(!layer||typeof layer!=='object'||!Array.isArray(layer.signals))return null;
   return layer.signals
-    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null)
+    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null&&isPlayable(match,row))
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0));
 }
 function playableSignals(match,limit=100){

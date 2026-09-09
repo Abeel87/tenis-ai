@@ -43,6 +43,13 @@ SIDE_MARKETS = {
     "p2_wins_a_set": "p2",
 }
 
+LINE_MARKETS = {
+    "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "set3_game_handicap", "set_handicap",
+    "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
+}
+
 CAT_FEATURES = ["market", "pick", "surface", "tour", "player_scope"]
 NUM_FEATURES = [
     "line", "checkpoint", "best_of", "state_probability",
@@ -182,11 +189,18 @@ def _candidate_review_ready_markets(history: list[dict]) -> set[str]:
 
 def _frozen_operator_row_allowed(raw: dict) -> bool:
     """Admit only immutable exact Superbet evidence into Symphony training."""
-    numeric_line = _num(raw.get("line")) is not None
+    market = _norm(raw.get("market"))
+    line_required = market in LINE_MARKETS
     return bool(
         _norm(raw.get("operator")) == "superbet.pl"
         and raw.get("operator_line_verified") is True
-        and (not numeric_line or raw.get("fixture_line_verified") is True)
+        and (
+            not line_required
+            or (
+                _num(raw.get("line")) is not None
+                and raw.get("fixture_line_verified") is True
+            )
+        )
         and _norm(raw.get("result")) in {"hit", "miss"}
     )
 

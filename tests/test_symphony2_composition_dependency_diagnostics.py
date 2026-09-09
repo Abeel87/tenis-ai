@@ -153,6 +153,7 @@ def test_weakest_leg_impact_is_exposed_without_affecting_ranking():
     assert diagnostics["dependency_score_semantics"]["thresholds_enabled"] is False
     assert diagnostics["ranking_influence"] is False
 
+
 def test_best_compositions_rejects_exact_zero_cross_market_conflict():
     match = _match()
     outcomes = build_outcomes(match)

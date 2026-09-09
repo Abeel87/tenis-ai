@@ -67,6 +67,12 @@ ACTIONABLE_EVIDENCE_MARKETS = {
     "player_total_games",
 }
 
+LINE_MARKETS = {
+    "set_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "set2_total", "set3_total", "player_total_games",
+}
+
 
 def _num(value, default=None):
     try:
@@ -127,6 +133,17 @@ def _signature(row: dict) -> tuple:
     )
 
 
+def _line_evidence_valid(row: dict) -> bool:
+    market = str(row.get("market") or "")
+    if market not in LINE_MARKETS:
+        return True
+    return bool(
+        _num(row.get("line")) is not None
+        and row.get("operator_line_verified") is True
+        and row.get("fixture_line_verified") is True
+    )
+
+
 def _candidate_signal(row: dict, now: datetime, source_model: str) -> dict:
     score = _num(row.get("score"))
     out = {
@@ -145,7 +162,7 @@ def _candidate_signal(row: dict, now: datetime, source_model: str) -> dict:
         "operator_available": row.get("operator_available") is True,
         "operator_line_verified": row.get("operator_line_verified") is True,
         "fixture_line_verified": row.get("fixture_line_verified") is True
-        if _num(row.get("line")) is not None else None,
+        if str(row.get("market") or "") in LINE_MARKETS else None,
         "operator_line_source": row.get("operator_line_source"),
         "operator_offer_source": row.get("operator_offer_source"),
         "direct_source": row.get("direct_source"),
@@ -201,10 +218,7 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
                 continue
             if operator_row.get("operator_available") is not True:
                 continue
-            if _num(operator_row.get("line")) is not None and not (
-                operator_row.get("operator_line_verified") is True
-                and operator_row.get("fixture_line_verified") is True
-            ):
+            if not _line_evidence_valid(operator_row):
                 continue
             canonical[_signature(operator_row)] = operator_row
 
@@ -341,10 +355,7 @@ def build_candidate_stats(history: list[dict]) -> dict:
             if not _orientation_valid(entry, row):
                 orientation_quarantined += 1
                 continue
-            if _num(row.get("line")) is not None and not (
-                row.get("operator_line_verified") is True
-                and row.get("fixture_line_verified") is True
-            ):
+            if not _line_evidence_valid(row):
                 line_provenance_quarantined += 1
                 continue
             all_rows.append(row)
@@ -361,6 +372,7 @@ def build_candidate_stats(history: list[dict]) -> dict:
         "line_provenance_quarantined_rows": line_provenance_quarantined,
         "orientation_policy": "SIDE_MARKET_PLAYER_MUST_MATCH_APP_ORDER",
         "numeric_line_policy": "EXACT_FIXTURE_LINE_PROOF_REQUIRED",
+        "line_market_policy": "LINE_MARKET_REQUIRES_NUMERIC_LINE_AND_BOTH_PROOFS",
         "overall": _summary(all_rows),
         "by_market": by_market,
         "review_ready_markets": ready,
