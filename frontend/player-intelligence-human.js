@@ -122,20 +122,6 @@
       card.innerHTML = `<div class="pi888-card-head"><span>🧬 Profil zawodników</span><em>${esc(v.q)}</em></div><b>${esc(v.title)}</b><small>${esc(v.text)}</small>`;
     });
   }
-
-  const style = document.createElement('style');
-  style.id = 'pi888-human-style';
-  style.textContent = `
-    .pi888-card-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem}.pi888-card-head span{font-size:.67rem;font-weight:800;letter-spacing:.06em;color:#68e7ff}.pi888-card-head em{font-size:.61rem;font-style:normal;color:#baff67}.pi851-card-strip[data-pi888="1"]>b{display:block;margin-top:.3rem;color:#effbff;font-size:.82rem}.pi851-card-strip[data-pi888="1"]>small{display:block;margin-top:.18rem;color:#91aab5;line-height:1.4}
-    .pi888-human{margin:.75rem 1rem .55rem;padding:.9rem;border:1px solid rgba(87,221,248,.28);border-radius:17px;background:linear-gradient(145deg,rgba(4,31,43,.98),rgba(3,18,28,.98));box-shadow:0 10px 26px rgba(0,0,0,.16)}
-    .pi888-human header{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem}.pi888-human header>div{display:flex;flex-direction:column;gap:.18rem}.pi888-human header span{font-size:.68rem;font-weight:900;letter-spacing:.07em;color:#68e6ff}.pi888-human header b{font-size:1.08rem;color:#f2fcff}.pi888-human header small{color:#9bb2bc;line-height:1.45}.pi888-human header em{white-space:nowrap;font-style:normal;font-size:.64rem;padding:.24rem .48rem;border-radius:999px;color:#baff65;border:1px solid rgba(180,255,98,.2);background:rgba(180,255,98,.06)}
-    .pi888-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:.45rem;margin-top:.7rem}.pi888-chips span{padding:.55rem .62rem;border-radius:11px;background:rgba(67,193,220,.07);border:1px solid rgba(67,193,220,.11)}.pi888-chips small{display:block;color:#718d99;font-size:.59rem}.pi888-chips b{display:block;margin-top:.12rem;color:#e8faff;font-size:.72rem}
-    .pi888-why{margin-top:.75rem;padding-top:.65rem;border-top:1px solid rgba(93,190,211,.12)}.pi888-why>b{color:#eafaff}.pi888-why>div{display:grid;grid-template-columns:.7fr 1.3fr;gap:.5rem;padding:.38rem 0;border-bottom:1px solid rgba(255,255,255,.04)}.pi888-why span{color:#75929e;font-size:.68rem}.pi888-why strong{color:#dff6fc;font-size:.69rem;font-weight:700}.pi888-why p{color:#839da8;font-size:.68rem}.pi888-explain{margin:.68rem 0 0;color:#819ba6;font-size:.67rem;line-height:1.5}.pi888-explain b{color:#ffd18f}
-    .pi888-advanced{margin:.45rem 1rem 1rem;border:1px solid rgba(75,178,201,.13);border-radius:13px;overflow:hidden;background:rgba(3,17,26,.58)}.pi888-advanced>summary{display:flex;align-items:center;gap:.45rem;padding:.65rem .75rem;cursor:pointer}.pi888-advanced>summary b{color:#dff7fd;font-size:.74rem}.pi888-advanced>summary span{color:#6f8995;font-size:.62rem}.pi888-advanced>summary i{margin-left:auto;font-style:normal;color:#71909d}.pi888-advanced[open]>summary i{transform:rotate(180deg)}.pi888-advanced .pi851-detail{margin:0;border:0;border-top:1px solid rgba(75,178,201,.1);border-radius:0;background:transparent}.pi888-advanced .pi851-detail-head{display:none}
-    @media(max-width:720px){.pi888-human{margin:.6rem .55rem .45rem;padding:.72rem}.pi888-human header{flex-direction:column}.pi888-chips{grid-template-columns:1fr}.pi888-why>div{grid-template-columns:.65fr 1.35fr}.pi888-advanced{margin:.4rem .55rem .85rem}}
-  `;
-  document.head.appendChild(style);
-
   try {
     if (typeof renderMatches === 'function' && !renderMatches.__pi888human) {
       const base = renderMatches;
