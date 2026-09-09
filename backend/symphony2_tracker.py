@@ -46,15 +46,6 @@ def _num(value, default=None):
         return default
 
 
-def _invalid_exact_zero_joint(row: dict) -> bool:
-    joint = _num(row.get("joint_probability"))
-    return (
-        row.get("joint_status") == "EXACT_SHARED_STATE"
-        and joint is not None
-        and joint <= 0.0
-    )
-
-
 def _norm(value: Any) -> str:
     return " ".join(str(value or "").strip().casefold().split())
 
@@ -135,8 +126,6 @@ def capture(current: dict, history_doc: dict) -> tuple[dict, int]:
         comp = (match.get("compositions") or {}).get(str(n)) if n is not None else None
         if not isinstance(comp, dict) or not comp.get("selection"):
             continue
-        if _invalid_exact_zero_joint(comp):
-            continue
         mid = _match_id(match)
         pid = _composition_id(mid, comp)
         if pid in seen:
@@ -210,24 +199,6 @@ def settle(history_doc: dict, base_history: list[dict]) -> tuple[dict, int]:
         if not isinstance(raw, dict):
             continue
         entry = dict(raw)
-        if (
-            entry.get("result") not in {"hit", "miss", "void"}
-            and _invalid_exact_zero_joint(entry)
-        ):
-            legs = []
-            for leg_raw in entry.get("selection") or []:
-                if not isinstance(leg_raw, dict):
-                    continue
-                leg = dict(leg_raw)
-                leg["result"] = "void"
-                legs.append(leg)
-            entry["selection"] = legs
-            entry["result"] = "void"
-            entry["void_reason"] = "INVALID_EXACT_ZERO_JOINT_COMPOSITION"
-            entry["settled_at"] = datetime.now(timezone.utc).isoformat()
-            settled += 1
-            rows.append(entry)
-            continue
         if entry.get("result") in {"hit", "miss", "void"}:
             rows.append(entry)
             continue
@@ -412,11 +383,6 @@ def performance_stats(history_doc: dict) -> dict:
         "history_version": VERSION,
         "predictions_total": len(entries),
         "predictions_pending": sum(1 for x in entries if x.get("result") == "pending"),
-        "invalid_zero_joint_voided": sum(
-            1 for x in entries
-            if x.get("result") == "void"
-            and x.get("void_reason") == "INVALID_EXACT_ZERO_JOINT_COMPOSITION"
-        ),
         "compositions_settled": len(settled),
         "compositions_hits": hits,
         "compositions_misses": len(settled) - hits,
