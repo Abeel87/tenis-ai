@@ -27,6 +27,7 @@ const checks=[
  ['Clean Core logic remains loaded after Adaptive Learning',/adaptive-learning-v79\.js[\s\S]{0,700}clean-core-v80\.js/.test(index)],
  ['Legacy Clean Core CSS is removed',!index.includes('clean-core-v80.css')&&!sw.includes('clean-core-v80.css')],
  ['Single canonical stylesheet is loaded',stylesheetCount===1&&index.includes('href="style.css"')],
+ ['Runtime does not dynamically add CSS',!meta.includes('loadStyle(')&&!meta.includes('neuro-shadow.css')],
  ['Legacy layered UI is not loaded',legacyUi.every(name=>!index.includes(name))],
  ['Old History v7.3.2 is not loaded',!index.includes('history-days-v732.js')&&!index.includes('history-days-v732.css')],
  ['Post-Match Center logic still exists',clean.includes('RAPORT PO MECZU')&&clean.includes('Co nie weszło')&&clean.includes('Modele — wynik tego meczu')],
@@ -46,6 +47,7 @@ const checks=[
  ['Main cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(ui)],
  ['Canonical responsive rules exist',style.includes('@media(max-width:760px)')&&style.includes('.match-grid')],
  ['Match detail is in-app, not legacy overlay',ui.includes("app.innerHTML=detailHtml(m)")&&!ui.includes('p751-match-overlay')],
+ ['NEURO clean shell trigger exists',index.includes('id="neuro-open"')],
  ['Shadow cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(shadow)]
 ];
 
