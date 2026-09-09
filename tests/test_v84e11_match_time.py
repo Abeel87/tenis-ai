@@ -10,7 +10,8 @@ def read(path):
 
 def test_global_time_assets_and_protected_pins():
     idx=read("frontend/index.html")
-    assert "match-time.css" in idx
+    assert 'href="style.css"' in idx
+    assert "match-time.css" not in idx
     assert "match-time.js" in idx
     assert "match-time-v84e11.css" not in idx
     assert "match-time-v84e11.js" not in idx
