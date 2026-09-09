@@ -30,3 +30,12 @@ def test_match_browser_and_top_strip_share_playable_signals_gate():
     assert "const signal=match?playableSignals(match,1)[0]:null;" in playable
     assert "TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,100)" in browser
     assert "const isPlayable=m=>playableSignals(m).length>0;" in browser
+
+
+def test_operator_projection_ui_does_not_claim_symphony_playable_authority():
+    text = PLAYABLE_UI.read_text(encoding="utf-8")
+
+    assert "SUPERBET · ZWERYFIKOWANA OFERTA" in text
+    assert "finalne P(hit) i kompozycje PLAYABLE należą do Symfonii 2.0." in text
+    assert "<span>🎯 SUPERBET PLAYABLE</span>" not in text
+    assert "najmocniejsze PLAYABLE" not in text
