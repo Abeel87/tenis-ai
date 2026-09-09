@@ -25,6 +25,7 @@ def test_v917_actionable_surfaces_share_one_gate_without_erasing_raw_detail():
     assert "playableSignals(match,60)" in UI
     assert "match?.superbet_playable_v912" in UI
     assert "projectionSignals(match" in UI
+    assert "&&isPlayable(match,row)" in UI
     assert "decisionRows(match,api)" in UI
     assert "legs.every(leg=>isPlayable(match,leg))" in UI
     assert "Brak Superbet PLAYABLE" in UI
@@ -76,6 +77,10 @@ const api=win.TENIS_AI_PLAYABLE_UI_V917;
 assert.equal(api.active(match),true);
 assert.equal(api.findMatch('id:1'),match);
 assert.equal(api.playableSignals(match).length,1,'null score must not become zero');
+const staleProjection={...match,superbet_playable_v912:{signals:[{...selections[0],line:11.5,v:90,operator_playable:true}]}};
+assert.equal(api.playableSignals(staleProjection).length,0,'backend PLAYABLE snapshot must be revalidated against exact current offer');
+const alignedProjection={...match,superbet_playable_v912:{signals:[{...selections[0],v:90,operator_playable:true}]}};
+assert.equal(api.playableSignals(alignedProjection).length,1,'exact current-offer projection remains PLAYABLE');
 assert.equal(api.isPlayable(match,{...selections[0],line:11.5}),false);
 assert.equal(api.compositionPlayable(match,{selection:selections}),true);
 assert.equal(api.compositionPlayable(match,{selection:[selections[0]]}),false);
