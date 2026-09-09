@@ -212,6 +212,7 @@ def test_finalize_preserves_exact_line_provenance_instead_of_fabricating_a_sourc
         "fixture_line_verified": True,
         "operator_line_source": None,
     }]
+    match = lab.enrich(match)
     rows, ready, signals = finalize_results([match])
     assert ready == 1
     assert signals == 1
