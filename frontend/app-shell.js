@@ -208,6 +208,69 @@
     if (message) message.textContent = `Witaj, ${profile()?.username || 'użytkowniku'}.`;
   }
 
+
+  function technicalMode() {
+    return document.documentElement.dataset.tenisUiMode === 'technical';
+  }
+
+  function decorateMatchBrowser() {
+    const technical = technicalMode();
+
+    document.querySelectorAll('.match-card').forEach(card => {
+      card.classList.add('tenis-shell-match-card');
+
+      const score = card.querySelector('.match-score span');
+      if (score) {
+        if (!score.dataset.shellOriginal) score.dataset.shellOriginal = score.textContent.trim();
+        const original = score.dataset.shellOriginal;
+        if (technical) {
+          score.textContent = original;
+        } else if (/^MODEL\\s+/i.test(original)) {
+          score.textContent = original.replace(/^MODEL\\s+/i, 'Siła ');
+        }
+      }
+
+      const quality = card.querySelector('.match-score small');
+      if (quality) quality.classList.add('tenis-technical-detail');
+
+      const signalsTitle = card.querySelector('.signals-title');
+      if (signalsTitle) {
+        if (!signalsTitle.dataset.shellOriginal) signalsTitle.dataset.shellOriginal = signalsTitle.textContent.trim();
+        signalsTitle.textContent = technical
+          ? signalsTitle.dataset.shellOriginal
+          : '🔥 Najmocniejsze sygnały';
+      }
+
+      const pick = card.querySelector('.pick b');
+      if (pick) {
+        if (!pick.dataset.shellOriginal) pick.dataset.shellOriginal = pick.textContent;
+        pick.textContent = technical
+          ? pick.dataset.shellOriginal
+          : pick.dataset.shellOriginal.replace('🎯 Model 1. seta:', '🎯 Typ na 1. set:');
+      }
+
+      card.querySelectorAll('.marketbox .tag, .modelnote').forEach(el => {
+        el.classList.add('tenis-technical-detail');
+      });
+    });
+  }
+
+  function wrapMatchRenderer() {
+    try {
+      if (typeof renderMatches === 'function' && !renderMatches.__tenisShellWrapped) {
+        const base = renderMatches;
+        const wrapped = function () {
+          const value = base.apply(this, arguments);
+          decorateMatchBrowser();
+          return value;
+        };
+        wrapped.__tenisShellWrapped = true;
+        renderMatches = wrapped;
+      }
+    } catch {}
+    decorateMatchBrowser();
+  }
+
   function syncAuthenticatedShell() {
     const state = authState();
     document.body.classList.toggle('tenis-shell-ready', state === 'authenticated');
@@ -216,6 +279,8 @@
     syncRole();
     syncTabs();
     syncViewContext();
+    wrapMatchRenderer();
+    decorateMatchBrowser();
   }
 
   function syncAll() {
@@ -229,12 +294,16 @@
       'tenis-technical-view',
       document.documentElement.dataset.tenisUiMode === 'technical'
     );
+    decorateMatchBrowser();
   });
   window.addEventListener('pageshow', () => setTimeout(syncAll, 0));
 
   document.addEventListener('click', event => {
     if (event.target?.closest?.('.main-tabs button[data-view]')) {
-      setTimeout(syncViewContext, 0);
+      setTimeout(() => { syncViewContext(); decorateMatchBrowser(); }, 0);
+    }
+    if (event.target?.closest?.('#tour-nav button,#collapse-all,#expand-all,.tournament-summary,.match-summary')) {
+      setTimeout(decorateMatchBrowser, 0);
     }
   });
 
@@ -248,6 +317,7 @@
     sync: syncAll,
     authState,
     role,
-    activeView
+    activeView,
+    decorateMatchBrowser
   });
 })();
