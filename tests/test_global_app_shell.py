@@ -55,3 +55,14 @@ def test_admin_technical_mode_contract_remains_owned_by_ui_organizer():
     assert "return accountRole() === 'admin';" in ORGANIZER
     assert "const next = isAdmin() && requested === 'technical' ? 'technical' : 'simple';" in ORGANIZER
     assert 'html:not([data-tenis-role="admin"]) #tenis-ui-mode-toggle' in SHELL_CSS
+
+
+def test_simple_match_browser_hides_only_presentation_noise():
+    assert "function decorateMatchBrowser()" in SHELL
+    assert "renderMatches.__tenisShellWrapped" in SHELL
+    assert "Siła " in SHELL
+    assert "🎯 Typ na 1. set:" in SHELL
+    assert "tenis-technical-detail" in SHELL
+    assert 'html[data-tenis-ui-mode="simple"] .tenis-technical-detail' in SHELL_CSS
+    assert "first_set_win" not in SHELL
+    assert "model_confidence" not in SHELL
