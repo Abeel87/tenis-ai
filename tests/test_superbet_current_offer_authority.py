@@ -98,9 +98,10 @@ def test_canonical_provider_selection_requires_explicit_price_level_active_true(
 
     active = _winner_markets()
     active_row = {**base_row, "bookmakerOdds": {"superbet.pl": _book(active)}}
-    sanitized = mapping._sanitize_fixture(active_row, _market_meta())
-    assert sanitized is not None
-    assert len(sanitized["canonical_selections"]) == 2
+    for sanitize in (mapping._sanitize_fixture, context.mapped_sanitize):
+        sanitized = sanitize(active_row, _market_meta())
+        assert sanitized is not None
+        assert len(sanitized["canonical_selections"]) == 2
 
     for availability_case in ("false", "missing"):
         markets = _winner_markets()
@@ -111,7 +112,51 @@ def test_canonical_provider_selection_requires_explicit_price_level_active_true(
                 else:
                     player_data.pop("active", None)
         row = {**base_row, "bookmakerOdds": {"superbet.pl": _book(markets)}}
-        out = mapping._sanitize_fixture(row, _market_meta())
+        for sanitize in (mapping._sanitize_fixture, context.mapped_sanitize):
+            out = sanitize(row, _market_meta())
+            assert out is not None
+            assert out["canonical_selections"] == []
+
+
+def test_context_direct_outcome_carrier_also_requires_explicit_active_true():
+    base_row = {
+        "fixtureId": "f-direct-carrier",
+        "participant1Name": "A",
+        "participant2Name": "B",
+        "startTime": "2026-09-08T12:00:00Z",
+    }
+
+    def direct_markets(active_value):
+        outcomes = {}
+        for outcome_id, pick in (("1", "1"), ("2", "2")):
+            carrier = {
+                "bookmakerOutcomeId": pick,
+                "mainLine": True,
+            }
+            if active_value != "missing":
+                carrier["active"] = active_value
+            outcomes[outcome_id] = carrier
+        return {
+            "1": {
+                "marketActive": True,
+                "outcomes": outcomes,
+            }
+        }
+
+    active_row = {
+        **base_row,
+        "bookmakerOdds": {"superbet.pl": _book(direct_markets(True))},
+    }
+    active = context.mapped_sanitize(active_row, _market_meta())
+    assert active is not None
+    assert len(active["canonical_selections"]) == 2
+
+    for availability_case in (False, "missing"):
+        row = {
+            **base_row,
+            "bookmakerOdds": {"superbet.pl": _book(direct_markets(availability_case))},
+        }
+        out = context.mapped_sanitize(row, _market_meta())
         assert out is not None
         assert out["canonical_selections"] == []
 
