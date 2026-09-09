@@ -137,6 +137,7 @@ def test_inactive_superbet_bookmaker_is_fail_closed_at_fixture_context_boundary(
 
 def test_playable_line_market_requires_explicit_operator_line_verification():
     match = {
+        "scheduled_time": "2099-01-01T12:00:00Z",
         "superbet_market_v91": {
             "status": "VERIFIED",
             "operator": "superbet.pl",

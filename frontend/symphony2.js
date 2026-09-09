@@ -15,6 +15,22 @@
   const yes=v=>['yes','tak','true','1'].includes(String(v??'').trim().toLowerCase());
   const no=v=>['no','nie','false','0'].includes(String(v??'').trim().toLowerCase());
   const marketKey=v=>String(v??'').trim().toLowerCase().replace(/exactly_1_set/g,'exactly_1set');
+  function projectMatchFor(row){
+    const keys=[row?.match_key,row?.match_id,row?.id].filter(v=>v!=null&&String(v)!=='').map(String);
+    for(const k of keys){try{const match=window.TENIS_AI_PROJECT_UI?.findMatch?.(k);if(match)return match}catch{}}
+    return null;
+  }
+  function rowPreMatch(row,match=null,now=Date.now()){
+    const scheduled=Date.parse(row?.scheduled_time||'');
+    if(!Number.isFinite(scheduled)||scheduled<=Number(now))return false;
+    const guard=window.TENIS_AI_PLAYABLE_UI_V917?.preMatch;
+    if(typeof guard==='function'){
+      if(guard(row,now)!==true)return false;
+      if(match&&guard(match,now)!==true)return false;
+    }
+    return true;
+  }
+  function currentRows(data,now=Date.now()){return (data?.matches||[]).filter(row=>rowPreMatch(row,projectMatchFor(row),now))}
 
   const MARKET_LABELS={
     match_winner:'Wygra mecz',match_win:'Wygra mecz',
@@ -67,7 +83,7 @@
   }
 
   function status(data){
-    return `<div class="s2-status"><div class="s2-stat"><small>Model linii</small><strong>${esc(data?.model_status||'N/D')}</strong></div><div class="s2-stat"><small>Mecze z ofertą</small><strong>${nfmt(data?.matches_count)}</strong></div><div class="s2-stat"><small>Wygenerowano</small><strong>${esc((data?.generated_at||'').replace('T',' ').slice(0,16)||'N/D')}</strong></div></div>`;
+    return `<div class="s2-status"><div class="s2-stat"><small>Model linii</small><strong>${esc(data?.model_status||'N/D')}</strong></div><div class="s2-stat"><small>Mecze z ofertą</small><strong>${nfmt(currentRows(data).length)}</strong></div><div class="s2-stat"><small>Wygenerowano</small><strong>${esc((data?.generated_at||'').replace('T',' ').slice(0,16)||'N/D')}</strong></div></div>`;
   }
   function playerFor(x,m){
     const direct=x?.player_name||x?.player||x?.participant||x?.competitor||x?.selection_player;
@@ -114,11 +130,11 @@
   }
   function availableLegCounts(data){
     const counts=new Set();
-    (data?.matches||[]).forEach(m=>Object.keys(m?.compositions||{}).forEach(k=>{const n=Number(k);if(Number.isInteger(n)&&n>0)counts.add(n)}));
+    currentRows(data).forEach(m=>Object.keys(m?.compositions||{}).forEach(k=>{const n=Number(k);if(Number.isInteger(n)&&n>0)counts.add(n)}));
     return [...counts].sort((a,b)=>a-b);
   }
   function eligibleMatchCount(data){
-    return (data?.matches||[]).filter(m=>Object.keys(m?.compositions||{}).some(k=>m.compositions?.[k])).length;
+    return currentRows(data).filter(m=>Object.keys(m?.compositions||{}).some(k=>m.compositions?.[k])).length;
   }
   function countOptions(data){
     const max=Math.max(1,eligibleMatchCount(data));
@@ -132,7 +148,7 @@
     return `<option value="auto" selected>AUTO ${range}</option>${counts.map(n=>`<option value="${n}">${n}</option>`).join('')}`;
   }
   function renderCompositions(data,count,legs){
-    const rows=(data?.matches||[]).map(m=>{
+    const rows=currentRows(data).map(m=>{
       const n=legs==='auto'?m?.recommended_leg_count:Number(legs);
       return {m,c:n?m?.compositions?.[String(n)]:null};
     }).filter(x=>x.c).sort((a,b)=>Number(b.c?.score||0)-Number(a.c?.score||0)).slice(0,count);
@@ -222,7 +238,8 @@
     const keys=Object.keys(row.compositions||{}).map(Number).filter(Number.isFinite).sort((a,b)=>b-a);
     for(const k of keys)if(row.compositions?.[String(k)])return row.compositions[String(k)];return null;
   }
-  function matchSymphonyHtml(row,data){
+  function matchSymphonyHtml(row,data,match=null){
+    if(!rowPreMatch(row,match))return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-wait" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · NIEAKTYWNA</small><h3>Snapshot pre-match wygasł</h3><p>Po czasie rozpoczęcia meczu kompozycja nie jest już PLAYABLE. Dane MODEL/RAW pozostają bez zmian.</p></div><strong>—</strong></header></section>`;
     const comp=compositionFor(row),offer=Number(row?.offer_selections||0),scored=(row?.scored_selections||[]).filter(x=>num(x?.operator_model_probability)!=null);
     const best=scored.sort((a,b)=>num(b.operator_model_probability)-num(a.operator_model_probability)).slice(0,3);
     if(comp)return `<section id="symphony2-match-detail" class="s2-match-detail s2-match-ready" data-symphony2-match="1"><header><div><small>🎼 SYMFONIA 2.0 · PLAYABLE</small><h3>Najlepsza spójna kompozycja</h3><p>Wyłącznie dokładne, aktualne selekcje Superbet. RAW nie jest źródłem linii PLAYABLE.</p></div><strong>${pct(comp.joint_probability)}</strong></header><div class="s2-match-legs">${(comp.selection||[]).map(x=>leg(x,row)).join('')}</div><footer>Exact shared-state joint · ${comp.legs} zdarzenia · model ${esc(data?.model_status||'N/D')}</footer></section>`;
@@ -250,7 +267,7 @@
     const {overlay,screen,match,key}=currentMatch(),scope=screen||overlay;if(!scope)return false;cleanupLegacySymphony(scope);compactSuperbet(scope);
     try{
       const data=await load(force),row=(data?.matches||[]).find(x=>sameMatch(x,match,key));scope.querySelector('#symphony2-match-detail')?.remove();if(!row)return false;
-      const wrap=document.createElement('div');wrap.innerHTML=matchSymphonyHtml(row,data);const block=wrap.firstElementChild,raw=scope.querySelector('[data-raw-playable-separation],.v921-raw,.raw-playable-raw,.model-raw'),decision=scope.querySelector('.dc87');
+      const wrap=document.createElement('div');wrap.innerHTML=matchSymphonyHtml(row,data,match);const block=wrap.firstElementChild,raw=scope.querySelector('[data-raw-playable-separation],.v921-raw,.raw-playable-raw,.model-raw'),decision=scope.querySelector('.dc87');
       if(decision)decision.insertAdjacentElement('beforebegin',block);else if(raw)raw.insertAdjacentElement('afterend',block);else scope.append(block);compactSuperbet(scope);return true;
     }catch(e){console.warn('[Symphony2 match]',e);return false}
   }
