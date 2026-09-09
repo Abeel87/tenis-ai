@@ -10,7 +10,8 @@ projection from the current verified Superbet context and may freeze that
 projection into dedicated historical evidence layers.
 
 Contract:
-    DATA/MODEL RAW -> SYMPHONY / model analysis -> verified Superbet offer -> PLAYABLE
+    DATA/MODEL RAW -> verified exact Superbet offer -> PRE_SYMPHONY_EXACT_OFFER_PROJECTION
+    Final PLAYABLE authority is published later by Symphony 2.0.
 
 Bookmaker availability is never a training target and bookmaker prices are not
 used here.
