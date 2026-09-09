@@ -42,6 +42,13 @@ DISPLAY_DERIVED_MARKETS = {
     "p2_exactly_2_sets", "p1_wins_a_set", "p2_wins_a_set", "set_handicap",
 }
 
+LINE_MARKETS = {
+    "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+    "set3_game_handicap", "set_handicap",
+    "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
+}
+
 
 def _read(path: Path, fallback):
     try:
@@ -102,16 +109,37 @@ def _selection_key(selection: dict) -> str:
     )
 
 
+def _context_current(ctx: dict) -> bool:
+    return bool(
+        isinstance(ctx, dict)
+        and ctx.get("operator") == "superbet.pl"
+        and ctx.get("operator_verified") is True
+        and ctx.get("status") == "VERIFIED"
+        and ctx.get("suspended") is not True
+    )
+
+
 def _selection_evidence_verified(selection: dict) -> bool:
     """Derived coverage may consume only current operator-verified evidence."""
-    if selection.get("operator_available") is not True:
+    if not isinstance(selection, dict) or selection.get("operator_available") is not True:
         return False
-    if _num(selection.get("line")) is None:
+    market = str(selection.get("market") or "")
+    if market not in LINE_MARKETS:
         return True
     return (
-        selection.get("operator_line_verified") is True
+        _num(selection.get("line")) is not None
+        and selection.get("operator_line_verified") is True
         and selection.get("fixture_line_verified") is True
     )
+
+
+def _current_selection_rows(ctx: dict) -> list[dict]:
+    if not _context_current(ctx):
+        return []
+    return [
+        row for row in (ctx.get("canonical_selections") or [])
+        if isinstance(row, dict) and _selection_evidence_verified(row)
+    ]
 
 
 def _distribution_bundle(match: dict) -> dict:
@@ -245,8 +273,10 @@ def _coverage_fields(ctx: dict, selections: list[dict], signals: list[dict], sha
 
 
 def _base_enrich_match(raw: dict) -> dict:
-    match=dict(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=[x for x in (ctx.get("canonical_selections") or []) if isinstance(x,dict)]; signals=[dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)]; shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict)]
-    existing={_selection_key(x) for x in signals}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in BASE_DERIVED_MARKETS and _selection_evidence_verified(s) and _selection_key(s) not in existing]
+    match=dict(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=_current_selection_rows(ctx); selection_keys={_selection_key(x) for x in selections}
+    signals=[dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict) and _selection_key(x) in selection_keys] if _context_current(ctx) else []
+    shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict) and _selection_key(x) in selection_keys] if _context_current(ctx) else []
+    existing={_selection_key(x) for x in signals}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in BASE_DERIVED_MARKETS and _selection_key(s) not in existing]
     bundle=_distribution_bundle(match) if any(str(s.get("market") or "") in ACTIONABLE_DERIVED_MARKETS for s in wanted) else None
     ace_dist=_most_aces_distribution(match) if any(str(s.get("market") or "") in SHADOW_DERIVED_MARKETS for s in wanted) else None
     added=shadow_added=0
@@ -360,12 +390,15 @@ def _label(selection: dict) -> str:
 
 
 def enrich_match(raw: dict) -> dict:
-    match=_base_enrich_match(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=[x for x in (ctx.get("canonical_selections") or []) if isinstance(x,dict)]; shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict)]; existing={_selection_key(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in DISPLAY_DERIVED_MARKETS and _selection_evidence_verified(s) and _selection_key(s) not in existing]; bundle=_extended_bundle(match) if wanted else {}; added=0
+    match=_base_enrich_match(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=_current_selection_rows(ctx); selection_keys={_selection_key(x) for x in selections}
+    signals=[dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict) and _selection_key(x) in selection_keys] if _context_current(ctx) else []
+    shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict) and _selection_key(x) in selection_keys] if _context_current(ctx) else []
+    existing={_selection_key(x) for x in signals}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in DISPLAY_DERIVED_MARKETS and _selection_key(s) not in existing]; bundle=_extended_bundle(match) if wanted else {}; added=0
     for selection in wanted:
         result,source=_derived(match,selection,bundle)
         if not result or result.get("score") is None:continue
         row=_signal(selection,result,source or "existing_distribution",False); row["label"]=_label(selection); row["symphony_market_adapter"]=VERSION; row["coverage_adapter_version"]=VERSION; row["coverage_status"]="MODEL_DERIVED_DISPLAY_ONLY_PENDING_SETTLEMENT"; row["exact_path_supported"]=False; row["symphony_actionable"]=False; shadow.append(row); added+=1
-    signals=[dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)]; base_added=int(ctx.get("coverage_adapter_added") or 0); prior_shadow=max(0,int(ctx.get("coverage_adapter_shadow_added") or 0)); match["superbet_market_v91"]=_coverage_fields(ctx,selections,signals,shadow,VERSION,base_added,prior_shadow+added); return match
+    base_added=int(ctx.get("coverage_adapter_added") or 0); prior_shadow=max(0,int(ctx.get("coverage_adapter_shadow_added") or 0)); match["superbet_market_v91"]=_coverage_fields(ctx,selections,signals,shadow,VERSION,base_added,prior_shadow+added); return match
 
 
 def enrich_results(rows: list[dict]):

@@ -13,6 +13,7 @@ from backend.superbet_candidate_settlement import (
 from backend.superbet_playable import (
     inject_match,
     is_operator_playable_signal,
+    operator_availability,
     project_match_for_display,
     signal_signature,
 )
@@ -173,6 +174,47 @@ def test_set_handicap_signature_keeps_exact_numeric_line_and_is_not_playable_wit
 
     assert not any(
         row.get("market") == "set_handicap"
+        for row in view["superbet_playable_v912"]["signals"]
+    )
+
+
+
+
+def test_line_market_requires_numeric_line_and_set3_handicap_keeps_exact_identity_without_promotion():
+    malformed = {
+        "market": "match_total",
+        "pick": "over",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    original = _match()
+    original["superbet_market_v91"]["canonical_selections"] = [malformed]
+    assert operator_availability(original) == {}
+
+    a = {
+        "market": "set3_game_handicap",
+        "pick": "Player A",
+        "line": -1.5,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    b = {**a, "line": -2.5}
+    assert signal_signature(a) != signal_signature(b)
+
+    original = _match()
+    original["superbet_market_v91"]["canonical_selections"].extend([a, b])
+    original["superbet_market_v91"]["model_signals"].append({
+        **a,
+        "key": "set3-handicap-a",
+        "score": 80.0,
+    })
+    view, _ = project_match_for_display(original)
+
+    assert not any(
+        row.get("market") == "set3_game_handicap"
         for row in view["superbet_playable_v912"]["signals"]
     )
 
@@ -372,6 +414,51 @@ def test_v925_numeric_candidate_requires_fixture_proof_and_preserves_direct_sour
     assert row["operator_line_source"] == "superbet_direct_selected_shadow"
     assert row["operator_offer_source"] == "superbet_direct_selected_shadow"
     assert row["direct_source"] is True
+
+
+
+
+def test_v925_line_market_missing_numeric_line_is_rejected_from_capture_and_stats():
+    now = datetime.now(timezone.utc)
+    future = (now + timedelta(hours=2)).isoformat()
+    history = [{
+        "match_id": 1,
+        "p1": "Player A",
+        "p2": "Player B",
+        "scheduled_time": future,
+        "status": "pending",
+    }]
+    match = _match()
+    match["scheduled_time"] = future
+    malformed = {
+        "market": "set_handicap",
+        "pick": "Player A",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    match["superbet_market_v91"]["canonical_selections"].append(dict(malformed))
+    match["superbet_market_v91"]["coverage_shadow_signals"] = [{
+        **malformed,
+        "key": "candidate|set_handicap|missing-line",
+        "score": 75.0,
+    }]
+
+    frozen, info = capture_candidates(history, [match], now=now)
+    assert info["captured"] == 0
+    assert not frozen[0].get(V925_LAYER)
+
+    stats = build_candidate_stats([{
+        V925_LAYER: [{
+            **malformed,
+            "score": 75.0,
+            "result": "hit",
+            "operator": "superbet.pl",
+        }]
+    }])
+    assert stats["line_provenance_quarantined_rows"] == 1
+    assert "set_handicap" not in stats["by_market"]
 
 
 def test_v925_stats_quarantine_legacy_numeric_lines_without_fixture_proof():

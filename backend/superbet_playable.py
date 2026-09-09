@@ -45,7 +45,7 @@ STRICT_MARKETS = {
 }
 LINE_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
-    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set_handicap",
+    "match_game_handicap", "set1_game_handicap", "set2_game_handicap", "set3_game_handicap", "set_handicap",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
 }
 PLAYER_MARKETS = {"player_total_games", "player_aces", "player_double_faults"}
@@ -151,7 +151,8 @@ def _operator_evidence_verified(row: dict, market: str) -> bool:
         return False
     if market in LINE_MARKETS:
         return (
-            row.get("operator_line_verified") is True
+            _num(row.get("line")) is not None
+            and row.get("operator_line_verified") is True
             and row.get("fixture_line_verified") is True
         )
     return True
