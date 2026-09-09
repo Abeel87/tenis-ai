@@ -137,7 +137,7 @@ def _sanitize_fixture(row: dict, meta: dict):
             outcome_meta = (market_meta.get("outcomes") or {}).get(str(outcome_id), {})
             outcome_name = outcome_meta.get("outcomeName") or outcome_meta.get("outcomeNameShort")
             for player_data in (outcome_data.get("players") or {}).values():
-                if not isinstance(player_data, dict) or player_data.get("active") is False: continue
+                if not isinstance(player_data, dict) or player_data.get("active") is not True: continue
                 boid = player_data.get("bookmakerOutcomeId")
                 pick = _selection_pick(canonical, outcome_name, boid, p1, p2)
                 line, line_source = _market_line(canonical, market_meta, outcome_name, boid, pick=pick, p1=p1, p2=p2)

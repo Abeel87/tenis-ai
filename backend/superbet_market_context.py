@@ -138,10 +138,14 @@ def _fixture_line_for_selection(market: str,market_data: dict,market_meta: dict,
 
 
 def _selection_carriers(outcome_data: dict) -> list[dict]:
-    if not isinstance(outcome_data,dict) or outcome_data.get("active") is False:return []
-    players=outcome_data.get("players") or {}
-    active_players=[player for player in players.values() if isinstance(player,dict) and player.get("active") is not False] if isinstance(players,dict) else []
-    return active_players or [outcome_data]
+    if not isinstance(outcome_data,dict):return []
+    players=outcome_data.get("players")
+    if isinstance(players,dict) and players:
+        return [
+            player for player in players.values()
+            if isinstance(player,dict) and player.get("active") is True
+        ]
+    return [outcome_data] if outcome_data.get("active") is True else []
 
 
 def _selection_is_valid(market: str,pick) -> bool:
