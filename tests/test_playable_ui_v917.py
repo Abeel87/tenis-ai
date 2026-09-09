@@ -11,6 +11,8 @@ def test_v917_requires_fresh_verified_superbet_context():
     assert "x.status==='VERIFIED'" in UI
     assert "x.suspended!==true" in UI
     assert "if(!active(match)||!row||typeof row!=='object')return false" in UI
+    assert "function preMatch(match,now=Date.now())" in UI
+    assert "scheduled<=Number(now)" in UI
 
 
 def test_v917_matches_exact_operator_selection_not_just_market_family():
@@ -100,6 +102,10 @@ for(const status of ['CACHE_STALE','NOT_FOUND']){
 }
 assert.equal(api.active({...match,superbet_market_v91:{...match.superbet_market_v91,suspended:true}}),false);
 assert.equal(api.active({...match,feed_status:'completed'}),false);
+assert.equal(api.preMatch({...match,scheduled_time:'2026-08-28T12:00:00Z'}),false,'PLAYABLE expires exactly at scheduled start');
+assert.equal(api.active({...match,scheduled_time:'2026-08-28T12:00:00Z'}),false,'no 30-minute PLAYABLE grace after scheduled start');
+assert.equal(api.active({...match,scheduled_time:'2026-08-28T11:59:59Z'}),false);
+assert.equal(api.active({...match,feed_status:'live'}),false,'known live status is never pre-match PLAYABLE');
 assert.equal(api.active({...match,scheduled_time:'2026-08-28T10:00:00Z'}),false);
 assert.equal(api.active({...match,superbet_market_v91:{...match.superbet_market_v91,source_max_age_hours:0}}),false);
 const before=JSON.stringify(match);
