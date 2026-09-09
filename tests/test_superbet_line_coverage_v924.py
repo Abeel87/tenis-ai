@@ -23,6 +23,19 @@ def _match():
     }
 
 
+
+
+def _ctx(selections, model_signals=None, *, status="VERIFIED", operator_verified=True, operator="superbet.pl", suspended=False):
+    return {
+        "operator": operator,
+        "status": status,
+        "operator_verified": operator_verified,
+        "suspended": suspended,
+        "canonical_selections": list(selections),
+        "model_signals": list(model_signals or []),
+        "prices_used": False,
+    }
+
 def test_extended_bundle_reuses_existing_math_and_retains_second_set_paths():
     bundle = cov._extended_bundle(_match())
     assert bundle["set1"]
@@ -61,7 +74,7 @@ def test_new_audited_families_get_model_probability_but_stay_display_only():
         if row.get("line") is not None:
             row["fixture_line_verified"] = True
             row["operator_line_source"] = "oddspapi_fixture_market"
-    match["superbet_market_v91"] = {"canonical_selections": selections, "model_signals": [], "prices_used": False}
+    match["superbet_market_v91"] = _ctx(selections)
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     assert ctx["model_signals"] == []
@@ -89,11 +102,7 @@ def test_derived_handicap_preserves_direct_line_provenance():
         "operator_offer_source": direct_source,
         "direct_source": True,
     }
-    match["superbet_market_v91"] = {
-        "canonical_selections": [selection],
-        "model_signals": [],
-        "prices_used": False,
-    }
+    match["superbet_market_v91"] = _ctx([selection])
 
     out = cov.enrich_match(match)
     signals = out["superbet_market_v91"]["model_signals"]
@@ -161,3 +170,23 @@ def test_adapter_source_has_no_network_path():
     for token in ("urlopen", "requests.get", "urllib.request", "httpx", "aiohttp"):
         assert token not in source
     assert '"external_requests":0' in source.replace(" ", "")
+
+
+def test_set_handicap_missing_line_is_fail_closed_even_with_true_flags():
+    match = _match()
+    selection = {
+        "market": "set_handicap",
+        "pick": "Player One",
+        "line": None,
+        "operator_available": True,
+        "operator_line_verified": True,
+        "fixture_line_verified": True,
+    }
+    match["superbet_market_v91"] = _ctx([selection])
+
+    out = cov.enrich_match(match)
+    ctx = out["superbet_market_v91"]
+
+    assert ctx["available_selections_count"] == 0
+    assert ctx["coverage_shadow_signals"] == []
+    assert ctx["display_covered_count"] == 0
