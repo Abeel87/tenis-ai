@@ -671,8 +671,8 @@
   }
 
   simplifyShell();
-  setTimeout(()=>{simplifyShell();if(typeof view!=='undefined'&&view==='matches')renderMatches()},120);
-  setTimeout(()=>{if(typeof view!=='undefined'&&view==='matches')renderMatches()},600);
+  if(typeof view!=='undefined'&&view==='matches')renderMatches();
+  document.documentElement.dataset.tenisUiReady='1';
 
   window.TENIS_AI_PROJECT_UI = {
     openMatch,
