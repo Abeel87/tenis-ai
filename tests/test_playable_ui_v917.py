@@ -12,6 +12,7 @@ def test_v917_requires_fresh_verified_superbet_context():
     assert "x.suspended!==true" in UI
     assert "if(!active(match)||!row||typeof row!=='object')return false" in UI
     assert "function preMatch(match,now=Date.now())" in UI
+    assert "function fallbackNonPrematchStatus(match)" in UI
     assert "scheduled<=Number(now)" in UI
 
 
@@ -106,6 +107,11 @@ assert.equal(api.preMatch({...match,scheduled_time:'2026-08-28T12:00:00Z'}),fals
 assert.equal(api.active({...match,scheduled_time:'2026-08-28T12:00:00Z'}),false,'no 30-minute PLAYABLE grace after scheduled start');
 assert.equal(api.active({...match,scheduled_time:'2026-08-28T11:59:59Z'}),false);
 assert.equal(api.active({...match,feed_status:'live'}),false,'known live status is never pre-match PLAYABLE');
+const savedMatchTime=win.TENIS_AI_MATCH_TIME;
+delete win.TENIS_AI_MATCH_TIME;
+assert.equal(api.active({...match,feed_status:'live'}),false,'UI fallback must reject live even if match-time helper is unavailable');
+assert.equal(api.active({...match,feed_status:'not_started'}),true,'UI fallback must preserve explicit not-started fixtures');
+win.TENIS_AI_MATCH_TIME=savedMatchTime;
 assert.equal(api.active({...match,scheduled_time:'2026-08-28T10:00:00Z'}),false);
 assert.equal(api.active({...match,superbet_market_v91:{...match.superbet_market_v91,source_max_age_hours:0}}),false);
 const before=JSON.stringify(match);
