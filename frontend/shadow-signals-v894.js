@@ -65,7 +65,6 @@ function ensureNav(){
     btn.dataset.shadowSignalsBound='1';
     btn.addEventListener('click',()=>open());
   }
-  document.documentElement.classList.add('sh894-nav-ready');
   return true;
 }
 

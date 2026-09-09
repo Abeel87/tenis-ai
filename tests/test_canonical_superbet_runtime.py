@@ -172,10 +172,15 @@ def test_model_trend_monitor_stays_read_only():
 
 
 def test_integrity_status_preserves_shadow_experiment_boundary():
-    text = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
-    assert "integrity_report_v78a.json" in text
-    assert "shadow-lab-v78e6.js" in text
-    assert "shadow-lab-v78e6.css" in text
+    integrity = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
+    index = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    style = (FRONTEND / "style.css").read_text(encoding="utf-8")
+    assert "integrity_report_v78a.json" in integrity
+    assert 'src="shadow-lab-v78e6.js' in index
+    assert "shadow-lab-v78e6.js" not in integrity
+    assert "shadow-lab-v78e6.css" not in integrity
+    assert "Migrated functional component rules from retired shadow-lab-v78e6.css" in style
+    assert not (FRONTEND / "shadow-lab-v78e6.css").exists()
 
 
 def test_match_time_runtime_preserves_single_formatter_contract():
