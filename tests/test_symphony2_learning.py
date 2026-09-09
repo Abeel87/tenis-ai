@@ -457,8 +457,8 @@ def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch
             "tabpfn_score": 70.0,
             "adaptive_score": 70.0,
             "target": i % 2,
-            "captured_ts": float(i),
-            "settled_ts": float(i),
+            "captured_ts": float(i + 1),
+            "settled_ts": float(i + 1),
             "training_source": "playable_frozen",
         })
     with_candidate_holdout = list(canonical)
@@ -467,8 +467,8 @@ def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch
             **canonical[i],
             "market": "set2_total",
             "line": 8.5,
-            "captured_ts": float(i) + 0.1,
-            "settled_ts": float(i) + 0.1,
+            "captured_ts": float(i + 1) + 0.1,
+            "settled_ts": float(i + 1) + 0.1,
             "training_source": "candidate_review_ready",
         })
     with_candidate_holdout.sort(key=lambda row: row["captured_ts"])
