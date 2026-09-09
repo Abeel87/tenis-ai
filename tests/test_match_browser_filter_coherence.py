@@ -44,3 +44,21 @@ def test_match_browser_keeps_navigation_state_across_detail_return():
 def test_retired_playable_filter_paths_stay_deleted():
     assert not (ROOT / "frontend" / "playable-ui-coherence-v917.js").exists()
     assert not (ROOT / "frontend" / "playable-line-freshness-v925.js").exists()
+
+
+def test_model_raw_top_is_resynchronized_after_match_browser_filters():
+    browser = BROWSER.read_text(encoding="utf-8")
+    assert "function syncModelTop()" in browser
+    assert "#app .p751-top:not([data-playable-top-v917])" in browser
+    assert "#app .p751-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])" in browser
+    assert "button.hidden=!show" in browser
+    assert "top.hidden=shown===0" in browser
+    assert "syncModelTop();" in browser
+    assert browser.index("syncModelTop();") < browser.index("TENIS_AI_PLAYABLE_UI_V917?.patchHome?.()")
+
+
+def test_model_raw_top_filtering_is_reversible_instead_of_deleting_rows():
+    browser = BROWSER.read_text(encoding="utf-8")
+    assert "visible.has(topKey(button))" in browser
+    assert "button.hidden=!show" in browser
+    assert "syncModelTop,enhance" in browser

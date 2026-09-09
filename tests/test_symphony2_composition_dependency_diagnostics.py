@@ -152,3 +152,20 @@ def test_weakest_leg_impact_is_exposed_without_affecting_ranking():
     assert diagnostics["weakest_supervised_leg_joint_mass_removed_pp"] is not None
     assert diagnostics["dependency_score_semantics"]["thresholds_enabled"] is False
     assert diagnostics["ranking_influence"] is False
+
+
+def test_best_compositions_rejects_exact_zero_cross_market_conflict():
+    match = _match()
+    outcomes = build_outcomes(match)
+    scored = [
+        _row("match_winner", "Alpha", 68.0),
+        _row("p1_wins_a_set", "no", 60.0, player="Alpha"),
+    ]
+
+    joint, supported = joint_probability(match, scored, outcomes)
+    assert joint is not None and supported == 2
+    assert joint == 0.0
+
+    compositions = _best_compositions(match, scored, outcomes)
+
+    assert compositions == {}

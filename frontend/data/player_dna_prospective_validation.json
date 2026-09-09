@@ -18,11 +18,11 @@
     "settled_at_rewrite_forbidden": true,
     "snapshot_drop_forbidden_before_retention_cap": true,
     "retention_cap": 5000,
-    "previous_snapshot_count": 116,
+    "previous_snapshot_count": 183,
     "current_snapshot_count_before_retention": 183,
-    "preserved_snapshots": 116,
-    "new_snapshots": 67,
-    "newly_settled": 4,
+    "preserved_snapshots": 183,
+    "new_snapshots": 0,
+    "newly_settled": 0,
     "rewritten_predictions": 0,
     "settlement_regressions": 0,
     "settled_actual_rewrites": 0,
@@ -46,81 +46,81 @@
     "unsettled": {
       "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
       "buckets": {
-        "upcoming": 67,
-        "due_within_6h": 0,
+        "upcoming": 58,
+        "due_within_6h": 9,
         "overdue_6_24h": 0,
-        "overdue_24_72h": 23,
-        "overdue_gt_72h": 0,
+        "overdue_24_72h": 19,
+        "overdue_gt_72h": 4,
         "unparseable_schedule": 0
       },
       "overdue_samples": [
         {
           "match_id": "186964",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 72.19,
           "p1": "Adrienn Nagy",
           "p2": "Samira De Stefano"
         },
         {
           "match_id": "187045",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 72.19,
           "p1": "Oskari Paldanius",
           "p2": "Nicolas Tepmahc"
         },
         {
           "match_id": "187083",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 72.19,
           "p1": "Ivan Gakhov",
           "p2": "Oleg Prihodko"
         },
         {
           "match_id": "187084",
           "scheduled_time": "2026-09-06T09:30:00+00:00",
-          "hours_since_scheduled": 69.86,
+          "hours_since_scheduled": 72.19,
           "p1": "Niels Visker",
           "p2": "Daniel Siniakov"
         },
         {
           "match_id": "187048",
           "scheduled_time": "2026-09-06T11:00:00+00:00",
-          "hours_since_scheduled": 68.36,
+          "hours_since_scheduled": 70.69,
           "p1": "Amit Vales",
           "p2": "Mathieu Scaglia"
         },
         {
           "match_id": "187074",
           "scheduled_time": "2026-09-06T12:00:00+00:00",
-          "hours_since_scheduled": 67.36,
+          "hours_since_scheduled": 69.69,
           "p1": "Mario Gonzalez Fernandez",
           "p2": "Pavel Lagutin"
         },
         {
           "match_id": "186888",
           "scheduled_time": "2026-09-07T02:00:00+00:00",
-          "hours_since_scheduled": 53.36,
+          "hours_since_scheduled": 55.69,
           "p1": "Alexis Galarneau",
           "p2": "Semen Pankin"
         },
         {
           "match_id": "187102",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 54.69,
           "p1": "Enzo Aguiard",
           "p2": "Khumoyun Sultanov"
         },
         {
           "match_id": "187103",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 54.69,
           "p1": "Maximus Jones",
           "p2": "Florent Bax"
         },
         {
           "match_id": "187107",
           "scheduled_time": "2026-09-07T03:00:00+00:00",
-          "hours_since_scheduled": 52.36,
+          "hours_since_scheduled": 54.69,
           "p1": "Moise Kouame",
           "p2": "Kenta Miyoshi"
         }
@@ -135,9 +135,34 @@
       "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
     },
     "schedule_drift": {
-      "count": 0,
+      "count": 4,
       "meaning": "current schedule differs from immutable frozen prospective schedule; snapshot is never rewritten",
-      "samples": []
+      "samples": [
+        {
+          "match_id": "188259",
+          "frozen_scheduled_time": "2026-09-09T08:30:00+00:00",
+          "current_scheduled_time": "2026-09-09T09:00:00+00:00",
+          "drift_minutes": 30.0
+        },
+        {
+          "match_id": "188292",
+          "frozen_scheduled_time": "2026-09-09T10:00:00+00:00",
+          "current_scheduled_time": "2026-09-09T10:30:00+00:00",
+          "drift_minutes": 30.0
+        },
+        {
+          "match_id": "188290",
+          "frozen_scheduled_time": "2026-09-09T08:30:00+00:00",
+          "current_scheduled_time": "2026-09-09T08:45:00+00:00",
+          "drift_minutes": 15.0
+        },
+        {
+          "match_id": "188308",
+          "frozen_scheduled_time": "2026-09-09T08:30:00+00:00",
+          "current_scheduled_time": "2026-09-09T08:45:00+00:00",
+          "drift_minutes": 15.0
+        }
+      ]
     }
   },
   "hold_calibration_provenance": {
@@ -281,8 +306,8 @@
     "hold_calibration_contract_fingerprint_sha256": "631e0158e0b014c4a28f543fe074ca1f557ae04930520bd7e2e47ae2d40e842a"
   },
   "counts": {
-    "current_simulated_matches": 73,
-    "current_eligible_by_segment": 70,
+    "current_simulated_matches": 67,
+    "current_eligible_by_segment": 64,
     "snapshots": 183,
     "settled_snapshots": 93,
     "unsettled_snapshots": 90,
@@ -417,11 +442,11 @@
       "settled_at_rewrite_forbidden": true,
       "snapshot_drop_forbidden_before_retention_cap": true,
       "retention_cap": 5000,
-      "previous_snapshot_count": 191,
+      "previous_snapshot_count": 195,
       "current_snapshot_count_before_retention": 195,
-      "preserved_snapshots": 191,
-      "new_snapshots": 4,
-      "newly_settled": 6,
+      "preserved_snapshots": 195,
+      "new_snapshots": 0,
+      "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -445,81 +470,81 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 56,
-          "due_within_6h": 9,
-          "overdue_6_24h": 6,
-          "overdue_24_72h": 31,
-          "overdue_gt_72h": 0,
+          "upcoming": 41,
+          "due_within_6h": 18,
+          "overdue_6_24h": 12,
+          "overdue_24_72h": 27,
+          "overdue_gt_72h": 4,
           "unparseable_schedule": 0
         },
         "overdue_samples": [
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 68.36,
+            "hours_since_scheduled": 70.69,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 69.69,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "186888",
             "scheduled_time": "2026-09-07T02:00:00+00:00",
-            "hours_since_scheduled": 53.36,
+            "hours_since_scheduled": 55.69,
             "p1": "Alexis Galarneau",
             "p2": "Semen Pankin"
           },
           {
             "match_id": "187102",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 54.69,
             "p1": "Enzo Aguiard",
             "p2": "Khumoyun Sultanov"
           },
           {
             "match_id": "187103",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 54.69,
             "p1": "Maximus Jones",
             "p2": "Florent Bax"
           },
           {
             "match_id": "187107",
             "scheduled_time": "2026-09-07T03:00:00+00:00",
-            "hours_since_scheduled": 52.36,
+            "hours_since_scheduled": 54.69,
             "p1": "Moise Kouame",
             "p2": "Kenta Miyoshi"
           }
@@ -550,13 +575,13 @@
             "drift_minutes": 1440.0
           },
           {
-            "match_id": "188291",
+            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
           },
           {
-            "match_id": "188366",
+            "match_id": "188291",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -681,9 +706,9 @@
       }
     },
     "counts": {
-      "current_dynamic_matches": 320,
-      "current_rows_with_dynamic_candidates": 64,
-      "current_dynamic_candidate_market_slots": 340,
+      "current_dynamic_matches": 268,
+      "current_rows_with_dynamic_candidates": 59,
+      "current_dynamic_candidate_market_slots": 347,
       "snapshots": 195,
       "ledger_settled_snapshots": 93,
       "ledger_unsettled_snapshots": 102,
@@ -9082,10 +9107,10 @@
       "settlement_regression_forbidden": true,
       "settled_actual_rewrite_forbidden": true,
       "settled_at_rewrite_forbidden": true,
-      "previous_snapshot_count": 234,
+      "previous_snapshot_count": 242,
       "current_snapshot_count_before_retention": 242,
-      "new_snapshots": 8,
-      "newly_settled": 7,
+      "new_snapshots": 0,
+      "newly_settled": 0,
       "rewritten_predictions": 0,
       "settlement_regressions": 0,
       "settled_actual_rewrites": 0,
@@ -9100,81 +9125,81 @@
       "unsettled": {
         "meaning": "operational age of frozen unsettled snapshots; overdue does not imply cancellation",
         "buckets": {
-          "upcoming": 65,
-          "due_within_6h": 11,
-          "overdue_6_24h": 13,
-          "overdue_24_72h": 37,
-          "overdue_gt_72h": 0,
+          "upcoming": 46,
+          "due_within_6h": 22,
+          "overdue_6_24h": 20,
+          "overdue_24_72h": 32,
+          "overdue_gt_72h": 6,
           "unparseable_schedule": 0
         },
         "overdue_samples": [
           {
             "match_id": "186869",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 70.86,
+            "hours_since_scheduled": 73.19,
             "p1": "Cesar Bouchelaghem",
             "p2": "Aziz Dougaz"
           },
           {
             "match_id": "186940",
             "scheduled_time": "2026-09-06T08:30:00+00:00",
-            "hours_since_scheduled": 70.86,
+            "hours_since_scheduled": 73.19,
             "p1": "Ryan Nijboer",
             "p2": "Martin Van Der Meerschen"
           },
           {
             "match_id": "186964",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Adrienn Nagy",
             "p2": "Samira De Stefano"
           },
           {
             "match_id": "187045",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Oskari Paldanius",
             "p2": "Nicolas Tepmahc"
           },
           {
             "match_id": "187083",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Ivan Gakhov",
             "p2": "Oleg Prihodko"
           },
           {
             "match_id": "187084",
             "scheduled_time": "2026-09-06T09:30:00+00:00",
-            "hours_since_scheduled": 69.86,
+            "hours_since_scheduled": 72.19,
             "p1": "Niels Visker",
             "p2": "Daniel Siniakov"
           },
           {
             "match_id": "187048",
             "scheduled_time": "2026-09-06T11:00:00+00:00",
-            "hours_since_scheduled": 68.36,
+            "hours_since_scheduled": 70.69,
             "p1": "Amit Vales",
             "p2": "Mathieu Scaglia"
           },
           {
             "match_id": "186941",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 69.69,
             "p1": "Eero Vasa",
             "p2": "Adrian Oetzbach"
           },
           {
             "match_id": "187074",
             "scheduled_time": "2026-09-06T12:00:00+00:00",
-            "hours_since_scheduled": 67.36,
+            "hours_since_scheduled": 69.69,
             "p1": "Mario Gonzalez Fernandez",
             "p2": "Pavel Lagutin"
           },
           {
             "match_id": "187036",
             "scheduled_time": "2026-09-06T19:30:00+00:00",
-            "hours_since_scheduled": 59.86,
+            "hours_since_scheduled": 62.19,
             "p1": "Jamie Mackenzie",
             "p2": "Matias Reyniak"
           }
@@ -9189,7 +9214,7 @@
         "meaning": "time from frozen scheduled start to first workflow observation of complete canonical labels"
       },
       "schedule_drift": {
-        "count": 26,
+        "count": 25,
         "meaning": "current simulation schedule differs from immutable frozen schedule; trajectory snapshot is never rewritten",
         "samples": [
           {
@@ -9205,13 +9230,13 @@
             "drift_minutes": 1440.0
           },
           {
-            "match_id": "188291",
+            "match_id": "188366",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
           },
           {
-            "match_id": "188366",
+            "match_id": "188291",
             "frozen_scheduled_time": "2026-09-09T08:00:00+00:00",
             "current_scheduled_time": "2026-09-10T08:00:00+00:00",
             "drift_minutes": 1440.0
@@ -9256,8 +9281,8 @@
       }
     },
     "counts": {
-      "current_simulated_matches": 73,
-      "new_current_pre_match_snapshots": 8,
+      "current_simulated_matches": 67,
+      "new_current_pre_match_snapshots": 0,
       "snapshots": 242,
       "ledger_settled_snapshots": 116,
       "ledger_unsettled_snapshots": 126,
@@ -10913,20 +10938,20 @@
         "checkpoint_after_2_games_top3": 1.0,
         "checkpoint_after_4_games_top1": 0.450867,
         "checkpoint_after_4_games_top3": 0.911368,
-        "checkpoint_after_6_games_top1": 0.364162,
+        "checkpoint_after_6_games_top1": 0.362235,
         "checkpoint_after_6_games_top3": 0.828516,
-        "first_set_complete_path_top1": 0.038536,
-        "first_set_complete_path_top3": 0.090559,
-        "first_set_complete_path_top8": 0.208092,
-        "storyline_match_score_top1": 0.340385,
-        "storyline_match_score_top3": 0.680769,
+        "first_set_complete_path_top1": 0.030829,
+        "first_set_complete_path_top3": 0.092486,
+        "first_set_complete_path_top8": 0.217726,
+        "storyline_match_score_top1": 0.344231,
+        "storyline_match_score_top3": 0.684615,
         "match_set_sequence_top1": 0.023077,
         "match_set_sequence_top3": 0.071154,
         "match_set_sequence_top12": 0.2,
         "full_match_game_path_top1": 0.001953,
         "full_match_game_path_top2": 0.001953,
-        "full_match_game_path_top4": 0.001953,
-        "full_match_game_path_mean_top1_prefix_fraction": 0.108886
+        "full_match_game_path_top4": 0.003906,
+        "full_match_game_path_mean_top1_prefix_fraction": 0.106447
       },
       "policy": {
         "benchmark_is_historical_reference_not_performance_verdict": true,
