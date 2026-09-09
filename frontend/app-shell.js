@@ -271,6 +271,343 @@
     decorateMatchBrowser();
   }
 
+
+  const SHELL_STATE_KEY = 'tenis-ai-product-shell-state';
+  let decorateTimer = null;
+
+  function readShellState() {
+    try { return JSON.parse(localStorage.getItem(SHELL_STATE_KEY) || '{}') || {}; }
+    catch { return {}; }
+  }
+
+  function writeShellState(next) {
+    try {
+      const current = readShellState();
+      localStorage.setItem(SHELL_STATE_KEY, JSON.stringify({...current, ...next}));
+    } catch {}
+  }
+
+  function ensureSurfaceHeader(target, key, kicker, title, subtitle) {
+    if (!target) return;
+    let header = document.querySelector(`.tenis-surface-header[data-tenis-surface="${CSS.escape(key)}"]`);
+    if (!header) {
+      header = document.createElement('div');
+      header.className = 'tenis-surface-header';
+      header.dataset.tenisSurface = key;
+      header.innerHTML = `
+        <div>
+          <span>${escapeHtml(kicker)}</span>
+          <b>${escapeHtml(title)}</b>
+          <small>${escapeHtml(subtitle)}</small>
+        </div>`;
+    }
+    target.dataset.tenisSurfaceReady = '1';
+    if (target.previousElementSibling !== header) target.before(header);
+  }
+
+  function normalizeSimpleCopy(root = document) {
+    const technical = technicalMode();
+
+    root.querySelectorAll('.stats-hero span').forEach(el => {
+      if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : el.dataset.shellOriginal.replace('📊 Skuteczność modelu · zielone sygnały', '📊 Skuteczność typów');
+    });
+
+    root.querySelectorAll('.stats-note').forEach(el => {
+      if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : 'Skuteczność pokazuje tylko typy, które da się jednoznacznie rozliczyć po meczu.';
+    });
+
+    root.querySelectorAll('.s2-kicker').forEach(el => {
+      if (!el.dataset.shellOriginal) el.dataset.shellOriginal = el.textContent;
+      el.textContent = technical
+        ? el.dataset.shellOriginal
+        : (/SYMPHONY/i.test(el.dataset.shellOriginal) ? 'SYMFONIA 2.0' : el.dataset.shellOriginal);
+    });
+
+    root.querySelectorAll('.pds-subhead, .pi851-tech-note, .pc882-note').forEach(el => {
+      el.classList.add('tenis-secondary-copy');
+    });
+  }
+
+  function decorateStats() {
+    const app = document.querySelector('#app');
+    if (!app || activeView() !== 'stats') return;
+    app.classList.add('tenis-stats-view');
+
+    const hero = app.querySelector('.stats-hero');
+    if (hero) hero.classList.add('tenis-product-hero');
+
+    const pc = document.querySelector('#pc882-dashboard');
+    const pi = document.querySelector('#pi85-stats');
+    const models = document.querySelector('#al84-performance');
+    const trends = document.querySelector('#mt84e2');
+
+    if (pc) {
+      pc.classList.add('tenis-product-surface', 'tenis-performance-surface');
+      ensureSurfaceHeader(pc, 'performance', 'WYNIKI', 'Skuteczność i jakość', 'Najważniejsze wyniki modeli oraz jakość sygnałów.');
+    }
+    if (pi) {
+      pi.classList.add('tenis-product-surface', 'tenis-player-intelligence-surface');
+      ensureSurfaceHeader(pi, 'player-intelligence', 'ZAWODNICY', 'Player Intelligence', 'Forma, matchup i dane zawodników w czytelnej warstwie.');
+    }
+    if (models) {
+      models.classList.add('tenis-product-surface', 'tenis-models-surface');
+      ensureSurfaceHeader(models, 'models', 'SILNIK', 'Modele i uczenie', 'Status modeli produkcyjnych oraz warstwy uczącej.');
+    }
+    if (trends) trends.classList.add('tenis-product-surface', 'tenis-trends-surface');
+
+    app.querySelectorAll('.stats-section,.stat-grid,.pc882-card,.pi851-card-compare,.pi851-metrics,.al84-card')
+      .forEach(el => el.classList.add('tenis-product-card'));
+  }
+
+  function decorateHistory() {
+    const app = document.querySelector('#app');
+    if (!app || activeView() !== 'history') return;
+    app.classList.add('tenis-history-view');
+    app.querySelectorAll('.v75-history-stats,.history-head').forEach(el => el.classList.add('tenis-product-hero'));
+    app.querySelectorAll('.v75-history-day,.v75-history-card,.history-card').forEach(el => el.classList.add('tenis-product-card'));
+    app.querySelectorAll('.v75-history-signal,.history-signal').forEach(el => el.classList.add('tenis-result-row'));
+  }
+
+  function decorateCommunity() {
+    document.querySelectorAll(
+      '.shared-hero,.community-hero,.community-live-stats,.hub-profile-card,.hub-gate,.hub-panel-title'
+    ).forEach(el => el.classList.add('tenis-product-hero'));
+
+    document.querySelectorAll(
+      '.shared-card,.coupon-card,.hub-person,.hub-message,.hub-coupon-mini,.community-card,.hub-activity'
+    ).forEach(el => el.classList.add('tenis-product-card'));
+
+    document.querySelectorAll(
+      '.shared-toolbar,.hub-nav,.admin74-filters,.admin74-toolbar'
+    ).forEach(el => el.classList.add('tenis-product-toolbar'));
+
+    const hub = document.querySelector('#community-hub-body');
+    if (hub) hub.classList.add('tenis-community-surface');
+  }
+
+  function decoratePlayerProfiles() {
+    const panel = document.querySelector('#player-profile-panel');
+    if (panel && !panel.hidden) panel.classList.add('tenis-product-surface', 'tenis-player-profile-surface');
+
+    document.querySelectorAll(
+      '.player-current-card,.player-section,.player-history-row,.player-stat,.player-kpi,.player-surface-row,.player-market-row'
+    ).forEach(el => el.classList.add('tenis-product-card'));
+
+    document.querySelectorAll('.player-section-title').forEach(el => el.classList.add('tenis-product-section-title'));
+  }
+
+  function decorateSymphony() {
+    document.querySelectorAll('.s2-shell').forEach(el => el.classList.add('tenis-symphony-surface', 'tenis-product-surface'));
+    document.querySelectorAll('.s2-hero,.s2-head,.s2stats-head').forEach(el => el.classList.add('tenis-product-hero'));
+    document.querySelectorAll('.s2-card,.s2-match-ready,.s2-match-wait,.s2stats-card,.s2-leg,.s2-joint')
+      .forEach(el => el.classList.add('tenis-product-card'));
+    document.querySelectorAll('.s2-controls').forEach(el => el.classList.add('tenis-product-toolbar'));
+
+    const surface = document.querySelector('.s2-shell');
+    if (surface) ensureSurfaceHeader(surface, 'symphony', 'DECYZJA', 'Symfonia 2.0', 'Połączony obraz modeli, rynku i finalnego PLAYABLE.');
+  }
+
+  function decoratePlayerDna() {
+    const dna = document.querySelector('#player-dna-match-trajectory');
+    if (dna) {
+      dna.classList.add('tenis-product-surface', 'tenis-dna-surface');
+      ensureSurfaceHeader(dna, 'player-dna', 'PRZEBIEG MECZU', 'Player DNA', 'Scenariusze gem po gemie i możliwe gałęzie meczu.');
+    }
+    document.querySelectorAll(
+      '.pds-scenario,.pds-metric,.pds-market-row,.pds-trajectory-branch,.pds-direct-cell,.pds-health-item'
+    ).forEach(el => el.classList.add('tenis-product-card'));
+    document.querySelectorAll('.pds-health,.pds-foot,.phase11-technical').forEach(el => el.classList.add('tenis-technical-surface'));
+  }
+
+  function decorateAdmin() {
+    document.querySelectorAll('.admin74').forEach(el => el.classList.add('tenis-admin-surface', 'tenis-product-surface'));
+    document.querySelectorAll('.admin74-user,.admin74-request,.admin74-summary').forEach(el => el.classList.add('tenis-product-card'));
+    document.querySelectorAll('.admin74-actions').forEach(el => el.classList.add('tenis-product-actions'));
+  }
+
+  function decorateAccount() {
+    const modal = document.querySelector('.account-modal');
+    if (modal) modal.classList.add('tenis-account-surface');
+    document.querySelectorAll('.account-profile-card,.profile-editor,.account-setup')
+      .forEach(el => el.classList.add('tenis-product-card'));
+  }
+
+  function gotoView(view) {
+    const button = document.querySelector(`.main-tabs button[data-view="${CSS.escape(view)}"]`);
+    if (!button) return false;
+    button.click();
+    setTimeout(() => window.scrollTo({top:0, behavior:'smooth'}), 30);
+    closeAdminCenter();
+    return true;
+  }
+
+  function ensureAdminCenter() {
+    const admin = role() === 'admin';
+    const host = document.querySelector('.header-actions');
+    let button = document.querySelector('#tenis-admin-center-open');
+    let overlay = document.querySelector('#tenis-admin-center');
+
+    if (!admin) {
+      button?.remove();
+      if (overlay) overlay.hidden = true;
+      return;
+    }
+
+    if (host && !button) {
+      button = document.createElement('button');
+      button.id = 'tenis-admin-center-open';
+      button.className = 'tenis-admin-center-open';
+      button.type = 'button';
+      button.innerHTML = '<span>⚙️</span><span><b>Control</b><small>Admin</small></span>';
+      button.setAttribute('aria-label', 'Otwórz centrum administratora');
+      const accountButton = host.querySelector('#account-button');
+      if (accountButton) host.insertBefore(button, accountButton);
+      else host.append(button);
+      button.addEventListener('click', openAdminCenter);
+    }
+
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'tenis-admin-center';
+      overlay.className = 'tenis-admin-center';
+      overlay.hidden = true;
+      overlay.innerHTML = `
+        <section class="tenis-admin-center-panel" role="dialog" aria-modal="true" aria-labelledby="tenis-admin-center-title">
+          <header>
+            <div>
+              <span>ADMIN</span>
+              <h2 id="tenis-admin-center-title">Control Center</h2>
+              <p>Najważniejsze narzędzia i diagnostyka w jednym miejscu.</p>
+            </div>
+            <button type="button" data-admin-center-close aria-label="Zamknij">✕</button>
+          </header>
+          <div class="tenis-admin-center-grid">
+            <button type="button" data-admin-action="view:matches"><span>🎾</span><b>Mecze</b><small>Match Browser</small></button>
+            <button type="button" data-admin-action="symphony"><span>🎼</span><b>Symfonia 2.0</b><small>Finalny PLAYABLE</small></button>
+            <button type="button" data-admin-action="view:stats"><span>📊</span><b>Statystyki</b><small>Modele i wyniki</small></button>
+            <button type="button" data-admin-action="technical"><span>🛠️</span><b>Tryb techniczny</b><small>Pełna diagnostyka</small></button>
+            <button type="button" data-admin-action="community"><span>👥</span><b>Użytkownicy</b><small>Moderacja i role</small></button>
+            <button type="button" data-admin-action="view:history"><span>🕘</span><b>Historia</b><small>Settlement i wyniki</small></button>
+            <button type="button" data-admin-action="view:coupons"><span>🧾</span><b>Kupony</b><small>Społeczność</small></button>
+            <button type="button" data-admin-action="refresh"><span>↻</span><b>Odśwież</b><small>Dane aplikacji</small></button>
+          </div>
+          <footer>
+            <span id="tenis-admin-center-role">Rola: ADMIN</span>
+            <span id="tenis-admin-center-mode">Widok: prosty</span>
+          </footer>
+        </section>`;
+      document.body.append(overlay);
+      overlay.addEventListener('click', event => {
+        if (event.target === overlay || event.target.closest('[data-admin-center-close]')) closeAdminCenter();
+        const action = event.target.closest('[data-admin-action]')?.dataset.adminAction;
+        if (!action) return;
+        if (action.startsWith('view:')) return void gotoView(action.split(':')[1]);
+        if (action === 'refresh') {
+          document.querySelector('#refresh')?.click();
+          closeAdminCenter();
+        }
+        if (action === 'technical') {
+          const next = technicalMode() ? 'simple' : 'technical';
+          window.TENIS_AI_UI_ORGANIZER_V853?.setMode?.(next);
+          syncAdminCenterMeta();
+          scheduleDecorate(20);
+        }
+        if (action === 'symphony') {
+          const target = document.querySelector('#p751-bottom-nav [data-p751-nav="symphony2"]');
+          target?.click();
+          closeAdminCenter();
+          scheduleDecorate(60);
+        }
+        if (action === 'community') {
+          const adminOpen = document.querySelector('#community-admin-open');
+          if (adminOpen) adminOpen.click();
+          else document.querySelector('#community-hub-open')?.click();
+          closeAdminCenter();
+          scheduleDecorate(120);
+        }
+      });
+    }
+    syncAdminCenterMeta();
+  }
+
+  function syncAdminCenterMeta() {
+    const technical = technicalMode();
+    const mode = document.querySelector('#tenis-admin-center-mode');
+    if (mode) mode.textContent = `Widok: ${technical ? 'techniczny' : 'prosty'}`;
+    const button = document.querySelector('[data-admin-action="technical"]');
+    if (button) {
+      const title = button.querySelector('b');
+      const copy = button.querySelector('small');
+      if (title) title.textContent = technical ? 'Widok prosty' : 'Tryb techniczny';
+      if (copy) copy.textContent = technical ? 'Wróć do codziennego widoku' : 'Pełna diagnostyka';
+    }
+  }
+
+  function openAdminCenter() {
+    const overlay = document.querySelector('#tenis-admin-center');
+    if (!overlay || role() !== 'admin') return;
+    syncAdminCenterMeta();
+    overlay.hidden = false;
+    document.body.classList.add('tenis-modal-open');
+  }
+
+  function closeAdminCenter() {
+    const overlay = document.querySelector('#tenis-admin-center');
+    if (overlay) overlay.hidden = true;
+    document.body.classList.remove('tenis-modal-open');
+  }
+
+  function decorateProductSurfaces() {
+    if (authState() !== 'authenticated') return;
+    const app = document.querySelector('#app');
+    if (app) {
+      app.classList.toggle('tenis-stats-view', activeView() === 'stats');
+      app.classList.toggle('tenis-history-view', activeView() === 'history');
+      app.classList.toggle('tenis-coupons-view', activeView() === 'coupons');
+      app.classList.toggle('tenis-feedback-view', activeView() === 'feedback');
+    }
+    decorateMatchBrowser();
+    decorateStats();
+    decorateHistory();
+    decorateCommunity();
+    decoratePlayerProfiles();
+    decorateSymphony();
+    decoratePlayerDna();
+    decorateAdmin();
+    decorateAccount();
+    normalizeSimpleCopy(document);
+    ensureAdminCenter();
+  }
+
+  function scheduleDecorate(delay = 30) {
+    clearTimeout(decorateTimer);
+    decorateTimer = setTimeout(decorateProductSurfaces, delay);
+  }
+
+  function saveUiState() {
+    writeShellState({
+      view: activeView(),
+      scrollY: Math.max(0, Math.round(window.scrollY || 0))
+    });
+  }
+
+  function restoreUiState() {
+    if (authState() !== 'authenticated') return;
+    const state = readShellState();
+    if (state.view && state.view !== activeView()) {
+      document.querySelector(`.main-tabs button[data-view="${CSS.escape(state.view)}"]`)?.click();
+    }
+    if (Number.isFinite(Number(state.scrollY)) && Number(state.scrollY) > 0) {
+      setTimeout(() => window.scrollTo({top:Number(state.scrollY), behavior:'auto'}), 120);
+    }
+  }
+
   function syncAuthenticatedShell() {
     const state = authState();
     document.body.classList.toggle('tenis-shell-ready', state === 'authenticated');
@@ -281,6 +618,8 @@
     syncViewContext();
     wrapMatchRenderer();
     decorateMatchBrowser();
+    ensureAdminCenter();
+    scheduleDecorate(20);
   }
 
   function syncAll() {
@@ -295,15 +634,24 @@
       document.documentElement.dataset.tenisUiMode === 'technical'
     );
     decorateMatchBrowser();
+    syncAdminCenterMeta();
+    scheduleDecorate(20);
   });
-  window.addEventListener('pageshow', () => setTimeout(syncAll, 0));
+  window.addEventListener('pageshow', () => setTimeout(() => { syncAll(); restoreUiState(); scheduleDecorate(80); }, 0));
+  window.addEventListener('pagehide', saveUiState);
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !document.querySelector('#tenis-admin-center')?.hidden) closeAdminCenter();
+  });
 
   document.addEventListener('click', event => {
     if (event.target?.closest?.('.main-tabs button[data-view]')) {
-      setTimeout(() => { syncViewContext(); decorateMatchBrowser(); }, 0);
+      writeShellState({view:event.target.closest('.main-tabs button[data-view]')?.dataset.view || activeView(), scrollY:0});
+      setTimeout(() => { syncViewContext(); decorateMatchBrowser(); scheduleDecorate(50); }, 0);
     }
-    if (event.target?.closest?.('#tour-nav button,#collapse-all,#expand-all,.tournament-summary,.match-summary')) {
-      setTimeout(decorateMatchBrowser, 0);
+    if (event.target?.closest?.('#tour-nav button,#collapse-all,#expand-all,.tournament-summary,.match-summary,.player-suggestion,#community-hub-open,[data-p751-nav],.s2-generate,.hub-nav button,.shared-toolbar button')) {
+      setTimeout(() => { decorateMatchBrowser(); scheduleDecorate(80); }, 0);
+      setTimeout(() => scheduleDecorate(0), 220);
     }
   });
 
@@ -318,6 +666,10 @@
     authState,
     role,
     activeView,
-    decorateMatchBrowser
+    decorateMatchBrowser,
+    decorateProductSurfaces,
+    scheduleDecorate,
+    openAdminCenter,
+    closeAdminCenter
   });
 })();
