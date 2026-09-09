@@ -17,7 +17,7 @@ def req(text,needle,msg):
 
 def main():
     js=read("frontend/match-time.js")
-    css=read("frontend/match-time.css")
+    css=read("frontend/style.css")
     idx=read("frontend/index.html")
     ui=read(".github/workflows/ui-smoke.yml")
     pages=read(".github/workflows/update-and-pages.yml")
@@ -39,7 +39,9 @@ def main():
         ERR.append("Global Match Time ma mieć dokładnie jeden setInterval")
 
     req(css,".tai-match-time","brak stylu czasu")
-    req(idx,'match-time.css',"index nie ładuje kanonicznego CSS Match Time")
+    req(idx,'href="style.css"',"index nie ładuje kanonicznego style.css")
+    if 'match-time.css' in idx or (ROOT/'frontend/match-time.css').exists():
+        ERR.append("stary osobny CSS Match Time nie może wrócić")
     req(idx,'match-time.js',"index nie ładuje kanonicznego JS Match Time")
     req(idx,'app.js?v=84b1',"naruszono chroniony app.js pin")
     if 'scenario-studio-v82a.js' in idx:
