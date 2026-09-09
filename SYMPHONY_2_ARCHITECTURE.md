@@ -8,6 +8,17 @@ Stara Symfonia v9.x została usunięta z aktywnego stosu. Jej raporty, UI, staty
 
 ## Twardy podział warstw
 
+## Nazewnictwo authority
+
+`superbet_playable_v912` jest historycznie nazwaną, kompatybilną warstwą **projekcji exact-line na zweryfikowaną bieżącą ofertę Superbet**. Służy do historii, treningowego evidence, diagnostyki pokrycia i weryfikacji zgodności linii, ale **nie jest `P_final` Symfonii 2.0 i nie jest authority finalnego PLAYABLE**.
+
+Finalny authority jest publikowany addytywnie w `results.json` jako `symphony2_playable` i pochodzi wyłącznie z rekomendowanej kompozycji bieżącej Symfonii 2.0:
+
+`AKTUALNA OFERTA SUPERBET -> SUPERVISED P(HIT) -> EXACT JOINT -> SYMFONIA 2.0 -> PLAYABLE`.
+
+Jeżeli Symfonia nie ma rekomendowanej kompozycji albo mecz nie jest już current pre-match, `symphony2_playable.playable=false` nawet wtedy, gdy pre-Symphony projekcja exact-offer zawiera sygnały.
+
+
 ### MODEL / RAW
 
 - pozostaje niezależny od operatora;
@@ -55,7 +66,7 @@ Następnie:
 
 1. kalibracja Platt jest akceptowana tylko wtedy, gdy nie pogarsza Brier score;
 2. przy wystarczającej próbce stosujemy kalibrację osobno dla rodziny rynku;
-3. przy małej liczbie historycznych obserwacji danej rodziny wynik jest jawnie shrinkowany w stronę 50%, zamiast udawać wysoką pewność;
+3. mała próbka nie zniekształca supervised probability: raportujemy niższe `learning_reliability`, a rodzina z zerowym supportem jest `N/D` / unscored zamiast dostawać sztuczne 50%;
 4. `operator_model_probability` jest końcowym nadzorowanym `P_final`, a nie ręcznie ustawioną wagą modeli.
 
 ## Exact shared-state
