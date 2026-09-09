@@ -102,6 +102,18 @@ def _selection_key(selection: dict) -> str:
     )
 
 
+def _selection_evidence_verified(selection: dict) -> bool:
+    """Derived coverage may consume only current operator-verified evidence."""
+    if selection.get("operator_available") is not True:
+        return False
+    if _num(selection.get("line")) is None:
+        return True
+    return (
+        selection.get("operator_line_verified") is True
+        and selection.get("fixture_line_verified") is True
+    )
+
+
 def _distribution_bundle(match: dict) -> dict:
     first = lab.parse_exact(match.get("exact_first_set"))
     bundle = {"set1": first or None, "set2": None, "match": None}
@@ -207,7 +219,7 @@ def _base_derived_for_selection(match: dict, selection: dict, bundle=None, ace_d
 
 def _signal(selection: dict, result: dict, source: str, actionable: bool) -> dict:
     score=max(0.0,min(100.0,float(result["score"]))); row=dict(selection)
-    row.update({"key":_selection_key(selection),"label":_base_label(selection),"score":round(score,3),"symphony_raw_probability":round(score,4),"symphony_market_adapter":BASE_VERSION,"symphony_source":f"superbet_market_v91+{source}","symphony_actionable":bool(actionable),"operator":"superbet.pl","operator_available":True,"operator_line_verified":True,"operator_line_source":"oddspapi_superbet_pl","exact_path_supported":bool(actionable),"coverage_adapter_version":BASE_VERSION,"coverage_status":"MODEL_DERIVED" if actionable else "SHADOW_DERIVED_NOT_PLAYABLE"})
+    row.update({"key":_selection_key(selection),"label":_base_label(selection),"score":round(score,3),"symphony_raw_probability":round(score,4),"symphony_market_adapter":BASE_VERSION,"symphony_source":f"superbet_market_v91+{source}","symphony_actionable":bool(actionable),"operator":"superbet.pl","operator_available":selection.get("operator_available") is True,"operator_line_verified":selection.get("operator_line_verified") is True,"exact_path_supported":bool(actionable),"coverage_adapter_version":BASE_VERSION,"coverage_status":"MODEL_DERIVED" if actionable else "SHADOW_DERIVED_NOT_PLAYABLE"})
     for key,value in result.items():
         if key!="score":row[key]=round(float(value),4) if isinstance(value,(int,float)) else value
     return row
@@ -234,7 +246,7 @@ def _coverage_fields(ctx: dict, selections: list[dict], signals: list[dict], sha
 
 def _base_enrich_match(raw: dict) -> dict:
     match=dict(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=[x for x in (ctx.get("canonical_selections") or []) if isinstance(x,dict)]; signals=[dict(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)]; shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict)]
-    existing={_selection_key(x) for x in signals}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in BASE_DERIVED_MARKETS and _selection_key(s) not in existing]
+    existing={_selection_key(x) for x in signals}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in BASE_DERIVED_MARKETS and _selection_evidence_verified(s) and _selection_key(s) not in existing]
     bundle=_distribution_bundle(match) if any(str(s.get("market") or "") in ACTIONABLE_DERIVED_MARKETS for s in wanted) else None
     ace_dist=_most_aces_distribution(match) if any(str(s.get("market") or "") in SHADOW_DERIVED_MARKETS for s in wanted) else None
     added=shadow_added=0
@@ -348,7 +360,7 @@ def _label(selection: dict) -> str:
 
 
 def enrich_match(raw: dict) -> dict:
-    match=_base_enrich_match(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=[x for x in (ctx.get("canonical_selections") or []) if isinstance(x,dict)]; shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict)]; existing={_selection_key(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in DISPLAY_DERIVED_MARKETS and _selection_key(s) not in existing]; bundle=_extended_bundle(match) if wanted else {}; added=0
+    match=_base_enrich_match(raw); ctx=dict(match.get("superbet_market_v91") or {}); selections=[x for x in (ctx.get("canonical_selections") or []) if isinstance(x,dict)]; shadow=[dict(x) for x in (ctx.get("coverage_shadow_signals") or []) if isinstance(x,dict)]; existing={_selection_key(x) for x in (ctx.get("model_signals") or []) if isinstance(x,dict)}|{_selection_key(x) for x in shadow}; wanted=[s for s in selections if str(s.get("market") or "") in DISPLAY_DERIVED_MARKETS and _selection_evidence_verified(s) and _selection_key(s) not in existing]; bundle=_extended_bundle(match) if wanted else {}; added=0
     for selection in wanted:
         result,source=_derived(match,selection,bundle)
         if not result or result.get("score") is None:continue

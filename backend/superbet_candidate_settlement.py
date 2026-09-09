@@ -142,8 +142,13 @@ def _candidate_signal(row: dict, now: datetime, source_model: str) -> dict:
         "result": "pending",
         "source_model": source_model,
         "operator": "superbet.pl",
-        "operator_available": row.get("operator_available") is not False,
+        "operator_available": row.get("operator_available") is True,
         "operator_line_verified": row.get("operator_line_verified") is True,
+        "fixture_line_verified": row.get("fixture_line_verified") is True
+        if _num(row.get("line")) is not None else None,
+        "operator_line_source": row.get("operator_line_source"),
+        "operator_offer_source": row.get("operator_offer_source"),
+        "direct_source": row.get("direct_source"),
         "operator_playable": False,
         "candidate_for_playable": True,
         "candidate_version": VERSION,
@@ -182,11 +187,26 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
         ctx = (match or {}).get("superbet_market_v91") or {}
         if not (
             isinstance(ctx, dict)
+            and ctx.get("operator") == "superbet.pl"
             and ctx.get("operator_verified") is True
             and ctx.get("status") == "VERIFIED"
+            and ctx.get("suspended") is not True
         ):
             out.append(entry)
             continue
+
+        canonical = {}
+        for operator_row in ctx.get("canonical_selections") or []:
+            if not isinstance(operator_row, dict):
+                continue
+            if operator_row.get("operator_available") is not True:
+                continue
+            if _num(operator_row.get("line")) is not None and not (
+                operator_row.get("operator_line_verified") is True
+                and operator_row.get("fixture_line_verified") is True
+            ):
+                continue
+            canonical[_signature(operator_row)] = operator_row
 
         rows = []
         seen = set()
@@ -204,15 +224,14 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
                     continue
                 if market not in SETTLEMENT_SUPPORTED_MARKETS:
                     continue
-                if signal.get("operator_available") is False:
+                operator_row = canonical.get(_signature(signal))
+                if operator_row is None:
                     continue
-                # Any candidate carrying a numeric operator line must preserve
-                # explicit line provenance from the source snapshot.
-                if _num(signal.get("line")) is not None and signal.get("operator_line_verified") is not True:
-                    continue
+                # The canonical current-offer row is the authority for operator
+                # availability and exact-line provenance. Derived/model rows may
+                # carry stale or partial copies of those fields, so never treat
+                # their flags as a second independent source of truth.
                 if source_model == "superbet_operator_line_model" and market not in ACTIONABLE_EVIDENCE_MARKETS:
-                    continue
-                if source_model == "superbet_operator_line_model" and signal.get("operator_line_verified") is not True:
                     continue
                 score = _num(signal.get("score"))
                 if score is None or score < TRACK_MIN_SCORE:
@@ -221,7 +240,15 @@ def capture_candidates(history: list[dict], results: list[dict], now: datetime |
                 if sig in seen:
                     continue
                 seen.add(sig)
-                rows.append(_candidate_signal(signal, now, source_model))
+                frozen_signal = dict(signal)
+                for key in (
+                    "operator_available", "operator_line_verified",
+                    "fixture_line_verified", "operator_line_source",
+                    "operator_offer_source", "direct_source",
+                ):
+                    if key in operator_row:
+                        frozen_signal[key] = operator_row.get(key)
+                rows.append(_candidate_signal(frozen_signal, now, source_model))
 
         if rows:
             entry[LAYER] = rows
@@ -304,6 +331,7 @@ def build_candidate_stats(history: list[dict]) -> dict:
     all_rows = []
     by_market_rows: dict[str, list[dict]] = defaultdict(list)
     orientation_quarantined = 0
+    line_provenance_quarantined = 0
     for entry in history or []:
         if not isinstance(entry, dict):
             continue
@@ -312,6 +340,12 @@ def build_candidate_stats(history: list[dict]) -> dict:
                 continue
             if not _orientation_valid(entry, row):
                 orientation_quarantined += 1
+                continue
+            if _num(row.get("line")) is not None and not (
+                row.get("operator_line_verified") is True
+                and row.get("fixture_line_verified") is True
+            ):
+                line_provenance_quarantined += 1
                 continue
             all_rows.append(row)
             by_market_rows[str(row.get("market") or "unknown")].append(row)
@@ -324,7 +358,9 @@ def build_candidate_stats(history: list[dict]) -> dict:
         "layer": LAYER,
         "mode": "SETTLEMENT_SHADOW_ONLY",
         "orientation_quarantined_rows": orientation_quarantined,
+        "line_provenance_quarantined_rows": line_provenance_quarantined,
         "orientation_policy": "SIDE_MARKET_PLAYER_MUST_MATCH_APP_ORDER",
+        "numeric_line_policy": "EXACT_FIXTURE_LINE_PROOF_REQUIRED",
         "overall": _summary(all_rows),
         "by_market": by_market,
         "review_ready_markets": ready,
@@ -341,8 +377,10 @@ def build_candidate_stats(history: list[dict]) -> dict:
         "pbp_only_markets": sorted(PBP_ONLY_MARKETS),
         "contract": {
             "operator_verified_snapshots_only": True,
+            "exact_current_operator_selection_required": True,
             "pre_match_capture_only": True,
             "verified_numeric_lines_only": True,
+            "fixture_line_proof_required_for_numeric_lines": True,
             "orientation_quarantine": True,
             "prices_used": False,
             "playable_accuracy_unchanged": True,

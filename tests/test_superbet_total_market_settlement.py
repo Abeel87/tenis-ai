@@ -100,8 +100,22 @@ def test_candidate_shadow_captures_verified_later_set_markets_without_playable_e
         "p2": "Beta Player",
         "scheduled_time": "2026-09-01T10:00:00Z",
         "superbet_market_v91": {
+            "operator": "superbet.pl",
             "operator_verified": True,
             "status": "VERIFIED",
+            "suspended": False,
+            "canonical_selections": [
+                {"market": "set2_total", "pick": "over", "line": 8.5,
+                 "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True},
+                {"market": "set3_total", "pick": "over", "line": 7.5,
+                 "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True},
+                {"market": "set2_winner", "pick": "Beta Player",
+                 "operator_available": True, "operator_line_verified": True},
+                {"market": "set3_winner", "pick": "Alpha Player",
+                 "operator_available": True, "operator_line_verified": True},
+                {"market": "player_total_games", "player": "Alpha Player", "pick": "over", "line": 14.5,
+                 "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True},
+            ],
             "coverage_shadow_signals": [],
             "model_signals": [
                 {"market": "set2_total", "pick": "over", "line": 8.5, "score": 70.0, "operator_line_verified": True},
@@ -124,4 +138,8 @@ def test_candidate_shadow_captures_verified_later_set_markets_without_playable_e
         ("player_total_games", "Alpha Player"),
     }
     assert all(row["operator_line_verified"] is True for row in rows)
+    assert all(
+        row.get("fixture_line_verified") is True
+        for row in rows if row.get("line") is not None
+    )
     assert all(row["operator_playable"] is False for row in rows)

@@ -139,7 +139,9 @@ def test_playable_line_market_requires_explicit_operator_line_verification():
     match = {
         "superbet_market_v91": {
             "status": "VERIFIED",
+            "operator": "superbet.pl",
             "operator_verified": True,
+            "suspended": False,
             "canonical_selections": [
                 {"market": "set1_total", "pick": "over", "line": 9.5, "operator_available": True},
                 {"market": "match_winner", "pick": "Alpha", "operator_available": True},
@@ -159,10 +161,15 @@ def test_candidate_evidence_requires_future_snapshot_and_verified_numeric_line()
         "scheduled_time": future, "status": "pending", "p1": "A", "p2": "B",
     }]
     base_ctx = {
-        "status": "VERIFIED", "operator_verified": True,
+        "status": "VERIFIED", "operator": "superbet.pl",
+        "operator_verified": True, "suspended": False,
+        "canonical_selections": [
+            {"market": "set_handicap", "pick": "A", "line": -1.5,
+             "operator_available": True, "operator_line_verified": False,
+             "fixture_line_verified": False},
+        ],
         "coverage_shadow_signals": [
-            {"market": "set_handicap", "pick": "A", "line": -1.5, "score": 72,
-             "operator_available": True, "operator_line_verified": False},
+            {"market": "set_handicap", "pick": "A", "line": -1.5, "score": 72},
         ],
         "model_signals": [],
     }
@@ -172,14 +179,17 @@ def test_candidate_evidence_requires_future_snapshot_and_verified_numeric_line()
     assert CANDIDATE_LAYER not in captured[0]
 
     verified = dict(base_ctx)
-    verified["coverage_shadow_signals"] = [
-        {"market": "set_handicap", "pick": "A", "line": -1.5, "score": 72,
-         "operator_available": True, "operator_line_verified": True},
+    verified["canonical_selections"] = [
+        {"market": "set_handicap", "pick": "A", "line": -1.5,
+         "operator_available": True, "operator_line_verified": True,
+         "fixture_line_verified": True, "operator_line_source": "fixture-test"},
     ]
     results[0] = {**results[0], "superbet_market_v91": verified}
     captured, stats = capture_candidates(history, results, now=now)
     assert stats["captured"] == 1
     assert captured[0][CANDIDATE_LAYER][0]["operator_line_verified"] is True
+    assert captured[0][CANDIDATE_LAYER][0]["fixture_line_verified"] is True
+    assert captured[0][CANDIDATE_LAYER][0]["operator_line_source"] == "fixture-test"
 
     late_history = [{**history[0], "scheduled_time": (now + timedelta(minutes=3)).isoformat()}]
     late_results = [{**results[0], "scheduled_time": late_history[0]["scheduled_time"]}]

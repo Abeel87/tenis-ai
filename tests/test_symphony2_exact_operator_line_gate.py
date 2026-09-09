@@ -1,11 +1,20 @@
 from backend.symphony2_engine import _current_offer
 
 
-def _match(selections, *, operator_verified=True, status="VERIFIED"):
+def _match(
+    selections,
+    *,
+    operator="superbet.pl",
+    operator_verified=True,
+    status="VERIFIED",
+    suspended=False,
+):
     return {
         "superbet_market_v91": {
+            "operator": operator,
             "operator_verified": operator_verified,
             "status": status,
+            "suspended": suspended,
             "canonical_selections": selections,
         }
     }
@@ -17,6 +26,7 @@ def _line(line, *, verified, available=True, **extra):
         "pick": "over",
         "line": line,
         "operator_available": available,
+        "operator_line_verified": verified,
         "fixture_line_verified": verified,
         **extra,
     }
@@ -86,6 +96,13 @@ def test_unverified_operator_context_is_fail_closed():
 
     assert _current_offer(_match([selection], operator_verified=False)) == []
     assert _current_offer(_match([selection], status="STALE")) == []
+
+
+def test_wrong_or_suspended_operator_context_is_fail_closed():
+    selection = _line(20.5, verified=True, operator_line_verified=True)
+
+    assert _current_offer(_match([selection], operator="other.example")) == []
+    assert _current_offer(_match([selection], suspended=True)) == []
 
 
 def test_non_line_market_can_pass_without_fixture_line_flag_but_only_from_verified_offer():
