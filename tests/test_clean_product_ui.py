@@ -18,8 +18,31 @@ def test_clean_ui_uses_one_canonical_stylesheet_and_no_layered_shell():
         "project-readability.css",
         "ui-cleanup.css",
         "clean-core-v80.css",
+        "model-guide.css",
+        "multi-model.css",
+        "neuro-shadow.css",
+        "player-search.css",
+        "shadow-signals-v894.css",
     ):
         assert forbidden not in INDEX
+
+
+
+def test_canonical_stylesheet_is_the_only_physical_frontend_css_owner():
+    css_files = sorted(p.name for p in (ROOT / "frontend").glob("*.css"))
+    assert css_files == ["style.css"]
+
+
+def test_neuro_has_no_legacy_navigation_or_dynamic_css_bridge():
+    meta = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
+    neuro = (ROOT / "frontend" / "neuro-shadow.js").read_text(encoding="utf-8")
+    assert "loadStyle(" not in meta
+    assert "neuro-shadow.css" not in meta
+    assert 'id="neuro-open"' in INDEX
+    assert "#p751-bottom-nav" not in neuro
+    assert "#p751-match-overlay" not in neuro
+    assert "#app[data-match-key]" in neuro
+    assert not (ROOT / "frontend" / "shadow-signals-v894.js").exists()
 
 
 def test_legacy_dom_mutators_are_not_loaded():
