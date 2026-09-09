@@ -39,6 +39,7 @@ def test_project_ui_has_no_legacy_quality_patch_polling():
 def test_project_ui_keeps_lab_and_market_diagnostics_without_dom_patch_bridge():
     js = read("frontend/project-ui.js")
     assert 'data-sp-market="p772-' in js
-    assert "serveProps(m)" in js
-    assert "exactScore(m)" in js
+    assert "function serve(m)" in js
+    assert "m.serve_props_v72" in js
+    assert "m.exact_match_score" in js
     assert "matchGamesLines" in js
