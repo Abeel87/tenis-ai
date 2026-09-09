@@ -136,7 +136,7 @@ def test_missing_evidence_stays_operator_only_instead_of_getting_a_fake_probabil
     match.pop("exact_first_set")
     selection = {"market": "set1_game_handicap", "pick": "Player One", "line": -1.5,
                  "operator_available": True, "operator_line_verified": True, "fixture_line_verified": True}
-    match["superbet_market_v91"] = {"canonical_selections": [selection], "model_signals": []}
+    match["superbet_market_v91"] = _ctx([selection])
     out = cov.enrich_match(match)
     ctx = out["superbet_market_v91"]
     assert ctx["model_signals"] == []
