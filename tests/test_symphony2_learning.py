@@ -368,3 +368,196 @@ def test_calibrator_reports_separate_fit_and_evaluation_samples():
     _, info = learning._accepted_calibrator(fit_raw, fit_targets, eval_raw, eval_targets)
     assert info["fit_rows"] == 40
     assert info["evaluation_rows"] == 20
+
+
+def test_candidate_review_ready_gate_uses_only_labels_settled_by_cutoff(monkeypatch):
+    history = [
+        {
+            "captured_at": "2026-08-01T10:00:00+00:00",
+            "settled_at": "2026-08-01T13:00:00+00:00",
+        },
+        {
+            "captured_at": "2026-08-02T09:00:00+00:00",
+            "settled_at": "2026-08-03T13:00:00+00:00",
+        },
+        {
+            "captured_at": "2026-08-02T09:30:00+00:00",
+        },
+    ]
+    seen = []
+
+    def fake_gate(rows):
+        seen.extend(row["settled_at"] for row in rows)
+        return {"set2_total"}
+
+    monkeypatch.setattr(learning, "_candidate_review_ready_markets", fake_gate)
+    cutoff = learning._date_key("2026-08-02T10:00:00+00:00")
+
+    markets = learning._candidate_markets_as_of(history, cutoff)
+
+    assert markets == {"set2_total"}
+    assert seen == ["2026-08-01T13:00:00+00:00"]
+
+
+def test_explicit_candidate_gate_does_not_recompute_from_future_history(monkeypatch):
+    entry = _entry()
+    entry["playable_autolearn_signals_v912"] = []
+    entry["superbet_candidate_signals_v925"] = [{
+        "market": "p1_wins_a_set",
+        "pick": "yes",
+        "player": "A",
+        "score": 72.0,
+        "result": "hit",
+        "operator": "superbet.pl",
+        "operator_line_verified": True,
+        "candidate_version": "v925",
+    }]
+
+    def forbidden(_rows):
+        raise AssertionError("explicit as-of candidate gate must not be recomputed")
+
+    monkeypatch.setattr(learning, "_candidate_review_ready_markets", forbidden)
+
+    assert learning.build_training_rows([entry], candidate_markets=set()) == []
+
+
+def test_purged_time_split_excludes_labels_unavailable_at_training_cutoff():
+    cutoff = 100.0
+    rows = [
+        {"captured_ts": 80.0, "settled_ts": 90.0, "target": 1},
+        {"captured_ts": 85.0, "settled_ts": 120.0, "target": 0},
+        {"captured_ts": 90.0, "settled_ts": 0.0, "target": 1},
+        {"captured_ts": 110.0, "settled_ts": 130.0, "target": 0},
+        {"captured_ts": 120.0, "settled_ts": 0.0, "target": 1},
+    ]
+
+    train, valid, purged = learning._purged_time_split(rows, cutoff)
+
+    assert train == [rows[0]]
+    assert valid == [rows[3]]
+    assert purged == 3
+
+
+
+
+def test_no_honest_holdout_falls_back_to_full_history_without_fake_validation(monkeypatch):
+    rows = []
+    for i in range(220):
+        rows.append({
+            "market": "match_total",
+            "pick": "over",
+            "surface": "hard",
+            "tour": "atp",
+            "player_scope": "none",
+            "line": 21.5,
+            "checkpoint": 0.0,
+            "best_of": 3.0,
+            "state_probability": 55.0,
+            "base_score": 70.0,
+            "current_score": 70.0,
+            "catboost_score": 70.0,
+            "tabpfn_score": 70.0,
+            "adaptive_score": 70.0,
+            "target": i % 2,
+            "captured_ts": float(i + 1),
+            "settled_ts": float(i + 1),
+            "training_source": "playable_frozen",
+        })
+
+    def fake_rows(_history, candidate_markets=None):
+        return list(rows)
+
+    class FakeCatBoost:
+        def __init__(self, **_kwargs):
+            pass
+
+        def fit(self, x, y, cat_features=None):
+            self.fit_rows = len(x)
+            return self
+
+        def predict_proba(self, x):
+            return [[0.45, 0.55] for _ in x]
+
+    monkeypatch.setattr(learning, "build_training_rows", fake_rows)
+    monkeypatch.setattr(learning, "_candidate_markets_as_of", lambda _history, _cutoff: {"set2_total"})
+    monkeypatch.setattr(learning, "_candidate_review_ready_markets", lambda _history: {"set2_total"})
+    monkeypatch.setattr(learning, "CatBoostClassifier", FakeCatBoost)
+
+    model = learning.train_operator_line_model([{"captured_at": "2026-08-01T00:00:00+00:00"}])
+
+    assert model.status == "ready"
+    assert model.trained_rows == 220
+    assert model.validation_rows == 0
+    assert model.metrics["time_split"] is False
+    assert model.metrics["candidate_gate_as_of"] is False
+    assert model.metrics["candidate_gate_cutoff_ts"] is None
+    assert model.metrics["purged_unavailable_label_rows"] == 0
+    assert sum(model.market_support.values()) == model.trained_rows
+
+
+def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch):
+    canonical = []
+    for i in range(300):
+        canonical.append({
+            "market": "match_total",
+            "pick": "over",
+            "surface": "hard",
+            "tour": "atp",
+            "player_scope": "none",
+            "line": 21.5,
+            "checkpoint": -1.0,
+            "best_of": 3.0,
+            "state_probability": 55.0,
+            "base_score": 70.0,
+            "current_score": 70.0,
+            "catboost_score": 70.0,
+            "tabpfn_score": 70.0,
+            "adaptive_score": 70.0,
+            "target": i % 2,
+            "captured_ts": float(i + 1),
+            "settled_ts": float(i + 1),
+            "training_source": "playable_frozen",
+        })
+    with_candidate_holdout = list(canonical)
+    for i in range(260, 280):
+        with_candidate_holdout.append({
+            **canonical[i],
+            "market": "set2_total",
+            "line": 8.5,
+            "captured_ts": float(i + 1) + 0.1,
+            "settled_ts": float(i + 1) + 0.1,
+            "training_source": "candidate_review_ready",
+        })
+    with_candidate_holdout.sort(key=lambda row: row["captured_ts"])
+
+    def fake_rows(_history, candidate_markets=None):
+        if candidate_markets == set():
+            return list(canonical)
+        return list(with_candidate_holdout)
+
+    class FakeCatBoost:
+        def __init__(self, **_kwargs):
+            pass
+
+        def fit(self, x, y, cat_features=None):
+            self.fit_rows = len(x)
+            return self
+
+        def predict_proba(self, x):
+            return [[0.45, 0.55] for _ in x]
+
+    monkeypatch.setattr(learning, "build_training_rows", fake_rows)
+    monkeypatch.setattr(learning, "_candidate_markets_as_of", lambda _history, _cutoff: {"set2_total"})
+    monkeypatch.setattr(learning, "CatBoostClassifier", FakeCatBoost)
+
+    model = learning.train_operator_line_model([{"captured_at": "2026-08-01T00:00:00+00:00"}])
+
+    assert model.status == "ready"
+    assert model.metrics["candidate_gate_as_of"] is True
+    assert model.trained_rows == 240
+    assert model.validation_rows == 80
+    assert model.market_support["match_total"] == 240
+    assert model.market_support.get("set2_total", 0) == 0
+    assert sum(model.market_support.values()) == model.trained_rows
+    assert model.metrics["training_source_counts"] == {"playable_frozen": 240}
+    assert sum(model.metrics["training_source_counts"].values()) == model.trained_rows
