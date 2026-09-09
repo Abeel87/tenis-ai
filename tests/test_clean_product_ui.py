@@ -104,3 +104,26 @@ def test_clean_ui_keeps_all_model_math_out_of_presentation_controller():
         "production_influence=",
     ):
         assert forbidden not in PROJECT_UI
+
+
+def test_dynamic_match_modules_use_clean_in_app_detail_root():
+    detail = (ROOT / "frontend" / "match-detail.js").read_text(encoding="utf-8")
+    coverage = (ROOT / "frontend" / "superbet-model-coverage.js").read_text(encoding="utf-8")
+    segregation = (ROOT / "frontend" / "market-segregation.js").read_text(encoding="utf-8")
+    visibility = (ROOT / "frontend" / "match-visibility.js").read_text(encoding="utf-8")
+
+    for source in (detail, coverage, segregation):
+        assert "p751-match-overlay" not in source
+
+    assert "const ROOT='#app[data-match-key] .p751-detail-screen';" in detail
+    assert "const host=document.querySelector('#app[data-match-key]');" in coverage
+    assert "#app[data-match-key] [data-superbet-model-coverage-v922]" in segregation
+    assert "function style(){}" in coverage
+    assert "function style(){}" in segregation
+    assert ".signal-spotlight" in visibility
+    assert ".match-group" in visibility
+
+
+def test_canonical_stylesheet_owns_superbet_market_visuals():
+    assert ".sbmc922-panel" in STYLE
+    assert ".rp93g-tabs" in STYLE
