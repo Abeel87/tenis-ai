@@ -20,6 +20,8 @@ js_files=list(frontend.glob('*.js')) if frontend.exists() else []
 css_files=list(frontend.glob('*.css')) if frontend.exists() else []
 if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać.')
 if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać.')
+if sorted(p.name for p in css_files)!=['style.css']:
+    failures.append('Frontend ma dodatkowe CSS poza kanonicznym style.css: '+', '.join(sorted(p.name for p in css_files if p.name!='style.css')))
 
 def b64url_decode(s):
     s += '=' * (-len(s)%4)
@@ -63,6 +65,9 @@ required=[
 ]
 for ok,msg in required:
     if not ok:failures.append(msg)
+
+if 'loadStyle(' in meta or "createElement('link')" in meta or 'createElement("link")' in meta:
+    failures.append('app-meta.js nadal może dynamicznie doładować dodatkowy CSS.')
 
 if 'history-days-v732.js' in index or 'history-days-v732.css' in index:
     failures.append('Stary renderer History v7.3.2 nadal jest ładowany.')
