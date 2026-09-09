@@ -55,6 +55,12 @@
   }
   function signals(m){
     const api=modelApi();
+    if(api?.signals){
+      try{
+        return (api.signals(m,40)||[]).map(x=>({label:x.label||x.key||'Sygnał',value:Number(x.v),kind:'selected-model',market:x.market,pick:x.pick,key:x.key,source_model:activeModelId()}))
+          .filter(x=>num(x.value)!=null).sort((a,b)=>b.value-a.value);
+      }catch{}
+    }
     if(api?.allSignals){
       return modelAllSignals(m).map(x=>({label:x.label||x.key||'Sygnał',value:Number(x.v),kind:'selected-model',market:x.market,pick:x.pick,key:x.key,source_model:activeModelId()}))
         .filter(x=>num(x.value)!=null).sort((a,b)=>b.value-a.value);
