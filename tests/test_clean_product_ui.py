@@ -145,3 +145,19 @@ def test_admin_mode_is_owned_by_clean_project_controller():
     assert "setUiMode" in PROJECT_UI
     assert "syncUiMode" in PROJECT_UI
     assert 'id="tenis-ui-mode-toggle"' in INDEX
+
+
+def test_retired_presentation_files_are_physically_removed():
+    for name in (
+        "app-shell.css", "app-shell.js", "neon.css",
+        "project-ui.css", "project-readability.css",
+        "ui-cleanup.css", "ui-cleanup.js",
+        "navigation-tools.css", "navigation-tools.js",
+        "clarity-labels.js", "project-ui-quality.js",
+        "ui-organizer.css", "ui-organizer.js",
+        "clean-core-v80.css", "adaptive-learning-v79.css",
+        "adaptive-prod-bridge.css", "autolearn-v84.css",
+        "dynamic-weights-v84d1.css", "performance-dashboard.css",
+        "player-dna-shadow.css", "symphony2.css",
+    ):
+        assert not (ROOT / "frontend" / name).exists(), name

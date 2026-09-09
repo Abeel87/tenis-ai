@@ -96,8 +96,21 @@ analytics=read(frontend/'player-analytics.js')
 adaptive=read(frontend/'adaptive-learning-v79.js')
 clean_core=read(frontend/'clean-core-v80.js')
 
-if (frontend/'navigation-tools.js').exists():
-    failures.append('Stary navigation-tools.js nadal istnieje po clean rebuildzie.')
+retired_ui_files = (
+    'app-shell.css', 'app-shell.js', 'neon.css',
+    'project-ui.css', 'project-readability.css',
+    'ui-cleanup.css', 'ui-cleanup.js',
+    'navigation-tools.css', 'navigation-tools.js',
+    'clarity-labels.js', 'project-ui-quality.js',
+    'ui-organizer.css', 'ui-organizer.js',
+    'clean-core-v80.css', 'adaptive-learning-v79.css',
+    'adaptive-prod-bridge.css', 'autolearn-v84.css',
+    'dynamic-weights-v84d1.css', 'performance-dashboard.css',
+    'player-dna-shadow.css', 'symphony2.css',
+)
+retired_ui_present=[name for name in retired_ui_files if (frontend/name).exists()]
+if retired_ui_present:
+    failures.append('Stare warstwy UI nadal istnieją po clean rebuildzie: '+', '.join(sorted(retired_ui_present)))
 
 if 'setInterval(inject,700)' in analytics:
     failures.append('Player Analytics nadal ma stary polling co 700 ms.')

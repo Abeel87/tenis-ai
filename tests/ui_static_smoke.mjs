@@ -14,20 +14,31 @@ const legacyUi=[
   'clean-core-v80.css',
   'symphony2.css',
   'project-ui.css',
+  'project-readability.css',
   'neon.css',
   'navigation-tools.js',
+  'navigation-tools.css',
   'clarity-labels.js',
   'ui-cleanup.js',
+  'ui-cleanup.css',
   'project-ui-quality.js',
+  'ui-organizer.js',
+  'ui-organizer.css',
   'app-shell.js',
-  'app-shell.css'
+  'app-shell.css',
+  'adaptive-learning-v79.css',
+  'adaptive-prod-bridge.css',
+  'autolearn-v84.css',
+  'dynamic-weights-v84d1.css',
+  'performance-dashboard.css',
+  'player-dna-shadow.css'
 ];
 
 const checks=[
  ['Clean Core logic remains loaded after Adaptive Learning',/adaptive-learning-v79\.js[\s\S]{0,700}clean-core-v80\.js/.test(index)],
  ['Legacy Clean Core CSS is removed',!index.includes('clean-core-v80.css')&&!sw.includes('clean-core-v80.css')],
  ['Single canonical stylesheet is loaded',stylesheetCount===1&&index.includes('href="style.css"')],
- ['Legacy layered UI is not loaded',legacyUi.every(name=>!index.includes(name))],
+ ['Legacy layered UI is not loaded or present',legacyUi.every(name=>!index.includes(name)&&!fs.existsSync('frontend/'+name))],
  ['Old History v7.3.2 is not loaded',!index.includes('history-days-v732.js')&&!index.includes('history-days-v732.css')],
  ['Post-Match Center logic still exists',clean.includes('RAPORT PO MECZU')&&clean.includes('Co nie weszło')&&clean.includes('Modele — wynik tego meczu')],
  ['Adaptive review is still available',clean.includes('adaptive_review_v79')&&clean.includes('Dlaczego model się pomylił')],
