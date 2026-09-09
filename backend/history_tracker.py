@@ -260,16 +260,22 @@ def find_final_result(hist: pd.DataFrame, entry: dict) -> dict | None:
         ]
         if tournament_columns:
             tournament_match = None
+            tournament_evidence_present = False
             for col in tournament_columns:
-                matched = candidates[candidates[col].map(
+                usable = candidates[candidates[col].map(lambda value: bool(_key(value)))]
+                if usable.empty:
+                    continue
+                tournament_evidence_present = True
+                matched = usable[usable[col].map(
                     lambda value: _tournament_compatible(target_tournament, value)
                 )]
                 if not matched.empty:
                     tournament_match = matched.copy()
                     break
-            if tournament_match is None:
+            if tournament_evidence_present and tournament_match is None:
                 return None
-            candidates = tournament_match
+            if tournament_match is not None:
+                candidates = tournament_match
 
     if '_delta' in candidates.columns:
         best_delta = candidates['_delta'].min()
