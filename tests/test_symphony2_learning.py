@@ -438,6 +438,63 @@ def test_purged_time_split_excludes_labels_unavailable_at_training_cutoff():
     assert purged == 3
 
 
+
+
+def test_no_honest_holdout_falls_back_to_full_history_without_fake_validation(monkeypatch):
+    rows = []
+    for i in range(220):
+        rows.append({
+            "market": "match_total",
+            "pick": "over",
+            "surface": "hard",
+            "tour": "atp",
+            "player_scope": "none",
+            "line": 21.5,
+            "checkpoint": 0.0,
+            "best_of": 3.0,
+            "state_probability": 55.0,
+            "base_score": 70.0,
+            "current_score": 70.0,
+            "catboost_score": 70.0,
+            "tabpfn_score": 70.0,
+            "adaptive_score": 70.0,
+            "target": i % 2,
+            "captured_ts": float(i + 1),
+            "settled_ts": float(i + 1),
+            "training_source": "playable_frozen",
+        })
+
+    def fake_rows(_history, candidate_markets=None):
+        return list(rows)
+
+    class FakeCatBoost:
+        def __init__(self, **_kwargs):
+            pass
+
+        def fit(self, x, y, cat_features=None):
+            self.fit_rows = len(x)
+            return self
+
+        def predict_proba(self, x):
+            return [[0.45, 0.55] for _ in x]
+
+    monkeypatch.setattr(learning, "build_training_rows", fake_rows)
+    monkeypatch.setattr(learning, "_candidate_markets_as_of", lambda _history, _cutoff: {"set2_total"})
+    monkeypatch.setattr(learning, "_candidate_review_ready_markets", lambda _history: {"set2_total"})
+    monkeypatch.setattr(learning, "CatBoostClassifier", FakeCatBoost)
+
+    model = learning.train_operator_line_model([{"captured_at": "2026-08-01T00:00:00+00:00"}])
+
+    assert model.status == "ready"
+    assert model.trained_rows == 220
+    assert model.validation_rows == 0
+    assert model.metrics["time_split"] is False
+    assert model.metrics["candidate_gate_as_of"] is False
+    assert model.metrics["candidate_gate_cutoff_ts"] is None
+    assert model.metrics["purged_unavailable_label_rows"] == 0
+    assert sum(model.market_support.values()) == model.trained_rows
+
+
 def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch):
     canonical = []
     for i in range(300):
