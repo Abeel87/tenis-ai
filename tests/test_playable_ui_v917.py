@@ -110,7 +110,9 @@ assert.equal(api.active({...match,feed_status:'live'}),false,'known live status 
 const savedMatchTime=win.TENIS_AI_MATCH_TIME;
 delete win.TENIS_AI_MATCH_TIME;
 assert.equal(api.active({...match,feed_status:'live'}),false,'UI fallback must reject live even if match-time helper is unavailable');
+assert.equal(api.active({...match,feed_status:'in-progress'}),false,'UI fallback must reject hyphenated in-progress status');
 assert.equal(api.active({...match,feed_status:'not_started'}),true,'UI fallback must preserve explicit not-started fixtures');
+assert.equal(api.active({...match,feed_status:'not-started'}),true,'UI fallback must preserve hyphenated not-started fixtures');
 win.TENIS_AI_MATCH_TIME=savedMatchTime;
 assert.equal(api.active({...match,scheduled_time:'2026-08-28T10:00:00Z'}),false);
 assert.equal(api.active({...match,superbet_market_v91:{...match.superbet_market_v91,source_max_age_hours:0}}),false);
