@@ -143,7 +143,7 @@ function isPlayable(match,row){
   if(!active(match)||!row||typeof row!=='object')return false;
   return availability(match).has(signature(row));
 }
-function valueOf(row){return num(row?.v??row?.final_score??row?.adaptive_prod_score??row?.score??row?.current)}
+function valueOf(row){return num(row?.operator_model_probability??row?.v??row?.final_score??row?.adaptive_prod_score??row?.score??row?.current)}
 function modelSignals(match,limit=100){
   const api=window.TENIS_AI_MODEL_API;
   let rows=[];
