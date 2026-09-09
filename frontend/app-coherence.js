@@ -82,22 +82,6 @@
     </article>`;
   }
 
-  function ensureStyle(){
-    if(document.getElementById('coh892-style'))return;
-    const style=document.createElement('style');
-    style.id='coh892-style';
-    style.textContent=`
-      .coh892-shadow{margin:12px 0;padding:12px;border:1px solid rgba(123,229,255,.16);border-radius:16px;background:rgba(6,18,31,.78)}
-      .coh892-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.coh892-head b{display:block;font-size:.82rem}.coh892-head small{display:block;color:#8ea7b2;font-size:.66rem;margin-top:3px}.coh892-head>span{font-size:.62rem;padding:5px 8px;border-radius:999px;border:1px solid rgba(123,229,255,.2);color:#8be8ff;white-space:nowrap}
-      .coh892-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.coh892-card{border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:10px;background:rgba(255,255,255,.025)}
-      .coh892-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.coh892-card header>div{display:flex;gap:7px;align-items:flex-start}.coh892-card header b{display:block;font-size:.75rem}.coh892-card header small{display:block;color:#8ca4af;font-size:.61rem;margin-top:2px}.coh892-card header em{font-style:normal;font-size:.58rem;padding:4px 6px;border-radius:999px}.coh892-card header em.good{color:#baff76;background:rgba(153,255,83,.08);border:1px solid rgba(153,255,83,.18)}.coh892-card header em.watch{color:#ffd28f;background:rgba(255,184,76,.08);border:1px solid rgba(255,184,76,.18)}.coh892-card header em.collecting{color:#a9bec8;background:rgba(169,190,200,.07);border:1px solid rgba(169,190,200,.16)}
-      .coh892-metric{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;margin:10px 0 7px}.coh892-metric small{color:#8ca4af;font-size:.6rem}.coh892-metric b{font-size:1.05rem;grid-row:1/3;grid-column:2;text-align:right}.coh892-metric span{font-size:.59rem;color:#9fb2bb}.coh892-card p{font-size:.64rem;line-height:1.45;color:#a9bbc3;margin:6px 0}.coh892-alpha{display:flex;justify-content:space-between;font-size:.62rem;padding-top:6px;border-top:1px dashed rgba(255,255,255,.08)}.coh892-card footer{display:flex;flex-wrap:wrap;gap:5px 9px;margin-top:8px;font-size:.57rem;color:#899fa9}.coh892-card footer strong{color:#ffca87;font-weight:600}
-      .coh892-elo-card{border-color:rgba(180,255,115,.13)}.coh892-compare{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:7px 0}.coh892-compare span{display:grid;gap:2px;padding:6px;border-radius:9px;background:rgba(255,255,255,.025);font-size:.56rem;color:#8fa5af}.coh892-compare b{font-size:.65rem;color:#dbeaf0}
-      @media(max-width:720px){.coh892-grid{grid-template-columns:1fr}.coh892-head{align-items:center}}
-    `;
-    document.head.appendChild(style);
-  }
-
   async function loadTelemetry(){
     try{
       const api=window.TENIS_AI_AUTOLEARN_V84;
@@ -116,7 +100,6 @@
     const learning=telemetry?.ensemble_player_learning_v891||null;
     const elo=telemetry?.surface_elo_integration_v893||null;
     if(!player&&!learning&&!elo)return false;
-    ensureStyle();
     const existing=host.querySelector('#coh892-shadow');
     const section=existing||document.createElement('section');
     section.id='coh892-shadow';

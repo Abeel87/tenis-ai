@@ -48,7 +48,9 @@ def main():
     req(audit, "Audyt pełnej puli MODEL/RAW", "Dynamic Weights UI nie jest odseparowane od PLAYABLE")
     req(audit, "Symfonia 2.0 korzysta z własnego operator-first pipeline", "brak jawnego rozdziału Dynamic Weights / Symfonia 2.0")
 
-    req(idx, 'autolearn-v84.css?v=84a1&hf=84a3', "naruszono chroniony pin CSS")
+    req(idx, 'href="style.css"', "brak kanonicznego style.css")
+    if 'autolearn-v84.css' in idx or (ROOT/'frontend/autolearn-v84.css').exists():
+        ERRORS.append("stary osobny AutoLearn CSS nie może wrócić")
     req(idx, 'dynamic-weights-v84d1.js?v=84e0', "brak aktywnego Dynamic Weights UI")
     req(idx, 'symphony2.js', "brak aktywnej Symfonii 2.0")
     if 'symphony2.js?v=210' in idx or 'symphony2.js?v=220' in idx:

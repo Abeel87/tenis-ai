@@ -7,32 +7,35 @@ def read(path):
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_stats_organizer_is_event_driven_without_delayed_layout_passes():
-    js = read("frontend/ui-organizer.js")
-    assert "RUNTIME_FIX = 'v8.8.19'" in js
-    assert "tenis-ai:stats-ready" in js
-    assert "tenis-ai:stats-dashboard-ready" in js
-    assert "setTimeout(organize, 300)" not in js
-    assert "setTimeout(organize, 900)" not in js
-    assert "setTimeout(organize, 500)" not in js
-    assert "setTimeout(organize, 1400)" not in js
-    assert "setTimeout(visualPolish" not in js
-    assert "setTimeout(ensureReadabilityControls" not in js
-    assert "new MutationObserver(" not in js
-    assert "setInterval(" not in js
+def test_stats_runtime_is_event_driven_without_retired_organizer():
+    ranking = read("frontend/stats-ranking.js")
+    project = read("frontend/project-ui.js")
+    assert "tenis-ai:stats-ready" in ranking
+    assert "tenis-ai:stats-dashboard-ready" in ranking
+    assert "tenis-ai:ui-ready" in project
+    assert "tenis-ai:matches-rendered" in project
+    assert "new MutationObserver(" not in ranking
+    assert "setInterval(" not in ranking
+    assert not (ROOT / "frontend/ui-organizer.js").exists()
 
 
-def test_stats_organizer_does_one_complete_pass():
-    js = read("frontend/ui-organizer.js")
-    assert "visualPolish();\n    ensureReadabilityControls();" in js
-    assert "timer = setTimeout(organize, delay)" in js
-    assert "runtimeFix: RUNTIME_FIX" in js
-
-
-def test_canonical_organizer_does_not_overwrite_app_version_branding():
-    js = read("frontend/ui-organizer.js")
+def test_canonical_project_ui_owns_readability_mode():
+    project = read("frontend/project-ui.js")
     index = read("frontend/index.html")
-    assert "brand.textContent='Tenis AI v8.5.3" not in js
-    assert "ui-organizer.js" in index
-    assert "ui-organizer-v853.js" not in index
-    assert "ui-organizer-v853.css" not in index
+    assert "#tenis-ui-mode-toggle" in project
+    assert "dataset.tenisUiMode" in project
+    assert "tenis-ai-ui-mode-change" in project
+    assert 'id="tenis-ui-mode-toggle"' in index
+    assert "ui-organizer.js" not in index
+
+
+def test_canonical_ui_does_not_restore_versioned_organizer_assets():
+    index = read("frontend/index.html")
+    for retired in (
+        "ui-organizer.js",
+        "ui-organizer.css",
+        "ui-organizer-v853.js",
+        "ui-organizer-v853.css",
+    ):
+        assert retired not in index
+        assert not (ROOT / "frontend" / retired).exists()

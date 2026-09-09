@@ -17,7 +17,7 @@ def req(text, needle, msg):
 def main():
     idx=read("frontend/index.html")
     js=read("frontend/dynamic-weights-v84d1.js")
-    css=read("frontend/dynamic-weights-v84d1.css")
+    css=read("frontend/style.css")
     wf=read(".github/workflows/update-and-pages.yml")
 
     req(js,"const VERSION='v8.4D.4'","audit UI nie jest aktualnym v8.4D.4")
@@ -32,7 +32,11 @@ def main():
         ERR.append("Dynamic Weights nadal zależy od wycofanego Scenario draftu")
 
     req(css,"v8.4D.2 scope label","brak stylu informacji o zakresie")
-    req(idx,'autolearn-v84.css?v=84a1&hf=84a3',"naruszono chroniony pin AutoLearn CSS")
+    req(idx,'href="style.css"',"brak kanonicznego style.css")
+    if 'autolearn-v84.css' in idx or (ROOT/'frontend/autolearn-v84.css').exists():
+        ERR.append("stary osobny AutoLearn CSS nie może wrócić")
+    if 'dynamic-weights-v84d1.css' in idx or (ROOT/'frontend/dynamic-weights-v84d1.css').exists():
+        ERR.append("stary osobny Dynamic Weights CSS nie może wrócić")
     req(idx,'dynamic-weights-v84d1.js?v=84e0',"brak aktywnego Dynamic Weights UI")
     req(idx,'symphony2.js',"brak aktywnej Symfonii 2.0")
     if 'symphony2.js?v=210' in idx or 'symphony2.js?v=220' in idx:

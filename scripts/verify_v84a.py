@@ -27,7 +27,9 @@ def main():
     front=read("frontend/autolearn-v84.js")
 
     req(index,'autolearn-v84.js?v=84a1','brak JS AutoLearn')
-    req(index,'autolearn-v84.css?v=84a1','brak CSS AutoLearn')
+    req(index,'href="style.css"','brak kanonicznego style.css')
+    if 'autolearn-v84.css' in index or (ROOT/'frontend/autolearn-v84.css').exists():
+        ERRORS.append('stary osobny AutoLearn CSS nie może wrócić')
     req(settle,'autolearn_signals_v84','Settlement nie rozlicza AutoLearn')
     req(auto,'chronological_split','Brak chronologicznego splitu')
     req(auto,'ML is not allowed to create new Live Tennis API settlement work','Brak guarda zerowego dodatkowego settlement work')

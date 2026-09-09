@@ -5,7 +5,7 @@ const RUNTIME_CACHE_POLICY='v853-large-json-bypass';
 
 const CORE=[
   './','index.html','manifest.webmanifest','favicon.png','icon-192.png','icon-512.png',
-  'app-meta.js','clean-core-v80.css','clean-core-v80.js','symphony2.js','symphony2.css'
+  'app-meta.js','style.css','clean-core-v80.js','symphony2.js'
 ];
 
 self.addEventListener('install',event=>{
@@ -54,7 +54,7 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  if(url.pathname.endsWith('/symphony2.js')||url.pathname.endsWith('/symphony2.css')){
+  if(url.pathname.endsWith('/symphony2.js')){
     event.respondWith(fetch(new Request(request,{cache:'no-store'})));
     return;
   }

@@ -18,8 +18,9 @@ def read(path):
 if not frontend.exists():failures.append('Brak katalogu frontend/')
 js_files=list(frontend.glob('*.js')) if frontend.exists() else []
 css_files=list(frontend.glob('*.css')) if frontend.exists() else []
-if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — aktywne mosty legacy warto dalej scalać.')
-if len(css_files)>20:warnings.append(f'Frontend ma {len(css_files)} osobnych plików CSS — aktywne style legacy warto dalej scalać.')
+if len(js_files)>20:warnings.append(f'Frontend ma {len(js_files)} osobnych plików JS — moduły funkcjonalne są dozwolone, ale prezentacja ma jednego właściciela.')
+if [p.name for p in css_files] != ['style.css']:
+    failures.append('Frontend ma używać fizycznie dokładnie jednego CSS: frontend/style.css.')
 
 def b64url_decode(s):
     s += '=' * (-len(s)%4)
@@ -53,7 +54,8 @@ clean=read(frontend/'clean-core-v80.js')
 sw=read(frontend/'sw.js')
 
 required=[
-    ('clean-core-v80.css?v=801' in index,'Brak Clean Core CSS v8.0.1 w index.html.'),
+    (index.count('rel="stylesheet"') == 1 and 'href="style.css"' in index,'Frontend nie używa jednego kanonicznego style.css.'),
+    ('clean-core-v80.css' not in index,'Stary Clean Core CSS nadal jest aktywny.'),
     ('clean-core-v80.js?v=801' in index,'Brak Clean Core JS v8.0.1 w index.html.'),
     ("appVersion: 'v8.0.1'" in meta,'app-meta.js nie wskazuje v8.0.1.'),
     ('Post-Match Center' in clean or 'RAPORT PO MECZU' in clean,'Brak Post-Match Center w Clean Core.'),
@@ -95,9 +97,8 @@ analytics=read(frontend/'player-analytics.js')
 adaptive=read(frontend/'adaptive-learning-v79.js')
 clean_core=read(frontend/'clean-core-v80.js')
 
-restore=read(frontend/'navigation-tools.js')
-if 'setInterval(refresh,1200)' in restore:
-    failures.append('Stary polling UI co 1.2 s nadal istnieje.')
+if (frontend/'navigation-tools.js').exists():
+    failures.append('Stary navigation-tools.js nadal istnieje po clean rebuildzie.')
 
 if 'setInterval(inject,700)' in analytics:
     failures.append('Player Analytics nadal ma stary polling co 700 ms.')
@@ -107,6 +108,20 @@ if re.search(r'observer\.observe\(document\.documentElement', adaptive):
 
 if re.search(r'observer\.observe\(document\.documentElement', clean_core):
     failures.append('Clean Core nadal obserwuje cały dokument.')
+
+# Clean rebuild contract: one visual owner, no hidden legacy DOM/CSS mutators.
+for p in js_files:
+    txt=read(p)
+    if re.search(r"createElement\(['\"]style['\"]\)", txt):
+        failures.append(f'Runtime wstrzykuje inline <style> zamiast używać style.css: {p.name}')
+    if re.search(r"\.rel\s*=\s*['\"]stylesheet['\"]", txt) or re.search(r"\.href\s*=\s*['\"][^'\"]+\.css", txt):
+        failures.append(f'Runtime doładowuje dodatkowy CSS zamiast używać style.css: {p.name}')
+    if 'new MutationObserver(' in txt and (
+        'observe(document.body' in txt or 'observe(document.documentElement' in txt
+    ):
+        failures.append(f'Runtime obserwuje globalny DOM: {p.name}')
+    if '#p751-match-overlay' in txt or 'p751-bottom-nav' in txt:
+        failures.append(f'Runtime nadal odwołuje się do wycofanego DOM clean rebuild: {p.name}')
 
 if workflows.exists():
     for wf in [*workflows.glob('*.yml'),*workflows.glob('*.yaml')]:

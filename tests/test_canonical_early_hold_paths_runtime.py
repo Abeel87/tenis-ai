@@ -7,9 +7,11 @@ FRONTEND = ROOT / "frontend"
 def test_early_hold_paths_use_stable_presentation_assets():
     index = (FRONTEND / "index.html").read_text(encoding="utf-8")
     js = (FRONTEND / "early-hold-paths.js").read_text(encoding="utf-8")
-    assert (FRONTEND / "early-hold-paths.css").is_file()
+    style = (FRONTEND / "style.css").read_text(encoding="utf-8")
     assert 'src="early-hold-paths.js"' in index
-    assert 'href="early-hold-paths.css"' in index
+    assert 'href="style.css"' in index
+    assert not (FRONTEND / "early-hold-paths.css").exists()
+    assert ".player-section" in style
     assert not (FRONTEND / "early-hold-paths-v771.js").exists()
     assert not (FRONTEND / "early-hold-paths-v771.css").exists()
     assert "window.TENIS_AI_EARLY_HOLD_PATHS_V81" in js

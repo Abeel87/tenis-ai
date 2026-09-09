@@ -113,6 +113,7 @@
     const gs=tel.game_state_progress_v84e2||{};
     return `<section id="${esc(rootId)}" class="mt84e2">
       <header class="mt84e2-head"><div><b>📈 Model Trend Monitor v8.4E2</b><small>Czy model rośnie, stoi czy się pogarsza</small></div><span>MONITORING</span></header>
+      <button type="button" class="v853c-toggle" data-mt84e2-toggle>Ukryj wykresy modeli</button>
       <div class="mt84e2-legend"><span class="rising">↗ rośnie</span><span class="stable">→ stabilny</span><span class="watch">◐ obserwuj</span><span class="falling">↘ ostrożnie</span></div>
       <div class="mt84e2-grid">${PRIMARY.map(id=>modelCard(tel,id)).join('')}</div>
       <details class="mt84e2-details"><summary><b>Modele bazowe i Dynamic</b><span>pokaż trendy</span></summary><div class="mt84e2-grid secondary">${SECONDARY.map(id=>modelCard(tel,id)).join('')}</div></details>
@@ -140,6 +141,13 @@
   }
 
   document.addEventListener('tenis-ai:stats-dashboard-ready',mountLegacyMonitor);
+  document.addEventListener('click',event=>{
+    const btn=event.target?.closest?.('[data-mt84e2-toggle]');if(!btn)return;
+    const root=btn.closest('#mt84e2');if(!root)return;
+    const collapsed=root.classList.toggle('v853c-collapsed');
+    btn.textContent=collapsed?'Pokaż wykresy modeli':'Ukryj wykresy modeli';
+    btn.setAttribute('aria-expanded',collapsed?'false':'true');
+  });
   if(document.querySelector('#pc882-dashboard'))mountLegacyMonitor();
 
   window.TENIS_AI_MODEL_TRENDS_V84E2=Object.freeze({

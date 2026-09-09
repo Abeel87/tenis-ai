@@ -42,13 +42,14 @@ def test_performance_dashboard_runtime_refresh_is_targeted():
 
 
 def test_performance_dashboard_adaptive_compact():
-    css=t("frontend/performance-dashboard.css")
+    css=t("frontend/style.css")
     assert "#v79-health:not(.expanded)" in css
 
 
 def test_performance_dashboard_assets_use_stable_paths():
     h=t("frontend/index.html")
-    assert "performance-dashboard.css" in h
+    assert 'href="style.css"' in h
+    assert "performance-dashboard.css" not in h
     assert "performance-dashboard.js" in h
     assert h.index("adaptive-prod-bridge.js") < h.index("performance-dashboard.js")
     assert "v882-cleanup.js" not in h

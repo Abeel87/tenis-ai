@@ -37,8 +37,9 @@ def main():
 
     if not any(x in index for x in ("autolearn-v84.js?v=84a1&hf=84a2", "autolearn-v84.js?v=84a1&hf=84a3", "autolearn-v84.js?v=84a1&hf=84b1")):
         ERRORS.append("brak kompatybilnego cache-bust JS v8.4A.1+")
-    if not any(x in index for x in ("autolearn-v84.css?v=84a1&hf=84a2", "autolearn-v84.css?v=84a1&hf=84a3")):
-        ERRORS.append("brak kompatybilnego cache-bust CSS v8.4A.1+")
+    req(index,'href="style.css"',"brak kanonicznego style.css")
+    if 'autolearn-v84.css' in index or (ROOT/'frontend/autolearn-v84.css').exists():
+        ERRORS.append("stary osobny AutoLearn CSS nie może wrócić")
 
     req(workflow,"AutoLearn Hotfix Guard v8.4A.1","workflow nie ma guarda AutoLearn")
     # Scenario Generator/Studio was retired in favor of Symphony 2.0. AutoLearn

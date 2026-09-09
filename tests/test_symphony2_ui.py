@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 JS = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
-CSS = (ROOT / "frontend" / "symphony2.css").read_text(encoding="utf-8")
+CSS = (ROOT / "frontend" / "style.css").read_text(encoding="utf-8")
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 APP_META = (ROOT / "frontend" / "app-meta.js").read_text(encoding="utf-8")
 PLAYABLE_UI = (ROOT / "frontend" / "playable-ui.js").read_text(encoding="utf-8")
@@ -13,7 +13,10 @@ WORKFLOW = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(e
 
 def test_single_symphony2_frontend_is_loaded():
     assert 'src="symphony2.js"' in INDEX
-    assert 'href="symphony2.css"' in INDEX
+    assert 'href="style.css"' in INDEX
+    assert 'href="symphony2.css"' not in INDEX
+    assert ".s2-shell" in CSS
+    assert ".s2-card" in CSS
     for legacy in (
         "symphony-v90.js", "symphony-v90.css", "symphony-stats-v90d.js",
         "symphony-stats-v90d.css", "symphony-surface-v90.js",
@@ -59,25 +62,28 @@ def test_symphony_market_labels_are_human_readable():
     assert "zweryfikowana linia Superbet" in JS
 
 
-def test_symphony2_owns_native_nav_without_retired_scenario_migration_lookup():
-    assert "data-p751-nav=\"symphony2\"" in JS
+def test_symphony2_owns_canonical_structural_control_without_retired_nav():
+    assert "const NAV_SELECTOR='#symphony-open'" in JS
+    assert 'id="symphony-open"' in INDEX
+    assert "p751-bottom-nav" not in JS
     assert "data-p751-nav=\"scenarios\"" not in JS
-    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in JS
     assert "TENIS_AI_SCENARIOS" not in JS
     assert "scenario-v82a-panel" not in JS
 
 
-def test_symphony2_close_clears_its_own_nav_state():
+def test_symphony2_close_clears_its_own_control_state():
     assert "markNav('symphony2',false)" in JS
+    assert "aria-pressed" in JS
     assert "markNav('matches',false)" not in JS
 
 
-def test_symphony2_nav_binding_is_idempotent_under_mutation_observer():
-    assert "new MutationObserver(" in JS
+def test_symphony2_nav_binding_is_idempotent_and_event_driven():
+    assert "new MutationObserver(" not in JS
     assert "if(nav.dataset.symphony2Nav!=='1'){" in JS
-    guarded = JS.split("if(nav.dataset.symphony2Nav!=='1'){", 1)[1].split("}", 1)[0]
-    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in guarded
-    assert "nav.dataset.symphony2Nav='1'" in guarded
+    assert "nav.dataset.symphony2Nav='1'" in JS
+    assert "nav.addEventListener('click'" in JS
+    assert "tenis-ai:match-open" in JS
+    assert "tenis-ai:superbet-coverage-ready" in JS
 
 
 def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
