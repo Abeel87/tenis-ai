@@ -367,6 +367,32 @@ def _provider_fixture_is_fresh(fixture: dict, availability: dict, now: datetime)
     return 0 <= age_hours <= DIRECT_MAX_AGE_HOURS
 
 
+def _provider_fixture_has_safe_offer(fixture: dict) -> bool:
+    """A fresh timestamp alone must never block a safer Direct current offer."""
+    if (
+        not isinstance(fixture, dict)
+        or fixture.get("bookmaker") != base.BOOKMAKER
+        or fixture.get("bookmaker_active") is False
+        or fixture.get("suspended") is True
+    ):
+        return False
+    line_markets = set(mapping.LINE_MARKETS) | set(NEW_LINE_MARKETS) | set(DIRECT_HANDICAP_MARKETS)
+    for row in fixture.get("canonical_selections") or []:
+        if not isinstance(row, dict) or row.get("operator_available") is not True:
+            continue
+        market = str(row.get("market") or "").strip()
+        if not market:
+            continue
+        if market in line_markets and (
+            base._line(row.get("line")) is None
+            or row.get("operator_line_verified") is not True
+            or row.get("fixture_line_verified") is not True
+        ):
+            continue
+        return True
+    return False
+
+
 def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) -> dict:
     """Add fresh Direct fixtures only where current canonical provider has no safe match."""
     now = now or datetime.now(timezone.utc)
@@ -380,6 +406,7 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         "fallback_fixtures_added": 0,
         "existing_provider_preferred": 0,
         "stale_provider_replaced": 0,
+        "unsafe_provider_replaced": 0,
         "unsafe_sidecar_matches_rejected": 0,
         "suppressed_direct_handicap_variants": 0,
         "prices_in_canonical_availability": False,
@@ -457,7 +484,11 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
             continue
 
         existing = fixture_matching.select_cached_fixture(app_match, fixtures)
-        if existing is not None and _provider_fixture_is_fresh(existing, availability, now):
+        if (
+            existing is not None
+            and _provider_fixture_is_fresh(existing, availability, now)
+            and _provider_fixture_has_safe_offer(existing)
+        ):
             diagnostic["existing_provider_preferred"] += 1
             continue
 
@@ -469,14 +500,19 @@ def _overlay_direct_fallback(results: list[dict], availability: dict, now=None) 
         if existing is not None:
             kept = []
             removed = 0
+            unsafe_removed = 0
             for candidate in fixtures:
                 overlaps = fixture_matching.select_cached_fixture(app_match, [candidate]) is not None
                 if overlaps and not _provider_fixture_is_fresh(candidate, availability, now):
                     removed += 1
                     continue
+                if overlaps and not _provider_fixture_has_safe_offer(candidate):
+                    unsafe_removed += 1
+                    continue
                 kept.append(candidate)
             fixtures = kept
             diagnostic["stale_provider_replaced"] += removed
+            diagnostic["unsafe_provider_replaced"] += unsafe_removed
 
         oriented = dict(oriented)
         oriented["offer_checked_at"] = sidecar.get("generated_at")
