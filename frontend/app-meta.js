@@ -85,9 +85,32 @@
 
   const earlyResults=fastFetch('data/results.json',{cache:'no-store'}).then(r=>r.ok?r.json():[]).catch(()=>[]);
   const earlyMeta=fastFetch('data/meta.json',{cache:'no-store'}).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  function metaFreshness(meta){
+    const candidates=[];
+    const add=(label,value)=>{
+      const ts=Date.parse(String(value||''));if(Number.isFinite(ts))candidates.push({label,value,ts});
+    };
+    if(meta&&typeof meta==='object'){
+      add('updated_at',meta.updated_at);
+      Object.entries(meta).forEach(([key,value])=>{
+        if(/_updated_at$/i.test(key))add(key,value);
+        if(value&&typeof value==='object'&&!Array.isArray(value)){
+          Object.entries(value).forEach(([child,childValue])=>{
+            if(/(?:updated_at|source_generated_at|generated_at)$/i.test(child))add(`${key}.${child}`,childValue);
+          });
+        }
+      });
+    }
+    return candidates.sort((a,b)=>b.ts-a.ts)[0]||null;
+  }
   function applyMetaFast(meta){
     try{
-      const updated=document.querySelector('#updated');if(updated)updated.textContent=meta?.updated_at?'Aktualizacja: '+new Date(meta.updated_at).toLocaleString('pl-PL'):'Aktualizacja: —';
+      const fresh=metaFreshness(meta);
+      const updated=document.querySelector('#updated');
+      if(updated){
+        updated.textContent=fresh?'Najnowsze dane: '+new Date(fresh.value).toLocaleString('pl-PL'):'Najnowsze dane: —';
+        updated.title=fresh?.label?`Źródło świeżości: ${fresh.label}`:'';
+      }
       const mode=document.querySelector('#mode');if(mode)mode.textContent='Źródło: '+(meta?.fixtures_mode||'—');
     }catch{}
   }
@@ -120,7 +143,7 @@
     loadAddon('neuro-shadow.js','neuro-shadow-js');
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadUxAddons,{once:true});else loadUxAddons();
-  window.TENIS_AI_FAST_BOOT_V888=Object.freeze({version:'v8.8.8',clear:clearDataCache,snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})});
+  window.TENIS_AI_FAST_BOOT_V888=Object.freeze({version:'v8.8.8',clear:clearDataCache,freshness:metaFreshness,snapshot:()=>({...state,cached:cache.size,inflight:inflight.size})});
 })();
 
 /* Canonical Superbet UI bootstrap for Symphony 2.0 era. */
