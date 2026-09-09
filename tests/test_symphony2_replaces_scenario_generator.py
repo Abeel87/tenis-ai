@@ -58,13 +58,16 @@ def test_no_active_frontend_javascript_references_retired_scenario_runtime():
         assert 'data-p751-nav="scenarios"' not in source, path
 
 
-def test_symphony2_has_own_fullscreen_hub_and_nav_ownership():
+def test_symphony2_has_own_fullscreen_hub_and_clean_topbar_ownership():
     js = text("frontend/symphony2.js")
+    index = text("frontend/index.html")
     css = text("frontend/style.css")
     assert "#symphony2-hub" in js
-    assert "data-p751-nav=\"symphony2\"" in js
-    assert 'data-p751-nav="scenarios"' not in js
-    assert "<span>🎼</span><b>Symfonia 2.0</b>" in js
+    assert "TRIGGER_SELECTOR='#symphony-open'" in js
+    assert 'id="symphony-open"' in index
+    assert "data-p751-nav" not in js
+    assert "#p751-bottom-nav" not in js
+    assert "#p751-match-overlay" not in js
     assert "TENIS_AI_SYMPHONY2" in js
     assert "TENIS_AI_SCENARIOS" not in js
     assert "scenario-v82a-panel" not in js
