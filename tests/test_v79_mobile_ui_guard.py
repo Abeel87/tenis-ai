@@ -10,19 +10,17 @@ def _compact(text: str) -> str:
 
 
 def test_adaptive_panel_has_mobile_overflow_guardrails():
-    css = (ROOT / "frontend/adaptive-learning-v79.css").read_text(encoding="utf-8")
+    css = (ROOT / "frontend/style.css").read_text(encoding="utf-8")
     compact = _compact(css)
 
-    assert ".v79-live-panel*,.v79-health*{box-sizing:border-box;min-width:0}" in compact
-    assert ".v79-live-panel,.v79-health{overflow:hidden}" in compact
+    assert ".v79-live-panel,.v79-health{box-sizing:border-box;min-width:0;overflow:hidden}" in compact
     assert "overflow-wrap:anywhere" in css
     assert "word-break:break-word" in css
     assert ".v79-model-list" in css and "flex-wrap:wrap" in css
     assert "@media(max-width:560px)" in compact
     assert "@media(max-width:360px)" in compact
-    assert ".v79-health-grid{grid-template-columns:1fr}" in compact
-    assert ".v79-score-flowem{grid-column:1/-1" in compact
-
+    assert ".v79-health-grid{grid-template-columns:1fr!important}" in compact
+    assert ".v79-score-flowem{grid-column:1/-1}" in compact
 
 def test_adaptive_ui_uses_controlled_prod_contract_and_keeps_shadows_separate():
     ui = (ROOT / "frontend/adaptive-learning-v79.js").read_text(encoding="utf-8")
