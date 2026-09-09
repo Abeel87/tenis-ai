@@ -501,3 +501,6 @@ def test_market_support_counts_only_rows_actually_used_for_model_fit(monkeypatch
     assert model.validation_rows == 80
     assert model.market_support["match_total"] == 240
     assert model.market_support.get("set2_total", 0) == 0
+    assert sum(model.market_support.values()) == model.trained_rows
+    assert model.metrics["training_source_counts"] == {"playable_frozen": 240}
+    assert sum(model.metrics["training_source_counts"].values()) == model.trained_rows
