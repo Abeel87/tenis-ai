@@ -151,3 +151,9 @@ def test_match_detail_does_not_equate_verified_offer_with_final_playable():
     assert "final PLAYABLE = Symfonia 2.0" in MATCH_DETAIL
     assert "zweryfikowana oferta Superbet jest osobną warstwą" in MATCH_DETAIL
     assert "SUPERBET PLAYABLE — realna, zweryfikowana oferta operatora" not in MATCH_DETAIL
+
+
+
+def test_symphony_no_composition_state_is_not_labeled_playable():
+    assert "SYMFONIA 2.0 · BRAK PLAYABLE" in JS
+    assert "SYMFONIA 2.0 · PLAYABLE</small><h3>Brak kompozycji" not in JS
