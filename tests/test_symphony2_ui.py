@@ -62,10 +62,11 @@ def test_symphony_market_labels_are_human_readable():
     assert "zweryfikowana linia Superbet" in JS
 
 
-def test_symphony2_owns_native_nav_without_retired_scenario_migration_lookup():
-    assert "data-p751-nav=\"symphony2\"" in JS
-    assert "data-p751-nav=\"scenarios\"" not in JS
-    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in JS
+def test_symphony2_uses_clean_topbar_without_retired_navigation_lookup():
+    assert "TRIGGER_SELECTOR='#symphony-open'" in JS
+    assert "#p751-bottom-nav" not in JS
+    assert "data-p751-nav" not in JS
+    assert "nav.setAttribute('aria-label','Otwórz Symfonię 2.0')" in JS
     assert "TENIS_AI_SCENARIOS" not in JS
     assert "scenario-v82a-panel" not in JS
 
@@ -75,12 +76,12 @@ def test_symphony2_close_clears_its_own_nav_state():
     assert "markNav('matches',false)" not in JS
 
 
-def test_symphony2_nav_binding_is_idempotent_under_mutation_observer():
+def test_symphony2_observer_is_scoped_to_clean_app_root():
     assert "new MutationObserver(" in JS
-    assert "if(nav.dataset.symphony2Nav!=='1'){" in JS
-    guarded = JS.split("if(nav.dataset.symphony2Nav!=='1'){", 1)[1].split("}", 1)[0]
-    assert "nav.innerHTML='<span>🎼</span><b>Symfonia 2.0</b>'" in guarded
-    assert "nav.dataset.symphony2Nav='1'" in guarded
+    assert "const appRoot=document.querySelector('#app')" in JS
+    assert "observer.observe(appRoot,{subtree:true,childList:true})" in JS
+    assert "observer.observe(document.documentElement" not in JS
+    assert "#p751-match-overlay" not in JS
 
 
 def test_match_view_replaces_legacy_symphony_surfaces_with_symphony2():
