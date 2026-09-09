@@ -146,7 +146,7 @@ function projectionSignals(match){
   const layer=match?.superbet_playable_v912;
   if(!layer||typeof layer!=='object'||!Array.isArray(layer.signals))return null;
   return layer.signals
-    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null)
+    .filter(row=>row&&typeof row==='object'&&row.operator_playable===true&&valueOf(row)!=null&&isPlayable(match,row))
     .sort((a,b)=>(valueOf(b)||0)-(valueOf(a)||0));
 }
 function playableSignals(match,limit=100){
