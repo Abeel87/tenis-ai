@@ -274,3 +274,51 @@ def test_final_playable_projection_fails_closed_without_current_symphony_row():
     assert layer["playable_count"] == 0
     assert layer["signals"] == []
     assert layer["status"] == "NOT_CURRENT_PREMATCH"
+
+
+
+def test_final_playable_projection_rejects_composition_with_unverified_leg():
+    results = [{
+        "id": 404,
+        "p1": "Player G",
+        "p2": "Player H",
+        "scheduled_time": "2099-01-01T15:00:00Z",
+    }]
+    current = {
+        "generated_at": "2099-01-01T10:00:00+00:00",
+        "matches": [{
+            "id": 404,
+            "match_key": "404",
+            "recommended_leg_count": 2,
+            "compositions": {
+                "2": {
+                    "legs": 2,
+                    "joint_probability": 50.0,
+                    "joint_status": "EXACT_SHARED_STATE",
+                    "selection": [
+                        {
+                            "market": "match_winner",
+                            "pick": "Player G",
+                            "operator_model_probability": 70.0,
+                            "fixture_line_verified": True,
+                        },
+                        {
+                            "market": "set1_total",
+                            "pick": "over",
+                            "line": 9.5,
+                            "operator_model_probability": 66.0,
+                            "fixture_line_verified": False,
+                        },
+                    ],
+                }
+            },
+        }],
+    }
+
+    projected = _project_final_playable(results, current)
+
+    layer = projected[0]["symphony2_playable"]
+    assert layer["playable"] is False
+    assert layer["playable_count"] == 0
+    assert layer["signals"] == []
+    assert layer["status"] == "NO_RECOMMENDED_COMPOSITION"
