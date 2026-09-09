@@ -50,3 +50,10 @@ def test_addon_is_display_only_and_does_not_fetch_or_train():
         assert token not in lowered
     assert "TENIS_AI_SUPERBET_MODEL_COVERAGE_V922" in ADDON
     assert "coverageKey" in ADDON
+
+def test_full_offer_panel_is_fail_closed_on_operator_and_line_evidence():
+    assert "row.operator_available!==true" in ADDON
+    assert "row.operator_line_verified===true&&row.fixture_line_verified===true" in ADDON
+    assert ".filter(operatorSelectionVerified)" in ADDON
+    assert "operator_available!==false" not in ADDON
+
