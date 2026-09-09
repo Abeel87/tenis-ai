@@ -26,33 +26,40 @@ def forbid(rel, needle, label):
 def verify_visible_version_contract():
     meta = read("frontend/app-meta.js")
     html = read("frontend/index.html")
-    match = re.search(r"displayVersion:\s*'([^']+)'", meta)
-    if not match:
-        errors.append("frontend/app-meta.js: brak centralnego displayVersion")
+    release = re.search(r"releaseVersion:\s*'([^']+)'", meta)
+    if not release:
+        errors.append("frontend/app-meta.js: brak centralnego releaseVersion")
         return
-    version = match.group(1)
-    if f"Tenis AI {version}" not in html:
-        errors.append(f"frontend/index.html: wersja widoczna nie zgadza się z displayVersion {version}")
+    if "<title>Tenis AI</title>" not in html:
+        errors.append("frontend/index.html: brak czystego tytułu produktu")
+    if "const shown=META.releaseVersion||META.displayVersion||META.appVersion" not in meta:
+        errors.append("frontend/app-meta.js: widoczna wersja nie jest sterowana centralnym META")
+    if "document.title=`Tenis AI · ${shown}`" not in meta:
+        errors.append("frontend/app-meta.js: dokument nie dostaje centralnej wersji")
 
 
 def verify_checkpoint_lock_order():
     html = read("frontend/index.html")
     required = [
-        "ui-cleanup.js",
+        "ui-organizer.js",
         "stats-ranking.js",
         "market-quality.js",
+        "project-ui.js",
     ]
     if not all(token in html for token in required):
-        errors.append("frontend/index.html: niepełne kanoniczne warstwy UI cleanup / stats ranking / Market Quality")
+        errors.append("frontend/index.html: niepełny kanoniczny łańcuch UI organizer / stats / Market Quality / project UI")
         return
-    if not (html.index(required[0]) < html.index(required[1]) < html.index(required[2])):
-        errors.append("frontend/index.html: CORE Market Quality Lock nie jest ostatnią warstwą selekcji MODEL/RAW")
+    if not (html.index(required[0]) < html.index(required[1]) < html.index(required[2]) < html.index(required[3])):
+        errors.append("frontend/index.html: kolejność kanonicznych właścicieli UI/quality jest niespójna")
+    if "ui-cleanup.js" in html:
+        errors.append("frontend/index.html: wycofany ui-cleanup.js wrócił do runtime")
 
 
 # Runtime/UI baseline retained after Scenario retirement.
 need("frontend/index.html", "runtime-fetch.js", "kanoniczny runtime data dedupe")
 need("frontend/index.html", "ui-organizer.js", "kanoniczny UI organizer")
-need("frontend/index.html", "ui-organizer.css", "kanoniczny UI organizer CSS")
+need("frontend/index.html", 'href="style.css"', "jeden kanoniczny arkusz style.css")
+forbid("frontend/index.html", "ui-organizer.css", "wycofany osobny UI organizer CSS")
 verify_visible_version_contract()
 verify_checkpoint_lock_order()
 need("frontend/app-meta.js", "appVersion: 'v8.0.1'", "chroniony kontrakt bazowy v8.0.1")
@@ -61,6 +68,7 @@ need("frontend/index.html", "autolearn-v84.js?v=84a1&hf=84b1", "chroniony pin Au
 need("frontend/index.html", "dynamic-weights-v84d1.js?v=84e0", "chroniony pin Dynamic Weights")
 need("frontend/index.html", "model-trends.js", "kanoniczny Trend Monitor")
 need("frontend/index.html", "market-quality.js", "kanoniczny CORE Market Quality Layer")
+forbid("frontend/app-meta.js", "loadStyle(", "dynamiczny loader dodatkowych CSS")
 
 # Scenario/Generator is retired. It must not return through runtime assets.
 for retired in (
