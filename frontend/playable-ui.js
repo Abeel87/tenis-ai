@@ -48,10 +48,16 @@ function freshContext(x,now=Date.now()){
   const age=Number(now)-generated;
   return finite(maxHours)&&Number(maxHours)>0&&Number.isFinite(age)&&age>=0&&age<=Number(maxHours)*3600000;
 }
+function preMatch(match,now=Date.now()){
+  const scheduled=Date.parse(match?.scheduled_time||'');
+  if(!Number.isFinite(scheduled)||scheduled<=Number(now))return false;
+  const kind=window.TENIS_AI_MATCH_TIME?.statusKind?.(match);
+  return !kind||kind==='scheduled';
+}
 function active(match,now=Date.now()){
   const x=context(match);
   return x.operator_verified===true&&x.status==='VERIFIED'&&x.suspended!==true&&Array.isArray(x.canonical_selections)
-    &&freshContext(x,now)&&window.TENIS_AI_MATCH_TIME?.isCurrent?.(match,now)===true;
+    &&freshContext(x,now)&&preMatch(match,now);
 }
 function keyParts(row){return String(row?.key||row?.signal_key||'').split('|')}
 function rowLine(row,market=canonicalMarket(row?.market)){
@@ -411,6 +417,7 @@ window.TENIS_AI_PLAYABLE_UI_V917=Object.freeze({
   version:VERSION,
   active,
   freshContext,
+  preMatch,
   findMatch,
   compositionPlayable,
   canonicalMarket,
