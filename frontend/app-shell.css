@@ -1329,3 +1329,101 @@ body.tenis-modal-open{
     font-size:24px;
   }
 }
+
+
+/* Match landing cleanup */
+.tenis-shell-ready #player-search-shell{
+  margin:0 0 12px!important;
+  padding:14px!important;
+  border:1px solid rgba(38,230,211,.13)!important;
+  border-radius:18px!important;
+  background:#06131f!important;
+}
+
+.tenis-shell-ready #player-search-shell input{
+  min-height:46px;
+  border-color:rgba(126,158,186,.15)!important;
+  background:#03101a!important;
+}
+
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  margin:0 0 12px!important;
+  padding:10px 12px!important;
+  border-radius:16px!important;
+}
+
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-title{
+  min-width:0;
+}
+
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-title small,
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats #community-hub-preview{
+  display:none!important;
+}
+
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-grid{
+  display:flex!important;
+  gap:5px!important;
+  margin:0!important;
+}
+
+html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-grid>div{
+  min-width:60px!important;
+  min-height:auto!important;
+  padding:6px 8px!important;
+}
+
+.tenis-shell-ready #match-controls{
+  margin-bottom:12px;
+}
+
+.tenis-shell-ready #tour-nav{
+  padding:5px;
+  border:1px solid rgba(126,158,186,.10);
+  border-radius:15px;
+  background:#05111d;
+}
+
+.tenis-shell-ready #tour-nav button{
+  border-color:transparent!important;
+  background:transparent!important;
+  color:#7f95aa!important;
+}
+
+.tenis-shell-ready #tour-nav button.active{
+  color:#001b18!important;
+  background:linear-gradient(135deg,var(--shell-cyan),var(--shell-lime))!important;
+}
+
+.tenis-shell-ready .collapse-bar button{
+  border-color:rgba(126,158,186,.10)!important;
+  background:#06131f!important;
+  color:#73899e!important;
+}
+
+@media(max-width:620px){
+  html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+
+  html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-grid{
+    width:100%;
+  }
+
+  html[data-tenis-view="matches"] .tenis-shell-ready #community-live-stats .community-live-grid>div{
+    flex:1;
+  }
+
+  .tenis-shell-ready #player-search-shell{
+    padding:10px!important;
+  }
+
+  .tenis-shell-ready #tour-nav{
+    margin-bottom:7px;
+  }
+}
