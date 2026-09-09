@@ -52,8 +52,8 @@ function fallbackNonPrematchStatus(match){
   const result=match?.result&&typeof match.result==='object'?match.result:{};
   const raw=[match?.event_status,match?.feed_status,match?.status,result.status]
     .map(v=>norm(v)).filter(Boolean).join(' ')
-    .replace(/\bnot started\b/g,' ');
-  return /\b(?:live|playing|started|in progress|completed|finished|settled|retired|cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b/.test(raw);
+    .replace(/\bnot[- ]started\b/g,' ');
+  return /\b(?:live|playing|started|in[- ]progress|completed|finished|settled|retired|cancelled|canceled|postponed|abandoned|walkover|void|suspended|interrupted)\b/.test(raw);
 }
 function preMatch(match,now=Date.now()){
   const scheduled=Date.parse(match?.scheduled_time||'');
