@@ -41,7 +41,9 @@ def test_strong_filter_uses_raw_model_rows_during_base_render():
     assert "playableSignals:modelSignals" in PLAYABLE
     assert "finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}" in PLAYABLE
     assert "function playableSignals(match,limit=100)" in PLAYABLE
-    assert ".filter(row=>isPlayable(match,row))" in PLAYABLE
+    assert "return layer.signals" in PLAYABLE
+    assert ".filter(row=>row&&typeof row==='object'&&valueOf(row)!=null&&isPlayable(match,row))" in PLAYABLE
+    assert "return projectionSignals(match).slice(0,max);" in PLAYABLE
 
 
 def test_current_operator_chain_has_no_legacy_v921_dependency():
