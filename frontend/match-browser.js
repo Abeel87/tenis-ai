@@ -1,8 +1,10 @@
-/* Tenis AI v9.4.9.1 — Match Browser mobile rebuild.
-   Presentation/navigation only. Never changes model math, Symphony, Superbet eligibility or PLAYABLE decisions. */
+/* Tenis AI v9.4.9.2 — Match Browser behavior for the canonical product shell.
+   Presentation/navigation only. Never changes model math, Symphony, Superbet eligibility or PLAYABLE decisions.
+   The visible filter controls are owned by index.html (#focus-filters). This module
+   must never inject a second filter bar or a second PLAYABLE/top-card presentation. */
 (()=>{
 'use strict';
-const VERSION='v9.4.9.1';
+const VERSION='v9.4.9.2';
 const STORE='tenis-ai-match-browser-v945';
 const state={mode:'all',qualityOnly:true,sort:'quality',surface:'all',returnScroll:null,returnPending:false};
 try{Object.assign(state,JSON.parse(sessionStorage.getItem(STORE)||'{}'))}catch{}
@@ -36,10 +38,42 @@ function syncModelTop(){
   const label=top.querySelector('header small');if(label)label.textContent=`${shown} wybrane z aktualnych meczów`;
 }
 function visibleByState(m){if(!m)return false;if(state.qualityOnly&&!hasAnalysis(m))return false;if(state.surface!=='all'&&surface(m)!==state.surface)return false;if(state.mode==='2h'&&!within2h(m))return false;if(state.mode==='80'&&strength(m)<80)return false;if(state.mode==='playable'&&!isPlayable(m))return false;if(state.mode==='pbp'&&!pbp(m))return false;return true}
-function toolHtml(){const btn=(mode,label)=>`<button data-v945-mode="${mode}" class="${state.mode===mode?'active':''}">${label}</button>`;const surfaces=[...new Set(rowsAll().map(surface).filter(x=>x&&x!=='—'))].sort();return `<section class="v945-tools" aria-label="Filtry meczów"><div class="v945-primary">${btn('all','Wszystkie')}${btn('2h','⏱ Do 2h')}${btn('80','⭐ 80+')}${btn('playable','🎯 PLAYABLE')}${btn('pbp','🧬 PBP')}</div><div class="v945-secondary"><button data-v945-ready class="${state.qualityOnly?'active':''}">✓ Z danymi</button><button data-v945-sort>⇅ ${state.sort==='quality'?'Najlepsze':'Godzina'}</button><select data-v945-surface aria-label="Nawierzchnia"><option value="all">Wszystkie naw.</option>${surfaces.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${state.surface===x?'selected':''}>${x}</option>`).join('')}</select></div></section>`}
-function ensureTools(){const app=document.querySelector('#app');if(!app)return;let tools=app.querySelector('.v945-tools');const html=toolHtml();if(!tools)app.insertAdjacentHTML('afterbegin',html);else tools.outerHTML=html}
+
+const SHELL_TO_MODE={all:'all',soon:'2h',strong:'80',playable:'playable',pbp:'pbp'};
+const MODE_TO_SHELL={all:'all','2h':'soon','80':'strong',playable:'playable',pbp:'pbp'};
+function canonicalControls(){return document.querySelector('#focus-filters')}
+function canonicalShell(){return !!document.querySelector('#product-shell')}
+function syncCanonicalControls(){
+  const controls=canonicalControls();if(!controls)return false;
+  const focus=MODE_TO_SHELL[state.mode]||'all';
+  controls.querySelectorAll('[data-focus]').forEach(button=>{
+    const on=button.dataset.focus===focus;
+    button.classList.toggle('active',on);
+    button.setAttribute('aria-pressed',on?'true':'false');
+  });
+  return true;
+}
+function stripRetiredPresentation(){
+  if(!canonicalShell())return;
+  document.querySelectorAll('#app .v945-tools,#app [data-playable-top-v917="1"],#app [data-v917-playable-card],#app [data-v917-match-total-preview]').forEach(el=>el.remove());
+  document.querySelectorAll('#app .match-filter-row').forEach(el=>el.remove());
+}
+function ensureTools(){
+  if(canonicalControls()){
+    state.surface='all';
+    state.qualityOnly=false;
+    if(!['all','2h','80','playable','pbp'].includes(state.mode))state.mode='all';
+    syncCanonicalControls();
+    stripRetiredPresentation();
+    save();
+    return;
+  }
+  // Legacy shells may still call the behavior API, but this module no longer
+  // injects presentation. Existing legacy controls, if present, remain usable.
+}
 function decorateAndFilter(){
   const groupsWrap=document.querySelector('#app .match-groups');if(!groupsWrap)return;
+  ensureTools();
   refreshReadyKeys();
   const groups=[...groupsWrap.querySelectorAll('.match-group')];
   groups.forEach(g=>{
@@ -75,18 +109,39 @@ function decorateAndFilter(){
   let empty=groupsWrap.querySelector('.v945-empty');
   if(!shownGroups.length){
     if(!empty){empty=document.createElement('div');empty.className='p751-empty v945-empty';groupsWrap.appendChild(empty)}
-    empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr lub wyłącz „Z danymi”.</span>';
+    empty.innerHTML='<b>Brak meczów dla tego zestawu filtrów.</b><span>Zmień filtr.</span>';
   }else empty?.remove();
   const count=document.querySelector('#app .match-browser-head > div > b');
   if(count)count.textContent=`${groups.reduce((n,g)=>n+g.querySelectorAll('.p751-match-card:not([hidden])').length,0)} spotkań`;
   syncModelTop();
+  syncCanonicalControls();
+  stripRetiredPresentation();
   queueMicrotask(()=>window.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.());
 }
-function enhance(){if(!document.querySelector('#app .match-browser-head'))return;ensureTools();decorateAndFilter()}
+function enhance(){if(!document.querySelector('#app .match-browser-head'))return;decorateAndFilter()}
 function restoreReturnScroll(){if(!state.returnPending)return;const y=num(state.returnScroll);state.returnPending=false;state.returnScroll=null;save();if(y==null)return;requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'auto'})))}
-document.addEventListener('click',e=>{const mode=e.target.closest('[data-v945-mode]');if(mode){e.preventDefault();state.mode=mode.dataset.v945Mode;save();enhance();return}const ready=e.target.closest('[data-v945-ready]');if(ready){e.preventDefault();state.qualityOnly=!state.qualityOnly;save();enhance();return}const sort=e.target.closest('[data-v945-sort]');if(sort){e.preventDefault();state.sort=state.sort==='quality'?'time':'quality';save();enhance();return}const open=e.target.closest('[data-p751-open]');if(open&&!e.target.closest('.v762-player-link')){state.returnScroll=window.scrollY;state.returnPending=true;save();return}const close=e.target.closest('[data-p751-close]');if(close)setTimeout(restoreReturnScroll,0)},true);
-document.addEventListener('change',e=>{if(e.target.matches('[data-v945-surface]')){state.surface=e.target.value||'all';save();enhance()}},true);
+
+document.addEventListener('click',e=>{
+  const focus=e.target.closest?.('#focus-filters [data-focus]');
+  if(focus){
+    const mode=SHELL_TO_MODE[focus.dataset.focus];
+    if(mode){e.preventDefault();state.mode=mode;save();enhance();return}
+  }
+  const mode=e.target.closest?.('[data-v945-mode]');
+  if(mode){e.preventDefault();state.mode=mode.dataset.v945Mode;save();enhance();return}
+  const ready=e.target.closest?.('[data-v945-ready]');
+  if(ready){e.preventDefault();state.qualityOnly=!state.qualityOnly;save();enhance();return}
+  const sort=e.target.closest?.('[data-v945-sort]');
+  if(sort){e.preventDefault();state.sort=state.sort==='quality'?'time':'quality';save();enhance();return}
+  const open=e.target.closest?.('[data-p751-open]');
+  if(open&&!e.target.closest?.('.v762-player-link')){state.returnScroll=window.scrollY;state.returnPending=true;save();return}
+  const close=e.target.closest?.('[data-p751-close],[data-close-match]');
+  if(close)setTimeout(restoreReturnScroll,0);
+},true);
+document.addEventListener('change',e=>{if(e.target.matches?.('[data-v945-surface]')){state.surface=e.target.value||'all';save();enhance()}},true);
 document.addEventListener('tenis-ai:matches-rendered',enhance);
-window.addEventListener('pagehide',()=>{save()});window.addEventListener('pageshow',()=>setTimeout(()=>{enhance();restoreReturnScroll()},0));setTimeout(enhance,0);
+window.addEventListener('pagehide',()=>{save()});
+window.addEventListener('pageshow',()=>setTimeout(()=>{enhance();restoreReturnScroll()},0));
+setTimeout(enhance,0);
 window.TENIS_AI_MATCH_BROWSER_V945=Object.freeze({version:VERSION,hasAnalysis,within2h,qualityScore,visibleByState,syncModelTop,enhance});
 })();
