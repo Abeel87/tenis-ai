@@ -1,0 +1,82 @@
+name: One-shot UI contract recovery
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ui-contract-recovery.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Restore protected runtime contracts and retain new product layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          OLD=1297097f3e207a2a2654182bac2145de65a4bb8b
+          git fetch --no-tags origin "$OLD" --depth=1
+
+          cp frontend/style.css /tmp/product-style.css
+
+          git show "$OLD:frontend/project-ui.js" > frontend/project-ui.js
+          git show "$OLD:frontend/style.css" > /tmp/canonical-style.css
+          git show "$OLD:frontend/sw.js" > frontend/sw.js
+          git show "$OLD:tests/ui_static_smoke.mjs" > tests/ui_static_smoke.mjs
+          git show "$OLD:tests/audit_consistency_smoke.mjs" > tests/audit_consistency_smoke.mjs
+
+          cat /tmp/canonical-style.css /tmp/product-style.css > frontend/style.css
+
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+
+          old='1297097f3e207a2a2654182bac2145de65a4bb8b'
+          index_path=Path('frontend/index.html')
+          index=index_path.read_text(encoding='utf-8')
+          old_index=subprocess.check_output(['git','show',f'{old}:frontend/index.html'], text=True)
+
+          for src in re.findall(r'<script src="([^"]+)"', old_index):
+              if '://' in src:
+                  continue
+              base=src.split('?')[0]
+              index=re.sub(rf'src="{re.escape(base)}(?:\?[^\"]*)?"', f'src="{src}"', index)
+
+          index=re.sub(r'href="style\.css(?:\?[^\"]*)?"', 'href="style.css"', index)
+          index=index.replace('<span>♫</span> Symfonia', '<span>🎼</span><b>Symfonia</b>')
+          index=index.replace('class="technical-status technical-only"', 'class="status technical-status technical-only"')
+          if 'class="main-tabs"' not in index:
+              index=index.replace('<main id="app"', '<nav class="main-tabs" hidden aria-hidden="true"></nav>\n\n        <main id="app"', 1)
+          index_path.write_text(index, encoding='utf-8')
+
+          pp_path=Path('frontend/product-polish.js')
+          pp=pp_path.read_text(encoding='utf-8')
+          m=re.search(r'\n\s*const STYLE=`([\s\S]*?)`;\s*\n', pp)
+          if m:
+              css=m.group(1)
+              with Path('frontend/style.css').open('a', encoding='utf-8') as f:
+                  f.write('\n\n/* Role-aware admin/user product polish */\n')
+                  f.write(css)
+                  f.write('\n')
+              pp=pp[:m.start()]+'\n'+pp[m.end():]
+          pp=re.sub(
+              r"\s*const style=document\.createElement\('style'\);style\.id='tenis-product-polish';style\.textContent=STYLE;document\.head\.appendChild\(style\);?",
+              '',
+              pp
+          )
+          pp_path.write_text(pp, encoding='utf-8')
+          PY
+
+          rm .github/workflows/ui-contract-recovery.yml
+
+          git config user.name 'tenis-ai-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add frontend/index.html frontend/project-ui.js frontend/style.css frontend/sw.js frontend/product-polish.js tests/ui_static_smoke.mjs tests/audit_consistency_smoke.mjs .github/workflows/ui-contract-recovery.yml
+          git commit -m 'fix: restore protected UI contracts without losing product polish'
+          git push origin HEAD:main
