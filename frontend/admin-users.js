@@ -1,6 +1,7 @@
 /* Tenis AI — restores admin account management on top of the new UI. */
 (()=>{
 'use strict';
+if(typeof document==='undefined'||typeof document.createElement!=='function')return;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const A=()=>window.TenisAccount;

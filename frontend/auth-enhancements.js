@@ -1,6 +1,7 @@
 /* Tenis AI — restores CAPTCHA-protected auth and registration after UI rewrite. */
 (()=>{
 'use strict';
+if(typeof document==='undefined'||typeof document.createElement!=='function')return;
 const SITE_KEY='0x4AAAAAAEX7JDePX3k2rQXE';
 const USER_RE=/^[\p{L}\p{N}_.-]+$/u;
 const $=s=>document.querySelector(s);
