@@ -12,7 +12,7 @@ function element(s){if(!elements.has(s))elements.set(s,node());return elements.g
 const storage=new Map();
 let role='user';
 const account={authenticated:true,user:{id:'owner'},profile:{username:'Tester'},get role(){return role},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},upsert(row){writes.push({table,row});q.row=row;return q},single(){return Promise.resolve({data:q.row})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return q},rpc(){return Promise.resolve({data:[]})}},signOut(){account.authenticated=false;handlers['tenis-auth']()}};
-const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollTo(){},setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('history')?[]:path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
+const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('history')?[]:path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
 ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
 const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
 for(const name of scripts)vm.runInContext(read(name),ctx,{filename:name});
@@ -25,6 +25,29 @@ for(const m of candidates){const id=ctx.TenisPresentation.key(m),box=node();cons
 assert(element('#coupon-bar').innerHTML.includes(candidates.length+' zdarzeń'));
 assert((await route('#coupons')).includes('slip-stake'));
 const click=async attrs=>{const b={dataset:{},matches:()=>false,hasAttribute:k=>k in attrs,...attrs};await handlers.click({target:{closest:()=>b}});await flush()};
+// Stage 1: selectors and navigation retain their presentation state.
+await route('#symphony');
+const scored=symphony.matches.flatMap(m=>ctx.TenisPresentation.allEvents(ctx.TenisPresentation.find(matches,m)||m,m)).filter(s=>s.source==='Symfonia 2.0');
+if(scored.length){
+ const cards=()=> (element('#app').innerHTML.match(/class="recommendation-card"/g)||[]).length;
+ assert(cards()>0&&cards()<=3,'Default TOP 3');
+ await click({dataset:{sLimit:'5'}});assert(cards()<=5,'TOP 5 limit');
+ const choice=ctx.TenisPresentation.marketChoice(scored[0]);
+ handlers.change({target:{id:'symphony-market',value:choice}});
+ assert(element('#symphony-results').innerHTML.includes('recommendation-card'),'Existing market has recommendations');
+ await route('#symphony');assert(element('#app').innerHTML.includes(`value="${choice}" selected`),'Market choice survives routing');
+}
+await route('#matches');
+await click({dataset:{focus:'all'},closest:()=>({dataset:{filterScope:'matches'}})});
+assert.equal((element('#app').innerHTML.match(/class="match-card"/g)||[]).length,matches.length,'Tournament sections preserve every fixture');
+const tournament=ctx.TenisPresentation.tournamentGroups(matches)[0].key;
+handlers.toggle({target:{dataset:{tournament},open:true}});
+ctx.scrollY=640;handlers.scroll();
+await route('#match/'+encodeURIComponent(ctx.TenisPresentation.key(matches[0]))+'/summary');
+await route('#matches');assert.equal(ctx.scrollY,640,'Hash navigation restores list position');
+assert(element('#app').innerHTML.includes(`data-tournament="${ctx.TenisPresentation.esc(tournament)}" open`),'Expanded tournament survives return');
+await route('#coupons');
+console.log('PASS: TOP controls, market state, tournament fixture retention, expanded section and scroll restoration');
 handlers.input({target:{id:'slip-title',value:'Weekend',matches:()=>false}});
 handlers.input({target:{id:'slip-stake',value:'25',matches:()=>false}});
 await click({'data-save-slip':true});assert.equal(writes[0].table,'ui_coupons');assert.equal(writes[0].row.user_id,'owner');assert.equal(writes[0].row.title,'Weekend');assert.equal(writes[0].row.stake,25);assert.equal(writes[0].row.legs.length,candidates.length);
