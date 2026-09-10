@@ -160,3 +160,13 @@ def test_no_frontend_runtime_can_recreate_layered_visual_ownership():
         if "new MutationObserver(" in source:
             assert "observe(document.body" not in source
             assert "observe(document.documentElement" not in source
+
+def test_retired_mobile_css_cannot_override_canonical_shell():
+    assert "body{padding-bottom:94px!important}" not in STYLE
+    assert "left:50%;bottom:0;transform:translateX(-50%)" not in STYLE
+    assert ".player-search-shell{padding:11px!important;margin:9px 0!important}" not in STYLE
+    assert "body{padding-left:10px!important;padding-right:10px!important}" not in STYLE
+    assert 'html[data-tenis-view="matches"] #v79-health{display:none!important}' in STYLE
+    assert '#player-search-input,.player-search-input-wrap input{' in STYLE
+    assert '.signal-spotlight-grid{display:flex;grid-template-columns:none' in STYLE
+
