@@ -1,0 +1,134 @@
+name: One-shot canonical mobile CSS repair
+
+on:
+  push:
+    branches:
+      - fix/canonical-mobile-visual-conflicts
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/canonical-mobile-visual-conflicts
+          fetch-depth: 0
+
+      - name: Repair canonical mobile visual ownership
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('frontend/style.css')
+          css = path.read_text(encoding='utf-8')
+
+          def sub_once(pattern, replacement, text, *, flags=0, label='pattern'):
+              out, count = re.subn(pattern, replacement, text, count=1, flags=flags)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, got {count}')
+              return out
+
+          # Retired history-ui rules were copied into style.css and still used !important.
+          # They overrode the later canonical product shell on phones.
+          css = sub_once(r'body\{padding-bottom:94px!important\}\n', '', css, label='legacy body bottom padding')
+          css = sub_once(r'\.main-tabs\{position:fixed!important;left:50%;bottom:0;transform:translateX\(-50%\);[^\n]*?gap:5px\}\n', '', css, label='legacy fixed nav')
+          css = sub_once(r'\.main-tabs button\{min-height:50px!important;[^\n]*?place-items:center;gap:2px\}\n', '', css, label='legacy nav buttons')
+          css = sub_once(r'\.main-tabs button span\{font-size:9px\}\.main-tabs button\.active\{[^\n]*?\}\n', '', css, label='legacy nav active state')
+          css = sub_once(r'\.player-search-shell\{padding:11px!important;margin:9px 0!important\}', '', css, label='legacy search shell important')
+          css = sub_once(r'body\{padding-left:10px!important;padding-right:10px!important\}\n', '', css, label='legacy mobile body side padding')
+
+          # Old match-browser bootstrap also made the second filter bar a sticky mini-header.
+          css = sub_once(
+              r'\.v945-tools\{position:sticky;top:0;z-index:20;background:var\(--bg,#08111f\);padding:7px 0 5px;margin-top:0\}',
+              '.v945-tools{position:relative;z-index:2;background:transparent;padding:4px 0 5px;margin-top:0}',
+              css,
+              label='legacy sticky match tools',
+          )
+
+          # Make the canonical search box the actual owner. The migrated player-search block
+          # used an ID selector and otherwise survived despite being visually retired.
+          old = '.player-search-shell{position:relative;margin:0 0 12px}'
+          new = '.player-search-shell{position:relative;z-index:15;margin:0 0 12px;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}'
+          if css.count(old) != 1:
+              raise SystemExit(f'canonical search shell: expected one match, got {css.count(old)}')
+          css = css.replace(old, new, 1)
+
+          css = sub_once(
+              r'\.search-icon\{color:var\(--muted\);font-size:20px\}',
+              '.player-search-input-wrap .search-icon{position:static;left:auto;color:var(--muted);font-size:18px;filter:none}',
+              css,
+              label='canonical search icon',
+          )
+
+          css = sub_once(
+              r'\.player-search-input-wrap input\{\n  flex:1;\n  min-width:0;\n  border:0;\n  outline:0;\n  color:var\(--text\);\n  background:transparent;\n  font-size:14px;\n\}',
+              '#player-search-input,.player-search-input-wrap input{\n  flex:1;\n  width:auto;\n  min-width:0;\n  height:auto;\n  padding:0;\n  border:0;\n  border-radius:0;\n  outline:0;\n  color:var(--text);\n  background:transparent;\n  box-shadow:none;\n  font-size:14px;\n}',
+              css,
+              label='canonical search input',
+          )
+          css = sub_once(
+              r'\.player-search-input-wrap input::placeholder\{color:#53677c\}',
+              '#player-search-input::placeholder,.player-search-input-wrap input::placeholder{color:#53677c}',
+              css,
+              label='canonical search placeholder',
+          )
+
+          # Compact the landing page on phones: this is a match workspace, not a dashboard hero.
+          replacements = {
+              '.topbar{min-height:64px}': '.topbar{min-height:56px;gap:8px}',
+              '.product-brand-symbol{width:34px;height:34px}': '.product-brand-symbol{width:31px;height:31px}',
+              '.topbar-action,.account-button,.topbar-icon{width:40px;min-width:40px;padding:0;justify-content:center}': '.topbar-action,.account-button,.topbar-icon{width:36px;min-width:36px;min-height:36px;padding:0;justify-content:center}',
+              '.page-head{padding:20px 2px 14px;align-items:start}': '.page-head{padding:14px 2px 10px;align-items:start}',
+              '.page-head h1{font-size:34px}': '.page-head h1{font-size:30px}',
+              '.page-head p{max-width:310px;font-size:11px}': '.page-head p{max-width:340px;font-size:10px;line-height:1.4}',
+          }
+          for old, new in replacements.items():
+              if css.count(old) != 1:
+                  raise SystemExit(f'canonical mobile replacement missing/ambiguous: {old!r} count={css.count(old)}')
+              css = css.replace(old, new, 1)
+
+          # Top signals stay useful but stop consuming most of the first screen.
+          old_spot = '''  .signal-spotlight{padding:12px;border-radius:17px}\n  .signal-spotlight>header small{display:none}\n  .signal-spotlight-grid{grid-template-columns:1fr}\n  .signal-spotlight-card{grid-template-columns:1fr auto;align-items:center}\n  .signal-spotlight-card>span,.signal-spotlight-card>small{grid-column:1/-1}\n  .signal-spotlight-card>strong{grid-column:2;grid-row:2/4}\n'''
+          new_spot = '''  .signal-spotlight{padding:10px;border-radius:16px;margin-bottom:12px}\n  .signal-spotlight>header{margin-bottom:8px}\n  .signal-spotlight>header small{display:none}\n  .signal-spotlight-grid{display:flex;grid-template-columns:none;gap:7px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;padding-bottom:1px}\n  .signal-spotlight-grid::-webkit-scrollbar{display:none}\n  .signal-spotlight-card{flex:0 0 min(78vw,280px);grid-template-columns:minmax(0,1fr) auto;align-items:center;scroll-snap-align:start;padding:10px 11px}\n  .signal-spotlight-card>span,.signal-spotlight-card>small{grid-column:1}\n  .signal-spotlight-card>b{grid-column:1;grid-row:2}\n  .signal-spotlight-card>strong{grid-column:2;grid-row:2/4;font-size:17px}\n'''
+          if css.count(old_spot) != 1:
+              raise SystemExit(f'mobile spotlight block: expected one match, got {css.count(old_spot)}')
+          css = css.replace(old_spot, new_spot, 1)
+
+          # Adaptive Learning health is diagnostics; do not put it above the match list.
+          marker = '/* Match filters */\n'
+          rule = 'html[data-tenis-view="matches"] #v79-health{display:none!important}\n\n'
+          if rule not in css:
+              if css.count(marker) != 1:
+                  raise SystemExit('match filters marker missing/ambiguous')
+              css = css.replace(marker, rule + marker, 1)
+
+          path.write_text(css, encoding='utf-8')
+
+          # Regression: prevent retired mobile globals from taking visual ownership again.
+          test_path = Path('tests/test_clean_product_ui.py')
+          test = test_path.read_text(encoding='utf-8')
+          addition = '''\n\ndef test_retired_mobile_css_cannot_override_canonical_shell():\n    assert "body{padding-bottom:94px!important}" not in STYLE\n    assert "left:50%;bottom:0;transform:translateX(-50%)" not in STYLE\n    assert ".player-search-shell{padding:11px!important;margin:9px 0!important}" not in STYLE\n    assert "body{padding-left:10px!important;padding-right:10px!important}" not in STYLE\n    assert 'html[data-tenis-view="matches"] #v79-health{display:none!important}' in STYLE\n    assert '#player-search-input,.player-search-input-wrap input{' in STYLE\n    assert '.signal-spotlight-grid{display:flex;grid-template-columns:none' in STYLE\n'''
+          if 'def test_retired_mobile_css_cannot_override_canonical_shell()' not in test:
+              test_path.write_text(test.rstrip() + addition + '\n', encoding='utf-8')
+          PY
+
+      - name: Focused validation
+        run: |
+          python -m pytest -q tests/test_clean_product_ui.py
+          node tests/ui_static_smoke.mjs
+
+      - name: Commit repaired canonical files and remove one-shot workflow
+        shell: bash
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/fix-canonical-mobile-once.yml
+          git add frontend/style.css tests/test_clean_product_ui.py
+          git commit -m "Fix canonical mobile visual ownership"
+          git push origin HEAD:fix/canonical-mobile-visual-conflicts
