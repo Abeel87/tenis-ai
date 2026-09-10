@@ -306,6 +306,7 @@
     navActive('matches');
     document.documentElement.dataset.tenisRoute='matches';
     const app=document.querySelector('#app');
+    if(app)delete app.dataset.matchKey;
     const rows=currentRows();
     if(!rows.length){
       app.innerHTML=`<section class="match-browser-head">${focusBar()}</section>
