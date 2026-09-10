@@ -1,6 +1,6 @@
-/* Tenis AI — bounded PWA cache · product UI 2026-09-10 */
+/* Tenis AI — bounded PWA cache · canonical product UI 2026-09-10 */
 const LEGACY_CACHE_CONTRACT='tenis-ai-v801-player-profile';
-const CACHE='tenis-ai-product-ui-20260910';
+const CACHE='tenis-ai-product-ui-20260910b';
 const RUNTIME_CACHE_POLICY='v853-large-json-bypass';
 
 const CORE=[

@@ -26,7 +26,7 @@ const legacyUi=[
 const checks=[
  ['Clean Core logic remains loaded after Adaptive Learning',/adaptive-learning-v79\.js[\s\S]{0,700}clean-core-v80\.js/.test(index)],
  ['Legacy Clean Core CSS is removed',!index.includes('clean-core-v80.css')&&!sw.includes('clean-core-v80.css')],
- ['Single canonical stylesheet is loaded',stylesheetCount===1&&index.includes('href="style.css"')],
+ ['Single canonical stylesheet is loaded',stylesheetCount===1&&/href="style\.css(?:\?[^\"]*)?"/.test(index)],
  ['Legacy layered UI is not loaded',legacyUi.every(name=>!index.includes(name))],
  ['Old History v7.3.2 is not loaded',!index.includes('history-days-v732.js')&&!index.includes('history-days-v732.css')],
  ['Post-Match Center logic still exists',clean.includes('RAPORT PO MECZU')&&clean.includes('Co nie weszło')&&clean.includes('Modele — wynik tego meczu')],
@@ -37,19 +37,22 @@ const checks=[
  ['Central app metadata is v8.0.1',meta.includes("appVersion: 'v8.0.1'")&&meta.includes("cacheVersion: 'v801'")],
  ['PWA registration is v801',app.includes("serviceWorker.register('sw.js?v=801')")],
  ['PWA registration actively checks update',app.includes(".then(r=>r.update())")],
- ['PWA cache is v84b',/const CACHE\s*=\s*['"]tenis-ai-v84b-[0-9a-z._-]+['"]/i.test(sw)],
+ ['PWA cache has an explicit bounded Tenis AI version',/const CACHE\s*=\s*['"]tenis-ai-(?:v84b-|product-ui-)[0-9a-z._-]+['"]/i.test(sw)],
  ['PWA cache owns canonical style only',sw.includes("'style.css'")&&!sw.includes('symphony2.css')],
  ['Dynamic JSON cache is canonical',sw.includes('canonicalDataRequest')&&sw.includes("url.pathname.includes('/data/')")],
  ['No old fragile cache.addAll(ASSETS)',!sw.includes('cache.addAll(ASSETS)')],
  ['Supabase version is pinned',/@supabase\/supabase-js@2\.112\.3/.test(index)],
  ['Shadow Lab remains available without legacy bottom nav',index.includes('shadow-lab-v78e6.js')&&shadow.includes('window.TENIS_AI_SHADOW_LAB')&&shadow.includes('open:openShadow')&&!ui.includes('p751-bottom-nav')],
  ['Main cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(ui)],
- ['Canonical responsive rules exist',style.includes('@media(max-width:760px)')&&style.includes('.match-grid')],
- ['Match detail is in-app, not legacy overlay',ui.includes("app.innerHTML=detailHtml(m)")&&!ui.includes('p751-match-overlay')],
+ ['Canonical responsive product rules exist',style.includes('@media(max-width:760px)')&&style.includes('.match-card-new')&&style.includes('.mobile-nav')],
+ ['Match detail uses the new product screen, not legacy p751 overlay',ui.includes("$('#match-detail-overlay')")&&ui.includes("$('#match-screen-body')")&&!ui.includes('p751-match-overlay')],
+ ['New role-aware product shell is present',index.includes('class="side-rail"')&&index.includes('class="mobile-nav main-tabs"')&&index.includes('data-view="picks"')&&index.includes('data-view="players"')],
+ ['Old global status anchor is absent from product shell',!index.includes('class="status technical-status"')],
+ ['PLAYABLE authority remains wired into product UI',index.includes('playable-ui.js')&&ui.includes('TENIS_AI_PLAYABLE_UI_V917')],
  ['Shadow cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(shadow)]
 ];
 
 let failed=0;
 for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'}  ${name}`);if(!ok)failed++}
 if(failed){console.error(`\n${failed} smoke check(s) failed.`);process.exit(1)}
-console.log('\nUI smoke clean rebuild: PASS');
+console.log('\nUI smoke canonical product rebuild: PASS');
