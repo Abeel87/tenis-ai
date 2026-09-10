@@ -104,7 +104,7 @@ UI-only. No direct fetch, no MutationObserver, no interval.
   }
 
   function decorateCards(){document.querySelectorAll('.p751-match-card').forEach(c=>{if(c.querySelector('.pi851-card-strip'))return;const m=matchFromEncoded(c.getAttribute('data-p751-open'));if(!m)return;const h=cardStrip(m),f=c.querySelector('footer');if(h)(f?f.insertAdjacentHTML('beforebegin',h):c.insertAdjacentHTML('beforeend',h))})}
-  function injectDetail(m){const h=document.querySelector('.p751-detail-screen');if(!m||!h||h.querySelector('[data-pi851-detail]'))return;const x=details(m),head=h.querySelector('.dc87')||h.querySelector('.p751-matchup')||h.querySelector('.p751-detail-header');if(x)(head?head.insertAdjacentHTML('afterend',x):h.insertAdjacentHTML('afterbegin',x))}
+  function injectDetail(m){const h=document.querySelector('.p751-detail-screen');if(!m||!h||h.querySelector('[data-pi851-detail]'))return;const x=details(m),slot=h.querySelector('[data-player-stats-tab-slot]'),head=h.querySelector('.dc87')||h.querySelector('.p751-matchup')||h.querySelector('.p751-detail-header');if(x){if(slot)slot.insertAdjacentHTML('beforeend',x);else(head?head.insertAdjacentHTML('afterend',x):h.insertAdjacentHTML('afterbegin',x))}}
 
   function telemetry(){if(telemetryPromise)return telemetryPromise;const api=window.TENIS_AI_AUTOLEARN_V84;telemetryPromise=api?.loadTelemetry?Promise.resolve(api.loadTelemetry()).catch(()=>null):Promise.resolve(null);return telemetryPromise}
   function activeProfiles(){const s=new Set();rows().forEach(m=>{const p=m?.player_intelligence_v85?.profiles||{};[p.p1,p.p2].forEach(x=>{if(x?.player_key||x?.player)s.add(String(x.player_key||x.player))})});return s.size}

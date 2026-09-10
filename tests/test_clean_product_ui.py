@@ -170,3 +170,40 @@ def test_retired_mobile_css_cannot_override_canonical_shell():
     assert '#player-search-input,.player-search-input-wrap input{' in STYLE
     assert '.signal-spotlight-grid{display:flex;grid-template-columns:none' in STYLE
 
+def test_agreed_product_blueprint_is_the_visible_navigation_contract():
+    assert 'data-tenis-product="blueprint"' in INDEX
+    assert 'data-tenis-view="home"' in INDEX
+    for view, label in (("home","Start"),("matches","Mecze"),("picks","Typy"),("players","Zawodnicy"),("account","Konto")):
+        assert f'data-view="{view}"' in INDEX
+        assert f'<b>{label}</b>' in INDEX
+    assert 'class="legacy-view-hook" data-view="stats"' in INDEX
+    assert 'id="tenis-admin-center-open"' in INDEX
+
+
+def test_agreed_product_blueprint_has_real_product_routes():
+    assert "let view='home';" in APP
+    assert 'function renderProductHome()' in APP
+    assert 'function renderProductPicks()' in APP
+    assert 'function renderProductPlayers()' in APP
+    assert 'function renderProductAccount()' in APP
+    assert 'window.TENIS_AI_APP_NAV=Object.freeze' in APP
+
+
+def test_match_detail_uses_agreed_four_section_information_architecture():
+    for tab in ('summary','path','stats','h2h'):
+        assert f'data-match-tab="{tab}"' in PROJECT_UI
+        assert f'data-match-panel="{tab}"' in PROJECT_UI
+    for label in ('Podsumowanie','Przebieg','Statystyki','H2H'):
+        assert label in PROJECT_UI
+    assert '${topStrip(rows)}' not in PROJECT_UI
+    assert 'data-player-dna-tab-slot' in PROJECT_UI
+    assert 'data-player-stats-tab-slot' in PROJECT_UI
+
+
+def test_blueprint_keeps_one_visual_owner_and_role_aware_admin_center():
+    assert 'TENIS AI AGREED PRODUCT BLUEPRINT' in STYLE
+    assert '.legacy-view-hook{display:none!important}' in STYLE
+    assert '[data-tenis-role="admin"] #tenis-admin-center-open' in STYLE
+    assert '.match-detail-tabs' in STYLE
+    assert '.product-home-hero' in STYLE
+

@@ -874,10 +874,13 @@
     }
     panel.innerHTML=trajectoryHTML(row);
 
+    const tabSlot=currentScreen.querySelector('[data-player-dna-tab-slot]');
     const playerContext=currentScreen.querySelector('[data-pi851-detail],#pi85-detail');
     const verdict=currentScreen.querySelector('.p751-verdict');
     const matchup=currentScreen.querySelector('.p751-matchup');
-    if(playerContext?.parentNode){
+    if(tabSlot){
+      tabSlot.replaceChildren(panel);
+    }else if(playerContext?.parentNode){
       playerContext.insertAdjacentElement('afterend',panel);
     }else if(verdict?.parentNode){
       verdict.parentNode.insertBefore(panel,verdict);

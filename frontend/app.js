@@ -4,14 +4,18 @@ let statsData=null;
 let secondaryDataPromise=null;
 let secondaryDataLoaded=false;
 let filter='all';
-let view='matches';
+let view='home';
 
 const VIEW_COPY={
-  matches:['DZISIAJ','Mecze','Najważniejsze spotkania, sygnały i rynki — bez technicznego szumu.'],
-  stats:['WYNIKI','Statystyki','Skuteczność modeli, trendy i jakość danych w jednym miejscu.'],
+  home:['TENIS AI','Start','Najważniejsze rzeczy na dziś — bez przekopywania się przez techniczne dane.'],
+  matches:['DZISIAJ','Mecze','Dzisiejsze spotkania. Otwórz mecz, żeby zobaczyć pełną analizę.'],
+  picks:['SYGNAŁY','Typy','Aktualne typy PLAYABLE zweryfikowane względem bieżącej oferty Superbet.'],
+  players:['ZAWODNICY','Zawodnicy','Wyszukaj zawodnika i przejdź od razu do jego profilu.'],
+  account:['TWOJE KONTO','Konto','Profil, rola i ustawienia Tenis AI.'],
+  stats:['WYNIKI','Statystyki','Zaawansowane wyniki modeli i diagnostyka.'],
   history:['ARCHIWUM','Historia','Rozliczone mecze i wcześniejsze sygnały.'],
-  coupons:['SPOŁECZNOŚĆ','Kupony','Kupony testerów i Twoje zapisane typy.'],
-  feedback:['ROZWÓJ','Pomysły','Zgłoszenia, poprawki i pomysły do kolejnych wersji.']
+  coupons:['SPOŁECZNOŚĆ','Kupony','Kupony testerów i zapisane typy.'],
+  feedback:['ROZWÓJ','Pomysły','Zgłoszenia, poprawki i pomysły.']
 };
 function updateViewChrome(){
   const copy=VIEW_COPY[view]||VIEW_COPY.matches;
@@ -130,13 +134,104 @@ function couponCard(x){return `<article class="coupon-card">${x.image?`<img src=
 async function compressImage(file){if(!file)return '';const img=await createImageBitmap(file);const max=1200;const scale=Math.min(1,max/Math.max(img.width,img.height));const w=Math.max(1,Math.round(img.width*scale));const h=Math.max(1,Math.round(img.height*scale));const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);return canvas.toDataURL('image/jpeg',.72)}
 function renderCoupons(){const app=document.querySelector('#app');app.innerHTML=`<section class="community-hero"><h2>🧾 Kupony społeczności</h2><p>Wrzuć swój kupon, dopisz kurs, bukmachera i status. Reakcje i komentarze są już w widoku.</p><div class="local-note">Na razie kupony są zapisywane lokalnie na tym urządzeniu. Nie udajemy wspólnej bazy, dopóki nie podłączymy backendu.</div></section><form id="coupon-form" class="community-form coupon-form"><label>Tytuł<input name="title" maxlength="80" required placeholder="Np. Kupon na wieczór"></label><label>Bukmacher<input name="bookmaker" maxlength="50" placeholder="Np. Superbet"></label><label>Kurs<input name="odds" maxlength="20" placeholder="Np. 8.45"></label><label>Status<select name="status"><option>Grany</option><option>Wygrany</option><option>Przegrany</option><option>Cashout</option></select></label><label class="wide">Opis<textarea name="description" maxlength="600" placeholder="Co zagrałeś?"></textarea></label><label class="wide">Screen kuponu<input name="image" type="file" accept="image/*"></label><button type="submit" class="primary-btn wide">Dodaj kupon</button></form><div class="coupon-list">${couponRows.length?couponRows.slice().reverse().map(couponCard).join(''):'<div class="empty small"><b>Brak kuponów.</b><br>Dodaj pierwszy.</div>'}</div>`;document.querySelector('#coupon-form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget;const fd=new FormData(form);const file=form.elements.image.files?.[0];let image='';try{image=await compressImage(file)}catch{}const row={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title:String(fd.get('title')||'').trim(),bookmaker:String(fd.get('bookmaker')||'').trim(),odds:String(fd.get('odds')||'').trim(),status:String(fd.get('status')||'Grany'),description:String(fd.get('description')||'').trim(),image,likes:0,comments:[],createdAt:new Date().toISOString()};couponRows.push(row);if(!writeLocal(COUPON_KEY,couponRows)){couponRows.pop();alert('Brak miejsca na urządzeniu. Spróbuj mniejszego screena lub usuń starszy kupon.');return}renderCoupons()};document.querySelectorAll('[data-like-coupon]').forEach(b=>b.onclick=()=>{const x=couponRows.find(v=>v.id===b.dataset.likeCoupon);if(x){x.likes=(x.likes||0)+1;writeLocal(COUPON_KEY,couponRows);renderCoupons()}});document.querySelectorAll('[data-comment-form]').forEach(f=>f.onsubmit=e=>{e.preventDefault();const x=couponRows.find(v=>v.id===f.dataset.commentForm);const input=f.querySelector('input');const text=input.value.trim();if(x&&text){x.comments=x.comments||[];x.comments.push(text);writeLocal(COUPON_KEY,couponRows);renderCoupons()}})}
 
+
+function productMatchKey(m){return String(m?.id??m?.match_id??[m?.p1,m?.p2,m?.scheduled_time].join('|'))}
+function productSignalValue(x){const v=x?.operator_model_probability??x?.v??x?.final_score??x?.adaptive_prod_score??x?.score??x?.current;return v==null||!Number.isFinite(Number(v))?null:Number(v)}
+function productPlayable(m,limit=5){try{return window.TENIS_AI_PLAYABLE_UI_V917?.playableSignals?.(m,limit)||[]}catch{return []}}
+function productTopSignal(m){
+  const p=productPlayable(m,1)[0];
+  if(p){const v=productSignalValue(p);return v==null?null:{label:p.label||p.pick||p.key||'Typ PLAYABLE',value:v,source:'PLAYABLE'}}
+  const raw=bestSignalsData(m,1)[0];
+  return raw?{label:raw.label,value:Number(raw.v),source:'MODEL'}:null;
+}
+function productRows(){return filteredReady().slice().sort((a,b)=>new Date(a.scheduled_time||0)-new Date(b.scheduled_time||0))}
+function productRole(){return String(document.documentElement.dataset.tenisRole||window.tenisAIAccount?.profile?.role||'user').toLowerCase()}
+function bindProductScreen(){
+  document.querySelectorAll('[data-product-go]').forEach(b=>b.onclick=()=>goView(b.dataset.productGo));
+  document.querySelectorAll('#app [data-p751-open]').forEach(b=>b.onclick=e=>{
+    e.preventDefault();
+    let k=b.getAttribute('data-p751-open')||'';try{k=decodeURIComponent(k)}catch{}
+    window.TENIS_AI_PROJECT_UI?.openMatch?.(k);
+  });
+  document.querySelectorAll('[data-product-action="account"]').forEach(b=>b.onclick=()=>document.querySelector('#account-button')?.click());
+  document.querySelectorAll('[data-product-action="community"]').forEach(b=>b.onclick=()=>document.querySelector('#community-hub-open')?.click());
+  document.querySelectorAll('[data-product-action="symphony"]').forEach(b=>b.onclick=()=>document.querySelector('#symphony-open')?.click());
+  document.querySelectorAll('[data-product-action="control"]').forEach(b=>b.onclick=()=>document.querySelector('#tenis-admin-center-open')?.click());
+}
+function renderProductHome(){
+  const app=document.querySelector('#app'),rows=productRows(),now=Date.now();
+  const twoHours=rows.filter(m=>{const t=Date.parse(m.scheduled_time||'');return Number.isFinite(t)&&t>=now&&t<=now+2*3600000}).length;
+  const playableMatches=rows.filter(m=>productPlayable(m,1).length).length;
+  const ranked=rows.map(m=>({m,s:productTopSignal(m)})).filter(x=>x.s).sort((a,b)=>b.s.value-a.s.value);
+  const strongest=ranked[0]?.s?.value;
+  const role=productRole();
+  app.innerHTML=`<div class="product-home">
+    <section class="product-home-hero">
+      <div><span>TWÓJ TENIS AI</span><h2>Co dziś gramy?</h2><p>Najpierw najważniejsze informacje. Szczegóły są dopiero tam, gdzie ich potrzebujesz.</p></div>
+      <div class="product-home-kpis">
+        <div><small>Mecze</small><b>${rows.length}</b><span>aktualne</span></div>
+        <div><small>Do 2 h</small><b>${twoHours}</b><span>najbliższe</span></div>
+        <div><small>PLAYABLE</small><b>${playableMatches}</b><span>Superbet</span></div>
+        <div><small>Top</small><b>${strongest==null?'—':Math.round(strongest)}</b><span>${ranked[0]?.s?.source||'N/D'}</span></div>
+      </div>
+    </section>
+    <section class="product-launch-grid">
+      <button data-product-go="matches"><span>🎾</span><div><b>Mecze</b><small>Lista spotkań i pełna analiza meczu</small></div><i>→</i></button>
+      <button data-product-go="picks"><span>⚡</span><div><b>Typy</b><small>Najmocniejsze aktualne PLAYABLE</small></div><i>→</i></button>
+      <button data-product-go="players"><span>👤</span><div><b>Zawodnicy</b><small>Profil, forma, serwis i return</small></div><i>→</i></button>
+      <button data-product-action="community"><span>👥</span><div><b>Społeczność</b><small>Testerzy, kupony i aktywność</small></div><i>→</i></button>
+      ${role==='admin'?'<button class="admin-launch" data-product-action="control"><span>⚙️</span><div><b>Control Center</b><small>Pełne narzędzia administratora</small></div><i>→</i></button>':''}
+      ${role==='moderator'?'<button class="moderator-launch" data-product-action="community"><span>🛡️</span><div><b>Moderacja</b><small>Narzędzia moderatora społeczności</small></div><i>→</i></button>':''}
+    </section>
+    <section class="product-home-section">
+      <header><div><span>NAJMOCNIEJSZE TERAZ</span><b>Top typy</b></div><button data-product-go="picks">Wszystkie typy →</button></header>
+      <div class="product-home-picks">${ranked.slice(0,3).map(({m,s})=>`<button data-p751-open="${encodeURIComponent(productMatchKey(m))}"><div><small>${esc((m.tour||'TENIS').toUpperCase())} · ${esc(scheduled(m)||'—')}</small><b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b><span>${esc(s.label)}</span></div><strong>${Math.round(s.value)}</strong><em>${esc(s.source)}</em></button>`).join('')||'<div class="product-empty">Brak gotowych typów dla aktualnych spotkań.</div>'}</div>
+    </section>
+  </div>`;
+  bindProductScreen();
+}
+function renderProductPicks(){
+  const app=document.querySelector('#app');
+  const rows=productRows().flatMap(m=>productPlayable(m,12).map(s=>({m,s,v:productSignalValue(s)}))).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v).slice(0,60);
+  app.innerHTML=`<div class="product-picks-page">
+    <section class="product-picks-hero"><div><span>FINALNA WARSTWA</span><h2>Typy PLAYABLE</h2><p>Tylko selekcje obecne w bieżącej ofercie Superbet i przepuszczone przez finalną warstwę PLAYABLE.</p></div><button data-product-action="symphony">🎼 Otwórz Symfonię 2.0</button></section>
+    <div class="product-picks-list">${rows.length?rows.map(({m,s,v})=>`<button class="product-pick-row" data-p751-open="${encodeURIComponent(productMatchKey(m))}"><div><small>${esc((m.tour||'TENIS').toUpperCase())} · ${esc(scheduled(m)||'—')} · ${esc(m.tournament||'Turniej')}</small><b>${esc(m.p1)} <i>vs</i> ${esc(m.p2)}</b><span>${esc(s.label||s.pick||s.key||'Typ')}</span></div><strong>${Math.round(v)}/100</strong><em>SUPERBET ✓</em></button>`).join(''):'<div class="product-empty"><b>Brak PLAYABLE w tej chwili.</b><span>Modele nadal liczą dane, ale tu pokazujemy tylko typy dostępne teraz w Superbet.</span></div>'}</div>
+  </div>`;
+  bindProductScreen();
+}
+function renderProductPlayers(){
+  const app=document.querySelector('#app');
+  app.innerHTML=`<section class="product-players-intro"><span>ZAWODNICY</span><h2>Znajdź zawodnika</h2><p>Wyszukaj nazwisko powyżej. Profil pokaże formę, serwis, return, nawierzchnię, trendy i dostępne dane Player Intelligence.</p></section>`;
+  bindProductScreen();
+}
+function renderProductAccount(){
+  const app=document.querySelector('#app');
+  const profile=window.tenisAIAccount?.profile||{};const role=productRole();
+  app.innerHTML=`<div class="product-account-page"><section class="product-account-card"><div class="product-account-avatar">${esc((profile.username||'U').slice(0,1).toUpperCase())}</div><div><span>TWOJE KONTO</span><h2>${esc(profile.username||'Użytkownik')}</h2><p>Rola: <b>${esc(role.toUpperCase())}</b></p></div></section><section class="product-account-actions"><button data-product-action="account">👤 Profil i ustawienia <i>→</i></button>${role==='admin'?'<button data-product-action="control">⚙️ Control Center <i>→</i></button>':''}<button data-product-action="community">👥 Społeczność <i>→</i></button></section></div>`;
+  bindProductScreen();
+}
+async function goView(next){
+  const allowed=new Set(['home','matches','picks','players','account','stats','history','coupons','feedback']);
+  if(!allowed.has(next))next='home';
+  view=next;
+  document.querySelectorAll('.main-tabs button[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));
+  if(view==='stats'||view==='history')await loadSecondaryData();
+  render();
+  window.scrollTo({top:0,behavior:'auto'});
+}
+window.TENIS_AI_APP_NAV=Object.freeze({go:goView,current:()=>view});
+
 function render(){
   updateViewChrome();
   const matchControls=document.querySelector('#match-controls');
   const matched=document.querySelector('#matched');
   if(matchControls)matchControls.style.display=view==='matches'?'block':'none';
   if(matched)matched.style.display=view==='matches'?'inline-block':'none';
-  if(view==='matches')renderMatches();
+  if(view==='home')renderProductHome();
+  else if(view==='matches')renderMatches();
+  else if(view==='picks')renderProductPicks();
+  else if(view==='players')renderProductPlayers();
+  else if(view==='account')renderProductAccount();
   else if(view==='stats')renderStats();
   else if(view==='history')renderHistory();
   else if(view==='feedback')renderFeedback();
@@ -148,7 +243,7 @@ async function loadSecondaryData(force=false){if(secondaryDataPromise&&!force)re
 async function load(){try{const [results,meta]=await Promise.all([safeJson('data/results.json',[]),safeJson('data/meta.json',{})]);all=results;if(view==='stats'||view==='history')await loadSecondaryData();document.querySelector('#updated').textContent=meta.updated_at?'Aktualizacja: '+new Date(meta.updated_at).toLocaleString('pl-PL'):'Aktualizacja: —';document.querySelector('#mode').textContent='Źródło: '+(meta.fixtures_mode||'—');const hm=document.querySelector('#history-mode');if(hm){const x=meta.history_mode||'—';hm.textContent=x==='degraded-previous'?'Historia: awaria źródła · poprzednie dane':x==='cache'?'Historia: cache':x==='fresh'?'Historia: świeża':x==='fresh+cache'?'Historia: cache + świeże':'Historia: '+x}updateCounts();render()}catch(e){document.querySelector('#app').innerHTML='<div class="empty">Nie udało się wczytać danych.</div>'}}
 
 document.querySelectorAll('#tour-nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#tour-nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;renderMatches()});
-document.querySelectorAll('.main-tabs button[data-view]').forEach(b=>b.onclick=async()=>{document.querySelectorAll('.main-tabs button[data-view]').forEach(x=>x.classList.remove('active'));b.classList.add('active');view=b.dataset.view;if(view==='stats'||view==='history')await loadSecondaryData();render()});
+document.querySelectorAll('.main-tabs button[data-view]').forEach(b=>b.onclick=()=>goView(b.dataset.view));
 document.querySelector('#collapse-all').onclick=()=>setAllDetails(false);
 document.querySelector('#expand-all').onclick=()=>setAllDetails(true);
 document.querySelector('#refresh').onclick=async()=>{if(view==='stats'||view==='history')secondaryDataLoaded=false;await load()};

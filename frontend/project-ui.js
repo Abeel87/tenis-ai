@@ -316,7 +316,6 @@
       return;
     }
     app.innerHTML=`<div class="match-browser">
-      ${topStrip(rows)}
       <section class="match-browser-head">
         <div><span>LISTA MECZÓW</span><b>${rows.length} spotkań</b></div>
         ${focusBar()}
@@ -559,10 +558,7 @@
   }
 
   function lazySections78e23(m){
-    const out=[
-      lazySection78e23('stats','📊','Statystyki zawodników','porównanie obok siebie'),
-      lazySection78e23('analytics','🧠','Player Analytics PRO','profil 0–100 · nie prawdopodobieństwo','PRO')
-    ];
+    const out=[];
     if(m.early_hold_v7) out.push(lazySection78e23('pbp','🧬','Early Hold · PBP',m.early_hold_v7.ready?'prawdziwy początek seta':'brak pełnej próbki',m.early_hold_v7.ready?'PBP OK':'N/D'));
     if(m.serve_props_v72) out.push(lazySection78e23('serve','⚡','Asy i podwójne błędy','przeciwnik + nawierzchnia + długość meczu',m.serve_props_v72.ready?'MODEL':'N/D'));
     if(m.market_lab_v741) out.push(lazySection78e23('lab','🧪','Market Lab','pełne rynki · osobna walidacja','LAB'));
@@ -595,75 +591,71 @@
     });
   }
 
+
+  function h2hHtml(m){
+    const rows=[m?.h2h,m?.head_to_head,m?.head2head].find(Array.isArray)||[];
+    if(!rows.length)return `<div class="match-h2h-empty"><b>Brak bezpośrednich danych H2H.</b><span>Nie tworzymy sztucznej historii. Gdy feed ma wcześniejsze bezpośrednie mecze, pojawią się tutaj.</span></div>`;
+    return `<div class="match-h2h-list">${rows.slice(0,10).map(r=>{const a=r?.p1??r?.player1??r?.home??m.p1,b=r?.p2??r?.player2??r?.away??m.p2,score=r?.score??r?.result??r?.score_text??'—',date=r?.date??r?.scheduled_time??'';return `<article><small>${esc(date)}</small><b>${esc(a)} <i>vs</i> ${esc(b)}</b><strong>${esc(score)}</strong></article>`}).join('')}</div>`;
+  }
+
   function detailHtml(m){
     const ss=top(m,3),best=ss[0],second=ss[1];
     const trust=Math.round(Math.min(100,(num(m.model_confidence)||0)+(m.early_hold_v7?.ready?4:0)));
     return `<div class="p751-detail-screen match-page">
       <header class="match-page-top">
         <button data-p751-close class="match-back" aria-label="Wróć">←</button>
-        <div>
-          <span>${esc(tour(m))} · ${esc(m.tournament||'Turniej')}</span>
-          <b>Analiza meczu</b>
-        </div>
+        <div><span>${esc(tour(m))} · ${esc(m.tournament||'Turniej')}</span><b>Analiza meczu</b></div>
         <time>${esc(dt(m))} · ${esc(tm(m))}</time>
       </header>
       <section class="match-hero">
-        <div class="match-hero-meta">
-          <span>${esc(surf(m))}</span>
-          <span>${m.early_hold_v7?.ready?'PBP gotowe':'PBP N/D'}</span>
-          <span class="phase11-technical">Jakość ${trust}/100</span>
-        </div>
-        <div class="match-hero-players">
-          <b class="v762-player-link" role="link" tabindex="0">${esc(m.p1)}</b>
-          <span>vs</span>
-          <b class="v762-player-link" role="link" tabindex="0">${esc(m.p2)}</b>
-        </div>
+        <div class="match-hero-meta"><span>${esc(surf(m))}</span><span>${m.early_hold_v7?.ready?'PBP gotowe':'PBP N/D'}</span><span class="phase11-technical">Jakość ${trust}/100</span></div>
+        <div class="match-hero-players"><b class="v762-player-link" role="link" tabindex="0">${esc(m.p1)}</b><span>vs</span><b class="v762-player-link" role="link" tabindex="0">${esc(m.p2)}</b></div>
       </section>
-      <section class="match-decision">
-        <article class="match-decision-main">
-          <span>NAJLEPSZY TYP</span>
-          <b>${esc(best?.label||'Brak mocnego sygnału')}</b>
-          <strong>${best?signalText(best.value):'—'}</strong>
-          <small>${second?`Alternatywa: ${esc(second.label)} · ${signalText(second.value)}`:'Model nie wskazał mocnej alternatywy.'}</small>
-        </article>
-        <article>
-          <span>OCENA</span>
-          <b>${(best?.value||0)>=85?'Bardzo mocny':(best?.value||0)>=72?'Mocny':'Umiarkowany'}</b>
-          <strong>${best?signalText(best.value):'—'}</strong>
-        </article>
-        <article>
-          <span>DANE</span>
-          <b>${trust>=85?'Wysokie zaufanie':trust>=65?'Średnie zaufanie':'Ostrożnie'}</b>
-          <strong>${trust||'—'}%</strong>
-        </article>
-      </section>
-      <div class="match-page-content">
-        <section class="match-page-primary">
-          <div class="section-heading"><span>RYNKI</span><b>Co warto sprawdzić</b></div>
-          ${coreMarkets(m)}
-          ${jointBuilder78b(m)}
-          ${lazySections78e23(m)}
+      <nav class="match-detail-tabs" aria-label="Sekcje analizy meczu">
+        <button class="active" data-match-tab="summary" type="button">Podsumowanie</button>
+        <button data-match-tab="path" type="button">Przebieg</button>
+        <button data-match-tab="stats" type="button">Statystyki</button>
+        <button data-match-tab="h2h" type="button">H2H</button>
+      </nav>
+      <section class="match-tab-panel active" data-match-panel="summary">
+        <section class="match-decision">
+          <article class="match-decision-main"><span>NAJLEPSZY TYP</span><b>${esc(best?.label||'Brak mocnego sygnału')}</b><strong>${best?signalText(best.value):'—'}</strong><small>${second?`Alternatywa: ${esc(second.label)} · ${signalText(second.value)}`:'Model nie wskazał mocnej alternatywy.'}</small></article>
+          <article><span>OCENA</span><b>${(best?.value||0)>=85?'Bardzo mocny':(best?.value||0)>=72?'Mocny':'Umiarkowany'}</b><strong>${best?signalText(best.value):'—'}</strong></article>
+          <article><span>DANE</span><b>${trust>=85?'Wysokie zaufanie':trust>=65?'Średnie zaufanie':'Ostrożnie'}</b><strong>${trust||'—'}%</strong></article>
         </section>
-        <aside class="match-page-side">
-          <div class="section-heading"><span>KONTEKST</span><b>Kalibracja i jakość</b></div>
-          ${calibration78d(m)}
-          <p class="p751-disclaimer">Sygnały są estymacjami analitycznymi, nie gwarancją wyniku.</p>
-        </aside>
-      </div>
+        <div class="match-summary-layout">
+          <section class="match-page-primary"><div class="section-heading"><span>RYNKI</span><b>Co warto sprawdzić</b></div>${coreMarkets(m)}${jointBuilder78b(m)}</section>
+          <aside class="match-page-side"><div class="section-heading"><span>KONTEKST</span><b>Kalibracja i jakość</b></div>${calibration78d(m)}<p class="p751-disclaimer">Sygnały są estymacjami analitycznymi, nie gwarancją wyniku.</p></aside>
+        </div>
+        <div class="phase11-technical match-technical-extras">${lazySections78e23(m)}</div>
+      </section>
+      <section class="match-tab-panel" data-match-panel="path"><div class="section-heading"><span>PLAYER DNA</span><b>Przewidywany przebieg meczu</b></div><div data-player-dna-tab-slot><div class="product-empty">Ładowanie przebiegu Player DNA…</div></div></section>
+      <section class="match-tab-panel" data-match-panel="stats"><div class="section-heading"><span>ZAWODNICY</span><b>Statystyki i profile</b></div>${stats(m)}${analyticsPro76(m)}<div data-player-stats-tab-slot></div></section>
+      <section class="match-tab-panel" data-match-panel="h2h"><div class="section-heading"><span>H2H</span><b>Bezpośrednie spotkania</b></div>${h2hHtml(m)}</section>
     </div>`;
   }
 
+  function bindMatchDetailTabs(root){
+    const buttons=[...root.querySelectorAll('[data-match-tab]')],panels=[...root.querySelectorAll('[data-match-panel]')];
+    const activate=id=>{buttons.forEach(b=>b.classList.toggle('active',b.dataset.matchTab===id));panels.forEach(p=>p.classList.toggle('active',p.dataset.matchPanel===id));};
+    buttons.forEach(b=>b.addEventListener('click',()=>activate(b.dataset.matchTab)));
+    activate('summary');
+  }
+
   let returnScroll=0;
+  let returnView='matches';
   function findMatch(k){return (Array.isArray(all)?all:[]).find(m=>key(m)===k)}
   function openMatch(k){
     const m=findMatch(k);if(!m)return;
     const app=document.querySelector('#app');if(!app)return;
     returnScroll=window.scrollY||0;
+    returnView=window.TENIS_AI_APP_NAV?.current?.()||'matches';
     route='match';
     document.documentElement.dataset.tenisRoute='match';
     app.innerHTML=detailHtml(m);
     app.dataset.matchKey=String(k);
     app.querySelector('.p751-detail-screen')?.setAttribute('data-match-key',String(k));
+    bindMatchDetailTabs(app);
     bindLazySections78e23(app,m);
     window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(m);
     window.TENIS_AI_PLAYER_UI_V851?.injectDetail?.(m);
@@ -675,10 +667,11 @@
   function closeMatch(){
     const app=document.querySelector('#app');
     if(app)delete app.dataset.matchKey;
-    route='matches';
-    document.documentElement.dataset.tenisRoute='matches';
+    route=returnView==='matches'?'matches':returnView;
+    document.documentElement.dataset.tenisRoute=route;
     document.dispatchEvent(new CustomEvent('tenis-ai:match-close'));
-    renderMatches();
+    if(returnView==='matches')renderMatches();
+    else window.TENIS_AI_APP_NAV?.go?.(returnView);
     setTimeout(()=>window.scrollTo({top:returnScroll,behavior:'auto'}),0);
   }
 
@@ -706,15 +699,36 @@
     return document.querySelector('.main-tabs');
   }
   function navActive(which){
-    const mapped=which==='history'?'history':which==='matches'?'matches':null;
+    const mapped=which==='signals'?'picks':['home','matches','picks','players','account','history'].includes(which)?which:null;
     if(mapped){
       document.querySelectorAll('.main-tabs button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===mapped));
     }
     document.documentElement.dataset.tenisRoute=which;
   }
 
+
+  function ensureAdminCenter(){
+    const trigger=document.querySelector('#tenis-admin-center-open');
+    if(!trigger)return;
+    if(!isUiAdmin()){trigger.hidden=true;document.querySelector('#tenis-admin-center')?.remove();return;}
+    trigger.hidden=false;
+    let overlay=document.querySelector('#tenis-admin-center');
+    if(!overlay){
+      overlay=document.createElement('div');overlay.id='tenis-admin-center';overlay.className='tenis-admin-center';overlay.hidden=true;
+      overlay.innerHTML=`<section class="tenis-admin-center-panel" role="dialog" aria-modal="true"><header><div><span>ADMIN</span><h2>Control Center</h2><p>Normalny interfejs zostaje prosty. Tutaj masz pełny dostęp techniczny.</p></div><button data-admin-close type="button">✕</button></header><div class="tenis-admin-grid">
+        <button data-admin-go="matches">🎾<b>Mecze</b><small>Match Browser</small></button><button data-admin-go="picks">⚡<b>Typy</b><small>PLAYABLE</small></button><button data-admin-go="players">👤<b>Zawodnicy</b><small>Profile</small></button><button data-admin-action="symphony">🎼<b>Symfonia 2.0</b><small>Decyzje</small></button>
+        <button data-admin-go="stats">📊<b>Statystyki</b><small>Modele i SHADOW</small></button><button data-admin-go="history">◷<b>Historia</b><small>Settlement</small></button><button data-admin-go="coupons">🧾<b>Kupony</b><small>Społeczność</small></button><button data-admin-action="community">👥<b>Użytkownicy</b><small>Moderacja</small></button>
+        <button data-admin-action="neuro">🧠<b>NEURO</b><small>SHADOW</small></button><button data-admin-action="shadow">👻<b>SHADOW</b><small>Signal Center</small></button><button data-admin-action="mode">👁️<b>Tryb widoku</b><small>Prosty / techniczny</small></button><button data-admin-go="feedback">💬<b>Pomysły</b><small>Zgłoszenia</small></button>
+      </div></section>`;
+      document.body.append(overlay);
+      overlay.addEventListener('click',e=>{if(e.target===overlay||e.target.closest('[data-admin-close]'))overlay.hidden=true;const go=e.target.closest('[data-admin-go]')?.dataset.adminGo;if(go){overlay.hidden=true;window.TENIS_AI_APP_NAV?.go?.(go);return}const a=e.target.closest('[data-admin-action]')?.dataset.adminAction;if(!a)return;if(a==='symphony')document.querySelector('#symphony-open')?.click();if(a==='community')document.querySelector('#community-hub-open')?.click();if(a==='neuro')document.querySelector('#neuro-open')?.click();if(a==='shadow')document.querySelector('#shadow-signals-open')?.click();if(a==='mode')setUiMode(document.documentElement.dataset.tenisUiMode==='technical'?'simple':'technical');if(a!=='mode')overlay.hidden=true;});
+    }
+    if(trigger.dataset.blueprintBound!=='1'){trigger.dataset.blueprintBound='1';trigger.addEventListener('click',()=>{ensureAdminCenter();const o=document.querySelector('#tenis-admin-center');if(o)o.hidden=false;});}
+  }
+
   function simplifyShell(){
     window.TENIS_AI_APPLY_META?.();
+    ensureAdminCenter();
     const symphony=document.querySelector('#symphony-open');
     if(symphony&&!symphony.dataset.boundProjectUi){
       symphony.dataset.boundProjectUi='1';
@@ -728,7 +742,7 @@
 
   simplifyShell();
   bindUiMode();
-  window.addEventListener('tenis-ai-auth-change',()=>setTimeout(bindUiMode,0));
+  window.addEventListener('tenis-ai-auth-change',()=>setTimeout(()=>{bindUiMode();ensureAdminCenter();},0));
   window.addEventListener('pageshow',()=>setTimeout(bindUiMode,0));
   if(typeof view!=='undefined'&&view==='matches')renderMatches();
   document.documentElement.dataset.tenisUiReady='1';
