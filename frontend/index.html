@@ -10,6 +10,72 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
+  <style id="product-shell-ownership">
+    /* Canonical USER shell: technical runtime panels may exist for model/admin logic,
+       but they never own presentation outside ADMIN technical mode. */
+    html[data-tenis-ui-mode="simple"] #v79-health,
+    html[data-tenis-ui-mode="simple"] .v79-live-panel,
+    html[data-tenis-ui-mode="simple"] .coh892-shadow,
+    html[data-tenis-ui-mode="simple"] .p751-match-card .pi851-card-strip,
+    html[data-tenis-ui-mode="simple"] .phase11-technical{display:none!important}
+
+    /* Player search is a Matches/Players tool, not global page furniture. */
+    html:not([data-tenis-view="matches"]):not([data-tenis-view="players"]) #player-search-shell{display:none!important}
+
+    /* Shadow/Admin CSS used the generic .p751-match-card selector and was overriding
+       the canonical match tile. Re-assert the product card contract here. */
+    #app .p751-match-card.match-tile{
+      display:block!important;
+      grid-template-columns:none!important;
+      gap:0!important;
+      min-width:0!important;
+      min-height:0!important;
+      height:auto!important;
+      padding:0!important;
+      overflow:hidden!important;
+      border:1px solid var(--line-soft)!important;
+      border-radius:18px!important;
+      background:linear-gradient(180deg,#0a1623,#07111d)!important;
+    }
+    #app .p751-match-card.match-tile>.match-tile-head{display:flex!important;visibility:visible!important;opacity:1!important}
+    #app .p751-match-card.match-tile>.match-tile-main{
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) auto!important;
+      gap:14px!important;
+      min-width:0!important;
+      min-height:0!important;
+      padding:14px!important;
+      visibility:visible!important;
+      opacity:1!important;
+    }
+    #app .p751-match-card.match-tile .match-tile-copy,
+    #app .p751-match-card.match-tile .match-tile-event,
+    #app .p751-match-card.match-tile .match-tile-players,
+    #app .p751-match-card.match-tile .match-tile-pick,
+    #app .p751-match-card.match-tile .match-tile-score{
+      visibility:visible!important;
+      opacity:1!important;
+    }
+    #app .p751-match-card.match-tile .match-tile-copy{display:block!important;min-width:0!important}
+    #app .p751-match-card.match-tile .match-tile-players{display:flex!important}
+    #app .p751-match-card.match-tile .match-tile-pick{display:grid!important}
+    #app .p751-match-card.match-tile .match-tile-score{display:grid!important}
+    #app .p751-match-card.match-tile>.match-tile-foot{
+      grid-column:auto!important;
+      display:flex!important;
+      align-items:center!important;
+      gap:7px!important;
+      min-height:38px!important;
+      padding:8px 12px!important;
+      font-size:8px!important;
+      visibility:visible!important;
+      opacity:1!important;
+    }
+    @media(max-width:760px){
+      #app .p751-match-card.match-tile>.match-tile-main{grid-template-columns:minmax(0,1fr) 68px!important;gap:10px!important;padding:12px!important}
+      #app .p751-match-card.match-tile .match-tile-score{min-width:68px!important}
+    }
+  </style>
 </head>
 <body>
   <section id="auth-screen" class="auth-screen" aria-live="polite">
@@ -215,8 +281,8 @@
   <script src="player-dna-shadow.js"></script>
   <script src="market-quality.js"></script>
   <script src="match-visibility.js"></script>
-  <script src="playable-ui.js?v=1000"></script>
-  <script src="product-polish.js?v=1010"></script>
-  <script src="project-ui.js"></script>
+  <script src="playable-ui.js?v=1022"></script>
+  <script src="product-polish.js?v=1022"></script>
+  <script src="project-ui.js?v=1022"></script>
 </body>
 </html>
