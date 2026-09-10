@@ -10,6 +10,8 @@ backend=(ROOT/'backend/player_intelligence_v85.py').read_text(encoding='utf-8')
 front=(ROOT/'frontend/player-intelligence-v85.js').read_text(encoding='utf-8')
 index=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
 workflow=(ROOT/'.github/workflows/update-and-pages.yml').read_text(encoding='utf-8')
+style=(ROOT/'frontend/style.css').read_text(encoding='utf-8')
+legacy_css=ROOT/'frontend/player-intelligence-v85.css'
 
 ok('backend version', 'VERSION = "v8.5"' in backend)
 ok('cache-first zero API', '"api_calls": 0' in backend and 'requests.' not in backend)
@@ -22,7 +24,8 @@ ok('generator assist remains disabled', '"generator_assist": "disabled_shadow_on
 ok('frontend no fetch', 'fetch(' not in front)
 ok('frontend no observer', 'new MutationObserver(' not in front)
 ok('frontend no interval', 'setInterval' not in front)
-ok('index css once', index.count('player-intelligence-v85.css?v=85a1')==1)
+ok('canonical css once', index.count('href="style.css"')==1 and '.pi85' in style)
+ok('legacy player intelligence css retired', not legacy_css.exists() and 'player-intelligence-v85.css' not in index)
 ok('index js once', index.count('player-intelligence-v85.js?v=85a1')==1)
 ok('workflow pre', 'Player Intelligence v8.5 PRE' in workflow)
 ok('workflow post', 'Player Intelligence v8.5 POST' in workflow)
