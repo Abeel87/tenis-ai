@@ -1,11 +1,11 @@
-/* Tenis AI v8.8.9 — bounded PWA cache */
+/* Tenis AI — bounded PWA cache · product UI 2026-09-10 */
 const LEGACY_CACHE_CONTRACT='tenis-ai-v801-player-profile';
-const CACHE='tenis-ai-v84b-logic-stability';
+const CACHE='tenis-ai-product-ui-20260910';
 const RUNTIME_CACHE_POLICY='v853-large-json-bypass';
 
 const CORE=[
   './','index.html','manifest.webmanifest','favicon.png','icon-192.png','icon-512.png',
-  'app-meta.js','style.css','clean-core-v80.js','symphony2.js'
+  'app-meta.js','style.css','project-ui.js','clean-core-v80.js','symphony2.js'
 ];
 
 self.addEventListener('install',event=>{
@@ -43,7 +43,7 @@ self.addEventListener('fetch',event=>{
   if(request.mode==='navigate'){
     event.respondWith((async()=>{
       try{
-        const response=await fetch(request),cache=await caches.open(CACHE);
+        const response=await fetch(new Request(request,{cache:'no-store'})),cache=await caches.open(CACHE);
         if(response&&response.ok)cache.put('index.html',response.clone()).catch(()=>{});
         return response;
       }catch{
@@ -54,8 +54,8 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  if(url.pathname.endsWith('/symphony2.js')){
-    event.respondWith(fetch(new Request(request,{cache:'no-store'})));
+  if(url.pathname.endsWith('/symphony2.js')||url.pathname.endsWith('/project-ui.js')||url.pathname.endsWith('/style.css')){
+    event.respondWith(networkFirst(new Request(request,{cache:'no-store'}),request));
     return;
   }
 
