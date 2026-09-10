@@ -101,48 +101,6 @@ function wrapAutoLearn(){
   return true;
 }
 
-/* Compatibility symbols retained for guards/tests. The real dashboard lives in
-   the performance dashboard module. These functions are intentionally not wired to renderStats. */
-function confidenceRows(){return[]}
-function renderMarkets(){return''}
-function segmentRows(){return{best:[],weak:[]}}
-function modelRows(){return[]}
-const LEGACY_STATS_SOURCES=[
-  'repeated_errors',
-  'data/adaptive_learning_v79.json',
-  'data/model_telemetry_v84c.json'
-];
-
-function injectStats(){
-  document.querySelector('#pc88-dashboard')?.remove();
-  return false;
-}
-
-function wrapStats(){
-  return false;
-}
-
-function applyV88Brand(){
-  window.TENIS_AI_APPLY_META?.();
-}
-
-function boot(){
-  applyV88Brand();
-  wrapAutoLearn();
-  injectStats();
-}
-
-document.addEventListener('tenis-ai:stats-ready',injectStats);
-document.addEventListener('tenis-ai:stats-dashboard-ready',injectStats);
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-else boot();
-
-window.TENIS_AI_V88={
-  version:VERSION,
-  runtimeFix:RUNTIME_FIX,
-  wrapAutoLearn,
-  injectStats,
-  wrapStats,
-  LEGACY_STATS_SOURCES
-};
+wrapAutoLearn();
+window.TENIS_AI_V88={version:VERSION,wrapAutoLearn};
 })();

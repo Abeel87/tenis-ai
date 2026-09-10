@@ -83,20 +83,6 @@ def test_adaptive_learner_reads_settled_specialist_signals_separately():
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_v79b_frontend_is_static_and_visible_before_domcontentloaded():
-    idx = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
-    ui = (ROOT / "frontend/adaptive-learning-v79.js").read_text(encoding="utf-8")
-    assert "<title>Tenis AI</title>" in idx
-    assert 'id="product-shell"' in idx
-    assert 'src="adaptive-learning-v79.js' in idx
-    assert 'adaptive-learning-v79.css' not in idx
-    assert 'data-v79-adaptive="js"' in idx
-    assert "tenis-ai-v801-player-profile" in sw
-    assert "p751-detail-screen" in ui
-    assert "v79-health" in ui
-
-
 def test_specialist_signals_are_settled_and_workflow_runs_before_adaptive():
     settle = (ROOT / "backend/live_history_settle.py").read_text(encoding="utf-8")
     flow = (ROOT / ".github/workflows/update-and-pages.yml").read_text(encoding="utf-8")

@@ -55,8 +55,8 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
     assert "Fast frontend checks" in workflow
     assert "actions/upload-pages-artifact@v4" in workflow
     assert "actions/deploy-pages@v4" in workflow
-    assert "backend/|scripts/|data/|frontend/data/|requirements" in workflow
-    assert "FULL workflow owns this deploy" in workflow
+    assert "python .github/scripts/change_scope.py" in workflow
+    assert "steps.scope.outputs.deploy" in workflow
 
 
 def test_retry_selects_only_its_own_pages_artifact():

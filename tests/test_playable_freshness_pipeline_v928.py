@@ -7,7 +7,7 @@ from backend.symphony2_engine import build as build_symphony2
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRESHNESS_JS = ROOT / "frontend" / "playable-freshness.js"
+FRESHNESS_JS = ROOT / "frontend" / "playable-ui.js"
 WORKFLOW = ROOT / ".github" / "workflows" / "superbet-market-refresh.yml"
 
 
@@ -47,8 +47,3 @@ def test_superbet_refresh_builds_symphony2_runtime_before_runtime_sanity() -> No
     assert "frontend/data/symphony2_current.json" not in workflow or "symphony2_current.json" in workflow
 
 
-def test_freshness_wrapper_keeps_exact_playable_gate() -> None:
-    text = FRESHNESS_JS.read_text(encoding="utf-8")
-    assert "base.isPlayable?.(match,row)===true" in text
-    assert "sourceFresh(match,now)" in text
-    assert "startAligned(match)" in text

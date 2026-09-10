@@ -20,7 +20,22 @@ concurrency:
   group: tennis-data-build
   cancel-in-progress: false
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      heavy: ${{ steps.changes.outputs.heavy }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: changes
+        env:
+          BEFORE: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python .github/scripts/change_scope.py
   build:
+    needs: scope
+    if: github.event_name != 'push' || needs.scope.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

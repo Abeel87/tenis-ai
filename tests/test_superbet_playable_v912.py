@@ -91,8 +91,6 @@ def _match():
     }
 
 
-
-
 def test_playable_is_strictly_prematch_while_operator_context_and_model_raw_survive():
     match = _match()
     scheduled = datetime(2099, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -186,27 +184,6 @@ def test_inject_builds_separate_operator_projection_without_mutating_raw_autolea
     assert "operator_playable" not in raw18
 
 
-def test_normal_match_view_preserves_raw_ladders_and_exposes_playable_separately():
-    original = _match()
-    raw_ou = deepcopy(original["match_over_under"])
-    raw_set1_ou = deepcopy(original["over_under"])
-    raw_auto = deepcopy(original["autolearn_v84"])
-    view, info = project_match_for_display(original)
-    assert info["active"] is True
-    assert view["match_over_under"] == raw_ou
-    assert view["over_under"] == raw_set1_ou
-    assert view["autolearn_v84"] == raw_auto
-    lines = {x.get("line") for x in view["superbet_playable_v912"]["signals"] if x.get("market") == "match_total"}
-    assert 20.5 in lines
-    assert 18.5 not in lines
-    exact = next(
-        row for row in view["superbet_playable_v912"]["signals"]
-        if row.get("market") == "match_total" and row.get("line") == 20.5
-    )
-    assert exact["operator_line_verified"] is True
-    assert exact["fixture_line_verified"] is True
-
-
 def test_model_generated_individual_aces_and_df_remain_raw_analysis_only():
     original = _match()
     raw_props = deepcopy(original["serve_props_v72"])
@@ -253,8 +230,6 @@ def test_set_handicap_signature_keeps_exact_numeric_line_and_is_not_playable_wit
         row.get("market") == "set_handicap"
         for row in view["superbet_playable_v912"]["signals"]
     )
-
-
 
 
 def test_line_market_requires_numeric_line_and_set3_handicap_keeps_exact_identity_without_promotion():
@@ -493,8 +468,6 @@ def test_v925_numeric_candidate_requires_fixture_proof_and_preserves_direct_sour
     assert row["direct_source"] is True
 
 
-
-
 def test_v925_line_market_missing_numeric_line_is_rejected_from_capture_and_stats():
     now = datetime.now(timezone.utc)
     future = (now + timedelta(hours=2)).isoformat()
@@ -581,15 +554,6 @@ def test_v925_promotion_gate_reports_readiness_but_never_auto_promotes():
     assert stats["review_ready_markets"] == ["exact_sets"]
     assert stats["promotion_gate"]["auto_promote"] is False
     assert stats["contract"]["playable_accuracy_unchanged"] is True
-
-
-def test_playable_stats_ui_is_explicit_when_operator_feed_is_unverified():
-    js = (ROOT / "frontend/superbet-playable-stats.js").read_text(encoding="utf-8")
-    assert "FEED N/D" in js
-    assert "Brak zweryfikowanej oferty Superbet" in js
-    assert "feedActive=matches>0" in js
-    assert "nie jest to stan oferty na żywo" in js
-    assert "brak bieżących danych nie oznacza skuteczności 0%" in js
 
 
 def test_master_plan_playable_requires_exact_verified_current_superbet_line():

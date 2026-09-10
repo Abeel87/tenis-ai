@@ -191,253 +191,70 @@ function compositionPlayable(match,comp){
   return active(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
 }
 
-/* Legacy decorators below are intentionally retained only for old shells.
-   They are NOT allowed to mount in #product-shell, where project-ui owns UI. */
-function playableCardHtml(match,signals,top){
-  const value=valueOf(top);
-  const green=signals.filter(s=>(valueOf(s)||0)>=72).length;
-  const name=top?String(top.label||top.pick||top.key||'Sygnał PLAYABLE'):(active(match)?'Brak pojedynczego typu':'Brak Superbet PLAYABLE');
-  return `<span>🎯 SUPERBET PLAYABLE</span><b>${esc(name)}</b><strong>${scoreText(value)}</strong><em>${top?`${green} zielonych PLAYABLE · linia zweryfikowana ✓`:'N/D · brak PLAYABLE · MODEL / RAW bez zmian'}</em>`;
-}
-function patchMatchTotalPreview(card,match,signals,top){
-  let preview=card.querySelector('[data-v917-match-total-preview]');
-  const candidate=signals.find(s=>canonicalMarket(s?.market)==='match_total')||null;
-  if(!candidate||sameSelection(candidate,top)){preview?.remove();return}
-  const line=rowLine(candidate,'match_total');
-  if(line==null){preview?.remove();return}
-  if(!preview){
-    preview=document.createElement('div');
-    preview.className='p753-match-total-preview v917-playable-total';
-    preview.dataset.v917MatchTotalPreview='1';
-    const own=card.querySelector('[data-v917-playable-card]');
-    const foot=card.querySelector('footer');
-    if(own)own.after(preview);else if(foot)foot.before(preview);else card.append(preview);
-  }
-  const pick=rowPick(candidate,'match_total');
-  const side=pick==='over'?'OVER':pick==='under'?'UNDER':String(candidate.pick||'').toUpperCase();
-  const html=`<span>📊 Gemy · cały mecz · SUPERBET PLAYABLE</span><b>${esc(side)} ${esc(Number(line).toFixed(1).replace('.0',''))}</b><strong>${scoreText(valueOf(candidate))}</strong><em>linia Superbet ✓</em>`;
-  if(preview.innerHTML!==html)preview.innerHTML=html;
-}
-function patchCard(card){
-  const match=matchFor(card);
-  if(!match)return;
-  const signals=playableSignals(match,60);
-  const top=signals[0]||null;
-  let box=card.querySelector('[data-v917-playable-card]');
-  if(!box){
-    box=document.createElement('div');
-    box.className='p753-match-total-preview v917-playable-card';
-    box.dataset.v917PlayableCard='1';
-    const foot=card.querySelector('footer');
-    if(foot)foot.before(box);else card.append(box);
-  }
-  const html=playableCardHtml(match,signals,top);
-  if(box.innerHTML!==html)box.innerHTML=html;
-  patchMatchTotalPreview(card,match,signals,top);
-  card.dataset.playableUiV917=active(match)?'verified':'nd';
-}
-function topBarHtml(picks){
-  return `<section class="p751-top" data-playable-top-v917="1"><header><b>⚡ Top sygnały · SUPERBET</b><span>${picks.length} najmocniejsze PLAYABLE</span></header><div>${picks.map(({match,signal,raw})=>`<button data-v917-top="1" data-p751-open="${esc(raw)}"><small>${esc(match.p1)} vs ${esc(match.p2)}</small><b>${esc(signal.label||signal.pick||signal.key||'Sygnał PLAYABLE')}</b><strong>${scoreText(valueOf(signal))}</strong><span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${(valueOf(signal)||0)>=i*18?'on':''}"></i>`).join('')}</span><small class="pc882-top-meta">SUPERBET PLAYABLE · linia zweryfikowana ✓</small></button>`).join('')}</div></section>`;
-}
-function patchTopStrip(){
-  const cards=[...document.querySelectorAll('#app .match-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])')];
-  const picks=cards.map(card=>{
-    const raw=card.getAttribute('data-p751-open')||'';
-    const match=findMatch(raw);
-    const signal=match?playableSignals(match,1)[0]:null;
-    return match&&signal&&valueOf(signal)>=72?{match,signal,raw}:null;
-  }).filter(Boolean).sort((a,b)=>valueOf(b.signal)-valueOf(a.signal)).slice(0,3);
-  const old=document.querySelector('#app [data-playable-top-v917="1"]');
-  if(!picks.length){old?.remove();return}
-  const hash=picks.map(x=>`${x.raw}:${signature(x.signal)}:${valueOf(x.signal)}`).join('|');
-  if(old?.dataset?.v917Hash===hash)return;
-  const wrap=document.createElement('div');
-  wrap.innerHTML=topBarHtml(picks);
-  const fresh=wrap.firstElementChild;
-  fresh.dataset.v917Hash=hash;
-  if(old)old.replaceWith(fresh);
-  else{
-    const rawTop=document.querySelector('#app .signal-spotlight:not([data-playable-top-v917])');
-    const focus=document.querySelector('#app .match-browser-head');
-    if(rawTop)rawTop.insertAdjacentElement('afterend',fresh);
-    else if(focus)focus.insertAdjacentElement('afterend',fresh);
-    else document.querySelector('#app')?.prepend(fresh);
-  }
-}
-function patchSignalPage(){
-  const page=document.querySelector('#app .p751-signals-page');
-  if(!page)return;
-  page.dataset.playableUiV917='raw-preserved';
-}
-function patchHome(){
-  if(canonicalShell()){patchSignalPage();return}
-  document.querySelectorAll('#app .p751-match-card[data-p751-open]').forEach(patchCard);
-  patchTopStrip();
-  patchSignalPage();
-}
+window.TENIS_AI_PLAYABLE_UI_V917=Object.freeze({version:VERSION,active,freshContext,preMatch,compositionPlayable,canonicalMarket,signature,isPlayable,playableSignals,availability});
+})();
 
-function patchDecisionHeader(root,match,rows){
-  if(!root)return;
-  root.dataset.playableUiV917=active(match)?'verified':'nd';
-  const playable=playableSignals(match,100);
-  const kicker=root.querySelector('.dc87-kicker');
-  if(kicker)kicker.textContent='MODEL / RAW + SUPERBET';
-  const title=root.querySelector('#dc87-title');
-  if(title)title.textContent='Sygnały modelowe i realna oferta';
-  const p=root.querySelector('.dc87-head p');
-  if(p)p.textContent=active(match)
-    ?'MODEL / RAW pozostaje pełny. Sygnały dostępne na dokładnej linii bieżącej oferty są dodatkowo oznaczane jako SUPERBET PLAYABLE.'
-    :'Brak świeżej oferty Superbet. MODEL / RAW oraz modelowy FINAL pozostają widoczne bez zmian; żaden sygnał nie jest oznaczany jako SUPERBET PLAYABLE.';
-  const health=root.querySelector('.dc87-health');
-  if(health){
-    let badge=health.querySelector('[data-v917-book]');
-    if(!badge){badge=document.createElement('span');badge.dataset.v917Book='1';health.prepend(badge)}
-    badge.className=active(match)?'prod':'shadow';
-    badge.textContent=active(match)?`Superbet ✓ ${playable.length} PLAYABLE`:'Superbet N/D · RAW dostępny';
+/* Existing freshness and schedule-alignment guard, consolidated without its DOM loader. */
+(()=>{
+  'use strict';
+  if(window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925)return;
+  const base=window.TENIS_AI_PLAYABLE_UI_V917;
+  if(!base)return;
+
+  const VERSION='v9.2.8';
+  const MAX_OPERATOR_AGE_MS=90*60*1000;
+  const MAX_START_DRIFT_MS=35*60*1000;
+  const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+
+  function context(match){
+    const x=match?.superbet_market_v91;
+    return x&&typeof x==='object'?x:{};
   }
-  const empty=root.querySelector('.dc87-empty');
-  if(empty&&rows.length===0)empty.innerHTML='<b>Brak sygnałów modelowych</b>Dla tego meczu MODEL / RAW nie ma jeszcze policzonych selekcji.';
-}
-function decisionRows(match,api){
-  let built=[];
-  try{built=api.buildRows(match)||[]}catch{built=[]}
-  built=built.filter(row=>row&&typeof row==='object');
-  const projected=active(match)?playableSignals(match,100):[];
-  const projectedBySignature=new Map(projected.map(row=>[signature(row),row]));
-  const rows=built.map(row=>{
-    const operatorRow=projectedBySignature.get(signature(row));
-    if(!operatorRow)return {...row,operator_playable:false};
-    return {
-      ...row,
-      operator_playable:true,
-      operator_verified:true,
-      operator:'Superbet',
-      operator_market_id:operatorRow.operator_market_id??row.operator_market_id,
-      operator_selection_id:operatorRow.operator_selection_id??row.operator_selection_id,
-      selected_line:operatorRow.selected_line??operatorRow.line??row.selected_line,
-      superbet_playable_projection:operatorRow
-    };
+  function sourceAgeMs(match,now=Date.now()){
+    const generated=Date.parse(context(match)?.source_generated_at||'');
+    return Number.isFinite(generated)?Number(now)-generated:Infinity;
+  }
+  function sourceFresh(match,now=Date.now()){
+    const age=sourceAgeMs(match,now);
+    return Number.isFinite(age)&&age>=0&&age<=MAX_OPERATOR_AGE_MS;
+  }
+  function startAligned(match){
+    const op=Date.parse(context(match)?.operator_start_time||'');
+    const fixture=Date.parse(match?.scheduled_time||'');
+    if(!Number.isFinite(op)||!Number.isFinite(fixture))return true;
+    return Math.abs(op-fixture)<=MAX_START_DRIFT_MS;
+  }
+  function strictActive(match,now=Date.now()){
+    return base.active?.(match,now)===true&&sourceFresh(match,now)&&startAligned(match);
+  }
+  function strictIsPlayable(match,row){
+    return strictActive(match)&&base.isPlayable?.(match,row)===true;
+  }
+  function strictCompositionPlayable(match,comp){
+    const legs=comp?.selection;
+    return strictActive(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>strictIsPlayable(match,leg));
+  }
+  function strictPlayableSignals(match,limit=100){
+    if(!strictActive(match))return[];
+    const rows=base.playableSignals?.(match,Math.max(100,Number(limit)||100))||[];
+    return rows.filter(row=>strictIsPlayable(match,row)).slice(0,Math.max(1,Number(limit)||100));
+  }
+
+  const wrapped=Object.freeze({
+    ...base,
+    version:VERSION,
+    active:strictActive,
+    isPlayable:strictIsPlayable,
+    compositionPlayable:strictCompositionPlayable,
+    playableSignals:strictPlayableSignals,
+    sourceFresh,
+    sourceAgeMs,
+    startAligned,
+    maxOperatorAgeMinutes:MAX_OPERATOR_AGE_MS/60000
   });
-  const seen=new Set(rows.map(signature));
-  for(const operatorRow of projected){
-    const sig=signature(operatorRow);
-    if(seen.has(sig))continue;
-    const market=canonicalMarket(operatorRow.market);
-    const category=(WINNER_MARKETS.has(market)||['total_sets','exact_match_score'].includes(market))?'result'
-      :(market==='game_state'?'checkpoints'
-      :(LINE_MARKETS.has(market)||['set1_tiebreak','set1_exact_score'].includes(market)?'games':'special'));
-    rows.push({...operatorRow,category,operator_playable:true,operator_verified:true,operator:'Superbet'});
-    seen.add(sig);
-  }
-  return rows;
-}
-function wrapDecisionCenter(){
-  if(canonicalShell())return false;
-  const api=window.TENIS_AI_DECISION_CENTER_V87;
-  if(!api||api[WRAP]||typeof api.tidy!=='function'||typeof api.buildRows!=='function'||typeof api.install!=='function')return false;
-  const base=api.tidy.bind(api);
-  api.tidy=function(match){
-    const screen=document.querySelector('.p751-detail-screen');
-    const modelId=window.TENIS_AI_MODEL_API?.active||'';
-    const gateKey=JSON.stringify([active(match),context(match).source_generated_at,match?.scheduled_time,modelId,context(match).canonical_selections]);
-    if(screen?.querySelector('.dc87[data-playable-ui-v917]')?.dataset.playableGateKey===gateKey)return true;
-    base(match);
-    const old=screen?.querySelector('.dc87');
-    if(!old)return false;
-    const rows=decisionRows(match,api);
-    const shell=api.decisionCenter(match)?.html;
-    if(!shell)return false;
-    const mount=document.createElement('div');mount.innerHTML=shell;
-    const fresh=mount.firstElementChild;
-    old.replaceWith(fresh);
-    api.install(fresh,match,rows);
-    patchDecisionHeader(fresh,match,rows);
-    fresh.dataset.playableGateKey=gateKey;
-    return true;
-  };
-  api[WRAP]=true;
-  return true;
-}
-function patchOpenDecision(){
-  if(canonicalShell())return false;
-  const app=document.querySelector('#app[data-match-key]');
-  const screen=app?.querySelector('.p751-detail-screen');
-  if(!app||!screen)return;
-  const match=findMatch(app.dataset.matchKey||'');
-  if(!match)return;
-  wrapDecisionCenter();
-  window.TENIS_AI_DECISION_CENTER_V87?.tidy?.(match);
-}
+  window.TENIS_AI_PLAYABLE_UI_V917=wrapped;
+  window.TENIS_AI_PLAYABLE_LINE_FRESHNESS_V925=Object.freeze({
+    version:VERSION,sourceFresh,sourceAgeMs,startAligned,maxOperatorAgeMinutes:MAX_OPERATOR_AGE_MS/60000
+  });
 
-function wrapRenderMatches(){
-  const current=window.renderMatches;
-  if(typeof current!=='function'||current[WRAP])return false;
-  const wrapped=function(...args){
-    const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
-    if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
-    let result;
-    try{result=current.apply(this,args)}
-    finally{if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917=strictApi}
-    queueMicrotask(patchHome);
-    return result;
-  };
-  Object.defineProperty(wrapped,WRAP,{value:true});
-  window.renderMatches=wrapped;
-  return true;
-}
-
-let timer=null;
-function schedule(ms=40){
-  clearTimeout(timer);
-  timer=setTimeout(()=>{
-    wrapRenderMatches();
-    if(!canonicalShell())wrapDecisionCenter();
-    patchHome();
-    if(!canonicalShell())patchOpenDecision();
-  },ms);
-}
-function boot(){
-  wrapRenderMatches();
-  if(!canonicalShell())wrapDecisionCenter();
-  schedule(0);setTimeout(()=>schedule(0),180);setTimeout(()=>schedule(0),800);
-  document.addEventListener('click',event=>{
-    if(!canonicalShell()){
-      const top=event.target?.closest?.('[data-v917-top]');
-      if(top){
-        event.preventDefault();event.stopPropagation();
-        const key=decode(top.getAttribute('data-p751-open')||'');
-        window.TENIS_AI_PROJECT_UI?.openMatch?.(key);
-        setTimeout(patchOpenDecision,30);
-        return;
-      }
-    }
-    if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-filter],[data-view="matches"],[data-p751-nav="matches"],[data-p751-nav="signals"],[data-v945-mode],[data-v945-ready],[data-v945-sort]'))schedule(80);
-  },true);
-  document.addEventListener('change',event=>{
-    if(event.target?.matches?.('[data-v945-surface]'))schedule(80);
-  },true);
-  for(const eventName of ['tenis-ai:matches-rendered','tenis-ai:match-open','tenis-ai:match-close','tenis-ai:match-refresh','tenis-ai:superbet-coverage-ready','tenis-ai-ui-mode-change']){
-    document.addEventListener(eventName,()=>schedule(eventName==='tenis-ai:match-open'?0:40));
-  }
-}
-
-window.TENIS_AI_PLAYABLE_UI_V917=Object.freeze({
-  version:VERSION,
-  active,
-  freshContext,
-  preMatch,
-  findMatch,
-  compositionPlayable,
-  canonicalMarket,
-  signature,
-  isPlayable,
-  playableSignals,
-  patchHome,
-  patchOpenDecision
-});
-
-if(typeof document!=='undefined'){
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
-  else boot();
-}
 })();

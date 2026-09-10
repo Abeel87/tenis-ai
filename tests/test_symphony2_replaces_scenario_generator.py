@@ -26,53 +26,11 @@ def test_old_scenario_generator_files_are_removed():
         assert not (ROOT / path).exists(), path
 
 
-def test_index_loads_only_symphony2_composer_assets():
-    index = text("frontend/index.html")
-    assert 'href="style.css"' in index
-    assert 'symphony2.css' not in index
-    assert 'src="symphony2.js"' in index
-    for retired in (
-        "scenario-studio-v82a",
-        "scenario-runtime-v202",
-        "scenario-dynamic-v84d3",
-        "scenario-settlement-v83c",
-        "generator-quality-v888",
-    ):
-        assert retired not in index
-
-
-def test_project_ui_owns_symphony2_slot_without_legacy_scenario_bridge():
-    ui = text("frontend/project-ui.js")
-    assert "#symphony-open" in ui
-    assert "TENIS_AI_SYMPHONY2" in ui
-    assert "TENIS_AI_SYMPHONY2" in ui
-    assert "TENIS_AI_SCENARIOS" not in ui
-    assert 'data-p751-nav="scenarios"' not in ui
-    assert "route='scenarios'" not in ui
-
-
 def test_no_active_frontend_javascript_references_retired_scenario_runtime():
     for path in (ROOT / "frontend").glob("*.js"):
         source = path.read_text(encoding="utf-8")
         assert "TENIS_AI_SCENARIOS" not in source, path
         assert 'data-p751-nav="scenarios"' not in source, path
-
-
-def test_symphony2_has_own_fullscreen_hub_and_nav_ownership():
-    index = text("frontend/index.html")
-    js = text("frontend/symphony2.js")
-    css = text("frontend/style.css")
-    assert "#symphony2-hub" in js
-    assert "const NAV_SELECTOR='#symphony-open'" in js
-    assert 'id="symphony-open"' in index
-    assert "<span>🎼</span><b>Symfonia</b>" in index
-    assert 'data-p751-nav="symphony2"' not in js
-    assert 'data-p751-nav="scenarios"' not in js
-    assert "TENIS_AI_SYMPHONY2" in js
-    assert "TENIS_AI_SCENARIOS" not in js
-    assert "scenario-v82a-panel" not in js
-    assert ".s2-shell" in css
-    assert ".s2-hub-frame" in css
 
 
 def test_data_workflow_no_longer_builds_or_guards_old_scenarios():
@@ -86,12 +44,3 @@ def test_data_workflow_no_longer_builds_or_guards_old_scenarios():
     assert "Symphony 2.0 operator-first build + clean settlement" in workflow
 
 
-def test_service_worker_forgets_scenario_cache_and_pins_symphony2():
-    sw = text("frontend/sw.js")
-    assert "scenario-runtime" not in sw
-    assert "scenario-studio" not in sw
-    assert "symphony2-v210" not in sw
-    assert "symphony2-v220" not in sw
-    assert "symphony2.js" in sw
-    assert "style.css" in sw
-    assert "symphony2.css" not in sw

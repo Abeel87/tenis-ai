@@ -12,16 +12,6 @@ def load(name,path):
     spec.loader.exec_module(mod)
     return mod
 
-def test_frontend_bridge_and_ui():
-    mm=(ROOT/'frontend/multi-model.js').read_text(encoding='utf-8')
-    ui=(ROOT/'frontend/project-ui.js').read_text(encoding='utf-8')
-    assert 'window.TENIS_AI_MODEL_API' in mm
-    assert 'modelApi()?.active' in ui
-    assert 'Najlepszy typ' in ui
-    assert 'Siła' in ui
-    assert 'match-tile-score' in ui
-    assert 'data-sp-market="p772-' in ui
-    assert 'tracker rozlicza też liczbę tie-breaków' in ui
 
 def test_player_analytics_formula_parity():
     ui=(ROOT/'frontend/player-analytics.js').read_text(encoding='utf-8')
@@ -55,22 +45,3 @@ def test_market_lab_conditional_second_set():
     assert 'second=second_if_win if w1 else second_if_loss' in lab
     assert 'second=mix_dist(second_if_win,second_if_loss,p1win(first))' in lab
 
-def test_history_source_and_pwa():
-    h=(ROOT/'backend/history_tracker.py').read_text(encoding='utf-8')
-    sw=(ROOT/'frontend/sw.js').read_text(encoding='utf-8')
-    idx=(ROOT/'frontend/index.html').read_text(encoding='utf-8')
-    meta=(ROOT/'frontend/app-meta.js').read_text(encoding='utf-8')
-
-    assert "source_model='early_hold_pbp'" in h
-
-    # Verify the live PWA/cache and central metadata contracts without pinning
-    # Symphony to a historical cache version.
-    assert "const CACHE='tenis-ai-" in sw
-    assert "'symphony2.js'" in sw
-    assert "'style.css'" in sw
-    assert "symphony2.css" not in sw
-    assert "appVersion: 'v8.0.1'" in meta
-    assert "modelVersion:'v7.8D'" in meta
-    assert "modelName:'AutoLearn Ensemble + Adaptive Learning'" in meta
-    assert "productionModelName:'AutoLearn Ensemble + Dynamic Weights + Adaptive PROD'" in meta
-    assert 'app-meta.js?v=' in idx

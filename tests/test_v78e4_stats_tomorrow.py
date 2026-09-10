@@ -15,13 +15,3 @@ def test_v78e4_keeps_current_and_legacy_separate():
     assert "window.TENIS_AI_META?.appVersion" in js
     assert "<b>v7.8E4</b>" not in js
 
-def test_v78e4_bumps_pwa_cache():
-    sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
-
-    # Verify the current cache contract and canonical Symphony assets without
-    # freezing the test to a historical Symphony cache version.
-    assert "const CACHE='tenis-ai-" in sw
-    assert "'symphony2.js'" in sw
-    assert "'style.css'" in sw
-    assert "symphony2.css" not in sw
-    assert "cache.addAll(ASSETS)" not in sw

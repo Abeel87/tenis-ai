@@ -11,7 +11,6 @@ from backend.superbet_playable import _filter_shadow_feed, _history_signal, oper
 from backend.symphony2_engine import _is_current_pre_match_fixture
 
 ROOT = Path(__file__).resolve().parents[1]
-SYMPHONY_UI = (ROOT / "frontend" / "symphony2.js").read_text(encoding="utf-8")
 PLAYABLE_BACKEND = (ROOT / "backend" / "superbet_playable.py").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
 
@@ -70,13 +69,6 @@ def test_playable_projection_is_additive_and_never_rewrites_model_raw_fields():
 def test_playable_history_does_not_invent_zero_score_when_score_is_missing():
     row = _history_signal({"market": "match_winner", "pick": "A"}, "test")
     assert "score" not in row
-
-
-def test_symphony_ui_does_not_render_missing_numeric_values_as_real_zero():
-    assert "const nfmt=v=>Number(v||0)" not in SYMPHONY_UI
-    assert "Number(data?.matches_count||0)" not in SYMPHONY_UI
-    assert "Number(x?.learning_support_rows||0)" not in SYMPHONY_UI
-    assert "const nfmt=v=>num(v)==null?'N/D':" in SYMPHONY_UI
 
 
 def test_autolearn_uses_previous_telemetry_snapshot_before_current_run_telemetry_refresh():

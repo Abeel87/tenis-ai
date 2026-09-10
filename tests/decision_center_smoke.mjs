@@ -93,27 +93,6 @@ assert.equal(center.finalScore(alpha, match, {adaptive: [], consensus: []}), 66.
 const top = center.topRows(rows, match, {adaptive: [], early: [], serve: [], form: [], surface: [], consensus: []});
 assert.equal(top[0].pick, 'Alpha', 'Top mode should rank by backend FINAL');
 
-const view = center.decisionCenter(match).html;
-for (const marker of [
-  'Centrum Decyzji Meczu',
-  'data-dc-mode="top"',
-  'data-dc-mode="all"',
-  'data-dc-mode="pro"',
-  'type="search"',
-  'Accuracy Lab v8.6 · SHADOW'
-]) {
-  assert.ok(view.includes(marker), 'missing UI marker: ' + marker);
-}
-assert.ok(!view.includes('<table'), 'wide table must not return');
-
-const legacyMatch = structuredClone(match);
-legacyMatch.adaptive_learning_v79.mode = 'shadow';
-const legacyView = center.decisionCenter(legacyMatch).html;
-assert.ok(legacyView.includes('Adaptive PROD · ACTIVE · SYNC'), 'old records should fail safe to controlled PROD sync state');
-assert.ok(!legacyView.includes('Adaptive SHADOW'), 'Adaptive must not return to a SHADOW badge');
-
-console.log('Decision Center runtime smoke: PASS');
-
 const checkpoints = structuredClone(match);
 checkpoints.game_states = {'6': {'4:2':30, '3:3':50, '2:4':20}};
 checkpoints.autolearn_v84.signals.push(
@@ -135,5 +114,5 @@ mixed.autolearn_v84.signals.push({market:'match_total',line:18.5,pick:'over',ens
 const ranked = center.topRows(center.buildRows(mixed),mixed,{});
 assert.equal(ranked[0].market,'match_total','winner must not be pinned ahead of stronger FINAL');
 assert.ok(!ranked.some(r=>r.pick==='Alpha'),'base fallback must not compete with FINAL');
-assert.ok(center.decisionCenter(mixed).html.includes('nie prawdopodobieństwo'));
+
 console.log('Checkpoint mapping and FINAL-only ranking regressions: PASS');

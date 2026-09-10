@@ -38,18 +38,3 @@ def test_learning_does_not_emit_first_set_11_5():
     assert all(s.get("line") != 11.5 for s in signals)
 
 
-def test_ui_reads_shadow_and_backend_consensus():
-    guide = (ROOT / "frontend" / "model-guide.js").read_text(encoding="utf-8")
-    assert "player_intelligence_v85?.shadow_score" in guide
-    assert "specialist_signals_v79b_current" in guide
-    assert "signalsFor?.(id,m)" in guide
-    assert "ids=['adaptive','early','serve','form','surface']" in guide
-
-
-def test_refresh_and_joint_pipeline_are_consistent():
-    runtime = (ROOT / "frontend" / "runtime-fetch.js").read_text(encoding="utf-8")
-    workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
-    assert "`${url.pathname}${url.search}`" in runtime
-    assert "mode === 'no-store'" in runtime
-    assert workflow.index("python backend/pbp_enrich.py") < workflow.index("python backend/apply_joint_to_results.py")
-    assert "python backend/apply_joint_to_results_v78b.py" not in workflow

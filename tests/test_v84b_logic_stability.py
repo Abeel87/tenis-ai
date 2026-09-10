@@ -155,22 +155,6 @@ def test_history_fallback_does_not_guess_between_two_equal_candidates():
     entry = {"p1": "A", "p2": "B", "scheduled_time": "2026-08-24T10:00:00+00:00", "tournament": ""}
     assert history_tracker.find_final_result(hist, entry) is None
 
-def test_pwa_uses_one_canonical_cache_key_per_data_json():
-    sw = (ROOT / "frontend/sw.js").read_text(encoding="utf-8")
-    app = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
-    assert "canonicalDataRequest" in sw
-    assert "url.origin+url.pathname" in sw.replace(" ", "")
-    assert "isDataJson" in sw
-    assert "serviceWorker.register('sw.js?v=801')" in app
-    assert ".then(r=>r.update())" in app
-    assert "{cache:'no-store'}" in app
-
-def test_symphony2_replaces_previous_scenario_pin():
-    index = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-    assert 'src="symphony2.js"' in index
-    assert "scenario-studio-v82a.js" not in index
-    assert "scenario-runtime-v202.js" not in index
-
 
 def test_history_tournament_can_beat_one_day_archive_date_drift():
     hist = pd.DataFrame([

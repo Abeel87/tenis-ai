@@ -40,21 +40,7 @@ jobs:
             exit 0
           fi
 
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            CHANGED="$(git show --pretty='' --name-only HEAD)"
-          else
-            CHANGED="$(git diff --name-only "$BEFORE" "$GITHUB_SHA")"
-          fi
-          printf '%s\n' "$CHANGED"
-
-          if printf '%s\n' "$CHANGED" | grep -Eq '^(backend/|scripts/|data/|frontend/data/|requirements\.txt$)'; then
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-            echo "Data/model files changed too — FULL workflow owns this deploy."
-          else
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            echo "Frontend-only change — FAST Pages deploy enabled."
-          fi
+          BEFORE="${{ github.event.before }}" HEAD_SHA="$GITHUB_SHA" python .github/scripts/change_scope.py
 
       - name: Setup Node
         if: steps.scope.outputs.deploy == 'true'
@@ -71,6 +57,8 @@ jobs:
             node --check "$f"
           done < <(find frontend -maxdepth 1 -name '*.js' -print0)
           node tests/ui_static_smoke.mjs
+          node tests/ui_runtime_smoke.mjs
+          node tests/decision_center_smoke.mjs
 
       - name: Configure Pages
         if: steps.scope.outputs.deploy == 'true'
@@ -89,3 +77,4 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+

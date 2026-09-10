@@ -29,26 +29,7 @@ RETIRED_COMPATIBILITY_SHIMS = {
     "superbet_playable_v912.py",
     "superbet_fixture_matching_v927.py",
 }
-STABLE_FRONTEND_RUNTIME = {
-    "playable-ui.js", "playable-freshness.js", "match-browser.js", "match-visibility.js",
-    "superbet-model-coverage.js", "market-segregation.js", "match-detail.js",
-    "player-intelligence-human.js", "player-intelligence-ui.js",
-    "app-coherence.js", "symphony2-live-ui.js",
-    "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
-    "registration-handler.js", "registration-ux.js",
-    "history-ui.js", "project-ui.js",
-    "adaptive-prod-bridge.js",
-    "performance-dashboard.js", "performance-center.js",
-    "superbet-playable-stats.js",
-    "stats-ranking.js", "market-quality.js",
-    "integrity-status.js", "model-trends.js",
-    "match-time.js", "pbp-validation.js", "market-lab.js",
-    "early-hold-paths.js",
-    "player-trends.js", "player-analytics.js",
-    "match-tendencies.js", "community-admin.js",
-    "admin-delete.js",
-    "style.css",
-}
+STABLE_FRONTEND_RUNTIME = {'adaptive-prod-bridge.js', 'supabase-config.js', 'style.css', 'match-tendencies.js', 'player-analytics.js', 'serve-props-v72.js', 'signal-mapping-v84d4.js', 'market-quality.js', 'player-avatars.js', 'presentation-data.js', 'performance-center.js', 'early-hold-paths.js', 'sw.js', 'autolearn-v84.js', 'clean-core-v80.js', 'app.js', 'playable-ui.js', 'account.js', 'multi-model.js', 'model-guide.js', 'match-time.js'}
 RETIRED_FRONTEND_RUNTIME = {
     "playable-ui-coherence-v917.js", "playable-line-freshness-v925.js", "match-browser-v945.js",
     "match-list-visibility-v916.js", "superbet-model-coverage-v922.js", "market-segregation-v93g.js",
@@ -105,101 +86,6 @@ def test_active_frontend_does_not_boot_retired_runtime_filenames():
             if retired in text:
                 offenders.append(f"source-{idx}:{retired}")
     assert not offenders, f"Active frontend still boots retired runtime paths: {offenders}"
-
-
-def test_app_meta_owns_single_canonical_playable_bootstrap():
-    text = (FRONTEND / "app-meta.js").read_text(encoding="utf-8")
-    assert "load('playable-ui.js','tenis-ai-playable-ui',freshness)" in text
-    assert "load('playable-freshness.js','tenis-ai-playable-freshness')" in text
-    visibility = (FRONTEND / "match-visibility.js").read_text(encoding="utf-8")
-    assert "playable-ui.js" not in visibility
-    assert "playable-freshness.js" not in visibility
-
-
-def test_match_visibility_owns_stable_detail_chain_only():
-    text = (FRONTEND / "match-visibility.js").read_text(encoding="utf-8")
-    assert "superbet-model-coverage.js" in text
-    assert "market-segregation.js" in text
-    assert "match-detail.js" in text
-    for retired in ("superbet-model-coverage-v922.js", "market-segregation-v93g.js", "match-detail-architecture-v950.js"):
-        assert retired not in text
-
-
-def test_project_ui_has_single_match_list_owner():
-    project = (FRONTEND / "project-ui.js").read_text(encoding="utf-8")
-    history = (FRONTEND / "history-ui.js").read_text(encoding="utf-8")
-    assert "renderMatches=function" in project
-    assert "window.TENIS_AI_PROJECT_UI" in project
-    assert "renderMatches=function" not in history
-    assert "filteredReady" not in history
-    assert "window.renderHistory=render" in history
-
-
-def test_index_boots_stable_production_runtime_chain():
-    text = (FRONTEND / "index.html").read_text(encoding="utf-8")
-    for name in (
-        "runtime-fetch.js", "match-loading.js", "data-runtime.js", "fixture-history-freshness.js",
-        "registration-handler.js", "registration-ux.js", "history-ui.js", "project-ui.js",
-        "adaptive-prod-bridge.js", "performance-dashboard.js",
-        "performance-center.js", "player-intelligence-ui.js", "stats-ranking.js", "market-quality.js",
-        "integrity-status.js", "match-time.js", "model-trends.js",
-        "pbp-validation.js", "market-lab.js", "early-hold-paths.js", "player-trends.js", "player-analytics.js",
-        "match-tendencies.js", "community-admin.js", "admin-delete.js", "match-visibility.js",
-    ):
-        assert f'src="{name}"' in text
-
-    assert text.count('rel="stylesheet"') == 1
-    assert 'href="style.css"' in text
-
-    for legacy in (
-        "clarity-labels.js", "navigation-tools.js", "project-ui-quality.js", "ui-cleanup.js",
-        "project-ui.css", "project-readability.css", "neon.css",
-        "clean-core-v80.css", "symphony2.css",
-    ):
-        assert legacy not in text
-
-    assert text.index('src="history-ui.js"') < text.index('src="project-ui.js"')
-    assert text.index('src="registration-handler.js"') < text.index('src="registration-ux.js"')
-    for retired in RETIRED_FRONTEND_RUNTIME:
-        assert retired not in text
-
-
-def test_model_trend_monitor_stays_read_only():
-    text = (FRONTEND / "model-trends.js").read_text(encoding="utf-8")
-    assert "Read-only monitoring" in text
-    assert "never changes production weights" in text
-    assert "window.TENIS_AI_MODEL_TRENDS_V84E2" in text
-
-
-def test_integrity_status_preserves_shadow_experiment_boundary():
-    integrity = (FRONTEND / "integrity-status.js").read_text(encoding="utf-8")
-    index = (FRONTEND / "index.html").read_text(encoding="utf-8")
-    style = (FRONTEND / "style.css").read_text(encoding="utf-8")
-    assert "integrity_report_v78a.json" in integrity
-    assert 'src="shadow-lab-v78e6.js' in index
-    assert "shadow-lab-v78e6.js" not in integrity
-    assert "shadow-lab-v78e6.css" not in integrity
-    assert "Migrated functional component rules from retired shadow-lab-v78e6.css" in style
-    assert not (FRONTEND / "shadow-lab-v78e6.css").exists()
-
-
-def test_match_time_runtime_preserves_single_formatter_contract():
-    text = (FRONTEND / "match-time.js").read_text(encoding="utf-8")
-    assert "One formatter + one lightweight clock" in text
-    assert "TENIS_AI_MATCH_TIME" in text
-    assert "A passed scheduled time never implies LIVE" in text
-
-
-def test_market_lab_stays_lab_only():
-    text = (FRONTEND / "market-lab.js").read_text(encoding="utf-8")
-    assert "Market Lab v7.4.1" in text
-    assert "Na razie nie podbijają wyniku 72/80+" in text
-
-
-def test_pbp_validation_stays_reporting_only():
-    text = (FRONTEND / "pbp-validation.js").read_text(encoding="utf-8")
-    assert "PBP Result Tracker + walk-forward validation" in text
-    assert "diagnostyka stabilności tendencji" in text
 
 
 def test_production_workflow_does_not_execute_versioned_superbet_entrypoints():

@@ -67,7 +67,3 @@ def test_backend_declares_train_only_and_raw_validation_audit():
     assert '"fit_scope": "train_only"' in s
     assert '"current_raw": _metrics(val, raw_base_val)' in s
 
-def test_ui_explains_calibrated_engine():
-    s = read("frontend/autolearn-v84.js")
-    assert "Current Engine · kalibrowany" in s
-    assert "Kalibracja Engine" in s

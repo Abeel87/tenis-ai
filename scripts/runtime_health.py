@@ -20,34 +20,11 @@ def audit(root: Path):
     metrics={}
 
     index=read(frontend/'index.html')
-    runtime=read(frontend/'data-runtime.js')
-    fetch_runtime=read(frontend/'runtime-fetch.js')
-    dynamic=read(frontend/'dynamic-weights-v84d1.js')
-
-    app_pos=index.find('app.js')
-    runtime_pos=index.find('data-runtime.js')
-    dynamic_pos=index.find('dynamic-weights-v84d1.js')
-
-    if runtime_pos < 0:
-        failures.append('index.html nie ładuje data-runtime.js')
-    if min(app_pos,runtime_pos,dynamic_pos) >= 0 and not (app_pos < runtime_pos < dynamic_pos):
-        failures.append('Shared Data Runtime musi być po app.js i przed Dynamic Weights.')
-
-    required_runtime=[
-        ("const VERSION='v8.4E0'" in runtime,'Brak markera wersji v8.4E0.'),
-        ('window.TENIS_AI_DATA' in runtime,'Brak wspólnego API TENIS_AI_DATA.'),
-        ('window.fetch=function' in runtime,'Brak współdzielenia ciężkich fetchy.'),
-        ("url.searchParams.has('ts')" in runtime,'Brak bypassu dla autorytatywnego odświeżania app.js.'),
-        ("/data/results.json" in runtime,'Brak współdzielenia results.json.'),
-        ("/data/history.json" in runtime,'Brak współdzielenia history.json.'),
-        ('const inflight = new Map()' in fetch_runtime,'Brak deduplikacji requestów /data/*.json.'),
-    ]
-    for ok,msg in required_runtime:
-        if not ok:
-            failures.append(msg)
-
-    if 'setInterval(()=>schedule(0),60000)' in dynamic:
-        failures.append('Dynamic Weights nadal skanuje całą pulę automatycznie co 60 s.')
+    runtime=read(frontend/'presentation-data.js')
+    if 'presentation-data.js' not in index or 'const cache=new Map()' not in runtime:
+        failures.append('Missing canonical cached presentation loader')
+    if "cache:'no-store'" not in runtime:
+        failures.append('Published data must be fetched fresh')
 
     for name in ['results.json','history.json']:
         path=frontend/'data'/name
@@ -63,7 +40,7 @@ def audit(root: Path):
     direct_results=[]
     service_worker_routes=[]
     global_observers=[]
-    allowed_results={'app.js','dynamic-weights-v84d1.js','runtime-fetch.js','data-runtime.js'}
+    allowed_results={'app.js','presentation-data.js'}
     for path in frontend.glob('*.js'):
         txt=read(path)
         if 'data/results.json' in txt and 'fetch(' in txt:

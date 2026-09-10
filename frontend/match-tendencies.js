@@ -1,7 +1,7 @@
 /* Tenis AI v7.1.2 — szybkie tendencje bezpośrednio przy meczu */
 (() => {
-  if(typeof renderMatchDetail!=='function') return;
-  const baseRender=renderMatchDetail;
+
+
   const escT=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const norm=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
   const LABELS={
@@ -31,33 +31,5 @@
     const all=[...a,...b].sort((x,y)=>(y.pct*(y.n/(y.n+3)))-(x.pct*(x.n/(x.n+3)))||y.n-x.n).slice(0,3);
     return {rows:all,scope,surface,historyN:sample(g,scope,win),pbpN:sample(p,scope,win)};
   }
-  function trendRows(x){
-    if(!x.rows.length)return '<div class="mt-empty">N/D — za mała próbka w tym meczu.</div>';
-    return x.rows.map(r=>`<div class="mt-row"><div><b>${escT(r.label)}</b><small>${r.kind} · ${r.hits}/${r.n}</small></div><strong>${Math.round(r.pct)}%</strong></div>`).join('');
-  }
-  function player(m,side){
-    const name=m[side]||'—',x=topFor(m,side);const scopeLabel=x.scope==='surface'?(x.surface||'surface').toUpperCase():'WSZYSTKIE';
-    return `<article class="mt-player"><div class="mt-name"><b>${escT(name)}</b><span>${escT(scopeLabel)} · 10</span></div><div class="mt-list">${trendRows(x)}</div><div class="mt-sample">Historia ${x.historyN} · PBP ${x.pbpN||0}</div><button type="button" class="mt-profile" data-mt-player="${escT(name)}">Pełny profil 5/10/20 →</button></article>`;
-  }
-  function box(m){
-    if(!m.tendencies_v71)return '';
-    return `<section class="match-tendencies" data-mt-match="${escT(matchKey(m))}"><div class="mt-head"><div><b>🧭 Szybkie tendencje zawodników</b><small>ostatnie 10 · bieżąca nawierzchnia, gdy próbka ≥5</small></div><span>HISTORIA + PBP</span></div><div class="mt-grid">${player(m,'p1')}${player(m,'p2')}</div><div class="mt-note">To częstość zdarzeń w poprzednich meczach, nie prognoza na dzisiejszy wynik.</div></section>`;
-  }
-
-  renderMatchDetail=function(m){
-    const html=baseRender(m),panel=box(m);if(!panel)return html;
-    return html.replace('<div class="match-detail">',`<div class="match-detail">${panel}`);
-  };
-
-  function openPlayer(name){
-    const input=document.querySelector('#player-search-input');if(!input)return;
-    input.value=name;
-    input.dispatchEvent(new Event('input',{bubbles:true}));
-    input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',bubbles:true}));
-    setTimeout(()=>document.querySelector('#player-profile-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
-  }
-  document.addEventListener('click',e=>{
-    const b=e.target.closest?.('[data-mt-player]');if(!b)return;
-    e.preventDefault();e.stopPropagation();openPlayer(b.dataset.mtPlayer||'');
-  });
+window.TENIS_AI_TENDENCIES={topFor};
 })();

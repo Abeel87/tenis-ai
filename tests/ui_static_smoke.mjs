@@ -1,55 +1,39 @@
 import fs from 'node:fs';
-const read=p=>fs.readFileSync(p,'utf8');
-const ui=read('frontend/project-ui.js');
-const shadow=read('frontend/shadow-lab-v78e6.js');
-const style=read('frontend/style.css');
-const index=read('frontend/index.html');
-const sw=read('frontend/sw.js');
-const meta=read('frontend/app-meta.js');
-const clean=read('frontend/clean-core-v80.js');
-const app=read('frontend/app.js');
-
-const stylesheetCount=(index.match(/rel="stylesheet"/g)||[]).length;
-const legacyUi=[
-  'clean-core-v80.css',
-  'symphony2.css',
-  'project-ui.css',
-  'neon.css',
-  'navigation-tools.js',
-  'clarity-labels.js',
-  'ui-cleanup.js',
-  'project-ui-quality.js',
-  'app-shell.js',
-  'app-shell.css'
-];
-
-const checks=[
- ['Clean Core logic remains loaded after Adaptive Learning',/adaptive-learning-v79\.js[\s\S]{0,700}clean-core-v80\.js/.test(index)],
- ['Legacy Clean Core CSS is removed',!index.includes('clean-core-v80.css')&&!sw.includes('clean-core-v80.css')],
- ['Single canonical stylesheet is loaded',stylesheetCount===1&&index.includes('href="style.css"')],
- ['Legacy layered UI is not loaded',legacyUi.every(name=>!index.includes(name))],
- ['Old History v7.3.2 is not loaded',!index.includes('history-days-v732.js')&&!index.includes('history-days-v732.css')],
- ['Post-Match Center logic still exists',clean.includes('RAPORT PO MECZU')&&clean.includes('Co nie weszło')&&clean.includes('Modele — wynik tego meczu')],
- ['Adaptive review is still available',clean.includes('adaptive_review_v79')&&clean.includes('Dlaczego model się pomylił')],
- ['Specialist learning remains available',clean.includes('learning_signals_v79b')&&clean.includes('learning-only')],
- ['History report logic remains available',clean.includes('data-v80-history-open')&&clean.includes('openPostMatch')],
- ['Header has no old hardcoded v7.8D override',!ui.includes("Tenis AI v7.8D · Calibration Guard")],
- ['Central app metadata is v8.0.1',meta.includes("appVersion: 'v8.0.1'")&&meta.includes("cacheVersion: 'v801'")],
- ['PWA registration is v801',app.includes("serviceWorker.register('sw.js?v=801')")],
- ['PWA registration actively checks update',app.includes(".then(r=>r.update())")],
- ['PWA cache is v84b',/const CACHE\s*=\s*['"]tenis-ai-v84b-[0-9a-z._-]+['"]/i.test(sw)],
- ['PWA cache owns canonical style only',sw.includes("'style.css'")&&!sw.includes('symphony2.css')],
- ['Dynamic JSON cache is canonical',sw.includes('canonicalDataRequest')&&sw.includes("url.pathname.includes('/data/')")],
- ['No old fragile cache.addAll(ASSETS)',!sw.includes('cache.addAll(ASSETS)')],
- ['Supabase version is pinned',/@supabase\/supabase-js@2\.112\.3/.test(index)],
- ['Shadow Lab remains available without legacy bottom nav',index.includes('shadow-lab-v78e6.js')&&shadow.includes('window.TENIS_AI_SHADOW_LAB')&&shadow.includes('open:openShadow')&&!ui.includes('p751-bottom-nav')],
- ['Main cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(ui)],
- ['Canonical responsive rules exist',style.includes('@media(max-width:760px)')&&style.includes('.match-grid')],
- ['Match detail is in-app, not legacy overlay',ui.includes("app.innerHTML=detailHtml(m)")&&!ui.includes('p751-match-overlay')],
- ['Shadow cards remain semantic containers',!/<button[^>]*class=["'][^"']*p751-match-card/.test(shadow)]
-];
-
-let failed=0;
-for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'}  ${name}`);if(!ok)failed++}
-if(failed){console.error(`\n${failed} smoke check(s) failed.`);process.exit(1)}
-console.log('\nUI smoke clean rebuild: PASS');
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+const root='frontend',read=n=>fs.readFileSync(path.join(root,n),'utf8');
+const index=read('index.html'),style=read('style.css'),app=read('app.js'),auth=read('account.js');
+const scripts=[...index.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:'));
+assert.equal((index.match(/rel="stylesheet"/g)||[]).length,1);
+assert(!index.includes('<style'),'No override style layer');
+assert(index.includes('id="product-shell" hidden'),'Fail closed before auth');
+assert(!index.includes('project-ui.js')&&!index.includes('product-polish.js'));
+assert(auth.includes('auth.getUser()')&&auth.includes("from('profiles')"));
+assert(!auth.includes('user_metadata'),'Roles cannot be user-editable metadata');
+assert(/@supabase\/supabase-js@2\.112\.3/.test(index));
+assert(style.includes('env(safe-area-inset-bottom)')&&style.includes('@media(max-width:760px)'));
+assert(app.includes("serviceWorker.register('sw.js').then(r=>r.update())"));
+assert(read('sw.js').includes("u.pathname.includes('/data/')"),'Data never served from stale PWA cache');
+for(const f of scripts){assert(fs.existsSync(path.join(root,f)),'Missing import '+f);new vm.Script(read(f),{filename:f});}
+const noUI=['multi-model.js','model-guide.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','playable-ui.js','clean-core-v80.js','serve-props-v72.js','player-analytics.js','match-time.js','early-hold-paths.js','match-tendencies.js','performance-center.js'];
+for(const f of noUI)assert(!/<(?:div|section|article|button|details|table)\b/.test(read(f)),f+' retains an old renderer');
+const sandbox={console,URL,Map,Set,Date,Number,Object,Array,String,Math,JSON,Promise,localStorage:{getItem:()=>null,setItem:()=>{}},queueMicrotask,fetch:()=>{throw Error('Unexpected pre-auth fetch')}};sandbox.window=sandbox;sandbox.globalThis=sandbox;vm.createContext(sandbox);
+for(const f of scripts.filter(f=>!['app.js','account.js'].includes(f)))new vm.Script(read(f),{filename:f}).runInContext(sandbox);
+const D=sandbox.TenisPresentation,P=sandbox.TENIS_AI_PLAYABLE_UI_V917;
+assert.equal(D.num(null),null);assert.equal(D.num(''),null);assert.equal(D.pct(null),'Brak danych');
+assert.equal(D.couponTotals([{matchId:'a',odds:2},{matchId:'b',odds:3}],10).payout,60);
+assert.equal(D.couponTotals([{matchId:'a',odds:2},{matchId:'a',odds:3}],10).odds,null,'Do not multiply correlated Bet Builder prices');
+assert.equal(D.couponTotals([{matchId:'a',odds:null}],10).payout,null);
+const now=Date.now();const future=new Date(now+3600000).toISOString();
+const signal={market:'set1_total',pick:'over',line:8.5,operator_available:true,operator_line_verified:true,fixture_line_verified:true};
+const m={id:1,p1:'A',p2:'B',scheduled_time:future,superbet_market_v91:{operator:'superbet.pl',operator_verified:true,status:'VERIFIED',source_generated_at:new Date(now).toISOString(),canonical_selections:[signal]},symphony2_playable:{final_playable_authority:true,playable:true,signals:[signal]}};
+assert(P.isPlayable(m,signal));assert(!P.isPlayable(m,{...signal,line:9.5}));assert(!P.active({...m,scheduled_time:new Date(now-1).toISOString()}));assert(!P.active({...m,superbet_market_v91:{...m.superbet_market_v91,source_generated_at:new Date(now-8*3600000).toISOString()}}));
+assert.equal(D.filterRows([{id:1,scheduled_time:future},{id:2,scheduled_time:new Date(now+3*3600000).toISOString()}],{focus:'soon'},{now}).length,1);
+const raw={id:8,p1:'A',p2:'B',first_set_win:{A:64,B:36},game_states:{2:{'1:1':77}},over_under:{'8.5':{over:68,under:32}},model_ready:true};
+const snapshot=JSON.stringify(raw),rows=D.allEvents(raw,{scored_selections:[{market:'match_winner',pick:'A',operator_model_probability:75}]});
+assert(rows.some(x=>x.source==='Symfonia 2.0'));assert(rows.some(x=>x.pick==='1:1'&&x.value===77));assert(rows.some(x=>x.source==='Model bazowy'));assert.equal(JSON.stringify(raw),snapshot,'Presentation cannot mutate model input');
+assert(rows.every(s=>!D.availability(raw,s,null,null).playable),'No offer must fail closed');
+const fixtureDir=process.env.TENIS_UI_FIXTURES||'frontend/data';
+if(fs.existsSync(path.join(fixtureDir,'results.json'))){const results=JSON.parse(fs.readFileSync(path.join(fixtureDir,'results.json'))),s2=JSON.parse(fs.readFileSync(path.join(fixtureDir,'symphony2_current.json')));for(const s of s2.matches){const r=D.find(results,s)||s;const before=JSON.stringify(r);const e=D.allEvents(r,s);assert.equal(JSON.stringify(r),before);for(const leg of s.scored_selections||[])assert(e.some(x=>x.source==='Symfonia 2.0'&&P.signature(x)===P.signature(leg)),'Lost Symphony leg');}assert.equal(D.filterRows(s2.matches,{focus:'all'}).length,s2.matches.length);console.log(`Real feeds: ${results.length} matches, all ${s2.matches.length} Symphony matches and scored events preserved`);}
+console.log('PASS: imports, auth gate, pure retained functions, exact offer, expiry, RAW retention, filters, coupon arithmetic, mobile CSS');

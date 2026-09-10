@@ -8,7 +8,7 @@
     module.exports=api;
   }else{
     root.TENIS_AI_MATCH_TIME=api;
-    api.mount();
+
   }
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
@@ -63,11 +63,6 @@
     if(!scheduled)return {txt:'CZAS N/D',cls:'unknown'};
     if(scheduled.getTime()<=Number(nowValue))return {txt:'OCZEKUJE NA STATUS',cls:'waiting'};
     return {txt:'PRZED MECZEM',cls:'upcoming'};
-  }
-
-  function badgeHtml(m){
-    const s=cardStatus(m);
-    return `<span class="p751-status ${esc(s.cls)}" data-tai-match-status="1" data-scheduled-time="${esc(m?.scheduled_time||'')}" data-match-status="${esc(rawStatus(m))}">${esc(s.txt)}</span>`;
   }
 
   function parseTime(value){
@@ -173,134 +168,5 @@
     };
   }
 
-  function html(m,mode='full'){
-    const x=compute(m,Date.now(),mode);
-    const sid=m?.id??m?.match_id??'';
-    return `<span class="tai-match-time tai-time-${esc(x.kind)}" data-tai-match-time="1" data-scheduled-time="${esc(m?.scheduled_time||'')}" data-match-status="${esc(x.raw_status)}" data-time-mode="${esc(mode)}" data-match-id="${esc(sid)}">${esc(x.text)}</span>`;
-  }
-
-  function markerModel(el){
-    return {
-      scheduled_time:el.dataset.scheduledTime||null,
-      status:el.dataset.matchStatus||''
-    };
-  }
-
-  function refreshMarker(el,now=Date.now()){
-    const x=compute(markerModel(el),now,el.dataset.timeMode||'full');
-    const cls=`tai-match-time tai-time-${x.kind}`;
-    if(el.className!==cls)el.className=cls;
-    if(el.textContent!==x.text)el.textContent=x.text;
-  }
-
-  function refreshAllMarkersOnly(){
-    if(typeof document==='undefined')return;
-    document.querySelectorAll('[data-tai-match-time="1"]').forEach(el=>refreshMarker(el));
-    document.querySelectorAll('[data-tai-match-status="1"]').forEach(el=>{
-      const s=cardStatus(markerModel(el));
-      const cls=`p751-status ${s.cls}`;
-      if(el.className!==cls)el.className=cls;
-      if(el.textContent!==s.txt)el.textContent=s.txt;
-    });
-  }
-
-  function currentHistoryRows(){
-    try{
-      if(typeof historyRows!=='undefined' && Array.isArray(historyRows)){
-        return historyRows.filter(e=>{
-          if(!(e.signals||[]).length)return false;
-          if(e.status==='settled'||e.status==='void')return true;
-          const t=new Date(e.scheduled_time||'').getTime();
-          return Number.isFinite(t)&&t<=Date.now()+5*60*1000;
-        }).slice(0,150);
-      }
-    }catch{}
-    return [];
-  }
-
-  function decorateHistory(){
-    if(typeof document==='undefined')return;
-    const cards=[...document.querySelectorAll('#app .history-card')];
-    const rows=currentHistoryRows();
-    cards.forEach((card,i)=>{
-      if(card.querySelector('[data-tai-match-time="1"]'))return;
-      const row=rows[i];
-      const anchor=card.querySelector('.history-match');
-      if(!row||!anchor)return;
-      anchor.insertAdjacentHTML('afterend',html(row,'history'));
-    });
-  }
-
-  function installMainWrappers(){
-    if(typeof root.renderMatchCard==='function' && !root.renderMatchCard.__tai_time_e11){
-      const base=root.renderMatchCard;
-      const wrapped=function(m){
-        let out=base.apply(this,arguments);
-        if(typeof out==='string' && !out.includes('data-tai-match-time="1"')){
-          out=out.replace('<div class="match-main">',`<div class="match-main">${html(m,'compact')}`);
-        }
-        return out;
-      };
-      wrapped.__tai_time_e11=true;
-      try{root.renderMatchCard=wrapped}catch{}
-      try{renderMatchCard=wrapped}catch{}
-    }
-
-    if(typeof root.renderHistory==='function' && !root.renderHistory.__tai_time_e11){
-      const base=root.renderHistory;
-      const wrapped=function(){
-        const value=base.apply(this,arguments);
-        setTimeout(decorateHistory,0);
-        return value;
-      };
-      wrapped.__tai_time_e11=true;
-      try{root.renderHistory=wrapped}catch{}
-      try{renderHistory=wrapped}catch{}
-    }
-  }
-
-  function scheduleDecorate(){
-    [0,60,220,600].forEach(ms=>setTimeout(()=>{
-      decorateHistory();
-      refreshAllMarkersOnly();
-    },ms));
-  }
-
-  function refreshAll(){
-    if(typeof document==='undefined'||document.hidden)return;
-    refreshAllMarkersOnly();
-    root.TENIS_AI_MATCH_VISIBILITY_V916?.refreshClock?.();
-    root.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.();
-    root.TENIS_AI_PLAYABLE_UI_V917?.patchOpenDecision?.();
-    root.TENIS_AI_PLAYABLE_UI_V917?.patchSymphonyMinis?.();
-    root.TENIS_AI_SYMPHONY_PLAYABLE_DETAIL_GUARD_V915?.guardOpenMatch?.();
-    root.TENIS_AI_SYMPHONY_V90?.refreshVisible?.();
-    root.TENIS_AI_SHADOW_SIGNAL_CENTER_V894?.refreshVisible?.();
-  }
-
-  let timer=null;
-  function mount(){
-    if(typeof document==='undefined')return;
-    installMainWrappers();
-    scheduleDecorate();
-    document.addEventListener('click',scheduleDecorate,true);
-    document.addEventListener('visibilitychange',refreshAll);
-    root.addEventListener?.('pageshow',refreshAll);
-    if(!timer)timer=setInterval(refreshAll,TICK_MS);
-  }
-
-  return Object.freeze({
-    version:VERSION,
-    compute,
-    html,
-    refreshAll,
-    mount,
-    statusKind,
-    isCurrent,
-    cardStatus,
-    badgeHtml,
-    rawStatus,
-    futureDistance,
-    pastDistance
-  });
+  return Object.freeze({version:VERSION,compute,statusKind,isCurrent,cardStatus,rawStatus,futureDistance,pastDistance});
 });

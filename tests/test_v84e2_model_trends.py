@@ -110,19 +110,3 @@ def test_quality_lock_v852_capture_time_split():
     assert curr["unknown_capture_time_n"] == 1
 
 
-def test_frontend_is_additive_and_no_new_polling():
-    js = (ROOT / "frontend/model-trends.js").read_text(encoding="utf-8")
-    idx = (ROOT / "frontend/index.html").read_text(encoding="utf-8")
-
-    assert "fetch(" not in js
-    assert "new MutationObserver(" not in js
-    assert "setInterval(" not in js
-    assert "historyRows" not in js
-
-    assert "Ensemble selector proxy" in js
-    assert "zbieramy próbę" in js
-    assert 'src="model-trends.js"' in idx
-    assert "model-trends-v84e2.js" not in idx
-    assert "autolearn-v84.js?v=84a1&hf=84b1" in idx
-    assert 'src="symphony2.js"' in idx
-    assert "scenario-studio-v82a.js" not in idx

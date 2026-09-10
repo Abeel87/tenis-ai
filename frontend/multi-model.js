@@ -1,7 +1,7 @@
 /* Tenis AI v6.3 — Multi Model + Consensus
    Experimental specialist models. Different weighting of existing pre-match inputs; not ML yet. */
 (() => {
-  if(typeof bestSignalsData!=='function' || typeof renderMatchDetail!=='function') return;
+
 
   const MODEL_KEY='tenis-ai-v63-active-model';
   const MODEL_IDS=['adaptive','early','serve','form','surface'];
@@ -14,7 +14,7 @@
     surface:{name:'Surface',icon:'🏟️',desc:'Mocniej ufa sygnałom, gdy mamy dobrą próbkę z tej nawierzchni; małe próbki mocno wygasza.'}
   };
 
-  const baseRenderMatchDetail=renderMatchDetail;
+
   let activeModel=readModel();
 
   function readModel(){try{return localStorage.getItem(MODEL_KEY)||'consensus'}catch{return 'consensus'}}
@@ -175,37 +175,4 @@
     }
   };
 
-  bestSignalsData=(m,limit=3)=>selectedSignals(m,limit);
-  bestSignals=(m)=>{
-    const top=selectedSignals(m,3);if(!top.length)return '';
-    const title='FINAL Adaptive PROD — najmocniejsze sygnały';
-    return `<div class="signals"><div class="signals-title">${title}</div><div class="signals-grid">${top.map(x=>pill(x.votes?`${x.votes}/5 · ${x.label}`:x.label,x.v)).join('')}</div></div>`;
-  };
-  compactSignals=(m)=>{
-    const top=selectedSignals(m,2);if(!top.length)return '';
-    return `<div class="compact-signals">${top.map(x=>`<span class="compact-signal ${cls(x.v)} ${activeModel==='consensus'?'consensus':''}">${esc(x.votes?`${x.votes}/5 · ${x.label}`:x.label)} <b>${Math.round(x.v)}</b></span>`).join('')}</div>`;
-  };
-
-  function topFor(id,m){const rows=(id==='consensus'?consensusSignals(m):modelSignals(id,m).sort((a,b)=>b.v-a.v)).filter(x=>x.v>=55);return rows[0]||null}
-  function scoreClass(v){return v>=80?'elite':v>=72?'good':''}
-  function modelPanel(m){
-    const consensus=consensusSignals(m).slice(0,3);
-    const cards=MODEL_IDS.map(id=>{const x=topFor(id,m);return `<div class="model-mini ${activeModel===id?'active':''}"><div class="model-mini-name"><span>${META[id].icon} ${META[id].name}</span></div><div class="model-mini-score ${x?scoreClass(x.v):''}">${x?Math.round(x.v):'—'}</div><div class="model-mini-pick">${x?esc(x.label):'Brak mocnego sygnału'}</div></div>`}).join('');
-    return `<section class="multi-model-panel"><div class="multi-model-head"><b>🧠 Porównanie modeli</b><span>aktywny: ${esc(selectedName())}</span></div><div class="multi-model-grid">${cards}</div><div class="consensus-box"><div class="consensus-title"><b>⚡ Consensus</b><span>poparcie ≥68/100</span></div><div class="consensus-list">${consensus.length?consensus.map(x=>`<div class="consensus-row"><div class="consensus-votes">${x.votes}/5</div><span>${esc(x.label)}</span><b>${Math.round(x.v)}/100</b></div>`).join(''):'<div class="multi-model-note">Brak typu popieranego przez co najmniej 2 modele.</div>'}</div></div><div class="multi-model-note">Modele v6.3 są specjalistycznymi wariantami heurystycznymi. Każdy inaczej waży te same dane wejściowe. To jeszcze nie ML i wynik 0–100 nie jest gwarantowanym prawdopodobieństwem.</div></section>`;
-  }
-
-  renderMatchDetail=(m)=>`${modelPanel(m)}${baseRenderMatchDetail(m)}`;
-
-  function syncSwitcher(){
-    const desc=document.querySelector('#model-description');if(desc)desc.textContent=META[activeModel]?.desc||'';
-    document.querySelectorAll('[data-model]').forEach(b=>b.classList.toggle('active',b.dataset.model===activeModel));
-  }
-  function refreshViews(){
-    try{if(typeof view!=='undefined'&&view==='matches'&&typeof renderMatches==='function')renderMatches()}catch{}
-    const panel=document.querySelector('#player-profile-panel');const input=document.querySelector('#player-search-input');
-    if(panel&&!panel.hidden&&input?.value){try{input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))}catch{}}
-  }
-  document.querySelectorAll('[data-model]').forEach(b=>b.addEventListener('click',()=>{activeModel=b.dataset.model;if(!META[activeModel])activeModel='consensus';saveModel();syncSwitcher();refreshViews()}));
-  syncSwitcher();
-  setTimeout(refreshViews,0);
 })();
