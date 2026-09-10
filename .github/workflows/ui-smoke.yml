@@ -44,7 +44,9 @@ jobs:
           done < <(find frontend -maxdepth 1 -name '*.js' -print0)
 
       - name: UI static smoke
-        run: node tests/ui_static_smoke.mjs
+        run: |
+          node tests/ui_static_smoke.mjs
+          node tests/audit_consistency_smoke.mjs
 
       - name: Python syntax
         run: python -m compileall -q backend scripts

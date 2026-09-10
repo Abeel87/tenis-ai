@@ -24,7 +24,7 @@ def test_playable_match_total_has_its_own_slot():
 
 def test_model_top_strip_is_preserved_beside_superbet_top_strip():
     assert 'document.querySelector(\'#app [data-playable-top-v917="1"]\')' in PLAYABLE
-    assert '.p751-top:not([data-playable-top-v917])' in PLAYABLE
+    assert '.signal-spotlight:not([data-playable-top-v917])' in PLAYABLE
     assert "if(rawTop)rawTop.insertAdjacentElement('afterend',fresh)" in PLAYABLE
     assert "const old=document.querySelector('#app .p751-top')" not in PLAYABLE
 

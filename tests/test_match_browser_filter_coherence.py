@@ -36,7 +36,7 @@ def test_match_browser_keeps_navigation_state_across_detail_return():
     text = BROWSER.read_text(encoding="utf-8")
     assert "returnScroll" in text
     assert "returnPending" in text
-    assert "captureOpenGroups" in text
+    assert "tenis-ai:matches-rendered" in text
     assert "restoreReturnScroll" in text
     assert "sessionStorage" in text
 
@@ -49,8 +49,8 @@ def test_retired_playable_filter_paths_stay_deleted():
 def test_model_raw_top_is_resynchronized_after_match_browser_filters():
     browser = BROWSER.read_text(encoding="utf-8")
     assert "function syncModelTop()" in browser
-    assert "#app .p751-top:not([data-playable-top-v917])" in browser
-    assert "#app .p751-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])" in browser
+    assert "#app .signal-spotlight:not([data-playable-top-v917])" in browser
+    assert "#app .match-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])" in browser
     assert "button.hidden=!show" in browser
     assert "top.hidden=shown===0" in browser
     assert "syncModelTop();" in browser

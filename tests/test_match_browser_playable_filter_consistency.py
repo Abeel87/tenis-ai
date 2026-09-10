@@ -15,7 +15,7 @@ def test_playable_and_data_filters_share_one_visible_match_predicate():
 
 def test_superbet_top_uses_only_cards_left_visible_by_match_browser():
     assert "Top SUPERBET must be derived from the exact set that Match Browser leaves" in PLAYABLE
-    assert ".p751-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])" in PLAYABLE
+    assert ".match-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])" in PLAYABLE
     assert "queueMicrotask(()=>window.TENIS_AI_PLAYABLE_UI_V917?.patchHome?.())" in BROWSER
 
 
