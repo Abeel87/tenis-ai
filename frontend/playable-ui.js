@@ -1,7 +1,12 @@
 /* Tenis AI v9.4.8 — Symphony-final PLAYABLE gate for actionable UI.
    MODEL/RAW analytics stay independent. This bridge only verifies actionable
-   Superbet surfaces against the current fixture offer. It contains no Symphony
-   v9.x card/feed/bootstrap logic; Symphony 2.0 owns all Symphony UI. */
+   Superbet surfaces against the current fixture offer.
+
+   IMPORTANT UI OWNERSHIP:
+   The current #product-shell/project-ui renderer owns presentation. Legacy
+   PLAYABLE card/top/Decision Center decorators are kept only for old-shell
+   compatibility and are never mounted into the current product shell.
+*/
 (()=>{
 'use strict';
 if(window.TENIS_AI_PLAYABLE_UI_V917)return;
@@ -34,6 +39,9 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const norm=v=>String(v??'').trim().toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9:.+\-]+/g,' ').replace(/\s+/g,' ').trim();
 const nameKey=v=>norm(v).replace(/[^a-z0-9]+/g,' ').split(' ').filter(Boolean).sort().join(' ');
 
+function canonicalShell(){
+  return typeof document!=='undefined'&&typeof document.getElementById==='function'&&!!document.getElementById('product-shell');
+}
 function canonicalMarket(value){
   const raw=norm(value).replace(/ /g,'_');
   return ALIASES[raw]||raw;
@@ -183,6 +191,8 @@ function compositionPlayable(match,comp){
   return active(match)&&Array.isArray(legs)&&legs.length>=2&&legs.every(leg=>isPlayable(match,leg));
 }
 
+/* Legacy decorators below are intentionally retained only for old shells.
+   They are NOT allowed to mount in #product-shell, where project-ui owns UI. */
 function playableCardHtml(match,signals,top){
   const value=valueOf(top);
   const green=signals.filter(s=>(valueOf(s)||0)>=72).length;
@@ -192,10 +202,7 @@ function playableCardHtml(match,signals,top){
 function patchMatchTotalPreview(card,match,signals,top){
   let preview=card.querySelector('[data-v917-match-total-preview]');
   const candidate=signals.find(s=>canonicalMarket(s?.market)==='match_total')||null;
-  if(!candidate||sameSelection(candidate,top)){
-    preview?.remove();
-    return;
-  }
+  if(!candidate||sameSelection(candidate,top)){preview?.remove();return}
   const line=rowLine(candidate,'match_total');
   if(line==null){preview?.remove();return}
   if(!preview){
@@ -233,8 +240,6 @@ function topBarHtml(picks){
   return `<section class="p751-top" data-playable-top-v917="1"><header><b>⚡ Top sygnały · SUPERBET</b><span>${picks.length} najmocniejsze PLAYABLE</span></header><div>${picks.map(({match,signal,raw})=>`<button data-v917-top="1" data-p751-open="${esc(raw)}"><small>${esc(match.p1)} vs ${esc(match.p2)}</small><b>${esc(signal.label||signal.pick||signal.key||'Sygnał PLAYABLE')}</b><strong>${scoreText(valueOf(signal))}</strong><span class="p751-bars">${[1,2,3,4,5].map(i=>`<i class="${(valueOf(signal)||0)>=i*18?'on':''}"></i>`).join('')}</span><small class="pc882-top-meta">SUPERBET PLAYABLE · linia zweryfikowana ✓</small></button>`).join('')}</div></section>`;
 }
 function patchTopStrip(){
-  // Top SUPERBET must be derived from the exact set that Match Browser leaves
-  // visible after its mode / data / surface filters, never from hidden cards.
   const cards=[...document.querySelectorAll('#app .match-group:not([hidden]) .p751-match-card[data-p751-open]:not([hidden])')];
   const picks=cards.map(card=>{
     const raw=card.getAttribute('data-p751-open')||'';
@@ -265,6 +270,7 @@ function patchSignalPage(){
   page.dataset.playableUiV917='raw-preserved';
 }
 function patchHome(){
+  if(canonicalShell()){patchSignalPage();return}
   document.querySelectorAll('#app .p751-match-card[data-p751-open]').forEach(patchCard);
   patchTopStrip();
   patchSignalPage();
@@ -326,6 +332,7 @@ function decisionRows(match,api){
   return rows;
 }
 function wrapDecisionCenter(){
+  if(canonicalShell())return false;
   const api=window.TENIS_AI_DECISION_CENTER_V87;
   if(!api||api[WRAP]||typeof api.tidy!=='function'||typeof api.buildRows!=='function'||typeof api.install!=='function')return false;
   const base=api.tidy.bind(api);
@@ -352,6 +359,7 @@ function wrapDecisionCenter(){
   return true;
 }
 function patchOpenDecision(){
+  if(canonicalShell())return false;
   const app=document.querySelector('#app[data-match-key]');
   const screen=app?.querySelector('.p751-detail-screen');
   if(!app||!screen)return;
@@ -366,9 +374,6 @@ function wrapRenderMatches(){
   if(typeof current!=='function'||current[WRAP])return false;
   const wrapped=function(...args){
     const strictApi=window.TENIS_AI_PLAYABLE_UI_V917;
-    // project-ui's base focus=strong filter is a MODEL/RAW filter. During only
-    // that synchronous base render, expose model rows through the legacy hook;
-    // immediately restore strict PLAYABLE before any Superbet patch runs.
     if(strictApi)window.TENIS_AI_PLAYABLE_UI_V917={...strictApi,playableSignals:modelSignals};
     let result;
     try{result=current.apply(this,args)}
@@ -386,23 +391,25 @@ function schedule(ms=40){
   clearTimeout(timer);
   timer=setTimeout(()=>{
     wrapRenderMatches();
-    wrapDecisionCenter();
+    if(!canonicalShell())wrapDecisionCenter();
     patchHome();
-    patchOpenDecision();
+    if(!canonicalShell())patchOpenDecision();
   },ms);
 }
 function boot(){
   wrapRenderMatches();
-  wrapDecisionCenter();
+  if(!canonicalShell())wrapDecisionCenter();
   schedule(0);setTimeout(()=>schedule(0),180);setTimeout(()=>schedule(0),800);
   document.addEventListener('click',event=>{
-    const top=event.target?.closest?.('[data-v917-top]');
-    if(top){
-      event.preventDefault();event.stopPropagation();
-      const key=decode(top.getAttribute('data-p751-open')||'');
-      window.TENIS_AI_PROJECT_UI?.openMatch?.(key);
-      setTimeout(patchOpenDecision,30);
-      return;
+    if(!canonicalShell()){
+      const top=event.target?.closest?.('[data-v917-top]');
+      if(top){
+        event.preventDefault();event.stopPropagation();
+        const key=decode(top.getAttribute('data-p751-open')||'');
+        window.TENIS_AI_PROJECT_UI?.openMatch?.(key);
+        setTimeout(patchOpenDecision,30);
+        return;
+      }
     }
     if(event.target?.closest?.('[data-p751-open],[data-p751-focus],[data-filter],[data-view="matches"],[data-p751-nav="matches"],[data-p751-nav="signals"],[data-v945-mode],[data-v945-ready],[data-v945-sort]'))schedule(80);
   },true);
