@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Syntax
-        run: python -m py_compile backend/ineed_money.py backend/ineed_runner.py
+        run: python -m py_compile backend/ineed_money.py backend/ineed_runner.py backend/ineed_settlement_runner.py
       - name: Tests
         run: |
           python -m pip install -q pytest
@@ -66,6 +66,11 @@ jobs:
           RESPONSE="$(curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=tenis-ai-ineed")"
           TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
           echo "INEED_OIDC_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+      - name: Settle open iNeed$ bets from Live Tennis API
+        env:
+          EDGE_URL: https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/ineed-sync
+          LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
+        run: python backend/ineed_settlement_runner.py --edge-url "$EDGE_URL" --oidc-token "$INEED_OIDC_TOKEN"
       - name: Run iNeed$ SHADOW
         env:
           EDGE_URL: https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/ineed-sync
