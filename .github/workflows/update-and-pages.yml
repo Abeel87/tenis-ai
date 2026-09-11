@@ -264,6 +264,8 @@ jobs:
               assert signals == (comp.get('selection') or [])
           print('Symphony final PLAYABLE publication OK')
           PY
+      - name: Export existing H2H history for match details
+        run: python backend/match_detail_history.py
       - name: Compact frontend data v8.5.4
         run: python scripts/compact_frontend_data.py
       - name: Final full regression after generated layers v9.3.3
