@@ -5,7 +5,7 @@ const D=window.TenisPresentation;
 const nameKey=v=>String(v??'').toLowerCase().replaceAll('ł','l').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').match(/[\p{L}\p{N}]+/gu)?.sort().join(' ')||'';
 function samePlayer(a,as,b,bs){
  const ai=a[as+'_id'],bi=b[bs+'_id'];
- if(ai!=null&&bi!=null)return String(ai)===String(bi);
+ if(ai!=null&&bi!=null&&String(ai)===String(bi))return true;
  const an=nameKey(a[as]),bn=nameKey(b[bs]);
  return !!an&&an===bn;
 }
