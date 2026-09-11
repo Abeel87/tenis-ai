@@ -1,0 +1,69 @@
+name: iNeed$ SHADOW bankroll
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 * * * *'
+  workflow_run:
+    workflows: ['Superbet hourly market refresh']
+    types: [completed]
+  pull_request:
+    paths:
+      - 'backend/ineed_*.py'
+      - 'config/ineed_superbet_pl.json'
+      - 'tests/test_ineed_money.py'
+      - 'frontend/ineed.*'
+      - 'frontend/index.html'
+      - 'supabase/functions/ineed-sync/**'
+      - 'supabase/migrations/*ineed*'
+      - '.github/workflows/ineed-shadow.yml'
+
+concurrency:
+  group: ineed-shadow-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Syntax
+        run: python -m py_compile backend/ineed_money.py backend/ineed_runner.py
+      - name: Tests
+        run: |
+          python -m pip install -q pytest
+          python -m pytest -q tests/test_ineed_money.py
+
+  shadow-sync:
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    needs: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Get GitHub OIDC token
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESPONSE="$(curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=tenis-ai-ineed")"
+          TOKEN="$(python -c 'import json,sys; print(json.load(sys.stdin)["value"])' <<<"$RESPONSE")"
+          echo "INEED_OIDC_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+      - name: Run iNeed$ SHADOW
+        env:
+          EDGE_URL: https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/ineed-sync
+        run: python backend/ineed_runner.py --edge-url "$EDGE_URL" --oidc-token "$INEED_OIDC_TOKEN"
