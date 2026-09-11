@@ -26,5 +26,5 @@ def test_workflow_starts_guard_before_current_match_update():
     text = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(encoding="utf-8")
     begin = text.index("Central API Quota Guard")
     update = text.index("- name: Update analysis")
-    backfill = text.index("Historical backfill v8.3B")
+    backfill = text.index("Historical Data Booster v8.3B")
     assert begin < update < backfill
