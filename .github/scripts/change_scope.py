@@ -8,6 +8,10 @@ args = ['git', 'diff', '--name-only', before, head] if before and set(before) !=
 paths = subprocess.check_output(args, text=True).splitlines()
 
 def affects_data(path):
+    # The main data workflow is itself part of the data-generation contract.
+    # A quota/backfill change there must run the full build immediately.
+    if path == '.github/workflows/update-and-pages.yml':
+        return True
     if path.startswith(('backend/', 'data/', 'frontend/data/')) or path == 'requirements.txt':
         return True
     if path.startswith('tests/') and path.endswith('.py'):

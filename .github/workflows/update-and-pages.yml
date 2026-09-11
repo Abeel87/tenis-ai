@@ -114,16 +114,23 @@ jobs:
         run: python backend/shadow_lab_v78e6.py
       - name: Track Market Lab learning data
         run: python backend/market_lab_tracker_v741.py
-      - name: Historical backfill v8.3B (central spare quota)
+      - name: Historical Data Booster v8.3B (Player DNA spare quota)
         env:
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
           HISTORY_BACKFILL_ENABLED: '1'
-          API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.30'
+          API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.60'
           API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.20'
           API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '240'
-          HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '0.75'
+          HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '0'
           HISTORY_BACKFILL_MAX_CACHE_MB: '900'
-        run: python backend/history_backfill_v83.py
+        run: |
+          # Three bounded passes can spend up to 720 calls per build, but the
+          # central quota guard caps historical spend at 60% of the daily quota
+          # and always preserves a 20% reserve for current/settlement traffic.
+          for pass in 1 2 3; do
+            echo "Historical booster pass ${pass}/3"
+            python backend/history_backfill_v83.py
+          done
       - name: Optional TabPFN V2 runtime v8.4A
         env:
           TABPFN_MODEL_CACHE_DIR: data/cache/tabpfn_models
