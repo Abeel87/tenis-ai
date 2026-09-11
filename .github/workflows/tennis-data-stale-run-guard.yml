@@ -20,6 +20,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       STALE_AFTER_MINUTES: '120'
+      INEED_MAX_AGE_MINUTES: '75'
     steps:
       - name: Cancel stale FULL builds
         shell: bash
@@ -39,4 +40,44 @@ jobs:
           done < <(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-pages.yml/runs?status=in_progress&per_page=100" --jq '.workflow_runs[] | [.id,.created_at] | @tsv')
           if [ "$found" -eq 0 ]; then
             echo "No stale FULL run found."
+          fi
+
+      - name: Ensure iNeed$ SHADOW heartbeat
+        shell: bash
+        run: |
+          set -euo pipefail
+          now_epoch=$(date -u +%s)
+          latest_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ineed-shadow.yml/runs?branch=main&per_page=1")"
+          run_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$latest_json")"
+          status="$(jq -r '.workflow_runs[0].status // empty' <<<"$latest_json")"
+          conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' <<<"$latest_json")"
+          created_at="$(jq -r '.workflow_runs[0].created_at // empty' <<<"$latest_json")"
+
+          if [ -n "$run_id" ] && [[ "$status" =~ ^(queued|in_progress|waiting|requested|pending)$ ]]; then
+            echo "iNeed$ run $run_id is already active ($status)."
+            exit 0
+          fi
+
+          should_dispatch=0
+          reason=""
+          if [ -z "$run_id" ] || [ -z "$created_at" ]; then
+            should_dispatch=1
+            reason="no previous iNeed$ run"
+          elif [ "$status" = "completed" ] && [ "$conclusion" != "success" ]; then
+            should_dispatch=1
+            reason="latest iNeed$ run concluded ${conclusion:-unknown}"
+          else
+            created_epoch=$(date -u -d "$created_at" +%s)
+            age_minutes=$(((now_epoch - created_epoch) / 60))
+            if [ "$age_minutes" -ge "$INEED_MAX_AGE_MINUTES" ]; then
+              should_dispatch=1
+              reason="latest iNeed$ run is ${age_minutes}m old"
+            else
+              echo "iNeed$ heartbeat is fresh: run $run_id, age ${age_minutes}m, conclusion ${conclusion:-n/a}."
+            fi
+          fi
+
+          if [ "$should_dispatch" -eq 1 ]; then
+            echo "Dispatching iNeed$ SHADOW: $reason."
+            gh workflow run ineed-shadow.yml --repo "$GITHUB_REPOSITORY" --ref main
           fi

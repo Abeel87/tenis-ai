@@ -119,23 +119,59 @@ def event_urls_from_payload(payload: object) -> list[str]:
 
 
 def _collect_dom_urls(driver) -> list[str]:
+    """Snapshot tennis links without retaining WebElement references.
+
+    Superbet virtualizes the listing while scrolling, so Selenium WebElements
+    can become stale between ``find_elements`` and ``get_attribute``. Reading
+    hrefs atomically inside the page avoids that race. A WebElement fallback is
+    kept only for drivers that cannot execute the snapshot script.
+    """
+    raw_hrefs: list[str] = []
     try:
-        from selenium.webdriver.common.by import By
-    except ImportError:
-        return []
+        snapshot = driver.execute_script(
+            """
+            return Array.from(document.querySelectorAll('a[href*="/kursy/tenis/"]'))
+              .map(a => a.href || a.getAttribute('href') || '')
+              .filter(Boolean);
+            """
+        )
+        if isinstance(snapshot, list):
+            raw_hrefs.extend(str(value) for value in snapshot if value)
+    except Exception:
+        try:
+            from selenium.webdriver.common.by import By
+            from selenium.common.exceptions import StaleElementReferenceException
+
+            for element in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]'):
+                try:
+                    candidate = element.get_attribute("href")
+                except StaleElementReferenceException:
+                    continue
+                except Exception:
+                    continue
+                if candidate:
+                    raw_hrefs.append(str(candidate))
+        except (ImportError, Exception):
+            pass
+
     out: list[str] = []
-    for element in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]'):
-        candidate = str(element.get_attribute("href") or "")
-        if not candidate:
-            continue
+    seen: set[str] = set()
+    for candidate in raw_hrefs:
         absolute = urljoin(superbet_direct.BASE, candidate)
         if (
             superbet_direct._allowed_url(absolute)
             and re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(absolute).path)
         ):
-            out.append(f"{superbet_direct.BASE}{urlparse(absolute).path}")
+            canonical = f"{superbet_direct.BASE}{urlparse(absolute).path}"
+            if canonical not in seen:
+                seen.add(canonical)
+                out.append(canonical)
+
     try:
-        out.extend(superbet_direct.discover_match_urls(driver.page_source))
+        for candidate in superbet_direct.discover_match_urls(driver.page_source):
+            if candidate not in seen:
+                seen.add(candidate)
+                out.append(candidate)
     except Exception:
         pass
     return out
@@ -207,6 +243,7 @@ def discover_live_superbet_urls(timeout: int = 30) -> tuple[list[str], dict]:
     urls: list[str] = []
     dom_found: set[str] = set()
     network_found: set[str] = set()
+    transient_scroll_errors = 0
 
     def add(items, bucket: set[str]):
         for candidate in items:
@@ -237,16 +274,24 @@ def discover_live_superbet_urls(timeout: int = 30) -> tuple[list[str], dict]:
             add(_collect_dom_urls(driver), dom_found)
             add(_drain_public_listing_json(driver), network_found)
 
-            metrics = driver.execute_script(
-                """
-                const el = document.scrollingElement || document.documentElement;
-                const h = el ? (el.scrollHeight || 0) : 0;
-                const y = window.scrollY || (el ? el.scrollTop : 0) || 0;
-                const vh = window.innerHeight || 1000;
-                window.scrollBy(0, Math.max(800, Math.floor(vh * 0.85)));
-                return [h, y, vh];
-                """
-            ) or [0, 0, 1000]
+            try:
+                metrics = driver.execute_script(
+                    """
+                    const el = document.scrollingElement || document.documentElement;
+                    const h = el ? (el.scrollHeight || 0) : 0;
+                    const y = window.scrollY || (el ? el.scrollTop : 0) || 0;
+                    const vh = window.innerHeight || 1000;
+                    window.scrollBy(0, Math.max(800, Math.floor(vh * 0.85)));
+                    return [h, y, vh];
+                    """
+                ) or [0, 0, 1000]
+            except Exception:
+                transient_scroll_errors += 1
+                if transient_scroll_errors >= 5:
+                    break
+                time.sleep(0.25)
+                continue
+
             height = int(metrics[0] or 0)
             y = int(metrics[1] or 0)
             vh = int(metrics[2] or 1000)
@@ -266,13 +311,17 @@ def discover_live_superbet_urls(timeout: int = 30) -> tuple[list[str], dict]:
         add(_collect_dom_urls(driver), dom_found)
         add(_drain_public_listing_json(driver), network_found)
     finally:
-        driver.quit()
+        try:
+            driver.quit()
+        except Exception:
+            pass
 
     return urls, {
         "status": "OK" if urls else "NO_MATCH_URLS",
         "urls_found": len(urls),
         "dom_urls_found": len(dom_found),
         "network_event_urls_found": len(network_found),
+        "transient_scroll_errors": transient_scroll_errors,
         "discovery": "INCREMENTAL_SCROLL_PLUS_PUBLIC_LISTING_XHR",
     }
 
@@ -334,15 +383,15 @@ def refresh_direct_for_ineed(results: list[dict], direct_feed: dict, discoverer=
         }
 
     seed_urls = _seed_direct_urls(direct_feed if isinstance(direct_feed, dict) else {})
+    discovery_error = None
     try:
         discovered, diag = (discoverer or discover_live_superbet_urls)()
     except Exception as exc:
-        return direct_feed, {
+        discovered = []
+        discovery_error = type(exc).__name__
+        diag = {
             "status": "LIVE_DISCOVERY_FAILED",
-            "error": type(exc).__name__,
-            "seed_urls": len(seed_urls),
-            "playable_targets": len(target_rows),
-            "used_fresh_direct": False,
+            "error": discovery_error,
         }
 
     urls: list[str] = []
@@ -353,7 +402,13 @@ def refresh_direct_for_ineed(results: list[dict], direct_feed: dict, discoverer=
             urls.append(candidate)
 
     if not urls:
-        return direct_feed, {**diag, "status": "NO_DIRECT_URLS", "used_fresh_direct": False}
+        return direct_feed, {
+            **diag,
+            "status": "LIVE_DISCOVERY_FAILED" if discovery_error else "NO_DIRECT_URLS",
+            "seed_urls": len(seed_urls),
+            "playable_targets": len(target_rows),
+            "used_fresh_direct": False,
+        }
 
     try:
         fresh = superbet_direct.build_selected_direct_feed(target_rows, urls, max_matches=64)
@@ -381,7 +436,8 @@ def refresh_direct_for_ineed(results: list[dict], direct_feed: dict, discoverer=
 
     return fresh, {
         **diag,
-        "status": "OK",
+        "status": "DEGRADED_SEED_REFRESH" if discovery_error else "OK",
+        "live_discovery_error": discovery_error,
         "seed_urls": len(seed_urls),
         "playable_targets": len(target_rows),
         "total_candidate_urls": len(urls),
