@@ -63,7 +63,8 @@ jobs:
           ]
           for token in forbidden_ui:
               assert token not in index, token
-          assert 'symphony2.js' in index
+          assert 'href="#symphony"' in index
+          assert '<script src="app.js"></script>' in index
           assert 'style.css' in index
           assert 'symphony2.css' not in index
 
