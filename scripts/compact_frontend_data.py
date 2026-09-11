@@ -32,6 +32,7 @@ SETTLED_AUTOLEARN_REDUNDANT_FIELDS = {
     'adaptive_delta_pp', 'local_weights',
 }
 DYNAMIC_HISTORY_KEYS = ('version', 'active', 'status', 'reason', 'max_shift')
+ADAPTIVE_PROD_HISTORY_KEYS = ('version', 'status', 'final_score')
 
 
 def _path_label(path: Path) -> str:
@@ -67,18 +68,28 @@ def _compact_dynamic_history(policy):
     }
 
 
+def _compact_adaptive_prod_history(policy):
+    if not isinstance(policy, dict):
+        return policy
+    return {
+        key: policy.get(key)
+        for key in ADAPTIVE_PROD_HISTORY_KEYS
+        if policy.get(key) is not None
+    }
+
+
 def prune_history_payload(path: Path) -> dict:
     """Bound settled AutoLearn history without removing learning evidence.
 
     Pending/upcoming forecasts remain byte-for-byte structurally complete so the
     frozen prediction-time evidence is available until settlement. For settled
-    rows we remove only duplicated explanatory fields and retain a compact
-    Dynamic Ensemble policy sufficient for historical telemetry.
+    rows we remove only duplicated explanatory fields and retain compact
+    Dynamic Ensemble and Adaptive PROD state sufficient for historical telemetry.
 
     Preserved canonical learning/settlement inputs include:
     - market/pick/line/checkpoint/key/score/result;
     - model_scores and generator_selected;
-    - adaptive_prod_v79 (including final_score);
+    - adaptive_prod_v79.final_score plus version/status provenance;
     - all non-AutoLearn history layers, including Player Intelligence and
       exact Superbet/Symphony training evidence.
     """
@@ -91,6 +102,7 @@ def prune_history_payload(path: Path) -> dict:
 
     removed_fields = 0
     compacted_dynamic = 0
+    compacted_adaptive_prod = 0
     settled_signals = 0
 
     for entry in data:
@@ -114,6 +126,13 @@ def prune_history_payload(path: Path) -> dict:
                     compacted_dynamic += 1
                 signal['dynamic_weighting'] = compact
 
+            adaptive_prod = signal.get('adaptive_prod_v79')
+            if isinstance(adaptive_prod, dict):
+                compact_prod = _compact_adaptive_prod_history(adaptive_prod)
+                if compact_prod != adaptive_prod:
+                    compacted_adaptive_prod += 1
+                signal['adaptive_prod_v79'] = compact_prod
+
             for key in SETTLED_AUTOLEARN_REDUNDANT_FIELDS:
                 if key in signal:
                     signal.pop(key, None)
@@ -127,6 +146,7 @@ def prune_history_payload(path: Path) -> dict:
         'policy': 'SETTLED_AUTOLEARN_SUFFICIENT_STATE_KEEP_TRAINING_AND_SETTLEMENT',
         'settled_autolearn_signals': settled_signals,
         'compacted_dynamic_policies': compacted_dynamic,
+        'compacted_adaptive_prod_policies': compacted_adaptive_prod,
         'removed_redundant_fields': removed_fields,
         'training_evidence_removed': False,
         'pending_forecasts_changed': False,

@@ -114,6 +114,10 @@ jobs:
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/project_health.py
 
+      - name: Compact safe publication payloads
+        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
+        run: python scripts/compact_frontend_data.py
+
       - name: Runtime health v8.4E0
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/runtime_health.py
@@ -125,4 +129,3 @@ jobs:
       - name: Model Trend Monitor Guard v8.4E2
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/verify_v84e2.py
-
