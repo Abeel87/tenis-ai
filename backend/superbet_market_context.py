@@ -26,7 +26,7 @@ except ImportError:
     import superbet_market_mapping as mapping
 
 VERSION = "v9.2.4"
-STRICT_FIXTURE_LINE_VERSION = "v9.3.4-core"
+STRICT_FIXTURE_LINE_VERSION = "v9.3.5-core"
 NEW_LINE_MARKETS = {"set_handicap"}
 NEW_HANDICAP_MARKETS = {"set_handicap"}
 DIRECT_SIDECAR = base.OUT / "superbet_direct_current.json"
