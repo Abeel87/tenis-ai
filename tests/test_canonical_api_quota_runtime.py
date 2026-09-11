@@ -27,9 +27,10 @@ def test_backfill_workflow_uses_same_canonical_policy_namespace():
     workflow = (ROOT / ".github" / "workflows" / "update-and-pages.yml").read_text(
         encoding="utf-8"
     )
-    assert "API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.12'" in workflow
-    assert "API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.45'" in workflow
-    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '120'" in workflow
+    assert "API_QUOTA_HISTORY_BACKFILL_DAILY_FRACTION: '0.30'" in workflow
+    assert "API_QUOTA_HISTORY_BACKFILL_RESERVE_FRACTION: '0.20'" in workflow
+    assert "API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '240'" in workflow
+    assert "HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '0.75'" in workflow
     lines = {line.strip() for line in workflow.splitlines()}
     assert not any(line.startswith("HISTORY_BACKFILL_DAILY_FRACTION:") for line in lines)
     assert not any(line.startswith("HISTORY_BACKFILL_HARD_RESERVE_FRACTION:") for line in lines)
