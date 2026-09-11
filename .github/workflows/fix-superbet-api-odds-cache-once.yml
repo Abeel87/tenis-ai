@@ -1,0 +1,53 @@
+name: Fix Superbet API odds cache once
+
+on:
+  push:
+    branches:
+      - fix/superbet-api-odds-cache
+    paths:
+      - '.github/workflows/fix-superbet-api-odds-cache-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/superbet-api-odds-cache
+          fetch-depth: 0
+
+      - name: Invalidate stale price-less Superbet cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('backend/superbet_market_context.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'STRICT_FIXTURE_LINE_VERSION = "v9.3.4-core"'
+          new = 'STRICT_FIXTURE_LINE_VERSION = "v9.3.5-core"'
+          if old not in text:
+              raise SystemExit('expected strict runtime version not found; refusing broad edit')
+          if text.count(old) != 1:
+              raise SystemExit('strict runtime version is not unique; refusing broad edit')
+          if 'operator_price_source":"oddspapi_current_superbet_offer"' not in text:
+              raise SystemExit('OddsPapi presentation-price extractor is missing')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Focused syntax and diff guard
+        run: |
+          python -m py_compile backend/superbet_market_context.py
+          git diff --check
+          git diff -- backend/superbet_market_context.py
+
+      - name: Commit isolated cache invalidation
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add backend/superbet_market_context.py
+          git commit -m "fix: force fresh OddsPapi price metadata refresh"
+          git push origin HEAD:fix/superbet-api-odds-cache
