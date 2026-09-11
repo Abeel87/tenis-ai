@@ -12,6 +12,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+from pathlib import Path
 from urllib.request import Request, urlopen
 
 try:
@@ -19,6 +20,8 @@ try:
 except ImportError:
     from ineed_money import build_settlements
 
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG = ROOT / "config" / "ineed_superbet_pl.json"
 BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 OPEN = {"PENDING", "SHADOW_PLACED"}
 MAX_RESULT_CHECKS = 12
@@ -197,11 +200,12 @@ def main() -> int:
         print("iNeed direct settlement skipped: LIVE_TENNIS_API_KEY missing")
         return 0
 
+    cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
     state = post(args.edge_url, args.oidc_token, {"action": "state"})
     experiment = state.get("experiment") or {}
     open_bets = state.get("open_bets") or []
     final_rows, diag = live_final_rows(open_bets, api_key)
-    settlements = build_settlements(open_bets, final_rows, experiment.get("config") or {})
+    settlements = build_settlements(open_bets, final_rows, cfg)
 
     if not settlements:
         print(json.dumps({"ok": True, "settlements": 0, "result_checks": diag}, ensure_ascii=False))
