@@ -1311,7 +1311,7 @@ def build_selected_direct_feed(
     match_urls: list[str],
     *,
     fetcher=None,
-    max_matches: int = 16,
+    max_matches: int = 64,
 ) -> dict:
     """Build a full Direct sidecar only for current Tenis AI match overlaps."""
     if isinstance(results, list):
@@ -1321,7 +1321,7 @@ def build_selected_direct_feed(
     else:
         matches = []
 
-    limit = max(1, min(int(max_matches or 1), 32))
+    limit = max(1, min(int(max_matches or 1), 64))
     candidates: list[dict] = []
     for match in matches:
         if not match.get("p1") or not match.get("p2") or not match.get("scheduled_time"):
@@ -1716,13 +1716,60 @@ def browser_probe(timeout: int = 25) -> dict:
         except Exception:
             pass
 
+        # Superbet lazy-loads the tennis listing. A single DOM snapshot only
+        # exposes the first rendered batch. Accumulate canonical event URLs while
+        # scrolling; Direct stays isolated and cannot affect MODEL/RAW or PLAYABLE.
+        import time as _time
+
+        match_urls = []
+        seen = set()
+        listing_html = driver.page_source
+        stable_rounds = 0
+        previous_count = -1
+
+        for _ in range(40):
+            listing_html = driver.page_source
+            direct_hrefs = [
+                str(el.get_attribute("href") or "")
+                for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
+            ]
+            for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
+                absolute = urljoin(BASE, candidate)
+                if not _allowed_url(absolute):
+                    continue
+                path = urlparse(absolute).path
+                if not re.fullmatch(r"/kursy/tenis/.+-\d+", path):
+                    continue
+                canonical = f"{BASE}{path}"
+                if canonical not in seen:
+                    seen.add(canonical)
+                    match_urls.append(canonical)
+
+            before_height = int(driver.execute_script(
+                "return (document.scrollingElement || document.documentElement).scrollHeight || 0"
+            ) or 0)
+            driver.execute_script(
+                "window.scrollTo(0, (document.scrollingElement || document.documentElement).scrollHeight)"
+            )
+            _time.sleep(0.5)
+            after_height = int(driver.execute_script(
+                "return (document.scrollingElement || document.documentElement).scrollHeight || 0"
+            ) or 0)
+
+            current_count = len(match_urls)
+            if current_count == previous_count and after_height <= before_height:
+                stable_rounds += 1
+            else:
+                stable_rounds = 0
+            previous_count = current_count
+            if stable_rounds >= 4:
+                break
+
         listing_html = driver.page_source
         direct_hrefs = [
             str(el.get_attribute("href") or "")
             for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
         ]
-        match_urls = []
-        seen = set()
         for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
             absolute = urljoin(BASE, candidate)
             if not _allowed_url(absolute):
