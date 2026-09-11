@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
+import unicodedata
 from urllib.request import Request, urlopen
 
 try:
@@ -80,7 +82,51 @@ def _winner_index(match: dict) -> int | None:
 
 
 def _name_key(value) -> str:
-    return " ".join(str(value or "").strip().casefold().split())
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).casefold()
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
+
+
+def _player_tokens(value) -> tuple[str, ...]:
+    """Compare player names independent of 'Surname, Given' display order."""
+    return tuple(sorted(_name_key(value).split()))
+
+
+def _canonical_player(value, p1, p2):
+    wanted = _player_tokens(value)
+    if wanted and wanted == _player_tokens(p1):
+        return p1
+    if wanted and wanted == _player_tokens(p2):
+        return p2
+    return value
+
+
+def normalize_open_bets_for_settlement(open_bets: list[dict]) -> list[dict]:
+    """Map operator display names to the exact canonical p1/p2 names.
+
+    Superbet commonly returns selections as ``Surname, Given`` while the match
+    result uses ``Given Surname``. The shared settlement engine intentionally
+    compares exact normalized names, so iNeed$ resolves that presentation-only
+    difference before calling it.
+    """
+    out: list[dict] = []
+    pick_markets = {
+        "match_winner", "set1_winner", "set2_winner", "set3_winner",
+        "match_game_handicap", "set1_game_handicap", "set2_game_handicap",
+        "set_handicap",
+    }
+    for bet in open_bets or []:
+        row = dict(bet)
+        snap = dict(row.get("placement_snapshot") or {})
+        p1, p2 = snap.get("p1"), snap.get("p2")
+        if p1 and p2:
+            if str(snap.get("market") or row.get("market") or "") in pick_markets:
+                snap["pick"] = _canonical_player(snap.get("pick") or row.get("selection"), p1, p2)
+            if str(snap.get("market") or row.get("market") or "") == "player_total_games":
+                snap["player"] = _canonical_player(snap.get("player"), p1, p2)
+        row["placement_snapshot"] = snap
+        out.append(row)
+    return out
 
 
 def final_from_match(match: dict, bet: dict) -> dict | None:
@@ -203,7 +249,7 @@ def main() -> int:
     cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
     state = post(args.edge_url, args.oidc_token, {"action": "state"})
     experiment = state.get("experiment") or {}
-    open_bets = state.get("open_bets") or []
+    open_bets = normalize_open_bets_for_settlement(state.get("open_bets") or [])
     final_rows, diag = live_final_rows(open_bets, api_key)
     settlements = build_settlements(open_bets, final_rows, cfg)
 
