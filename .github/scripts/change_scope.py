@@ -10,6 +10,8 @@ paths = subprocess.check_output(args, text=True).splitlines()
 def affects_data(path):
     if path.startswith(('backend/', 'data/', 'frontend/data/')) or path == 'requirements.txt':
         return True
+    if path.startswith('tests/') and path.endswith('.py'):
+        return True
     return path.startswith('scripts/') and not (path.startswith('scripts/verify_') or path in {'scripts/project_health.py', 'scripts/runtime_health.py'})
 
 heavy = any(affects_data(path) for path in paths)
