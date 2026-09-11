@@ -31,6 +31,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import textwrap
 
           path = Path("backend/superbet_direct.py")
           text = path.read_text(encoding="utf-8")
@@ -42,7 +43,8 @@ jobs:
           if start < 0 or end < 0:
               raise SystemExit("browser_probe listing block boundaries not found; refusing blind patch")
 
-          new = '''        # Superbet lazy-loads the tennis listing. A single DOM snapshot only
+          body = '''
+          # Superbet lazy-loads the tennis listing. A single DOM snapshot only
           # exposes the first rendered batch. Accumulate canonical event URLs while
           # scrolling; Direct stays isolated and cannot affect MODEL/RAW or PLAYABLE.
           import time as _time
@@ -108,6 +110,7 @@ jobs:
                   seen.add(canonical)
                   match_urls.append(canonical)
           '''
+          new = textwrap.indent(textwrap.dedent(body).strip("\n"), "        ") + "\n"
           text = text[:start] + new + text[end:]
 
           old_limit = "    max_matches: int = 16,"
