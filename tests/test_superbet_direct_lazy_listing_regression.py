@@ -8,6 +8,7 @@ def test_browser_probe_accumulates_lazy_loaded_listing_urls():
     source = inspect.getsource(direct.browser_probe)
 
     assert "window.scrollTo" in source
+    assert "for _ in range(40)" in source
     assert "stable_rounds" in source
     assert "match_urls.append(canonical)" in source
     assert source.count("driver.page_source") >= 3
