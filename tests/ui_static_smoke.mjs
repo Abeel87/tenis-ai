@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const root='frontend',read=n=>fs.readFileSync(path.join(root,n),'utf8');
-const index=read('index.html'),style=read('style.css'),app=read('app.js'),auth=read('account.js'),sw=read('sw.js'),manifest=JSON.parse(read('manifest.webmanifest'));
+const index=read('index.html'),style=read('style.css'),app=read('app.js'),ineed=read('ineed.js'),auth=read('account.js'),sw=read('sw.js'),manifest=JSON.parse(read('manifest.webmanifest'));
 const scripts=[...index.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:'));
 assert.equal((index.match(/rel="stylesheet"/g)||[]).length,1);
 assert(!index.includes('<style'),'No override style layer');
@@ -15,6 +15,12 @@ assert(/@supabase\/supabase-js@2\.112\.3/.test(index));
 assert(style.includes('env(safe-area-inset-bottom)')&&style.includes('@media(max-width:760px)'));
 assert(app.includes("serviceWorker.register('sw.js').then(r=>r.update())"));
 assert(sw.includes("u.pathname.includes('/data/')"),'Data never served from stale PWA cache');
+assert(!app.includes('async function loadH2H(){await loadHistory()'),'H2H must not fetch the full history payload');
+assert(app.includes("async function loadH2H(){if(!state.detailHistory)"),'H2H uses the compact detail-history artifact');
+assert(app.includes("const backgroundJobs=[['telemetry'"),'Non-critical UI data loads after the primary screen');
+assert(app.includes("target=\"_blank\" rel=\"noopener\">${l} ↗"),'Huge Neuron history stays available without rendering it into the app DOM');
+assert(ineed.includes('let renderGeneration=0')&&ineed.includes('generation===renderGeneration'),'iNeed$ stale async renders are guarded');
+assert(ineed.includes("timeZone:'Europe/Warsaw'")&&ineed.includes('dayKey(Date.now())'),'iNeed$ daily counters use Warsaw time');
 const theme=index.match(/<meta name="theme-color" content="([^"]+)"/)?.[1];
 assert.equal(manifest.theme_color,theme,'Manifest and browser theme colors must stay coherent');
 assert(!manifest.description.includes('?'),'Manifest metadata must keep valid Polish text');
@@ -41,4 +47,4 @@ assert(rows.some(x=>x.source==='Symfonia 2.0'));assert(rows.some(x=>x.pick==='1:
 assert(rows.every(s=>!D.availability(raw,s,null,null).playable),'No offer must fail closed');
 const fixtureDir=process.env.TENIS_UI_FIXTURES||'frontend/data';
 if(fs.existsSync(path.join(fixtureDir,'results.json'))){const results=JSON.parse(fs.readFileSync(path.join(fixtureDir,'results.json'))),s2=JSON.parse(fs.readFileSync(path.join(fixtureDir,'symphony2_current.json')));for(const s of s2.matches){const r=D.find(results,s)||s;const before=JSON.stringify(r);const e=D.allEvents(r,s);assert.equal(JSON.stringify(r),before);for(const leg of s.scored_selections||[])assert(e.some(x=>x.source==='Symfonia 2.0'&&P.signature(x)===P.signature(leg)),'Lost Symphony leg');}assert.equal(D.filterRows(s2.matches,{focus:'all'}).length,s2.matches.length);console.log(`Real feeds: ${results.length} matches, all ${s2.matches.length} Symphony matches and scored events preserved`);}
-console.log('PASS: imports, auth gate, pure retained functions, exact offer, expiry, RAW retention, filters, coupon arithmetic, mobile CSS, PWA metadata/cache');
+console.log('PASS: imports, auth gate, pure retained functions, exact offer, expiry, RAW retention, filters, coupon arithmetic, mobile CSS, PWA metadata/cache, async hardening');
