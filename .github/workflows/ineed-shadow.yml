@@ -2,6 +2,12 @@ name: iNeed$ SHADOW bankroll
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/ineed_runner.py'
+      - 'tests/test_ineed_runner_direct_enrichment.py'
+      - '.github/workflows/ineed-shadow.yml'
   schedule:
     - cron: '15 * * * *'
   workflow_run:
