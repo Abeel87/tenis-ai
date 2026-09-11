@@ -34,25 +34,15 @@ jobs:
 
           path = Path('backend/superbet_market_context.py')
           text = path.read_text(encoding='utf-8')
-          marker = 'selection["operator_price_source"]="oddspapi_current_superbet_offer"'
+          marker = 'operator_price_source":"oddspapi_current_superbet_offer"'
           if marker not in text:
               fn = text.find('def mapped_sanitize(row: dict,meta: dict):')
               end_fn = text.find('\ndef _direct_selection_without_price', fn)
-              target = text.find('                selections.append(selection)', fn)
+              old = '                selections.append(selection)'
+              target = text.find(old, fn)
               if fn < 0 or target < 0 or end_fn < 0 or target > end_fn:
                   raise SystemExit('mapped_sanitize insertion point not found; refusing blind patch')
-              old = '                selections.append(selection)'
-              new = '''                # OddsPapi returns the exact current Superbet price on the active
-                # outcome carrier. Keep it strictly as UI/presentation metadata;
-                # MODEL/RAW, Symphony and PLAYABLE calculations remain unchanged.
-                api_price=base._num(carrier.get("price"))
-                if api_price is None:api_price=base._num(outcome_data.get("price"))
-                if api_price is not None and api_price>=1.0:
-                    selection["odds"]=round(float(api_price),4)
-                    selection["operator_price_source"]="oddspapi_current_superbet_offer"
-                    selection["operator_price_metadata_only"]=True
-                    selection["prices_used"]=False
-                selections.append(selection)'''
+              new = '                api_price=base._num(carrier.get("price"));api_price=api_price if api_price is not None else base._num(outcome_data.get("price"));selection.update({"odds":round(float(api_price),4),"operator_price_source":"oddspapi_current_superbet_offer","operator_price_metadata_only":True,"prices_used":False}) if api_price is not None and api_price>=1.0 else None;selections.append(selection)'
               text = text[:target] + new + text[target + len(old):]
               path.write_text(text, encoding='utf-8')
 
