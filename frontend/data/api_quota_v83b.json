@@ -1,17 +1,17 @@
 {
   "version": "v8.3B",
-  "updated_at": "2026-09-11T06:13:15.523570+00:00",
+  "updated_at": "2026-09-11T08:00:03.293229+00:00",
   "status": "ready",
   "quota_day": "2026-09-11",
   "daily_limit": 10000,
-  "calls_at_begin": 821,
-  "remaining_at_begin": 9179,
-  "managed_calls_this_run": 25,
-  "remaining_estimate": 9154,
+  "calls_at_begin": 847,
+  "remaining_at_begin": 9153,
+  "managed_calls_this_run": 328,
+  "remaining_estimate": 8825,
   "per_minute": 300,
   "categories": {
     "fixtures": {
-      "calls": 5,
+      "calls": 6,
       "policy": {
         "daily_fraction": 0.08,
         "run_cap": 12,
@@ -21,7 +21,7 @@
       }
     },
     "pbp_current": {
-      "calls": 181,
+      "calls": 248,
       "policy": {
         "daily_fraction": 0.42,
         "run_cap": 180,
@@ -31,7 +31,7 @@
       }
     },
     "pbp_tracker": {
-      "calls": 39,
+      "calls": 41,
       "policy": {
         "daily_fraction": 0.07,
         "run_cap": 36,
@@ -41,7 +41,7 @@
       }
     },
     "history_settle": {
-      "calls": 42,
+      "calls": 60,
       "policy": {
         "daily_fraction": 0.18,
         "run_cap": 48,
@@ -51,7 +51,7 @@
       }
     },
     "history_backfill": {
-      "calls": 480,
+      "calls": 720,
       "policy": {
         "daily_fraction": 0.12,
         "run_cap": 120,
@@ -62,16 +62,16 @@
     }
   },
   "last_allocation": {
-    "role": "pbp_current",
-    "requested": 560,
-    "budget": 180,
+    "role": "history_backfill",
+    "requested": 240,
+    "budget": 240,
     "reason": "ok",
-    "remaining_before": 9178,
-    "role_spent_today": 157,
-    "daily_cap": 4200,
+    "remaining_before": 9065,
+    "role_spent_today": 480,
+    "daily_cap": 3000,
     "reserve": 2000,
-    "priority": "critical-current",
-    "at": "2026-09-11T06:10:31.098980+00:00"
+    "priority": "background",
+    "at": "2026-09-11T07:56:51.837503+00:00"
   },
   "canonical_module": "backend/api_quota.py",
   "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
