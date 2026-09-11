@@ -8,7 +8,7 @@ const A=()=>window.TenisAccount;
 let rows=[],query='',generation=0,loading=false;
 function isAdmin(){return A()?.authenticated&&A()?.role==='admin'}
 function currentRoute(){return location.hash==='#admin/users'}
-function fmt(x){const d=new Date(x||'');return Number.isFinite(d.getTime())?d.toLocaleString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
+function fmt(x){const d=new Date(x||'');return Number.isFinite(d.getTime())?d.toLocaleString('pl-PL',{timeZone:'Europe/Warsaw',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
 function badge(role){return `<span class="admin-user-role ${esc(role)}">${esc(String(role||'user').toUpperCase())}</span>`}
 function mount(){
   if(!isAdmin()||!currentRoute())return;

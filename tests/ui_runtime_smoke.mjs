@@ -13,7 +13,7 @@ function element(s){if(!elements.has(s))elements.set(s,node());return elements.g
 const storage=new Map();
 let role='user';
 const account={authenticated:true,user:{id:'owner'},profile:{username:'Tester'},get role(){return role},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},upsert(row){writes.push({table,row});q.row=row;return q},single(){return Promise.resolve({data:q.row})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return q},rpc(){return Promise.resolve({data:[]})}},signOut(){account.authenticated=false;handlers['tenis-auth']()}};
-const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{timers.push(f);return timers.length},requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('superbet_direct_current')?(directReads++,feed('superbet_direct_current.json')||{}):path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
+const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{timers.push(f);return timers.length},requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('neuro_shadow_current_v936')?(feed('neuro_shadow_current_v936.json')||{}):path.includes('meta.json')?(feed('meta.json')||{}):path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('superbet_direct_current')?(directReads++,feed('superbet_direct_current.json')||{}):path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
 ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
 const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
 for(const name of scripts)vm.runInContext(read(name),ctx,{filename:name});
@@ -70,6 +70,17 @@ if(existingH2H){
  else assert(html.includes('bez potwierdzonego zwycięzcy.'),'H2H without a confirmed winner stays explicit instead of fabricating a bar');
 }
 assert(read('app.js').includes('class="h2h-bar"'),'H2H comparison bar renderer remains present');
+const overview=await route('#admin/dashboard');
+assert(overview.includes('PRZEGLĄD')&&overview.includes('TECHNICZNE'));
+assert(!overview.includes('<pre>'),'Overview must not expose raw reports');
+const neuron=feed('neuro_shadow_current_v936.json');
+if(neuron?.status){assert(overview.includes(neuron.status),'Read real published Neuron artifact');if(!neuron.generated_at&&!neuron.updated_at)assert(overview.includes('świeżość niepotwierdzona'),'Do not fabricate freshness without timestamp')}
+assert(!/\d{4}-\d{2}-\d{2}T\d{2}:/.test(overview),'Overview formats timestamps');
+const technicalView=await route('#admin/models');
+assert(technicalView.includes('data/neuro_shadow_current_v936.json'));
+assert(technicalView.includes('data/neuro_shadow_neural_v936.json'));
+assert((await route('#admin/data')).includes('Metadane publikacji'));
+console.log('PASS Stage 3: admin hierarchy, canonical Neuron artifact, explicit freshness and technical reports');
 console.log('PASS Stage 2: real comparison, form and H2H route rendering');
 const readsBefore=directReads,routeBefore=ctx.location.hash;
 for(const tick of timers)await tick();await flush();
