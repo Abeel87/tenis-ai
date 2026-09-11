@@ -123,9 +123,11 @@ jobs:
           PY
 
       - name: Focused checks
+        env:
+          PYTHONPATH: .
         run: |
           python -m py_compile backend/superbet_direct.py
-          pytest -q tests/test_superbet_direct.py
+          python -m pytest -q tests/test_superbet_direct.py
 
       - name: Refresh isolated Direct sidecar live
         run: python backend/superbet_direct.py refresh-selected
