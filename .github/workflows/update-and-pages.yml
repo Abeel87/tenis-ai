@@ -123,12 +123,21 @@ jobs:
           API_QUOTA_HISTORY_BACKFILL_RUN_CAP: '240'
           HISTORY_BACKFILL_MIN_INTERVAL_HOURS: '0'
           HISTORY_BACKFILL_MAX_CACHE_MB: '900'
+          HISTORY_PLAYER_PRIORITY_MAX_PLAYERS: '24'
+          HISTORY_PLAYER_PRIORITY_MAX_LIST_PAGES: '2'
+          HISTORY_PLAYER_PRIORITY_MAX_DOWNLOADS_PER_PLAYER: '12'
+          HISTORY_PLAYER_PRIORITY_COOLDOWN_HOURS: '12'
         run: |
-          # Three bounded passes can spend up to 720 calls per build, but the
-          # central quota guard caps historical spend at 60% of the daily quota
-          # and always preserves a 20% reserve for current/settlement traffic.
-          for pass in 1 2 3; do
-            echo "Historical booster pass ${pass}/3"
+          # Spend the first bounded pass on players the current application knows,
+          # preferring current players and the thinnest caches. Keep the same strict
+          # from-start quality gate and the same central history quota.
+          echo "Historical booster pass 1/3: player-priority"
+          python backend/history_player_priority_backfill.py
+
+          # Preserve two broad chronological passes as a fallback/discovery path.
+          # Total maximum remains 3 x 240 = 720 calls per build.
+          for pass in 2 3; do
+            echo "Historical booster pass ${pass}/3: global fallback"
             python backend/history_backfill_v83.py
           done
       - name: Optional TabPFN V2 runtime v8.4A
