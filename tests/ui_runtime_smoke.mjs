@@ -15,7 +15,7 @@ let role='user';
 const account={authenticated:true,user:{id:'owner'},profile:{username:'Tester'},get role(){return role},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},upsert(row){writes.push({table,row});q.row=row;return q},single(){return Promise.resolve({data:q.row})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return q},rpc(){return Promise.resolve({data:[]})}},signOut(){account.authenticated=false;handlers['tenis-auth']()}};
 const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{timers.push(f);return timers.length},requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('superbet_direct_current')?(directReads++,feed('superbet_direct_current.json')||{}):path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
 ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
-const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
+const scripts=[...read('index.html').matchAll(/<script src=\"([^\"]+)\"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
 for(const name of scripts)vm.runInContext(read(name),ctx,{filename:name});
 const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve()};await flush();
 const route=async hash=>{ctx.location.hash=hash;handlers.hashchange();await flush();return element('#app').innerHTML};
@@ -30,23 +30,23 @@ const click=async attrs=>{const b={dataset:{},matches:()=>false,hasAttribute:k=>
 await route('#symphony');
 const scored=symphony.matches.flatMap(m=>ctx.TenisPresentation.allEvents(ctx.TenisPresentation.find(matches,m)||m,m)).filter(s=>s.source==='Symfonia 2.0');
 if(scored.length){
- const cards=()=> (element('#app').innerHTML.match(/class="recommendation-card"/g)||[]).length;
+ const cards=()=> (element('#app').innerHTML.match(/class=\"recommendation-card\"/g)||[]).length;
  assert(cards()>0&&cards()<=3,'Default TOP 3');
  await click({dataset:{sLimit:'5'}});assert(cards()<=5,'TOP 5 limit');
  const choice=ctx.TenisPresentation.marketChoice(scored[0]);
  handlers.change({target:{id:'symphony-market',value:choice}});
  assert(element('#symphony-results').innerHTML.includes('recommendation-card'),'Existing market has recommendations');
- await route('#symphony');assert(element('#app').innerHTML.includes(`value="${choice}" selected`),'Market choice survives routing');
+ await route('#symphony');assert(element('#app').innerHTML.includes(`value=\"${choice}\" selected`),'Market choice survives routing');
 }
 await route('#matches');
 await click({dataset:{focus:'all'},closest:()=>({dataset:{filterScope:'matches'}})});
-assert.equal((element('#app').innerHTML.match(/class="match-card"/g)||[]).length,matches.length,'Tournament sections preserve every fixture');
+assert.equal((element('#app').innerHTML.match(/class=\"match-card\"/g)||[]).length,matches.length,'Tournament sections preserve every fixture');
 const tournament=ctx.TenisPresentation.tournamentGroups(matches)[0].key;
 handlers.toggle({target:{dataset:{tournament},open:true}});
 ctx.scrollY=640;handlers.scroll();
 await route('#match/'+encodeURIComponent(ctx.TenisPresentation.key(matches[0]))+'/summary');
 await route('#matches');assert.equal(ctx.scrollY,640,'Hash navigation restores list position');
-assert(element('#app').innerHTML.includes(`data-tournament="${ctx.TenisPresentation.esc(tournament)}" open`),'Expanded tournament survives return');
+assert(element('#app').innerHTML.includes(`data-tournament=\"${ctx.TenisPresentation.esc(tournament)}\" open`),'Expanded tournament survives return');
 await route('#coupons');
 console.log('PASS: TOP controls, market state, tournament fixture retention, expanded section and scroll restoration');
 handlers.input({target:{id:'slip-title',value:'Weekend',matches:()=>false}});
@@ -62,7 +62,14 @@ const rich=matches.find(m=>m.match_win&&m.player_intelligence_v85?.profiles?.p1?
 if(rich){const key=encodeURIComponent(ctx.TenisPresentation.key(rich));const summary=await route('#match/'+key+'/summary');assert(summary.includes('SZYBKA OCENA'));assert(summary.includes('Porównanie zawodników'));assert(summary.includes('Przewaga'));assert((await route('#match/'+key+'/stats')).includes('Trend:'));}
 const realHistory=feed('history.json')||[];
 const existingH2H=matches.find(m=>ctx.TenisMatchDetail.historyRows(realHistory,m,'p1',true).length);
-if(existingH2H){const html=await route('#match/'+encodeURIComponent(ctx.TenisPresentation.key(existingH2H))+'/h2h');assert(html.includes('h2h-bar'));assert(html.includes('Zwycięzca:'));}
+if(existingH2H){
+ const rows=ctx.TenisMatchDetail.historyRows(realHistory,existingH2H,'p1',true);
+ const html=await route('#match/'+encodeURIComponent(ctx.TenisPresentation.key(existingH2H))+'/h2h');
+ assert(html.includes('Zwycięzca:'),'H2H rows expose winner status without inventing a result');
+ if(rows.some(r=>ctx.TenisMatchDetail.winnerSide(r)))assert(html.includes('h2h-bar'),'Confirmed H2H winner renders the comparison bar');
+ else assert(html.includes('bez potwierdzonego zwycięzcy.'),'H2H without a confirmed winner stays explicit instead of fabricating a bar');
+}
+assert(read('app.js').includes('class=\"h2h-bar\"'),'H2H comparison bar renderer remains present');
 console.log('PASS Stage 2: real comparison, form and H2H route rendering');
 const readsBefore=directReads,routeBefore=ctx.location.hash;
 for(const tick of timers)await tick();await flush();
