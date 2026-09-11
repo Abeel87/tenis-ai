@@ -2,6 +2,12 @@ name: iNeed$ SHADOW bankroll
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/ineed_*.py'
+      - 'config/ineed_superbet_pl.json'
+      - '.github/workflows/ineed-shadow.yml'
   schedule:
     - cron: '15 * * * *'
   workflow_run:
