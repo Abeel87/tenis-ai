@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const root='frontend',read=n=>fs.readFileSync(path.join(root,n),'utf8');
-const index=read('index.html'),style=read('style.css'),app=read('app.js'),auth=read('account.js');
+const index=read('index.html'),style=read('style.css'),app=read('app.js'),auth=read('account.js'),sw=read('sw.js'),manifest=JSON.parse(read('manifest.webmanifest'));
 const scripts=[...index.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:'));
 assert.equal((index.match(/rel="stylesheet"/g)||[]).length,1);
 assert(!index.includes('<style'),'No override style layer');
@@ -14,7 +14,12 @@ assert(!auth.includes('user_metadata'),'Roles cannot be user-editable metadata')
 assert(/@supabase\/supabase-js@2\.112\.3/.test(index));
 assert(style.includes('env(safe-area-inset-bottom)')&&style.includes('@media(max-width:760px)'));
 assert(app.includes("serviceWorker.register('sw.js').then(r=>r.update())"));
-assert(read('sw.js').includes("u.pathname.includes('/data/')"),'Data never served from stale PWA cache');
+assert(sw.includes("u.pathname.includes('/data/')"),'Data never served from stale PWA cache');
+const theme=index.match(/<meta name="theme-color" content="([^"]+)"/)?.[1];
+assert.equal(manifest.theme_color,theme,'Manifest and browser theme colors must stay coherent');
+assert(!manifest.description.includes('?'),'Manifest metadata must keep valid Polish text');
+for(const icon of manifest.icons||[])assert(fs.existsSync(path.join(root,icon.src)),'Missing manifest icon '+icon.src);
+for(const f of [...scripts,'style.css','manifest.webmanifest','favicon.png','brand-symbol.png'])assert(sw.includes(`'${f}'`),'PWA core missing runtime asset '+f);
 for(const f of scripts){assert(fs.existsSync(path.join(root,f)),'Missing import '+f);new vm.Script(read(f),{filename:f});}
 const noUI=['multi-model.js','model-guide.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','playable-ui.js','clean-core-v80.js','serve-props-v72.js','player-analytics.js','match-time.js','early-hold-paths.js','match-tendencies.js','performance-center.js'];
 for(const f of noUI)assert(!/<(?:div|section|article|button|details|table)\b/.test(read(f)),f+' retains an old renderer');
@@ -36,4 +41,4 @@ assert(rows.some(x=>x.source==='Symfonia 2.0'));assert(rows.some(x=>x.pick==='1:
 assert(rows.every(s=>!D.availability(raw,s,null,null).playable),'No offer must fail closed');
 const fixtureDir=process.env.TENIS_UI_FIXTURES||'frontend/data';
 if(fs.existsSync(path.join(fixtureDir,'results.json'))){const results=JSON.parse(fs.readFileSync(path.join(fixtureDir,'results.json'))),s2=JSON.parse(fs.readFileSync(path.join(fixtureDir,'symphony2_current.json')));for(const s of s2.matches){const r=D.find(results,s)||s;const before=JSON.stringify(r);const e=D.allEvents(r,s);assert.equal(JSON.stringify(r),before);for(const leg of s.scored_selections||[])assert(e.some(x=>x.source==='Symfonia 2.0'&&P.signature(x)===P.signature(leg)),'Lost Symphony leg');}assert.equal(D.filterRows(s2.matches,{focus:'all'}).length,s2.matches.length);console.log(`Real feeds: ${results.length} matches, all ${s2.matches.length} Symphony matches and scored events preserved`);}
-console.log('PASS: imports, auth gate, pure retained functions, exact offer, expiry, RAW retention, filters, coupon arithmetic, mobile CSS');
+console.log('PASS: imports, auth gate, pure retained functions, exact offer, expiry, RAW retention, filters, coupon arithmetic, mobile CSS, PWA metadata/cache');
