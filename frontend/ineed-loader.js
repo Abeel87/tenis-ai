@@ -1,1 +1,1 @@
-(()=>{'use strict';if(typeof document==='undefined')return;const s=document.createElement('script');s.src='ineed.js';s.defer=true;document.body.appendChild(s)})();
+(()=>{'use strict';if(typeof document==='undefined'||typeof document.createElement!=='function'||!document.body||typeof document.body.appendChild!=='function')return;const s=document.createElement('script');s.src='ineed.js';s.defer=true;document.body.appendChild(s)})();
