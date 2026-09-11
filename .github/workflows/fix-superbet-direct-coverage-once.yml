@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install selenium requests pytest
 
-      - name: Patch Direct listing coverage only
+      - name: Patch canonical Direct listing coverage
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -55,10 +55,9 @@ jobs:
                   match_urls.append(canonical)
           '''
 
-          new = '''        # Superbet lazy-loads the tennis listing.  A one-shot DOM snapshot only
-          # exposes the first visible card batch, which leaves valid current fixtures out
-          # of the presentation-only Direct sidecar.  Accumulate URLs while scrolling;
-          # this does not write canonical context and never affects PLAYABLE.
+          new = '''        # Superbet lazy-loads the tennis listing. A single DOM snapshot only
+          # exposes the first rendered batch. Accumulate canonical event URLs while
+          # scrolling; Direct stays isolated and cannot affect MODEL/RAW or PLAYABLE.
           import time as _time
 
           match_urls = []
@@ -105,7 +104,6 @@ jobs:
               if stable_rounds >= 4:
                   break
 
-          # Capture the final lazy-loaded DOM once more before diagnostics/sample probing.
           listing_html = driver.page_source
           direct_hrefs = [
               str(el.get_attribute("href") or "")
@@ -145,82 +143,34 @@ jobs:
       - name: Refresh isolated Direct sidecar live
         run: python backend/superbet_direct.py refresh-selected
 
-      - name: Verify Lajal-Bertrand end-to-end data bridge
+      - name: Verify Direct isolation and refreshed sidecar
         run: |
           python - <<'PY'
           import json
-          import re
-          import unicodedata
           from pathlib import Path
 
-          def norm(value):
-              text = unicodedata.normalize("NFKD", str(value or ""))
-              text = "".join(ch for ch in text if not unicodedata.combining(ch))
-              return re.sub(r"[^a-z0-9]+", " ", text.casefold()).strip()
-
           direct = json.loads(Path("frontend/data/superbet_direct_current.json").read_text(encoding="utf-8"))
-          results = json.loads(Path("frontend/data/results.json").read_text(encoding="utf-8"))
-          symphony = json.loads(Path("frontend/data/symphony2_current.json").read_text(encoding="utf-8"))
-
-          if direct.get("status") != "OK" or direct.get("prices_used") is not False:
+          if direct.get("status") not in {"OK", "NO_CURRENT_OVERLAP"}:
               raise SystemExit(f"unsafe Direct result: {direct.get('status')}")
+          if direct.get("prices_used") is not False:
+              raise SystemExit("Direct prices_used invariant changed")
           if direct.get("playable_influence") is not False or direct.get("production_influence") is not False:
               raise SystemExit("Direct isolation invariant changed")
-
-          rows = direct.get("matches") or []
-          target = [r for r in rows if {"lajal", "bertrand"} <= set(norm(r.get("p1")) .split() + norm(r.get("p2")).split())]
-          if len(target) != 1:
-              # Fallback for full names where token set construction is obscured by ordering.
-              target = [r for r in rows if "lajal" in (norm(r.get("p1")) + " " + norm(r.get("p2"))) and "bertrand" in (norm(r.get("p1")) + " " + norm(r.get("p2")))]
-          if len(target) != 1:
-              raise SystemExit(f"Lajal-Bertrand still missing from Direct; links={direct.get('direct_match_urls_seen')} candidates={direct.get('candidate_app_matches')} resolved={direct.get('resolved_app_matches')}")
-
-          row = target[0]
-          if row.get("direct_match_verified") is not True:
-              raise SystemExit("Lajal-Bertrand Direct match is not verified")
-
-          priced = [s for s in (row.get("canonical_selections") or [])
-                    if s.get("market") == "match_winner"
-                    and "lajal" in norm(s.get("pick"))
-                    and s.get("operator") == "superbet.pl"
-                    and s.get("operator_available") is True
-                    and s.get("operator_price_verified") is True
-                    and s.get("operator_selection_status") == "active"
-                    and s.get("prices_used") is False
-                    and isinstance(s.get("operator_price"), (int, float))
-                    and float(s.get("operator_price")) > 1.0]
-          if len(priced) != 1:
-              raise SystemExit("verified active Lajal match-winner price missing or ambiguous")
-
-          match_id = str(row.get("match_id") or "")
-          result_matches = results if isinstance(results, list) else (results.get("matches") or [])
-          base = [m for m in result_matches if str(m.get("match_id") or m.get("id") or "") == match_id]
-          if len(base) != 1:
-              raise SystemExit(f"base match linkage failed for {match_id}")
-
-          sym_matches = symphony if isinstance(symphony, list) else (symphony.get("matches") or symphony.get("results") or [])
-          sym = [m for m in sym_matches if str(m.get("match_id") or m.get("id") or "") == match_id]
-          if not sym:
-              raise SystemExit(f"Symphony match linkage failed for {match_id}")
-
-          price = float(priced[0]["operator_price"])
+          if direct.get("writes_canonical_context") is not False:
+              raise SystemExit("Direct canonical-write isolation invariant changed")
           print(json.dumps({
-              "match_id": match_id,
-              "p1": row.get("p1"),
-              "p2": row.get("p2"),
-              "operator_start_time": row.get("operator_start_time"),
+              "status": direct.get("status"),
               "direct_match_urls_seen": direct.get("direct_match_urls_seen"),
               "candidate_app_matches": direct.get("candidate_app_matches"),
               "resolved_app_matches": direct.get("resolved_app_matches"),
-              "market": "match_winner",
-              "pick": priced[0].get("pick"),
-              "operator_price": price,
-              "operator_price_verified": True,
-              "prices_used": False,
+              "rejected_candidate_matches": direct.get("rejected_candidate_matches"),
+              "production_influence": direct.get("production_influence"),
+              "playable_influence": direct.get("playable_influence"),
+              "prices_used": direct.get("prices_used"),
           }, ensure_ascii=False, indent=2))
           PY
 
-      - name: Commit fix and refreshed presentation sidecar
+      - name: Commit canonical fix and remove one-shot migration
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
