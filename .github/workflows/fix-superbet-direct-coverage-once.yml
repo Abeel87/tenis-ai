@@ -34,26 +34,13 @@ jobs:
 
           path = Path("backend/superbet_direct.py")
           text = path.read_text(encoding="utf-8")
-
-          old = '''        listing_html = driver.page_source
-          direct_hrefs = [
-              str(el.get_attribute("href") or "")
-              for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
-          ]
-          match_urls = []
-          seen = set()
-          for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
-              absolute = urljoin(BASE, candidate)
-              if not _allowed_url(absolute):
-                  continue
-              path = urlparse(absolute).path
-              if not re.fullmatch(r"/kursy/tenis/.+-\\d+", path):
-                  continue
-              canonical = f"{BASE}{path}"
-              if canonical not in seen:
-                  seen.add(canonical)
-                  match_urls.append(canonical)
-          '''
+          fn = text.find("def browser_probe(timeout: int = 25) -> dict:")
+          if fn < 0:
+              raise SystemExit("browser_probe not found; refusing blind patch")
+          start = text.find("        listing_html = driver.page_source", fn)
+          end = text.find("\n        result = {", start)
+          if start < 0 or end < 0:
+              raise SystemExit("browser_probe listing block boundaries not found; refusing blind patch")
 
           new = '''        # Superbet lazy-loads the tennis listing. A single DOM snapshot only
           # exposes the first rendered batch. Accumulate canonical event URLs while
@@ -120,11 +107,8 @@ jobs:
               if canonical not in seen:
                   seen.add(canonical)
                   match_urls.append(canonical)
-          '''
-
-          if old not in text:
-              raise SystemExit("expected browser listing block not found; refusing blind patch")
-          text = text.replace(old, new, 1)
+'''
+          text = text[:start] + new + text[end:]
 
           old_limit = "    max_matches: int = 16,"
           old_cap = "    limit = max(1, min(int(max_matches or 1), 32))"
