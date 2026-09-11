@@ -182,7 +182,7 @@ def mapped_sanitize(row: dict,meta: dict):
                 selection={"market":market,"pick":pick,"line":line,"checkpoint":checkpoint,"player":player,"market_name":market_name,"market_id":market_id,"outcome_id":outcome_id,"main_line":bool(carrier.get("mainLine",outcome_data.get("mainLine",False))),"operator_available":True,"operator_line_verified":True}
                 if market in mapping.LINE_MARKETS:
                     selection["operator_line_source"]=line_source;selection["fixture_line_verified"]=True;selection["fixture_line_contract_version"]=STRICT_FIXTURE_LINE_VERSION
-                selections.append(selection)
+                api_price=base._num(carrier.get("price"));api_price=api_price if api_price is not None else base._num(outcome_data.get("price"));selection.update({"odds":round(float(api_price),4),"operator_price_source":"oddspapi_current_superbet_offer","operator_price_metadata_only":True,"prices_used":False}) if api_price is not None and api_price>=1.0 else None;selections.append(selection)
     dedup={}
     for selection in selections:
         sig=(selection.get("market"),base._norm(selection.get("pick")),base._line(selection.get("line")),int(selection.get("checkpoint") or 0),base._name_key(selection.get("player")))

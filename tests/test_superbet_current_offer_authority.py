@@ -362,3 +362,25 @@ def test_context_keeps_strict_parser_version_as_cache_invalidation_owner():
     assert 'availability["runtime_adapter_version"]=STRICT_FIXTURE_LINE_VERSION' in text
     assert 'availability["runtime_adapter_version"]=VERSION' not in text
     assert context.STRICT_FIXTURE_LINE_VERSION != context.VERSION
+
+
+def test_context_preserves_oddspapi_price_as_presentation_metadata_only():
+    markets = _winner_markets()
+    markets["1"]["outcomes"]["1"]["players"]["a"]["price"] = 1.83
+    markets["1"]["outcomes"]["2"]["players"]["b"]["price"] = 2.05
+    row = {
+        "fixtureId": "f-price-ui",
+        "participant1Name": "A",
+        "participant2Name": "B",
+        "startTime": "2026-09-11T12:00:00Z",
+        "bookmakerOdds": {"superbet.pl": _book(markets)},
+    }
+    out = context.mapped_sanitize(row, _market_meta())
+    assert out is not None
+    by_pick = {selection["pick"]: selection for selection in out["canonical_selections"]}
+    assert by_pick["A"]["odds"] == 1.83
+    assert by_pick["B"]["odds"] == 2.05
+    assert by_pick["A"]["operator_price_source"] == "oddspapi_current_superbet_offer"
+    assert by_pick["A"]["operator_price_metadata_only"] is True
+    assert by_pick["A"]["prices_used"] is False
+    assert by_pick["A"]["operator_available"] is True
