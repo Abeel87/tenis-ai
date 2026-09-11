@@ -47,8 +47,10 @@ if(!sig||!api.freshContext(fresh))return null;
 const name=v=>norm(v).split(' ').sort().join(' ');
 const rows=(Array.isArray(feed.matches)?feed.matches:[]).filter(r=>String(r.match_id)===key(m)&&r.direct_match_verified===true&&name(r.p1)===name(m.p1)&&name(r.p2)===name(m.p2));
 if(rows.length!==1)return null;
-const r=rows[0],start=Date.parse(r.operator_start_time);
-if(!Number.isFinite(start)||start<=Date.now())return null;
+const r=rows[0],start=Date.parse(r.operator_start_time),scheduled=Date.parse(m.scheduled_time);
+// Match the existing backend fixture tolerance (MAX_MATCH_TIME_DELTA_HOURS=4).
+// A verified ID does not authorize reusing a price for another day's fixture.
+if(!Number.isFinite(start)||!Number.isFinite(scheduled)||start<=Date.now()||Math.abs(start-scheduled)>4*3600000)return null;
 try{const url=new URL(r.event_url);if(url.protocol!=='https:'||url.hostname!=='superbet.pl')return null}catch{return null}
 const matches=(Array.isArray(r.canonical_selections)?r.canonical_selections:[]).filter(x=>x.operator==='superbet.pl'&&x.operator_available===true&&x.operator_price_verified===true&&x.prices_used===false&&x.operator_selection_status!=='suspended'&&(!x.operator_selection_status||x.operator_selection_status==='active')&&api.signature(x)===sig&&num(x.set_no)===num(s.set_no??(/^set([123])_/.exec(api.canonicalMarket(s.market))?.[1])));
 // Ambiguous duplicate prices fail closed; no nearest market/line or old-price fallback.

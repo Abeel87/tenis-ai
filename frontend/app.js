@@ -79,6 +79,15 @@ document.addEventListener('change',e=>{if(!A.authenticated)return;const el=e.tar
 document.addEventListener('input',e=>{if(!A.authenticated)return;const el=e.target;if(el.matches('input[data-filter="query"]')){const isSym=el.closest('[data-filter-scope]').dataset.filterScope==='symphony';(isSym?state.sFilter:state.filter).query=el.value;$(isSym?'#symphony-results':'#match-results').innerHTML=isSym?symphonyList():matchList()}if(el.id==='player-query')document.querySelectorAll('[data-player-name]').forEach(x=>x.hidden=!x.dataset.playerName.includes(D.norm(el.value)));if(el.id==='slip-title'){state.slip.title=el.value;persistDraft()}if(el.id==='slip-stake'){state.slip.stake=Math.max(0,D.num(el.value)||0);persistDraft();$('#coupon-totals').innerHTML=totalsHtml(D.couponTotals(state.slip.legs,state.slip.stake))}});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(()=>{});
 if(A.authenticated){state.userId=A.user.id;loadData()}
-setInterval(()=>{if(!A.authenticated||document.hidden)return;document.querySelectorAll('[data-refresh-event]').forEach(el=>{const m=match(el.dataset.eventMatch),index=Number(el.dataset.refreshEvent),s=m&&events(m)[index];if(!s)return;const replacement=document.createElement('div');replacement.innerHTML=eventHtml(m,s,index,el.dataset.compact==='true');const next=replacement.firstElementChild,control=el.querySelector('label');next.querySelector('label').replaceWith(control);el.replaceWith(next)});},30000);
+let directRefreshAt=0,directRefreshPending=false;
+async function refreshDirectPrices(){
+ if(!A.authenticated||document.hidden||state.loading||directRefreshPending||Date.now()-directRefreshAt<60000)return;
+ directRefreshAt=Date.now();directRefreshPending=true;
+ const generation=loadGeneration,uid=A.user.id;
+ try{const feed=await D.json('data/superbet_direct_current.json',true);if(generation===loadGeneration&&A.authenticated&&A.user?.id===uid)state.direct=feed}
+ catch{/* Retained prices still pass the existing freshness check on every render. */}
+ finally{directRefreshPending=false}
+}
+setInterval(async()=>{if(!A.authenticated||document.hidden)return;await refreshDirectPrices();if(!A.authenticated||document.hidden)return;document.querySelectorAll('[data-refresh-event]').forEach(el=>{const m=match(el.dataset.eventMatch),index=Number(el.dataset.refreshEvent),s=m&&events(m)[index];if(!s)return;const replacement=document.createElement('div');replacement.innerHTML=eventHtml(m,s,index,el.dataset.compact==='true');const next=replacement.firstElementChild,control=el.querySelector('label');next.querySelector('label').replaceWith(control);el.replaceWith(next)});},30000);
 window.TENIS_AI_PROJECT_UI={findMatch:match};
 })();

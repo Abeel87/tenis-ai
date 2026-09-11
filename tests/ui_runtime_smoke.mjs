@@ -6,13 +6,14 @@ const fixtureDir=process.env.TENIS_UI_FIXTURES||'frontend/data';
 const feed=n=>fs.existsSync(fixtureDir+'/'+n)?JSON.parse(fs.readFileSync(fixtureDir+'/'+n)):null;
 const matches=feed('results.json')||[{id:1,p1:'Alpha',p2:'Beta',scheduled_time:new Date(Date.now()+3600000).toISOString(),first_set_win:{Alpha:60,Beta:40},game_states:{2:{'1:1':65}}},{id:2,p1:'Gamma',p2:'Delta',scheduled_time:new Date(Date.now()+3600000).toISOString(),first_set_win:{Gamma:60,Delta:40}}];
 const symphony=feed('symphony2_current.json')||{matches};
+const timers=[];let directReads=0;
 const handlers={},elements=new Map(),writes=[];
 function node(){return {innerHTML:'',textContent:'',hidden:false,disabled:false,dataset:{},classList:{toggle(){}},setAttribute(){},removeAttribute(){},querySelectorAll(){return[]},querySelector(s){return element(s)}}}
 function element(s){if(!elements.has(s))elements.set(s,node());return elements.get(s)}
 const storage=new Map();
 let role='user';
 const account={authenticated:true,user:{id:'owner'},profile:{username:'Tester'},get role(){return role},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},upsert(row){writes.push({table,row});q.row=row;return q},single(){return Promise.resolve({data:q.row})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return q},rpc(){return Promise.resolve({data:[]})}},signOut(){account.authenticated=false;handlers['tenis-auth']()}};
-const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
+const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{timers.push(f);return timers.length},requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('superbet_direct_current')?(directReads++,feed('superbet_direct_current.json')||{}):path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
 ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
 const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
 for(const name of scripts)vm.runInContext(read(name),ctx,{filename:name});
@@ -63,6 +64,14 @@ const realHistory=feed('history.json')||[];
 const existingH2H=matches.find(m=>ctx.TenisMatchDetail.historyRows(realHistory,m,'p1',true).length);
 if(existingH2H){const html=await route('#match/'+encodeURIComponent(ctx.TenisPresentation.key(existingH2H))+'/h2h');assert(html.includes('h2h-bar'));assert(html.includes('Zwycięzca:'));}
 console.log('PASS Stage 2: real comparison, form and H2H route rendering');
+const readsBefore=directReads,routeBefore=ctx.location.hash;
+for(const tick of timers)await tick();await flush();
+assert.equal(directReads,readsBefore+1,'Open UI fetches new Direct prices past the JSON cache');
+assert.equal(ctx.location.hash,routeBefore,'Price refresh preserves the active route');
+for(const tick of timers)await tick();await flush();
+assert.equal(directReads,readsBefore+1,'Repeated ticks do not refetch inside one minute');
+console.log('PASS: automatic Direct refresh, cache bypass, throttle and route preservation');
+
 account.authenticated=false;handlers['tenis-auth']();assert.equal(element('#app').innerHTML,'');assert(element('#coupon-bar').hidden);
 console.log('PASS: route runtime, all Symphony cards, expansion, cross-match selection, coupon persistence contract, role isolation, logout cleanup');
 // Exercise the real authentication owner against a controlled Supabase boundary.
