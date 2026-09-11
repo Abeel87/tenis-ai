@@ -1,6 +1,6 @@
 {
   "version": "v8.6-shadow",
-  "generated_at": "2026-09-11T05:52:37.074293+00:00",
+  "generated_at": "2026-09-11T06:12:09.602499+00:00",
   "status": "ACTIVE",
   "production_mode": "shadow_only",
   "production_changed": false,
@@ -211,77 +211,9 @@
     }
   },
   "tabpfn_native_ab": {
-    "status": "ok",
-    "variants": {
-      "native_300_e1": {
-        "status": "ok",
-        "train_rows": 300,
-        "n_estimators": 1,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 1049,
-          "coverage": 1.0,
-          "brier": 0.20851,
-          "log_loss": 0.60826,
-          "selected_n": 692,
-          "selected_coverage": 0.6597,
-          "accuracy": 74.3,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 1044,
-          "coverage": 1.0,
-          "brier": 0.21781,
-          "log_loss": 0.62944,
-          "selected_n": 750,
-          "selected_coverage": 0.7184,
-          "accuracy": 71.5,
-          "threshold": 65.0
-        }
-      },
-      "native_600_e4": {
-        "status": "ok",
-        "train_rows": 600,
-        "n_estimators": 4,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 1049,
-          "coverage": 1.0,
-          "brier": 0.21581,
-          "log_loss": 0.62834,
-          "selected_n": 595,
-          "selected_coverage": 0.5672,
-          "accuracy": 75.6,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 1044,
-          "coverage": 1.0,
-          "brier": 0.21904,
-          "log_loss": 0.63386,
-          "selected_n": 663,
-          "selected_coverage": 0.6351,
-          "accuracy": 73.2,
-          "threshold": 65.0
-        }
-      }
-    }
+    "status": "unavailable",
+    "reason": "tabpfn_not_installed_this_run",
+    "variants": {}
   },
   "router_shadow": {
     "global_cal_champion": "current",
@@ -294,16 +226,16 @@
         ],
         "segments": {
           "set1_total|ATP|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 65,
-            "brier": 0.17169,
-            "log_loss": 0.52953
+            "brier": 0.17194,
+            "log_loss": 0.52882
           },
           "game_state|ATP|HARD": {
-            "model": "native_600_e4",
+            "model": "direct_catboost",
             "cal_n": 60,
-            "brier": 0.24138,
-            "log_loss": 0.67557
+            "brier": 0.24436,
+            "log_loss": 0.68184
           },
           "match_total|WTA|HARD": {
             "model": "current",
@@ -336,34 +268,34 @@
             "log_loss": 0.59031
           },
           "game_state|CHALLENGER|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 66,
-            "brier": 0.23508,
-            "log_loss": 0.66275
+            "brier": 0.24167,
+            "log_loss": 0.67655
           },
           "match_total|ITF|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 27,
-            "brier": 0.22,
-            "log_loss": 0.62929
+            "brier": 0.22746,
+            "log_loss": 0.65082
           },
           "set1_total|ITF|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 45,
-            "brier": 0.18493,
-            "log_loss": 0.54696
+            "brier": 0.19041,
+            "log_loss": 0.56523
           },
           "game_state|ITF|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 39,
-            "brier": 0.24775,
-            "log_loss": 0.68823
+            "brier": 0.25714,
+            "log_loss": 0.70841
           },
           "match_total|CHALLENGER|CLAY": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 76,
-            "brier": 0.15305,
-            "log_loss": 0.47758
+            "brier": 0.16101,
+            "log_loss": 0.50317
           },
           "set1_total|CHALLENGER|CLAY": {
             "model": "current",
@@ -372,10 +304,10 @@
             "log_loss": 0.57759
           },
           "game_state|CHALLENGER|CLAY": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 114,
-            "brier": 0.23961,
-            "log_loss": 0.67218
+            "brier": 0.2448,
+            "log_loss": 0.68296
           }
         }
       },
@@ -386,16 +318,16 @@
         ],
         "segments": {
           "set1_total|ATP": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 65,
-            "brier": 0.17169,
-            "log_loss": 0.52953
+            "brier": 0.17194,
+            "log_loss": 0.52882
           },
           "game_state|ATP": {
-            "model": "native_600_e4",
+            "model": "direct_catboost",
             "cal_n": 60,
-            "brier": 0.24138,
-            "log_loss": 0.67557
+            "brier": 0.24436,
+            "log_loss": 0.68184
           },
           "match_total|WTA": {
             "model": "current",
@@ -416,10 +348,10 @@
             "log_loss": 0.62793
           },
           "match_total|CHALLENGER": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 138,
-            "brier": 0.16144,
-            "log_loss": 0.50194
+            "brier": 0.16407,
+            "log_loss": 0.51011
           },
           "set1_total|CHALLENGER": {
             "model": "current",
@@ -428,10 +360,10 @@
             "log_loss": 0.5769
           },
           "game_state|CHALLENGER": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 201,
-            "brier": 0.2424,
-            "log_loss": 0.67835
+            "brier": 0.24484,
+            "log_loss": 0.68342
           },
           "match_total|ITF": {
             "model": "current",
@@ -440,16 +372,16 @@
             "log_loss": 0.61085
           },
           "set1_total|ITF": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 57,
-            "brier": 0.18976,
-            "log_loss": 0.56215
+            "brier": 0.1913,
+            "log_loss": 0.56796
           },
           "game_state|ITF": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 51,
-            "brier": 0.24924,
-            "log_loss": 0.6914
+            "brier": 0.25873,
+            "log_loss": 0.71184
           }
         }
       },
@@ -471,10 +403,10 @@
             "log_loss": 0.67786
           },
           "match_total": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 205,
-            "brier": 0.17835,
-            "log_loss": 0.54117
+            "brier": 0.17867,
+            "log_loss": 0.54234
           }
         }
       }
@@ -482,18 +414,16 @@
     "validation": {
       "n": 1044,
       "coverage": 1.0,
-      "brier": 0.21408,
-      "log_loss": 0.61901,
-      "selected_n": 720,
-      "selected_coverage": 0.6897,
-      "accuracy": 71.9,
+      "brier": 0.21644,
+      "log_loss": 0.62277,
+      "selected_n": 698,
+      "selected_coverage": 0.6686,
+      "accuracy": 72.5,
       "threshold": 65.0
     },
     "validation_model_usage": {
-      "current": 577,
-      "direct_catboost": 27,
-      "native_300_e1": 323,
-      "native_600_e4": 117
+      "current": 993,
+      "direct_catboost": 51
     },
     "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
   },
@@ -513,9 +443,7 @@
   ],
   "models_available_for_router": [
     "current",
-    "direct_catboost",
-    "native_300_e1",
-    "native_600_e4"
+    "direct_catboost"
   ],
   "promotion_gate": {
     "status": "shadow_only",
