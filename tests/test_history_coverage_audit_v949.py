@@ -15,7 +15,9 @@ def _long(*rows):
 
 
 def test_reports_no_safe_identity_candidate_without_merging_token_hint():
-    raw = _long(("Nicole Melichar", "nicole melichar", pd.Timestamp("2026-01-01")))
+    # Same first-name token is only a diagnostic hint.  This pair deliberately
+    # does not satisfy any production identity-resolution rule.
+    raw = _long(("Nicole Garcia", "nicole garcia", pd.Timestamp("2026-01-01")))
     item = classify_player_history(
         player="Nicole Melichar-Martinez",
         stats={"matches": 0, "quality": "LOW", "history_identity_mode": "none"},
@@ -25,7 +27,7 @@ def test_reports_no_safe_identity_candidate_without_merging_token_hint():
     )
     assert item["reason"] == "no_safe_identity_candidate"
     assert item["raw"]["resolved_key"] is None
-    assert "nicole melichar" in item["token_hints_raw"]["same_first_token"]
+    assert "nicole garcia" in item["token_hints_raw"]["same_first_token"]
 
 
 def test_reports_rows_removed_by_hygiene_before_any_identity_recovery():
