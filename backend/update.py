@@ -38,9 +38,11 @@ TML_SOURCES=[
     {'key':'ch_ongoing','tour':'CH','url':'https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv','refresh_hours':0},
     {'key':'wta_ongoing','tour':'WTA','url':'https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv','refresh_hours':0},
     {'key':'atp_2026','tour':'ATP','url':'https://stats.tennismylife.org/data/2026.csv','refresh_hours':12},
+    {'key':'atp_quali_2026','tour':'ATP','url':'https://stats.tennismylife.org/data/atp_quali/2026_atp_quali.csv','refresh_hours':12},
     {'key':'ch_2026','tour':'CH','url':'https://stats.tennismylife.org/data/2026_challenger.csv','refresh_hours':12},
     {'key':'wta_2026','tour':'WTA','url':'https://stats.tennismylife.org/data/2026_wta.csv','refresh_hours':12},
     {'key':'atp_2025','tour':'ATP','url':'https://stats.tennismylife.org/data/2025.csv','refresh_hours':None},
+    {'key':'atp_quali_2025','tour':'ATP','url':'https://stats.tennismylife.org/data/atp_quali/2025_atp_quali.csv','refresh_hours':None},
     {'key':'ch_2025','tour':'CH','url':'https://stats.tennismylife.org/data/2025_challenger.csv','refresh_hours':None},
     {'key':'wta_2025','tour':'WTA','url':'https://stats.tennismylife.org/data/2025_wta.csv','refresh_hours':None},
 ]
