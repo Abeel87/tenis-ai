@@ -118,11 +118,11 @@ def test_winner_pick_canonicalizes_feed_middle_name_expansion():
 
 def test_winner_pick_does_not_guess_when_expanded_name_matches_both_players():
     assert mapping._winner_pick(
-        "Jay Dylan Friend",
+        "Jay Dylan Hara Friend",
         "opaque",
         "Jay Friend",
-        "Dylan Friend",
-    ) == "Jay Dylan Friend"
+        "Jay Hara",
+    ) == "Jay Dylan Hara Friend"
 
 
 def test_global_audit_aggregates_same_unknown_family_across_fixtures():
