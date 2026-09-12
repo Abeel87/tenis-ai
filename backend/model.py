@@ -52,11 +52,14 @@ def _history_name_variant_matches(requested_key: str, candidate_key: str) -> boo
     """Accept only conservative full-name/short-name variants.
 
     This is deliberately not fuzzy matching. It allows:
+    - exact token-preserving reordering used by some fixture providers,
     - the same tokens with surname-first ordering,
     - a short form that is a prefix of a longer form,
     - inserted middle names while first and last name stay identical,
     - surname-first expanded forms such as ``Friend Jay Dylan Hara`` for
-      ``Jay Friend``.
+      ``Jay Friend``,
+    - a single given-name initial when surname + initial identify one unique
+      history key.
     """
     requested = requested_key.split()
     candidate = candidate_key.split()
@@ -66,8 +69,35 @@ def _history_name_variant_matches(requested_key: str, candidate_key: str) -> boo
     if requested == candidate:
         return True
 
+    # Providers occasionally preserve every token but reorder compound names,
+    # e.g. Guiomar Zuleta De Reales Maristany <-> Guiomar Maristany Zuleta De Reales.
+    # Equality of the complete token multiset is deterministic, not fuzzy.
+    if len(requested) == len(candidate) and sorted(requested) == sorted(candidate):
+        return True
+
     # Exact surname-first rotation: Juan Manuel Cerundolo <-> Cerundolo Juan Manuel.
     if candidate == [requested[-1], *requested[:-1]] or requested == [candidate[-1], *candidate[:-1]]:
+        return True
+
+    def _initial_form_matches(short: list[str], full: list[str]) -> bool:
+        if len(short) != 2 or len(full) < 2:
+            return False
+
+        # A Panova <-> Alexandra [middle...] Panova.
+        if len(short[0]) == 1 and short[-1] == full[-1] and full[0].startswith(short[0]):
+            return True
+        # Panova A <-> Alexandra [middle...] Panova.
+        if len(short[-1]) == 1 and short[0] == full[-1] and full[0].startswith(short[-1]):
+            return True
+        # A Panova <-> Panova Alexandra [middle...].
+        if len(short[0]) == 1 and short[-1] == full[0] and full[1].startswith(short[0]):
+            return True
+        # Panova A <-> Panova Alexandra [middle...].
+        if len(short[-1]) == 1 and short[0] == full[0] and full[1].startswith(short[-1]):
+            return True
+        return False
+
+    if _initial_form_matches(requested, candidate) or _initial_form_matches(candidate, requested):
         return True
 
     short, long = (requested, candidate) if len(requested) < len(candidate) else (candidate, requested)
