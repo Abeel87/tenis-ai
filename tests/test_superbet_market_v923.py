@@ -101,6 +101,30 @@ def test_existing_sanitizer_output_is_preserved_and_only_compact_audit_is_added(
     assert out["unrecognized_market_families"][0]["market_name"] == "Race To Three Games First Set"
 
 
+def test_winner_pick_canonicalizes_feed_middle_name_expansion():
+    assert mapping._winner_pick(
+        "Jay Dylan Hara Friend",
+        "opaque-2",
+        "Maks Kasnikowski",
+        "Jay Friend",
+    ) == "Jay Friend"
+    assert mapping._winner_pick(
+        "Friend, Jay Dylan Hara",
+        "opaque-2",
+        "Maks Kasnikowski",
+        "Jay Friend",
+    ) == "Jay Friend"
+
+
+def test_winner_pick_does_not_guess_when_expanded_name_matches_both_players():
+    assert mapping._winner_pick(
+        "Jay Dylan Friend",
+        "opaque",
+        "Jay Friend",
+        "Dylan Friend",
+    ) == "Jay Dylan Friend"
+
+
 def test_global_audit_aggregates_same_unknown_family_across_fixtures():
     one = sanitize_with_audit(_fixture(), _meta(), mapping._sanitize_fixture)
     two = dict(one)
