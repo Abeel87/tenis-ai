@@ -31,8 +31,12 @@ SETTLED_AUTOLEARN_REDUNDANT_FIELDS = {
     'historical_accuracy', 'evidence', 'components', 'ensemble_raw',
     'adaptive_delta_pp', 'local_weights',
 }
-DYNAMIC_HISTORY_KEYS = ('version', 'active', 'status', 'reason', 'max_shift')
-ADAPTIVE_PROD_HISTORY_KEYS = ('version', 'status', 'final_score')
+# Historical telemetry consumes only ``active`` from dynamic_weighting and only
+# ``final_score`` from adaptive_prod_v79. Version/status/reason/max_shift and
+# adaptive version/status are explanatory duplicates once the frozen signal is
+# settled; canonical signal identity, source, scores and result remain intact.
+DYNAMIC_HISTORY_KEYS = ('active',)
+ADAPTIVE_PROD_HISTORY_KEYS = ('final_score',)
 
 
 def _path_label(path: Path) -> str:
@@ -83,13 +87,14 @@ def prune_history_payload(path: Path) -> dict:
 
     Pending/upcoming forecasts remain byte-for-byte structurally complete so the
     frozen prediction-time evidence is available until settlement. For settled
-    rows we remove only duplicated explanatory fields and retain compact
-    Dynamic Ensemble and Adaptive PROD state sufficient for historical telemetry.
+    rows we remove only duplicated explanatory fields and retain exactly the
+    Dynamic Ensemble and Adaptive PROD state consumed by historical telemetry.
 
     Preserved canonical learning/settlement inputs include:
-    - market/pick/line/checkpoint/key/score/result;
+    - market/pick/line/checkpoint/key/label/source/score/result;
     - model_scores and generator_selected;
-    - adaptive_prod_v79.final_score plus version/status provenance;
+    - adaptive_prod_v79.final_score;
+    - dynamic_weighting.active;
     - all non-AutoLearn history layers, including Player Intelligence and
       exact Superbet/Symphony training evidence.
     """
@@ -143,7 +148,7 @@ def prune_history_payload(path: Path) -> dict:
 
     report = _compact_json(path, data)
     report.update({
-        'policy': 'SETTLED_AUTOLEARN_SUFFICIENT_STATE_KEEP_TRAINING_AND_SETTLEMENT',
+        'policy': 'SETTLED_AUTOLEARN_TELEMETRY_MINIMUM_KEEP_TRAINING_AND_SETTLEMENT',
         'settled_autolearn_signals': settled_signals,
         'compacted_dynamic_policies': compacted_dynamic,
         'compacted_adaptive_prod_policies': compacted_adaptive_prod,
