@@ -75,7 +75,7 @@ def _autolearn_signal():
     }
 
 
-def test_settled_autolearn_compaction_keeps_training_sufficient_state(tmp_path):
+def test_settled_autolearn_compaction_keeps_training_settlement_and_telemetry_state(tmp_path):
     signal = _autolearn_signal()
     untouched_layer = [{"key": "operator", "model_scores": {"ensemble": 75}, "result": "hit"}]
     data = [{
@@ -94,20 +94,22 @@ def test_settled_autolearn_compaction_keeps_training_sufficient_state(tmp_path):
     saved = json.loads(path.read_text(encoding="utf-8"))
     row = saved[0]["autolearn_signals_v84"][0]
 
+    # Canonical frozen prediction identity/result and every telemetry score stay.
     assert row["key"] == signal["key"]
+    assert row["label"] == signal["label"]
+    assert row["market"] == signal["market"]
+    assert row["pick"] == signal["pick"]
+    assert row["line"] == signal["line"]
+    assert row["source_model"] == signal["source_model"]
     assert row["score"] == 76.0
     assert row["result"] == "hit"
     assert row["model_scores"] == signal["model_scores"]
     assert row["generator_selected"] is True
-    assert row["adaptive_prod_v79"]["final_score"] == 73.5
 
-    assert row["dynamic_weighting"] == {
-        "version": "v8.4D",
-        "active": True,
-        "status": "ACTIVE",
-        "reason": "bounded_segment_adjustment",
-        "max_shift": 0.07,
-    }
+    # Keep exactly what model_telemetry_v84c.collect_rows consumes.
+    assert row["adaptive_prod_v79"] == {"final_score": 73.5}
+    assert row["dynamic_weighting"] == {"active": True}
+
     assert "local_weights" not in row
     for key in (
         "components", "lesson", "evidence", "action", "similar_n",
@@ -116,6 +118,7 @@ def test_settled_autolearn_compaction_keeps_training_sufficient_state(tmp_path):
     ):
         assert key not in row
 
+    # Non-AutoLearn historical evidence is untouched.
     assert saved[0]["player_intelligence_signals_v85"] == data[0]["player_intelligence_signals_v85"]
     assert saved[0]["playable_autolearn_signals_v912"] == untouched_layer
     assert saved[0]["superbet_candidate_signals_v925"] == data[0]["superbet_candidate_signals_v925"]
