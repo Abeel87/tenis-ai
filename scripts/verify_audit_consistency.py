@@ -54,8 +54,16 @@ def check(directory):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir', type=Path, default=ROOT / 'frontend' / 'data')
-    errors, checked = check(parser.parse_args().data_dir)
+    args = parser.parse_args()
+    errors, checked = check(args.data_dir)
     if errors:
         print('\n'.join(errors))
         raise SystemExit(1)
     print(f'Audit consistency: PASS ({checked} RAW/FINAL candidates; all closed layers; same-snapshot calibration)')
+
+    # Generate a diagnostic-only history coverage report from the exact cache used
+    # by the current build. This never changes model inputs, thresholds or identities.
+    if args.data_dir.resolve() == (ROOT / 'frontend' / 'data').resolve():
+        from history_coverage_audit import write_current_audit
+        coverage = write_current_audit()
+        print('History coverage audit:', json.dumps(coverage.get('summary') or {}, ensure_ascii=False, sort_keys=True))
