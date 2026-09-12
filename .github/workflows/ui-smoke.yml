@@ -41,4 +41,5 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Exact current history coverage audit
+        # Re-run against the post-#314 ATP qualifying history cache from latest main.
         run: python scripts/audit_current_history_coverage.py
