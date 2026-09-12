@@ -58,6 +58,27 @@ def _close(a: float, b: float, eps: float = 1e-9) -> bool:
     return abs(float(a) - float(b)) <= eps
 
 
+def _winner_identity(pick, p1, p2):
+    """Resolve only an unambiguous operator full-name expansion to a participant."""
+    pick_key = _norm(pick)
+    participant_keys = [_norm(p1), _norm(p2)]
+    for key in participant_keys:
+        if pick_key and pick_key == key:
+            return key
+
+    observed = set(pick_key.split())
+    candidates = []
+    for key in participant_keys:
+        tokens = set(key.split())
+        if (
+            len(tokens) >= 2
+            and len(observed) > len(tokens)
+            and tokens.issubset(observed)
+        ):
+            candidates.append(key)
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def validate_availability(report: dict) -> dict:
     assert isinstance(report, dict), "Superbet availability report must be an object"
     assert report.get("contains_prices") is False, "Superbet adapter must not persist prices"
@@ -135,9 +156,15 @@ def validate_availability(report: dict) -> dict:
             for row in rows
         ]
         if winner_rows:
-            picks = {_norm(row.get("pick")) for row in winner_rows if row.get("pick")}
+            raw_picks = [row.get("pick") for row in winner_rows if row.get("pick")]
+            picks = {_norm(pick) for pick in raw_picks}
+            resolved = {
+                identity
+                for pick in raw_picks
+                if (identity := _winner_identity(pick, p1, p2)) is not None
+            }
             expected = {key for key in (p1_key, p2_key) if key}
-            assert expected.issubset(picks), (
+            assert expected.issubset(resolved), (
                 f"match winner mapping incomplete for {p1} vs {p2}: picks={sorted(picks)}"
             )
             winner_pairs += 1
