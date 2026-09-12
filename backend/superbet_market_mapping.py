@@ -69,6 +69,16 @@ def batched_request(original_request: Callable, path: str, api_key: str, quota: 
     return rows
 
 
+def _expanded_name_match(participant, observed) -> bool:
+    participant_tokens = set(base._norm(participant).split())
+    observed_tokens = set(base._norm(observed).split())
+    return (
+        len(participant_tokens) >= 2
+        and len(observed_tokens) > len(participant_tokens)
+        and participant_tokens.issubset(observed_tokens)
+    )
+
+
 def _winner_pick(outcome_name, bookmaker_outcome_id, p1, p2):
     outcome = base._norm(outcome_name)
     if outcome in {"1", "p1", "participant 1", "player 1"}: return p1
@@ -81,6 +91,10 @@ def _winner_pick(outcome_name, bookmaker_outcome_id, p1, p2):
     n1, n2 = base._norm(p1), base._norm(p2)
     if n1 and (n1 in outcome or n1 in bookmaker): return p1
     if n2 and (n2 in outcome or n2 in bookmaker): return p2
+    p1_expanded = _expanded_name_match(p1, outcome_name) or _expanded_name_match(p1, bookmaker_outcome_id)
+    p2_expanded = _expanded_name_match(p2, outcome_name) or _expanded_name_match(p2, bookmaker_outcome_id)
+    if p1_expanded != p2_expanded:
+        return p1 if p1_expanded else p2
     return str(outcome_name or bookmaker_outcome_id or "").strip() or None
 
 
