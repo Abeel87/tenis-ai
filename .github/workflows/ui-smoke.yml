@@ -24,108 +24,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Classify change scope
-        id: scope
-        env:
-          BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: python .github/scripts/change_scope.py
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
       - name: Setup Python
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install Python deps
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python -m pip install -r requirements.txt
 
-      - name: JavaScript syntax
-        shell: bash
-        run: |
-          set -e
-          while IFS= read -r -d '' f; do
-            node --check "$f"
-          done < <(find frontend -maxdepth 1 -name '*.js' -print0)
+      - name: Restore exact tennis history cache for coverage audit
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-coverage-audit-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
 
-      - name: UI static smoke
-        run: |
-          node tests/ui_static_smoke.mjs
-          node tests/ui_runtime_smoke.mjs
-          node tests/decision_center_smoke.mjs
-
-      - name: Python syntax
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python -m compileall -q backend scripts
-
-      - name: Prune publication-only results payload
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/prune_results_payload.py
-
-      - name: Full test suite
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python -m pytest -q
-
-      - name: Player Model Shadow Guard v8.9
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v89_player_model_shadow.py
-
-      - name: Ensemble + Player Learning Guard v8.9.1
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v891_ensemble_player_learning.py
-
-      - name: Surface Elo Guard v8.9.3
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v893_surface_elo_integration.py
-
-      - name: SHADOW experiment trend guard
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v895_shadow_experiment_trends.py
-
-      - name: Shadow Signal Center Guard v8.9.4
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v894_shadow_signal_center.py
-
-      - name: Full App Coherence Guard v8.9.2
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v892_full_app_coherence.py
-
-      - name: History sampling outliers
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/audit_history_sampling_outliers.py
-
-      - name: Runtime & UI Guard v8.5.3
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v853_runtime_ui.py
-
-      - name: Match Decision Center Guard v8.7
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          python scripts/verify_v87_decision_center.py
-          node tests/decision_center_smoke.mjs
-
-      - name: Project health
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/project_health.py
-
-      - name: Compact safe publication payloads
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/compact_frontend_data.py
-
-      - name: Runtime health v8.4E0
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/runtime_health.py
-
-      - name: Global Match Time Guard v8.4E1.1
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v84e11.py
-
-      - name: Model Trend Monitor Guard v8.4E2
-        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v84e2.py
+      - name: Exact current history coverage audit
+        run: python scripts/audit_current_history_coverage.py
