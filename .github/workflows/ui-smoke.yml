@@ -46,6 +46,19 @@ jobs:
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python -m pip install -r requirements.txt
 
+      - name: Restore exact tennis history cache for coverage audit
+        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-coverage-audit-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Exact current history coverage audit
+        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
+        run: python scripts/audit_current_history_coverage.py
+
       - name: JavaScript syntax
         shell: bash
         run: |
