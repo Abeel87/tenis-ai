@@ -256,7 +256,7 @@ def _request(path: str, api_key: str, quota: dict, **params):
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        if path == "fixtures" and exc.code == 404:
+        if path in {"fixtures", "odds-by-tournaments"} and exc.code == 404:
             try:
                 payload = json.loads(body)
             except (TypeError, ValueError):
