@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-"""Current Engine facade with best-of aware match distribution (v9.4.6).
+"""Current Engine facade with best-of aware match distribution (v9.4.7).
 
 The proven player/set model is preserved verbatim in ``model_core``. This
-facade re-exports its public/private helpers and only replaces full-match
-aggregation so BO5 fixtures are never evaluated as BO3.
-No Superbet/PLAYABLE logic lives here.
+facade re-exports its public/private helpers, resolves only unambiguous history
+name variants, and replaces full-match aggregation so BO5 fixtures are never
+evaluated as BO3. No Superbet/PLAYABLE logic lives here.
 """
 
 try:  # package import in tests
@@ -17,7 +17,7 @@ for _name in dir(_core):
     if not _name.startswith("__"):
         globals()[_name] = getattr(_core, _name)
 
-VERSION = "current-engine-bestof-v9.4.6"
+VERSION = "current-engine-bestof-v9.4.7"
 
 
 def _best_of(match: dict) -> int:
@@ -48,11 +48,94 @@ def _naive_cutoff(as_of):
     return _core.pd.Timestamp(cut.date())
 
 
+def _history_name_variant_matches(requested_key: str, candidate_key: str) -> bool:
+    """Accept only conservative full-name/short-name variants.
+
+    This is deliberately not fuzzy matching. It allows:
+    - the same tokens with surname-first ordering,
+    - a short form that is a prefix of a longer form,
+    - inserted middle names while first and last name stay identical,
+    - surname-first expanded forms such as ``Friend Jay Dylan Hara`` for
+      ``Jay Friend``.
+    """
+    requested = requested_key.split()
+    candidate = candidate_key.split()
+    if len(requested) < 2 or len(candidate) < 2:
+        return False
+
+    if requested == candidate:
+        return True
+
+    # Exact surname-first rotation: Juan Manuel Cerundolo <-> Cerundolo Juan Manuel.
+    if candidate == [requested[-1], *requested[:-1]] or requested == [candidate[-1], *candidate[:-1]]:
+        return True
+
+    short, long = (requested, candidate) if len(requested) < len(candidate) else (candidate, requested)
+    short_set = set(short)
+    long_set = set(long)
+    if not short_set.issubset(long_set):
+        return False
+
+    # Common provider expansion: Carlos Alcaraz -> Carlos Alcaraz Garfia.
+    if long[: len(short)] == short:
+        return True
+
+    # Inserted middle names: Jay Friend -> Jay Dylan Hara Friend.
+    if short[0] == long[0] and short[-1] == long[-1]:
+        return True
+
+    # Surname-first expanded variant: Jay Friend -> Friend Jay Dylan Hara.
+    if len(short) == 2 and long[0] == short[-1] and long[1] == short[0]:
+        return True
+
+    return False
+
+
+def _resolve_history_player_key(long_df, player: str):
+    """Resolve an exact or single unambiguous history key; otherwise fail closed."""
+    requested_key = _core._key(player)
+    if not requested_key or long_df is None or getattr(long_df, "empty", False):
+        return None, "none"
+
+    if "player_key" in long_df.columns:
+        keys = {
+            str(value).strip()
+            for value in long_df["player_key"].dropna().unique().tolist()
+            if str(value).strip()
+        }
+    elif "player" in long_df.columns:
+        keys = {
+            _core._key(value)
+            for value in long_df["player"].dropna().unique().tolist()
+            if _core._key(value)
+        }
+    else:
+        return None, "none"
+
+    if requested_key in keys:
+        return requested_key, "exact"
+
+    candidates = sorted(
+        key for key in keys
+        if _history_name_variant_matches(requested_key, key)
+    )
+    if len(candidates) == 1:
+        return candidates[0], "expanded-name"
+    return None, "ambiguous" if candidates else "none"
+
+
 def player_profile(long_df, player: str, surface: str = '', as_of=None, priors=None):
     history_df = _dated_history(long_df)
     cut = _naive_cutoff(as_of)
     safe_priors = priors if priors is not None else _core._surface_priors(history_df, surface, cut)
-    return _core.player_profile(history_df, player, surface, cut, safe_priors)
+    resolved_key, identity_mode = _resolve_history_player_key(history_df, player)
+    lookup_player = resolved_key if resolved_key is not None else player
+    profile = _core.player_profile(history_df, lookup_player, surface, cut, safe_priors)
+    profile["player"] = player
+    profile["history_identity_mode"] = identity_mode
+    if resolved_key is not None and resolved_key != _core._key(player):
+        profile["history_player_key"] = resolved_key
+    return profile
 
 
 def _match_distribution_conditional(
@@ -144,8 +227,8 @@ def analyse_match(long_df, match: dict) -> dict:
     as_of = match.get('scheduled_time') or None
     cut = _naive_cutoff(as_of)
     priors = _core._surface_priors(history_df, surface, cut)
-    p1 = _core.player_profile(history_df, match['p1'], surface, cut, priors)
-    p2 = _core.player_profile(history_df, match['p2'], surface, cut, priors)
+    p1 = player_profile(history_df, match['p1'], surface, cut, priors)
+    p2 = player_profile(history_df, match['p2'], surface, cut, priors)
 
     h1 = _core._service_hold_probability(p1, p2, priors.get('hold_rate', .72))
     h2 = _core._service_hold_probability(p2, p1, priors.get('hold_rate', .72))
