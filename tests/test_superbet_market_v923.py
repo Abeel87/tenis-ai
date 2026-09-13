@@ -125,6 +125,47 @@ def test_winner_pick_does_not_guess_when_expanded_name_matches_both_players():
     ) == "Jay Dylan Hara Friend"
 
 
+def test_partial_match_winner_variant_is_suppressed_fail_closed():
+    fixture = {
+        "p1": "Malygina, Elena",
+        "p2": "Pereira de Aguiar, Giulia",
+        "canonical_selections": [
+            {
+                "market": "match_winner",
+                "market_id": "121",
+                "pick": "Pereira de Aguiar, Giulia",
+                "operator_available": True,
+            },
+            {
+                "market": "set1_total",
+                "market_id": "555",
+                "pick": "over",
+                "line": 8.5,
+                "operator_available": True,
+            },
+        ],
+    }
+    cleaned, suppressed = mapping._suppress_incomplete_match_winner_groups(fixture)
+    assert suppressed == 1
+    assert all(row["market"] != "match_winner" for row in cleaned["canonical_selections"])
+    assert cleaned["canonical_selections"][0]["market"] == "set1_total"
+    assert cleaned["suppressed_incomplete_match_winner_markets"] == 1
+
+
+def test_complete_match_winner_variant_is_preserved():
+    fixture = {
+        "p1": "Malygina, Elena",
+        "p2": "Pereira de Aguiar, Giulia",
+        "canonical_selections": [
+            {"market": "match_winner", "market_id": "121", "pick": "Malygina, Elena"},
+            {"market": "match_winner", "market_id": "121", "pick": "Pereira de Aguiar, Giulia"},
+        ],
+    }
+    cleaned, suppressed = mapping._suppress_incomplete_match_winner_groups(fixture)
+    assert suppressed == 0
+    assert cleaned == fixture
+
+
 def test_global_audit_aggregates_same_unknown_family_across_fixtures():
     one = sanitize_with_audit(_fixture(), _meta(), mapping._sanitize_fixture)
     two = dict(one)
