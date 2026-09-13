@@ -85,3 +85,38 @@ def test_high_win_tax():
 def test_fingerprint_stable():
     a=m._stable_fingerprint("1",signal()); b=m._stable_fingerprint("1",signal())
     assert a==b
+
+
+def test_candidate_keeps_its_own_model_probability_after_sorting():
+    ts = datetime.now(timezone.utc).isoformat()
+    results = [
+        {"match_id":"1","p1":"A","p2":"B","symphony2_playable":{
+            "playable":True,"final_playable_authority":True,"authority":m.FINAL_AUTHORITY,"operator":m.OPERATOR,
+            "signals":[{"market":"match_winner","pick":"A","operator_model_probability":70,"learning_reliability":.9}]
+        }},
+        {"match_id":"2","p1":"C","p2":"D","symphony2_playable":{
+            "playable":True,"final_playable_authority":True,"authority":m.FINAL_AUTHORITY,"operator":m.OPERATOR,
+            "signals":[{"market":"match_winner","pick":"C","operator_model_probability":60,"learning_reliability":.9}]
+        }},
+    ]
+    quotes = {
+        "operator": m.OPERATOR,
+        "status": "OK",
+        "generated_at": ts,
+        "matches": [
+            {"match_id":"1","p1":"A","p2":"B","direct_match_verified":True,"canonical_selections":[
+                {"market":"match_winner","pick":"A","operator_available":True,"operator_price_verified":True,"operator_price":2.0,"operator_selection_status":"active"},
+                {"market":"match_winner","pick":"B","operator_available":True,"operator_price_verified":True,"operator_price":2.0,"operator_selection_status":"active"},
+            ]},
+            {"match_id":"2","p1":"C","p2":"D","direct_match_verified":True,"canonical_selections":[
+                {"market":"match_winner","pick":"C","operator_available":True,"operator_price_verified":True,"operator_price":2.0,"operator_selection_status":"active"},
+                {"market":"match_winner","pick":"D","operator_available":True,"operator_price_verified":True,"operator_price":2.0,"operator_selection_status":"active"},
+            ]},
+        ],
+    }
+    rows = m.evaluate(results, quotes, CFG, state(equity=1000, peak=1000))
+    qualified = {row["match_id"]: row for row in rows if row["status"] == "QUALIFIED"}
+    assert qualified["1"]["snapshot"]["operator_model_probability"] == 70
+    assert qualified["2"]["snapshot"]["operator_model_probability"] == 60
+    assert round(qualified["1"]["expected_value_net"], 3) == .232
+    assert round(qualified["2"]["expected_value_net"], 3) == .056
