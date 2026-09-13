@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 const num=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Number(v);
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const key=m=>String(m.id??m.match_id??m.match_key??[m.p1,m.p2,m.scheduled_time].join('|'));
 const pct=v=>num(v)==null?'Brak danych':`${Number(v).toFixed(1).replace('.0','')}%`;
