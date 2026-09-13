@@ -8,6 +8,15 @@ args = ['git', 'diff', '--name-only', before, head] if before and set(before) !=
 paths = subprocess.check_output(args, text=True).splitlines()
 
 def affects_data(path):
+    # iNeed$ is a post-PLAYABLE SHADOW/risk layer with its own dedicated
+    # workflow and tests. Changes there must not be classified as core
+    # data/model generation, otherwise unrelated publication-size gates can
+    # turn a healthy iNeed$ fix red.
+    if path.startswith('backend/ineed_') and path.endswith('.py'):
+        return False
+    if path.startswith('tests/test_ineed_') and path.endswith('.py'):
+        return False
+
     # The main data workflow is itself part of the data-generation contract.
     # A quota/backfill change there must run the full build immediately.
     if path == '.github/workflows/update-and-pages.yml':
