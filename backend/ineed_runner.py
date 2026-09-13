@@ -39,7 +39,7 @@ def post(url: str, token: str, body: dict) -> dict:
         headers={"authorization": f"Bearer {token}", "content-type": "application/json"},
         method="POST",
     )
-    with urlopen(req, timeout=60) as r:
+    with urlopen(req, timeout=180) as r:
         return json.loads(r.read().decode())
 
 
