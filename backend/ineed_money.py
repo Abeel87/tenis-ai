@@ -231,11 +231,11 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
             if odds < float(cfg.get("minimum_odds", 1.01)) or (cfg.get("maximum_odds") is not None and odds > float(cfg["maximum_odds"])):
                 rows.append(_reject({**base, "odds": odds, "odds_timestamp": quote.get("odds_timestamp")}, "ODDS_OUT_OF_RANGE")); continue
             econ_unit = economics(model_p, odds, cfg, sibling_quotes(direct, mid, quote), 1.0)
-            candidates.append((econ_unit["expected_value_net"], match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2))
+            candidates.append((econ_unit["expected_value_net"], model_p, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2))
 
     candidates.sort(key=lambda x: x[0], reverse=True)
     allocated = list(open_bets)
-    for _, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2 in candidates:
+    for _, model_p, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2 in candidates:
         odds = float(quote["operator_price"])
         if rstate == "HALTED":
             rows.append(_reject(base, "RISK_ENGINE_HALTED")); continue
