@@ -38,6 +38,9 @@ assert.equal(time.isCurrent(future,now),true);
 assert.equal(time.isCurrent(waiting,now),true);
 assert.equal(time.isCurrent(boundary,now),true);
 assert.equal(time.isCurrent(boundary,now+1),false);
+assert.equal(time.isCurrent({...old,event_status:'Live'},now),true);
+assert.equal(time.isCurrent({...old,event_status:'Suspended'},now),true);
+assert.equal(time.isCurrent({...old,event_status:'Interrupted'},now),true);
 assert.equal(time.cardStatus(future,now).txt,'PRZED MECZEM');
 assert.equal(time.cardStatus(waiting,now).txt,'OCZEKUJE NA STATUS');
 assert.equal(time.cardStatus(atStart,now).cls,'waiting');
@@ -57,5 +60,34 @@ assert.equal(time.compute({...waiting,event_status:'Suspended'},now).text.includ
 assert.equal(time.cardStatus({...future,scheduled_time:'2026-08-28T14:15:00+02:00'},now).cls,'waiting');
 assert.equal(time.cardStatus({...future,scheduled_time:'2026-01-28T13:15:00+01:00'},Date.parse('2026-01-28T12:15:00Z')).cls,'waiting');
 console.log('Match lifecycle regression: PASS');
+'''
+    subprocess.run([node, "-e", script], cwd=ROOT, check=True)
+
+
+def test_today_feed_expires_stale_scheduled_rows_but_keeps_explicit_live():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node is required for frontend lifecycle regression tests")
+    script = r'''
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const time=require('./frontend/match-time.js');
+const window={
+  TENIS_AI_MATCH_TIME:time,
+  TENIS_AI_MODEL_API:{signals:()=>[]}
+};
+vm.runInNewContext(fs.readFileSync('./frontend/presentation-data.js','utf8'),{window,URL,Date,Map,Set,Object,Array,String,Number,Math,JSON,Error,fetch:()=>{throw new Error('unexpected fetch')}});
+const now=Date.parse('2026-09-13T11:57:00Z'); // 13:57 Europe/Warsaw
+const rows=[
+  {id:'stale',scheduled_time:'2026-09-13T06:30:00Z',feed_status:'upcoming'}, // 08:30 Warsaw
+  {id:'recent',scheduled_time:'2026-09-13T11:40:00Z',feed_status:'upcoming'},
+  {id:'future',scheduled_time:'2026-09-13T12:30:00Z',feed_status:'upcoming'},
+  {id:'live-old-clock',scheduled_time:'2026-09-13T06:30:00Z',event_status:'Live'},
+  {id:'tomorrow',scheduled_time:'2026-09-14T08:00:00Z',feed_status:'upcoming'}
+];
+const visible=window.TenisPresentation.filterRows(rows,{focus:'today',sort:'time'},{now}).map(x=>x.id).sort();
+assert.deepEqual(visible,['future','live-old-clock','recent']);
+console.log('Today feed stale-time regression: PASS');
 '''
     subprocess.run([node, "-e", script], cwd=ROOT, check=True)
