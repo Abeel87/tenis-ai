@@ -47,9 +47,16 @@
   }
 
   function isCurrent(m,nowValue=Date.now(),graceMinutes=30){
-    if(!m||!['scheduled','live','suspended','interrupted'].includes(statusKind(m)))return false;
+    if(!m)return false;
+    const kind=statusKind(m);
+    // An explicit active state is authoritative: tennis matches can run for hours,
+    // so their scheduled clock must not expire them from the current feed.
+    if(['live','suspended','interrupted'].includes(kind))return true;
+    if(kind!=='scheduled')return false;
     const scheduled=parseTime(m.scheduled_time);
     // Keep fixtures with missing time visible as N/D; never invent a start.
+    // Scheduled-only rows expire after a short grace period so an obsolete start
+    // time cannot remain in the current feed for the rest of the day.
     return !scheduled||scheduled.getTime()>=Number(nowValue)-graceMinutes*60000;
   }
 

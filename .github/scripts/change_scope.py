@@ -4,6 +4,17 @@ import subprocess
 
 before = os.environ.get('BEFORE', '')
 head = os.environ.get('HEAD_SHA', 'HEAD')
+base_ref = os.environ.get('GITHUB_BASE_REF', '')
+if base_ref:
+    # Pull-request base.sha can lag behind a moving main while Actions checks out
+    # the synthetic merge commit. Diff against the fetched current base branch so
+    # unrelated bot data refreshes on main do not turn a UI-only PR into a heavy run.
+    current_base = f'origin/{base_ref}'
+    try:
+        subprocess.check_call(['git', 'rev-parse', '--verify', current_base], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        before = current_base
+    except subprocess.CalledProcessError:
+        pass
 args = ['git', 'diff', '--name-only', before, head] if before and set(before) != {'0'} else ['git', 'show', '--pretty=', '--name-only', head]
 paths = subprocess.check_output(args, text=True).splitlines()
 
