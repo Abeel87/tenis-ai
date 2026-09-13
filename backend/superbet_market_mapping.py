@@ -170,6 +170,69 @@ def _sanitize_fixture(row: dict, meta: dict):
     return {"fixture_id":row.get("fixtureId"),"p1":p1,"p2":p2,"start_time":row.get("startTime"),"tournament":row.get("tournamentName"),"tournament_id":row.get("tournamentId"),"bookmaker":base.BOOKMAKER,"bookmaker_active":bool(book.get("bookmakerIsActive",True)),"suspended":bool(book.get("suspended",False)),"raw_markets":len(raw_markets),"recognized_markets":sorted(recognized_markets),"canonical_selections":selections}
 
 
+def _suppress_incomplete_match_winner_groups(fixture: dict) -> tuple[dict, int]:
+    """Drop partial two-way match-winner variants instead of exposing one live side."""
+    if not isinstance(fixture, dict):
+        return fixture, 0
+    selections = [row for row in (fixture.get("canonical_selections") or []) if isinstance(row, dict)]
+    expected = {base._name_key(fixture.get("p1")), base._name_key(fixture.get("p2"))}
+    expected.discard("")
+    if len(expected) != 2:
+        return fixture, 0
+
+    groups: dict[str, list[dict]] = {}
+    for row in selections:
+        if str(row.get("market") or "") != "match_winner":
+            continue
+        market_id = str(row.get("market_id") or "__default__")
+        groups.setdefault(market_id, []).append(row)
+
+    incomplete = {
+        market_id
+        for market_id, rows in groups.items()
+        if not expected.issubset({base._name_key(row.get("pick")) for row in rows if row.get("pick")})
+    }
+    if not incomplete:
+        return fixture, 0
+
+    cleaned = dict(fixture)
+    cleaned["canonical_selections"] = [
+        row for row in selections
+        if not (
+            str(row.get("market") or "") == "match_winner"
+            and str(row.get("market_id") or "__default__") in incomplete
+        )
+    ]
+    cleaned["suppressed_incomplete_match_winner_markets"] = len(incomplete)
+    return cleaned, len(incomplete)
+
+
+def _suppress_incomplete_match_winner_markets() -> int:
+    """Fail closed across the final cached operator context, including fallbacks."""
+    availability = base._read(base.AVAILABILITY, {})
+    if not isinstance(availability, dict):
+        return 0
+    fixtures = availability.get("fixtures") or []
+    if not isinstance(fixtures, list):
+        return 0
+
+    cleaned_fixtures = []
+    suppressed = 0
+    for fixture in fixtures:
+        if not isinstance(fixture, dict):
+            cleaned_fixtures.append(fixture)
+            continue
+        cleaned, count = _suppress_incomplete_match_winner_groups(fixture)
+        cleaned_fixtures.append(cleaned)
+        suppressed += count
+
+    availability = dict(availability)
+    availability["fixtures"] = cleaned_fixtures
+    availability["suppressed_incomplete_match_winner_markets"] = suppressed
+    base._write(base.AVAILABILITY, availability)
+    return suppressed
+
+
 def _stamp_runtime_adapter() -> None:
     availability = base._read(base.AVAILABILITY, {})
     if not isinstance(availability, dict): return
@@ -201,17 +264,20 @@ def prepare() -> dict:
         base._sanitize_fixture=original_sanitize_fixture
         base._availability_due=original_availability_due
 
+    suppressed_incomplete_match_winner_markets = _suppress_incomplete_match_winner_markets()
     _stamp_runtime_adapter()
     result["runtime_adapter_version"]=VERSION
     result["tournament_batch_limit"]=MAX_TOURNAMENT_IDS_PER_REQUEST
     result["refresh_hours"]=base.REFRESH_HOURS
     result["monthly_request_cap"]=base.MONTHLY_REQUEST_CAP
     result["parser_refresh_forced"]=force_parser_refresh
+    result["suppressed_incomplete_match_winner_markets"]=suppressed_incomplete_match_winner_markets
     return result
 
 
 def finalize() -> dict:
-    result=dict(base.finalize()); result["runtime_adapter_version"]=VERSION; return result
+    suppressed_incomplete_match_winner_markets = _suppress_incomplete_match_winner_markets()
+    result=dict(base.finalize()); result["runtime_adapter_version"]=VERSION; result["suppressed_incomplete_match_winner_markets"]=suppressed_incomplete_match_winner_markets; return result
 
 
 def main() -> None:
