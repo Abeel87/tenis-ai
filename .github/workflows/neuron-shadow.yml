@@ -64,8 +64,23 @@ jobs:
           assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
           PY
       - name: Train from Tenis AI raw history
-        if: github.event_name != 'pull_request' && (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
+        if: github.event_name == 'pull_request' || (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
         run: python backend/neuron.py train
+      - name: Candidate quality gate against pre-match Elo
+        if: github.event_name == 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('frontend/data/neuron_metrics.json').read_text())
+          print(json.dumps({'training':report.get('training'),'validation':report.get('validation'),'test':report.get('test'),'elo_baseline_test':report.get('elo_baseline_test'),'quality_gate':report.get('quality_gate')},indent=2))
+          q=report.get('quality_gate') or {}
+          assert q.get('beats_elo_log_loss') is True, 'candidate does not beat Elo log-loss OOS'
+          assert q.get('beats_elo_accuracy') is True, 'candidate does not beat Elo accuracy OOS'
+          assert q.get('ece_le_0_05') is True, 'candidate ECE exceeds 0.05 OOS'
+          assert q.get('test_rows_ge_1000') is True, 'candidate test support too small'
+          assert q.get('passed') is True, 'candidate quality gate failed'
+          PY
       - name: Require trained model before scoring
         if: github.event_name != 'pull_request'
         run: test -s frontend/data/neuron_model.json
