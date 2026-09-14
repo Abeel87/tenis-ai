@@ -2,7 +2,15 @@ name: Neuron SHADOW research
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/neuron.py'
+      - 'tests/test_neuron.py'
+      - 'requirements.txt'
+      - '.github/workflows/neuron-shadow.yml'
   schedule:
+    - cron: '20 * * * *'
     - cron: '35 3 * * 1,4'
   pull_request:
     branches: [main]
@@ -11,13 +19,17 @@ on:
       - 'tests/test_neuron.py'
       - 'requirements.txt'
       - '.github/workflows/neuron-shadow.yml'
+      - 'frontend/neuron-data-bridge.js'
+      - 'frontend/index.html'
+      - 'frontend/sw.js'
+      - 'scripts/runtime_health.py'
 
 permissions:
   contents: write
 
 concurrency:
   group: neuron-shadow-research
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   neuron:
@@ -50,8 +62,11 @@ jobs:
           assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
           PY
       - name: Train from Tenis AI raw history
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
         run: python backend/neuron.py train
+      - name: Require trained model before scoring
+        if: github.event_name != 'pull_request'
+        run: test -s frontend/data/neuron_model.json
       - name: Score current matches in SHADOW only
         if: github.event_name != 'pull_request'
         run: python backend/neuron.py current
