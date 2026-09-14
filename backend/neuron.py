@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""Rebuilt Tenis AI Neuron: leakage-safe Siamese MLP, SHADOW_RESEARCH only."""
+"""Tenis AI Neuron: leakage-safe residual Siamese MLP, SHADOW_RESEARCH only."""
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 import argparse, json, math, re, sys, unicodedata
@@ -13,6 +13,7 @@ MODE='SHADOW_RESEARCH'; POLICY='RAW_TENIS_AI_HISTORY_ONLY; NO_LEGACY_NEURON_OUTP
 PF=['log_rank','rank_missing','elo','surface_elo','wr10','wr25','wr50','surface_wr20','hold20','break20','spw20','rpw20','matches7','sets7','days_last','log_matches','age','age_missing','height','height_missing','left','hand_missing']
 CF=['h2h_a','log_h2h','bo5','hard','clay','grass','other_surface','atp','wta','challenger','other_tour','grand_slam']
 SET_RE=re.compile(r'(\d+)\s*[-:]\s*(\d+)')
+ELO_I=PF.index('elo'); ELO_LOGIT=math.log(10.0)/400.0
 
 def key(v):
     s=unicodedata.normalize('NFKD',str(v or '')).encode('ascii','ignore').decode().casefold()
@@ -36,7 +37,7 @@ def surface(v):
 def best_of(r):
     for k in ('best_of','best_of_sets'):
         try:
-            x=int(r.get(k));
+            x=int(r.get(k))
             if x in (3,5): return x
         except (TypeError,ValueError): pass
     return 5 if str(r.get('source_tour') or '').lower()=='atp' and str(r.get('tourney_level') or '').upper()=='G' else 3
@@ -111,45 +112,82 @@ def split(D):
     a=max(1,int(.70*len(u))); b=min(len(u)-1,max(a+1,int(.85*len(u))))
     return {n:np.isin(D,x) for n,x in {'train':u[:a],'validation':u[a:b],'test':u[b:]}.items()}
 
+def _sigmoid(x): return 1/(1+np.exp(-np.clip(x,-35,35)))
+
 class Model:
+    PARAMS=('W1','b1','W2','b2','W3','b3','W4','b4','Ws')
     def __init__(self,p=len(PF),c=len(CF),seed=87):
         rng=np.random.default_rng(seed); self.p=p; self.c=c; self.mu_p=self.sd_p=self.mu_c=self.sd_c=None
-        self.W1=rng.normal(0,.12,(p,64)); self.b1=np.zeros(64); self.W2=rng.normal(0,.12,(64,32)); self.b2=np.zeros(32); self.W3=rng.normal(0,.10,(32*3+c,32)); self.b3=np.zeros(32); self.W4=rng.normal(0,.10,(32,1)); self.b4=np.zeros(1)
+        self.W1=rng.normal(0,math.sqrt(2/max(1,p)),(p,64)); self.b1=np.zeros(64)
+        self.W2=rng.normal(0,math.sqrt(2/64),(64,32)); self.b2=np.zeros(32)
+        self.W3=rng.normal(0,math.sqrt(2/(32*3+c)),(32*3+c,32)); self.b3=np.zeros(32)
+        self.W4=np.zeros((32,1)); self.b4=np.zeros(1); self.Ws=np.zeros((p,1)); self.temperature=1.0; self.training_info={}
     def _std(self,X,mu,sd): return np.nan_to_num((X-mu)/sd,nan=0.,posinf=0.,neginf=0.)
     def _prep(self,A,B,C): return self._std(np.atleast_2d(A),self.mu_p,self.sd_p),self._std(np.atleast_2d(B),self.mu_p,self.sd_p),self._std(np.atleast_2d(C),self.mu_c,self.sd_c)
-    def _f(self,A,B,C,train=False,rng=None):
-        e=lambda X:(np.maximum(0,X@self.W1+self.b1))@self.W2+self.b2
-        ea=np.maximum(0,e(A)); eb=np.maximum(0,e(B)); z=np.c_[ea,eb,ea-eb,C]; h=np.maximum(0,z@self.W3+self.b3)
-        mask=None
-        if train and rng is not None: mask=(rng.random(h.shape)>=.2)/.8; h=h*mask
-        q=h@self.W4+self.b4; p=1/(1+np.exp(-np.clip(q,-35,35))); return p[:,0],(ea,eb,z,h,mask)
-    def fit(self,A,B,C,Y,VA,VB,VC,VY,epochs=160,lr=.004,seed=87):
-        self.mu_p=np.nanmean(np.r_[A,B],axis=0); self.sd_p=np.nanstd(np.r_[A,B],axis=0); self.sd_p=np.where((self.sd_p<1e-6)|~np.isfinite(self.sd_p),1,self.sd_p); self.mu_p=np.nan_to_num(self.mu_p)
-        self.mu_c=np.nanmean(C,axis=0); self.sd_c=np.nanstd(C,axis=0); self.sd_c=np.where((self.sd_c<1e-6)|~np.isfinite(self.sd_c),1,self.sd_c); self.mu_c=np.nan_to_num(self.mu_c)
-        A,B,C=self._prep(A,B,C); VA,VB,VC=self._prep(VA,VB,VC); rng=np.random.default_rng(seed); best=1e9; snap=None; stale=0
-        for _ in range(epochs):
-            p,(ea,eb,z,h,mask)=self._f(A,B,C,True,rng); n=len(Y); dq=(p-Y)[:,None]/n; dW4=h.T@dq+1e-5*self.W4; db4=dq.sum(0); dh=dq@self.W4.T; dh*=h>0
-            if mask is not None: dh*=mask
-            d3=dh; dW3=z.T@d3+1e-5*self.W3; db3=d3.sum(0); dz=d3@self.W3.T; de_a=dz[:,:32]+dz[:,64:96]; de_b=dz[:,32:64]-dz[:,64:96]
-            de_a*=ea>0; de_b*=eb>0; h1a=np.maximum(0,A@self.W1+self.b1); h1b=np.maximum(0,B@self.W1+self.b1); dW2=h1a.T@de_a+h1b.T@de_b+1e-5*self.W2; db2=(de_a+de_b).sum(0)
-            dh1a=(de_a@self.W2.T)*(h1a>0); dh1b=(de_b@self.W2.T)*(h1b>0); dW1=A.T@dh1a+B.T@dh1b+1e-5*self.W1; db1=(dh1a+dh1b).sum(0)
-            for name,g in (('W4',dW4),('b4',db4),('W3',dW3),('b3',db3),('W2',dW2),('b2',db2),('W1',dW1),('b1',db1)): setattr(self,name,getattr(self,name)-lr*g)
-            vp=self._f(VA,VB,VC)[0]; loss=ll(VY,vp)
-            if loss<best-1e-5: best=loss; snap={x:getattr(self,x).copy() for x in ('W1','b1','W2','b2','W3','b3','W4','b4')}; stale=0
-            else: stale+=1
-            if stale>=18: break
-        if snap:
-            for k,v in snap.items(): setattr(self,k,v)
-    def predict(self,A,B,C):
-        A0,B0,C0=np.atleast_2d(A),np.atleast_2d(B),np.atleast_2d(C); A1,B1,C1=self._prep(A0,B0,C0); p=self._f(A1,B1,C1)[0]
-        CS=C0.copy(); CS[:,0]=1-CS[:,0]; B2,A2,C2=self._prep(B0,A0,CS); q=1-self._f(B2,A2,C2)[0]
+    def _base(self,A,B):
+        A=np.atleast_2d(A); B=np.atleast_2d(B); ea=np.nan_to_num(A[:,ELO_I],nan=1500.,posinf=1500.,neginf=1500.); eb=np.nan_to_num(B[:,ELO_I],nan=1500.,posinf=1500.,neginf=1500.)
+        return ELO_LOGIT*(ea-eb)
+    def _f(self,A,B,C,base,train=False,rng=None,dropout=.15):
+        h1a=np.maximum(0,A@self.W1+self.b1); h1b=np.maximum(0,B@self.W1+self.b1)
+        ea=np.maximum(0,h1a@self.W2+self.b2); eb=np.maximum(0,h1b@self.W2+self.b2)
+        z=np.c_[ea,eb,ea-eb,C]; h=np.maximum(0,z@self.W3+self.b3); mask=None; hd=h
+        if train and rng is not None and dropout>0:
+            mask=(rng.random(h.shape)>=dropout)/(1-dropout); hd=h*mask
+        q=np.asarray(base,float)[:,None]+(A-B)@self.Ws+hd@self.W4+self.b4
+        return _sigmoid(q)[:,0],(h1a,h1b,ea,eb,z,h,hd,mask)
+    def _one(self,A0,B0,C0):
+        A0,B0,C0=np.atleast_2d(A0),np.atleast_2d(B0),np.atleast_2d(C0); A,B,C=self._prep(A0,B0,C0)
+        return self._f(A,B,C,self._base(A0,B0))[0]
+    def _sym(self,A0,B0,C0):
+        A0,B0,C0=np.atleast_2d(A0),np.atleast_2d(B0),np.atleast_2d(C0); p=self._one(A0,B0,C0); CS=C0.copy(); CS[:,0]=1-CS[:,0]; q=1-self._one(B0,A0,CS)
         return np.clip((p+q)/2,1e-6,1-1e-6)
+    @staticmethod
+    def _calibrate(p,t):
+        p=np.clip(np.asarray(p,float),1e-6,1-1e-6); t=max(.25,float(t)); return _sigmoid(np.log(p/(1-p))/t)
+    def predict(self,A,B,C): return np.clip(self._calibrate(self._sym(A,B,C),self.temperature),1e-6,1-1e-6)
+    def fit(self,A,B,C,Y,VA,VB,VC,VY,epochs=80,lr=.0025,seed=87,batch_size=1024,patience=12,dropout=.15):
+        RA,RB,RC=np.atleast_2d(np.asarray(A,float)),np.atleast_2d(np.asarray(B,float)),np.atleast_2d(np.asarray(C,float)); Y=np.asarray(Y,float)
+        RVA,RVB,RVC=np.atleast_2d(np.asarray(VA,float)),np.atleast_2d(np.asarray(VB,float)),np.atleast_2d(np.asarray(VC,float)); VY=np.asarray(VY,float)
+        self.mu_p=np.nanmean(np.r_[RA,RB],axis=0); self.sd_p=np.nanstd(np.r_[RA,RB],axis=0); self.sd_p=np.where((self.sd_p<1e-6)|~np.isfinite(self.sd_p),1,self.sd_p); self.mu_p=np.nan_to_num(self.mu_p)
+        self.mu_c=np.nanmean(RC,axis=0); self.sd_c=np.nanstd(RC,axis=0); self.sd_c=np.where((self.sd_c<1e-6)|~np.isfinite(self.sd_c),1,self.sd_c); self.mu_c=np.nan_to_num(self.mu_c)
+        SA,SB,SC=self._prep(RA,RB,RC); rng=np.random.default_rng(seed); self.temperature=1.0
+        init=self._sym(RVA,RVB,RVC); init_loss=ll(VY,init); init_acc=float(np.mean((init>=.5)==VY))
+        best=init_loss; best_acc=init_acc; snap={x:getattr(self,x).copy() for x in self.PARAMS}; stale=0; best_epoch=0
+        m1={x:np.zeros_like(getattr(self,x)) for x in self.PARAMS}; m2={x:np.zeros_like(getattr(self,x)) for x in self.PARAMS}; step=0
+        n=len(Y); batch_size=max(64,min(int(batch_size),n)); reg=1e-5; beta1=.9; beta2=.999; eps=1e-8; epoch=0
+        for epoch in range(1,int(epochs)+1):
+            order=rng.permutation(n)
+            for start in range(0,n,batch_size):
+                ix=order[start:start+batch_size]; a,b,c,y=SA[ix],SB[ix],SC[ix],Y[ix]; base=self._base(RA[ix],RB[ix])
+                p,(h1a,h1b,ea,eb,z,h,hd,mask)=self._f(a,b,c,base,True,rng,dropout); k=max(1,len(ix)); dq=(p-y)[:,None]/k
+                dWs=(a-b).T@dq+reg*self.Ws; dW4=hd.T@dq+reg*self.W4; db4=dq.sum(0); dh=dq@self.W4.T
+                if mask is not None: dh*=mask
+                d3=dh*(h>0); dW3=z.T@d3+reg*self.W3; db3=d3.sum(0); dz=d3@self.W3.T
+                dea=dz[:,:32]+dz[:,64:96]; deb=dz[:,32:64]-dz[:,64:96]; d2a=dea*(ea>0); d2b=deb*(eb>0)
+                dW2=h1a.T@d2a+h1b.T@d2b+reg*self.W2; db2=(d2a+d2b).sum(0)
+                dh1a=(d2a@self.W2.T)*(h1a>0); dh1b=(d2b@self.W2.T)*(h1b>0)
+                dW1=a.T@dh1a+b.T@dh1b+reg*self.W1; db1=(dh1a+dh1b).sum(0)
+                grads={'Ws':dWs,'W4':dW4,'b4':db4,'W3':dW3,'b3':db3,'W2':dW2,'b2':db2,'W1':dW1,'b1':db1}; step+=1
+                for name in self.PARAMS:
+                    g=np.clip(grads[name],-5,5); m1[name]=beta1*m1[name]+(1-beta1)*g; m2[name]=beta2*m2[name]+(1-beta2)*(g*g)
+                    mh=m1[name]/(1-beta1**step); vh=m2[name]/(1-beta2**step); setattr(self,name,getattr(self,name)-lr*mh/(np.sqrt(vh)+eps))
+            vp=self._sym(RVA,RVB,RVC); loss=ll(VY,vp); acc=float(np.mean((vp>=.5)==VY)); eligible=acc>=init_acc-1e-12
+            if eligible and (loss<best-1e-5 or (abs(loss-best)<=1e-5 and acc>best_acc)):
+                best=loss; best_acc=acc; best_epoch=epoch; snap={x:getattr(self,x).copy() for x in self.PARAMS}; stale=0
+            else: stale+=1
+            if stale>=patience: break
+        for k,v in snap.items(): setattr(self,k,v)
+        raw=self._sym(RVA,RVB,RVC); candidates=np.linspace(.60,1.60,51); losses=[ll(VY,self._calibrate(raw,t)) for t in candidates]; self.temperature=float(candidates[int(np.argmin(losses))])
+        final=self.predict(RVA,RVB,RVC)
+        self.training_info={'optimizer':'adam','residual_prior':'pre_match_elo_logit','dropout':float(dropout),'best_epoch':int(best_epoch),'epochs_ran':int(epoch),'validation_start_log_loss':float(init_loss),'validation_best_log_loss':float(ll(VY,final)),'validation_start_accuracy':float(init_acc),'validation_best_accuracy':float(np.mean((final>=.5)==VY)),'temperature':self.temperature}
+        return self.training_info
     def dump(self):
-        arr=lambda x:getattr(self,x).tolist(); return {'format':'tenis-ai-neuron-siamese','architecture':'shared 22->64->32; [A,B,A-B,context]->32->sigmoid; dropout=0.20','mu_p':arr('mu_p'),'sd_p':arr('sd_p'),'mu_c':arr('mu_c'),'sd_c':arr('sd_c'),**{x:arr(x) for x in ('W1','b1','W2','b2','W3','b3','W4','b4')}}
+        arr=lambda x:getattr(self,x).tolist(); return {'format':'tenis-ai-neuron-siamese','architecture':'Elo-logit residual + shared 22->64->32; [A,B,A-B,context]->32->correction; Adam; dropout=0.15','temperature':float(self.temperature),'training_info':self.training_info,'mu_p':arr('mu_p'),'sd_p':arr('sd_p'),'mu_c':arr('mu_c'),'sd_c':arr('sd_c'),**{x:arr(x) for x in self.PARAMS}}
     @classmethod
     def load(cls,d):
         m=cls(len(d['mu_p']),len(d['mu_c']))
         for x in ('mu_p','sd_p','mu_c','sd_c','W1','b1','W2','b2','W3','b3','W4','b4'): setattr(m,x,np.asarray(d[x],float))
+        m.Ws=np.asarray(d.get('Ws',np.zeros((len(d['mu_p']),1))),float); m.temperature=float(d.get('temperature',1.0)); m.training_info=d.get('training_info') or {}
         return m
 
 def ll(y,p): p=np.clip(p,1e-9,1-1e-9); return float(-np.mean(y*np.log(p)+(1-y)*np.log(1-p)))
@@ -168,11 +206,11 @@ def load_history():
     return raw,warn,info
 
 def train():
-    raw,warn,info=load_history(); (A,B,C,Y,D),_,meta=build(raw,True); S=split(D); tr,va,te=S['train'],S['validation'],S['test']; m=Model(); m.fit(A[tr],B[tr],C[tr],Y[tr],A[va],B[va],C[va],Y[va]); vp=m.predict(A[va],B[va],C[va]); tp=m.predict(A[te],B[te],C[te])
-    elo=lambda mask:1/(1+10**(-((A[mask,PF.index('elo')]-B[mask,PF.index('elo')])/400)))
+    raw,warn,info=load_history(); (A,B,C,Y,D),_,meta=build(raw,True); S=split(D); tr,va,te=S['train'],S['validation'],S['test']; m=Model(); training=m.fit(A[tr],B[tr],C[tr],Y[tr],A[va],B[va],C[va],Y[va]); vp=m.predict(A[va],B[va],C[va]); tp=m.predict(A[te],B[te],C[te])
+    elo=lambda mask:1/(1+10**(-((A[mask,ELO_I]-B[mask,ELO_I])/400)))
     vm,tm,ve,te_m=metrics(Y[va],vp),metrics(Y[te],tp),metrics(Y[va],elo(va)),metrics(Y[te],elo(te)); gate={'beats_elo_log_loss':tm['log_loss']<te_m['log_loss'],'beats_elo_accuracy':tm['accuracy']>te_m['accuracy'],'ece_le_0_05':tm['ece_10']<=.05,'test_rows_ge_1000':int(te.sum())>=1000}; gate['passed']=all(gate.values()); now=datetime.now(timezone.utc).isoformat()
     mp={**m.dump(),**flags(),'generated_at':now,'inputs_policy':POLICY,'player_features':PF,'context_features':CF}; write(MODEL,mp)
-    report={**flags(),'generated_at':now,'dataset':meta,'source':info,'source_warnings':warn,'splits':{k:int(v.sum()) for k,v in S.items()},'validation':vm,'test':tm,'elo_baseline_validation':ve,'elo_baseline_test':te_m,'quality_gate':gate,'promotion_eligible':False,'promotion_reason':'manual architecture and quality review required'}; write(METRICS,report); return report
+    report={**flags(),'generated_at':now,'dataset':meta,'source':info,'source_warnings':warn,'splits':{k:int(v.sum()) for k,v in S.items()},'training':training,'validation':vm,'test':tm,'elo_baseline_validation':ve,'elo_baseline_test':te_m,'quality_gate':gate,'promotion_eligible':False,'promotion_reason':'manual architecture and quality review required'}; write(METRICS,report); return report
 
 def current_features(st,m):
     a=key(m.get('p1') or m.get('player1')); b=key(m.get('p2') or m.get('player2'))
