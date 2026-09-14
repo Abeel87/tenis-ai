@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-from backend.neuron import PF, build, split, Model, flags, POLICY
+from backend.neuron import PF, CF, build, split, Model, flags, POLICY
 
 def hist(days=40):
     rows=[]
@@ -12,6 +12,12 @@ def test_dataset_is_balanced_and_leakage_safe():
 def test_chrono_split_does_not_mix_dates():
     (_,_,_,_,D),_,_=build(hist(),True); s=split(D); sets={k:set(D[v]) for k,v in s.items()}; assert sets['train'].isdisjoint(sets['validation']|sets['test']); assert sets['validation'].isdisjoint(sets['test']); assert max(sets['train'])<min(sets['validation'])<min(sets['test'])
 def test_siamese_model_returns_probabilities_and_serializes():
-    (A,B,C,Y,D),_,_=build(hist(),True); s=split(D); m=Model(); m.fit(A[s['train']],B[s['train']],C[s['train']],Y[s['train']],A[s['validation']],B[s['validation']],C[s['validation']],Y[s['validation']],epochs=8); p=m.predict(A[s['test']],B[s['test']],C[s['test']]); assert np.all((p>0)&(p<1)); q=Model.load(m.dump()).predict(A[s['test']],B[s['test']],C[s['test']]); assert np.allclose(p,q)
+    (A,B,C,Y,D),_,_=build(hist(),True); s=split(D); m=Model(); m.fit(A[s['train']],B[s['train']],C[s['train']],Y[s['train']],A[s['validation']],B[s['validation']],C[s['validation']],Y[s['validation']],epochs=8); p=m.predict(A[s['test']],B[s['test']],C[s['test']]); assert np.all((p>0)&(p<1)); q=Model.load(m.dump()).predict(A[s['test']],B[s['test']],C[s['test']]); assert np.allclose(p,q); assert m.training_info['residual_prior']=='pre_match_elo_logit'
+def test_residual_optimizer_learns_non_elo_signal_and_is_symmetric():
+    rng=np.random.default_rng(11); n=320; A=np.zeros((n,len(PF))); B=np.zeros_like(A); C=np.zeros((n,len(CF))); C[:,0]=.5
+    x=rng.normal(size=n); z=rng.normal(size=n); A[:,PF.index('elo')]=1500; B[:,PF.index('elo')]=1500; A[:,PF.index('log_rank')]=5-x; B[:,PF.index('log_rank')]=5-z; Y=(x>z).astype(float)
+    m=Model(seed=5); m.fit(A[:220],B[:220],C[:220],Y[:220],A[220:270],B[220:270],C[220:270],Y[220:270],epochs=25,batch_size=64,patience=8)
+    p=m.predict(A[270:],B[270:],C[270:]); assert np.mean((p>=.5)==Y[270:])>.85
+    cs=C[270:].copy(); cs[:,0]=1-cs[:,0]; q=m.predict(B[270:],A[270:],cs); assert np.allclose(p,1-q,atol=1e-10)
 def test_hard_isolation_contract():
     f=flags(); assert f=={'mode':'SHADOW_RESEARCH','production_influence':False,'playable_influence':False,'symphony_influence':False,'ineed_influence':False,'auto_promote':False}; assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
