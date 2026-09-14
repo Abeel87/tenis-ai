@@ -4,6 +4,7 @@
 const D=window.TenisPresentation;
 if(!D||typeof D.json!=='function')return;
 const json=D.json.bind(D);
+const clearJson=typeof D.clearCache==='function'?D.clearCache.bind(D):null;
 let cached=null;
 async function bundle(force=false){
   if(cached&&!force)return cached;
@@ -46,6 +47,7 @@ D.json=async(path,force=false)=>{
   if(path==='data/neuro_shadow_history_v935.json')return (await bundle(force)).current;
   return json(path,force);
 };
+if(clearJson)D.clearCache=()=>{cached=null;return clearJson()};
 document.addEventListener('click',e=>{
   const a=e.target?.closest?.('a[href="data/neuro_shadow_history_v935.json"]');
   if(!a)return;
