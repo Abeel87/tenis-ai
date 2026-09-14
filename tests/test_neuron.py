@@ -21,3 +21,5 @@ def test_residual_optimizer_learns_non_elo_signal_and_is_symmetric():
     cs=C[270:].copy(); cs[:,0]=1-cs[:,0]; q=m.predict(B[270:],A[270:],cs); assert np.allclose(p,1-q,atol=1e-10)
 def test_hard_isolation_contract():
     f=flags(); assert f=={'mode':'SHADOW_RESEARCH','production_influence':False,'playable_influence':False,'symphony_influence':False,'ineed_influence':False,'auto_promote':False}; assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
+
+# Intentionally retained as a PR gate anchor: any latest-main refresh must rerun the real OOS Neuron quality gate.
