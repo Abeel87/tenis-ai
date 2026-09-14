@@ -1,0 +1,138 @@
+name: Superbet market refresh watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20,50 * * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/superbet-market-watchdog.yml'
+
+permissions:
+  contents: read
+
+env:
+  TARGET_WORKFLOW: superbet-market-refresh.yml
+  STALE_AFTER_MINUTES: '55'
+
+concurrency:
+  group: superbet-market-refresh-watchdog
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout proposed watchdog
+        uses: actions/checkout@v6
+
+      - name: Validate watchdog safety contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/superbet-market-watchdog.yml').read_text(encoding='utf-8')
+          assert "cron: '20,50 * * * *'" in workflow
+          assert "TARGET_WORKFLOW: superbet-market-refresh.yml" in workflow
+          assert "STALE_AFTER_MINUTES: '55'" in workflow
+          assert "github.event_name != 'pull_request'" in workflow
+          assert 'actions: write' in workflow
+          assert 'gh workflow run "$TARGET_WORKFLOW"' in workflow
+          print('SUPERBET_WATCHDOG_CONTRACT_OK')
+          PY
+
+  watchdog:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Inspect Superbet refresh health
+        id: inspect
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            "/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs?branch=main&per_page=30" \
+            > "$RUNNER_TEMP/superbet-refresh-runs.json"
+
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          data = json.loads(
+              Path(os.environ['RUNNER_TEMP'], 'superbet-refresh-runs.json').read_text(encoding='utf-8')
+          )
+          runs = [
+              row for row in (data.get('workflow_runs') or [])
+              if isinstance(row, dict) and row.get('event') != 'pull_request'
+          ]
+
+          active_states = {'queued', 'in_progress', 'waiting', 'requested', 'pending'}
+          active = [row for row in runs if row.get('status') in active_states]
+          successful = [row for row in runs if row.get('conclusion') == 'success']
+          successful.sort(key=lambda row: row.get('updated_at') or '')
+          latest = successful[-1] if successful else None
+
+          now = datetime.now(timezone.utc)
+          threshold = int(os.environ['STALE_AFTER_MINUTES'])
+          age_minutes = None
+          if latest and latest.get('updated_at'):
+              finished = datetime.fromisoformat(latest['updated_at'].replace('Z', '+00:00'))
+              age_minutes = max(0.0, (now - finished).total_seconds() / 60.0)
+
+          dispatch = not active and (age_minutes is None or age_minutes >= threshold)
+          if active:
+              reason = 'refresh_already_active'
+          elif age_minutes is None:
+              reason = 'no_successful_main_refresh_found'
+          elif dispatch:
+              reason = f'last_success_is_{age_minutes:.1f}_minutes_old'
+          else:
+              reason = f'last_success_is_fresh_{age_minutes:.1f}_minutes_old'
+
+          latest_id = latest.get('id') if latest else None
+          latest_time = latest.get('updated_at') if latest else None
+          print(
+              'SUPERBET_WATCHDOG '
+              f'dispatch={str(dispatch).lower()} reason={reason} '
+              f'active_runs={len(active)} latest_success_id={latest_id} '
+              f'latest_success_at={latest_time} threshold_minutes={threshold}'
+          )
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as handle:
+              handle.write(f"dispatch={'true' if dispatch else 'false'}\n")
+              handle.write(f"reason={reason}\n")
+              handle.write(f"active_runs={len(active)}\n")
+              handle.write(f"latest_success_id={latest_id or ''}\n")
+              handle.write(f"latest_success_at={latest_time or ''}\n")
+          PY
+
+      - name: Dispatch Superbet refresh when stale
+        if: steps.inspect.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run "$TARGET_WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Dispatched $TARGET_WORKFLOW because: ${{ steps.inspect.outputs.reason }}"
+
+      - name: Watchdog summary
+        if: always()
+        run: |
+          {
+            echo '### Superbet refresh watchdog'
+            echo ''
+            echo "- dispatch: ${{ steps.inspect.outputs.dispatch || 'n/a' }}"
+            echo "- reason: ${{ steps.inspect.outputs.reason || 'n/a' }}"
+            echo "- active refresh runs: ${{ steps.inspect.outputs.active_runs || 'n/a' }}"
+            echo "- latest successful refresh: ${{ steps.inspect.outputs.latest_success_at || 'n/a' }}"
+            echo "- stale threshold: ${STALE_AFTER_MINUTES} minutes"
+          } >> "$GITHUB_STEP_SUMMARY"
