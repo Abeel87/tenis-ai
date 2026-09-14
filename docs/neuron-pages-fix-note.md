@@ -1,0 +1,1 @@
+Neuron Pages publication is performed in the same workflow after SHADOW artifacts are pushed to main. This avoids relying on GITHUB_TOKEN-generated push events to trigger a second workflow.
