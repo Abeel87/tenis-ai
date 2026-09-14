@@ -32,11 +32,15 @@ def affects_data(path):
     # A quota/backfill change there must run the full build immediately.
     if path == '.github/workflows/update-and-pages.yml':
         return True
+    # Runtime Health changes must execute the full health pipeline; otherwise
+    # the check being edited could be skipped by the scope classifier itself.
+    if path == 'scripts/runtime_health.py':
+        return True
     if path.startswith(('backend/', 'data/', 'frontend/data/')) or path == 'requirements.txt':
         return True
     if path.startswith('tests/') and path.endswith('.py'):
         return True
-    return path.startswith('scripts/') and not (path.startswith('scripts/verify_') or path in {'scripts/project_health.py', 'scripts/runtime_health.py'})
+    return path.startswith('scripts/') and not (path.startswith('scripts/verify_') or path == 'scripts/project_health.py')
 
 heavy = any(affects_data(path) for path in paths)
 with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
