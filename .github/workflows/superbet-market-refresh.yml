@@ -28,14 +28,6 @@ on:
       - 'backend/symphony2_state.py'
       - 'backend/symphony2_engine.py'
       - 'backend/symphony2_tracker.py'
-      - 'backend/neuro_shadow_state.py'
-      - 'backend/neuro_shadow_market_adapter.py'
-      - 'backend/neuro_shadow_features.py'
-      - 'backend/neuro_shadow_tracker.py'
-      - 'backend/neuro_shadow_history.py'
-      - 'backend/neuro_shadow_neural.py'
-      - 'backend/neuro_shadow_training.py'
-      - 'backend/neuro_shadow_runner.py'
       - 'frontend/symphony2.js'
       - 'frontend/symphony2.css'
       - 'frontend/symphony2-live-ui.js'
@@ -71,13 +63,6 @@ on:
       - 'tests/test_playable_ui_v917.py'
       - 'tests/test_playable_freshness_pipeline_v928.py'
       - 'tests/test_raw_playable_separation_v922.py'
-      - 'tests/test_neuro_shadow_state_v935.py'
-      - 'tests/test_neuro_shadow_market_adapter_v935.py'
-      - 'tests/test_neuro_shadow_features_v935.py'
-      - 'tests/test_neuro_shadow_tracker_v935.py'
-      - 'tests/test_neuro_shadow_neural_v936.py'
-      - 'tests/test_neuro_shadow_neural_artifact_v936.py'
-      - 'tests/test_neuro_shadow_runner_v935.py'
       - '.github/workflows/superbet-market-refresh.yml'
 
 permissions:
@@ -97,21 +82,17 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
           fetch-depth: 0
-
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: pip
-
       - name: Install bounded runtime dependencies
         run: pip install -r requirements.txt
-
       - name: Refresh Superbet Direct selected-match sidecar
         continue-on-error: true
         run: |
           python -m pip install "selenium>=4,<5"
           python backend/superbet_direct.py refresh-selected
-
       - name: Syntax guard
         run: |
           python -m py_compile backend/superbet_market_context.py
@@ -132,27 +113,15 @@ jobs:
           python -m py_compile backend/symphony2_state.py
           python -m py_compile backend/symphony2_engine.py
           python -m py_compile backend/symphony2_tracker.py
-          python -m py_compile backend/neuro_shadow_state.py
-          python -m py_compile backend/neuro_shadow_market_adapter.py
-          python -m py_compile backend/neuro_shadow_features.py
-          python -m py_compile backend/neuro_shadow_tracker.py
-          python -m py_compile backend/neuro_shadow_history.py
-          python -m py_compile backend/neuro_shadow_neural.py
-          python -m py_compile backend/neuro_shadow_training.py
-          python -m py_compile backend/neuro_shadow_runner.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
-
-      - name: Zero-request coverage, fixture matching, Symphony 2 and NEURO guards
-        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_direct_context_fallback.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py tests/test_neuro_shadow_state_v935.py tests/test_neuro_shadow_market_adapter_v935.py tests/test_neuro_shadow_features_v935.py tests/test_neuro_shadow_tracker_v935.py tests/test_neuro_shadow_neural_v936.py tests/test_neuro_shadow_neural_artifact_v936.py tests/test_neuro_shadow_runner_v935.py
-
+      - name: Zero-request coverage, fixture matching and Symphony 2 guards
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_direct_context_fallback.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py
       - name: Refresh real Superbet catalogue + map audited families
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
         run: python backend/superbet_market_context.py prepare
-
       - name: Verify real Superbet market semantics
         run: python scripts/verify_superbet_market_semantics.py
-
       - name: Re-evaluate current models on real operator lines
         run: |
           python backend/market_lab_v741.py
@@ -160,214 +129,109 @@ jobs:
           python backend/superbet_line_coverage.py
           python backend/superbet_playable.py inject
           python backend/player_intelligence_v85.py post
-
       - name: Refresh current SHADOW scores on playable lines
         run: |
           python backend/player_model_shadow_v89.py
           python backend/ensemble_player_learning_v891.py
           python backend/shadow_signal_center_v894.py
-
       - name: Build and track Symphony 2 from exact current Superbet offer
         run: |
           python backend/superbet_playable.py project
           python backend/symphony2_engine.py
           python backend/symphony2_tracker.py
           python scripts/compact_frontend_data.py
-
-      - name: Capture isolated NEURO SHADOW evidence and refresh current feed
-        run: |
-          python -m backend.neuro_shadow_runner settle
-          python -m backend.neuro_shadow_runner capture
-          python -m backend.neuro_shadow_runner run
-
       - name: Runtime sanity guard
         run: |
           python - <<'PY'
           import json
           from collections import Counter
           from pathlib import Path
-
-          data = Path('frontend/data')
-          availability = json.loads((data/'superbet_market_availability_v91.json').read_text(encoding='utf-8'))
-          results = json.loads((data/'results.json').read_text(encoding='utf-8'))
-          meta = json.loads((data/'meta.json').read_text(encoding='utf-8'))
-          symphony = json.loads((data/'symphony2_current.json').read_text(encoding='utf-8'))
-          history = json.loads((data/'symphony2_history.json').read_text(encoding='utf-8'))
-          stats = json.loads((data/'symphony2_stats.json').read_text(encoding='utf-8'))
-          neuro_history = json.loads((data/'neuro_shadow_history_v935.json').read_text(encoding='utf-8'))
-          neuro_stats = json.loads((data/'neuro_shadow_stats_v935.json').read_text(encoding='utf-8'))
-          neuro_models = json.loads((data/'neuro_shadow_neural_v936.json').read_text(encoding='utf-8'))
-          assert isinstance(results, list) and results, 'results.json empty after market refresh'
-          symphony_by_id = {
-              str(row.get('id') if row.get('id') is not None else row.get('match_key')): row
-              for row in (symphony.get('matches') or [])
-              if isinstance(row, dict)
-          }
+          data=Path('frontend/data')
+          availability=json.loads((data/'superbet_market_availability_v91.json').read_text(encoding='utf-8'))
+          results=json.loads((data/'results.json').read_text(encoding='utf-8'))
+          meta=json.loads((data/'meta.json').read_text(encoding='utf-8'))
+          symphony=json.loads((data/'symphony2_current.json').read_text(encoding='utf-8'))
+          history=json.loads((data/'symphony2_history.json').read_text(encoding='utf-8'))
+          stats=json.loads((data/'symphony2_stats.json').read_text(encoding='utf-8'))
+          assert isinstance(results,list) and results, 'results.json empty after market refresh'
+          by_id={str(r.get('id') if r.get('id') is not None else r.get('match_key')):r for r in (symphony.get('matches') or []) if isinstance(r,dict)}
           for match in results:
-              if not isinstance(match, dict):
-                  continue
-              layer = match.get('symphony2_playable') or {}
+              if not isinstance(match,dict): continue
+              layer=match.get('symphony2_playable') or {}
               assert layer.get('final_playable_authority') is True
-              assert layer.get('authority') == 'SYMPHONY2_FINAL_PLAYABLE'
+              assert layer.get('authority')=='SYMPHONY2_FINAL_PLAYABLE'
               if layer.get('playable') is True:
-                  assert int(layer.get('playable_count') or 0) >= 2
-                  assert len(layer.get('signals') or []) == int(layer.get('playable_count') or 0)
-                  assert all(row.get('fixture_line_verified') is True for row in layer.get('signals') or [])
-                  mid = str(match.get('match_id') if match.get('match_id') is not None else match.get('id'))
-                  source = symphony_by_id.get(mid)
-                  assert source is not None
-                  recommended = source.get('recommended_leg_count')
-                  comp = (source.get('compositions') or {}).get(str(recommended))
-                  assert isinstance(comp, dict)
-                  assert layer.get('signals') == (comp.get('selection') or [])
-          assert isinstance(neuro_history, list)
-          assert neuro_stats.get('mode') == 'SHADOW'
-          assert neuro_stats.get('production_influence') is False
-          assert neuro_stats.get('playable_influence') is False
-          assert all(row.get('mode') == 'SHADOW' and row.get('operator_playable') is False for row in neuro_history)
-          assert neuro_models.get('mode') == 'SHADOW'
-          assert neuro_models.get('production_influence') is False
-          assert neuro_models.get('playable_influence') is False
-          assert neuro_models.get('symphony_prod_influence') is False
-          assert neuro_models.get('auto_promote') is False
-          for report in (neuro_models.get('markets') or {}).values():
-              assert report.get('mode') == 'SHADOW'
-              assert report.get('production_influence') is False
-              assert report.get('playable_influence') is False
-              if report.get('status') != 'SHADOW_MODEL_READY':
-                  assert report.get('model') is None
+                  assert int(layer.get('playable_count') or 0)>=2
+                  assert len(layer.get('signals') or [])==int(layer.get('playable_count') or 0)
+                  assert all(r.get('fixture_line_verified') is True for r in layer.get('signals') or [])
+                  mid=str(match.get('match_id') if match.get('match_id') is not None else match.get('id'))
+                  source=by_id.get(mid); assert source is not None
+                  comp=(source.get('compositions') or {}).get(str(source.get('recommended_leg_count')))
+                  assert isinstance(comp,dict) and layer.get('signals')==(comp.get('selection') or [])
           assert availability.get('contains_prices') is False
           assert availability.get('prices_used') is False
-          assert availability.get('refresh_hours') == 1
-          direct_fallback = availability.get('direct_fallback') or {}
-          assert direct_fallback.get('prices_used') is False
-          assert direct_fallback.get('prices_in_canonical_availability') is False
-          assert direct_fallback.get('model_math_unchanged') is True
-          if int(direct_fallback.get('fallback_fixtures_added') or 0) > 0:
-              assert direct_fallback.get('canonical_context_activation') is True
-              assert direct_fallback.get('downstream_playable_eligibility') is True
-          quota = availability.get('quota_guard') or {}
-          assert int(quota.get('monthly_cap') or 0) == 4000
-          assert availability.get('refresh_status') in {'OK', 'OK_NO_MATCHED_FIXTURES', 'CACHE_FRESH', 'CACHE_STALE'}
-          discovery = availability.get('fixture_discovery_contract') or {}
+          assert availability.get('refresh_hours')==1
+          direct=availability.get('direct_fallback') or {}
+          assert direct.get('prices_used') is False
+          assert direct.get('prices_in_canonical_availability') is False
+          assert direct.get('model_math_unchanged') is True
+          if int(direct.get('fallback_fixtures_added') or 0)>0:
+              assert direct.get('canonical_context_activation') is True
+              assert direct.get('downstream_playable_eligibility') is True
+          quota=availability.get('quota_guard') or {}
+          assert int(quota.get('monthly_cap') or 0)==4000
+          assert availability.get('refresh_status') in {'OK','OK_NO_MATCHED_FIXTURES','CACHE_FRESH','CACHE_STALE'}
+          discovery=availability.get('fixture_discovery_contract') or {}
           assert discovery.get('bookmaker_neutral') is True
           assert discovery.get('has_odds_filter') is False
           assert discovery.get('bookmaker_filter') is False
           assert discovery.get('operator_offer_checked_later') is True
-          matching = availability.get('fixture_matching_v927') or {}
-          assert matching.get('version') == 'v9.2.7'
-          assert int(matching.get('additional_external_requests', -1)) == 0
+          matching=availability.get('fixture_matching_v927') or {}
+          assert matching.get('version')=='v9.2.7'
+          assert int(matching.get('additional_external_requests',-1))==0
           assert matching.get('prices_used') is False
-          raw_audit = availability.get('raw_family_audit_v924') or {}
-          assert raw_audit.get('version') == 'v9.2.4'
-          assert int(raw_audit.get('additional_external_requests', -1)) == 0
-          assert raw_audit.get('prices_used') is False
-          coverage = meta.get('superbet_line_coverage_v924') or {}
-          assert coverage.get('version') == 'v9.2.4'
-          assert int(coverage.get('external_requests', -1)) == 0
+          raw=availability.get('raw_family_audit_v924') or {}
+          assert raw.get('version')=='v9.2.4'
+          assert int(raw.get('additional_external_requests',-1))==0
+          assert raw.get('prices_used') is False
+          coverage=meta.get('superbet_line_coverage_v924') or {}
+          assert coverage.get('version')=='v9.2.4'
+          assert int(coverage.get('external_requests',-1))==0
           assert coverage.get('prices_used') is False
-          assert symphony.get('architecture') == 'CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2'
-          assert symphony.get('probability_policy') == 'SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS'
-          assert symphony.get('operator') == 'superbet.pl'
+          assert symphony.get('architecture')=='CURRENT_SUPERBET_OFFER -> SUPERVISED_EXACT_LINE_P -> SHARED_STATE_JOINT -> SYMPHONY2'
+          assert symphony.get('probability_policy')=='SUPERVISED_MODEL; PER_MARKET_CALIBRATION_WHEN_VALIDATED; STATE_AND_EXISTING_MODELS_ARE_FEATURES_NOT_FIXED_WEIGHTS'
+          assert symphony.get('operator')=='superbet.pl'
           assert history.get('legacy_symphony_results_imported') is False
           assert stats.get('legacy_symphony_stats_used') is False
           assert stats.get('prices_used') is False
-          assert stats.get('joint_probability_policy') == 'EXACT_SHARED_STATE_ONLY'
+          assert stats.get('joint_probability_policy')=='EXACT_SHARED_STATE_ONLY'
           for match in symphony.get('matches') or []:
               for row in match.get('scored_selections') or []:
-                  if row.get('market') in {
-                      'match_total','set1_total','set2_total','set3_total','total_sets',
-                      'match_game_handicap','set1_game_handicap','set2_game_handicap',
-                      'player_total_games','match_total_aces','player_aces','player_double_faults'
-                  }:
+                  if row.get('market') in {'match_total','set1_total','set2_total','set3_total','total_sets','match_game_handicap','set1_game_handicap','set2_game_handicap','player_total_games','match_total_aces','player_aces','player_double_faults'}:
                       assert row.get('fixture_line_verified') is True
                   if row.get('operator_model_probability') is not None:
-                      assert row.get('probability_kind') == 'SUPERVISED_OPERATOR_LINE_P_HIT'
+                      assert row.get('probability_kind')=='SUPERVISED_OPERATOR_LINE_P_HIT'
               for comp in (match.get('compositions') or {}).values():
-                  assert comp.get('joint_status') == 'EXACT_SHARED_STATE'
+                  assert comp.get('joint_status')=='EXACT_SHARED_STATE'
                   assert comp.get('joint_probability') is not None
-
-          offer_markets = Counter()
-          offer_verified_lines = Counter()
-          suppressed_fixture_lines = 0
+          offer_markets=Counter(); offer_verified_lines=Counter(); suppressed_fixture_lines=0
           for match in results:
-              if not isinstance(match, dict):
-                  continue
-              ctx = match.get('superbet_market_v91') or {}
-              suppressed_fixture_lines += int(ctx.get('suppressed_line_selections_without_fixture_evidence') or 0)
+              if not isinstance(match,dict): continue
+              ctx=match.get('superbet_market_v91') or {}; suppressed_fixture_lines+=int(ctx.get('suppressed_line_selections_without_fixture_evidence') or 0)
               for row in ctx.get('canonical_selections') or []:
-                  if not isinstance(row, dict):
-                      continue
-                  market = str(row.get('market') or '')
-                  offer_markets[market] += 1
-                  if row.get('fixture_line_verified') is True:
-                      offer_verified_lines[market] += 1
-
-          sym2_rows = [
-              row
-              for match in (symphony.get('matches') or [])
-              for row in (match.get('scored_selections') or [])
-              if isinstance(row, dict)
-          ]
-          sym2_offer = Counter(str(row.get('market') or '') for row in sym2_rows)
-          sym2_scored = Counter(
-              str(row.get('market') or '')
-              for row in sym2_rows
-              if row.get('operator_model_probability') is not None
-          )
-          sym2_zero_support = Counter(
-              str(row.get('market') or '')
-              for row in sym2_rows
-              if int(row.get('learning_support_rows') or 0) == 0
-          )
-          print('SYMPHONY2_MARKET_DIAGNOSTIC ' + json.dumps({
-              'operator_offer_markets': dict(sorted(offer_markets.items())),
-              'operator_verified_line_markets': dict(sorted(offer_verified_lines.items())),
-              'suppressed_without_fixture_line': suppressed_fixture_lines,
-              'symphony2_offer_markets': dict(sorted(sym2_offer.items())),
-              'symphony2_scored_markets': dict(sorted(sym2_scored.items())),
-              'symphony2_zero_support_markets': dict(sorted(sym2_zero_support.items())),
-          }, sort_keys=True))
-
-          verified = sum(1 for m in results if isinstance(m, dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
-          print('SUPERBET_DIRECT_FALLBACK_DIAGNOSTIC ' + json.dumps({
-              'sidecar_status': direct_fallback.get('sidecar_status'),
-              'sidecar_generated_at': direct_fallback.get('sidecar_generated_at'),
-              'sidecar_age_hours': direct_fallback.get('sidecar_age_hours'),
-              'sidecar_matches_seen': direct_fallback.get('sidecar_matches_seen'),
-              'fallback_fixtures_added': direct_fallback.get('fallback_fixtures_added'),
-              'existing_provider_preferred': direct_fallback.get('existing_provider_preferred'),
-              'unsafe_sidecar_matches_rejected': direct_fallback.get('unsafe_sidecar_matches_rejected'),
-              'canonical_context_activation': direct_fallback.get('canonical_context_activation'),
-              'downstream_playable_eligibility': direct_fallback.get('downstream_playable_eligibility'),
-              'prices_used': direct_fallback.get('prices_used'),
-          }, sort_keys=True))
-          print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC ' + json.dumps({
-              'fixtures_seen': availability.get('fixtures_seen'),
-              'matched_fixture_candidates': availability.get('matched_fixture_candidates'),
-              'tournaments_queried': availability.get('tournaments_queried'),
-              'operator_odds_rows_seen': availability.get('operator_odds_rows_seen'),
-              'operator_fixture_candidates': availability.get('operator_fixture_candidates'),
-              'operator_fixture_id_matches': availability.get('operator_fixture_id_matches'),
-              'operator_pair_time_matches': availability.get('operator_pair_time_matches'),
-              'operator_fixture_ids_in_neutral_catalogue': availability.get('operator_fixture_ids_in_neutral_catalogue'),
-              'operator_rows_with_requested_bookmaker': availability.get('operator_rows_with_requested_bookmaker'),
-              'operator_rows_in_horizon': availability.get('operator_rows_in_horizon'),
-              'operator_rows_in_horizon_with_requested_bookmaker': availability.get('operator_rows_in_horizon_with_requested_bookmaker'),
-              'operator_bookmakers_seen': availability.get('operator_bookmakers_seen'),
-              'operator_start_min': availability.get('operator_start_min'),
-              'operator_start_max': availability.get('operator_start_max'),
-              'sanitized_fixtures': len(availability.get('fixtures') or []),
-          }, sort_keys=True))
-          print(
-              f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} '
-              f'requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} '
-              f'coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} '
-              f'symphony2_matches={symphony.get("matches_count")} model={symphony.get("model_status")} '
-              f'neuro_shadow={len(neuro_history)} neuro_ready={neuro_models.get("ready_markets")}'
-          )
+                  if not isinstance(row,dict): continue
+                  market=str(row.get('market') or ''); offer_markets[market]+=1
+                  if row.get('fixture_line_verified') is True: offer_verified_lines[market]+=1
+          sym2_rows=[row for match in (symphony.get('matches') or []) for row in (match.get('scored_selections') or []) if isinstance(row,dict)]
+          sym2_offer=Counter(str(row.get('market') or '') for row in sym2_rows)
+          sym2_scored=Counter(str(row.get('market') or '') for row in sym2_rows if row.get('operator_model_probability') is not None)
+          sym2_zero_support=Counter(str(row.get('market') or '') for row in sym2_rows if int(row.get('learning_support_rows') or 0)==0)
+          print('SYMPHONY2_MARKET_DIAGNOSTIC '+json.dumps({'operator_offer_markets':dict(sorted(offer_markets.items())),'operator_verified_line_markets':dict(sorted(offer_verified_lines.items())),'suppressed_without_fixture_line':suppressed_fixture_lines,'symphony2_offer_markets':dict(sorted(sym2_offer.items())),'symphony2_scored_markets':dict(sorted(sym2_scored.items())),'symphony2_zero_support_markets':dict(sorted(sym2_zero_support.items()))},sort_keys=True))
+          print('SUPERBET_DIRECT_FALLBACK_DIAGNOSTIC '+json.dumps({'sidecar_status':direct.get('sidecar_status'),'sidecar_generated_at':direct.get('sidecar_generated_at'),'sidecar_age_hours':direct.get('sidecar_age_hours'),'sidecar_matches_seen':direct.get('sidecar_matches_seen'),'fallback_fixtures_added':direct.get('fallback_fixtures_added'),'existing_provider_preferred':direct.get('existing_provider_preferred'),'unsafe_sidecar_matches_rejected':direct.get('unsafe_sidecar_matches_rejected'),'canonical_context_activation':direct.get('canonical_context_activation'),'downstream_playable_eligibility':direct.get('downstream_playable_eligibility'),'prices_used':direct.get('prices_used')},sort_keys=True))
+          print('SUPERBET_OPERATOR_JOIN_DIAGNOSTIC '+json.dumps({'fixtures_seen':availability.get('fixtures_seen'),'matched_fixture_candidates':availability.get('matched_fixture_candidates'),'tournaments_queried':availability.get('tournaments_queried'),'operator_odds_rows_seen':availability.get('operator_odds_rows_seen'),'operator_fixture_candidates':availability.get('operator_fixture_candidates'),'operator_fixture_id_matches':availability.get('operator_fixture_id_matches'),'operator_pair_time_matches':availability.get('operator_pair_time_matches'),'operator_fixture_ids_in_neutral_catalogue':availability.get('operator_fixture_ids_in_neutral_catalogue'),'operator_rows_with_requested_bookmaker':availability.get('operator_rows_with_requested_bookmaker'),'operator_rows_in_horizon':availability.get('operator_rows_in_horizon'),'operator_rows_in_horizon_with_requested_bookmaker':availability.get('operator_rows_in_horizon_with_requested_bookmaker'),'operator_bookmakers_seen':availability.get('operator_bookmakers_seen'),'operator_start_min':availability.get('operator_start_min'),'operator_start_max':availability.get('operator_start_max'),'sanitized_fixtures':len(availability.get('fixtures') or [])},sort_keys=True))
+          verified=sum(1 for m in results if isinstance(m,dict) and (m.get('superbet_market_v91') or {}).get('operator_verified') is True)
+          print(f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} symphony2_matches={symphony.get("matches_count")} model={symphony.get("model_status")}')
           PY
-
       - name: Commit refreshed market context
         if: github.event_name != 'pull_request'
         id: commit
@@ -394,7 +258,6 @@ jobs:
             fi
             sleep $((attempt * 2))
           done
-
       - name: Dispatch serialized FAST Pages deploy
         if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
         env:

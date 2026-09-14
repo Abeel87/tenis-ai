@@ -1,0 +1,90 @@
+name: Neuron SHADOW research
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/neuron.py'
+      - 'tests/test_neuron.py'
+      - 'requirements.txt'
+      - '.github/workflows/neuron-shadow.yml'
+  schedule:
+    - cron: '20 * * * *'
+    - cron: '35 3 * * 1,4'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/neuron.py'
+      - 'tests/test_neuron.py'
+      - 'requirements.txt'
+      - '.github/workflows/neuron-shadow.yml'
+      - 'frontend/neuron-data-bridge.js'
+      - 'frontend/index.html'
+      - 'frontend/sw.js'
+      - 'scripts/runtime_health.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: neuron-shadow-research
+  cancel-in-progress: false
+
+jobs:
+  neuron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Compile and test rebuilt Neuron
+        run: |
+          python -m py_compile backend/neuron.py
+          python -m pytest -q tests/test_neuron.py
+      - name: Hard isolation guard
+        run: |
+          ! grep -n "neuro_shadow\|symphony2_current.json\|symphony2_history.json\|superbet_playable.py\|ineed_state" backend/neuron.py
+          python - <<'PY'
+          from backend.neuron import POLICY, flags
+          f=flags()
+          assert f['mode']=='SHADOW_RESEARCH'
+          assert f['production_influence'] is False
+          assert f['playable_influence'] is False
+          assert f['symphony_influence'] is False
+          assert f['ineed_influence'] is False
+          assert f['auto_promote'] is False
+          assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
+          PY
+      - name: Train from Tenis AI raw history
+        if: github.event_name != 'pull_request' && (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
+        run: python backend/neuron.py train
+      - name: Require trained model before scoring
+        if: github.event_name != 'pull_request'
+        run: test -s frontend/data/neuron_model.json
+      - name: Score current matches in SHADOW only
+        if: github.event_name != 'pull_request'
+        run: python backend/neuron.py current
+      - name: Audit isolation
+        if: github.event_name != 'pull_request'
+        run: python backend/neuron.py audit
+      - name: Publish SHADOW artifacts
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/data/neuron_model.json frontend/data/neuron_metrics.json frontend/data/neuron_current.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "data: refresh rebuilt Neuron SHADOW"
+          for attempt in 1 2 3; do
+            git fetch origin
+            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            [ "$attempt" -eq 3 ] && exit 1
+            sleep $((attempt * 2))
+          done
