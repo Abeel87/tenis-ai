@@ -26,6 +26,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: neuron-shadow-research
@@ -88,3 +90,29 @@ jobs:
             [ "$attempt" -eq 3 ] && exit 1
             sleep $((attempt * 2))
           done
+
+  deploy-neuron-ui:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: neuron
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout newest main with published Neuron artifacts
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload frontend
+        uses: actions/upload-pages-artifact@v4
+        with:
+          name: neuron-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frontend
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: neuron-pages-${{ github.run_id }}-${{ github.run_attempt }}
