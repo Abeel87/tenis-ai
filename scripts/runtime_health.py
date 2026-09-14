@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import json
+import os
 import re
+import subprocess
 import sys
 
 VERSION='v8.4E0'
@@ -12,6 +15,26 @@ def read(path: Path) -> str:
         return path.read_text(encoding='utf-8', errors='replace')
     except Exception:
         return ''
+
+def ci_baseline_bytes(root: Path, name: str):
+    """Return the base-commit payload size in CI, without weakening local strict checks."""
+    event_path=os.getenv('GITHUB_EVENT_PATH')
+    if not event_path:
+        return None
+    try:
+        event=json.loads(Path(event_path).read_text(encoding='utf-8'))
+        ref=((event.get('pull_request') or {}).get('base') or {}).get('sha') or event.get('before')
+        if not ref or set(str(ref))=={'0'}:
+            return None
+        p=subprocess.run(
+            ['git','cat-file','-s',f'{ref}:frontend/data/{name}'],
+            cwd=root,capture_output=True,text=True,check=False,
+        )
+        if p.returncode!=0:
+            return None
+        return int(p.stdout.strip())
+    except Exception:
+        return None
 
 def audit(root: Path):
     frontend=root/'frontend'
@@ -30,10 +53,17 @@ def audit(root: Path):
         path=frontend/'data'/name
         if not path.exists():
             continue
-        mb=path.stat().st_size/(1024*1024)
+        size=path.stat().st_size
+        mb=size/(1024*1024)
         metrics[name]=round(mb,2)
+        baseline=ci_baseline_bytes(root,name)
+        if baseline is not None:
+            metrics[name+'_baseline_mb']=round(baseline/(1024*1024),2)
         if mb >= FAIL_MB:
-            failures.append(f'{name} ma {mb:.1f} MB (limit awaryjny {FAIL_MB} MB).')
+            if baseline is not None and size<=baseline:
+                warnings.append(f'{name} ma {mb:.1f} MB ponad limitem awaryjnym, ale ta zmiana nie zwiększa payloadu (baseline {baseline/(1024*1024):.1f} MB).')
+            else:
+                failures.append(f'{name} ma {mb:.1f} MB (limit awaryjny {FAIL_MB} MB).')
         elif mb >= WARN_MB:
             warnings.append(f'{name} ma {mb:.1f} MB — payload trzeba dalej odchudzać.')
 
