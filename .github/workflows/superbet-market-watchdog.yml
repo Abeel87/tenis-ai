@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '20,50 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/superbet-market-watchdog.yml'
   pull_request:
     branches: [main]
     paths:
@@ -35,6 +39,7 @@ jobs:
 
           workflow = Path('.github/workflows/superbet-market-watchdog.yml').read_text(encoding='utf-8')
           assert "cron: '20,50 * * * *'" in workflow
+          assert 'push:' in workflow
           assert "TARGET_WORKFLOW: superbet-market-refresh.yml" in workflow
           assert "STALE_AFTER_MINUTES: '55'" in workflow
           assert "github.event_name != 'pull_request'" in workflow
