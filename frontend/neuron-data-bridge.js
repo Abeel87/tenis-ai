@@ -48,7 +48,7 @@ D.json=async(path,force=false)=>{
   return json(path,force);
 };
 if(clearJson)D.clearCache=()=>{cached=null;return clearJson()};
-document.addEventListener('click',e=>{
+if(typeof document!=='undefined'&&typeof document.addEventListener==='function')document.addEventListener('click',e=>{
   const a=e.target?.closest?.('a[href="data/neuro_shadow_history_v935.json"]');
   if(!a)return;
   e.preventDefault();
