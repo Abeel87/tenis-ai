@@ -127,3 +127,11 @@ Wyniki i miary końcowe znajdują się w `AUDIT_RESULTS_20260915.json`. Cała li
 Dla tej samej bazy `2bfb104…` pierwszy render zmniejsza statyczne pobrania runtime JSON z 5 / 40 882 012 B do 1 / 290 719 B (99,29% mniej). Miara nie obejmuje Auth/profilu, moderacji, JS/CSS ani późniejszych pobrań konta. Źródłowe feedy pozostają niezmienione; szczegóły są pobierane po otwarciu meczu. Pierwotny snapshot audytu miał 62 699 141 B — zmiana feedu na main sama zmniejszyła tę bazę, więc nie przypisujemy całości różnicy poprawce.
 
 Pełna lista zmienionych plików znajduje się też w polu `changed_files` raportu JSON. HEAD po zmianach i status CI są identyfikowane przez commit i PR, żeby uniknąć wpisywania do pliku jego własnego, niemożliwego do ustabilizowania SHA.
+
+## Uzupełnienie po CI — pamięć audytu presji Player DNA
+
+Na commit e480cc1 dziewięć workflowów zakończyło się sukcesem, w tym pełne 1015 pytest, browser E2E, CodeQL i odświeżenia danych. Point Tape dwukrotnie otrzymał sygnał zatrzymania runnera podczas pressure challenger; drugi log zakończył się kodem 143. Brak telemetrii hosta nie pozwala uznać OOM za potwierdzoną przyczynę.
+
+Inspekcja wykazała jednak powtarzane alokowanie tych samych 112 nazw cech i ich wartości dla każdego punktu. Współdzielimy teraz wynik istniejącej funkcji `_pair_features` wyłącznie dla tej samej trójki (match_id, server_id, receiver_id), wewnątrz pojedynczego wywołania. Wynikowe słowniki wierszy pozostają odrębne. Surowe punkty/profile są zwalniane przed oceną, która ich nie używa. Nie zmieniono funkcji liczących cechy, ewaluacji, treningu, progów ani raportowanych liczników.
+
+Na fixture 5000 punktów pełna serializacja wierszy i liczników jest identyczna przed/po. `tracemalloc`: 67 339 673 B → 21 889 133 B szczytowych alokacji; to pomiar kontrolowany, nie produkcyjny RSS. Dodano test rozdzielenia meczów, kierunku serwisu, niezależności wierszy i kolejnych wywołań. Pełny pytest po poprawce: 1016 passed. Workflow mierzy teraz zasoby procesu przez `/usr/bin/time -v`, zachowując kod wyjścia i wszystkie gate. Poprawka wymaga ponownego zielonego CI; wcześniejszego nie uznajemy za dowód dla nowego HEAD.

@@ -68,8 +68,7 @@
   },
   "verification": {
     "pytest": {
-      "passed": 1015,
-      "seconds": 11.31
+      "passed": 1016
     },
     "ui_static_smoke": "PASS",
     "ui_runtime_smoke": "PASS",
@@ -99,7 +98,19 @@
       "files": 48,
       "pack_and_verify": "PASS"
     },
-    "github_actions": "Pending PR execution; local checks are not a substitute"
+    "github_actions": "e480cc1: 9 workflows success; Point Tape runner shutdown twice. Memory follow-up requires new CI.",
+    "pressure_memory_fixture": {
+      "before": {
+        "peak_traced_bytes": 67339673,
+        "seconds": 1.629
+      },
+      "after": {
+        "peak_traced_bytes": 21889133,
+        "seconds": 0.667
+      },
+      "same_serialized_rows_and_counts": true,
+      "fixture_points": 5000
+    }
   },
   "changed_files": [
     ".github/actions/prepare-pages/action.yml",
@@ -119,6 +130,7 @@
     ".github/workflows/update-and-pages.yml",
     ".gitignore",
     "backend/history_player_priority_backfill.py",
+    "backend/player_dna_pressure_challenger.py",
     "docs/AUDIT_DATA_DELIVERY_20260915.md",
     "docs/AUDIT_RESULTS_20260915.json",
     "frontend/app.js",
@@ -136,6 +148,7 @@
     "tests/delivery_browser_e2e.mjs",
     "tests/delivery_projection.mjs",
     "tests/test_history_player_priority_backfill.py",
+    "tests/test_player_dna_pressure_challenger.py",
     "tests/test_runtime_snapshot.py",
     "tests/ui_runtime_smoke.mjs",
     "tests/ui_static_smoke.mjs"

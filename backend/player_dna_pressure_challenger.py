@@ -255,6 +255,10 @@ def enrich_feature_rows(
     base_rows, base_counts = build_feature_rows(point_rows, profile_rows)
     profiles = _profile_index(profile_rows)
     identities = _point_identity_index(point_rows)
+    # A profile pair is fixed for this exact match and serving direction.
+    # Reuse its immutable scalar features instead of allocating their names
+    # again for every point. The cache never crosses calls or matches.
+    pair_features: dict[tuple[str, int, int], dict[str, float | None]] = {}
 
     rows: list[dict[str, Any]] = []
     counts: dict[str, int] = defaultdict(int)
@@ -275,7 +279,10 @@ def enrich_feature_rows(
             counts["missing_as_of_profile_pair"] += 1
             continue
 
-        rows.append({**row, **_pair_features(server, receiver)})
+        pair_key = (match_id, server_id, receiver_id)
+        if pair_key not in pair_features:
+            pair_features[pair_key] = _pair_features(server, receiver)
+        rows.append({**row, **pair_features[pair_key]})
         counts["enriched_rows"] += 1
         counts["rows_with_any_primary_pressure_rate"] += int(
             any(rows[-1].get(name) is not None for name in PRESSURE_PRIMARY_NUMERIC)
@@ -596,6 +603,8 @@ def build() -> dict[str, Any]:
     point_rows = list(_iter_jsonl_gz(POINTS) or ())
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
+    # Evaluation consumes only the enriched rows, not the original payloads.
+    del point_rows, profile_rows
     report = evaluate(rows)
     report["build_counts"] = build_counts
 
