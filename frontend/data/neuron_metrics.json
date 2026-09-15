@@ -5,11 +5,11 @@
   "symphony_influence": false,
   "ineed_influence": false,
   "auto_promote": false,
-  "generated_at": "2026-09-14T20:15:05.816707+00:00",
+  "generated_at": "2026-09-15T02:14:56.455407+00:00",
   "dataset": {
-    "raw_rows": 24354,
-    "usable_matches": 24339,
-    "rows": 48678,
+    "raw_rows": 24365,
+    "usable_matches": 24350,
+    "rows": 48700,
     "date_min": "2024-12-29",
     "date_max": "2026-09-14",
     "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION"
@@ -25,19 +25,31 @@
   "splits": {
     "train": 39546,
     "validation": 4844,
-    "test": 4288
+    "test": 4310
+  },
+  "training": {
+    "optimizer": "adam",
+    "residual_prior": "pre_match_elo_logit",
+    "dropout": 0.15,
+    "best_epoch": 4,
+    "epochs_ran": 16,
+    "validation_start_log_loss": 0.6609423705167774,
+    "validation_best_log_loss": 0.6446972304451168,
+    "validation_start_accuracy": 0.5988852188274154,
+    "validation_best_accuracy": 0.6345995045417011,
+    "temperature": 1.1600000000000001
   },
   "validation": {
-    "accuracy": 0.4599504541701073,
-    "log_loss": 0.6958500528440273,
-    "brier": 0.2513504840084949,
-    "ece_10": 0.05061697053186032
+    "accuracy": 0.6345995045417011,
+    "log_loss": 0.6446972304451168,
+    "brier": 0.22542816253940906,
+    "ece_10": 0.01896118383987099
   },
   "test": {
-    "accuracy": 0.4519589552238806,
-    "log_loss": 0.6964082527286511,
-    "brier": 0.25162963584941,
-    "ece_10": 0.05831212897634422
+    "accuracy": 0.6375870069605568,
+    "log_loss": 0.6376049465695659,
+    "brier": 0.22390049208289783,
+    "ece_10": 0.014944361386139079
   },
   "elo_baseline_validation": {
     "accuracy": 0.5988852188274154,
@@ -46,17 +58,17 @@
     "ece_10": 0.00881256885638573
   },
   "elo_baseline_test": {
-    "accuracy": 0.5946828358208955,
-    "log_loss": 0.6545006033455311,
-    "brier": 0.23180688113988365,
-    "ece_10": 0.01773635796100005
+    "accuracy": 0.5948955916473317,
+    "log_loss": 0.6543766826675237,
+    "brier": 0.23174212560882146,
+    "ece_10": 0.01775987219564477
   },
   "quality_gate": {
-    "beats_elo_log_loss": false,
-    "beats_elo_accuracy": false,
-    "ece_le_0_05": false,
+    "beats_elo_log_loss": true,
+    "beats_elo_accuracy": true,
+    "ece_le_0_05": true,
     "test_rows_ge_1000": true,
-    "passed": false
+    "passed": true
   },
   "promotion_eligible": false,
   "promotion_reason": "manual architecture and quality review required"
