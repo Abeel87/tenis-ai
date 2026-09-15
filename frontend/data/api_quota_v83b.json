@@ -1,17 +1,17 @@
 {
   "version": "v8.3B",
-  "updated_at": "2026-09-15T00:05:59.097894+00:00",
-  "status": "not-started",
+  "updated_at": "2026-09-15T02:22:39.607985+00:00",
+  "status": "ready",
   "quota_day": "2026-09-15",
-  "daily_limit": null,
-  "calls_at_begin": null,
-  "remaining_at_begin": null,
-  "managed_calls_this_run": 208,
-  "remaining_estimate": null,
-  "per_minute": null,
+  "daily_limit": 10000,
+  "calls_at_begin": 820,
+  "remaining_at_begin": 9180,
+  "managed_calls_this_run": 609,
+  "remaining_estimate": 8571,
+  "per_minute": 300,
   "categories": {
     "fixtures": {
-      "calls": 0,
+      "calls": 3,
       "policy": {
         "daily_fraction": 0.08,
         "run_cap": 12,
@@ -21,7 +21,7 @@
       }
     },
     "pbp_current": {
-      "calls": 0,
+      "calls": 53,
       "policy": {
         "daily_fraction": 0.42,
         "run_cap": 180,
@@ -31,7 +31,7 @@
       }
     },
     "pbp_tracker": {
-      "calls": 0,
+      "calls": 12,
       "policy": {
         "daily_fraction": 0.07,
         "run_cap": 36,
@@ -41,7 +41,7 @@
       }
     },
     "history_settle": {
-      "calls": 0,
+      "calls": 13,
       "policy": {
         "daily_fraction": 0.18,
         "run_cap": 48,
@@ -51,7 +51,7 @@
       }
     },
     "history_backfill": {
-      "calls": 208,
+      "calls": 736,
       "policy": {
         "daily_fraction": 0.12,
         "run_cap": 120,
@@ -64,14 +64,14 @@
   "last_allocation": {
     "role": "history_backfill",
     "requested": 240,
-    "budget": 0,
-    "reason": "guard_unavailable_safe_skip",
-    "remaining_before": null,
-    "role_spent_today": 208,
-    "daily_cap": null,
-    "reserve": null,
+    "budget": 240,
+    "reason": "ok",
+    "remaining_before": 8811,
+    "role_spent_today": 496,
+    "daily_cap": 6000,
+    "reserve": 2000,
     "priority": "background",
-    "at": "2026-09-15T00:02:27.912782+00:00"
+    "at": "2026-09-15T02:17:08.224133+00:00"
   },
   "canonical_module": "backend/api_quota.py",
   "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
