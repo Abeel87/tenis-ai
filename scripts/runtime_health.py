@@ -16,23 +16,51 @@ def read(path: Path) -> str:
     except Exception:
         return ''
 
+def _git_blob_size(root: Path, ref: str, name: str):
+    if not ref or set(str(ref))=={'0'}:
+        return None
+    p=subprocess.run(
+        ['git','cat-file','-s',f'{ref}:frontend/data/{name}'],
+        cwd=root,capture_output=True,text=True,check=False,
+    )
+    if p.returncode!=0:
+        return None
+    try:
+        return int(p.stdout.strip())
+    except ValueError:
+        return None
+
 def ci_baseline_bytes(root: Path, name: str):
-    """Return the base-commit payload size in CI, without weakening local strict checks."""
+    """Return the exact payload baseline used by the CI comparison.
+
+    Pull-request event metadata can keep an older ``base.sha`` after ``main`` moves,
+    while GitHub rebuilds ``refs/pull/<n>/merge`` against the newer branch tip.
+    The checked-out synthetic merge commit is authoritative: its first parent is
+    the exact base commit used for the merge-ref under test. Fall back to the
+    freshly fetched remote base branch, then event metadata. Push events retain
+    the previous-commit comparison. Local runs stay strict by returning None.
+    """
     event_path=os.getenv('GITHUB_EVENT_PATH')
     if not event_path:
         return None
     try:
         event=json.loads(Path(event_path).read_text(encoding='utf-8'))
-        ref=((event.get('pull_request') or {}).get('base') or {}).get('sha') or event.get('before')
-        if not ref or set(str(ref))=={'0'}:
-            return None
-        p=subprocess.run(
-            ['git','cat-file','-s',f'{ref}:frontend/data/{name}'],
-            cwd=root,capture_output=True,text=True,check=False,
-        )
-        if p.returncode!=0:
-            return None
-        return int(p.stdout.strip())
+        pr=event.get('pull_request') or {}
+        if pr:
+            parent=subprocess.run(
+                ['git','rev-parse','HEAD^1'],cwd=root,capture_output=True,text=True,check=False,
+            )
+            if parent.returncode==0:
+                size=_git_blob_size(root,parent.stdout.strip(),name)
+                if size is not None:
+                    return size
+            base_ref=(pr.get('base') or {}).get('ref')
+            if base_ref:
+                size=_git_blob_size(root,f'refs/remotes/origin/{base_ref}',name)
+                if size is not None:
+                    return size
+            return _git_blob_size(root,(pr.get('base') or {}).get('sha'),name)
+        return _git_blob_size(root,event.get('before'),name)
     except Exception:
         return None
 
