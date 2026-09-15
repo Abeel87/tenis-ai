@@ -7,6 +7,7 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-pages-fast.yml'
+      - '.github/actions/prepare-pages/**'
 
 permissions:
   contents: read
@@ -57,12 +58,17 @@ jobs:
             node --check "$f"
           done < <(find frontend -maxdepth 1 -name '*.js' -print0)
           node tests/ui_static_smoke.mjs
+          node scripts/build_delivery.mjs
           node tests/ui_runtime_smoke.mjs
           node tests/decision_center_smoke.mjs
 
       - name: Configure Pages
         if: steps.scope.outputs.deploy == 'true'
         uses: actions/configure-pages@v5
+
+      - name: Build lazy match delivery
+        if: steps.scope.outputs.deploy == 'true'
+        uses: ./.github/actions/prepare-pages
 
       - name: Upload frontend
         if: steps.scope.outputs.deploy == 'true'

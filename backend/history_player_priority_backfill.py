@@ -92,6 +92,25 @@ def _current_player_keys(results: Any) -> set[str]:
     return out
 
 
+def _upcoming_player_times(results: Any, now: datetime) -> dict[str, datetime]:
+    """Scheduling only; existing exact indexed provider IDs remain the authority."""
+    out: dict[str, datetime] = {}
+    for row in results if isinstance(results, list) else []:
+        if not isinstance(row, dict):
+            continue
+        start = _parse_dt(row.get("scheduled_time"))
+        if start is None or start <= now:
+            continue
+        status = str(row.get("event_status") or row.get("feed_status") or "").lower()
+        if status in {"live", "finished", "completed", "cancelled", "postponed", "retired"}:
+            continue
+        for side in ("p1", "p2"):
+            key = _key(row.get(side))
+            if key and (key not in out or start < out[key]):
+                out[key] = start
+    return out
+
+
 def _cached_recent_count(entry: dict, cache_dir: Path = backfill.MATCH_CACHE) -> int:
     total = 0
     for match in entry.get("matches") or []:
@@ -109,6 +128,7 @@ def _priority_players(
     now: datetime,
     *,
     cooldown_hours: float = DEFAULT_COOLDOWN_HOURS,
+    upcoming_times: dict[str, datetime] | None = None,
     cache_dir: Path = backfill.MATCH_CACHE,
 ) -> list[dict]:
     players = index.get("players") if isinstance(index, dict) else {}
@@ -147,6 +167,7 @@ def _priority_players(
 
     rows.sort(
         key=lambda row: (
+            0 if upcoming_times is not None and row["key"] in upcoming_times else 1,
             0 if row["current"] else 1,
             int(row["cached_recent"]),
             int(row["indexed_matches"]),
@@ -193,6 +214,7 @@ def run(now: datetime | None = None) -> dict:
     state = _read_json(STATE_PATH, {"players": {}})
     results = _read_json(RESULTS_PATH, [])
     current_keys = _current_player_keys(results)
+    upcoming_times = _upcoming_player_times(results, now)
 
     report = {
         "version": VERSION,
@@ -202,6 +224,8 @@ def run(now: datetime | None = None) -> dict:
         "calls_this_run": 0,
         "target_players_available": 0,
         "current_target_players": 0,
+        "upcoming_players": len(upcoming_times),
+        "upcoming_players_missing_exact_index": sum(k not in (index.get("players") or {}) for k in upcoming_times),
         "players_attempted": 0,
         "list_pages": 0,
         "downloaded_tapes": 0,
@@ -225,6 +249,7 @@ def run(now: datetime | None = None) -> dict:
         state,
         now,
         cooldown_hours=cooldown_hours,
+        upcoming_times=upcoming_times,
     )
     report["target_players_available"] = len(candidates)
     report["current_target_players"] = sum(1 for row in candidates if row["current"])

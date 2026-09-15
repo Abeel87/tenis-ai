@@ -25,7 +25,8 @@ assert(sw.includes("u.pathname.includes('/data/')"),'Data never served from stal
 assert(sw.includes("tenis-ai-mobile-presentation-"),'PWA cache namespace must retire older presentation caches');
 assert(!app.includes('async function loadH2H(){await loadHistory()'),'H2H must not fetch the full history payload');
 assert(app.includes("async function loadH2H(){if(!state.detailHistory)"),'H2H uses the compact detail-history artifact');
-assert(app.includes("const backgroundJobs=[['telemetry'"),'Non-critical UI data loads after the primary screen');
+assert(app.includes("const backgroundJobs=[['coupons'"),'Account data loads after the primary screen');
+assert(app.includes("route==='admin'&&admin()&&!adminLoaded"),'Telemetry requires the admin route');
 assert(app.includes("target=\"_blank\" rel=\"noopener\">${l} ↗"),'Huge Neuron history stays available without rendering it into the app DOM');
 assert(ineed.includes('let renderGeneration=0')&&ineed.includes('generation===renderGeneration'),'iNeed$ stale async renders are guarded');
 assert(ineed.includes("timeZone:'Europe/Warsaw'")&&ineed.includes('dayKey(Date.now())'),'iNeed$ daily counters use Warsaw time');
