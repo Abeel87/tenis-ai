@@ -22,4 +22,4 @@ def test_residual_optimizer_learns_non_elo_signal_and_is_symmetric():
 def test_hard_isolation_contract():
     f=flags(); assert f=={'mode':'SHADOW_RESEARCH','production_influence':False,'playable_influence':False,'symphony_influence':False,'ineed_influence':False,'auto_promote':False}; assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
 
-# Intentionally retained as a PR gate anchor: any latest-main refresh must rerun the real OOS Neuron quality gate.
+# PR gate anchor refreshed after Runtime Health baseline fix (#326): rerun real OOS Neuron quality gate on latest main.
