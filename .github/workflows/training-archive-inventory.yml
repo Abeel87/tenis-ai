@@ -1,0 +1,63 @@
+name: Training archive inventory
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Update tennis data and deploy Pages
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: training-archive-inventory
+  cancel-in-progress: true
+
+jobs:
+  inventory:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Restore latest tennis history + PBP cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: training-archive-inventory-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require a restored cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(find data/cache -type f -print -quit 2>/dev/null || true)" ]; then
+            echo "::error::No files were restored into data/cache; refusing to report a fabricated zero-byte archive."
+            exit 1
+          fi
+
+      - name: Inventory durable raw training inputs
+        run: |
+          python backend/training_archive_inventory.py \
+            --output artifacts/training_archive_inventory.json \
+            --require-candidates
+
+      - name: Upload inventory report
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-archive-inventory-${{ github.run_id }}
+          path: artifacts/training_archive_inventory.json
+          if-no-files-found: error
+          retention-days: 7
