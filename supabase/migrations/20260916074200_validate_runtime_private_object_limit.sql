@@ -1,0 +1,2 @@
+alter table public.runtime_data_objects
+  validate constraint runtime_data_objects_size_bytes_check;
