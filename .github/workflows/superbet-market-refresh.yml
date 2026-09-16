@@ -65,6 +65,8 @@ on:
       - 'tests/test_raw_playable_separation_v922.py'
       - 'requirements-optional.lock'
       - '.github/workflows/superbet-market-refresh.yml'
+      - '.github/scripts/superbet_refresh_guard.py'
+      - 'tests/test_superbet_refresh_guard.py'
 
 permissions:
   contents: write
@@ -84,18 +86,32 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
           fetch-depth: 0
+      - name: Recheck refresh freshness after concurrency wait
+        id: freshness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .github/scripts/superbet_refresh_guard.py refresh
+      - name: Validate orchestration guard on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          python -m pip install pytest -c requirements.lock
+          python -m pytest -q tests/test_superbet_refresh_guard.py
       - uses: actions/setup-python@v6
+        if: steps.freshness.outputs.refresh == 'true'
         with:
           python-version: '3.12'
           cache: pip
       - name: Install bounded runtime dependencies
+        if: steps.freshness.outputs.refresh == 'true'
         run: pip install -r requirements.txt -c requirements.lock
       - name: Refresh Superbet Direct selected-match sidecar
+        if: steps.freshness.outputs.refresh == 'true'
         continue-on-error: true
         run: |
           python -m pip install "selenium==4.49.0" -c requirements.lock -c requirements-optional.lock
           python backend/superbet_direct.py refresh-selected
       - name: Syntax guard
+        if: steps.freshness.outputs.refresh == 'true'
         run: |
           python -m py_compile backend/superbet_market_context.py
           python -m py_compile backend/superbet_direct.py
@@ -117,14 +133,18 @@ jobs:
           python -m py_compile backend/symphony2_tracker.py
           python -m py_compile scripts/verify_superbet_market_semantics.py
       - name: Zero-request coverage, fixture matching and Symphony 2 guards
+        if: steps.freshness.outputs.refresh == 'true'
         run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_direct_context_fallback.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py
       - name: Refresh real Superbet catalogue + map audited families
+        if: steps.freshness.outputs.refresh == 'true'
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
         run: python backend/superbet_market_context.py prepare
       - name: Verify real Superbet market semantics
+        if: steps.freshness.outputs.refresh == 'true'
         run: python scripts/verify_superbet_market_semantics.py
       - name: Re-evaluate current models on real operator lines
+        if: steps.freshness.outputs.refresh == 'true'
         run: |
           python backend/market_lab_v741.py
           python backend/superbet_market_context.py finalize
@@ -132,17 +152,20 @@ jobs:
           python backend/superbet_playable.py inject
           python backend/player_intelligence_v85.py post
       - name: Refresh current SHADOW scores on playable lines
+        if: steps.freshness.outputs.refresh == 'true'
         run: |
           python backend/player_model_shadow_v89.py
           python backend/ensemble_player_learning_v891.py
           python backend/shadow_signal_center_v894.py
       - name: Build and track Symphony 2 from exact current Superbet offer
+        if: steps.freshness.outputs.refresh == 'true'
         run: |
           python backend/superbet_playable.py project
           python backend/symphony2_engine.py
           python backend/symphony2_tracker.py
           python scripts/compact_frontend_data.py
       - name: Runtime sanity guard
+        if: steps.freshness.outputs.refresh == 'true'
         run: |
           python - <<'PY'
           import json
@@ -235,7 +258,7 @@ jobs:
           print(f'SUPERBET_REFRESH_OK results={len(results)} verified_matches={verified} requests={quota.get("requests_used_by_v91")}/{quota.get("monthly_cap")} coverage={coverage.get("playable_model_covered_selections")}/{coverage.get("available_selections")} symphony2_matches={symphony.get("matches_count")} model={symphony.get("model_status")}')
           PY
       - name: Commit refreshed market context
-        if: github.event_name != 'pull_request'
+        if: steps.freshness.outputs.refresh == 'true' && (github.event_name != 'pull_request')
         id: commit
         run: |
           git config user.name "tenis-ai-bot"
@@ -261,7 +284,7 @@ jobs:
             sleep $((attempt * 2))
           done
       - name: Dispatch serialized FAST Pages deploy
-        if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
+        if: steps.freshness.outputs.refresh == 'true' && (github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages-fast.yml --ref main

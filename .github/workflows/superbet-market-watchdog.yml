@@ -8,10 +8,14 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/superbet-market-watchdog.yml'
+      - '.github/scripts/superbet_refresh_guard.py'
+      - 'tests/test_superbet_refresh_guard.py'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/superbet-market-watchdog.yml'
+      - '.github/scripts/superbet_refresh_guard.py'
+      - 'tests/test_superbet_refresh_guard.py'
 
 permissions:
   contents: read
@@ -48,6 +52,11 @@ jobs:
           print('SUPERBET_WATCHDOG_CONTRACT_OK')
           PY
 
+      - name: Test orchestration decisions
+        run: |
+          python -m pip install pytest -c requirements.lock
+          python -m pytest -q tests/test_superbet_refresh_guard.py
+
   watchdog:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -55,70 +64,16 @@ jobs:
       contents: read
       actions: write
     steps:
+      - name: Checkout orchestration guard
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
       - name: Inspect Superbet refresh health
         id: inspect
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs?branch=main&per_page=30" \
-            > "$RUNNER_TEMP/superbet-refresh-runs.json"
-
-          python - <<'PY'
-          import json
-          import os
-          from datetime import datetime, timezone
-          from pathlib import Path
-
-          data = json.loads(
-              Path(os.environ['RUNNER_TEMP'], 'superbet-refresh-runs.json').read_text(encoding='utf-8')
-          )
-          runs = [
-              row for row in (data.get('workflow_runs') or [])
-              if isinstance(row, dict) and row.get('event') != 'pull_request'
-          ]
-
-          active_states = {'queued', 'in_progress', 'waiting', 'requested', 'pending'}
-          active = [row for row in runs if row.get('status') in active_states]
-          successful = [row for row in runs if row.get('conclusion') == 'success']
-          successful.sort(key=lambda row: row.get('updated_at') or '')
-          latest = successful[-1] if successful else None
-
-          now = datetime.now(timezone.utc)
-          threshold = int(os.environ['STALE_AFTER_MINUTES'])
-          age_minutes = None
-          if latest and latest.get('updated_at'):
-              finished = datetime.fromisoformat(latest['updated_at'].replace('Z', '+00:00'))
-              age_minutes = max(0.0, (now - finished).total_seconds() / 60.0)
-
-          dispatch = not active and (age_minutes is None or age_minutes >= threshold)
-          if active:
-              reason = 'refresh_already_active'
-          elif age_minutes is None:
-              reason = 'no_successful_main_refresh_found'
-          elif dispatch:
-              reason = f'last_success_is_{age_minutes:.1f}_minutes_old'
-          else:
-              reason = f'last_success_is_fresh_{age_minutes:.1f}_minutes_old'
-
-          latest_id = latest.get('id') if latest else None
-          latest_time = latest.get('updated_at') if latest else None
-          print(
-              'SUPERBET_WATCHDOG '
-              f'dispatch={str(dispatch).lower()} reason={reason} '
-              f'active_runs={len(active)} latest_success_id={latest_id} '
-              f'latest_success_at={latest_time} threshold_minutes={threshold}'
-          )
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as handle:
-              handle.write(f"dispatch={'true' if dispatch else 'false'}\n")
-              handle.write(f"reason={reason}\n")
-              handle.write(f"active_runs={len(active)}\n")
-              handle.write(f"latest_success_id={latest_id or ''}\n")
-              handle.write(f"latest_success_at={latest_time or ''}\n")
-          PY
+        run: python .github/scripts/superbet_refresh_guard.py watchdog
 
       - name: Dispatch Superbet refresh when stale
         if: steps.inspect.outputs.dispatch == 'true'
@@ -137,7 +92,5 @@ jobs:
             echo ''
             echo "- dispatch: ${{ steps.inspect.outputs.dispatch || 'n/a' }}"
             echo "- reason: ${{ steps.inspect.outputs.reason || 'n/a' }}"
-            echo "- active refresh runs: ${{ steps.inspect.outputs.active_runs || 'n/a' }}"
-            echo "- latest successful refresh: ${{ steps.inspect.outputs.latest_success_at || 'n/a' }}"
             echo "- stale threshold: ${STALE_AFTER_MINUTES} minutes"
           } >> "$GITHUB_STEP_SUMMARY"
