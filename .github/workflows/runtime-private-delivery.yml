@@ -87,15 +87,22 @@ jobs:
         run: python scripts/publish_runtime_private.py --layer "${{ steps.layer.outputs.layer }}"
 
   gc:
+    needs: publish
     if: >-
+      always() &&
       github.ref == 'refs/heads/main' &&
       (
         github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch' ||
         (
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main'
+          needs.publish.result == 'success' &&
+          (
+            github.event_name == 'workflow_dispatch' ||
+            (
+              github.event_name == 'workflow_run' &&
+              github.event.workflow_run.conclusion == 'success' &&
+              github.event.workflow_run.head_branch == 'main'
+            )
+          )
         )
       )
     runs-on: ubuntu-latest

@@ -95,3 +95,14 @@ def test_gc_runs_for_merge_rollout_and_every_successful_private_delivery_event()
         "gc_runtime_private.py"
     )
     assert "contents: write" not in WORKFLOW
+
+
+def test_gc_is_serialized_after_publish_without_losing_push_cleanup():
+    gc_block = WORKFLOW.split("\n  gc:\n", 1)[1]
+    assert "    needs: publish\n" in gc_block
+    assert "      always() &&\n" in gc_block
+    assert "needs.publish.result == 'success'" in gc_block
+    assert "github.event_name == 'push' ||" in gc_block
+    assert gc_block.index("github.event_name == 'push' ||") < gc_block.index(
+        "needs.publish.result == 'success'"
+    )
