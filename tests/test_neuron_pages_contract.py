@@ -9,5 +9,5 @@ def test_neuron_workflow_publishes_pages_after_artifacts():
     assert 'needs: neuron' in text
     assert 'ref: main' in text
     assert 'actions/upload-pages-artifact@v4' in text
-    assert 'actions/deploy-pages@v4' in text
+    assert 'actions/deploy-pages@v5' in text
     assert 'path: frontend' in text
