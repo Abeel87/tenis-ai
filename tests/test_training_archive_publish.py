@@ -110,3 +110,45 @@ def test_archive_infrastructure_is_private_oidc_pinned_and_service_role_only():
     assert 'const WORKFLOW = ".github/workflows/training-archive-inventory.yml"' in edge
     assert "payload.workflow_ref !== EXPECTED_WORKFLOW_REF" in edge
     assert "createSignedUploadUrl(storagePath, { upsert: false })" in edge
+
+
+def test_archive_prepare_repairs_missing_physical_objects_but_rejects_size_mismatch():
+    root = Path(__file__).resolve().parents[1]
+    probe = (root / "supabase/migrations/20260916102800_training_archive_self_healing_probe.sql").read_text(
+        encoding="utf-8"
+    )
+    edge = (root / "supabase/functions/training-archive-publish/index.ts").read_text(encoding="utf-8")
+
+    assert "create or replace function public.training_archive_probe_objects" in probe.lower()
+    assert "left join storage.objects" in probe.lower()
+    assert "s.bucket_id = 'tenis-ai-training-archive-private'" in probe
+    assert "security definer" in probe.lower()
+    assert "set search_path = pg_catalog, public, storage" in probe
+    assert "revoke all on function public.training_archive_probe_objects(text[])" in probe
+    assert "grant execute on function public.training_archive_probe_objects(text[])\n  to service_role" in probe
+
+    assert 'supabase.rpc("training_archive_probe_objects"' in edge
+    assert "if (health.present === true && health.size_matches !== true)" in edge
+    assert "Archive object has unexpected physical size" in edge
+    assert "if (health.present !== true) needsUpload.add(sha256);" in edge
+    assert "filter((file) => needsUpload.has(file.sha256))" in edge
+    assert "createSignedUploadUrl(storagePath, { upsert: false })" in edge
+
+
+def test_archive_finalize_rechecks_physical_storage_before_complete():
+    root = Path(__file__).resolve().parents[1]
+    migration = (root / "supabase/migrations/20260916102800_training_archive_self_healing_probe.sql").read_text(
+        encoding="utf-8"
+    )
+    lower = migration.lower()
+
+    assert "create or replace function public.training_archive_finalize_manifest" in lower
+    assert "set search_path = pg_catalog, public, storage" in migration
+    assert "left join storage.objects" in lower
+    assert "v_missing bigint" in lower
+    assert "v_size_mismatch bigint" in lower
+    assert "or v_missing <> 0" in lower
+    assert "or v_size_mismatch <> 0" in lower
+    assert "s.bucket_id = 'tenis-ai-training-archive-private'" in migration
+    assert "revoke all on function public.training_archive_finalize_manifest(uuid)" in migration
+    assert "grant execute on function public.training_archive_finalize_manifest(uuid)\n  to service_role" in migration

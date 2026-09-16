@@ -287,7 +287,24 @@ async function prepareBatch(supabase: any, auth: AuthContext, body: any) {
     if (error) throw error;
   }
 
-  const uploadCandidates = [...uniqueBySha.values()].filter((file) => !(objectBySha.get(file.sha256) as any)?.verified_at);
+  const { data: objectHealth, error: healthError } = await supabase.rpc("training_archive_probe_objects", {
+    p_sha256: shas,
+  });
+  if (healthError) throw healthError;
+  const healthBySha = new Map((objectHealth || []).map((row: any) => [row.sha256, row]));
+  const needsUpload = new Set<string>();
+  for (const [sha256] of uniqueBySha) {
+    const health = healthBySha.get(sha256) as any;
+    if (!health) {
+      return response({ error: `Archive object health row is missing: ${sha256}` }, 409);
+    }
+    if (health.present === true && health.size_matches !== true) {
+      return response({ error: `Archive object has unexpected physical size: ${sha256}` }, 409);
+    }
+    if (health.present !== true) needsUpload.add(sha256);
+  }
+
+  const uploadCandidates = [...uniqueBySha.values()].filter((file) => needsUpload.has(file.sha256));
   const uploads = await Promise.all(uploadCandidates.map(async (file) => {
     const storagePath = `objects/${file.sha256.slice(0, 2)}/${file.sha256}`;
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(storagePath, { upsert: false });
