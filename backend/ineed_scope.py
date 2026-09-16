@@ -37,7 +37,13 @@ def signal_allowed(signal: dict) -> bool:
 
 
 def filter_results(results: list[dict]) -> tuple[list[dict], dict]:
-    """Return shallow-copied PLAYABLE rows containing only in-scope signals."""
+    """Return iNeed-only shallow copies with out-of-scope signals removed.
+
+    Final PLAYABLE metadata (including ``playable_count``) is preserved verbatim.
+    The count of signals actually admitted to iNeed$ lives only in the returned
+    diagnostics, so the adapter never rewrites Symphony's final composition
+    semantics.
+    """
     filtered: list[dict] = []
     matches_seen = 0
     matches_kept = 0
@@ -61,7 +67,6 @@ def filter_results(results: list[dict]) -> tuple[list[dict], dict]:
         copied = dict(match)
         copied_layer = dict(layer)
         copied_layer["signals"] = kept
-        copied_layer["playable_count"] = len(kept)
         copied["symphony2_playable"] = copied_layer
         filtered.append(copied)
 
