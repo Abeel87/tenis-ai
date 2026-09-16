@@ -12,12 +12,24 @@ from typing import Any
 ALLOWED_MARKET_SCOPE = (
     {"market": "set1_winner"},
     {"market": "set1_total", "pick": "over"},
-    {"market": "game_state", "checkpoint": 6},
+    {"market": "game_state", "checkpoint": 6, "condition": "leader_after_6_games"},
 )
 
 
 def _norm(value: Any) -> str:
     return str(value or "").strip().casefold()
+
+
+def _leader_score_after_six(value: Any) -> bool:
+    text = _norm(value)
+    parts = text.split(":")
+    if len(parts) != 2:
+        return False
+    try:
+        left, right = int(parts[0]), int(parts[1])
+    except ValueError:
+        return False
+    return left >= 0 and right >= 0 and left + right == 6 and left != right
 
 
 def signal_allowed(signal: dict) -> bool:
@@ -30,9 +42,10 @@ def signal_allowed(signal: dict) -> bool:
         return _norm(signal.get("pick")) == "over"
     if market == "game_state":
         try:
-            return int(signal.get("checkpoint") or 0) == 6
+            checkpoint = int(signal.get("checkpoint") or 0)
         except (TypeError, ValueError):
             return False
+        return checkpoint == 6 and _leader_score_after_six(signal.get("pick"))
     return False
 
 
@@ -71,7 +84,7 @@ def filter_results(results: list[dict]) -> tuple[list[dict], dict]:
         filtered.append(copied)
 
     return filtered, {
-        "contract": "INEED_SCOPE_SET1_WINNER_SET1_OVER_GAME_STATE_6",
+        "contract": "INEED_SCOPE_SET1_WINNER_SET1_OVER_LEADER_AFTER_6",
         "matches_seen": matches_seen,
         "matches_kept": matches_kept,
         "signals_seen": signals_seen,
