@@ -14,6 +14,7 @@ const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`));
 const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch", "push"]);
 const RETIRED_KEEP_PER_LAYER = 1;
 const STAGED_GRACE_MS = 6 * 60 * 60 * 1000;
+const MAX_OBJECT_BYTES = 47185920;
 const REMOVE_BATCH = 100;
 const QUERY_PAGE_SIZE = 500;
 
@@ -30,6 +31,7 @@ type RuntimeObject = {
   generation: string;
   logical_path: string;
   storage_path: string;
+  size_bytes: number;
 };
 
 type Head = { layer: string; generation: string };
@@ -101,7 +103,7 @@ async function collect(supabase: any, dryRun: boolean) {
       .range(from, to)),
     paged<RuntimeObject>((from, to) => supabase
       .from("runtime_data_objects")
-      .select("layer,generation,logical_path,storage_path")
+      .select("layer,generation,logical_path,storage_path,size_bytes")
       .order("layer", { ascending: true })
       .order("generation", { ascending: true })
       .order("logical_path", { ascending: true })
@@ -110,6 +112,10 @@ async function collect(supabase: any, dryRun: boolean) {
 
   const keep = new Set<string>(heads.map((h) => key(h.layer, h.generation)));
   const now = Date.now();
+  const invalidStaged = new Set<string>();
+  for (const obj of allObjects) {
+    if (Number(obj.size_bytes) > MAX_OBJECT_BYTES) invalidStaged.add(key(obj.layer, obj.generation));
+  }
 
   const retiredByLayer = new Map<string, Generation[]>();
   for (const row of rows) {
@@ -125,8 +131,10 @@ async function collect(supabase: any, dryRun: boolean) {
 
   for (const row of rows) {
     if (row.status !== "staged") continue;
+    const k = key(row.layer, row.generation);
+    if (invalidStaged.has(k)) continue;
     const age = now - Date.parse(row.created_at);
-    if (!Number.isFinite(age) || age < STAGED_GRACE_MS) keep.add(key(row.layer, row.generation));
+    if (!Number.isFinite(age) || age < STAGED_GRACE_MS) keep.add(k);
   }
 
   const deletable = rows.filter((row) => {
@@ -162,6 +170,7 @@ async function collect(supabase: any, dryRun: boolean) {
     ok: true,
     dry_run: dryRun,
     scanned: { generations: rows.length, heads: heads.length, objects: allObjects.length },
+    invalid_staged_generations: rows.filter((row) => row.status === "staged" && invalidStaged.has(key(row.layer, row.generation))).length,
     retained_generations: rows.length - deletable.length,
     deleted_generations: deletable.length,
     deleted_storage_objects: orphanPaths.length,
@@ -169,6 +178,8 @@ async function collect(supabase: any, dryRun: boolean) {
       active: "always",
       retired_per_layer: RETIRED_KEEP_PER_LAYER,
       staged_grace_hours: STAGED_GRACE_MS / 3600000,
+      invalid_staged_over_limit: "delete_immediately",
+      max_object_bytes: MAX_OBJECT_BYTES,
     },
   };
 }
