@@ -37,7 +37,7 @@ def test_long_data_build_and_pages_deploy_use_separate_concurrency_lanes():
     assert "needs: build" in deploy_job
     assert "group: pages" in deploy_job
     assert "cancel-in-progress: false" in deploy_job
-    assert "actions/deploy-pages@v4" in deploy_job
+    assert "actions/deploy-pages@v5" in deploy_job
 
     # The long build must use the one canonical Superbet market-context module
     # for both phases. Versioned adapter filenames are retired production paths.
@@ -56,7 +56,7 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
     assert "cancel-in-progress: false" in workflow
     assert "Fast frontend checks" in workflow
     assert "actions/upload-pages-artifact@v4" in workflow
-    assert "actions/deploy-pages@v4" in workflow
+    assert "actions/deploy-pages@v5" in workflow
     assert "python .github/scripts/change_scope.py" in workflow
     assert "steps.scope.outputs.deploy" in workflow
 
@@ -109,7 +109,7 @@ def test_retry_selects_only_its_own_pages_artifact():
         return value.group(1).strip().strip('\"\'')
 
     upload_name = action_input('actions/upload-pages-artifact@v4', 'name')
-    deploy_name = action_input('actions/deploy-pages@v4', 'artifact_name')
+    deploy_name = action_input('actions/deploy-pages@v5', 'artifact_name')
 
     def resolve(value, attempt):
         return value.replace('${{ github.run_id }}', '12345').replace('${{ github.run_attempt }}', str(attempt))
@@ -134,7 +134,7 @@ def test_full_pages_deploy_selects_its_own_unique_artifact():
         return tail.split("\n\n", 1)[0]
 
     upload = action_block("actions/upload-pages-artifact@v4")
-    deploy = action_block("actions/deploy-pages@v4")
+    deploy = action_block("actions/deploy-pages@v5")
     artifact = "github-pages-${{ github.run_id }}-${{ github.run_attempt }}"
 
     assert f"name: {artifact}" in upload
