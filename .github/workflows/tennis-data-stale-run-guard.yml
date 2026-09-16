@@ -14,7 +14,6 @@ on:
       - '.github/workflows/tennis-data-stale-run-guard.yml'
 
 permissions:
-  actions: write
   contents: read
 
 jobs:
@@ -31,6 +30,7 @@ jobs:
           text = Path('.github/workflows/tennis-data-stale-run-guard.yml').read_text(encoding='utf-8')
           required = (
               "if: github.event_name != 'pull_request'",
+              'actions: write',
               'jobs?per_page=100',
               'shadow-sync',
               'sync_conclusion',
@@ -47,6 +47,9 @@ jobs:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      actions: write
+      contents: read
     env:
       GH_TOKEN: ${{ github.token }}
       STALE_AFTER_MINUTES: '120'
