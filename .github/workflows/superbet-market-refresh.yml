@@ -63,6 +63,7 @@ on:
       - 'tests/test_playable_ui_v917.py'
       - 'tests/test_playable_freshness_pipeline_v928.py'
       - 'tests/test_raw_playable_separation_v922.py'
+      - 'requirements-optional.lock'
       - '.github/workflows/superbet-market-refresh.yml'
 
 permissions:
@@ -91,7 +92,7 @@ jobs:
       - name: Refresh Superbet Direct selected-match sidecar
         continue-on-error: true
         run: |
-          python -m pip install "selenium>=4,<5"
+          python -m pip install "selenium==4.49.0" -c requirements.lock -c requirements-optional.lock
           python backend/superbet_direct.py refresh-selected
       - name: Syntax guard
         run: |
