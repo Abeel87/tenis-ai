@@ -1,0 +1,79 @@
+name: Runtime private delivery staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      layer:
+        description: Snapshot provenance layer
+        required: true
+        type: choice
+        options:
+          - core
+          - market
+          - dna
+          - neuron
+  workflow_run:
+    workflows:
+      - Update tennis data and deploy Pages
+      - Superbet hourly market refresh
+      - Player DNA SHADOW refresh
+      - Neuron SHADOW research
+    types: [completed]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: runtime-private-delivery
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.head_branch == 'main'
+        )
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout OIDC-attested main snapshot
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Resolve provenance layer
+        id: layer
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_LAYER: ${{ inputs.layer }}
+          PRODUCER: ${{ github.event.workflow_run.name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            layer="$MANUAL_LAYER"
+          else
+            case "$PRODUCER" in
+              "Update tennis data and deploy Pages") layer="core" ;;
+              "Superbet hourly market refresh") layer="market" ;;
+              "Player DNA SHADOW refresh") layer="dna" ;;
+              "Neuron SHADOW research") layer="neuron" ;;
+              *) echo "::error::Unknown producer: $PRODUCER"; exit 1 ;;
+            esac
+          fi
+          echo "layer=$layer" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild lazy Pages bundles for core snapshot
+        if: steps.layer.outputs.layer == 'core'
+        uses: ./.github/actions/prepare-pages
+
+      - name: Publish private content-addressed snapshot
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: python scripts/publish_runtime_private.py --layer "${{ steps.layer.outputs.layer }}"
