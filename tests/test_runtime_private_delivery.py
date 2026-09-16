@@ -124,7 +124,9 @@ def test_layer_scoping_and_history_chunking_are_bounded(tmp_path, monkeypatch):
 
     rows_by_layer = {}
     maps_by_layer = {}
-    for layer in ("core", "market", "dna", "neuron"):
+    # Keep core last because its ephemeral history projection intentionally
+    # replaces the shared projection directory for each one-layer invocation.
+    for layer in ("market", "dna", "neuron", "core"):
         rows_by_layer[layer], maps_by_layer[layer] = helper.snapshot_files(layer)
 
     paths = {
