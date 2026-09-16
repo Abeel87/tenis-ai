@@ -17,6 +17,7 @@ const STAGED_GRACE_MS = 6 * 60 * 60 * 1000;
 const MAX_OBJECT_BYTES = 47185920;
 const REMOVE_BATCH = 100;
 const QUERY_PAGE_SIZE = 500;
+const MAX_ERROR_MESSAGE = 400;
 
 type Generation = {
   layer: string;
@@ -36,11 +37,20 @@ type RuntimeObject = {
 
 type Head = { layer: string; generation: string };
 
+type SafeError = { code: string | null; message: string };
+
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
   });
+}
+
+function safeError(err: unknown): SafeError {
+  const value = err as { code?: unknown; message?: unknown } | null | undefined;
+  const code = typeof value?.code === "string" ? value.code.slice(0, 80) : null;
+  const raw = typeof value?.message === "string" ? value.message : String(err);
+  return { code, message: raw.slice(0, MAX_ERROR_MESSAGE) };
 }
 
 function serviceKey(): string {
@@ -77,11 +87,15 @@ function newestFirst(a: Generation, b: Generation) {
   return Date.parse(b.activated_at || b.created_at) - Date.parse(a.activated_at || a.created_at);
 }
 
-async function paged<T>(fetchPage: (from: number, to: number) => PromiseLike<any>): Promise<T[]> {
+async function paged<T>(label: string, fetchPage: (from: number, to: number) => PromiseLike<any>): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; ; from += QUERY_PAGE_SIZE) {
-    const { data, error } = await fetchPage(from, from + QUERY_PAGE_SIZE - 1);
-    if (error) throw error;
+    const to = from + QUERY_PAGE_SIZE - 1;
+    const { data, error } = await fetchPage(from, to);
+    if (error) {
+      const detail = safeError(error);
+      throw new Error(`${label}[${from}-${to}]${detail.code ? ` ${detail.code}` : ""}: ${detail.message}`);
+    }
     const page = (data || []) as T[];
     rows.push(...page);
     if (page.length < QUERY_PAGE_SIZE) return rows;
@@ -90,18 +104,18 @@ async function paged<T>(fetchPage: (from: number, to: number) => PromiseLike<any
 
 async function collect(supabase: any, dryRun: boolean) {
   const [rows, heads, allObjects] = await Promise.all([
-    paged<Generation>((from, to) => supabase
+    paged<Generation>("runtime_data_generations", (from, to) => supabase
       .from("runtime_data_generations")
       .select("layer,generation,status,created_at,activated_at")
       .order("layer", { ascending: true })
       .order("generation", { ascending: true })
       .range(from, to)),
-    paged<Head>((from, to) => supabase
+    paged<Head>("runtime_data_heads", (from, to) => supabase
       .from("runtime_data_heads")
       .select("layer,generation")
       .order("layer", { ascending: true })
       .range(from, to)),
-    paged<RuntimeObject>((from, to) => supabase
+    paged<RuntimeObject>("runtime_data_objects", (from, to) => supabase
       .from("runtime_data_objects")
       .select("layer,generation,logical_path,storage_path,size_bytes")
       .order("layer", { ascending: true })
@@ -202,7 +216,8 @@ Deno.serve(async (req: Request) => {
     if (body.action !== "collect") return response({ error: "Unknown action" }, 400);
     return response(await collect(supabase, body.dry_run === true));
   } catch (err) {
-    console.error(err);
-    return response({ error: "runtime gc failed" }, 500);
+    const detail = safeError(err);
+    console.error("runtime-data-gc", detail);
+    return response({ error: "runtime gc failed", detail }, 500);
   }
 });
