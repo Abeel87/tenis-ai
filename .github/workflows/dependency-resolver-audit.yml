@@ -1,0 +1,109 @@
+name: Optional dependency resolver audit
+
+on:
+  push:
+    branches:
+      - audit/optional-dependency-resolver-20260916
+    paths:
+      - '.github/workflows/dependency-resolver-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  resolver-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Reproduce locked baseline
+        run: |
+          set -euo pipefail
+          python --version | tee environment.txt
+          python -m pip --version | tee -a environment.txt
+          python -m pip install -r requirements.txt -c requirements.lock
+          python -m pip freeze | sort > baseline.freeze
+          python -m pip check > baseline.pip-check.txt
+
+      - name: Resolve Selenium sidecar exactly as production workflow
+        run: |
+          set -euo pipefail
+          python -m pip install --report selenium-report.json "selenium>=4,<5"
+          python -m pip freeze | sort > selenium.freeze
+          python -m pip check > selenium.pip-check.txt
+          diff -u baseline.freeze selenium.freeze > selenium.diff.txt || true
+
+      - name: Resolve TabPFN challenger exactly as production workflow
+        run: |
+          set -uo pipefail
+          set +e
+          timeout 240s python -m pip install --report tabpfn-report.json "tabpfn==8.2.0"
+          status=$?
+          set -e
+          printf '%s\n' "$status" > tabpfn-install-exit-code.txt
+          python -m pip freeze | sort > tabpfn.freeze
+          python -m pip check > tabpfn.pip-check.txt 2>&1 || true
+          diff -u selenium.freeze tabpfn.freeze > tabpfn-vs-selenium.diff.txt || true
+          diff -u baseline.freeze tabpfn.freeze > tabpfn-vs-baseline.diff.txt || true
+
+      - name: Build compact resolver summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          out = []
+          out.append(Path('environment.txt').read_text(encoding='utf-8').strip())
+          for label, report in [('SELENIUM', 'selenium-report.json'), ('TABPFN', 'tabpfn-report.json')]:
+              p = Path(report)
+              out.append(f'\n[{label}]')
+              if not p.exists():
+                  out.append('pip report missing')
+                  continue
+              data = json.loads(p.read_text(encoding='utf-8'))
+              rows = []
+              for item in data.get('install', []):
+                  meta = item.get('metadata', {})
+                  rows.append((str(meta.get('name', '?')), str(meta.get('version', '?')), bool(item.get('requested'))))
+              for name, version, requested in sorted(rows, key=lambda row: row[0].lower()):
+                  out.append(f'{name}=={version} requested={requested}')
+          exit_code = Path('tabpfn-install-exit-code.txt')
+          if exit_code.exists():
+              out.append(f'\nTABPFN_INSTALL_EXIT_CODE={exit_code.read_text().strip()}')
+          for label, diff in [('SELENIUM_DIFF', 'selenium.diff.txt'), ('TABPFN_VS_SELENIUM_DIFF', 'tabpfn-vs-selenium.diff.txt')]:
+              p = Path(diff)
+              out.append(f'\n[{label}]')
+              out.append(p.read_text(encoding='utf-8').strip() if p.exists() else 'missing')
+          Path('resolver-summary.txt').write_text('\n'.join(out) + '\n', encoding='utf-8')
+          print(Path('resolver-summary.txt').read_text(encoding='utf-8'))
+          PY
+
+      - name: Upload resolver evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: optional-dependency-resolver-audit
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            environment.txt
+            baseline.freeze
+            baseline.pip-check.txt
+            selenium-report.json
+            selenium.freeze
+            selenium.pip-check.txt
+            selenium.diff.txt
+            tabpfn-report.json
+            tabpfn-install-exit-code.txt
+            tabpfn.freeze
+            tabpfn.pip-check.txt
+            tabpfn-vs-selenium.diff.txt
+            tabpfn-vs-baseline.diff.txt
+            resolver-summary.txt
