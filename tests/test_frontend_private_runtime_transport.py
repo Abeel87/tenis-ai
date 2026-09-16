@@ -78,7 +78,7 @@ def test_real_auth_e2e_harness_uses_existing_accounts_and_real_password_grant():
     lowered = REAL_AUTH_E2E.lower()
     assert "service_role" not in lowered
     assert "admin.createuser" not in lowered
-    assert "signupt" not in lowered
+    assert "/auth/v1/signup" not in lowered
     assert "user_metadata" not in lowered
 
 
