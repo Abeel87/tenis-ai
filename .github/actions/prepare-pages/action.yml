@@ -1,0 +1,21 @@
+name: Prepare verifiable Pages data
+description: Preserve a runtime source snapshot and build the lightweight match delivery projection.
+runs:
+  using: composite
+  steps:
+    - name: Archive canonical publication sources
+      shell: bash
+      run: |
+        python scripts/runtime_snapshot.py pack --archive "$RUNNER_TEMP/tenis-runtime.tar.gz"
+        python scripts/runtime_snapshot.py verify --archive "$RUNNER_TEMP/tenis-runtime.tar.gz"
+    - name: Preserve reproducible runtime artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: runtime-source-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/tenis-runtime.tar.gz
+        retention-days: 90
+        compression-level: 0
+        if-no-files-found: error
+    - name: Build match delivery
+      shell: bash
+      run: node scripts/build_delivery.mjs

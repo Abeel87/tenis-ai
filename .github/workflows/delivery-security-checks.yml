@@ -1,0 +1,40 @@
+name: Delivery and security checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: ['frontend/**', 'scripts/**', 'tests/**', 'requirements*', 'package*.json', '.github/workflows/delivery-security-checks.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: delivery-checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node scripts/build_delivery.mjs
+      - run: node tests/delivery_projection.mjs
+      - run: npm run test:e2e
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pip-audit==2.10.1
+      - run: python -m pip_audit -r requirements.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm audit --package-lock-only

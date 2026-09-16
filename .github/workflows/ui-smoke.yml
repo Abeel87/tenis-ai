@@ -44,7 +44,7 @@ jobs:
 
       - name: Install Python deps
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt -c requirements.lock
 
       - name: JavaScript syntax
         shell: bash
@@ -57,6 +57,7 @@ jobs:
       - name: UI static smoke
         run: |
           node tests/ui_static_smoke.mjs
+          node scripts/build_delivery.mjs
           node tests/ui_runtime_smoke.mjs
           node tests/match_time_smoke.mjs
           node tests/decision_center_smoke.mjs

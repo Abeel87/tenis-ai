@@ -28,7 +28,7 @@ jobs:
           cache: pip
 
       - name: Install Python deps
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -c requirements.lock
 
       - name: Restore tennis history + PBP cache
         uses: actions/cache/restore@v4

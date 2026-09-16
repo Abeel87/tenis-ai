@@ -36,7 +36,7 @@ def affects_data(path):
     # the check being edited could be skipped by the scope classifier itself.
     if path == 'scripts/runtime_health.py':
         return True
-    if path.startswith(('backend/', 'data/', 'frontend/data/')) or path == 'requirements.txt':
+    if path.startswith(('backend/', 'data/', 'frontend/data/')) or path in {'requirements.txt','requirements.lock'}:
         return True
     if path.startswith('tests/') and path.endswith('.py'):
         return True

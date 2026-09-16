@@ -1,4 +1,4 @@
-/* New Neuron publication adapter. Read-only: maps the retired admin report slots to rebuilt SHADOW_RESEARCH artifacts. */
+/* Read-only summary of the current SHADOW_RESEARCH Neuron artifacts. */
 (()=>{
 'use strict';
 const D=window.TenisPresentation;
@@ -24,6 +24,11 @@ async function summary(force=false){
     status:scored.length?'SHADOW_ACTIVE':'SHADOW_NO_SCORES',
     status_source:'UI_DERIVED_FROM_PUBLISHED_ROWS',
     generated_at:current.generated_at||metrics.generated_at||null,
+    last_scoring_at:current.generated_at||null,
+    last_training_at:metrics.generated_at||null,
+    dataset_date_max:metrics.dataset?.date_max||null,
+    source_freshness:metrics.source||null,
+    auto_promote:false,
     matches_count:matches.length,
     neural_rows_count:scored.length,
     state_only_rows_count:0,
@@ -40,19 +45,6 @@ async function summary(force=false){
     matches
   };
 }
-D.json=async(path,force=false)=>{
-  if(path==='data/neuro_shadow_current_v936.json')return summary(force);
-  if(path==='data/neuro_shadow_stats_v935.json')return (await bundle(force)).metrics;
-  if(path==='data/neuro_shadow_neural_v936.json')return json('data/neuron_model.json',force);
-  if(path==='data/neuro_shadow_history_v935.json')return (await bundle(force)).current;
-  return json(path,force);
-};
 if(clearJson)D.clearCache=()=>{cached=null;return clearJson()};
-if(typeof document!=='undefined'&&typeof document.addEventListener==='function')document.addEventListener('click',e=>{
-  const a=e.target?.closest?.('a[href="data/neuro_shadow_history_v935.json"]');
-  if(!a)return;
-  e.preventDefault();
-  window.open?.('data/neuron_current.json','_blank','noopener');
-},true);
 window.TENIS_AI_NEURON_DATA={bundle,summary,clear(){cached=null}};
 })();

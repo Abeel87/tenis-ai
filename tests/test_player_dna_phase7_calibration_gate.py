@@ -94,7 +94,7 @@ def test_phase7_can_close_validation_without_claiming_promotion():
 
     assert gate["technical_validation_complete"] is True
     assert gate["phase7_complete"] is True
-    assert gate["phase8_ready"] is True
+    assert gate["phase9_ready"] is True
     assert gate["promotion_evidence_sufficient"] is False
     assert gate["promotion_verdict"] == "EVIDENCE_INSUFFICIENT_NO_PROMOTION"
     assert gate["promotion_allowed_by_this_gate"] is False
@@ -134,5 +134,5 @@ def test_phase7_gate_fails_closed_when_validation_contract_is_incomplete():
 
     assert gate["technical_validation_complete"] is False
     assert gate["phase7_complete"] is False
-    assert gate["phase8_ready"] is False
+    assert gate["phase9_ready"] is False
     assert gate["promotion_allowed_by_this_gate"] is False

@@ -17,7 +17,6 @@ DATA = ROOT / "frontend" / "data"
 OUT = DATA / "player_dna_phase14_lifecycle.json"
 
 PHASE7 = DATA / "player_dna_phase7_calibration_walk_forward.json"
-PHASE8 = DATA / "neuro_shadow_phase8_challenger_walk_forward.json"
 PHASE9 = DATA / "symphony2_phase9_player_dna_shared_state.json"
 PHASE10 = DATA / "symphony2_phase10_bet_builder_dependency.json"
 PHASE12 = DATA / "player_dna_phase12_master_regression.json"
@@ -76,7 +75,6 @@ def _lane(
 def evaluate_lifecycle(
     *,
     phase7: dict[str, Any],
-    phase8: dict[str, Any],
     phase9: dict[str, Any],
     phase10: dict[str, Any],
     phase12: dict[str, Any],
@@ -86,7 +84,6 @@ def evaluate_lifecycle(
 ) -> dict[str, Any]:
     phase_chain = {
         "phase7_complete": phase7.get("phase7_complete") is True,
-        "phase8_complete": phase8.get("phase8_complete") is True,
         "phase9_complete": phase9.get("phase9_complete") is True,
         "phase10_complete": phase10.get("phase10_complete") is True,
         "phase12_complete": phase12.get("phase12_complete") is True,
@@ -101,17 +98,6 @@ def evaluate_lifecycle(
                 "production_influence",
                 "runtime_scoring_enabled",
                 "symphony2_influence",
-                "superbet_playable_influence",
-                "auto_promote",
-            ),
-        ),
-        "phase8_isolated": _all_false(
-            phase8,
-            (
-                "production_influence",
-                "runtime_switch_enabled",
-                "playable_influence",
-                "symphony_prod_influence",
                 "superbet_playable_influence",
                 "auto_promote",
             ),
@@ -274,34 +260,6 @@ def evaluate_lifecycle(
         },
     )
 
-    phase8_summary = phase8.get("summary") or {}
-    neural_review = list(phase8_summary.get("neural_review_candidates") or [])
-    ensemble_review = list(phase8_summary.get("ensemble_review_candidates") or [])
-    neuro_checks = {
-        "technical_chain_complete": common_ready,
-        "phase8_identical_fold_evaluation_complete": (
-            phase8.get("status") == "PHASE8_VALIDATION_COMPLETE_NO_PROMOTION"
-        ),
-        "per_market_review_candidate_exists": bool(neural_review or ensemble_review),
-        # Phase 8 explicitly authorizes audit review only. There is no separate
-        # prospective bounded-canary evidence ledger for Neuro yet, therefore
-        # Phase 14 must fail closed instead of interpreting one good fold/market
-        # as a runtime promotion signal.
-        "separate_neuro_prospective_canary_gate_complete": False,
-    }
-    neuro_lane = _lane(
-        "NEURO_MODEL_CLASS_CHALLENGER",
-        neuro_checks,
-        evidence={
-            "phase8_promotion_verdict": phase8_summary.get("promotion_verdict"),
-            "neural_review_candidates": neural_review,
-            "ensemble_review_candidates": ensemble_review,
-            "global_neural_promotion_authorized": phase8_summary.get(
-                "neural_global_promotion_authorized"
-            ),
-        },
-    )
-
     price_experiment = phase10.get("operator_price_reaction_experiment") or {}
     shared_checks = {
         "technical_chain_complete": common_ready,
@@ -330,7 +288,6 @@ def evaluate_lifecycle(
     lanes = {
         "player_dna_hold_calibrated_simulator": hold_lane,
         "player_dna_dynamic_lean": dynamic_lane,
-        "neuro_model_class_challenger": neuro_lane,
         "symphony2_player_dna_shared_state": shared_lane,
     }
     manual_canary_review_candidates = sorted(
@@ -456,7 +413,7 @@ def evaluate_lifecycle(
             "bookmaker_availability_never_deletes_model_math": True,
             "playable_exact_current_superbet_line_contract_unchanged": True,
             "nearest_line_substitution_forbidden": True,
-            "player_dna_simulator_neuro_remain_shadow_without_separate_gate": True,
+            "player_dna_simulator_remains_shadow_without_separate_gate": True,
             "no_parallel_vxxx_promotion_authority_created": True,
         },
     }
@@ -465,7 +422,6 @@ def evaluate_lifecycle(
 def build() -> dict[str, Any]:
     report = evaluate_lifecycle(
         phase7=_read_json(PHASE7),
-        phase8=_read_json(PHASE8),
         phase9=_read_json(PHASE9),
         phase10=_read_json(PHASE10),
         phase12=_read_json(PHASE12),
