@@ -9,6 +9,8 @@ const HISTORY_PATH='data/history.json';
 const HISTORY_MANIFEST='data/private/history/manifest.json';
 const PATH_RE=/^data\/[A-Za-z0-9_./-]+\.json$/;
 const MAX_EVENTS=30;
+const privateCache=new Map();
+const shadowAt=new Map();
 
 const telemetry={
   mode:'public',
@@ -19,12 +21,17 @@ const telemetry={
   shadow_reads:0,
   shadow_success:0,
   shadow_errors:0,
+  shadow_skipped:0,
   fallback_reads:0,
   history_reconstructions:0,
   last_events:[],
 };
 
 function now(){return Date.now()}
+function ttl(path){
+  if(/^data\/delivery\/matches\/[a-f0-9]{64}\.json$/.test(path))return Infinity;
+  return /(?:current|index\.json|symphony\.json|meta\.json)/.test(path)?60000:300000;
+}
 function currentMode(){
   const value=String(window.TENIS_RUNTIME_DATA_MODE||'public').toLowerCase();
   const mode=MODES.has(value)?value:'public';
@@ -108,9 +115,22 @@ async function privateJson(path){
     throw error;
   }
 }
-function shadow(path){
+function privateCached(path,force=false){
+  const prior=privateCache.get(path);
+  if(force||prior&&now()-prior.at>=ttl(path))privateCache.delete(path);
+  if(!privateCache.has(path)){
+    const entry={at:now()};
+    entry.promise=privateJson(path).catch(error=>{if(privateCache.get(path)===entry)privateCache.delete(path);throw error});
+    privateCache.set(path,entry);
+  }
+  return privateCache.get(path).promise;
+}
+function shadow(path,force=false){
+  const last=shadowAt.get(path)||0;
+  if(!force&&now()-last<60000){telemetry.shadow_skipped+=1;return}
+  shadowAt.set(path,now());
   telemetry.shadow_reads+=1;
-  privateJson(path).then(()=>{
+  privateCached(path,force).then(()=>{
     telemetry.shadow_success+=1;
     record('shadow_ok',path);
   }).catch(error=>{
@@ -118,7 +138,7 @@ function shadow(path){
     record('shadow_error',path,{error:safeMessage(error)});
   });
 }
-async function read(path,publicReader){
+async function read(path,publicReader,{force=false}={}){
   if(typeof publicReader!=='function')throw Error('Public reader is required.');
   const mode=currentMode();
   if(mode==='public'||!runtimeEligible(path)){
@@ -128,12 +148,12 @@ async function read(path,publicReader){
   if(mode==='dual'){
     telemetry.public_reads+=1;
     const result=await publicReader();
-    if(window.TenisAccount?.authenticated)shadow(path);
-    else record('shadow_skip',path,{reason:'not_authenticated'});
+    if(window.TenisAccount?.authenticated)shadow(path,force);
+    else{telemetry.shadow_skipped+=1;record('shadow_skip',path,{reason:'not_authenticated'})}
     return result;
   }
   try{
-    return await privateJson(path);
+    return await privateCached(path,force);
   }catch(error){
     // Public fallback stays enabled during staged migration. It can be disabled
     // explicitly only after real Auth E2E and production observation succeed.
@@ -144,7 +164,19 @@ async function read(path,publicReader){
     return publicReader();
   }
 }
+function clearPrivateCache(){privateCache.clear();shadowAt.clear()}
 
 window.TenisRuntimeTelemetry=telemetry;
-window.TenisRuntimeDataTransport={read,privateJson,currentMode,runtimeEligible,telemetry};
+window.TenisRuntimeDataTransport={read,privateJson,currentMode,runtimeEligible,telemetry,clearCache:clearPrivateCache};
+
+// Keep TenisPresentation as the single application data entry point. This wrapper
+// changes nothing in default public mode and can be removed independently.
+const presentation=window.TenisPresentation;
+if(presentation?.json&&!presentation.__runtimeTransportWrapped){
+  const publicJson=presentation.json.bind(presentation);
+  const publicClear=typeof presentation.clearCache==='function'?presentation.clearCache.bind(presentation):null;
+  presentation.json=(path,force=false)=>read(path,()=>publicJson(path,force),{force});
+  presentation.clearCache=()=>{publicClear?.();clearPrivateCache()};
+  Object.defineProperty(presentation,'__runtimeTransportWrapped',{value:true,enumerable:false});
+}
 })();
