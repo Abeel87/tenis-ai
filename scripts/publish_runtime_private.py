@@ -12,6 +12,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import shutil
 import sys
 import time
 import urllib.error
@@ -27,19 +28,49 @@ PUBLISHER_URL = (
 FRONTEND = Path("frontend")
 DATA = FRONTEND / "data"
 
+# Keep a safety margin below the current 50 MB global Storage upload limit on
+# the free project. A bucket-specific 100 MiB limit cannot raise that global cap.
+MAX_OBJECT_SIZE = 45 * 1024 * 1024
+HISTORY_CHUNK_TARGET = 20 * 1024 * 1024
+
 # B = data required by an authenticated normal product view.
 # Everything else defaults to C (admin/technical) so an unknown file can never
 # accidentally become less restricted during the migration.
 B_EXACT = {
     "data/delivery/index.json",
     "data/delivery/symphony.json",
-    "data/history.json",
     "data/match_detail_history.json",
     "data/player_dna_current_simulation.json",
     "data/superbet_direct_current.json",
+    "data/private/history/manifest.json",
 }
 B_PATTERNS = (
     "data/delivery/matches/*.json",
+    "data/private/history/chunks/*.json",
+)
+
+# Provenance scopes. These do not create new model authorities; they only keep
+# one producer from republishing unrelated runtime files.
+NEURON_EXACT = {
+    "data/neuron_current.json",
+    "data/neuron_metrics.json",
+    "data/neuron_model.json",
+}
+DNA_PATTERNS = (
+    "data/player_dna_*.json",
+)
+MARKET_EXACT = {
+    "data/results.json",
+    "data/meta.json",
+    "data/player_model_shadow_v89.json",
+    "data/ensemble_player_learning_v891.json",
+    "data/surface_elo_integration_v893.json",
+}
+MARKET_PATTERNS = (
+    "data/superbet_*.json",
+    "data/symphony2_*.json",
+    "data/market_lab_*.json",
+    "data/shadow_*.json",
 )
 
 
@@ -55,6 +86,20 @@ def tier_for(logical_path: str) -> str:
     return "c"
 
 
+def owner_layer(logical_path: str) -> str:
+    if logical_path.startswith("data/delivery/"):
+        return "core"
+    if logical_path in NEURON_EXACT:
+        return "neuron"
+    if any(fnmatch.fnmatch(logical_path, pattern) for pattern in DNA_PATTERNS):
+        return "dna"
+    if logical_path in MARKET_EXACT:
+        return "market"
+    if any(fnmatch.fnmatch(logical_path, pattern) for pattern in MARKET_PATTERNS):
+        return "market"
+    return "core"
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -63,19 +108,128 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def snapshot_files() -> tuple[list[dict[str, Any]], dict[str, Path]]:
+def _projection_dir() -> Path:
+    base = Path(os.environ.get("RUNNER_TEMP") or ".runtime-private")
+    target = base / "tenis-ai-private-projection"
+    shutil.rmtree(target, ignore_errors=True)
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def _write_bytes(path: Path, payload: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+
+
+def _chunk_history(source: Path, projection: Path) -> list[tuple[str, Path]]:
+    try:
+        rows = json.loads(source.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise PublishError(f"Cannot parse {source}: {exc}") from exc
+    if not isinstance(rows, list):
+        raise PublishError("data/history.json must be a JSON array")
+
+    source_sha = sha256_file(source)
+    source_size = source.stat().st_size
+    chunks: list[dict[str, Any]] = []
+    materialized: list[tuple[str, Path]] = []
+    current: list[bytes] = []
+    current_size = 2  # []
+
+    def flush() -> None:
+        nonlocal current, current_size
+        if not current:
+            return
+        index = len(chunks)
+        logical = f"data/private/history/chunks/{index:04d}.json"
+        local = projection / f"history-chunk-{index:04d}.json"
+        payload = b"[" + b",".join(current) + b"]"
+        if len(payload) > MAX_OBJECT_SIZE:
+            raise PublishError(f"{logical} exceeds private object limit after chunking")
+        _write_bytes(local, payload)
+        chunks.append(
+            {
+                "path": logical,
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "size_bytes": len(payload),
+                "entries": len(current),
+            }
+        )
+        materialized.append((logical, local))
+        current = []
+        current_size = 2
+
+    for row in rows:
+        encoded = json.dumps(
+            row,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if len(encoded) + 2 > HISTORY_CHUNK_TARGET:
+            raise PublishError("A single history entry exceeds the chunk target")
+        added = len(encoded) + (1 if current else 0)
+        if current and current_size + added > HISTORY_CHUNK_TARGET:
+            flush()
+            added = len(encoded)
+        current.append(encoded)
+        current_size += added
+    flush()
+
+    manifest = {
+        "schema": 1,
+        "format": "json-array-chunks-v1",
+        "source_path": "data/history.json",
+        "source_sha256": source_sha,
+        "source_size_bytes": source_size,
+        "entry_count": len(rows),
+        "chunk_target_bytes": HISTORY_CHUNK_TARGET,
+        "chunks": chunks,
+    }
+    manifest_payload = json.dumps(
+        manifest,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    manifest_local = projection / "history-manifest.json"
+    _write_bytes(manifest_local, manifest_payload)
+    materialized.insert(0, ("data/private/history/manifest.json", manifest_local))
+    return materialized
+
+
+def snapshot_files(layer: str) -> tuple[list[dict[str, Any]], dict[str, Path]]:
+    if layer not in {"core", "market", "dna", "neuron"}:
+        raise PublishError(f"Unknown layer: {layer}")
     if not DATA.is_dir():
         raise PublishError("frontend/data is missing")
 
-    rows: list[dict[str, Any]] = []
-    by_hash: dict[str, Path] = {}
+    projection = _projection_dir()
+    selected: list[tuple[str, Path]] = []
     for source in sorted(DATA.rglob("*.json")):
         if not source.is_file():
             continue
         logical = source.relative_to(FRONTEND).as_posix()
+        if logical.startswith("data/private/"):
+            continue
+        if owner_layer(logical) != layer:
+            continue
+        if logical == "data/history.json":
+            selected.extend(_chunk_history(source, projection))
+            continue
+        selected.append((logical, source))
+
+    rows: list[dict[str, Any]] = []
+    by_hash: dict[str, Path] = {}
+    seen_paths: set[str] = set()
+    for logical, source in selected:
+        if logical in seen_paths:
+            raise PublishError(f"Duplicate logical path: {logical}")
+        seen_paths.add(logical)
         size = source.stat().st_size
-        if size > 104857600:
-            raise PublishError(f"{logical} exceeds the 100 MiB private-object limit")
+        if size > MAX_OBJECT_SIZE:
+            raise PublishError(
+                f"{logical} exceeds the {MAX_OBJECT_SIZE} byte private-object limit"
+            )
         digest = sha256_file(source)
         rows.append(
             {
@@ -88,7 +242,7 @@ def snapshot_files() -> tuple[list[dict[str, Any]], dict[str, Path]]:
         by_hash.setdefault(digest, source)
 
     if not rows:
-        raise PublishError("No frontend/data JSON files found")
+        raise PublishError(f"No frontend/data JSON files found for layer {layer}")
     return rows, by_hash
 
 
@@ -187,7 +341,7 @@ def upload_signed(url: str, source: Path) -> None:
 
 
 def publish(layer: str, *, attempts: int = 2) -> dict[str, Any]:
-    files, by_hash = snapshot_files()
+    files, by_hash = snapshot_files(layer)
 
     for attempt in range(1, attempts + 1):
         status, prepared = publisher_call(
