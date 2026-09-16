@@ -2,7 +2,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (
-    ROOT / "supabase" / "migrations" / "20260916032000_runtime_private_delivery_staging.sql"
+    ROOT / "supabase" / "migrations" / "20260916032018_runtime_private_delivery_staging.sql"
 ).read_text(encoding="utf-8")
 PUBLISHER = (
     ROOT / "supabase" / "functions" / "runtime-data-publish" / "index.ts"
