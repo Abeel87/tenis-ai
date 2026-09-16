@@ -24,7 +24,7 @@ def playable(signals):
     }
 
 
-def test_scope_accepts_only_contract_markets():
+def test_scope_accepts_only_contract_markets_without_rewriting_playable_metadata():
     signals = [
         {"market": "set1_winner", "pick": "A"},
         {"market": "set1_total", "pick": "over", "line": 8.5},
@@ -44,7 +44,7 @@ def test_scope_accepts_only_contract_markets():
         ("set1_total", "over", None),
         ("game_state", "A", 6),
     ]
-    assert filtered[0]["symphony2_playable"]["playable_count"] == 3
+    assert filtered[0]["symphony2_playable"]["playable_count"] == 8
     assert diag["signals_seen"] == 8
     assert diag["signals_kept"] == 3
     assert diag["signals_filtered"] == 5
