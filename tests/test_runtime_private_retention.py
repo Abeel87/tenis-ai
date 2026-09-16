@@ -106,3 +106,16 @@ def test_gc_is_serialized_after_publish_without_losing_push_cleanup():
     assert gc_block.index("github.event_name == 'push' ||") < gc_block.index(
         "needs.publish.result == 'success'"
     )
+
+
+def test_gc_reports_bounded_safe_diagnostics_after_oidc_authorization():
+    assert "MAX_ERROR_MESSAGE = 400" in GC_FUNCTION
+    assert "function safeError" in GC_FUNCTION
+    assert 'paged<Generation>("runtime_data_generations"' in GC_FUNCTION
+    assert 'paged<Head>("runtime_data_heads"' in GC_FUNCTION
+    assert 'paged<RuntimeObject>("runtime_data_objects"' in GC_FUNCTION
+    assert 'console.error("runtime-data-gc", detail)' in GC_FUNCTION
+    assert 'response({ error: "runtime gc failed", detail }, 500)' in GC_FUNCTION
+    authorization_end = GC_FUNCTION.index("  try {\n    const supabase = createClient")
+    diagnostics = GC_FUNCTION.index('response({ error: "runtime gc failed", detail }, 500)')
+    assert authorization_end < diagnostics
