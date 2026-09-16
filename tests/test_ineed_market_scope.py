@@ -28,12 +28,13 @@ def test_scope_accepts_only_contract_markets_without_rewriting_playable_metadata
     signals = [
         {"market": "set1_winner", "pick": "A"},
         {"market": "set1_total", "pick": "over", "line": 8.5},
-        {"market": "game_state", "pick": "A", "checkpoint": 6},
+        {"market": "game_state", "pick": "4:2", "checkpoint": 6},
+        {"market": "game_state", "pick": "3:3", "checkpoint": 6},
         {"market": "match_winner", "pick": "A"},
         {"market": "match_total", "pick": "over", "line": 21.5},
         {"market": "set1_total", "pick": "under", "line": 8.5},
-        {"market": "game_state", "pick": "A", "checkpoint": 2},
-        {"market": "game_state", "pick": "A", "checkpoint": 4},
+        {"market": "game_state", "pick": "1:1", "checkpoint": 2},
+        {"market": "game_state", "pick": "2:2", "checkpoint": 4},
     ]
     original = playable(signals)
     filtered, diag = scope.filter_results([original])
@@ -42,19 +43,23 @@ def test_scope_accepts_only_contract_markets_without_rewriting_playable_metadata
     assert [(row.get("market"), row.get("pick"), row.get("checkpoint")) for row in kept] == [
         ("set1_winner", "A", None),
         ("set1_total", "over", None),
-        ("game_state", "A", 6),
+        ("game_state", "4:2", 6),
     ]
-    assert filtered[0]["symphony2_playable"]["playable_count"] == 8
-    assert diag["signals_seen"] == 8
+    assert filtered[0]["symphony2_playable"]["playable_count"] == 9
+    assert diag["signals_seen"] == 9
     assert diag["signals_kept"] == 3
-    assert diag["signals_filtered"] == 5
-    assert len(original["symphony2_playable"]["signals"]) == 8
+    assert diag["signals_filtered"] == 6
+    assert len(original["symphony2_playable"]["signals"]) == 9
 
 
 def test_scope_is_case_insensitive_but_fail_closed():
     assert scope.signal_allowed({"market": "SET1_WINNER", "pick": "A"}) is True
     assert scope.signal_allowed({"market": "SET1_TOTAL", "pick": "OVER", "line": 9.5}) is True
-    assert scope.signal_allowed({"market": "GAME_STATE", "pick": "A", "checkpoint": "6"}) is True
+    assert scope.signal_allowed({"market": "GAME_STATE", "pick": "4:2", "checkpoint": "6"}) is True
+    assert scope.signal_allowed({"market": "game_state", "pick": "2:4", "checkpoint": 6}) is True
+    assert scope.signal_allowed({"market": "game_state", "pick": "6:0", "checkpoint": 6}) is True
+    assert scope.signal_allowed({"market": "game_state", "pick": "3:3", "checkpoint": 6}) is False
+    assert scope.signal_allowed({"market": "game_state", "pick": "4:1", "checkpoint": 6}) is False
     assert scope.signal_allowed({"market": "set1_total", "pick": "under", "line": 9.5}) is False
     assert scope.signal_allowed({"market": "game_state", "checkpoint": None}) is False
     assert scope.signal_allowed({"market": "match_winner", "pick": "A"}) is False
@@ -67,12 +72,13 @@ def test_match_with_no_allowed_signal_is_removed():
         playable([
             {"market": "match_winner", "pick": "A"},
             {"market": "match_total", "pick": "over", "line": 20.5},
+            {"market": "game_state", "pick": "3:3", "checkpoint": 6},
         ])
     ])
     assert filtered == []
     assert diag["matches_seen"] == 1
     assert diag["matches_kept"] == 0
-    assert diag["signals_filtered"] == 2
+    assert diag["signals_filtered"] == 3
 
 
 def test_scoped_runner_filters_new_evaluations_but_keeps_open_bets_for_settlement(monkeypatch):
