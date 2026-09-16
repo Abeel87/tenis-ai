@@ -7,18 +7,34 @@ on:
       - Update tennis data and deploy Pages
     types:
       - completed
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/training-archive-inventory.yml'
+      - 'backend/training_archive_inventory.py'
+      - 'scripts/publish_training_archive.py'
+      - 'supabase/functions/training-archive-publish/**'
+      - 'supabase/migrations/20260916095147_durable_training_archive.sql'
 
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 concurrency:
   group: training-archive-inventory
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   inventory:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current main
@@ -32,6 +48,7 @@ jobs:
           python-version: '3.12'
 
       - name: Restore latest tennis history + PBP cache
+        id: cache
         uses: actions/cache/restore@v4
         with:
           path: data/cache
@@ -41,8 +58,14 @@ jobs:
 
       - name: Require a restored cache
         shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
         run: |
           set -euo pipefail
+          if [ -z "$MATCHED_CACHE_KEY" ]; then
+            echo "::error::No Actions cache key was restored; refusing to publish archive data without cache provenance."
+            exit 1
+          fi
           if [ -z "$(find data/cache -type f -print -quit 2>/dev/null || true)" ]; then
             echo "::error::No files were restored into data/cache; refusing to report a fabricated zero-byte archive."
             exit 1
@@ -61,3 +84,13 @@ jobs:
           path: artifacts/training_archive_inventory.json
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish durable raw training archive
+        env:
+          TRAINING_ARCHIVE_SOURCE_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+          TRAINING_ARCHIVE_PRODUCER_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
+          TRAINING_ARCHIVE_PRODUCER_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+        run: |
+          python scripts/publish_training_archive.py \
+            --inventory artifacts/training_archive_inventory.json \
+            --cache-root data/cache
