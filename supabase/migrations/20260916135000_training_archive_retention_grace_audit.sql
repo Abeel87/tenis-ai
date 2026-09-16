@@ -278,8 +278,7 @@ begin
     v_grace_ready_objects,
     v_grace_ready_bytes,
     v_deactivated_candidates
-  ) returning public.training_archive_retention_audit.observation_id
-    into v_observation_id;
+  ) returning observation_id into v_observation_id;
 
   return query
   select
