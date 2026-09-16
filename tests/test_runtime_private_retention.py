@@ -7,6 +7,12 @@ MIGRATION = (
     / "migrations"
     / "20260916064000_runtime_private_object_limit.sql"
 ).read_text(encoding="utf-8")
+VALIDATION_MIGRATION = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20260916074200_validate_runtime_private_object_limit.sql"
+).read_text(encoding="utf-8")
 GC_FUNCTION = (
     ROOT / "supabase" / "functions" / "runtime-data-gc" / "index.ts"
 ).read_text(encoding="utf-8")
@@ -20,6 +26,7 @@ def test_database_enforces_private_object_safety_margin_for_new_rows():
     assert "size_bytes <= 47185920" in MIGRATION
     assert "not valid" in MIGRATION.lower()
     assert "validate after stale pre-chunking generations" in MIGRATION
+    assert "validate constraint runtime_data_objects_size_bytes_check" in VALIDATION_MIGRATION.lower()
 
 
 def test_gc_is_bound_to_exact_repo_owner_main_and_runtime_workflow():
@@ -42,6 +49,17 @@ def test_gc_never_deletes_active_head_and_preserves_one_rollback_generation():
     assert '.in("status", ["retired", "staged"])' in GC_FUNCTION
     assert "supabase.storage.from(BUCKET).remove" in GC_FUNCTION
     assert "dry_run" in GC_FUNCTION
+
+
+def test_gc_immediately_reaps_structurally_invalid_staged_generation():
+    assert "MAX_OBJECT_BYTES = 47185920" in GC_FUNCTION
+    assert "size_bytes: number" in GC_FUNCTION
+    assert 'logical_path,storage_path,size_bytes' in GC_FUNCTION
+    assert "invalidStaged" in GC_FUNCTION
+    assert "Number(obj.size_bytes) > MAX_OBJECT_BYTES" in GC_FUNCTION
+    assert "if (invalidStaged.has(k)) continue" in GC_FUNCTION
+    assert 'invalid_staged_over_limit: "delete_immediately"' in GC_FUNCTION
+    assert "invalid_staged_generations" in GC_FUNCTION
 
 
 def test_gc_paginates_every_metadata_source_deterministically():
