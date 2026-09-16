@@ -11,6 +11,9 @@ GC_FUNCTION = (
     ROOT / "supabase" / "functions" / "runtime-data-gc" / "index.ts"
 ).read_text(encoding="utf-8")
 GC_CLIENT = (ROOT / "scripts" / "gc_runtime_private.py").read_text(encoding="utf-8")
+WORKFLOW = (
+    ROOT / ".github" / "workflows" / "runtime-private-delivery.yml"
+).read_text(encoding="utf-8")
 
 
 def test_database_enforces_private_object_safety_margin_for_new_rows():
@@ -25,6 +28,7 @@ def test_gc_is_bound_to_exact_repo_owner_main_and_runtime_workflow():
     assert 'const REPOSITORY_OWNER_ID = "198365428"' in GC_FUNCTION
     assert 'const REF = "refs/heads/main"' in GC_FUNCTION
     assert 'const WORKFLOW = ".github/workflows/runtime-private-delivery.yml"' in GC_FUNCTION
+    assert 'new Set(["workflow_run", "workflow_dispatch", "push"])' in GC_FUNCTION
     assert "repository_id" in GC_FUNCTION
     assert "repository_owner_id" in GC_FUNCTION
     assert "workflow_ref" in GC_FUNCTION
@@ -46,3 +50,15 @@ def test_gc_client_uses_distinct_oidc_audience_and_no_service_secret():
     assert "ACTIONS_ID_TOKEN_REQUEST_TOKEN" in GC_CLIENT
     assert "SUPABASE_SERVICE_ROLE_KEY" not in GC_CLIENT
     assert "--dry-run" in GC_CLIENT
+
+
+def test_gc_rollout_is_attested_and_previews_before_apply():
+    assert "push:" in WORKFLOW
+    assert "branches: [main]" in WORKFLOW
+    assert "github.event_name == 'push'" in WORKFLOW
+    assert "python scripts/gc_runtime_private.py --dry-run" in WORKFLOW
+    assert "python scripts/gc_runtime_private.py\n" in WORKFLOW
+    assert WORKFLOW.index("gc_runtime_private.py --dry-run") < WORKFLOW.rindex(
+        "gc_runtime_private.py"
+    )
+    assert "contents: write" not in WORKFLOW
