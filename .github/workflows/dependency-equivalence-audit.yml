@@ -17,8 +17,6 @@ permissions:
 jobs:
   baseline:
     runs-on: ubuntu-latest
-    outputs:
-      fingerprint: ${{ steps.fingerprint.outputs.value }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -30,14 +28,16 @@ jobs:
       - name: Full baseline tests
         run: python -m pytest -q
       - name: Baseline fingerprint
-        id: fingerprint
-        shell: bash
-        run: echo "value=$(python scripts/dependency_equivalence_fingerprint.py)" >> "$GITHUB_OUTPUT"
+        run: python scripts/dependency_equivalence_fingerprint.py > baseline.fingerprint
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baseline-fingerprint
+          path: baseline.fingerprint
+          if-no-files-found: error
+          retention-days: 1
 
   candidate:
     runs-on: ubuntu-latest
-    outputs:
-      fingerprint: ${{ steps.fingerprint.outputs.value }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -58,19 +58,31 @@ jobs:
       - name: Full candidate tests
         run: python -m pytest -q
       - name: Candidate fingerprint
-        id: fingerprint
-        shell: bash
-        run: echo "value=$(python scripts/dependency_equivalence_fingerprint.py)" >> "$GITHUB_OUTPUT"
+        run: python scripts/dependency_equivalence_fingerprint.py > candidate.fingerprint
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-fingerprint
+          path: candidate.fingerprint
+          if-no-files-found: error
+          retention-days: 1
 
   compare:
     runs-on: ubuntu-latest
     needs: [baseline, candidate]
     steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: baseline-fingerprint
+          path: baseline
+      - uses: actions/download-artifact@v5
+        with:
+          name: candidate-fingerprint
+          path: candidate
       - name: Require exact deterministic fingerprint equality
-        env:
-          BASELINE: ${{ needs.baseline.outputs.fingerprint }}
-          CANDIDATE: ${{ needs.candidate.outputs.fingerprint }}
+        shell: bash
         run: |
+          BASELINE=$(tr -d '\r\n' < baseline/baseline.fingerprint)
+          CANDIDATE=$(tr -d '\r\n' < candidate/candidate.fingerprint)
           test -n "$BASELINE"
           test -n "$CANDIDATE"
           echo "baseline=$BASELINE"
