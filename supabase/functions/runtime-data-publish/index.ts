@@ -1,5 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2.116.0";
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "npm:jose@6.2.12";
+import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.2.12";
 
 const BUCKET = "tenis-ai-runtime-private";
 const AUDIENCE = "tenis-ai-runtime-publisher";
@@ -241,8 +241,8 @@ Deno.serve(async (req: Request) => {
   let auth;
   try {
     auth = await authorize(req);
-  } catch (err) {
-    return response({ error: "unauthorized", detail: String(err) }, 401);
+  } catch {
+    return response({ error: "unauthorized" }, 401);
   }
 
   try {
