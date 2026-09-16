@@ -1,0 +1,173 @@
+{
+  "initial_head": "7187f9fac787aab6bbf759d3a104aa95597b8022",
+  "verified_base_head": "2bfb10412c3e074d2f90dd38d36cc6d04bf082c3",
+  "canonical_payload_bytes": {
+    "results.json": 30822304,
+    "symphony2_current.json": 7929750,
+    "superbet_direct_current.json": 1922749,
+    "player_dna_current_shadow.json": 192275,
+    "meta.json": 14934,
+    "history.json": 61627377
+  },
+  "first_render": {
+    "before_json_requests": 5,
+    "before_json_bytes": 40882012,
+    "after_json_requests": 1,
+    "after_json_bytes": 290719,
+    "scope": "Static runtime JSON; excludes auth/profile, moderation, JS/CSS/assets and later account fetch"
+  },
+  "coverage_initial": {
+    "visible": 342,
+    "both_history": 116,
+    "min_5": 74,
+    "model_ready": 74,
+    "missing": 226
+  },
+  "coverage_current": {
+    "visible_matches": 225,
+    "both_players_have_history": 93,
+    "both_players_minimum_5": 60,
+    "model_ready": 60,
+    "matches_with_missing_player_history": 132,
+    "reason_counts_players": {
+      "insufficient_pre_match_sample": 77,
+      "insufficient_required_statistics": 1,
+      "no_safe_identity_candidate": 202,
+      "sufficient_history": 170
+    }
+  },
+  "coverage_causality": "Feed changed naturally on main; no measured production backfill improvement from this unmerged PR.",
+  "supabase_live": {
+    "rls_initplan_before": 25,
+    "rls_initplan_after": 0,
+    "missing_fk_indexes_before": 5,
+    "missing_fk_indexes_after": 0,
+    "migration": "20260915094023_audit_rls_and_fk_indexes",
+    "leaked_password_protection_enabled": false
+  },
+  "not_completed": [
+    "Stop hourly runtime Git commits",
+    "Private authorized B/C file delivery",
+    "Enable main protection",
+    "Enable leaked password protection",
+    "Production E2E auth",
+    "Complete optional training dependency lock"
+  ],
+  "boundaries": {
+    "model_math_untouched": true,
+    "thresholds_untouched": true,
+    "weights_untouched": true,
+    "training_logic_untouched": true,
+    "player_dna_math_untouched": true,
+    "symphony_math_untouched": true,
+    "neuron_isolated": true,
+    "playable_authority_untouched": true,
+    "superbet_exact_offer_authority_untouched": true,
+    "ineed_shadow_unchanged": true,
+    "no_real_betting": true
+  },
+  "verification": {
+    "pytest": {
+      "passed": 1017,
+      "seconds": 11.22
+    },
+    "ui_static_smoke": "PASS",
+    "ui_runtime_smoke": "PASS",
+    "playwright": {
+      "roles": [
+        "user",
+        "moderator",
+        "admin"
+      ],
+      "passed": 3,
+      "viewport": "412x915",
+      "auth_transport": "mocked Supabase and CAPTCHA; real Chromium and application auth code"
+    },
+    "projection": {
+      "playable_comparisons": 675,
+      "lossless_detail_json": true,
+      "deterministic_index": true,
+      "source_hashes": true
+    },
+    "pip_audit": "No known vulnerabilities found",
+    "npm_audit_vulnerabilities": 0,
+    "project_health": {
+      "failures": 0,
+      "warnings": 1
+    },
+    "runtime_snapshot": {
+      "files": 48,
+      "pack_and_verify": "PASS"
+    },
+    "github_actions": "Pending CI for authorized retirement of old NEURO; see PR #327 for current head/status.",
+    "pressure_memory_fixture": {
+      "before": {
+        "peak_traced_bytes": 67339673,
+        "seconds": 1.629
+      },
+      "after": {
+        "peak_traced_bytes": 21889133,
+        "seconds": 0.667
+      },
+      "same_serialized_rows_and_counts": true,
+      "fixture_points": 5000
+    }
+  },
+  "changed_files": [
+    ".github/actions/prepare-pages/action.yml",
+    ".github/dependabot.yml",
+    ".github/scripts/change_scope.py",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/delivery-security-checks.yml",
+    ".github/workflows/deploy-pages-fast.yml",
+    ".github/workflows/neuron-shadow.yml",
+    ".github/workflows/player-dna-service-split-depth-audit.yml",
+    ".github/workflows/player-dna-shadow-refresh.yml",
+    ".github/workflows/point-tape-audit.yml",
+    ".github/workflows/shadow-promotion-audit.yml",
+    ".github/workflows/superbet-market-refresh.yml",
+    ".github/workflows/symphony2-check.yml",
+    ".github/workflows/ui-smoke.yml",
+    ".github/workflows/update-and-pages.yml",
+    ".gitignore",
+    "backend/history_player_priority_backfill.py",
+    "backend/player_dna_market_walk_forward.py",
+    "backend/player_dna_phase14_lifecycle.py",
+    "backend/player_dna_pressure_challenger.py",
+    "backend/symphony2_state.py",
+    "docs/AUDIT_DATA_DELIVERY_20260915.md",
+    "docs/AUDIT_RESULTS_20260915.json",
+    "frontend/app.js",
+    "frontend/neuron-data-bridge.js",
+    "frontend/presentation-data.js",
+    "frontend/style.css",
+    "frontend/sw.js",
+    "package-lock.json",
+    "package.json",
+    "requirements.lock",
+    "requirements.txt",
+    "scripts/build_delivery.mjs",
+    "scripts/runtime_snapshot.py",
+    "supabase/migrations/20260915094023_audit_rls_and_fk_indexes.sql",
+    "tests/delivery_browser_e2e.mjs",
+    "tests/delivery_projection.mjs",
+    "tests/test_history_player_priority_backfill.py",
+    "tests/test_player_dna_phase14_lifecycle.py",
+    "tests/test_player_dna_phase7_calibration_gate.py",
+    "tests/test_player_dna_pressure_challenger.py",
+    "tests/test_runtime_snapshot.py",
+    "tests/test_symphony2_state.py",
+    "tests/ui_runtime_smoke.mjs",
+    "tests/ui_static_smoke.mjs"
+  ],
+  "retired_neuro": {
+    "user_decision_date": "2026-09-16",
+    "legacy_phase8": "removed, not marked passed",
+    "shared_state_prerequisite": "complete isolated Phase-7",
+    "legacy_promotion_lane": "removed",
+    "current_neuron_code_unchanged": true,
+    "current_neuron_tests_unchanged": true,
+    "legacy_admin_aliases": "removed",
+    "pressure_audit_peak_rss_kib": 13899500
+  }
+}

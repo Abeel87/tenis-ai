@@ -304,8 +304,15 @@ def test_phase9_joint_equals_direct_mass_from_one_shared_state_space():
 
 def test_phase9_gate_closes_without_promoting_shared_state_to_runtime():
     gate = evaluate_phase9_gate({
-        "phase8_complete": True,
+        "phase7_complete": True,
         "phase9_ready": True,
+        "technical_validation_complete": True,
+        "status": "PHASE7_VALIDATION_COMPLETE_NO_PROMOTION",
+        "production_influence": False,
+        "runtime_scoring_enabled": False,
+        "symphony2_influence": False,
+        "superbet_playable_influence": False,
+        "auto_promote": False,
     })
 
     assert gate["status"] == "PHASE9_SHARED_STATE_INTEGRATION_COMPLETE_NO_PROMOTION"
@@ -319,3 +326,13 @@ def test_phase9_gate_closes_without_promoting_shared_state_to_runtime():
     assert gate["operator_model_probability_influence"] is False
     assert gate["symphony2_current_ranking_replaced"] is False
     assert gate["superbet_playable_influence"] is False
+
+
+def test_shared_state_cannot_use_retired_neuro_completion_or_partial_evidence():
+    for evidence in ({}, {'phase8_complete': True, 'phase9_ready': True},
+                     {'phase7_complete': True, 'phase9_ready': True}):
+        gate = evaluate_phase9_gate(evidence)
+        assert gate['phase7_prerequisite_satisfied'] is False
+        assert gate['phase9_complete'] is False
+        assert gate['phase10_ready'] is False
+        assert gate['promotion_allowed_by_this_gate'] is False

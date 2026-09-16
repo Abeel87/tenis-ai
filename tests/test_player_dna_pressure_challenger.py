@@ -221,6 +221,31 @@ def test_primary_pressure_gate_excludes_early_game_and_support_proxy_features():
     assert all("support" not in name for name in primary | early)
 
 
+def test_pressure_features_stay_specific_to_match_and_serving_direction():
+    when = "2026-09-06T10:00:00Z"
+    profiles = [
+        _profile(match, when, player, opponent, serverish=serverish)
+        for match in ("m1", "m2")
+        for player, opponent, serverish in ((1, 2, True), (2, 1, False))
+    ]
+    profiles[2]["overall_prior"]["hold_rate"] = 0.51
+    points = [
+        _point("m1", when),
+        {**_point("m1", when), "event_index": 1},
+        {**_point("m1", when), "event_index": 2,
+         "server_player_id": 2, "receiver_player_id": 1},
+        _point("m2", when),
+    ]
+    rows, _ = enrich_feature_rows(points, profiles)
+    assert [r["server_overall_hold_rate"] for r in rows] == [0.84, 0.84, 0.76, 0.51]
+    # Mutating an output row cannot affect another row or a subsequent call.
+    rows[0]["server_overall_hold_rate"] = 0.01
+    assert rows[1]["server_overall_hold_rate"] == 0.84
+    profiles[0]["overall_prior"]["hold_rate"] = 0.66
+    again, _ = enrich_feature_rows(points, profiles)
+    assert again[0]["server_overall_hold_rate"] == 0.66
+
+
 def test_early_game_is_explicitly_diagnostic_only_even_without_enough_sample():
     report = evaluate([])
     contract = report["pressure_contract"]

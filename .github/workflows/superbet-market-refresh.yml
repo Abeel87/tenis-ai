@@ -87,7 +87,7 @@ jobs:
           python-version: '3.12'
           cache: pip
       - name: Install bounded runtime dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -c requirements.lock
       - name: Refresh Superbet Direct selected-match sidecar
         continue-on-error: true
         run: |

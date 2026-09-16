@@ -75,3 +75,21 @@ def test_detail_quality_requires_point_tape_and_from_start():
     assert not priority._detail_quality_ok(
         {"tape": [{}] * 20, "meta": {"coverage": "partial"}}
     )
+
+
+def test_upcoming_players_precede_started_feed_without_new_identity_join(tmp_path):
+    now = datetime(2026, 9, 15, 12, tzinfo=timezone.utc)
+    results = [
+        {"p1": "Started", "scheduled_time": (now-timedelta(hours=1)).isoformat()},
+        {"p1": "Upcoming", "scheduled_time": (now+timedelta(hours=1)).isoformat()},
+        {"p1": "Unknown", "scheduled_time": (now+timedelta(hours=2)).isoformat()},
+    ]
+    times = priority._upcoming_player_times(results, now)
+    rows = priority._priority_players(
+        {"players": {"started": _entry(1, []), "upcoming": _entry(2, [])}},
+        priority._current_player_keys(results), {"players": {}}, now,
+        upcoming_times=times, cache_dir=tmp_path,
+    )
+    assert [r["key"] for r in rows] == ["upcoming", "started"]
+    assert "unknown" in times and all(r["key"] != "unknown" for r in rows)
+    assert [r["player_id"] for r in rows] == [2, 1]

@@ -16,22 +16,6 @@ def _base_reports(*, hold_robust=False, prospective_robust=False, dynamic_robust
         "superbet_playable_influence": False,
         "auto_promote": False,
     }
-    phase8 = {
-        "phase8_complete": True,
-        "status": "PHASE8_VALIDATION_COMPLETE_NO_PROMOTION",
-        "production_influence": False,
-        "runtime_switch_enabled": False,
-        "playable_influence": False,
-        "symphony_prod_influence": False,
-        "superbet_playable_influence": False,
-        "auto_promote": False,
-        "summary": {
-            "neural_review_candidates": [],
-            "ensemble_review_candidates": [],
-            "neural_global_promotion_authorized": False,
-            "promotion_verdict": "NO_MODEL_CLASS_PROMOTION_EVIDENCE_REMAINS_SHADOW",
-        },
-    }
     phase9 = {
         "phase9_complete": True,
         "status": "PHASE9_SHARED_STATE_INTEGRATION_COMPLETE_NO_PROMOTION",
@@ -130,7 +114,6 @@ def _base_reports(*, hold_robust=False, prospective_robust=False, dynamic_robust
     }
     return {
         "phase7": phase7,
-        "phase8": phase8,
         "phase9": phase9,
         "phase10": phase10,
         "phase12": phase12,
@@ -197,20 +180,17 @@ def test_complete_existing_evidence_only_allows_manual_canary_review_not_activat
     ] is False
 
 
-def test_neuro_and_shared_state_fail_closed_without_separate_canary_gates():
+def test_shared_state_fails_closed_without_separate_canary_gate():
     reports = _base_reports(
         hold_robust=True,
         prospective_robust=True,
         dynamic_robust=True,
     )
-    reports["phase8"]["summary"]["neural_review_candidates"] = ["match_winner"]
 
     report = evaluate_lifecycle(**reports)
 
-    neuro = report["lanes"]["neuro_model_class_challenger"]
+    assert set(report["lanes"]) == {"player_dna_hold_calibrated_simulator", "player_dna_dynamic_lean", "symphony2_player_dna_shared_state"}
     shared = report["lanes"]["symphony2_player_dna_shared_state"]
-    assert neuro["manual_canary_review_eligible"] is False
-    assert "separate_neuro_prospective_canary_gate_complete" in neuro["blockers"]
     assert shared["manual_canary_review_eligible"] is False
     assert (
         "separate_shared_state_ranking_canary_gate_complete"
