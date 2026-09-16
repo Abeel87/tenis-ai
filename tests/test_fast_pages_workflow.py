@@ -1,4 +1,5 @@
 from pathlib import Path
+import ast
 import re
 
 
@@ -49,6 +50,7 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
     workflow = read(".github/workflows/deploy-pages-fast.yml")
     assert "name: Fast frontend deploy" in workflow
     assert "- 'frontend/**'" in workflow
+    assert "- '.github/scripts/change_scope.py'" in workflow
     assert "group: pages" in workflow
     assert "tennis-data-build" not in workflow
     assert "cancel-in-progress: false" in workflow
@@ -57,6 +59,38 @@ def test_fast_workflow_deploys_frontend_only_and_is_not_blocked_by_data_build():
     assert "actions/deploy-pages@v4" in workflow
     assert "python .github/scripts/change_scope.py" in workflow
     assert "steps.scope.outputs.deploy" in workflow
+
+
+def test_fast_deploy_allows_frontend_change_with_python_companion_tests():
+    source = read(".github/scripts/change_scope.py")
+    tree = ast.parse(source)
+    functions = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name in {"affects_data", "blocks_fast_deploy"}
+    ]
+    namespace = {}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), "change_scope.py", "exec"), namespace)
+
+    affects_data = namespace["affects_data"]
+    blocks_fast_deploy = namespace["blocks_fast_deploy"]
+    paths = [
+        "frontend/runtime-data-transport.js",
+        "frontend/index.html",
+        "tests/test_frontend_private_runtime_transport.py",
+    ]
+
+    # Companion Python tests still make Project Health run the full suite...
+    assert any(affects_data(path) for path in paths)
+    # ...but they cannot suppress publication of an otherwise frontend-only change.
+    assert not any(blocks_fast_deploy(path) for path in paths)
+
+    # Actual generated-data/model sources still block FAST publication.
+    assert blocks_fast_deploy("backend/symphony2_engine.py")
+    assert blocks_fast_deploy("frontend/data/results.json")
+    assert blocks_fast_deploy("scripts/update_data.py")
+    assert blocks_fast_deploy("requirements.txt")
 
 
 def test_retry_selects_only_its_own_pages_artifact():
