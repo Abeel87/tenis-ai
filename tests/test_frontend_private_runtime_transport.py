@@ -5,6 +5,9 @@ TRANSPORT = (ROOT / "frontend" / "runtime-data-transport.js").read_text(encoding
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 PRESENTATION = (ROOT / "frontend" / "presentation-data.js").read_text(encoding="utf-8")
 SW = (ROOT / "frontend" / "sw.js").read_text(encoding="utf-8")
+REAL_AUTH_E2E = (ROOT / "tests" / "runtime_private_auth_e2e.mjs").read_text(
+    encoding="utf-8"
+)
 
 
 def test_private_runtime_transport_is_loaded_after_auth_and_before_app():
@@ -59,6 +62,24 @@ def test_transport_wraps_only_the_central_presentation_json_reader():
     assert "__runtimeTransportWrapped" in TRANSPORT
     assert "async function json(path,force=false)" in PRESENTATION
     assert "frontend/app.js" not in TRANSPORT
+
+
+def test_real_auth_e2e_harness_uses_existing_accounts_and_real_password_grant():
+    assert "grant_type=password" in REAL_AUTH_E2E
+    assert "TENIS_E2E_USER_EMAIL" in REAL_AUTH_E2E
+    assert "TENIS_E2E_ADMIN_EMAIL" in REAL_AUTH_E2E
+    assert "TENIS_E2E_BANNED_EMAIL" in REAL_AUTH_E2E
+    assert "TENIS_E2E_MISSING_PROFILE_EMAIL" in REAL_AUTH_E2E
+    assert "REAL_AUTH_E2E_NOT_RUN" in REAL_AUTH_E2E
+    assert "TENIS_REQUIRE_REAL_AUTH_E2E==='1'" in REAL_AUTH_E2E
+    assert "/functions/v1/runtime-data-read" in REAL_AUTH_E2E
+    assert "data/delivery/index.json" in REAL_AUTH_E2E
+    assert "data/results.json" in REAL_AUTH_E2E
+    lowered = REAL_AUTH_E2E.lower()
+    assert "service_role" not in lowered
+    assert "admin.createuser" not in lowered
+    assert "signupt" not in lowered
+    assert "user_metadata" not in lowered
 
 
 def test_private_read_layer_cannot_change_model_or_betting_logic():
