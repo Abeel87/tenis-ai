@@ -61,7 +61,7 @@ SUPPORTED_MARKETS = set(_core.SUPPORTED_MARKETS) | NEW_MARKETS
 
 PHASE9_SHARED_MARKETS = SET1_FAMILY | SET2_FAMILY | MATCH_FAMILY
 ROOT = Path(__file__).resolve().parents[1]
-PHASE8_REPORT = ROOT / "frontend" / "data" / "neuro_shadow_phase8_challenger_walk_forward.json"
+PHASE7_REPORT = ROOT / "frontend" / "data" / "player_dna_phase7_calibration_walk_forward.json"
 PHASE9_OUT = ROOT / "frontend" / "data" / "symphony2_phase9_player_dna_shared_state.json"
 PHASE9_VERSION = "symphony2-phase9-player-dna-shared-state-v1"
 PHASE9_MODE = "SHADOW_PLAYER_DNA_SHARED_STATE_INTEGRATION_ONLY"
@@ -161,7 +161,7 @@ def phase9_shared_state_contract() -> dict:
     }
 
 
-def evaluate_phase9_gate(phase8_report: dict) -> dict:
+def evaluate_phase9_gate(phase7_report: dict) -> dict:
     match = {
         "p1": "Phase9 A",
         "p2": "Phase9 B",
@@ -177,9 +177,15 @@ def evaluate_phase9_gate(phase8_report: dict) -> dict:
         {"market": "match_winner", "pick": "Phase9 A"},
     ]
 
-    phase8_ready = bool(
-        phase8_report.get("phase8_complete") is True
-        and phase8_report.get("phase9_ready") is True
+    phase7_ready = bool(
+        phase7_report.get("phase7_complete") is True
+        and phase7_report.get("phase9_ready") is True
+        and phase7_report.get("technical_validation_complete") is True
+        and phase7_report.get("status") == "PHASE7_VALIDATION_COMPLETE_NO_PROMOTION"
+        and all(phase7_report.get(key) is False for key in (
+            "production_influence", "runtime_scoring_enabled", "symphony2_influence",
+            "superbet_playable_influence", "auto_promote",
+        ))
     )
     states = build_player_dna_shared_outcomes(match)
     mass = sum(float(row.get("prob") or 0.0) for row in states)
@@ -222,7 +228,7 @@ def evaluate_phase9_gate(phase8_report: dict) -> dict:
         )
     )
     complete = bool(
-        phase8_ready
+        phase7_ready
         and normalized
         and exact_joint_valid
         and non_independence
@@ -239,7 +245,7 @@ def evaluate_phase9_gate(phase8_report: dict) -> dict:
             else "PHASE9_SHARED_STATE_INTEGRATION_INCOMPLETE_NO_PROMOTION"
         ),
         "phase": 9,
-        "phase8_prerequisite_satisfied": phase8_ready,
+        "phase7_prerequisite_satisfied": phase7_ready,
         "phase9_complete": complete,
         "phase10_ready": complete,
         "shared_state_contract": contract,
@@ -277,10 +283,10 @@ def evaluate_phase9_gate(phase8_report: dict) -> dict:
 
 def build_phase9_gate() -> dict:
     try:
-        phase8 = json.loads(PHASE8_REPORT.read_text(encoding="utf-8"))
+        phase7 = json.loads(PHASE7_REPORT.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        phase8 = {}
-    report = evaluate_phase9_gate(phase8 if isinstance(phase8, dict) else {})
+        phase7 = {}
+    report = evaluate_phase9_gate(phase7 if isinstance(phase7, dict) else {})
     PHASE9_OUT.parent.mkdir(parents=True, exist_ok=True)
     PHASE9_OUT.write_text(
         json.dumps(report, ensure_ascii=False, indent=2),

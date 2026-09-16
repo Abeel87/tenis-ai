@@ -1227,7 +1227,7 @@ def evaluate_phase7_gate(
         "phase6_prerequisite_satisfied": phase6_ready,
         "technical_validation_complete": technical_validation_complete,
         "phase7_complete": technical_validation_complete,
-        "phase8_ready": technical_validation_complete,
+        "phase9_ready": technical_validation_complete,
         "promotion_evidence_sufficient": promotion_evidence_sufficient,
         "promotion_verdict": (
             "PROMOTION_EVIDENCE_SUFFICIENT_FOR_AUDIT_REVIEW"
@@ -1264,7 +1264,7 @@ def evaluate_phase7_gate(
             "phase_completion_does_not_mean_model_promotion": True,
             "existing_walk_forward_thresholds_are_authoritative": True,
             "insufficient_sample_or_mixed_evidence_means_no_promotion": True,
-            "phase8_is_challenger_evaluation_not_runtime_promotion": True,
+            "phase9_readiness_is_validation_not_runtime_promotion": True,
         },
     }
 
@@ -1285,7 +1285,7 @@ def build_phase7_gate() -> dict[str, Any]:
         "mode": report.get("mode"),
         "status": report.get("status"),
         "phase7_complete": report.get("phase7_complete"),
-        "phase8_ready": report.get("phase8_ready"),
+        "phase9_ready": report.get("phase9_ready"),
         "promotion_verdict": report.get("promotion_verdict"),
         "evidence": report.get("evidence"),
     }, ensure_ascii=False))

@@ -68,7 +68,8 @@
   },
   "verification": {
     "pytest": {
-      "passed": 1016
+      "passed": 1017,
+      "seconds": 11.22
     },
     "ui_static_smoke": "PASS",
     "ui_runtime_smoke": "PASS",
@@ -98,7 +99,7 @@
       "files": 48,
       "pack_and_verify": "PASS"
     },
-    "github_actions": "e480cc1: 9 workflows success; Point Tape runner shutdown twice. Memory follow-up requires new CI.",
+    "github_actions": "Pending CI for authorized retirement of old NEURO; see PR #327 for current head/status.",
     "pressure_memory_fixture": {
       "before": {
         "peak_traced_bytes": 67339673,
@@ -130,7 +131,10 @@
     ".github/workflows/update-and-pages.yml",
     ".gitignore",
     "backend/history_player_priority_backfill.py",
+    "backend/player_dna_market_walk_forward.py",
+    "backend/player_dna_phase14_lifecycle.py",
     "backend/player_dna_pressure_challenger.py",
+    "backend/symphony2_state.py",
     "docs/AUDIT_DATA_DELIVERY_20260915.md",
     "docs/AUDIT_RESULTS_20260915.json",
     "frontend/app.js",
@@ -148,9 +152,22 @@
     "tests/delivery_browser_e2e.mjs",
     "tests/delivery_projection.mjs",
     "tests/test_history_player_priority_backfill.py",
+    "tests/test_player_dna_phase14_lifecycle.py",
+    "tests/test_player_dna_phase7_calibration_gate.py",
     "tests/test_player_dna_pressure_challenger.py",
     "tests/test_runtime_snapshot.py",
+    "tests/test_symphony2_state.py",
     "tests/ui_runtime_smoke.mjs",
     "tests/ui_static_smoke.mjs"
-  ]
+  ],
+  "retired_neuro": {
+    "user_decision_date": "2026-09-16",
+    "legacy_phase8": "removed, not marked passed",
+    "shared_state_prerequisite": "complete isolated Phase-7",
+    "legacy_promotion_lane": "removed",
+    "current_neuron_code_unchanged": true,
+    "current_neuron_tests_unchanged": true,
+    "legacy_admin_aliases": "removed",
+    "pressure_audit_peak_rss_kib": 13899500
+  }
 }

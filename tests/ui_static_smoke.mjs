@@ -27,7 +27,7 @@ assert(!app.includes('async function loadH2H(){await loadHistory()'),'H2H must n
 assert(app.includes("async function loadH2H(){if(!state.detailHistory)"),'H2H uses the compact detail-history artifact');
 assert(app.includes("const backgroundJobs=[['coupons'"),'Account data loads after the primary screen');
 assert(app.includes("route==='admin'&&admin()&&!adminLoaded"),'Telemetry requires the admin route');
-assert(app.includes("target=\"_blank\" rel=\"noopener\">${l} ↗"),'Huge Neuron history stays available without rendering it into the app DOM');
+assert(['neuron_current.json','neuron_metrics.json','neuron_model.json'].every(name=>app.includes(name))&&!app.includes('neuro_shadow_'),'Admin uses only current Neuron artifacts');
 assert(ineed.includes('let renderGeneration=0')&&ineed.includes('generation===renderGeneration'),'iNeed$ stale async renders are guarded');
 assert(ineed.includes("timeZone:'Europe/Warsaw'")&&ineed.includes('dayKey(Date.now())'),'iNeed$ daily counters use Warsaw time');
 const theme=index.match(/<meta name="theme-color" content="([^"]+)"/)?.[1];

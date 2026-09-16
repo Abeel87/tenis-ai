@@ -135,3 +135,11 @@ Na commit e480cc1 dziewięć workflowów zakończyło się sukcesem, w tym pełn
 Inspekcja wykazała jednak powtarzane alokowanie tych samych 112 nazw cech i ich wartości dla każdego punktu. Współdzielimy teraz wynik istniejącej funkcji `_pair_features` wyłącznie dla tej samej trójki (match_id, server_id, receiver_id), wewnątrz pojedynczego wywołania. Wynikowe słowniki wierszy pozostają odrębne. Surowe punkty/profile są zwalniane przed oceną, która ich nie używa. Nie zmieniono funkcji liczących cechy, ewaluacji, treningu, progów ani raportowanych liczników.
 
 Na fixture 5000 punktów pełna serializacja wierszy i liczników jest identyczna przed/po. `tracemalloc`: 67 339 673 B → 21 889 133 B szczytowych alokacji; to pomiar kontrolowany, nie produkcyjny RSS. Dodano test rozdzielenia meczów, kierunku serwisu, niezależności wierszy i kolejnych wywołań. Pełny pytest po poprawce: 1016 passed. Workflow mierzy teraz zasoby procesu przez `/usr/bin/time -v`, zachowując kod wyjścia i wszystkie gate. Poprawka wymaga ponownego zielonego CI; wcześniejszego nie uznajemy za dowód dla nowego HEAD.
+
+## Usunięcie starego NEURO — decyzja użytkownika 16 września
+
+Użytkownik polecił usunąć stary model i zachować obecnego Neurona. Usunięto więc nieaktywną walidację Phase-8 oraz jej ścieżkę kandydatów z Phase-14; nie odtworzono skasowanego modułu i nie oznaczono starej fazy jako zaliczonej. Audyt wspólnego stanu Phase-9 zależy teraz od kompletnej, izolowanej walidacji Phase-7. Brak raportu, częściowy raport lub stary znacznik Phase-8 nie wystarczają. Zachowano dotychczasowe obliczenia, kontrolę prawdopodobieństwa wspólnego, progi i warunki pozostałych ścieżek; żadna z nich nie aktywuje automatycznie canary ani PROD.
+
+Panel używa wyłącznie aktualnych plików neuron_current.json, neuron_metrics.json i neuron_model.json. Usunięto stare aliasy oraz nieistniejącą historię NEURO. Kod i testy nowego Neurona pozostają bez zmian; jego odrębny workflow nadal sprawdza SHADOW_RESEARCH i brak wpływu na produkcję/PLAYABLE/Symfonię/iNeed$.
+
+Weryfikacja tej zmiany: 1017 pytest passed (11,22 s), UI static/runtime smoke PASS, 675 porównań PLAYABLE PASS, Chromium mobile user/moderator/admin PASS. Na poprzednim HEAD pressure challenger przeszedł z peak RSS 13 899 500 KiB; kolejny błąd importu starego NEURO był przyczyną opisanej wyżej zmiany. Nowy HEAD wymaga ponownego CI.
