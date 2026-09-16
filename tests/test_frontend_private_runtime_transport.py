@@ -5,7 +5,7 @@ TRANSPORT = (ROOT / "frontend" / "runtime-data-transport.js").read_text(encoding
 INDEX = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
 PRESENTATION = (ROOT / "frontend" / "presentation-data.js").read_text(encoding="utf-8")
 SW = (ROOT / "frontend" / "sw.js").read_text(encoding="utf-8")
-REAL_AUTH_E2E = (ROOT / "tests" / "runtime_private_auth_e2e.mjs").read_text(
+REAL_AUTH_E2E = (ROOT / "tests" / "runtime_private_auth_integrity_e2e.mjs").read_text(
     encoding="utf-8"
 )
 
@@ -75,6 +75,8 @@ def test_real_auth_e2e_harness_uses_existing_accounts_and_real_password_grant():
     assert "/functions/v1/runtime-data-read" in REAL_AUTH_E2E
     assert "data/delivery/index.json" in REAL_AUTH_E2E
     assert "data/results.json" in REAL_AUTH_E2E
+    assert "data/private/history/manifest.json" in REAL_AUTH_E2E
+    assert "createHash('sha256')" in REAL_AUTH_E2E
     lowered = REAL_AUTH_E2E.lower()
     assert "service_role" not in lowered
     assert "admin.createuser" not in lowered
