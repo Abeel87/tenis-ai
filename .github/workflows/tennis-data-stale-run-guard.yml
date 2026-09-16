@@ -8,15 +8,48 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/tennis-data-stale-run-guard.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/tennis-data-stale-run-guard.yml'
 
 permissions:
-  actions: write
   contents: read
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate stale-guard safety contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          text = Path('.github/workflows/tennis-data-stale-run-guard.yml').read_text(encoding='utf-8')
+          required = (
+              "if: github.event_name != 'pull_request'",
+              'actions: write',
+              'jobs?per_page=100',
+              'shadow-sync',
+              'sync_conclusion',
+              'INEED_MAX_AGE_MINUTES',
+              'gh workflow run ineed-shadow.yml --repo "$GITHUB_REPOSITORY" --ref main',
+          )
+          missing = [token for token in required if token not in text]
+          if missing:
+              raise SystemExit(f'stale-guard contract missing: {missing}')
+          print('STALE_GUARD_STATEFUL_HEARTBEAT_CONTRACT_OK')
+          PY
+
   cancel-stale-full:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      actions: write
+      contents: read
     env:
       GH_TOKEN: ${{ github.token }}
       STALE_AFTER_MINUTES: '120'
@@ -47,33 +80,50 @@ jobs:
         run: |
           set -euo pipefail
           now_epoch=$(date -u +%s)
-          latest_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ineed-shadow.yml/runs?branch=main&per_page=1")"
-          run_id="$(jq -r '.workflow_runs[0].id // empty' <<<"$latest_json")"
-          status="$(jq -r '.workflow_runs[0].status // empty' <<<"$latest_json")"
-          conclusion="$(jq -r '.workflow_runs[0].conclusion // empty' <<<"$latest_json")"
-          created_at="$(jq -r '.workflow_runs[0].created_at // empty' <<<"$latest_json")"
+          runs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ineed-shadow.yml/runs?branch=main&per_page=10")"
 
-          if [ -n "$run_id" ] && [[ "$status" =~ ^(queued|in_progress|waiting|requested|pending)$ ]]; then
-            echo "iNeed$ run $run_id is already active ($status)."
+          active_id="$(jq -r '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "requested" or .status == "pending")][0].id // empty' <<<"$runs_json")"
+          active_status="$(jq -r '[.workflow_runs[] | select(.status == "queued" or .status == "in_progress" or .status == "waiting" or .status == "requested" or .status == "pending")][0].status // empty' <<<"$runs_json")"
+          if [ -n "$active_id" ]; then
+            echo "iNeed$ run $active_id is already active ($active_status)."
             exit 0
           fi
 
+          stateful_run_id=""
+          stateful_conclusion=""
+          stateful_updated_at=""
+          while IFS=$'\t' read -r candidate_id candidate_updated_at; do
+            [ -z "${candidate_id:-}" ] && continue
+            jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate_id}/jobs?per_page=100")"
+            sync_conclusion="$(jq -r '[.jobs[] | select(.name == "shadow-sync")][0].conclusion // empty' <<<"$jobs_json")"
+
+            if [ -z "$sync_conclusion" ] || [ "$sync_conclusion" = "skipped" ]; then
+              echo "Ignoring iNeed$ run $candidate_id for heartbeat: shadow-sync=${sync_conclusion:-missing}."
+              continue
+            fi
+
+            stateful_run_id="$candidate_id"
+            stateful_conclusion="$sync_conclusion"
+            stateful_updated_at="$candidate_updated_at"
+            break
+          done < <(jq -r '.workflow_runs[] | select(.status == "completed") | [.id, (.updated_at // .created_at // "")] | @tsv' <<<"$runs_json")
+
           should_dispatch=0
           reason=""
-          if [ -z "$run_id" ] || [ -z "$created_at" ]; then
+          if [ -z "$stateful_run_id" ] || [ -z "$stateful_updated_at" ]; then
             should_dispatch=1
-            reason="no previous iNeed$ run"
-          elif [ "$status" = "completed" ] && [ "$conclusion" != "success" ]; then
+            reason="no recent iNeed$ run with a completed shadow-sync job"
+          elif [ "$stateful_conclusion" != "success" ]; then
             should_dispatch=1
-            reason="latest iNeed$ run concluded ${conclusion:-unknown}"
+            reason="latest stateful iNeed$ run $stateful_run_id shadow-sync concluded ${stateful_conclusion:-unknown}"
           else
-            created_epoch=$(date -u -d "$created_at" +%s)
-            age_minutes=$(((now_epoch - created_epoch) / 60))
+            stateful_epoch=$(date -u -d "$stateful_updated_at" +%s)
+            age_minutes=$(((now_epoch - stateful_epoch) / 60))
             if [ "$age_minutes" -ge "$INEED_MAX_AGE_MINUTES" ]; then
               should_dispatch=1
-              reason="latest iNeed$ run is ${age_minutes}m old"
+              reason="latest successful iNeed$ shadow-sync run $stateful_run_id is ${age_minutes}m old"
             else
-              echo "iNeed$ heartbeat is fresh: run $run_id, age ${age_minutes}m, conclusion ${conclusion:-n/a}."
+              echo "iNeed$ heartbeat is fresh: stateful run $stateful_run_id, age ${age_minutes}m, shadow-sync=$stateful_conclusion."
             fi
           fi
 
