@@ -1,0 +1,35 @@
+name: Runtime real Auth E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runtime-real-auth-e2e
+  cancel-in-progress: false
+
+jobs:
+  real_auth_e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TENIS_REQUIRE_REAL_AUTH_E2E: '1'
+      TENIS_E2E_USER_EMAIL: ${{ secrets.TENIS_E2E_USER_EMAIL }}
+      TENIS_E2E_USER_PASSWORD: ${{ secrets.TENIS_E2E_USER_PASSWORD }}
+      TENIS_E2E_ADMIN_EMAIL: ${{ secrets.TENIS_E2E_ADMIN_EMAIL }}
+      TENIS_E2E_ADMIN_PASSWORD: ${{ secrets.TENIS_E2E_ADMIN_PASSWORD }}
+      TENIS_E2E_BANNED_EMAIL: ${{ secrets.TENIS_E2E_BANNED_EMAIL }}
+      TENIS_E2E_BANNED_PASSWORD: ${{ secrets.TENIS_E2E_BANNED_PASSWORD }}
+      TENIS_E2E_MISSING_PROFILE_EMAIL: ${{ secrets.TENIS_E2E_MISSING_PROFILE_EMAIL }}
+      TENIS_E2E_MISSING_PROFILE_PASSWORD: ${{ secrets.TENIS_E2E_MISSING_PROFILE_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Real Supabase Auth and runtime-data-read matrix
+        run: node tests/runtime_private_auth_e2e.mjs
