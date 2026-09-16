@@ -44,6 +44,17 @@ def test_gc_never_deletes_active_head_and_preserves_one_rollback_generation():
     assert "dry_run" in GC_FUNCTION
 
 
+def test_gc_paginates_every_metadata_source_deterministically():
+    assert "QUERY_PAGE_SIZE = 500" in GC_FUNCTION
+    assert "async function paged" in GC_FUNCTION
+    assert ".range(from, to)" in GC_FUNCTION
+    assert '.from("runtime_data_generations")' in GC_FUNCTION
+    assert '.from("runtime_data_heads")' in GC_FUNCTION
+    assert '.from("runtime_data_objects")' in GC_FUNCTION
+    assert '.order("logical_path", { ascending: true })' in GC_FUNCTION
+    assert "scanned:" in GC_FUNCTION
+
+
 def test_gc_client_uses_distinct_oidc_audience_and_no_service_secret():
     assert 'AUDIENCE = "tenis-ai-runtime-gc"' in GC_CLIENT
     assert "ACTIONS_ID_TOKEN_REQUEST_URL" in GC_CLIENT
@@ -52,10 +63,14 @@ def test_gc_client_uses_distinct_oidc_audience_and_no_service_secret():
     assert "--dry-run" in GC_CLIENT
 
 
-def test_gc_rollout_is_attested_and_previews_before_apply():
+def test_gc_runs_for_merge_rollout_and_every_successful_private_delivery_event():
     assert "push:" in WORKFLOW
     assert "branches: [main]" in WORKFLOW
     assert "github.event_name == 'push'" in WORKFLOW
+    assert "github.event_name == 'workflow_dispatch'" in WORKFLOW
+    assert "github.event_name == 'workflow_run'" in WORKFLOW
+    assert "github.event.workflow_run.conclusion == 'success'" in WORKFLOW
+    assert "github.event.workflow_run.head_branch == 'main'" in WORKFLOW
     assert "python scripts/gc_runtime_private.py --dry-run" in WORKFLOW
     assert "python scripts/gc_runtime_private.py\n" in WORKFLOW
     assert WORKFLOW.index("gc_runtime_private.py --dry-run") < WORKFLOW.rindex(
