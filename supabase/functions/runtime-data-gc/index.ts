@@ -15,6 +15,7 @@ const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch", "push"]);
 const RETIRED_KEEP_PER_LAYER = 1;
 const STAGED_GRACE_MS = 6 * 60 * 60 * 1000;
 const REMOVE_BATCH = 100;
+const QUERY_PAGE_SIZE = 500;
 
 type Generation = {
   layer: string;
@@ -27,8 +28,11 @@ type Generation = {
 type RuntimeObject = {
   layer: string;
   generation: string;
+  logical_path: string;
   storage_path: string;
 };
+
+type Head = { layer: string; generation: string };
 
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -71,19 +75,40 @@ function newestFirst(a: Generation, b: Generation) {
   return Date.parse(b.activated_at || b.created_at) - Date.parse(a.activated_at || a.created_at);
 }
 
-async function collect(supabase: any, dryRun: boolean) {
-  const [{ data: generations, error: generationError }, { data: heads, error: headError }, { data: objects, error: objectError }] = await Promise.all([
-    supabase.from("runtime_data_generations").select("layer,generation,status,created_at,activated_at"),
-    supabase.from("runtime_data_heads").select("layer,generation"),
-    supabase.from("runtime_data_objects").select("layer,generation,storage_path"),
-  ]);
-  if (generationError) throw generationError;
-  if (headError) throw headError;
-  if (objectError) throw objectError;
+async function paged<T>(fetchPage: (from: number, to: number) => PromiseLike<any>): Promise<T[]> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += QUERY_PAGE_SIZE) {
+    const { data, error } = await fetchPage(from, from + QUERY_PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = (data || []) as T[];
+    rows.push(...page);
+    if (page.length < QUERY_PAGE_SIZE) return rows;
+  }
+}
 
-  const rows = (generations || []) as Generation[];
-  const allObjects = (objects || []) as RuntimeObject[];
-  const keep = new Set<string>((heads || []).map((h: any) => key(h.layer, h.generation)));
+async function collect(supabase: any, dryRun: boolean) {
+  const [rows, heads, allObjects] = await Promise.all([
+    paged<Generation>((from, to) => supabase
+      .from("runtime_data_generations")
+      .select("layer,generation,status,created_at,activated_at")
+      .order("layer", { ascending: true })
+      .order("generation", { ascending: true })
+      .range(from, to)),
+    paged<Head>((from, to) => supabase
+      .from("runtime_data_heads")
+      .select("layer,generation")
+      .order("layer", { ascending: true })
+      .range(from, to)),
+    paged<RuntimeObject>((from, to) => supabase
+      .from("runtime_data_objects")
+      .select("layer,generation,logical_path,storage_path")
+      .order("layer", { ascending: true })
+      .order("generation", { ascending: true })
+      .order("logical_path", { ascending: true })
+      .range(from, to)),
+  ]);
+
+  const keep = new Set<string>(heads.map((h) => key(h.layer, h.generation)));
   const now = Date.now();
 
   const retiredByLayer = new Map<string, Generation[]>();
@@ -136,6 +161,7 @@ async function collect(supabase: any, dryRun: boolean) {
   return {
     ok: true,
     dry_run: dryRun,
+    scanned: { generations: rows.length, heads: heads.length, objects: allObjects.length },
     retained_generations: rows.length - deletable.length,
     deleted_generations: deletable.length,
     deleted_storage_objects: orphanPaths.length,
