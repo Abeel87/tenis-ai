@@ -10,6 +10,7 @@ on:
       - 'backend/ineed_*.py'
       - 'config/ineed_superbet_pl.json'
       - 'tests/test_ineed_money.py'
+      - 'tests/test_ineed_market_scope.py'
       - 'tests/test_ineed_runner_direct_enrichment.py'
       - 'tests/test_ineed_settlement_runner.py'
       - 'frontend/ineed.*'
@@ -36,11 +37,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Syntax
-        run: python -m py_compile backend/ineed_money.py backend/ineed_runner.py backend/ineed_settlement_runner.py
+        run: python -m py_compile backend/ineed_money.py backend/ineed_scope.py backend/ineed_runner.py backend/ineed_scoped_runner.py backend/ineed_settlement_runner.py
       - name: Tests
         run: |
           python -m pip install -q "pytest==9.1.1" -c requirements.lock
-          python -m pytest -q tests/test_ineed_money.py tests/test_ineed_runner_direct_enrichment.py tests/test_ineed_settlement_runner.py
+          python -m pytest -q tests/test_ineed_money.py tests/test_ineed_market_scope.py tests/test_ineed_runner_direct_enrichment.py tests/test_ineed_settlement_runner.py
 
   shadow-sync:
     if: >-
@@ -79,7 +80,7 @@ jobs:
           EDGE_URL: https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/ineed-sync
           LIVE_TENNIS_API_KEY: ${{ secrets.LIVE_TENNIS_API_KEY }}
         run: python backend/ineed_settlement_runner.py --edge-url "$EDGE_URL" --oidc-token "$INEED_OIDC_TOKEN"
-      - name: Run iNeed$ SHADOW
+      - name: Run iNeed$ SHADOW within approved market scope
         env:
           EDGE_URL: https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/ineed-sync
-        run: python backend/ineed_runner.py --edge-url "$EDGE_URL" --oidc-token "$INEED_OIDC_TOKEN"
+        run: python backend/ineed_scoped_runner.py --edge-url "$EDGE_URL" --oidc-token "$INEED_OIDC_TOKEN"
