@@ -18,6 +18,7 @@ if base_ref:
 args = ['git', 'diff', '--name-only', before, head] if before and set(before) != {'0'} else ['git', 'show', '--pretty=', '--name-only', head]
 paths = subprocess.check_output(args, text=True).splitlines()
 
+
 def affects_data(path):
     # iNeed$ is a post-PLAYABLE SHADOW/risk layer with its own dedicated
     # workflow and tests. Changes there must not be classified as core
@@ -42,8 +43,26 @@ def affects_data(path):
         return True
     return path.startswith('scripts/') and not (path.startswith('scripts/verify_') or path == 'scripts/project_health.py')
 
+
+def blocks_fast_deploy(path):
+    """Return True only when FAST Pages would publish stale generated data.
+
+    Python tests intentionally remain ``heavy`` so PR health executes the full
+    Python suite. They are nevertheless neutral deployment companions: a
+    frontend change plus its regression test must still publish the already
+    generated frontend tree. Real data/model sources continue to block FAST.
+    """
+    if path.startswith('tests/'):
+        return False
+    return affects_data(path)
+
+
 heavy = any(affects_data(path) for path in paths)
+deploy_blocked = any(blocks_fast_deploy(path) for path in paths)
 with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
     output.write(f'heavy={str(heavy).lower()}\n')
-    output.write(f'deploy={str(not heavy).lower()}\n')
-print(f'Data/model changes: {heavy}; changed paths: {len(paths)}')
+    output.write(f'deploy={str(not deploy_blocked).lower()}\n')
+print(
+    f'Data/model changes: {heavy}; fast deploy blocked: {deploy_blocked}; '
+    f'changed paths: {len(paths)}'
+)
