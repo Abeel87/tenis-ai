@@ -13,6 +13,7 @@ on:
       - '.github/workflows/update-and-pages.yml'
       - 'requirements.txt'
       - 'requirements.lock'
+      - 'requirements-optional.lock'
 permissions:
   contents: write
   pages: write
@@ -71,7 +72,7 @@ jobs:
       - name: Superbet Direct selected-match SHADOW sidecar
         continue-on-error: true
         run: |
-          python -m pip install "selenium>=4,<5"
+          python -m pip install "selenium==4.49.0" -c requirements.lock -c requirements-optional.lock
           python backend/superbet_direct.py refresh-selected
       - name: Superbet Market Availability PREPARE
         env:
@@ -148,7 +149,7 @@ jobs:
         run: |
           if python backend/autolearn_v84.py --tabpfn-due; then
             echo "TabPFN V2 challenger is due — bounded optional install"
-            timeout 240s python -m pip install "tabpfn==8.2.0" || echo "TabPFN install skipped/failed; CatBoost fallback remains active"
+            timeout 240s python -m pip install "tabpfn==8.2.0" -c requirements.lock -c requirements-optional.lock || echo "TabPFN install skipped/failed; CatBoost fallback remains active"
           else
             echo "TabPFN V2 challenger not due this run"
           fi
