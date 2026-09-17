@@ -1,0 +1,166 @@
+{
+  "version": "task-017-tml-2024-candidate-lock-manifest-v3",
+  "basis": {
+    "task016_pr": 380,
+    "task016_merge_sha": "7a40fb453f754280f08fcdd81a09bbea9392cf69",
+    "global_hardening_evidence_head": "e306886429e1fa62755794649997b55cfabbd454",
+    "global_hardening_evidence_merge_sha": "dc6ec610ca640607172179bcc8ac523d13636f4c",
+    "fingerprint_discovery_head": "d33c4f41bc51ab730509a6bdf625861e4c851e3b",
+    "fingerprint_discovery_merge_sha": "6d8d3272dc545e5e5c35fe8c950a46552a2e2c1c",
+    "fingerprint_discovery_run": 35252302356,
+    "evidence": "TASK 016 frozen safe subset plus TASK 017 full-baseline and current-visible fail-closed diagnostics"
+  },
+  "sources": [
+    {
+      "key": "atp_2024",
+      "tour": "ATP",
+      "url": "https://stats.tennismylife.org/data/2024.csv"
+    },
+    {
+      "key": "atp_quali_2024",
+      "tour": "ATP",
+      "url": "https://stats.tennismylife.org/data/atp_quali/2024_atp_quali.csv"
+    },
+    {
+      "key": "ch_2024",
+      "tour": "CH",
+      "url": "https://stats.tennismylife.org/data/2024_challenger.csv"
+    },
+    {
+      "key": "wta_2024",
+      "tour": "WTA",
+      "url": "https://stats.tennismylife.org/data/2024_wta.csv"
+    }
+  ],
+  "task016_rules": {
+    "year": 2024,
+    "require_history_hygiene": true,
+    "exclude_player_keys": [
+      "bryce nakashima",
+      "emily appleton",
+      "julia avdeeva",
+      "mia ristic",
+      "yufei ren"
+    ],
+    "exclude_score_identities": [
+      ["ATP", "20240401", "Estoril", "Pablo Llamas Ruiz", "David Jorda Sanchis"],
+      ["ATP", "20240722", "Kitzbuhel", "Daniel Elahi Galan", "Hamad Medjedovic"],
+      ["CH", "20240121", "Indian Wells 1", "Learner Tien", "Giovanni Oradini"],
+      ["CH", "20240226", "Kigali 1", "Daniel Cukierman", "Ernest Habiyambere"]
+    ],
+    "dedupe_model_columns": [
+      "tourney_date",
+      "tourney_name",
+      "winner_name",
+      "loser_name",
+      "score"
+    ],
+    "exclude_baseline_overlaps": true,
+    "keep_first_internal_duplicate": true
+  },
+  "global_hardening": {
+    "exclude_archive_id_evidence": [
+      {
+        "namespace": "CH",
+        "player_key": "ivan denisov",
+        "baseline_ids": ["DB63"],
+        "archive_new_ids": ["D09V"]
+      },
+      {
+        "namespace": "CH",
+        "player_key": "jeremy zhang",
+        "baseline_ids": ["M0QK"],
+        "archive_new_ids": ["Z0CN"]
+      },
+      {
+        "namespace": "CH",
+        "player_key": "julien de cuyper",
+        "baseline_ids": ["F0DM"],
+        "archive_new_ids": ["D0CQ"]
+      },
+      {
+        "namespace": "CH",
+        "player_key": "lennon roark jones",
+        "baseline_ids": ["M0NL"],
+        "archive_new_ids": ["J0DB"]
+      },
+      {
+        "namespace": "CH",
+        "player_key": "miguel cejudo",
+        "baseline_ids": ["S0WT"],
+        "archive_new_ids": ["C0N9"]
+      }
+    ],
+    "exclude_exact_shadow_player_keys": [
+      "nicolas alvarez"
+    ],
+    "exact_shadow_evidence": [
+      {
+        "archive_exact_key": "nicolas alvarez",
+        "baseline_variant_candidates": ["nicolas alvarez varona"],
+        "baseline_resolution_before": "expanded-name",
+        "resolution_after_candidate": "exact"
+      }
+    ],
+    "exclude_visible_resolution_player_keys": [
+      "alexandre reco",
+      "leonid sheyngezikht",
+      "lucas catarina"
+    ],
+    "visible_resolution_evidence": [
+      {
+        "requested_key": "alexandre reco",
+        "player": "Alexandre Reco",
+        "baseline_resolved_key": null,
+        "augmented_resolved_key": "alexandre reco",
+        "baseline_mode": "none",
+        "augmented_mode": "exact"
+      },
+      {
+        "requested_key": "leonid sheyngezikht",
+        "player": "Leonid Sheyngezikht",
+        "baseline_resolved_key": null,
+        "augmented_resolved_key": "leonid sheyngezikht",
+        "baseline_mode": "none",
+        "augmented_mode": "exact"
+      },
+      {
+        "requested_key": "lucas catarina",
+        "player": "Lucas Catarina",
+        "baseline_resolved_key": null,
+        "augmented_resolved_key": "lucas catarina",
+        "baseline_mode": "none",
+        "augmented_mode": "exact"
+      }
+    ]
+  },
+  "task016_expected_shape": {
+    "candidate_rows": 12486,
+    "source_counts": {
+      "atp_2024": 2956,
+      "atp_quali_2024": 1294,
+      "ch_2024": 5694,
+      "wta_2024": 2542
+    },
+    "positive_gain_players": 8,
+    "players_reaching_minimum_5": 3,
+    "net_pre_match_rows": 16,
+    "newly_model_ready_matches": 1
+  },
+  "expected": {
+    "candidate_rows": 12474,
+    "source_counts": {
+      "atp_2024": 2956,
+      "atp_quali_2024": 1293,
+      "ch_2024": 5683,
+      "wta_2024": 2542
+    },
+    "candidate_logical_sha256": "876feb9ed27cb1aa56da1fc33dba534806a5ded87a87d82198f2b3298632cd4d",
+    "source_logical_sha256": {
+      "atp_2024": "73ea64a0fe70fcc883b6d28c88d42a6afed49b0011749434ad913f0ddbc224e5",
+      "atp_quali_2024": "ff524b6934a025e4de69beb4d876f8f9bdb6e5591c843eed9c2045477ec62d7a",
+      "ch_2024": "c3da80f8ba6519bf14630d1efc2dda4280df060fcec25765b950cd33ef652c98",
+      "wta_2024": "f4dc2d9467e5df12d13270413b26e1bb2899b8c80da479aafd740e770992f47f"
+    }
+  }
+}
