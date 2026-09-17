@@ -84,6 +84,14 @@ jobs:
           assert s['profiles_with_any_historical_opponent_rank'] > 0
           assert not s['current_engine_fixture_rank_counterfactual']['errors']
           assert not s['current_engine_history_rank_counterfactual']['errors']
+          assert not s['current_engine_opponent_rank_counterfactual']['errors']
+
+          fixture_consumer = report['consumer_map']['current_engine_fixture_provider_rank']
+          history_consumer = report['consumer_map']['current_engine_historical_latest_rank']
+          opponent_consumer = report['consumer_map']['current_engine_historical_opponent_rank']
+          assert fixture_consumer['used_in_current_probability_math'] == (s['current_engine_fixture_rank_counterfactual']['changed'] > 0)
+          assert history_consumer['used_in_current_probability_math'] == (s['current_engine_history_rank_counterfactual']['changed'] > 0)
+          assert opponent_consumer['used_in_current_probability_math'] == (s['current_engine_opponent_rank_counterfactual']['changed'] > 0)
 
           dna = report['consumer_map']['player_dna_current_shadow']
           assert dna['available'] is True
@@ -94,9 +102,9 @@ jobs:
 
           print(json.dumps({
               'summary': s,
-              'current_fixture_rank_consumer': report['consumer_map']['current_engine_fixture_provider_rank'],
-              'current_history_rank_consumer': report['consumer_map']['current_engine_historical_latest_rank'],
-              'current_opponent_rank_consumer': report['consumer_map']['current_engine_historical_opponent_rank'],
+              'current_fixture_rank_consumer': fixture_consumer,
+              'current_history_rank_consumer': history_consumer,
+              'current_opponent_rank_consumer': opponent_consumer,
               'player_dna_current_shadow': dna,
           }, indent=2, sort_keys=True))
           PY
