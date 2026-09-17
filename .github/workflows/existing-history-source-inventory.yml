@@ -1,0 +1,89 @@
+name: Existing history source inventory
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/existing_history_source_inventory.py'
+      - 'backend/training_archive_inventory.py'
+      - 'tests/test_existing_history_source_inventory.py'
+      - '.github/workflows/existing-history-source-inventory.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONPATH: backend:.
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Unit tests
+        run: python -m pytest -q tests/test_existing_history_source_inventory.py tests/test_training_archive_inventory.py
+
+      - name: Restore latest tennis cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: existing-history-source-inventory-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require restored cache
+        shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test -n "$MATCHED_CACHE_KEY" || { echo 'No tennis history cache restored'; exit 21; }
+          count=$(find data/cache -type f | wc -l)
+          echo "restored cache files: ${count}"
+          test "$count" -gt 0 || { echo 'Restored cache is empty'; exit 22; }
+
+      - name: Inventory all existing cache sources
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: python backend/existing_history_source_inventory.py
+
+      - name: Validate zero-network audit contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('artifacts/existing_history_source_inventory.json').read_text(encoding='utf-8'))
+          policy=doc['policy']; summary=doc['summary']; decision=doc['decision']
+          assert policy['network_calls'] == 0
+          assert policy['provider_requests'] == 0
+          assert policy['production_cache_writes'] == 0
+          assert policy['runtime_change_authorized'] is False
+          assert policy['history_source_authorized'] is False
+          assert policy['minimum_match_gate_changed'] is False
+          assert policy['identity_resolver_changed'] is False
+          assert policy['model_math_changed'] is False
+          assert decision['runtime_change'] is False
+          assert decision['authorize_new_history_source'] is False
+          assert summary['cache_files'] > 0
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          print(json.dumps(doc['provider_counts'], indent=2, sort_keys=True))
+          print(json.dumps(doc['rebuildable_role_counts'], indent=2, sort_keys=True))
+          print(json.dumps(doc['raw_like_unproven'], indent=2, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Upload TASK 011 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: existing-history-source-inventory
+          path: artifacts/existing_history_source_inventory.json
+          if-no-files-found: error
