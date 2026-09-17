@@ -1,0 +1,89 @@
+name: PBP short-history supply audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/pbp_short_history_supply_audit.py'
+      - 'backend/insufficient_history_evidence.py'
+      - 'backend/pbp_enrich.py'
+      - 'backend/player_identity.py'
+      - 'tests/test_pbp_short_history_supply_audit.py'
+      - '.github/workflows/pbp-short-history-supply-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: backend:.
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt -c requirements.lock
+
+      - name: Unit tests
+        run: python -m pytest -q tests/test_pbp_short_history_supply_audit.py tests/test_insufficient_history_evidence.py tests/test_pbp_profile_supply_v941.py
+
+      - name: Restore existing history and PBP cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-task006-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require restored PBP cache material
+        shell: bash
+        run: |
+          test -s data/cache/pbp_v7/players.json || { echo 'missing restored PBP players index'; exit 21; }
+          test -d data/cache/pbp_v7/matches || { echo 'missing restored PBP match cache'; exit 22; }
+          count=$(find data/cache/pbp_v7/matches -type f -name '*.json.gz' | wc -l)
+          echo "restored PBP tape files: ${count}"
+          test "${count}" -gt 0 || { echo 'restored PBP match cache is empty'; exit 23; }
+
+      - name: Run zero-network TASK 006 audit
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: python backend/pbp_short_history_supply_audit.py
+
+      - name: Validate audit contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('artifacts/pbp_short_history_supply_audit.json')
+          doc = json.loads(p.read_text(encoding='utf-8'))
+          policy = doc['policy']
+          summary = doc['summary']
+          assert policy['network_calls'] == 0
+          assert policy['fuzzy_matching'] is False
+          assert policy['manual_aliases'] is False
+          assert policy['exact_normalized_current_player_key_only'] is True
+          assert policy['stable_provider_integer_identity_required'] is True
+          assert policy['provider_id_conflicts_fail_closed'] is True
+          assert policy['cross_provider_numeric_id_comparison'] is False
+          assert policy['pbp_authorized_for_main_history'] is False
+          assert policy['cross_source_deduplication_proven'] is False
+          assert policy['schema_compatibility_proven'] is False
+          assert doc['decision']['runtime_change'] is False
+          assert doc['decision']['history_gate_change'] is False
+          assert summary['audited_unique_players'] > 0
+          assert summary['cache_payload_files_scanned'] > 0
+          assert summary['cache_payloads_readable'] > 0
+          assert summary['cache_payloads_with_stable_identity'] > 0
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload TASK 006 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbp-short-history-supply-audit
+          path: artifacts/pbp_short_history_supply_audit.json
+          if-no-files-found: error
