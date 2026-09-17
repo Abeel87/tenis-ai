@@ -1,0 +1,103 @@
+name: LOGIC-01 freshness counterfactual
+
+on:
+  pull_request:
+    paths:
+      - 'backend/history_freshness_counterfactual.py'
+      - 'tests/test_history_freshness_counterfactual.py'
+      - '.github/workflows/history-freshness-counterfactual.yml'
+      - 'TENIS_AI_EXECUTION_CHECKLIST.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: backend:.
+      LIVE_TENNIS_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install audit dependencies
+        run: python -m pip install pytest pandas requests
+      - name: Unit tests
+        run: python -m pytest -q tests/test_history_freshness_counterfactual.py
+      - name: Restore latest production tennis cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: logic-01-freshness-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+      - name: Require exact local evidence sources
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test -n "$MATCHED_CACHE_KEY" || { echo 'No tennis-history Actions cache restored'; exit 21; }
+          count=$(find data/cache -maxdepth 1 -type f -name '*.csv.gz' | wc -l)
+          echo "restored root CSV cache files: ${count}"
+          test "$count" -ge 11 || { echo 'Expected all declared current TennisMyLife cache files'; exit 22; }
+          test -s frontend/data/results.json || { echo 'Missing current results.json'; exit 23; }
+          test -s data/cache/pbp_v7/players.json || { echo 'Missing current PBP player index'; exit 24; }
+      - name: Run LOGIC-01 audit-only counterfactual
+        run: python backend/history_freshness_counterfactual.py
+      - name: Validate audit contract and evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('artifacts/history_freshness_counterfactual.json').read_text(encoding='utf-8'))
+          p = report['policy']
+          assert p['audit_only'] is True
+          assert p['shadow_counterfactual_only'] is True
+          assert p['runtime_change'] is False
+          assert p['model_math_changed'] is False
+          assert p['probability_policy_changed'] is False
+          assert p['thresholds_changed'] is False
+          assert p['weights_changed'] is False
+          assert p['training_changed'] is False
+          assert p['global_surface_priors_recomputed_per_scenario'] is False
+          assert p['live_tennis_api_calls'] == 0
+          assert p['production_cache_writes'] == 0
+          assert report['decision']['production_cutoff_selected'] is False
+          assert report['decision']['production_change_authorized'] is False
+          assert tuple(int(x) for x in report['current_player_history']['scenarios']) == (30, 60, 90, 120, 180, 365)
+          baseline = report['current_player_history']['baseline']
+          assert baseline['visible_fixtures_input'] > 0
+          assert baseline['fixtures_recomputed'] > 0
+          assert not baseline['errors'], baseline['errors'][:10]
+          for days, scenario in report['current_player_history']['scenarios'].items():
+              assert not scenario['fixture_errors'], (days, scenario['fixture_errors'][:10])
+          pbp = report['pbp_early_hold_freshness']
+          assert pbp['available'] is True
+          assert pbp['profiles_with_pbp_index'] > 0
+          print(json.dumps({
+              'task019': report['task019_frozen_baseline_evidence'],
+              'baseline': baseline,
+              'scenarios': {
+                  day: {
+                      'profiles_ge5': row['profiles_with_minimum_5_retained'],
+                      'model_ready': row['model_ready_matches'],
+                      'model_ready_lost': row['baseline_model_ready_lost'],
+                      'output_delta': row['common_set_output_delta'],
+                  }
+                  for day, row in report['current_player_history']['scenarios'].items()
+              },
+              'pbp_scenarios': pbp['scenarios'],
+          }, indent=2, sort_keys=True))
+          PY
+      - name: Upload LOGIC-01 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-01-freshness-counterfactual
+          path: artifacts/history_freshness_counterfactual.json
+          if-no-files-found: error
