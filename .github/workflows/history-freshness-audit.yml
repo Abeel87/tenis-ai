@@ -1,0 +1,74 @@
+name: History freshness audit
+
+on:
+  pull_request:
+    paths:
+      - 'backend/history_freshness_audit.py'
+      - 'tests/test_history_freshness_audit.py'
+      - '.github/workflows/history-freshness-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: backend:.
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install audit dependencies
+        run: python -m pip install pytest pandas requests
+      - name: Unit tests
+        run: python -m pytest -q tests/test_history_freshness_audit.py
+      - name: Restore latest tennis cache
+        id: history-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: history-freshness-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+      - name: Require restored production cache snapshot
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.history-cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test -n "$MATCHED_CACHE_KEY" || { echo 'No tennis-history Actions cache restored'; exit 21; }
+          count=$(find data/cache -maxdepth 1 -type f -name '*.csv.gz' | wc -l)
+          echo "restored root CSV cache files: ${count}"
+          test "$count" -ge 11 || { echo 'Expected all declared current TennisMyLife cache files'; exit 22; }
+          test -s frontend/data/results.json || { echo 'Missing current results.json'; exit 23; }
+      - name: Run TASK 019 history freshness audit
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: python backend/history_freshness_audit.py
+      - name: Validate audit-only contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('artifacts/history_freshness_audit.json').read_text(encoding='utf-8'))
+          p = report['policy']
+          s = report['summary']
+          assert p['audit_only'] is True
+          assert p['runtime_change'] is False
+          assert p['model_math_changed'] is False
+          assert p['history_sources_changed'] is False
+          assert p['live_tennis_api_calls'] == 0
+          assert p['production_cache_writes'] == 0
+          assert s['model_has_explicit_max_history_age_days'] is False
+          assert s['visible_matches'] > 0
+          print(json.dumps(s, indent=2, sort_keys=True))
+          PY
+      - name: Upload freshness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-freshness-audit
+          path: artifacts/history_freshness_audit.json
+          if-no-files-found: error
