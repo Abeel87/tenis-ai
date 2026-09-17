@@ -29,38 +29,46 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-01 — Freshness Counterfactual`
+**ACTIVE LOGIC/TASK:** `LOGIC-02 — Feature Provenance / Ranking Audit`
 
-**SUBSTEP:** przejąć istniejący dowód z `TASK 019` jako baseline evidence i ustalić, co można bezpiecznie wykorzystać bez powtarzania audytu.
+**SUBSTEP:** wykonać audit-only mapowanie rankingu fixture z Live Tennis API, historycznego `latest_rank`/`opponent_rank` z TML oraz wszystkich realnych konsumentów tych pól; zero zmian model math.
 
-**BRANCH:** `brak` — następny branch LOGIC-01 ma zostać utworzony dopiero ze świeżego `main` po wejściu tego checkpointu.
+**BRANCH:** `brak` dla LOGIC-02 — świeży branch ma zostać utworzony dopiero po wejściu tego checkpointu na aktualny `main`.
 
-**PR:** `brak` dla LOGIC-01. `#384` jest zakończony i zmergowany.
+**PR:** `brak` dla LOGIC-02. PR #386 jest zakończony i zmergowany; PR #383 został zamknięty bez merge jako superseded evidence.
 
-**LAST VERIFIED MAIN:** `5269f6c467c3602fd6d557ed3385bc951008f07d` — merge PR #384; zweryfikowany po merge 2026-09-17 ok. 21:17 CEST.
+**LAST VERIFIED MAIN:** `0c4c65f67e4bb3789f5693917911c4a4962ace9a` — botowy `data: refresh Superbet market context`, frontend/data-only drift po w pełni zielonym produkcyjnym refreshu LOGIC-01; parent `1b74e03ae5e1187d5ee90a547add622c5923d7c0`.
 
-**LAST COMPLETED WORK:** `LOGIC-00 — Project Constitution / Operating Contract` zakończony. PR #384 został zmergowany po pełnym green; kanoniczne dokumenty i test kontraktowy są na `main`; post-merge `Tenis AI UI & Project Health` przeszedł w całości zielono.
+**LAST COMPLETED WORK:** `LOGIC-01 — Freshness Counterfactual` zakończony. PR #386 został zmergowany jako `c9292b630c918f7fde0c9c48231629a10819c09f` po pełnym green CI. Audit wykorzystał istniejący TASK 019 jako frozen evidence, odtworzył baseline Current bez cutoffu, policzył 30/60/90/120/180/365 dni przy zamrożonych baseline surface priors i osobno zbadał PBP/Early Hold. Nie wybrano cutoffu i nie autoryzowano żadnej zmiany PROD.
 
-**CHANGED FILES w zakończonym PR #384:**
+**CHANGED FILES w zakończonym PR #386:**
 
-- `AGENTS.md`
-- `ARCHITECTURE.md`
-- `README.md`
-- `TENIS_AI_EXECUTION_CHECKLIST.md`
-- `TENIS_AI_LOGIC_CONSTITUTION.md`
-- `TENIS_AI_MODEL_DATA_REGISTRY.md`
-- `tests/test_project_contract_docs.py`
+- `backend/history_freshness_counterfactual.py`
+- `tests/test_history_freshness_counterfactual.py`
+- `.github/workflows/history-freshness-counterfactual.yml`
 
-**TEST STATUS:** finalny PR #384 miał pełne wymagane CI zielone. Po merge na `main` pełny pytest oraz wszystkie kroki `Tenis AI UI & Project Health` również zakończyły się `success`.
+**LOGIC-01 EVIDENCE:**
+
+- workflow audit: `35265863260`, artifact `10516701643`, digest `sha256:f28fb5362ee8e24475b803beed9111da673e07635069037edb283e758491e77b`;
+- baseline: 155 fixture'ów przeliczonych, 51 `model_ready`, 137 profili z >=5 meczami, zero błędów;
+- `model_ready` retained / 51: 30d=9, 60d=32, 90d=36, 120d=38, 180d=41, 365d=46;
+- profile z >=5 retained / baseline 137: 30d=40, 60d=86, 90d=97, 120d=105, 180d=114, 365d=126;
+- Early Hold: 77 obecnie gotowych profili; >=5 wybranych próbek retained: 30d=33, 60d=75, 90d=77, 120d=77, 180d=77, 365d=77; najstarsza użyta próbka 157 dni;
+- 594 daty próbek Early Hold rozwiązane, 0 brakujących;
+- Brier/calibration/accuracy celowo nie zostały sfabrykowane: ten audit nie posiadał dedykowanego, bezstronnego settled prediction ledger; ten kontrakt należy do LOGIC-09.
+
+**TEST STATUS:** PR #386 miał zielone testy jednostkowe LOGIC-01, realny restore cache, walidację kontraktu, pełny Project Health/pytest oraz brak błędów fixture w counterfactualu. Post-merge `main` przeszedł pełny final regression v9.3.3 w produkcyjnym refreshu.
 
 **CI STATUS:**
 
-- PR #384 final head `f41abaa760f7360c6fd6847412711963dd0c87b5`: `health`, `browser`, `dependencies`, CodeQL oraz analizy Python/JS = GREEN.
-- post-merge `main @ 5269f6c467c3602fd6d557ed3385bc951008f07d`: `Tenis AI UI & Project Health` run `35263641686` = GREEN; `browser`/`dependencies` run `35263641554` = GREEN.
+- PR #386 final head `ea416c5cc136834e7f11c623276ae6fbd14bd9c5`: Delivery/Security run `35265862952` = GREEN; LOGIC-01 run `35265863260` = GREEN; CodeQL run `35265863139` = GREEN; UI & Project Health run `35265862833` = GREEN.
+- post-merge `c9292b630c918f7fde0c9c48231629a10819c09f`: Project Health/full pytest, browser/dependencies i CodeQL = GREEN.
+- production refresh run `35266260343`: wszystkie warstwy, guardy, final full regression, commit refreshed JSON, Pages artifact i Deploy Pages = GREEN; bot przesunął `main` do `1b74e03ae5e1187d5ee90a547add622c5923d7c0`.
+- późniejszy botowy refresh Superbet market context przesunął `main` do `0c4c65f67e4bb3789f5693917911c4a4962ace9a`; drift względem `1b74e03...` dotyczył wyłącznie `frontend/data/*`, bez zmian kodu i dokumentacji.
 
-**BLOCKERS:** brak blockerów dla zamknięcia LOGIC-00.
+**BLOCKERS:** brak blockerów.
 
-**DO NOT REDO:** nie odtwarzać LOGIC-00 ani TASK 019 od zera bez nowego dowodu, że istniejący materiał jest błędny. PR #383 pozostaje materiałem wejściowym do LOGIC-01 i nie wolno go merge'ować w ciemno na starym base.
+**DO NOT REDO:** nie powtarzać TASK 019 ani LOGIC-01 bez nowego dowodu, że evidence jest błędne. PR #383 jest zamknięty bez merge. Nie wybierać cutoffu 30/60/90/120/180/365 „na oko” na podstawie samego LOGIC-01. Nie wdrażać freshness policy do PROD w LOGIC-02. Nie fabricować Brier/calibration bez bezstronnego common settled ledger.
 
 ### Co zakończono w LOGIC-00
 
@@ -77,20 +85,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Produkcyjna weryfikacja po merge: dokumenty są na `main`, pełny pytest i Project Health są zielone.
 - [x] `LOGIC-00` zakończony.
 
-### Znany równoległy stan
+### Stan zamkniętego TASK 019
 
-- `[S]` PR #383 — TASK 019 freshness audit: dowód audytowy istnieje, ale PR był oparty na starszym `main` i **nie wolno go merge'ować w ciemno**.
-- LOGIC-01 ma najpierw odczytać żywy stan #383 (head/base/files/CI/artifacts), ocenić drift względem świeżego `main` i wykorzystać istniejący wynik jako baseline evidence tam, gdzie nadal jest ważny.
-- Nie powtarzać samego audytu bez potrzeby; uzupełnić tylko brakujące elementy wymagane przez LOGIC-01.
+- [x] PR #383 dostarczył historyczny freshness evidence użyty jako materiał wejściowy LOGIC-01.
+- [x] Evidence zostało zweryfikowane i skonsumowane przez LOGIC-01 bez blind merge starego brancha.
+- [x] PR #383 został zamknięty bez merge jako superseded evidence.
 
 ### NEXT EXACT ACTION
 
-1. Sprawdź ponownie świeży `main`, otwarte PR-y i CI; bot może przesunąć `main` po tym checkpointcie.
-2. Odczytaj aktualny PR #383: head/base, changed files, CI, raporty/artefakty TASK 019 i dokładnie ustal, które wyniki są nadal ważne.
-3. Porównaj #383 ze świeżym `main`; **nie merge'uj #383 w ciemno**. Zdecyduj na podstawie diffu, czy wynik przenieść jako evidence do nowego LOGIC-01, czy bezpiecznie przebudować/rebase'ować jego zakres.
-4. Utwórz świeży branch LOGIC-01 z aktualnego `main` i rozpocznij wyłącznie audit/SHADOW freshness counterfactual.
-5. Najpierw zamroź baseline produkcyjny bez cutoffu i istniejący TASK 019 evidence; potem uruchamiaj scenariusze 30/60/90/120/180/365 dni dla tych samych danych/fixture'ów.
-6. Zero zmian PROD, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW/PROD promotion ani iNeed$ calculations w LOGIC-01.
+1. Sprawdź ponownie świeży `main`, otwarte PR-y i ostatnie CI; nie zakładaj, że `0c4c65f67e4bb3789f5693917911c4a4962ace9a` nadal jest HEAD, jeżeli bot zdążył zrobić kolejny refresh.
+2. Utwórz świeży branch `logic-02-ranking-provenance` z aktualnego `main`.
+3. Zmapuj bez nowych requestów: fixture `p1_rank/p2_rank` z Live Tennis API snapshotu, `latest_rank` i `opponent_rank` z TML/history oraz realne miejsca konsumpcji w Current Engine i SHADOW Player DNA.
+4. Dla każdego rankingu zapisz source, observation/effective date jeśli istnieje, wiek, resolved player identity i miejsce użycia. Nie wymyślaj `ranking_effective_date`, jeśli provider go nie daje.
+5. Audit-only: zmierz current-vs-historical rank, wiek historycznego rankingu, opponent-rank coverage i counterfactual, czy rank faktycznie wpływa na Current probability/output.
+6. Zero zmian model math, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD ani iNeed$ calculations.
+7. PR → pełne zielone CI + artifact → fresh-main check → merge → post-merge weryfikacja → checkpoint do LOGIC-03.
 
 ---
 
@@ -188,29 +197,29 @@ Cel: jedna prawda o projekcie, jeden sposób pracy, jedna kolejność napraw.
 
 ## LOGIC-01 — Freshness Counterfactual
 
-Status: `[~] ACTIVE — NEXT: TASK 019 EVIDENCE REVIEW`
+Status: `[x] COMPLETED — PR #386 / merge c9292b630c918f7fde0c9c48231629a10819c09f`
 
 Cel: ustalić na danych, jak świeżość wpływa na jakość modeli; bez zmiany PROD.
 
-- [ ] Przenieść wynik TASK 019 jako baseline evidence.
-- [ ] Zmierzyć baseline produkcyjny bez cutoffu.
-- [ ] Przeliczyć scenariusze 30/60/90/120/180/365 dni dla Current player history.
-- [ ] Osobno zmierzyć PBP/Early Hold freshness.
-- [ ] Nie zmieniać global surface priors w pierwszym eksperymencie — izolować player-history effect.
-- [ ] Raport: profile retained, >=5 fresh matches, model-ready matches retained/lost.
-- [ ] Raport: probability/output deltas na tych samych fixture'ach.
-- [ ] Raport: Brier/calibration/accuracy tam, gdzie istnieje bezstronny settled common set.
-- [ ] Lista konkretnych meczów/profili zależnych od starej historii.
-- [ ] Zero zmian PROD.
-- [ ] CI + artifact.
+- [x] Przenieść wynik TASK 019 jako baseline evidence.
+- [x] Zmierzyć baseline produkcyjny bez cutoffu.
+- [x] Przeliczyć scenariusze 30/60/90/120/180/365 dni dla Current player history.
+- [x] Osobno zmierzyć PBP/Early Hold freshness.
+- [x] Nie zmieniać global surface priors w pierwszym eksperymencie — izolować player-history effect.
+- [x] Raport: profile retained, >=5 fresh matches, model-ready matches retained/lost.
+- [x] Raport: probability/output deltas na tych samych fixture'ach.
+- [x] Raport: Brier/calibration/accuracy tam, gdzie istnieje bezstronny settled common set — `N/A` dla wejścia LOGIC-01; brak dedykowanego unbiased settled prediction ledger, metryk nie sfabrykowano; własność tego kontraktu = LOGIC-09.
+- [x] Lista konkretnych meczów/profili zależnych od starej historii w artefakcie.
+- [x] Zero zmian PROD.
+- [x] CI + artifact.
 
-**Definition of Done:** mamy twarde dane pozwalające później zdecydować o polityce świeżości; nie wybieramy cutoffu „na oko”.
+**Definition of Done:** spełnione. Mamy twarde dane do późniejszej decyzji o polityce świeżości; LOGIC-01 nie wybiera cutoffu „na oko”.
 
 ---
 
 ## LOGIC-02 — Feature Provenance / Ranking Audit
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE — NEXT: RANKING PROVENANCE AUDIT`
 
 Cel: wiedzieć skąd pochodzi każda ważna cecha i czy jest aktualna.
 
