@@ -1,26 +1,36 @@
 # Tenis AI
 
-Aktualny kierunek aplikacji: **v8.7 Decision Center + Adaptive PROD**.
+Tenis AI jest systemem analizy meczów tenisowych, budowania probability rynków, walidacji bieżącej oferty Superbet, kompozycji Symfonii 2.0, PLAYABLE oraz eksperymentalnego risk layer iNeed$.
 
-Tenis AI analizuje mecze tenisowe, śledzi rynki meczowe i setowe, zapisuje rozliczone prognozy oraz prowadzi kontrolowaną pętlę Adaptive Learning w trybie ograniczonego PROD.
+## Zanim zmienisz kod
 
-## Główne elementy
+Każdy agent/czat/programista ma zacząć od tych dokumentów, w tej kolejności:
 
-- `backend/model.py` — główna analiza meczów.
-- `backend/pbp_*` — Early Hold / point-by-point.
-- `backend/calibration_guard_v78d.py` — kalibracja bieżącej wersji.
-- `backend/shadow_lab_v78e6.py` — odrzucone sygnały / Shadow Lab.
-- `backend/specialist_learning_v79b.py` — learning-only dla Early, Serve/Return, Form, Surface i Consensus.
-- `backend/adaptive_learning_v79.py` — Bayesian Online Meta-Learner i ograniczona korekta po surowym Ensemble.
-- `frontend/model-guide.js` — Centrum Decyzji Meczu: Top / Wszystkie / PRO, filtry, wyszukiwarka i szczegóły modeli.
-- `frontend/clean-core-v80.js` — kanoniczna Historia v8.0 i Post-Match Center.
-- `frontend/ui-v751.js` — aktywny Match Center / bridge starszego UI; będzie dalej konsolidowany w kolejnych wydaniach v8.x.
+1. **`AGENTS.md`** — obowiązkowy proces pracy, zakazy i zasada naprawy w miejscu.
+2. **`TENIS_AI_LOGIC_CONSTITUTION.md`** — kanoniczne znaczenie danych i granice odpowiedzialności modeli/modułów.
+3. **`TENIS_AI_MODEL_DATA_REGISTRY.md`** — bieżący rejestr modeli, źródeł, known logic debt i kolejność programu napraw.
+4. **`TENIS_AI_EXECUTION_CHECKLIST.md`** — aktywny etap, checkboxy, `LIVE CHECKPOINT`, status PR/CI i `NEXT EXACT ACTION`; to jest punkt wznowienia po zmianie czatu lub przerwaniu pracy.
+5. **`ARCHITECTURE.md`** — techniczna mapa aktywnego pipeline'u; rozjazd z runtime jest bugiem dokumentacji/architektury, nie powodem do zgadywania.
 
-## Zasada v8.0
+Historyczne audyty i plany są materiałem dowodowym. Nie mają pierwszeństwa nad powyższymi kontraktami i nie dowodzą, że opisywana kiedyś ścieżka nadal jest aktywna.
 
-Interfejs pokazuje mało informacji na liście i więcej dopiero po wejściu w szczegóły. Historia nie rozwija już ściany typów. Kliknięcie rozliczonego meczu otwiera pełny raport: co weszło, co nie weszło, wynik każdego modelu oraz wnioski Adaptive Learning.
+## Kanoniczna zasada pipeline'u
 
-## Testy
+`RAW DATA -> IDENTITY/HYGIENE -> CONTEXT -> PLAYER/MODEL FEATURES -> CURRENT/ML -> CALIBRATION/ENSEMBLE -> SYMFONIA 2.0 -> EXACT CURRENT SUPERBET OFFER -> PLAYABLE -> iNeed$ -> UI/HISTORY/SETTLEMENT`
+
+Brak rynku Superbet nie usuwa MODEL/RAW. SHADOW nie steruje PROD bez jawnej promocji. Frontend nie tworzy probability ani brakujących danych.
+
+## Zasada konsolidacji
+
+Nie dokładamy kolejnych aktywnych `vXXX`, wrapperów ani hotfixów obok błędnego kodu. Ustalamy jednego kanonicznego właściciela odpowiedzialności, odtwarzamy bug testem, poprawiamy właściciela, usuwamy zastępowaną aktywną ścieżkę po migracji i zabezpieczamy kontrakt testami.
+
+## Zasada ciągłości pracy
+
+Stan projektu ma być zapisany w repo, nie w pamięci pojedynczej rozmowy. Każdy zakończony krok, realny blocker, merge i zmiana aktywnego etapu mają być zapisane w `TENIS_AI_EXECUTION_CHECKLIST.md`.
+
+Po przerwaniu pracy nowy agent nie zaczyna od zera. Najpierw sprawdza żywy GitHub, porównuje go z `LIVE CHECKPOINT`, a potem kontynuuje od `NEXT EXACT ACTION`.
+
+## Testy bazowe
 
 ```bash
 python -m pytest -q
@@ -28,10 +38,10 @@ node tests/ui_static_smoke.mjs
 python scripts/project_health.py
 ```
 
-## Ważne
+Pełny zestaw wymaganych workflow/CI zależy od zakresu PR i musi być zielony przed merge.
 
-Adaptive Learning działa jako **kontrolowany PROD**: `COLLECTING` nie zmienia wyniku, `EARLY` może skorygować go maksymalnie o ±4 pp, a `STRONG` maksymalnie o ±8 pp. Oryginalny Ensemble pozostaje zapisany jako RAW, obok wyniku po Adaptive.
+## Status eksperymentów
 
-Player Intelligence oraz Accuracy Lab v8.6 pozostają w trybie **SHADOW** i nie zmieniają produkcyjnego wyniku.
+Warstwy oznaczone w registry jako **SHADOW/PLAN** nie są źródłem produkcyjnej rekomendacji, dopóki nie przejdą audytu, counterfactual/backtestu, common test set, jawnego review i osobnego promotion PR.
 
 Modele nie gwarantują wygranej ani zysku.
