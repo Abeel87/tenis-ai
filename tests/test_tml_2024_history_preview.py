@@ -4,10 +4,11 @@ from backend import tml_2024_history_preview as audit
 
 
 def _row(index, *, player="Alice Smith", date=20250101, winner_id=101, source_tour="ATP"):
+    tourney_date = int((pd.to_datetime(str(date), format="%Y%m%d") + pd.Timedelta(days=index)).strftime("%Y%m%d"))
     return {
         "tourney_id": f"T{date}-{index}",
         "match_num": index,
-        "tourney_date": date + index,
+        "tourney_date": tourney_date,
         "tourney_name": "Test",
         "surface": "Hard",
         "winner_id": winner_id,
