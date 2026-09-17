@@ -1,18 +1,18 @@
 {
   "version": "v8.9",
-  "generated_at": "2026-09-17T20:35:34.157017+00:00",
+  "generated_at": "2026-09-17T20:49:41.070212+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
   "auto_promotion": false,
   "training": {
-    "rows_total": 4711,
+    "rows_total": 4717,
     "matches_total": 1009,
     "train_rows": 3796,
     "train_matches": 807,
-    "holdout_rows": 915,
+    "holdout_rows": 921,
     "holdout_matches": 202,
-    "rows_with_granular_pi_features": 4711,
+    "rows_with_granular_pi_features": 4717,
     "granular_feature_share": 1.0,
     "chronological_match_split": "80/20"
   },
@@ -43,45 +43,45 @@
   },
   "holdout": {
     "player_catboost_shadow": {
-      "n": 915,
-      "selected_n": 458,
-      "accuracy": 71.4,
-      "brier": 0.22332,
-      "log_loss": 0.63809,
-      "avg_probability": 59.7
+      "n": 921,
+      "selected_n": 459,
+      "accuracy": 71.2,
+      "brier": 0.22327,
+      "log_loss": 0.63796,
+      "avg_probability": 59.6
     },
     "baselines": {
       "catboost": {
-        "n": 915,
-        "selected_n": 357,
-        "accuracy": 73.1,
-        "brier": 0.21798,
-        "log_loss": 0.62694,
-        "avg_probability": 57.8
-      },
-      "ensemble": {
-        "n": 915,
-        "selected_n": 411,
-        "accuracy": 72.3,
-        "brier": 0.21743,
-        "log_loss": 0.62539,
+        "n": 921,
+        "selected_n": 358,
+        "accuracy": 72.9,
+        "brier": 0.21801,
+        "log_loss": 0.62701,
         "avg_probability": 57.7
       },
+      "ensemble": {
+        "n": 921,
+        "selected_n": 412,
+        "accuracy": 72.1,
+        "brier": 0.21752,
+        "log_loss": 0.62562,
+        "avg_probability": 57.6
+      },
       "ensemble_player_formula": {
-        "n": 915,
-        "selected_n": 441,
-        "accuracy": 71.2,
-        "brier": 0.21764,
-        "log_loss": 0.62575,
-        "avg_probability": 57.2
+        "n": 921,
+        "selected_n": 442,
+        "accuracy": 71.0,
+        "brier": 0.21766,
+        "log_loss": 0.6258,
+        "avg_probability": 57.1
       },
       "player_formula": {
-        "n": 915,
+        "n": 921,
         "selected_n": 422,
         "accuracy": 71.6,
-        "brier": 0.23152,
-        "log_loss": 0.6619,
-        "avg_probability": 53.7
+        "brier": 0.2312,
+        "log_loss": 0.66104,
+        "avg_probability": 53.6
       }
     },
     "segments": {
@@ -95,12 +95,12 @@
           "avg_probability": 57.1
         },
         "HARD": {
-          "n": 584,
-          "selected_n": 307,
-          "accuracy": 72.6,
-          "brier": 0.22145,
-          "log_loss": 0.63324,
-          "avg_probability": 61.2
+          "n": 590,
+          "selected_n": 308,
+          "accuracy": 72.4,
+          "brier": 0.22139,
+          "log_loss": 0.63309,
+          "avg_probability": 61.0
         }
       },
       "market": {
@@ -113,12 +113,12 @@
           "avg_probability": 71.9
         },
         "game_state": {
-          "n": 422,
-          "selected_n": 47,
-          "accuracy": 74.5,
-          "brier": 0.23846,
-          "log_loss": 0.66935,
-          "avg_probability": 47.0
+          "n": 428,
+          "selected_n": 48,
+          "accuracy": 72.9,
+          "brier": 0.23813,
+          "log_loss": 0.66864,
+          "avg_probability": 46.9
         },
         "match_winner": {
           "n": 32,
@@ -152,13 +152,13 @@
     "production_influence": false,
     "auto_promotion": false,
     "comparison_baseline": "ensemble",
-    "brier_gain": -0.00589,
-    "log_loss_gain": -0.0127,
+    "brier_gain": -0.00575,
+    "log_loss_gain": -0.01234,
     "accuracy_delta_pp": -0.9,
     "reason": "shadow_only_manual_gate"
   },
-  "current_scored_signals": 293,
-  "frozen_feature_snapshots_added": 0,
+  "current_scored_signals": 289,
+  "frozen_feature_snapshots_added": 9,
   "historical_feature_snapshots_added": 0,
   "historical_backfill_matches_skipped": 0,
   "note": "CatBoost + Player Intelligence działa wyłącznie w SHADOW. Nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score. Wpływ produkcyjny wymaga osobnego gate po wiarygodnym holdoucie."
