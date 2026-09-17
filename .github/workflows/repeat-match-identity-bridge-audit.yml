@@ -98,6 +98,7 @@ jobs:
           assert policy["fail_closed_on_alias_collision"] is True
           assert report["decision"]["runtime_change"] is False
           assert report["summary"]["cached_payloads_scanned"] > 0
+          assert report["summary"]["live_records"] > 0
           assert report["summary"]["tml_rows"] > 0
           print(json.dumps(report["summary"], sort_keys=True))
           print(json.dumps(report["case_impact"], sort_keys=True))
