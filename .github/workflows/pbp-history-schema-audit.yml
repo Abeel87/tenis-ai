@@ -1,0 +1,103 @@
+name: PBP history schema audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/pbp_history_schema_audit.py'
+      - 'backend/pbp_tml_dedup_audit.py'
+      - 'backend/pbp_short_history_supply_audit.py'
+      - 'backend/canonical_point_event.py'
+      - 'backend/atomic_point_transition.py'
+      - 'backend/player_dna_pbp_service_split_readiness.py'
+      - 'backend/model.py'
+      - 'backend/model_core.py'
+      - 'backend/history_hygiene_v78a.py'
+      - 'tests/test_pbp_history_schema_audit.py'
+      - '.github/workflows/pbp-history-schema-audit.yml'
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: backend:.
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt -c requirements.lock
+
+      - name: Unit tests
+        run: >-
+          python -m pytest -q
+          tests/test_pbp_history_schema_audit.py
+          tests/test_pbp_tml_dedup_audit.py
+          tests/test_pbp_short_history_supply_audit.py
+
+      - name: Restore existing history and PBP cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-task008-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require restored local cache
+        shell: bash
+        run: |
+          test -d data/cache/pbp_v7/matches || { echo 'missing restored PBP match cache'; exit 21; }
+          pbp_count=$(find data/cache/pbp_v7/matches -type f -name '*.json.gz' | wc -l)
+          tml_count=$(find data/cache -maxdepth 1 -type f -name '*.csv.gz' | wc -l)
+          echo "restored PBP tape files: ${pbp_count}"
+          echo "restored TML csv files: ${tml_count}"
+          test "${pbp_count}" -gt 0 || { echo 'restored PBP cache is empty'; exit 22; }
+          test "${tml_count}" -gt 0 || { echo 'restored TML cache is empty'; exit 23; }
+
+      - name: Run zero-network TASK 008 audit
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: python backend/pbp_history_schema_audit.py
+
+      - name: Validate audit contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          doc = json.loads(Path('artifacts/pbp_history_schema_audit.json').read_text(encoding='utf-8'))
+          policy = doc['policy']
+          summary = doc['summary']
+          decision = doc['decision']
+          assert policy['network_calls'] == 0
+          assert policy['fuzzy_matching'] is False
+          assert policy['manual_aliases'] is False
+          assert policy['cross_provider_numeric_id_comparison'] is False
+          assert policy['minimum_match_gate_changed'] is False
+          assert policy['history_hygiene_changed'] is False
+          assert policy['model_math_changed'] is False
+          assert policy['runtime_change_authorized'] is False
+          assert policy['pbp_authorized_for_main_history'] is False
+          assert policy['unmatched_pbp_authorized_as_new_history'] is False
+          assert decision['runtime_change'] is False
+          assert decision['history_gate_change'] is False
+          assert decision['authorize_pbp_history'] is False
+          assert summary['task007_unmatched_in_tml_cache'] > 0
+          assert summary['unmatched_observations_audited'] > 0
+          # TASK 007 currently provides only a tiny duplicate calibration set.
+          # Never silently turn a small sample into runtime authorization.
+          if summary['duplicate_observations_compared'] < policy['minimum_duplicate_observations_for_schema_proof']:
+              assert summary['schema_compatibility_proven'] is False
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload TASK 008 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbp-history-schema-audit
+          path: artifacts/pbp_history_schema_audit.json
+          if-no-files-found: error
