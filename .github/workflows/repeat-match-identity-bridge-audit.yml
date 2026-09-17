@@ -1,0 +1,113 @@
+name: Repeat match identity bridge audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/match_bridge_identity_evidence.py'
+      - 'backend/player_identity.py'
+      - 'backend/model.py'
+      - 'backend/history_coverage_audit.py'
+      - 'backend/history_hygiene_v78a.py'
+      - 'tests/test_match_bridge_identity_evidence.py'
+      - '.github/workflows/repeat-match-identity-bridge-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: repeat-match-identity-bridge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout audited ref
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install runtime and test dependencies
+        run: python -m pip install -r requirements.txt -c requirements.lock
+
+      - name: Full regression before cache audit
+        run: python -m pytest -q
+
+      - name: Restore latest tennis history + PBP cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: repeat-match-identity-audit-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require real restored history and PBP cache
+        shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MATCHED_CACHE_KEY" ]; then
+            echo "::error::No tennis-history Actions cache was restored."
+            exit 1
+          fi
+          if [ -z "$(find data/cache/pbp_v7/matches -maxdepth 1 -type f -name '*.json.gz' -print -quit 2>/dev/null || true)" ]; then
+            echo "::error::Restored cache has no cached PBP match payloads."
+            exit 1
+          fi
+          if [ -z "$(find data/cache -maxdepth 1 -type f -name '*.csv.gz' -print -quit 2>/dev/null || true)" ]; then
+            echo "::error::Restored cache has no historical CSV inputs."
+            exit 1
+          fi
+          echo "Restored cache: $MATCHED_CACHE_KEY"
+
+      - name: Build zero-network repeated match identity evidence
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: |
+          python backend/match_bridge_identity_evidence.py \
+            --output artifacts/repeat_match_identity_bridge.json
+
+      - name: Prove audit stayed fail-closed and non-runtime
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("artifacts/repeat_match_identity_bridge.json").read_text(encoding="utf-8"))
+          policy = report["policy"]
+          assert policy["network_calls"] == 0
+          assert policy["fuzzy_matching"] is False
+          assert policy["similarity_thresholds"] is False
+          assert policy["manual_aliases"] is False
+          assert policy["cross_provider_numeric_id_comparison"] is False
+          assert policy["runtime_alias_authorized"] is False
+          assert policy["minimum_distinct_meetings"] >= 2
+          assert policy["minimum_distinct_exact_anchors"] >= 2
+          assert policy["exact_tournament_required"] is True
+          assert policy["exact_surface_required"] is True
+          assert policy["exact_winner_oriented_score_required"] is True
+          assert policy["fail_closed_on_match_ambiguity"] is True
+          assert policy["fail_closed_on_alias_collision"] is True
+          assert report["decision"]["runtime_change"] is False
+          assert report["summary"]["cached_payloads_scanned"] > 0
+          assert report["summary"]["live_records"] > 0
+          assert report["summary"]["tml_rows"] > 0
+          print(json.dumps(report["summary"], sort_keys=True))
+          print(json.dumps(report["case_impact"], sort_keys=True))
+          PY
+
+      - name: Upload repeated match identity evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: repeat-match-identity-bridge-${{ github.run_id }}
+          path: artifacts/repeat_match_identity_bridge.json
+          if-no-files-found: error
+          retention-days: 7
