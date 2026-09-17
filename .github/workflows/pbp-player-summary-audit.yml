@@ -1,0 +1,99 @@
+name: PBP player summary audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'backend/pbp_player_summary_audit.py'
+      - 'backend/pbp_current.py'
+      - 'frontend/data/results.json'
+      - 'tests/test_pbp_player_summary_audit.py'
+      - '.github/workflows/pbp-player-summary-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONPATH: backend:.
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependency
+        run: python -m pip install pytest
+
+      - name: Unit tests
+        run: python -m pytest -q tests/test_pbp_player_summary_audit.py
+
+      - name: Restore latest tennis cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: pbp-player-summary-audit-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+
+      - name: Require real restored PBP index and payload cache
+        shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test -n "$MATCHED_CACHE_KEY" || { echo 'No tennis-history Actions cache restored'; exit 21; }
+          test -s data/cache/pbp_v7/players.json || { echo 'Missing or empty pbp_v7/players.json'; exit 22; }
+          count=$(find data/cache/pbp_v7/matches -type f -name '*.json.gz' 2>/dev/null | wc -l)
+          echo "restored local PBP payloads: ${count}"
+          test "$count" -gt 0 || { echo 'No local PBP payloads restored'; exit 23; }
+
+      - name: Audit cached player-index summaries
+        env:
+          LIVE_TENNIS_API_KEY: ''
+        run: python backend/pbp_player_summary_audit.py
+
+      - name: Validate zero-network fail-closed contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('artifacts/pbp_player_summary_audit.json').read_text(encoding='utf-8'))
+          policy = report['policy']
+          summary = report['summary']
+          decision = report['decision']
+          assert policy['network_calls'] == 0
+          assert policy['provider_requests'] == 0
+          assert policy['production_cache_writes'] == 0
+          assert policy['fuzzy_matching'] is False
+          assert policy['manual_aliases'] is False
+          assert policy['cross_provider_id_comparison'] is False
+          assert policy['minimum_match_gate'] == 5
+          assert policy['minimum_match_gate_changed'] is False
+          assert policy['identity_resolver_changed'] is False
+          assert policy['model_math_changed'] is False
+          assert policy['runtime_change_authorized'] is False
+          assert policy['summary_metadata_authorized_as_history'] is False
+          assert decision['runtime_change'] is False
+          assert decision['authorize_summary_as_history'] is False
+          assert summary['visible_matches'] > 0
+          assert summary['short_history_players'] > 0
+          assert summary['index_players'] > 0
+          assert summary['index_total_summaries'] > 0
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          print(json.dumps(report['summary_only_schema'], indent=2, sort_keys=True))
+          PY
+
+      - name: Upload TASK 012 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pbp-player-summary-audit
+          path: artifacts/pbp_player_summary_audit.json
+          if-no-files-found: error
