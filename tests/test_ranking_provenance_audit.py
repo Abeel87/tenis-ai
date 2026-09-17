@@ -38,6 +38,13 @@ def test_legal_player_rows_are_strictly_pre_match():
     assert [d.date().isoformat() for d in rows["date"]] == ["2026-09-17", "2026-09-10"]
 
 
+def test_age_days_rejects_future_observation():
+    cut = pd.Timestamp("2026-09-17")
+    assert audit._age_days(cut, "2026-09-17") == 0
+    assert audit._age_days(cut, "2026-09-16") == 1
+    assert audit._age_days(cut, "2026-09-18") is None
+
+
 def test_profile_rank_matches_current_head20_first_non_null_semantics():
     rows = pd.DataFrame([
         _row("Alice", "2026-09-17", None, 30),
@@ -100,6 +107,25 @@ def test_fixture_rank_counterfactual_ignores_passthrough_only_changes(monkeypatc
     assert result == {"ran": True, "current_output_changed": False, "error": None}
 
 
+def test_history_rank_and_opponent_rank_counterfactuals_are_isolated(monkeypatch):
+    frame = pd.DataFrame([{"rank": 10, "opponent_rank": 20}])
+
+    def fake_analyse(history, _match):
+        # Output intentionally depends on rank only. Changing opponent_rank must not
+        # be misreported as ranking influence.
+        rank = float(history.iloc[0]["rank"])
+        return {
+            "model_ready": True,
+            "first_set_win": {"Alice": rank, "Bob": 100.0 - rank},
+            "p1_stats": {"rank": rank, "opponent_rank": history.iloc[0]["opponent_rank"]},
+        }
+
+    monkeypatch.setattr(audit.model, "analyse_match", fake_analyse)
+    match = {"p1": "Alice", "p2": "Bob"}
+    assert audit._history_rank_counterfactual(frame, match)["current_output_changed"] is True
+    assert audit._opponent_rank_counterfactual(frame, match)["current_output_changed"] is False
+
+
 def test_report_is_audit_only_and_preserves_rank_provenance(monkeypatch):
     frame = pd.DataFrame([
         _row("Alice", "2026-09-16", 42, 12, opponent="Bob"),
@@ -117,16 +143,14 @@ def test_report_is_audit_only_and_preserves_rank_provenance(monkeypatch):
         "p2_stats": {"rank": 18},
         "model_ready": True,
     }]
-    monkeypatch.setattr(
-        audit,
-        "_fixture_rank_counterfactual",
-        lambda *_args, **_kwargs: {"ran": True, "current_output_changed": False, "error": None},
-    )
-    monkeypatch.setattr(
-        audit,
-        "_history_rank_counterfactual",
-        lambda *_args, **_kwargs: {"ran": True, "current_output_changed": False, "error": None},
-    )
+    no_change = lambda *_args, **_kwargs: {
+        "ran": True,
+        "current_output_changed": False,
+        "error": None,
+    }
+    monkeypatch.setattr(audit, "_fixture_rank_counterfactual", no_change)
+    monkeypatch.setattr(audit, "_history_rank_counterfactual", no_change)
+    monkeypatch.setattr(audit, "_opponent_rank_counterfactual", no_change)
 
     report = audit.build_report(
         frame,
@@ -147,6 +171,7 @@ def test_report_is_audit_only_and_preserves_rank_provenance(monkeypatch):
     assert report["summary"]["model_ready_matches"] == 1
     assert report["summary"]["model_ready_matches_with_both_fixture_provider_ranks"] == 1
     assert report["summary"]["profiles_with_both_fixture_and_historical_rank"] == 2
+    assert report["summary"]["current_engine_opponent_rank_counterfactual"]["changed"] == 0
     assert report["decision"]["production_change_authorized"] is False
     assert report["decision"]["ranking_feature_activation_authorized"] is False
     assert report["decision"]["opponent_adjustment_authorized"] is False
