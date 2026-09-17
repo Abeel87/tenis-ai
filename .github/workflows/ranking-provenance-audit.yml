@@ -1,0 +1,116 @@
+name: LOGIC-02 ranking provenance audit
+
+on:
+  pull_request:
+    paths:
+      - 'backend/ranking_provenance_audit.py'
+      - 'tests/test_ranking_provenance_audit.py'
+      - '.github/workflows/ranking-provenance-audit.yml'
+      - 'TENIS_AI_EXECUTION_CHECKLIST.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: backend:.
+      LIVE_TENNIS_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install audit dependencies
+        run: python -m pip install pytest pandas requests
+      - name: Unit tests
+        run: python -m pytest -q tests/test_ranking_provenance_audit.py
+      - name: Restore latest production tennis cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: logic-02-ranking-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+      - name: Require exact local evidence sources
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          test -n "$MATCHED_CACHE_KEY" || { echo 'No tennis-history Actions cache restored'; exit 21; }
+          count=$(find data/cache -maxdepth 1 -type f -name '*.csv.gz' | wc -l)
+          echo "restored root CSV cache files: ${count}"
+          test "$count" -ge 11 || { echo 'Expected all declared current TennisMyLife cache files'; exit 22; }
+          test -s frontend/data/results.json || { echo 'Missing current results.json'; exit 23; }
+          test -s frontend/data/meta.json || { echo 'Missing current meta.json'; exit 24; }
+          test -s frontend/data/player_dna_current_shadow.json || { echo 'Missing current Player DNA shadow provenance'; exit 25; }
+      - name: Run LOGIC-02 audit-only ranking provenance
+        run: python backend/ranking_provenance_audit.py
+      - name: Validate audit contract and evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('artifacts/ranking_provenance_audit.json').read_text(encoding='utf-8'))
+          p = report['policy']
+          assert p['audit_only'] is True
+          assert p['runtime_change'] is False
+          assert p['model_math_changed'] is False
+          assert p['probability_changed'] is False
+          assert p['thresholds_changed'] is False
+          assert p['weights_changed'] is False
+          assert p['training_changed'] is False
+          assert p['history_sources_changed'] is False
+          assert p['identity_rules_changed'] is False
+          assert p['live_tennis_api_calls'] == 0
+          assert p['production_cache_writes'] == 0
+
+          assert report['sources']['fixture_ranking']['provider'] == 'Live Tennis API'
+          assert report['sources']['fixture_ranking']['ranking_effective_date_available'] is False
+          assert report['sources']['fixture_ranking']['snapshot_observed_at']
+          assert report['sources']['historical_ranking']['provider'] == 'TennisMyLife'
+
+          s = report['summary']
+          assert s['visible_matches'] > 0
+          assert s['model_ready_matches'] > 0
+          assert s['audited_player_fixture_profiles'] > 0
+          assert s['matches_with_both_fixture_provider_ranks'] > 0
+          assert s['profiles_with_historical_profile_rank'] > 0
+          assert s['profiles_with_any_historical_opponent_rank'] > 0
+          assert not s['current_engine_fixture_rank_counterfactual']['errors']
+          assert not s['current_engine_history_rank_counterfactual']['errors']
+          assert not s['current_engine_opponent_rank_counterfactual']['errors']
+
+          fixture_consumer = report['consumer_map']['current_engine_fixture_provider_rank']
+          history_consumer = report['consumer_map']['current_engine_historical_latest_rank']
+          opponent_consumer = report['consumer_map']['current_engine_historical_opponent_rank']
+          assert fixture_consumer['used_in_current_probability_math'] == (s['current_engine_fixture_rank_counterfactual']['changed'] > 0)
+          assert history_consumer['used_in_current_probability_math'] == (s['current_engine_history_rank_counterfactual']['changed'] > 0)
+          assert opponent_consumer['used_in_current_probability_math'] == (s['current_engine_opponent_rank_counterfactual']['changed'] > 0)
+
+          dna = report['consumer_map']['player_dna_current_shadow']
+          assert dna['available'] is True
+          assert dna['production_influence'] is False
+          assert report['decision']['production_change_authorized'] is False
+          assert report['decision']['ranking_feature_activation_authorized'] is False
+          assert report['decision']['opponent_adjustment_authorized'] is False
+
+          print(json.dumps({
+              'summary': s,
+              'current_fixture_rank_consumer': fixture_consumer,
+              'current_history_rank_consumer': history_consumer,
+              'current_opponent_rank_consumer': opponent_consumer,
+              'player_dna_current_shadow': dna,
+          }, indent=2, sort_keys=True))
+          PY
+      - name: Upload LOGIC-02 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-02-ranking-provenance
+          path: artifacts/ranking_provenance_audit.json
+          if-no-files-found: error
