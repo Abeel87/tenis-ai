@@ -29,17 +29,40 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**Aktywny etap:** `LOGIC-00 — Project Constitution / Operating Contract`
+**ACTIVE LOGIC/TASK:** `LOGIC-01 — Freshness Counterfactual`
 
-**Aktywny branch:** `task-020-project-logic-constitution`
+**SUBSTEP:** przejąć istniejący dowód z `TASK 019` jako baseline evidence i ustalić, co można bezpiecznie wykorzystać bez powtarzania audytu.
 
-**Aktywny PR:** `#384 — TASK 020: lock project logic constitution and model/data registry`
+**BRANCH:** `brak` — następny branch LOGIC-01 ma zostać utworzony dopiero ze świeżego `main` po wejściu tego checkpointu.
 
-**Base przy utworzeniu PR:** `main @ 7ad30058060ea5d59a9069a5185f3104b70d41f4`
+**PR:** `brak` dla LOGIC-01. `#384` jest zakończony i zmergowany.
 
-**WAŻNE:** SHA zapisany tutaj jest historycznym checkpointem. Każdy kolejny agent ma najpierw sprawdzić żywy `main`, aktualny head brancha, stan PR i CI. Nie wolno zakładać, że powyższe SHA nadal są aktualne.
+**LAST VERIFIED MAIN:** `5269f6c467c3602fd6d557ed3385bc951008f07d` — merge PR #384; zweryfikowany po merge 2026-09-17 ok. 21:17 CEST.
 
-### Co już zrobiono w LOGIC-00
+**LAST COMPLETED WORK:** `LOGIC-00 — Project Constitution / Operating Contract` zakończony. PR #384 został zmergowany po pełnym green; kanoniczne dokumenty i test kontraktowy są na `main`; post-merge `Tenis AI UI & Project Health` przeszedł w całości zielono.
+
+**CHANGED FILES w zakończonym PR #384:**
+
+- `AGENTS.md`
+- `ARCHITECTURE.md`
+- `README.md`
+- `TENIS_AI_EXECUTION_CHECKLIST.md`
+- `TENIS_AI_LOGIC_CONSTITUTION.md`
+- `TENIS_AI_MODEL_DATA_REGISTRY.md`
+- `tests/test_project_contract_docs.py`
+
+**TEST STATUS:** finalny PR #384 miał pełne wymagane CI zielone. Po merge na `main` pełny pytest oraz wszystkie kroki `Tenis AI UI & Project Health` również zakończyły się `success`.
+
+**CI STATUS:**
+
+- PR #384 final head `f41abaa760f7360c6fd6847412711963dd0c87b5`: `health`, `browser`, `dependencies`, CodeQL oraz analizy Python/JS = GREEN.
+- post-merge `main @ 5269f6c467c3602fd6d557ed3385bc951008f07d`: `Tenis AI UI & Project Health` run `35263641686` = GREEN; `browser`/`dependencies` run `35263641554` = GREEN.
+
+**BLOCKERS:** brak blockerów dla zamknięcia LOGIC-00.
+
+**DO NOT REDO:** nie odtwarzać LOGIC-00 ani TASK 019 od zera bez nowego dowodu, że istniejący materiał jest błędny. PR #383 pozostaje materiałem wejściowym do LOGIC-01 i nie wolno go merge'ować w ciemno na starym base.
+
+### Co zakończono w LOGIC-00
 
 - [x] Utworzono `AGENTS.md` — obowiązkowy protokół pracy.
 - [x] Utworzono `TENIS_AI_LOGIC_CONSTITUTION.md` — kanoniczne znaczenie danych i granice modułów.
@@ -47,27 +70,27 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] `ARCHITECTURE.md` wskazuje dokumenty nadrzędne i oznacza starą mapę UI jako debt.
 - [x] `README.md` jest wejściem do kanonicznych dokumentów zamiast starej mapy vXXX/UI.
 - [x] Dodano test kontraktowy dokumentacji.
-- [x] Delivery/security dla pierwszej wersji PR #384 przeszło zielono.
-- [~] UI & Project Health / CodeQL dla PR #384 wymagają ponownej pełnej weryfikacji po ostatnich zmianach checklisty.
-- [ ] Wszystkie wymagane checki PR #384 zielone po finalnym headzie.
-- [ ] Fresh-main check bezpośrednio przed merge.
-- [ ] Merge PR #384.
-- [ ] Produkcyjna weryfikacja po merge: dokumenty są na `main`, test kontraktowy działa.
-- [ ] Oznaczyć `LOGIC-00` jako zakończone.
+- [x] Wszystkie wymagane checki PR #384 były zielone na finalnym headzie.
+- [x] Fresh-main check wykonano bezpośrednio przed merge; `main` nadal wskazywał `d24bee7cd11f54f6a42ee3b890d6067f0c90a7f7`.
+- [x] PR #384 zmergowano.
+- [x] Merge commit: `5269f6c467c3602fd6d557ed3385bc951008f07d`.
+- [x] Produkcyjna weryfikacja po merge: dokumenty są na `main`, pełny pytest i Project Health są zielone.
+- [x] `LOGIC-00` zakończony.
 
 ### Znany równoległy stan
 
-- `[S]` PR #383 — TASK 019 freshness audit: dowód audytowy istnieje, ale PR jest oparty na starym `main` i **nie wolno go merge'ować w ciemno**.
-- Po wejściu konstytucji należy zdecydować: przebudować/rebase'ować TASK 019 na świeży `main` albo przenieść jego wynik do LOGIC-01 jako materiał wejściowy. Nie powtarzać samego audytu bez potrzeby.
+- `[S]` PR #383 — TASK 019 freshness audit: dowód audytowy istnieje, ale PR był oparty na starszym `main` i **nie wolno go merge'ować w ciemno**.
+- LOGIC-01 ma najpierw odczytać żywy stan #383 (head/base/files/CI/artifacts), ocenić drift względem świeżego `main` i wykorzystać istniejący wynik jako baseline evidence tam, gdzie nadal jest ważny.
+- Nie powtarzać samego audytu bez potrzeby; uzupełnić tylko brakujące elementy wymagane przez LOGIC-01.
 
 ### NEXT EXACT ACTION
 
-1. Po każdej zmianie w PR #384 pobierz aktualny head brancha i uruchom/sprawdź wszystkie wymagane workflow.
-2. Jeżeli którykolwiek check jest czerwony — napraw przyczynę w kanonicznym właścicielu; nie omijaj checku.
-3. Gdy wszystkie checki są zielone, sprawdź świeży `main`.
-4. Jeżeli `main` się przesunął, sprawdź konflikt/drift, zaktualizuj branch i uruchom CI ponownie.
-5. Merge #384 dopiero na pełnym green.
-6. Po merge zaktualizuj tę sekcję: `LOGIC-00 = [x]`, wpisz merge commit i ustaw `LOGIC-01` jako aktywny etap.
+1. Sprawdź ponownie świeży `main`, otwarte PR-y i CI; bot może przesunąć `main` po tym checkpointcie.
+2. Odczytaj aktualny PR #383: head/base, changed files, CI, raporty/artefakty TASK 019 i dokładnie ustal, które wyniki są nadal ważne.
+3. Porównaj #383 ze świeżym `main`; **nie merge'uj #383 w ciemno**. Zdecyduj na podstawie diffu, czy wynik przenieść jako evidence do nowego LOGIC-01, czy bezpiecznie przebudować/rebase'ować jego zakres.
+4. Utwórz świeży branch LOGIC-01 z aktualnego `main` i rozpocznij wyłącznie audit/SHADOW freshness counterfactual.
+5. Najpierw zamroź baseline produkcyjny bez cutoffu i istniejący TASK 019 evidence; potem uruchamiaj scenariusze 30/60/90/120/180/365 dni dla tych samych danych/fixture'ów.
+6. Zero zmian PROD, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW/PROD promotion ani iNeed$ calculations w LOGIC-01.
 
 ---
 
@@ -143,7 +166,7 @@ Każdy przyszły TASK/LOGIC ma przejść przez tę listę. Nie pomijamy punktów
 
 ## LOGIC-00 — Project Constitution / Operating Contract
 
-Status: `[~] IN PROGRESS — PR #384`
+Status: `[x] COMPLETED — PR #384 / merge 5269f6c467c3602fd6d557ed3385bc951008f07d`
 
 Cel: jedna prawda o projekcie, jeden sposób pracy, jedna kolejność napraw.
 
@@ -154,10 +177,10 @@ Cel: jedna prawda o projekcie, jeden sposób pracy, jedna kolejność napraw.
 - [x] ARCHITECTURE authority order.
 - [x] Contract-doc tests.
 - [x] Execution checklist + resume protocol.
-- [ ] Final CI green.
-- [ ] Fresh-main check.
-- [ ] Merge #384.
-- [ ] Post-merge verification.
+- [x] Final CI green.
+- [x] Fresh-main check.
+- [x] Merge #384.
+- [x] Post-merge verification.
 
 **Definition of Done:** wszystkie kanoniczne dokumenty są na `main`, testy ich obecności są zielone, checkpoint wskazuje LOGIC-01.
 
@@ -165,7 +188,7 @@ Cel: jedna prawda o projekcie, jeden sposób pracy, jedna kolejność napraw.
 
 ## LOGIC-01 — Freshness Counterfactual
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE — NEXT: TASK 019 EVIDENCE REVIEW`
 
 Cel: ustalić na danych, jak świeżość wpływa na jakość modeli; bez zmiany PROD.
 
