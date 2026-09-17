@@ -18,6 +18,7 @@ for(let i=0;i<before.length;i++){
  assert.deepEqual(detail.match,JSON.parse(JSON.stringify(raw)),'Full raw record must survive unchanged');
  const s=D.find(sym.matches,raw),events=D.allEvents(raw,s);
  assert.equal(row.ui_summary.has_data,events.some(x=>x.value!=null));
+ assert.equal(row.ui_summary.has_dna,!!raw.player_intelligence_v85,'Delivery summary must preserve Player DNA availability: '+row.id);
  // Re-evaluate before kickoff and after expiration with the same canonical guards.
  const generated=Date.parse(raw.superbet_market_v91?.source_generated_at);
  for(const now of [generated,Date.parse(raw.scheduled_time),generated+91*60000]){
@@ -28,5 +29,7 @@ for(let i=0;i<before.length;i++){
   assert.equal(actual,expected,'Projection must preserve exact PLAYABLE authority: '+row.id);checks++;
  }
 }
+const app=fs.readFileSync(root+'/app.js','utf8');
+assert(app.includes("metric('Player DNA',state.matches.filter(m=>m.ui_summary?.has_dna===true).length,total,'meczów z profilem')"),'Admin Player DNA KPI must use delivery ui_summary.has_dna instead of an omitted full-result field');
 const first=fs.readFileSync(root+'/data/delivery/index.json');buildDelivery();assert(first.equals(fs.readFileSync(root+'/data/delivery/index.json')),'Same sources produce identical index');
-console.log('PASS lossless details, source hashes, index budget, reproducible index, '+checks+' PLAYABLE equivalence checks');
+console.log('PASS lossless details, source hashes, Player DNA summary/KPI source, index budget, reproducible index, '+checks+' PLAYABLE equivalence checks');
