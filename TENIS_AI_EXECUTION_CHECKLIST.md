@@ -2,9 +2,9 @@
 
 Status: **KANONICZNA LISTA WYKONAWCZA / PUNKT WZNOWIENIA**
 
-Ten plik odpowiada za dwie rzeczy:
+Ten plik odpowiada za:
 
-1. kolejność programu napraw i możliwość odhaczania wykonanych etapów,
+1. kolejność programu napraw i możliwość odhaczania etapów,
 2. jednoznaczny punkt wznowienia po przerwaniu pracy, limicie czatu, zmianie agenta albo przesunięciu `main` przez boty.
 
 Nie wolno zaczynać kolejnego etapu tylko dlatego, że „wydaje się następny”. Najpierw sprawdź ten plik, bieżący GitHub i ostatni checkpoint.
@@ -29,83 +29,77 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-02 — Feature Provenance / Ranking Audit`
+**ACTIVE LOGIC/TASK:** `LOGIC-03 — Population / Priors Audit`
 
-**SUBSTEP:** wykonać audit-only mapowanie rankingu fixture z Live Tennis API, historycznego `latest_rank`/`opponent_rank` z TML oraz wszystkich realnych konsumentów tych pól; zero zmian model math.
+**SUBSTEP:** audit-only rozdzielenie produkcyjnych `_surface_priors` na ATP / CH / WTA i pomiar counterfactual wpływu population-specific priors przy niezmienionej historii graczy.
 
-**BRANCH:** `brak` dla LOGIC-02 — świeży branch ma zostać utworzony dopiero po wejściu tego checkpointu na aktualny `main`.
+**BRANCH:** `brak` dla LOGIC-03 — utworzyć świeży branch dopiero ze zweryfikowanego `main` po wejściu tego checkpointu.
 
-**PR:** `brak` dla LOGIC-02. PR #386 jest zakończony i zmergowany; PR #383 został zamknięty bez merge jako superseded evidence.
+**PR:** `brak` dla LOGIC-03. PR #388 zakończony i zmergowany.
 
-**LAST VERIFIED MAIN:** `0c4c65f67e4bb3789f5693917911c4a4962ace9a` — botowy `data: refresh Superbet market context`, frontend/data-only drift po w pełni zielonym produkcyjnym refreshu LOGIC-01; parent `1b74e03ae5e1187d5ee90a547add622c5923d7c0`.
+**LAST VERIFIED MAIN:** `7328c0ec666272abf2a73b3b2a93d06f87d05704` — merge PR #388; post-merge `Tenis AI UI & Project Health` run `35269915274` = GREEN, Delivery/Security run `35269915322` browser+dependencies = GREEN.
 
-**LAST COMPLETED WORK:** `LOGIC-01 — Freshness Counterfactual` zakończony. PR #386 został zmergowany jako `c9292b630c918f7fde0c9c48231629a10819c09f` po pełnym green CI. Audit wykorzystał istniejący TASK 019 jako frozen evidence, odtworzył baseline Current bez cutoffu, policzył 30/60/90/120/180/365 dni przy zamrożonych baseline surface priors i osobno zbadał PBP/Early Hold. Nie wybrano cutoffu i nie autoryzowano żadnej zmiany PROD.
+**LAST COMPLETED WORK:** `LOGIC-02 — Feature Provenance / Ranking Audit` zakończony. PR #388 został zmergowany po pełnym green CI. Audit zmapował ranking fixture Live Tennis API, historyczny `latest_rank` i `opponent_rank` TML, wiek/provenance i realne miejsca konsumpcji. Pierwszy łączny probe rank+opponent_rank został przed merge poprawiony, aby oba pola mierzyć osobno.
 
-**CHANGED FILES w zakończonym PR #386:**
+**CHANGED FILES w zakończonym PR #388:**
 
-- `backend/history_freshness_counterfactual.py`
-- `tests/test_history_freshness_counterfactual.py`
-- `.github/workflows/history-freshness-counterfactual.yml`
+- `backend/ranking_provenance_audit.py`
+- `tests/test_ranking_provenance_audit.py`
+- `.github/workflows/ranking-provenance-audit.yml`
 
-**LOGIC-01 EVIDENCE:**
+**LOGIC-02 EVIDENCE:**
 
-- workflow audit: `35265863260`, artifact `10516701643`, digest `sha256:f28fb5362ee8e24475b803beed9111da673e07635069037edb283e758491e77b`;
-- baseline: 155 fixture'ów przeliczonych, 51 `model_ready`, 137 profili z >=5 meczami, zero błędów;
-- `model_ready` retained / 51: 30d=9, 60d=32, 90d=36, 120d=38, 180d=41, 365d=46;
-- profile z >=5 retained / baseline 137: 30d=40, 60d=86, 90d=97, 120d=105, 180d=114, 365d=126;
-- Early Hold: 77 obecnie gotowych profili; >=5 wybranych próbek retained: 30d=33, 60d=75, 90d=77, 120d=77, 180d=77, 365d=77; najstarsza użyta próbka 157 dni;
-- 594 daty próbek Early Hold rozwiązane, 0 brakujących;
-- Brier/calibration/accuracy celowo nie zostały sfabrykowane: ten audit nie posiadał dedykowanego, bezstronnego settled prediction ledger; ten kontrakt należy do LOGIC-09.
+- final head: `9d4200634afc22c9837da440d630e22c977c3f5e`;
+- audit workflow: `35269552146` = GREEN;
+- artifact: `10517338556`;
+- digest: `sha256:ad49a0aba2a9d6a7e627d21bdb88f18c4d33cac0247319dbb180a509ca632344`;
+- 161 widocznych meczów, 51 `model_ready`, 322 player-fixture profiles;
+- oba fixture provider ranks: 137 meczów, 50/51 `model_ready`;
+- historyczny profile rank: 197 profili;
+- 102/102 `model_ready` profile ranks dokładnie odtworzyły stored `p_stats.rank`;
+- wiek historycznego rankingu dla `model_ready`: median 11 dni, p90 72.8 dnia, max 340 dni; >30d=17, >90d=9, >180d=6, >365d=0;
+- bezwzględna różnica fixture-vs-history rank dla `model_ready`: n=101, median 0, p90 44, max 486;
+- fixture `p1_rank/p2_rank` counterfactual: 0/51 Current outputs changed;
+- historyczny `latest_rank` counterfactual: 51/51 Current outputs changed;
+- kanoniczne miejsce użycia historycznego rankingu: `model_core._historical_set_probability` rank term, 10% korekta historycznej set probability przed dalszym blendingiem Current;
+- historyczny `opponent_rank` counterfactual: 0/51 Current outputs changed;
+- Player DNA Current: `SHADOW_CURRENT_ONLY`, `production_influence=false`, `rank_features_used=false`.
 
-**TEST STATUS:** PR #386 miał zielone testy jednostkowe LOGIC-01, realny restore cache, walidację kontraktu, pełny Project Health/pytest oraz brak błędów fixture w counterfactualu. Post-merge `main` przeszedł pełny final regression v9.3.3 w produkcyjnym refreshu.
+**TEST STATUS:** dedykowane testy LOGIC-02 zielone, w tym time-leakage, head(20) latest-rank semantics, opponent-rank coverage, passthrough-safe output view, rozdzielone rank/opponent-rank probes i audit-only contract. Pełny wymagany pytest na finalnym PR i po merge = GREEN.
 
 **CI STATUS:**
 
-- PR #386 final head `ea416c5cc136834e7f11c623276ae6fbd14bd9c5`: Delivery/Security run `35265862952` = GREEN; LOGIC-01 run `35265863260` = GREEN; CodeQL run `35265863139` = GREEN; UI & Project Health run `35265862833` = GREEN.
-- post-merge `c9292b630c918f7fde0c9c48231629a10819c09f`: Project Health/full pytest, browser/dependencies i CodeQL = GREEN.
-- production refresh run `35266260343`: wszystkie warstwy, guardy, final full regression, commit refreshed JSON, Pages artifact i Deploy Pages = GREEN; bot przesunął `main` do `1b74e03ae5e1187d5ee90a547add622c5923d7c0`.
-- późniejszy botowy refresh Superbet market context przesunął `main` do `0c4c65f67e4bb3789f5693917911c4a4962ace9a`; drift względem `1b74e03...` dotyczył wyłącznie `frontend/data/*`, bez zmian kodu i dokumentacji.
+- PR #388 final head `9d4200634afc22c9837da440d630e22c977c3f5e`: LOGIC-02 audit `35269552146` = GREEN, CodeQL `35269552039` = GREEN, Delivery/Security `35269552040` = GREEN, UI & Project Health `35269552027` = GREEN.
+- merge commit: `7328c0ec666272abf2a73b3b2a93d06f87d05704`.
+- post-merge UI & Project Health `35269915274` = GREEN: full pytest, wszystkie SHADOW/runtime/health guardy = GREEN.
+- post-merge Delivery/Security `35269915322` = GREEN: browser E2E i dependency/security checks = GREEN.
 
 **BLOCKERS:** brak blockerów.
 
-**DO NOT REDO:** nie powtarzać TASK 019 ani LOGIC-01 bez nowego dowodu, że evidence jest błędne. PR #383 jest zamknięty bez merge. Nie wybierać cutoffu 30/60/90/120/180/365 „na oko” na podstawie samego LOGIC-01. Nie wdrażać freshness policy do PROD w LOGIC-02. Nie fabricować Brier/calibration bez bezstronnego common settled ledger.
+**DO NOT REDO:** nie powtarzać LOGIC-01 ani LOGIC-02 bez nowego dowodu błędu. Nie interpretować fixture provider rank jako używanego przez Current — finalny counterfactual wykazał 0/51 wpływu. Nie interpretować `opponent_rank` jako obecnego Current feature — 0/51 wpływu. Historyczny `latest_rank` jest realnym Current inputem. Nie aktywować fixture rank, opponent adjustment ani nowej freshness policy bez późniejszego SHADOW/validation/promotion. Nie fabricować Brier/calibration bez bezstronnego settled common ledger (LOGIC-09).
 
-### Co zakończono w LOGIC-00
+### Co zakończono wcześniej
 
-- [x] Utworzono `AGENTS.md` — obowiązkowy protokół pracy.
-- [x] Utworzono `TENIS_AI_LOGIC_CONSTITUTION.md` — kanoniczne znaczenie danych i granice modułów.
-- [x] Utworzono `TENIS_AI_MODEL_DATA_REGISTRY.md` — mapa modeli/danych i program napraw.
-- [x] `ARCHITECTURE.md` wskazuje dokumenty nadrzędne i oznacza starą mapę UI jako debt.
-- [x] `README.md` jest wejściem do kanonicznych dokumentów zamiast starej mapy vXXX/UI.
-- [x] Dodano test kontraktowy dokumentacji.
-- [x] Wszystkie wymagane checki PR #384 były zielone na finalnym headzie.
-- [x] Fresh-main check wykonano bezpośrednio przed merge; `main` nadal wskazywał `d24bee7cd11f54f6a42ee3b890d6067f0c90a7f7`.
-- [x] PR #384 zmergowano.
-- [x] Merge commit: `5269f6c467c3602fd6d557ed3385bc951008f07d`.
-- [x] Produkcyjna weryfikacja po merge: dokumenty są na `main`, pełny pytest i Project Health są zielone.
-- [x] `LOGIC-00` zakończony.
-
-### Stan zamkniętego TASK 019
-
-- [x] PR #383 dostarczył historyczny freshness evidence użyty jako materiał wejściowy LOGIC-01.
-- [x] Evidence zostało zweryfikowane i skonsumowane przez LOGIC-01 bez blind merge starego brancha.
-- [x] PR #383 został zamknięty bez merge jako superseded evidence.
+- [x] LOGIC-00 — Project Constitution / Operating Contract — PR #384 / merge `5269f6c467c3602fd6d557ed3385bc951008f07d`.
+- [x] LOGIC-01 — Freshness Counterfactual — PR #386 / merge `c9292b630c918f7fde0c9c48231629a10819c09f`.
+- [x] TASK 019 / PR #383 evidence zostało skonsumowane przez LOGIC-01; #383 zamknięty bez merge.
+- [x] LOGIC-02 — Feature Provenance / Ranking Audit — PR #388 / merge `7328c0ec666272abf2a73b3b2a93d06f87d05704`.
 
 ### NEXT EXACT ACTION
 
-1. Sprawdź ponownie świeży `main`, otwarte PR-y i ostatnie CI; nie zakładaj, że `0c4c65f67e4bb3789f5693917911c4a4962ace9a` nadal jest HEAD, jeżeli bot zdążył zrobić kolejny refresh.
-2. Utwórz świeży branch `logic-02-ranking-provenance` z aktualnego `main`.
-3. Zmapuj bez nowych requestów: fixture `p1_rank/p2_rank` z Live Tennis API snapshotu, `latest_rank` i `opponent_rank` z TML/history oraz realne miejsca konsumpcji w Current Engine i SHADOW Player DNA.
-4. Dla każdego rankingu zapisz source, observation/effective date jeśli istnieje, wiek, resolved player identity i miejsce użycia. Nie wymyślaj `ranking_effective_date`, jeśli provider go nie daje.
-5. Audit-only: zmierz current-vs-historical rank, wiek historycznego rankingu, opponent-rank coverage i counterfactual, czy rank faktycznie wpływa na Current probability/output.
-6. Zero zmian model math, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD ani iNeed$ calculations.
-7. PR → pełne zielone CI + artifact → fresh-main check → merge → post-merge weryfikacja → checkpoint do LOGIC-03.
+1. Sprawdź ponownie świeży `main`, wszystkie otwarte PR-y i ostatnie CI; bot może przesunąć `main` po tym checkpointcie.
+2. Przeczytaj aktualny `model_core._surface_priors`, `update.TML_SOURCES` i wynik LOGIC-02; nie zakładaj semantyki z pamięci.
+3. Utwórz świeży branch `logic-03-population-priors-audit` z aktualnego `main`.
+4. Audit-only: na dokładnym cache TML zmierz produkcyjny mixed `_surface_priors` per surface i osobno ATP / CH / WTA z zachowaniem as-of cutoff.
+5. Dla każdego segmentu raportuj support: pre-cut rows, surface rows i czy produkcyjny próg `>=100` wybrał surface-specific prior czy fallback all-surfaces.
+6. Dla jednoznacznie zmapowanych fixture'ów policz SHADOW counterfactual: identyczne player history i identyczny model, ale zamrożone population-specific priors; raportuj profile/output deltas. Nie zgaduj nieznanych `tour`.
+7. Zaprojektuj hierarchy/fallback jako evidence-only candidate; nie wdrażaj do PROD i nie zmieniaj progu 100.
+8. Zero zmian model math, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD ani iNeed$ calculations.
+9. PR → dedykowane CI + artifact → pełne zielone CI → fresh-main check → merge → post-merge verification → checkpoint do LOGIC-04.
 
 ---
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
-
-Każdy przyszły TASK/LOGIC ma przejść przez tę listę. Nie pomijamy punktów po cichu.
 
 ## A. Start
 
@@ -115,41 +109,41 @@ Każdy przyszły TASK/LOGIC ma przejść przez tę listę. Nie pomijamy punktów
 - [ ] Przeczytaj `AGENTS.md`.
 - [ ] Przeczytaj `TENIS_AI_LOGIC_CONSTITUTION.md`.
 - [ ] Przeczytaj odpowiedni wpis w `TENIS_AI_MODEL_DATA_REGISTRY.md`.
-- [ ] Przeczytaj `TENIS_AI_EXECUTION_CHECKLIST.md` i sekcję `LIVE CHECKPOINT`.
-- [ ] Ustal dokładnie jeden kanoniczny owner błędu/logiki.
-- [ ] Potwierdź, że nie istnieje już aktywna równoległa implementacja rozwiązująca to samo.
+- [ ] Przeczytaj `TENIS_AI_EXECUTION_CHECKLIST.md` i `LIVE CHECKPOINT`.
+- [ ] Ustal dokładnie jednego kanonicznego ownera błędu/logiki.
+- [ ] Potwierdź, że nie istnieje aktywna równoległa implementacja tego samego rozwiązania.
 
 ## B. Audyt przed zmianą
 
 - [ ] Odtwórz faktyczne zachowanie z kodu/runtime, nie z pamięci.
 - [ ] Zapisz źródła wejściowych danych.
-- [ ] Zapisz, które moduły konsumują wynik.
-- [ ] Zapisz guardy/walidatory stojące przed i za modułem.
-- [ ] Odtwórz bug testem, raportem lub audytem.
+- [ ] Zapisz konsumentów wyniku.
+- [ ] Zapisz guardy/walidatory przed i za modułem.
+- [ ] Odtwórz bug/problem testem, raportem lub audytem.
 - [ ] Rozdziel: bug implementacyjny / problem danych / problem modelowy / debt dokumentacyjny.
-- [ ] Jeżeli zmiana dotyczy probability/wag/progów/modelu — najpierw SHADOW/counterfactual i osobna autoryzacja.
+- [ ] Jeśli zakres dotyczy probability/wag/progów/modelu — najpierw SHADOW/counterfactual i osobna autoryzacja.
 
 ## C. Implementacja
 
 - [ ] Popraw kanonicznego ownera **w miejscu**.
 - [ ] Nie twórz nowego `vXXX`, wrappera ani równoległej ścieżki jako obejścia.
 - [ ] Usuń/zdezaktywuj zastępowaną aktywną logikę, gdy migracja jest bezpieczna.
-- [ ] Nie zmieniaj downstream UI tylko po to, by ukryć zły upstream.
+- [ ] Nie zmieniaj downstream UI, aby ukryć zły upstream.
 - [ ] Nie zmieniaj guardu, jeśli bug należy do producenta danych/modelu — i odwrotnie.
-- [ ] Zachowaj provenance danych i reason codes.
+- [ ] Zachowaj provenance i reason codes.
 - [ ] Dodaj test regresyjny.
-- [ ] Zaktualizuj registry/architekturę/checklistę, jeżeli zmieniła się odpowiedzialność lub pipeline.
+- [ ] Zaktualizuj registry/architekturę/checklistę, jeśli zmieniła się odpowiedzialność lub pipeline.
 
 ## D. Walidacja
 
-- [ ] Test jednostkowy reprodukujący bug jest zielony.
+- [ ] Test jednostkowy reprodukujący problem jest zielony.
 - [ ] Testy sąsiednich modułów są zielone.
 - [ ] Pełny wymagany pytest jest zielony.
 - [ ] UI smoke jest zielony, jeśli zakres dotyczy UI/runtime danych.
 - [ ] Project Health jest zielony.
 - [ ] Security/CodeQL wymagane dla PR są zielone.
 - [ ] Brak niezamierzonej zmiany probability/model math/settlement/PROD-SHADOW poza zakresem.
-- [ ] Porównano output przed/po tam, gdzie zmiana może wpłynąć na wyniki.
+- [ ] Porównano output przed/po tam, gdzie może zmienić wyniki.
 
 ## E. Merge
 
@@ -163,11 +157,11 @@ Każdy przyszły TASK/LOGIC ma przejść przez tę listę. Nie pomijamy punktów
 ## F. Po merge
 
 - [ ] Sprawdź produkcyjny workflow/snapshot.
-- [ ] Potwierdź, że funkcja faktycznie działa na `main`, nie tylko w teście.
-- [ ] Potwierdź brak regresji w module downstream.
+- [ ] Potwierdź, że funkcja działa na `main`, nie tylko w teście.
+- [ ] Potwierdź brak regresji downstream.
 - [ ] Odhacz zadanie w programie.
 - [ ] Ustaw `NEXT EXACT ACTION` następnego etapu.
-- [ ] Zapisz nowy checkpoint przed zakończeniem czatu.
+- [ ] Zapisz nowy checkpoint przed zakończeniem/przerwą.
 
 ---
 
@@ -191,7 +185,7 @@ Cel: jedna prawda o projekcie, jeden sposób pracy, jedna kolejność napraw.
 - [x] Merge #384.
 - [x] Post-merge verification.
 
-**Definition of Done:** wszystkie kanoniczne dokumenty są na `main`, testy ich obecności są zielone, checkpoint wskazuje LOGIC-01.
+**Definition of Done:** spełnione.
 
 ---
 
@@ -203,54 +197,57 @@ Cel: ustalić na danych, jak świeżość wpływa na jakość modeli; bez zmiany
 
 - [x] Przenieść wynik TASK 019 jako baseline evidence.
 - [x] Zmierzyć baseline produkcyjny bez cutoffu.
-- [x] Przeliczyć scenariusze 30/60/90/120/180/365 dni dla Current player history.
+- [x] Przeliczyć 30/60/90/120/180/365 dni dla Current player history.
 - [x] Osobno zmierzyć PBP/Early Hold freshness.
-- [x] Nie zmieniać global surface priors w pierwszym eksperymencie — izolować player-history effect.
-- [x] Raport: profile retained, >=5 fresh matches, model-ready matches retained/lost.
-- [x] Raport: probability/output deltas na tych samych fixture'ach.
-- [x] Raport: Brier/calibration/accuracy tam, gdzie istnieje bezstronny settled common set — `N/A` dla wejścia LOGIC-01; brak dedykowanego unbiased settled prediction ledger, metryk nie sfabrykowano; własność tego kontraktu = LOGIC-09.
-- [x] Lista konkretnych meczów/profili zależnych od starej historii w artefakcie.
+- [x] Zamrozić global surface priors w pierwszym eksperymencie.
+- [x] Raport profile retained / >=5 / model-ready retained-lost.
+- [x] Raport probability/output deltas na tych samych fixture'ach.
+- [x] Brier/calibration/accuracy: `N/A`, bo brak unbiased settled common ledger; owner = LOGIC-09.
+- [x] Lista konkretnych meczów/profili zależnych od starej historii.
 - [x] Zero zmian PROD.
 - [x] CI + artifact.
 
-**Definition of Done:** spełnione. Mamy twarde dane do późniejszej decyzji o polityce świeżości; LOGIC-01 nie wybiera cutoffu „na oko”.
+**Definition of Done:** spełnione; cutoff nie został wybrany „na oko”.
 
 ---
 
 ## LOGIC-02 — Feature Provenance / Ranking Audit
 
-Status: `[~] ACTIVE — NEXT: RANKING PROVENANCE AUDIT`
+Status: `[x] COMPLETED — PR #388 / merge 7328c0ec666272abf2a73b3b2a93d06f87d05704`
 
-Cel: wiedzieć skąd pochodzi każda ważna cecha i czy jest aktualna.
+Cel: wiedzieć skąd pochodzi każda ważna cecha rankingowa i czy jest aktualna.
 
-- [ ] Zmapować ranking fixture z Live Tennis API.
-- [ ] Zmapować `latest_rank` z TML/history.
-- [ ] Porównać current vs historical ranking dla wszystkich model-ready fixture'ów.
-- [ ] Zmierzyć wiek używanego rankingu.
-- [ ] Zidentyfikować miejsca, gdzie obecny ranking jest ignorowany.
-- [ ] Zmapować opponent rank dla historycznych meczów, jeśli źródło pozwala.
-- [ ] Zbudować provenance report per match/player.
-- [ ] Zero zmian model math w fazie audytu.
+- [x] Zmapować ranking fixture z Live Tennis API.
+- [x] Zmapować `latest_rank` z TML/history.
+- [x] Porównać current vs historical ranking dla wszystkich dostępnych model-ready profiles.
+- [x] Zmierzyć wiek używanego historycznego rankingu.
+- [x] Zidentyfikować miejsca, gdzie obecny fixture ranking jest ignorowany.
+- [x] Zmapować `opponent_rank` dla historycznych meczów.
+- [x] Zbudować provenance report per match/player.
+- [x] Rozdzielić counterfactual fixture rank / historical latest_rank / historical opponent_rank.
+- [x] Zero zmian model math i zero promocji w fazie audytu.
+- [x] Dedykowane CI + artifact + full PR CI + post-merge verification.
 
-**Definition of Done:** dla każdej cechy rankingowej znamy źródło, datę i miejsce użycia.
+**Definition of Done:** spełnione. Dla każdej badanej cechy rankingowej znamy źródło, obserwowaną datę tam gdzie istnieje, wiek oraz faktyczne miejsce użycia/nieużycia.
 
 ---
 
 ## LOGIC-03 — Population / Priors Audit
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE — NEXT: MIXED VS ATP/CH/WTA PRIORS AUDIT`
 
 Cel: sprawdzić mieszanie ATP/WTA/Challenger i wpływ globalnych priors.
 
 - [ ] Zmierzyć current `_surface_priors` per surface.
 - [ ] Rozbić priory na ATP / CH / WTA.
 - [ ] Zmierzyć różnice hold/break/serve/return.
-- [ ] Zmierzyć, ile profili zmienia się przez mixed-population prior.
+- [ ] Zmierzyć, ile profili/fixture outputs zmienia się przez mixed-population prior.
 - [ ] Sprawdzić fallback, gdy segment ma mało danych.
 - [ ] Zaprojektować hierarchy/fallback bez wdrażania do PROD.
 - [ ] SHADOW comparison.
+- [ ] Zero zmian model math / progu surface support 100 / PROD.
 
-**Definition of Done:** wiemy, czy i jak populacje muszą być rozdzielone oraz jaki fallback jest statystycznie uzasadniony.
+**Definition of Done:** wiemy, czy i jak populacje muszą być rozdzielone oraz jakie dane wspierają późniejszą decyzję o fallbacku; żadnej promocji w tym etapie.
 
 ---
 
@@ -447,19 +444,19 @@ Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
 Przed zakończeniem dłuższej sesji albo gdy istnieje ryzyko limitu/przerwania należy zaktualizować `LIVE CHECKPOINT` i zapisać co najmniej:
 
-- **ACTIVE LOGIC/TASK:** np. `LOGIC-05`.
-- **SUBSTEP:** konkretny punkt checklisty.
-- **BRANCH:** aktualny branch.
-- **PR:** numer albo `brak`.
-- **LAST VERIFIED MAIN:** SHA i czas sprawdzenia.
-- **LAST COMPLETED WORK:** co faktycznie zakończono.
-- **CHANGED FILES:** dokładna lista.
-- **TEST STATUS:** które testy przeszły / które nie były uruchomione.
-- **CI STATUS:** run IDs + green/red/in progress.
-- **BLOCKERS:** realne blokery, nie przypuszczenia.
-- **DO NOT REDO:** rzeczy już potwierdzone, których nie trzeba powtarzać bez powodu.
-- **NEXT EXACT ACTION:** jedna konkretna następna czynność.
-- **RISKS / HARD BANS:** czego nie wolno zmienić podczas wznowienia.
+- **ACTIVE LOGIC/TASK**,
+- **SUBSTEP**,
+- **BRANCH**,
+- **PR**,
+- **LAST VERIFIED MAIN**,
+- **LAST COMPLETED WORK**,
+- **CHANGED FILES**,
+- **TEST STATUS**,
+- **CI STATUS**,
+- **BLOCKERS**,
+- **DO NOT REDO**,
+- **NEXT EXACT ACTION**,
+- **RISKS / HARD BANS**.
 
 Jeżeli nie można zaktualizować pliku przed nagłym przerwaniem, następny agent ma odtworzyć checkpoint z GitHub PR/commits/workflowów i dopiero wtedy kontynuować.
 
@@ -467,30 +464,28 @@ Jeżeli nie można zaktualizować pliku przed nagłym przerwaniem, następny age
 
 # 5. PROTOKÓŁ WZNOWIENIA NOWEGO CZATU
 
-Każdy nowy czat/agent ma wykonać kolejno:
-
 1. Odczytaj `AGENTS.md`.
 2. Odczytaj `TENIS_AI_LOGIC_CONSTITUTION.md`.
 3. Odczytaj `TENIS_AI_MODEL_DATA_REGISTRY.md`.
 4. Odczytaj ten plik i `LIVE CHECKPOINT`.
 5. Sprawdź żywy GitHub: `main`, branch, PR, CI, najnowsze commity.
-6. Porównaj stan GitHub z checkpointem.
-7. Jeżeli bot przesunął `main`, nie resetuj całej pracy — oceń tylko drift względem aktywnego brancha.
+6. Porównaj GitHub z checkpointem.
+7. Jeśli bot przesunął `main`, nie resetuj całej pracy — oceń tylko drift względem aktywnego brancha.
 8. Potwierdź, które checkboxy mają dowody i są nadal ważne.
 9. Kontynuuj od `NEXT EXACT ACTION`.
-10. Nie rozpoczynaj wcześniejszego etapu od zera, chyba że odkryto dowód, że checkpoint był błędny.
-11. Nie przeskakuj do kolejnego LOGIC, dopóki Definition of Done aktywnego etapu nie jest spełnione albo jawnie oznaczone jako deferred/blocked przez właściciela projektu.
+10. Nie rozpoczynaj wcześniejszego etapu od zera bez dowodu, że checkpoint był błędny.
+11. Nie przeskakuj do kolejnego LOGIC, dopóki Definition of Done aktywnego etapu nie jest spełnione albo jawnie deferred/blocked przez właściciela projektu.
 
 ---
 
 # 6. Zasada anty-chaos
 
-Jeżeli podczas zadania pojawi się nowy problem, nie zmieniamy natychmiast całego zakresu.
+Jeżeli podczas zadania pojawi się nowy problem:
 
-- Jeżeli blokuje bieżący etap — wpisz jako blocker i napraw w jego ownerze.
-- Jeżeli nie blokuje — dopisz do właściwego LOGIC/P0/P1/P2 w registry/checkliście.
-- Nie twórz nowej architektury na boku.
-- Nie zmieniaj kolejności programu bez zapisania powodu.
-- Nie uznawaj problemu za rozwiązany tylko dlatego, że UI przestało go pokazywać.
+- jeśli blokuje bieżący etap — wpisz jako blocker i napraw w jego ownerze,
+- jeśli nie blokuje — dopisz do właściwego LOGIC/P0/P1/P2 w registry/checkliście,
+- nie twórz nowej architektury na boku,
+- nie zmieniaj kolejności programu bez zapisania powodu,
+- nie uznawaj problemu za rozwiązany tylko dlatego, że UI przestało go pokazywać.
 
 Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci pojedynczego czatu**.
