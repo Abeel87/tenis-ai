@@ -2,15 +2,17 @@ from __future__ import annotations
 
 """Zero-network provider identity evidence audit for TASK 003.
 
-This module never calls Live Tennis API. It only inspects the already-restored
-PBP cache plus the existing historical CSV cache and current published results.
+This module never calls Live Tennis API. It inspects only already-restored cache
+material, current published results, and the existing historical CSV cache.
 
-Identity is accepted only from:
-- ``pbp_v7/players.json`` entries with a strict integer ``player_id``;
-- cached match payloads accepted by ``player_identity.player_identity_map``.
+Important safety rule: a numeric Live Tennis API player ID is accepted as an
+explicit identity inside one cached payload/index record, but this audit does NOT
+assume that the numeric ID is globally unique across provider namespaces. Cross-
+match same-number joins are therefore reported only as an *unscoped upper bound*
+until a namespace can be proven from cached provider material.
 
-No fuzzy matching, similarity scoring, alias guessing, or cross-provider ID
-comparison is performed. Ambiguous/colliding evidence fails closed.
+No fuzzy matching, similarity scoring, manual aliases, or guessed namespace is
+used. Ambiguous/colliding evidence fails closed.
 """
 
 import argparse
@@ -37,13 +39,12 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PBP_ROOT = ROOT / "data" / "cache" / "pbp_v7"
 DEFAULT_RESULTS = ROOT / "frontend" / "data" / "results.json"
 DEFAULT_OUTPUT = ROOT / "artifacts" / "provider_identity_evidence.json"
-VERSION = "task-003-provider-identity-evidence-v1"
+VERSION = "task-003-provider-identity-evidence-v2"
 MAX_SOURCE_EXAMPLES = 5
 
 
 def _provider_id(value: Any) -> int | None:
-    # Strictly mirror player_identity.py semantics: bool is not a valid ID and
-    # strings/floats are never coerced.
+    """Accept only provider integers; never coerce strings/floats/bools."""
     return value if type(value) is int else None
 
 
@@ -53,10 +54,9 @@ def _key(value: Any) -> str:
 
 def _read_json(path: Path, default: Any) -> Any:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return default
-    return value
 
 
 def _read_gzip_json(path: Path) -> dict[str, Any] | None:
@@ -92,11 +92,12 @@ def build_provider_evidence(
     history_keys: Iterable[str] = (),
     existing_resolutions: dict[str, tuple[str | None, str]] | None = None,
 ) -> dict[str, Any]:
-    """Build deterministic provider-ID evidence from already-cached material.
+    """Inventory strict IDs and compute only a namespace-unscoped upper bound.
 
-    ``existing_resolutions`` is diagnostic only. When supplied, a provider-backed
-    alias is considered *new* only when the existing production resolver returns
-    no key. Existing exact/expanded-name behaviour therefore remains authoritative.
+    Same numeric IDs observed in different cached matches are deliberately NOT
+    authorized as runtime aliases. They are useful only to prove an upper bound:
+    if even the broad same-number relation yields zero current->history candidate,
+    any stricter namespace-scoped relation must also yield zero.
     """
     existing_resolutions = existing_resolutions or {}
 
@@ -139,12 +140,7 @@ def build_provider_evidence(
         index_exact[normalized_stored_key] = player_id
         raw_name = entry.get("player")
         raw_name = raw_name.strip() if isinstance(raw_name, str) and raw_name.strip() else None
-        observe_key(
-            player_id,
-            normalized_stored_key,
-            "players_index",
-            raw_name=raw_name,
-        )
+        observe_key(player_id, normalized_stored_key, "players_index", raw_name=raw_name)
         example = f"players.json:{normalized_stored_key}"
         if example not in id_source_examples[player_id] and len(id_source_examples[player_id]) < MAX_SOURCE_EXAMPLES:
             id_source_examples[player_id].append(example)
@@ -165,12 +161,7 @@ def build_provider_evidence(
             normalized = _key(raw_name)
             if not normalized:
                 continue
-            observe_key(
-                player_id,
-                normalized,
-                "match_payload",
-                raw_name=raw_name,
-            )
+            observe_key(player_id, normalized, "match_payload", raw_name=raw_name)
             example = f"match:{match_id}:p{side}"
             if example not in id_source_examples[player_id] and len(id_source_examples[player_id]) < MAX_SOURCE_EXAMPLES:
                 id_source_examples[player_id].append(example)
@@ -182,13 +173,13 @@ def build_provider_evidence(
     }
 
     provider_rows: dict[str, Any] = {}
-    safe_alias_pairs = 0
+    unscoped_numeric_pairs = 0
     ids_with_multiple_names = 0
     ids_with_multiple_keys = 0
     ids_with_multiple_collision_free_keys = 0
 
     for player_id in sorted(set(id_keys) | set(id_names) | set(id_sources)):
-        safe_keys = sorted(
+        collision_free_keys = sorted(
             key for key in id_keys[player_id]
             if set(key_ids[key]) == {player_id}
         )
@@ -196,24 +187,25 @@ def build_provider_evidence(
             ids_with_multiple_names += 1
         if len(id_keys[player_id]) > 1:
             ids_with_multiple_keys += 1
-        if len(safe_keys) > 1:
+        if len(collision_free_keys) > 1:
             ids_with_multiple_collision_free_keys += 1
-            safe_alias_pairs += sum(1 for _ in combinations(safe_keys, 2))
+            unscoped_numeric_pairs += sum(1 for _ in combinations(collision_free_keys, 2))
         provider_rows[str(player_id)] = {
             "exact_names": _sorted_counter(id_names[player_id]),
             "normalized_keys": _sorted_counter(id_keys[player_id]),
-            "collision_free_keys": safe_keys,
+            "collision_free_numeric_id_keys": collision_free_keys,
             "sources": dict(sorted(id_sources[player_id].items())),
             "source_examples": id_source_examples[player_id],
+            "cross_match_scope": "UNVERIFIED_PROVIDER_NAMESPACE",
         }
 
     key_rows = {
         key: {
-            "provider_ids": [
+            "numeric_provider_ids": [
                 {"id": player_id, "count": int(count)}
                 for player_id, count in sorted(counter.items())
             ],
-            "collision": len(counter) > 1,
+            "numeric_id_collision": len(counter) > 1,
             "exact_names": _sorted_counter(key_names[key]),
         }
         for key, counter in sorted(key_ids.items())
@@ -227,8 +219,8 @@ def build_provider_evidence(
             current_by_key[normalized].add(str(name))
 
     current_rows: list[dict[str, Any]] = []
-    safe_current_aliases: list[dict[str, Any]] = []
-    ambiguous_current_aliases: list[dict[str, Any]] = []
+    unscoped_current_candidates: list[dict[str, Any]] = []
+    ambiguous_unscoped_candidates: list[dict[str, Any]] = []
     conflicting_current_keys: list[dict[str, Any]] = []
 
     for current_key in sorted(current_by_key):
@@ -238,13 +230,10 @@ def build_provider_evidence(
         row: dict[str, Any] = {
             "current_key": current_key,
             "current_names": names,
-            "provider_id": player_id,
-            "existing_resolution": {
-                "resolved_key": existing_key,
-                "mode": existing_mode,
-            },
-            "status": "no_exact_current_provider_id",
-            "history_candidates": [],
+            "numeric_provider_id": player_id,
+            "existing_resolution": {"resolved_key": existing_key, "mode": existing_mode},
+            "status": "no_exact_current_numeric_provider_id",
+            "history_candidates_unscoped": [],
         }
         if player_id is None:
             current_rows.append(row)
@@ -252,41 +241,40 @@ def build_provider_evidence(
 
         observed_ids = set(key_ids.get(current_key, {}))
         if observed_ids and observed_ids != {player_id}:
-            row["status"] = "conflicting_current_key"
-            row["observed_provider_ids"] = sorted(observed_ids)
+            row["status"] = "conflicting_current_numeric_id"
+            row["observed_numeric_provider_ids"] = sorted(observed_ids)
             conflicting_current_keys.append(dict(row))
             current_rows.append(row)
             continue
 
-        safe_provider_keys = {
+        collision_free_keys = {
             key for key in id_keys.get(player_id, {})
             if set(key_ids.get(key, {})) == {player_id}
         }
         history_candidates = sorted(
-            key for key in (safe_provider_keys & history_set)
+            key for key in (collision_free_keys & history_set)
             if key != current_key
         )
-        row["history_candidates"] = history_candidates
+        row["history_candidates_unscoped"] = history_candidates
 
         if current_key in history_set:
             row["status"] = "history_exact_already_available"
         elif existing_key is not None:
             row["status"] = "history_already_resolved"
         elif len(history_candidates) == 1:
-            row["status"] = "safe_provider_alias"
-            alias = {
+            row["status"] = "unscoped_numeric_id_history_candidate"
+            unscoped_current_candidates.append({
                 "current_key": current_key,
                 "current_names": names,
-                "provider_id": player_id,
+                "numeric_provider_id": player_id,
                 "history_key": history_candidates[0],
-                "evidence": "same_live_tennis_api_provider_id",
-            }
-            safe_current_aliases.append(alias)
+                "scope": "UPPER_BOUND_ONLY_NAMESPACE_NOT_PROVEN",
+            })
         elif len(history_candidates) > 1:
-            row["status"] = "ambiguous_provider_history_keys"
-            ambiguous_current_aliases.append(dict(row))
+            row["status"] = "ambiguous_unscoped_numeric_id_history_keys"
+            ambiguous_unscoped_candidates.append(dict(row))
         else:
-            row["status"] = "no_provider_backed_history_key"
+            row["status"] = "no_numeric_id_backed_history_key_even_unscoped"
         current_rows.append(row)
 
     return {
@@ -296,34 +284,39 @@ def build_provider_evidence(
             "fuzzy_matching": False,
             "similarity_thresholds": False,
             "manual_aliases": False,
-            "provider_namespace": "live_tennis_api_only",
+            "numeric_id_cross_match_scope": "UPPER_BOUND_ONLY_NAMESPACE_NOT_PROVEN",
+            "runtime_alias_authorized": False,
+            "safe_provider_alias_pairs": 0,
             "fail_closed_on_collision": True,
         },
         "summary": {
             "cached_match_payloads_scanned": payload_files,
-            "cached_match_payloads_with_stable_identity": payloads_with_identity,
-            "stable_provider_ids": len(provider_rows),
-            "provider_ids_with_multiple_exact_names": ids_with_multiple_names,
-            "provider_ids_with_multiple_normalized_keys": ids_with_multiple_keys,
-            "provider_ids_with_multiple_collision_free_keys": ids_with_multiple_collision_free_keys,
-            "normalized_key_collisions": len(collision_keys),
-            "safe_provider_alias_pairs": safe_alias_pairs,
+            "cached_match_payloads_with_strict_integer_identity": payloads_with_identity,
+            "distinct_numeric_provider_ids": len(provider_rows),
+            "numeric_provider_ids_with_multiple_exact_names": ids_with_multiple_names,
+            "numeric_provider_ids_with_multiple_normalized_keys": ids_with_multiple_keys,
+            "numeric_provider_ids_with_multiple_collision_free_keys": ids_with_multiple_collision_free_keys,
+            "normalized_key_numeric_id_collisions": len(collision_keys),
+            "same_numeric_id_multi_key_pairs_unscoped": unscoped_numeric_pairs,
+            "safe_provider_alias_pairs": 0,
             "current_player_keys": len(current_by_key),
-            "current_players_with_exact_index_provider_id": sum(
-                1 for row in current_rows if row["provider_id"] is not None
+            "current_players_with_exact_index_numeric_provider_id": sum(
+                1 for row in current_rows if row["numeric_provider_id"] is not None
             ),
-            "current_players_with_safe_provider_alias": len(safe_current_aliases),
-            "current_players_with_ambiguous_provider_history_keys": len(ambiguous_current_aliases),
-            "current_player_key_conflicts": len(conflicting_current_keys),
+            "current_players_with_unscoped_numeric_id_history_candidate": len(unscoped_current_candidates),
+            "current_players_with_safe_provider_alias": 0,
+            "current_players_with_ambiguous_unscoped_history_keys": len(ambiguous_unscoped_candidates),
+            "current_player_numeric_id_conflicts": len(conflicting_current_keys),
             "history_keys": len(history_set),
             "invalid_non_integer_index_ids": invalid_index_ids,
         },
-        "provider_ids": provider_rows,
+        "numeric_provider_ids": provider_rows,
         "normalized_keys": key_rows,
         "collision_keys": collision_keys,
         "current_players": current_rows,
-        "safe_current_aliases": safe_current_aliases,
-        "ambiguous_current_aliases": ambiguous_current_aliases,
+        "unscoped_current_candidates": unscoped_current_candidates,
+        "safe_current_aliases": [],
+        "ambiguous_unscoped_candidates": ambiguous_unscoped_candidates,
         "conflicting_current_keys": conflicting_current_keys,
     }
 
@@ -363,16 +356,17 @@ def _existing_resolutions(long_df, names: Iterable[str]) -> dict[str, tuple[str 
     return out
 
 
-def _potential_case_impact(
+def _candidate_case_impact(
     results: list[dict[str, Any]],
     *,
     raw_long,
     clean_long,
-    safe_aliases: list[dict[str, Any]],
+    candidate_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    alias_by_current = {
+    """Measure only an upper bound for current no-safe-identity cases."""
+    candidate_by_current = {
         row["current_key"]: row["history_key"]
-        for row in safe_aliases
+        for row in candidate_rows
         if row.get("current_key") and row.get("history_key")
     }
     cases = 0
@@ -387,7 +381,7 @@ def _potential_case_impact(
         for side in ("p1", "p2"):
             player = str(match.get(side) or "")
             current_key = _key(player)
-            target_key = alias_by_current.get(current_key)
+            target_key = candidate_by_current.get(current_key)
             if not target_key:
                 continue
             item = classify_player_history(
@@ -429,7 +423,8 @@ def _potential_case_impact(
                 })
 
     return {
-        "no_safe_identity_candidate_cases_with_safe_provider_alias": cases,
+        "scope": "UPPER_BOUND_ONLY_NAMESPACE_NOT_PROVEN",
+        "no_safe_identity_candidate_cases_with_unscoped_numeric_candidate": cases,
         "cases_with_any_pre_match_history_rows": cases_with_pre_match_rows,
         "cases_with_at_least_five_pre_match_history_rows": cases_with_at_least_five_pre_match_rows,
         "examples": examples,
@@ -467,17 +462,22 @@ def build_real_cache_audit(
         "clean_history_rows": int(len(cleaned_history)),
         "hygiene_removed_rows": int((hygiene or {}).get("removed_rows", 0)),
     }
-    evidence["potential_case_impact"] = _potential_case_impact(
+    evidence["unscoped_upper_bound_case_impact"] = _candidate_case_impact(
         results,
         raw_long=raw_long,
         clean_long=clean_long,
-        safe_aliases=evidence["safe_current_aliases"],
+        candidate_rows=evidence["unscoped_current_candidates"],
     )
+    evidence["safe_case_impact"] = {
+        "authorized_provider_aliases": 0,
+        "no_safe_identity_candidate_cases_resolved": 0,
+        "reason": "provider namespace not proven; unscoped numeric-ID joins are never runtime-authorized",
+    }
     return evidence
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit provider-backed player identity from restored cache only")
+    parser = argparse.ArgumentParser(description="Audit cached provider identity without network or alias guessing")
     parser.add_argument("--pbp-root", type=Path, default=DEFAULT_PBP_ROOT)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -488,7 +488,8 @@ def main() -> int:
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({
         **report["summary"],
-        **report.get("potential_case_impact", {}),
+        "unscoped_upper_bound_case_impact": report["unscoped_upper_bound_case_impact"],
+        "safe_case_impact": report["safe_case_impact"],
         "output": str(args.output),
     }, ensure_ascii=False, default=str))
     return 0
