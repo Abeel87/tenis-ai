@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-"""Leakage-safe opponent-strength challenger for Player DNA.
+"""Leakage-safe opponent-strength and opponent-adjusted Player DNA audit.
 
-This is an evaluation-only Phase-2 challenger. It measures the quality of a
-player's *historical opponents* from the opponents' own strictly-prior Player
-DNA snapshots, then tests whether that context improves the canonical point
-scorer on the same chronological holdout / walk-forward methodology.
-
-No adjusted feature is written back to canonical profiles and nothing here can
-affect runtime, Symfonia 2.0, or Superbet PLAYABLE.
+LOGIC-05 measures the quality of historical opponents from their own strictly
+prior Player DNA snapshots. LOGIC-06 extends the same canonical SHADOW owner
+with count-pooled expected serve/return/hold/break components for the target
+player/opponent pair. All inputs are strict pre-match snapshots; target-match
+outcomes never enter an expectation. Nothing here writes canonical profiles or
+affects runtime, training, Symfonia 2.0, or Superbet PLAYABLE.
 """
 
 import json
@@ -79,6 +78,43 @@ OPPONENT_SUPPORT_NUMERIC = [
 ]
 OPPONENT_NUMERIC = OPPONENT_STRENGTH_NUMERIC + OPPONENT_SUPPORT_NUMERIC
 
+# Raw hold/break fields are added to the comparison baseline because canonical
+# PROFILE_NUMERIC already contains raw serve/return but not raw hold/break.
+RAW_ADJUSTMENT_BASE_NUMERIC = [
+    "server_overall_hold_rate",
+    "server_surface_hold_rate",
+    "receiver_overall_break_rate",
+    "receiver_surface_break_rate",
+]
+ADJUSTED_PERFORMANCE_NUMERIC = [
+    "server_overall_expected_serve_rate",
+    "server_overall_serve_residual",
+    "server_overall_expected_hold_rate",
+    "server_overall_hold_residual",
+    "receiver_overall_expected_return_rate",
+    "receiver_overall_return_residual",
+    "receiver_overall_expected_break_rate",
+    "receiver_overall_break_residual",
+    "server_surface_expected_serve_rate",
+    "server_surface_serve_residual",
+    "server_surface_expected_hold_rate",
+    "server_surface_hold_residual",
+    "receiver_surface_expected_return_rate",
+    "receiver_surface_return_residual",
+    "receiver_surface_expected_break_rate",
+    "receiver_surface_break_residual",
+]
+ADJUSTED_SUPPORT_NUMERIC = [
+    "server_overall_serve_pooled_sample",
+    "server_overall_hold_pooled_sample",
+    "receiver_overall_return_pooled_sample",
+    "receiver_overall_break_pooled_sample",
+    "server_surface_serve_pooled_sample",
+    "server_surface_hold_pooled_sample",
+    "receiver_surface_return_pooled_sample",
+    "receiver_surface_break_pooled_sample",
+]
+
 
 def _parse_utc(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
@@ -102,6 +138,12 @@ def _finite(value: Any) -> float | None:
 
 def _positive_int(value: Any) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        return None
+    return value
+
+
+def _nonnegative_int(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         return None
     return value
 
@@ -189,9 +231,6 @@ def _pair_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _context(history: list[dict[str, Any]], surface: str) -> dict[str, Any]:
-    # Support means usable opponent-strength evidence, not merely prior matches.
-    # Require the opponent's own pre-match serve AND return profile together so
-    # the candidate cannot gain signal from a disguised "matches played" proxy.
     overall_ready = [
         row
         for row in history
@@ -206,18 +245,10 @@ def _context(history: list[dict[str, Any]], surface: str) -> dict[str, Any]:
         and row.get("opponent_surface_serve") is not None
     ]
     return {
-        "opponent_return_mean": _mean(
-            row["opponent_return"] for row in overall_ready
-        ),
-        "opponent_return_l5": _last_mean(
-            row["opponent_return"] for row in overall_ready
-        ),
-        "opponent_serve_mean": _mean(
-            row["opponent_serve"] for row in overall_ready
-        ),
-        "opponent_serve_l5": _last_mean(
-            row["opponent_serve"] for row in overall_ready
-        ),
+        "opponent_return_mean": _mean(row["opponent_return"] for row in overall_ready),
+        "opponent_return_l5": _last_mean(row["opponent_return"] for row in overall_ready),
+        "opponent_serve_mean": _mean(row["opponent_serve"] for row in overall_ready),
+        "opponent_serve_l5": _last_mean(row["opponent_serve"] for row in overall_ready),
         "opponent_return_surface_mean": _mean(
             row["opponent_surface_return"] for row in surface_ready
         ),
@@ -233,16 +264,14 @@ def _context(history: list[dict[str, Any]], surface: str) -> dict[str, Any]:
         "overall_support": len(overall_ready),
         "surface_support": len(surface_ready),
         "overall_history_matches": len(history),
-        "surface_history_matches": sum(
-            1 for row in history if row["surface"] == surface
-        ),
+        "surface_history_matches": sum(1 for row in history if row["surface"] == surface),
     }
 
 
 def build_opponent_context_index(
     profile_rows: Iterable[dict[str, Any]],
 ) -> tuple[dict[tuple[str, int], dict[str, Any]], dict[str, int]]:
-    """Build as-of historical-opponent context without same-time leakage."""
+    """Build LOGIC-05 as-of historical-opponent context without leakage."""
 
     matches = _pair_groups(_profile_rows(profile_rows))
     history: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -255,8 +284,6 @@ def build_opponent_context_index(
 
     for scheduled in sorted(by_time):
         same_time = sorted(by_time[scheduled], key=lambda row: row["match_id"])
-
-        # Freeze every target context before any match at this timestamp is added.
         for match in same_time:
             for player in sorted(match["rows"]):
                 index[(match["match_id"], player)] = {
@@ -273,16 +300,12 @@ def build_opponent_context_index(
             p1, p2 = players
             for player, opponent in ((p1, p2), (p2, p1)):
                 opponent_row = match["rows"][opponent]
-                overall = (
-                    opponent_row.get("overall_prior")
-                    if isinstance(opponent_row.get("overall_prior"), dict)
-                    else {}
-                )
-                same_surface = (
-                    opponent_row.get("same_surface_prior")
-                    if isinstance(opponent_row.get("same_surface_prior"), dict)
-                    else {}
-                )
+                overall = opponent_row.get("overall_prior") if isinstance(
+                    opponent_row.get("overall_prior"), dict
+                ) else {}
+                same_surface = opponent_row.get("same_surface_prior") if isinstance(
+                    opponent_row.get("same_surface_prior"), dict
+                ) else {}
                 history[player].append(
                     {
                         "match_id": match["match_id"],
@@ -291,18 +314,160 @@ def build_opponent_context_index(
                         "opponent_id": opponent,
                         "opponent_return": _rate(overall, "return_win_rate"),
                         "opponent_serve": _rate(overall, "serve_win_rate"),
-                        "opponent_surface_return": _rate(
-                            same_surface, "return_win_rate"
-                        ),
-                        "opponent_surface_serve": _rate(
-                            same_surface, "serve_win_rate"
-                        ),
+                        "opponent_surface_return": _rate(same_surface, "return_win_rate"),
+                        "opponent_surface_serve": _rate(same_surface, "serve_win_rate"),
                     }
                 )
                 counts["historical_opponent_entries"] += 1
 
     counts["paired_matches"] = len(matches)
     counts["players_with_history"] = sum(1 for values in history.values() if values)
+    return index, dict(counts)
+
+
+def _pooled_component(
+    player_profile: dict[str, Any],
+    opponent_profile: dict[str, Any],
+    *,
+    player_wins_key: str,
+    player_trials_key: str,
+    opponent_wins_key: str,
+    opponent_trials_key: str,
+) -> dict[str, Any]:
+    """Count-pool player success with opponent failure, without tuned weights."""
+
+    player_trials = _nonnegative_int(player_profile.get(player_trials_key))
+    player_wins = _nonnegative_int(player_profile.get(player_wins_key))
+    opponent_trials = _nonnegative_int(opponent_profile.get(opponent_trials_key))
+    opponent_wins = _nonnegative_int(opponent_profile.get(opponent_wins_key))
+
+    valid = bool(
+        player_trials is not None
+        and player_wins is not None
+        and opponent_trials is not None
+        and opponent_wins is not None
+        and player_trials > 0
+        and opponent_trials > 0
+        and player_wins <= player_trials
+        and opponent_wins <= opponent_trials
+    )
+    if not valid:
+        return {
+            "raw_rate": None,
+            "expected_rate": None,
+            "residual": None,
+            "player_sample": int(player_trials or 0),
+            "opponent_sample": int(opponent_trials or 0),
+            "pooled_sample": int(player_trials or 0) + int(opponent_trials or 0),
+            "minimum_side_sample": min(int(player_trials or 0), int(opponent_trials or 0)),
+            "both_sides_available": False,
+        }
+
+    opponent_failures = opponent_trials - opponent_wins
+    pooled_sample = player_trials + opponent_trials
+    expected = (player_wins + opponent_failures) / pooled_sample
+    raw = player_wins / player_trials
+    return {
+        "raw_rate": round(raw, 6),
+        "expected_rate": round(expected, 6),
+        "residual": round(raw - expected, 6),
+        "player_sample": player_trials,
+        "opponent_sample": opponent_trials,
+        "pooled_sample": pooled_sample,
+        "minimum_side_sample": min(player_trials, opponent_trials),
+        "both_sides_available": True,
+    }
+
+
+def _adjusted_components(
+    player_profile: dict[str, Any], opponent_profile: dict[str, Any]
+) -> dict[str, Any]:
+    return {
+        "serve": _pooled_component(
+            player_profile,
+            opponent_profile,
+            player_wins_key="serve_wins",
+            player_trials_key="serve_points",
+            opponent_wins_key="return_wins",
+            opponent_trials_key="return_points",
+        ),
+        "return": _pooled_component(
+            player_profile,
+            opponent_profile,
+            player_wins_key="return_wins",
+            player_trials_key="return_points",
+            opponent_wins_key="serve_wins",
+            opponent_trials_key="serve_points",
+        ),
+        "hold": _pooled_component(
+            player_profile,
+            opponent_profile,
+            player_wins_key="holds",
+            player_trials_key="service_games",
+            opponent_wins_key="breaks",
+            opponent_trials_key="return_games",
+        ),
+        "break": _pooled_component(
+            player_profile,
+            opponent_profile,
+            player_wins_key="breaks",
+            player_trials_key="return_games",
+            opponent_wins_key="holds",
+            opponent_trials_key="service_games",
+        ),
+    }
+
+
+def build_target_adjustment_index(
+    profile_rows: Iterable[dict[str, Any]],
+) -> tuple[dict[tuple[str, int], dict[str, Any]], dict[str, int]]:
+    """Build strict-prior LOGIC-06 expectations for each target direction.
+
+    Expectations use only the two players' pre-match canonical snapshots for the
+    target match. No target point/game outcome is read by this function.
+    """
+
+    matches = _pair_groups(_profile_rows(profile_rows))
+    index: dict[tuple[str, int], dict[str, Any]] = {}
+    counts = defaultdict(int)
+    for match in matches:
+        players = sorted(match["rows"])
+        if len(players) != 2:
+            continue
+        p1, p2 = players
+        for player, opponent in ((p1, p2), (p2, p1)):
+            player_row = match["rows"][player]
+            opponent_row = match["rows"][opponent]
+            player_overall = player_row.get("overall_prior") if isinstance(
+                player_row.get("overall_prior"), dict
+            ) else {}
+            opponent_overall = opponent_row.get("overall_prior") if isinstance(
+                opponent_row.get("overall_prior"), dict
+            ) else {}
+            player_surface = player_row.get("same_surface_prior") if isinstance(
+                player_row.get("same_surface_prior"), dict
+            ) else {}
+            opponent_surface = opponent_row.get("same_surface_prior") if isinstance(
+                opponent_row.get("same_surface_prior"), dict
+            ) else {}
+            overall = _adjusted_components(player_overall, opponent_overall)
+            surface = _adjusted_components(player_surface, opponent_surface)
+            index[(match["match_id"], player)] = {
+                "overall": overall,
+                "surface": surface,
+                "strict_as_of": True,
+                "same_time_matches_count_as_prior": False,
+                "target_outcome_used_in_expectation": False,
+                "surface_name": match["surface"],
+            }
+            counts["target_directions"] += 1
+            counts["overall_all_four_available"] += int(
+                all(overall[name]["both_sides_available"] for name in ("serve", "return", "hold", "break"))
+            )
+            counts["surface_all_four_available"] += int(
+                all(surface[name]["both_sides_available"] for name in ("serve", "return", "hold", "break"))
+            )
+    counts["paired_matches"] = len(matches)
     return index, dict(counts)
 
 
@@ -330,12 +495,35 @@ def _point_identity_index(
     return out
 
 
+def _logic06_features(
+    server: dict[str, Any], receiver: dict[str, Any]
+) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for context_name in ("overall", "surface"):
+        server_context = server.get(context_name) if isinstance(server.get(context_name), dict) else {}
+        receiver_context = receiver.get(context_name) if isinstance(receiver.get(context_name), dict) else {}
+        for component in ("serve", "hold"):
+            item = server_context.get(component) if isinstance(server_context.get(component), dict) else {}
+            out[f"server_{context_name}_{component}_rate"] = item.get("raw_rate")
+            out[f"server_{context_name}_expected_{component}_rate"] = item.get("expected_rate")
+            out[f"server_{context_name}_{component}_residual"] = item.get("residual")
+            out[f"server_{context_name}_{component}_pooled_sample"] = int(item.get("pooled_sample") or 0)
+        for component in ("return", "break"):
+            item = receiver_context.get(component) if isinstance(receiver_context.get(component), dict) else {}
+            out[f"receiver_{context_name}_{component}_rate"] = item.get("raw_rate")
+            out[f"receiver_{context_name}_expected_{component}_rate"] = item.get("expected_rate")
+            out[f"receiver_{context_name}_{component}_residual"] = item.get("residual")
+            out[f"receiver_{context_name}_{component}_pooled_sample"] = int(item.get("pooled_sample") or 0)
+    return out
+
+
 def enrich_feature_rows(
     point_rows: list[dict[str, Any]],
     profile_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     base_rows, join_counts = build_feature_rows(point_rows, profile_rows)
     contexts, context_counts = build_opponent_context_index(profile_rows)
+    adjustments, adjustment_counts = build_target_adjustment_index(profile_rows)
     identities = _point_identity_index(point_rows)
 
     enriched = []
@@ -349,46 +537,26 @@ def enrich_feature_rows(
         server_id, receiver_id = identity
         server = contexts.get((key[0], server_id), {})
         receiver = contexts.get((key[0], receiver_id), {})
+        server_adjustment = adjustments.get((key[0], server_id), {})
+        receiver_adjustment = adjustments.get((key[0], receiver_id), {})
+        logic06 = _logic06_features(server_adjustment, receiver_adjustment)
 
         enriched.append(
             {
                 **row,
-                "server_history_opponent_return_mean": server.get(
-                    "opponent_return_mean"
-                ),
-                "server_history_opponent_return_l5": server.get(
-                    "opponent_return_l5"
-                ),
-                "server_history_opponent_return_surface_mean": server.get(
-                    "opponent_return_surface_mean"
-                ),
-                "server_history_opponent_return_surface_l5": server.get(
-                    "opponent_return_surface_l5"
-                ),
-                "receiver_history_opponent_serve_mean": receiver.get(
-                    "opponent_serve_mean"
-                ),
-                "receiver_history_opponent_serve_l5": receiver.get(
-                    "opponent_serve_l5"
-                ),
-                "receiver_history_opponent_serve_surface_mean": receiver.get(
-                    "opponent_serve_surface_mean"
-                ),
-                "receiver_history_opponent_serve_surface_l5": receiver.get(
-                    "opponent_serve_surface_l5"
-                ),
-                "server_history_opponent_overall_support": int(
-                    server.get("overall_support") or 0
-                ),
-                "server_history_opponent_surface_support": int(
-                    server.get("surface_support") or 0
-                ),
-                "receiver_history_opponent_overall_support": int(
-                    receiver.get("overall_support") or 0
-                ),
-                "receiver_history_opponent_surface_support": int(
-                    receiver.get("surface_support") or 0
-                ),
+                "server_history_opponent_return_mean": server.get("opponent_return_mean"),
+                "server_history_opponent_return_l5": server.get("opponent_return_l5"),
+                "server_history_opponent_return_surface_mean": server.get("opponent_return_surface_mean"),
+                "server_history_opponent_return_surface_l5": server.get("opponent_return_surface_l5"),
+                "receiver_history_opponent_serve_mean": receiver.get("opponent_serve_mean"),
+                "receiver_history_opponent_serve_l5": receiver.get("opponent_serve_l5"),
+                "receiver_history_opponent_serve_surface_mean": receiver.get("opponent_serve_surface_mean"),
+                "receiver_history_opponent_serve_surface_l5": receiver.get("opponent_serve_surface_l5"),
+                "server_history_opponent_overall_support": int(server.get("overall_support") or 0),
+                "server_history_opponent_surface_support": int(server.get("surface_support") or 0),
+                "receiver_history_opponent_overall_support": int(receiver.get("overall_support") or 0),
+                "receiver_history_opponent_surface_support": int(receiver.get("surface_support") or 0),
+                **logic06,
             }
         )
         counts["enriched_rows"] += 1
@@ -400,10 +568,19 @@ def enrich_feature_rows(
             int(server.get("surface_support") or 0) > 0
             and int(receiver.get("surface_support") or 0) > 0
         )
+        counts["rows_with_logic06_overall_serve_return"] += int(
+            logic06.get("server_overall_expected_serve_rate") is not None
+            and logic06.get("receiver_overall_expected_return_rate") is not None
+        )
+        counts["rows_with_logic06_overall_hold_break"] += int(
+            logic06.get("server_overall_expected_hold_rate") is not None
+            and logic06.get("receiver_overall_expected_break_rate") is not None
+        )
 
     return enriched, {
         "base_join_counts": join_counts,
         "context_counts": context_counts,
+        "adjustment_counts": adjustment_counts,
         "enrichment_counts": dict(counts),
     }
 
@@ -434,10 +611,7 @@ def _pearson(left: list[float], right: list[float]) -> float | None:
         return None
     left_mean = sum(left) / len(left)
     right_mean = sum(right) / len(right)
-    numerator = sum(
-        (x - left_mean) * (y - right_mean)
-        for x, y in zip(left, right)
-    )
+    numerator = sum((x - left_mean) * (y - right_mean) for x, y in zip(left, right))
     left_ss = sum((x - left_mean) ** 2 for x in left)
     right_ss = sum((y - right_mean) ** 2 for y in right)
     denominator = math.sqrt(left_ss * right_ss)
@@ -474,16 +648,8 @@ def _performance_vs_expectation_residual(
             for index, raw in enumerate(test[feature].tolist())
             if (value := _finite(raw)) is not None
         ]
-
-        bins = {
-            "q1_low": [],
-            "q2": [],
-            "q3": [],
-            "q4_high": [],
-        }
-        q25 = quartiles["q25"]
-        q50 = quartiles["q50"]
-        q75 = quartiles["q75"]
+        bins = {"q1_low": [], "q2": [], "q3": [], "q4_high": []}
+        q25, q50, q75 = quartiles["q25"], quartiles["q50"], quartiles["q75"]
         if q25 is not None and q50 is not None and q75 is not None:
             for value, residual in observed:
                 if value <= q25:
@@ -503,17 +669,12 @@ def _performance_vs_expectation_residual(
             "holdout_observed": len(observed),
             "holdout_missing": int(len(test) - len(observed)),
             "train_quartiles": quartiles,
-            "pearson_feature_vs_reference_residual": _pearson(
-                feature_values,
-                feature_residuals,
-            ),
+            "pearson_feature_vs_reference_residual": _pearson(feature_values, feature_residuals),
             "bins": {
                 name: {
                     "n": len(rows),
                     "feature_mean": _mean(value for value, _ in rows),
-                    "mean_reference_residual": _mean(
-                        residual for _, residual in rows
-                    ),
+                    "mean_reference_residual": _mean(residual for _, residual in rows),
                 }
                 for name, rows in bins.items()
             },
@@ -555,6 +716,8 @@ def _evaluate_frames(
     lean_strength_numeric = lean_numeric + list(OPPONENT_STRENGTH_NUMERIC)
     full_context_numeric = base_numeric + list(OPPONENT_NUMERIC)
     lean_full_context_numeric = lean_numeric + list(OPPONENT_NUMERIC)
+    logic06_raw_numeric = lean_numeric + list(RAW_ADJUSTMENT_BASE_NUMERIC)
+    logic06_adjusted_numeric = logic06_raw_numeric + list(ADJUSTED_PERFORMANCE_NUMERIC)
 
     rank_context, _ = _fit_candidate(train, test, rank_numeric)
     profile_only, _ = _fit_candidate(train, test, profile_numeric)
@@ -563,31 +726,21 @@ def _evaluate_frames(
     full_context, _ = _fit_candidate(train, test, full_context_numeric)
     lean, lean_probs = _fit_candidate(train, test, lean_numeric)
     lean_strength, _ = _fit_candidate(train, test, lean_strength_numeric)
-    lean_full_context, _ = _fit_candidate(
-        train, test, lean_full_context_numeric
-    )
+    lean_full_context, _ = _fit_candidate(train, test, lean_full_context_numeric)
+    logic06_raw, _ = _fit_candidate(train, test, logic06_raw_numeric)
+    logic06_adjusted, _ = _fit_candidate(train, test, logic06_adjusted_numeric)
 
-    strength_gains_vs_base = _proper_score_gains(
-        base["metrics"], strength["metrics"]
-    )
-    strength_gains_vs_lean = _proper_score_gains(
-        lean["metrics"], lean_strength["metrics"]
-    )
-    full_gains_vs_base = _proper_score_gains(
-        base["metrics"], full_context["metrics"]
-    )
-    full_gains_vs_lean = _proper_score_gains(
-        lean["metrics"], lean_full_context["metrics"]
-    )
+    strength_gains_vs_base = _proper_score_gains(base["metrics"], strength["metrics"])
+    strength_gains_vs_lean = _proper_score_gains(lean["metrics"], lean_strength["metrics"])
+    full_gains_vs_base = _proper_score_gains(base["metrics"], full_context["metrics"])
+    full_gains_vs_lean = _proper_score_gains(lean["metrics"], lean_full_context["metrics"])
     support_gains_beyond_strength = _proper_score_gains(
         lean_strength["metrics"], lean_full_context["metrics"]
     )
-    base_gains_vs_rank = _proper_score_gains(
-        rank_context["metrics"], base["metrics"]
-    )
-    strength_gains_vs_rank = _proper_score_gains(
-        rank_context["metrics"], strength["metrics"]
-    )
+    base_gains_vs_rank = _proper_score_gains(rank_context["metrics"], base["metrics"])
+    strength_gains_vs_rank = _proper_score_gains(rank_context["metrics"], strength["metrics"])
+    logic06_gains = _proper_score_gains(logic06_raw["metrics"], logic06_adjusted["metrics"])
+
     return {
         "rank_context_benchmark": rank_context,
         "profile_only_benchmark": profile_only,
@@ -604,17 +757,17 @@ def _evaluate_frames(
         "full_context_gains_vs_profile_plus_rank": full_gains_vs_base,
         "full_context_gains_vs_lean_stateful": full_gains_vs_lean,
         "support_gains_beyond_strength": support_gains_beyond_strength,
+        "logic06_raw_component_baseline": logic06_raw,
+        "logic06_opponent_adjusted_candidate": logic06_adjusted,
+        "logic06_adjusted_gains_vs_raw_common_test": logic06_gains,
+        "logic06_positive_adjusted_vs_raw_common_test": _positive_gains(logic06_gains),
         "performance_vs_expectation_residual": (
             _performance_vs_expectation_residual(train, test, lean_probs)
             if include_residual_diagnostic
             else None
         ),
-        "positive_strength_vs_profile_plus_rank": _positive_gains(
-            strength_gains_vs_base
-        ),
-        "positive_strength_vs_lean_stateful": _positive_gains(
-            strength_gains_vs_lean
-        ),
+        "positive_strength_vs_profile_plus_rank": _positive_gains(strength_gains_vs_base),
+        "positive_strength_vs_lean_stateful": _positive_gains(strength_gains_vs_lean),
         "support_improves_all_primary_scores_beyond_strength": _positive_gains(
             support_gains_beyond_strength
         ),
@@ -645,11 +798,7 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
             )
             continue
 
-        result = _evaluate_frames(
-            train,
-            test,
-            include_residual_diagnostic=False,
-        )
+        result = _evaluate_frames(train, test, include_residual_diagnostic=False)
         folds.append(
             {
                 **meta,
@@ -664,15 +813,10 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
             }
         )
 
-    completed = [
-        row
-        for row in folds
-        if "opponent_strength_gains_vs_lean_stateful" in row
-    ]
-    positive = [
-        row
-        for row in completed
-        if row.get("positive_strength_vs_lean_stateful") is True
+    completed = [row for row in folds if "opponent_strength_gains_vs_lean_stateful" in row]
+    positive = [row for row in completed if row.get("positive_strength_vs_lean_stateful") is True]
+    adjusted_positive = [
+        row for row in completed if row.get("logic06_positive_adjusted_vs_raw_common_test") is True
     ]
 
     def mean_gain(key: str, metric: str) -> float | None:
@@ -684,20 +828,24 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "folds": folds,
         "completed_folds": len(completed),
         "positive_folds_vs_lean_stateful": len(positive),
-        "robust_positive_vs_lean_stateful": bool(
-            len(completed) == 3 and len(positive) == 3
-        ),
+        "robust_positive_vs_lean_stateful": bool(len(completed) == 3 and len(positive) == 3),
         "mean_gains_vs_lean_stateful": {
-            "brier_gain": mean_gain(
-                "opponent_strength_gains_vs_lean_stateful", "brier_gain"
-            ),
+            "brier_gain": mean_gain("opponent_strength_gains_vs_lean_stateful", "brier_gain"),
             "match_equal_brier_gain": mean_gain(
-                "opponent_strength_gains_vs_lean_stateful",
-                "match_equal_brier_gain",
+                "opponent_strength_gains_vs_lean_stateful", "match_equal_brier_gain"
             ),
-            "log_loss_gain": mean_gain(
-                "opponent_strength_gains_vs_lean_stateful", "log_loss_gain"
+            "log_loss_gain": mean_gain("opponent_strength_gains_vs_lean_stateful", "log_loss_gain"),
+        },
+        "logic06_positive_folds_adjusted_vs_raw": len(adjusted_positive),
+        "logic06_robust_positive_adjusted_vs_raw": bool(
+            len(completed) == 3 and len(adjusted_positive) == 3
+        ),
+        "logic06_mean_gains_adjusted_vs_raw": {
+            "brier_gain": mean_gain("logic06_adjusted_gains_vs_raw_common_test", "brier_gain"),
+            "match_equal_brier_gain": mean_gain(
+                "logic06_adjusted_gains_vs_raw_common_test", "match_equal_brier_gain"
             ),
+            "log_loss_gain": mean_gain("logic06_adjusted_gains_vs_raw_common_test", "log_loss_gain"),
         },
         "same_timestamp_groups_not_split": True,
         "test_windows_disjoint": True,
@@ -730,6 +878,9 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "opponent_strength_numeric_features": list(OPPONENT_STRENGTH_NUMERIC),
         "opponent_support_numeric_features": list(OPPONENT_SUPPORT_NUMERIC),
         "opponent_numeric_features": list(OPPONENT_NUMERIC),
+        "logic06_raw_adjustment_baseline_numeric_features": list(RAW_ADJUSTMENT_BASE_NUMERIC),
+        "logic06_adjusted_performance_numeric_features": list(ADJUSTED_PERFORMANCE_NUMERIC),
+        "logic06_adjusted_support_numeric_diagnostics": list(ADJUSTED_SUPPORT_NUMERIC),
         "network_calls": 0,
         "production_influence": False,
         "runtime_scoring_enabled": False,
@@ -776,6 +927,24 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "primary_success_gate_uses_strength_rates_without_support_features": True,
             "no_modeling_support_threshold_activated": True,
         },
+        "logic06_contract": {
+            "mode": "SHADOW_OPPONENT_ADJUSTED_COMPONENTS_EVAL_ONLY",
+            "expected_serve_uses_player_serve_and_opponent_return_counts": True,
+            "expected_return_uses_player_return_and_opponent_serve_counts": True,
+            "expected_hold_uses_player_hold_and_opponent_break_counts": True,
+            "expected_break_uses_player_break_and_opponent_hold_counts": True,
+            "count_pooling_only_no_manual_weights": True,
+            "overall_and_same_surface_split": True,
+            "expectations_use_strict_prior_profiles_only": True,
+            "target_outcome_used_in_expectation": False,
+            "raw_vs_adjusted_same_chronological_test": True,
+            "walk_forward_required": True,
+            "support_is_diagnostic_not_strength": True,
+            "support_threshold_activated": False,
+            "player_dna_overwrite_enabled": False,
+            "feature_activation_enabled": False,
+            "production_gate": False,
+        },
         "source_limitations": {
             "reliable_first_serve_in_available": False,
             "reliable_first_second_serve_split_available": False,
@@ -789,6 +958,8 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "source_row_order_does_not_override_scheduled_time_order": True,
             "stable_provider_player_ids_only": True,
             "future_match_results_not_used": True,
+            "logic06_expected_components_use_target_pair_pre_match_snapshots_only": True,
+            "logic06_target_point_or_game_outcome_not_used_in_expectation": True,
         },
         "signal": {
             "status": "NOT_EVALUATED",
@@ -797,16 +968,28 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "candidate_may_replace_reference": False,
             "promotion_gate": False,
         },
+        "logic06_signal": {
+            "status": "NOT_EVALUATED",
+            "positive_adjusted_vs_raw_common_test": False,
+            "robust_positive_adjusted_vs_raw": False,
+            "candidate_may_replace_reference": False,
+            "promotion_gate": False,
+        },
     }
 
     if not enough:
         report["signal"]["status"] = "INSUFFICIENT_SHADOW_SAMPLE"
+        report["logic06_signal"]["status"] = "INSUFFICIENT_SHADOW_SAMPLE"
         return report
 
     holdout_result = _evaluate_frames(train, holdout)
     walk_forward = _walk_forward(rows)
     robust = bool(walk_forward["robust_positive_vs_lean_stateful"])
     holdout_positive = bool(holdout_result["positive_strength_vs_lean_stateful"])
+    logic06_holdout_positive = bool(
+        holdout_result["logic06_positive_adjusted_vs_raw_common_test"]
+    )
+    logic06_robust = bool(walk_forward["logic06_robust_positive_adjusted_vs_raw"])
 
     report["holdout"] = holdout_result
     report["walk_forward"] = walk_forward
@@ -824,6 +1007,17 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "candidate_may_replace_reference": False,
         "promotion_gate": False,
     }
+    report["logic06_signal"] = {
+        "status": (
+            "OPPONENT_ADJUSTED_ROBUST_POSITIVE_SHADOW_SIGNAL"
+            if logic06_holdout_positive and logic06_robust
+            else "OPPONENT_ADJUSTED_NOT_ROBUST_ENOUGH"
+        ),
+        "positive_adjusted_vs_raw_common_test": logic06_holdout_positive,
+        "robust_positive_adjusted_vs_raw": logic06_robust,
+        "candidate_may_replace_reference": False,
+        "promotion_gate": False,
+    }
     return report
 
 
@@ -835,10 +1029,7 @@ def build() -> dict[str, Any]:
     report["build_counts"] = build_counts
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    OUT.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False))
     return report
 
