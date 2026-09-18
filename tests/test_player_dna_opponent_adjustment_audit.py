@@ -1,8 +1,12 @@
+import pandas as pd
+
 from backend.player_dna_opponent_adjustment_audit import (
     OPPONENT_NUMERIC,
     OPPONENT_STRENGTH_NUMERIC,
     OPPONENT_SUPPORT_NUMERIC,
+    _performance_vs_expectation_residual,
     build_opponent_context_index,
+    evaluate,
 )
 
 
@@ -103,6 +107,42 @@ def test_same_timestamp_matches_never_enter_each_others_opponent_history():
     assert later["opponent_serve_mean"] == 0.675
     assert later["same_time_matches_count_as_prior"] is False
     assert counts["paired_matches"] == 3
+
+
+def test_future_match_never_enters_earlier_opponent_history():
+    rows = []
+    # Deliberately feed the future match first. The canonical Point Tape audit
+    # must still order by scheduled time and keep it out of the earlier target.
+    rows += _match_rows(
+        "future",
+        "2026-01-03T10:00:00Z",
+        1,
+        9,
+        p2_prior=(5, 0.90, 0.10),
+    )
+    rows += _match_rows(
+        "past",
+        "2026-01-01T10:00:00Z",
+        1,
+        8,
+        p2_prior=(3, 0.64, 0.36),
+    )
+    rows += _match_rows(
+        "target",
+        "2026-01-02T10:00:00Z",
+        1,
+        7,
+        p2_prior=(4, 0.62, 0.38),
+    )
+
+    index, _ = build_opponent_context_index(rows)
+    target = index[("target", 1)]
+    future = index[("future", 1)]
+
+    assert target["overall_support"] == 1
+    assert target["opponent_serve_mean"] == 0.64
+    assert target["opponent_return_mean"] == 0.36
+    assert future["overall_support"] == 2
 
 
 def test_opponent_context_uses_opponents_own_pre_match_profile():
@@ -242,3 +282,53 @@ def test_primary_opponent_strength_features_exclude_support_proxy():
     assert set(OPPONENT_NUMERIC) == strength | support
     assert all("support" not in name for name in OPPONENT_STRENGTH_NUMERIC)
     assert all("support" in name for name in OPPONENT_SUPPORT_NUMERIC)
+
+
+def _residual_frame(feature, values, labels):
+    rows = []
+    for value, label in zip(values, labels):
+        row = {name: None for name in OPPONENT_STRENGTH_NUMERIC}
+        row[feature] = value
+        row["server_won"] = label
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def test_residual_bins_use_train_only_boundaries():
+    feature = OPPONENT_STRENGTH_NUMERIC[0]
+    train = _residual_frame(feature, [0.10, 0.20, 0.30, 0.40], [0, 1, 0, 1])
+    holdout_a = _residual_frame(feature, [0.15, 0.35], [1, 0])
+    holdout_b = _residual_frame(feature, [-99.0, 99.0], [1, 0])
+
+    first = _performance_vs_expectation_residual(
+        train,
+        holdout_a,
+        [0.50, 0.50],
+    )
+    second = _performance_vs_expectation_residual(
+        train,
+        holdout_b,
+        [0.50, 0.50],
+    )
+
+    expected = {"q25": 0.175, "q50": 0.25, "q75": 0.325}
+    assert first["feature_diagnostics"][feature]["train_quartiles"] == expected
+    assert second["feature_diagnostics"][feature]["train_quartiles"] == expected
+    assert first["binning_policy"]["holdout_values_do_not_define_boundaries"] is True
+    assert first["binning_policy"]["holdout_labels_do_not_define_boundaries"] is True
+    assert first["feature_activation_enabled"] is False
+    assert first["production_gate"] is False
+
+
+def test_insufficient_sample_still_hard_blocks_promotion_and_rank_is_benchmark_only():
+    report = evaluate([])
+
+    assert report["signal"]["status"] == "INSUFFICIENT_SHADOW_SAMPLE"
+    assert report["candidate_may_replace_reference"] is False
+    assert report["promotion_gate"] is False
+    assert report["signal"]["candidate_may_replace_reference"] is False
+    assert report["signal"]["promotion_gate"] is False
+    assert report["ranking_benchmark_contract"]["manual_rank_multiplier_used"] is False
+    assert report["ranking_benchmark_contract"]["rank_is_benchmark_not_strength_definition"] is True
+    assert report["context_provenance"]["event_level"]["available_in_this_audit_input"] is False
+    assert report["context_provenance"]["event_level"]["inferred_from_tour_or_name"] is False
