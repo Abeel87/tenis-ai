@@ -25,61 +25,62 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT — od tego miejsca ma zaczynać kolejny czat
 
-**Ostatnia aktualizacja checkpointu:** 2026-09-17
+**Ostatnia aktualizacja checkpointu:** 2026-09-18
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-04 — Context Engine SHADOW`
+**ACTIVE LOGIC/TASK:** `LOGIC-05 — Opponent Strength Engine`
 
-**SUBSTEP:** zbudować jeden audit/SHADOW history-context owner, który składa istniejące fakty fixture/TML w spójny schema z provenance i strict as-of/identity guards. Context Engine nie tworzy probability, nie zmienia Current/Player DNA/Symfonii i nie zgaduje kontuzji ani event level.
+**SUBSTEP:** skonsolidować istniejący leakage-safe opponent-context challenger jako jednego kanonicznego ownera LOGIC-05 i uruchomić go jako reprodukowalny SHADOW evidence run na aktualnym Player DNA/TML cache. Najpierw dowód i benchmarki, bez promocji do PROD.
 
-**BRANCH:** `brak` dla LOGIC-04 — świeży branch `logic-04-context-engine-shadow` utworzyć dopiero z ponownie zweryfikowanego `main` po wejściu tego checkpointu.
+**BRANCH:** checkpoint closeout `logic-04-checkpoint-closeout`; po jego merge utworzyć świeży `logic-05-opponent-strength-engine` z ponownie zweryfikowanego `main`.
 
-**PR:** `brak` dla LOGIC-04. PR #390 jest zakończony i zmergowany.
+**PR:** PR #392 zakończony i zmergowany. Dla LOGIC-05 jeszcze brak PR.
 
-**LAST VERIFIED MAIN:** `abc13dd7204f69bcf32160c6e1f533f5e1ccc566` — merge PR #390. W momencie closeoutu brak otwartych PR-ów. Post-merge Project Health, Delivery/Security/browser/dependencies i CodeQL = GREEN.
+**LAST VERIFIED MAIN:** `9c1a8ca7cda5a42d4f079c2c17f6456d67e53929` — botowy `data: refresh Player DNA SHADOW` po pełnym post-merge refresh/Pages LOGIC-04. W momencie checkpointu brak otwartych PR-ów.
 
-**LAST COMPLETED WORK:** `LOGIC-03 — Population / Priors Audit` zakończony. PR #390 został dwukrotnie przebudowany na świeżym `main`, gdy boty przesuwały wyłącznie `frontend/data/*`; finalny head `bc26a40895aecd599eb63f22b3e61c7bbc9e8ff3` przeszedł cały gate i został zmergowany jako `abc13dd7204f69bcf32160c6e1f533f5e1ccc566`. Audit porównał produkcyjny mixed `_surface_priors` z ATP/CH/WTA population-specific priors przy identycznej historii graczy. Nie wdrożono population split ani nowego fallbacku do PROD.
+**LAST COMPLETED WORK:** `LOGIC-04 — Context Engine SHADOW` zakończony. PR #392 miał finalny head `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`, został przebudowany na świeżym `main` po data-only drift i zmergowany jako `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`. Context Engine pozostaje wyłącznie opisowym SHADOW/audyt ownerem: strict as-of, fail-closed identity, season buckets, freshness, surface/tour/event provenance, rank context i inactivity gaps bez probability, medycznych inferencji ani runtime wiring.
 
-**CHANGED FILES w zakończonym PR #390:**
+**CHANGED FILES w PR #392:**
 
-- `backend/population_priors_audit.py`
-- `tests/test_population_priors_audit.py`
-- `.github/workflows/population-priors-audit.yml`
+- `backend/match_context_shadow.py`
+- `tests/test_match_context_shadow.py`
+- `.github/workflows/context-engine-shadow.yml`
 
-**LOGIC-03 EVIDENCE:**
+**LOGIC-04 EVIDENCE:**
 
-- final PR head: `bc26a40895aecd599eb63f22b3e61c7bbc9e8ff3`;
-- final audit workflow: `35272062180` = GREEN;
-- artifact: `10519247060`;
-- digest: `sha256:26b0f80f1c5dcac55e56da039a6fa12b80824c044e2462b19ea3cf067d996456`;
-- snapshot: 159 widocznych meczów / 51 `model_ready`;
-- dokładnie zmapowane `model_ready`: ATP=23, CH=19, WTA=6; eligible counterfactuals=48, errors=0;
-- 3 `model_ready` ITF pozostają świadomie unmapped — brak zgadywania population namespace;
-- 23 ATP `model_ready` miały brak surface i są jawnie oznaczone `surface_missing`, nie „mała próbka”;
-- fallback reasons dla 48 eligible: `surface_missing`=23, `surface_specific`=25; żaden eligible fixture w tym snapshotcie nie wymagał fallbacku z powodu `<100` surface rows;
-- population-specific priors zmieniły numeric Current output dla 48/48 eligible fixture'ów i profile metrics dla 96/96 profili;
-- ATP: 23/23 output changed, max output delta 2.5 pp, max profile metric delta 0.021452962354;
-- CH: 19/19 output changed, max output delta 0.4 pp, max profile metric delta 0.004498676539;
-- WTA: 6/6 output changed, max output delta 3.9 pp, max profile metric delta 0.042544245195;
-- produkcyjny surface-support threshold `100` nie został zmieniony;
-- candidate hierarchy/fallback ma status `EVIDENCE_ONLY_NOT_PROD`.
+- final PR head: `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`;
+- merge commit: `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`;
+- final dedicated workflow: `35304943727` = GREEN;
+- artifact: `10531313079`;
+- digest: `sha256:99e85d6fb61c9543babb15033efa07c98a0b91aa3b35e4ec1d2a4082fa6c61b7`;
+- artifact snapshot: 214 meczów / 428 player-contexts;
+- identity resolved: 268 contexts, w tym 261 exact + 7 deterministic expanded; 160 fail-closed;
+- history rows użyte przez schema: 3626;
+- contexts z pełnym historycznym rank-gap: 3584;
+- wszystkie 75 `model_ready` mecze miały oba identity rozwiązane;
+- 46/75 `model_ready` miało brak fixture surface; wszystkie te przypadki pozostają `null/missing`, bez inferencji;
+- strict same-day protection: TML day-only rows z dnia fixture nie są traktowane jako legalne pre-match history;
+- direct-only event metadata: brak event level w źródle => `null/unavailable`, bez zgadywania z tour/name;
+- inactivity/gap jest obserwowalnym odstępem czasu, nie diagnozą kontuzji/comeback;
+- fixture provider rank jest provenance-only; nie wymyślono effective date ani nie aktywowano go jako Current feature;
+- zero Live Tennis API calls, zero production cache writes, zero probability output, zero runtime wiring, zero SHADOW→PROD promotion.
 
-**TEST STATUS:** finalny PR #390 miał zielone testy jednostkowe LOGIC-03, restore dokładnego produkcyjnego cache, strict pre-cut support semantics, future-row leakage test, brak surface vs low-support reason test, population split summary oraz hard audit-only contract. `Tenis AI UI & Project Health` run `35272062125` = GREEN z pełnym pytest i wszystkimi guardami.
+**TEST STATUS:** finalny PR #392: dedicated LOGIC-04 tests 8/8 GREEN, real production TML cache restored, identity/time leakage tests, season/freshness/missing-event/rank-gap/inactivity guards i hard no-probability/no-medical-inference contract = GREEN. Final `Tenis AI UI & Project Health` run `35304943712` = GREEN z pełnym pytest i wszystkimi guardami.
 
 **CI STATUS:**
 
-- final head `bc26a40895aecd599eb63f22b3e61c7bbc9e8ff3`: LOGIC-03 audit `35272062180` = GREEN; CodeQL `35272062140` = GREEN; Delivery/Security `35272062116` = GREEN; UI & Project Health `35272062125` = GREEN;
-- merge commit: `abc13dd7204f69bcf32160c6e1f533f5e1ccc566`;
-- post-merge UI & Project Health `35272542877` = GREEN: full pytest, wszystkie SHADOW/runtime/health guardy = GREEN;
-- post-merge Delivery/Security `35272542906` = GREEN: browser E2E + dependencies/security = GREEN;
-- post-merge CodeQL `35272542830` = GREEN: Python i JavaScript/TypeScript = GREEN.
+- final head `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`: LOGIC-04 `35304943727` = GREEN; CodeQL `35304943656` = GREEN; Delivery/Security `35304943669` = GREEN; UI & Project Health `35304943712` = GREEN;
+- merge commit `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`;
+- post-merge Update tennis data and deploy Pages `35305172850` = GREEN, w tym full pytest, quota guard, settlement, AutoLearn, SHADOW modules, Surface Elo, Symphony 2.0, final PLAYABLE publication guard, final full regression v9.3.3, data commit i Pages deploy;
+- post-merge CodeQL, Delivery/Security/browser/dependencies i Project Health = GREEN;
+- botowy Player DNA SHADOW refresh przesunął `main` do `9c1a8ca7cda5a42d4f079c2c17f6456d67e53929` po zakończeniu powyższych gate’ów.
 
 **BLOCKERS:** brak blockerów.
 
-**DO NOT REDO:** nie powtarzać LOGIC-01/02/03 bez nowego dowodu, że evidence jest błędne. Nie promować population-specific priors, fallback hierarchy ani zmiany progu 100 do PROD na podstawie samego LOGIC-03. Nie zgadywać population dla ITF. Nie traktować `surface_missing` jak low-support. Nie aktywować fixture rank/opponent adjustment ani freshness policy. Nie fabricować Brier/calibration bez bezstronnego settled common ledger — owner LOGIC-09.
+**DO NOT REDO:** nie powtarzać LOGIC-01/02/03/04 bez nowego dowodu, że evidence jest błędne. Nie promować Context Engine do PROD. Nie aktywować fixture rank, freshness policy, population priors ani opponent adjustment na podstawie samych audytów. Nie zgadywać aliasów, event level, surface, kontuzji ani przyczyny inactivity. Nie fabricować Brier/calibration bez uczciwego common ledger — owner LOGIC-09.
 
-**RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations. LOGIC-04 nie może produkować probability. Brak fuzzy matching, brak zgadywania aliasów, event level, kontuzji albo medycznej przyczyny przerwy.
+**RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez oddzielnej autoryzacji. LOGIC-05 jest evidence/SHADOW only. Brak fuzzy matching, ręcznych aliasów i porównywania provider IDs między namespace’ami.
 
 ### Co zakończono wcześniej
 
@@ -88,21 +89,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] TASK 019 / PR #383 evidence skonsumowane przez LOGIC-01; #383 zamknięty bez merge.
 - [x] LOGIC-02 — Feature Provenance / Ranking Audit — PR #388 / merge `7328c0ec666272abf2a73b3b2a93d06f87d05704`.
 - [x] LOGIC-03 — Population / Priors Audit — PR #390 / merge `abc13dd7204f69bcf32160c6e1f533f5e1ccc566`.
+- [x] LOGIC-04 — Context Engine SHADOW — PR #392 / merge `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`.
 
 ### NEXT EXACT ACTION
 
-1. Sprawdź ponownie świeży `main`, otwarte PR-y i ostatnie CI; bot może przesunąć `main` po tym checkpointcie.
-2. Odczytaj aktualne `model._dated_history`, `model._resolve_history_player_key`, `model_core.normalize_matches`, `player_dna_match_context.py`, `player_dna_context_time_audit.py` i `player_dna_opponent_context_audit.py`; reużyj istniejących semantyk zamiast tworzyć równoległe.
-3. Utwórz świeży branch `logic-04-context-engine-shadow` z aktualnego `main`.
-4. Zbuduj audit/SHADOW Context Engine bez runtime wiring: fixture as-of + resolved player identity + current-season / previous-season / career-prior buckets + `days_old` / opisowy freshness bucket + surface / same_surface + source_tour + jawny event-level tylko jeśli istnieje w źródle + player rank / opponent rank / rank gap + inactivity gaps + provenance/reason codes.
-5. Jeśli źródło nie daje event level, zwróć `null/unavailable`; nie inferuj go z nazwy turnieju ani touru.
-6. Nie diagnozuj „comeback po kontuzji”. Mierz wyłącznie obserwowalne przerwy i pozycję meczu względem przerwy; ewentualne progi pozostają opisowymi audit windows, nie prawdą medyczną ani PROD policy.
-7. Strict as-of: żadnych przyszłych rekordów; dla danych tylko z rozdzielczością dnia nie dopuszczaj niejawnego same-day leakage i raportuj granularity/provenance.
-8. Identity fail-closed: bez fuzzy matching i bez ręcznych aliasów. Nie zwiększaj coverage przez zgadywanie.
-9. Context Engine nie tworzy probability i nie zmienia Current/Player DNA/Surface Elo/Symfonii/Neuronu/PLAYABLE/settlement/iNeed$.
-10. Dodaj testy identity/time leakage, season buckets, freshness boundaries, missing event-level, rank gap, inactivity i brak probability/injury inference.
-11. Dedykowany workflow ma używać wyłącznie istniejącego TML cache i current results snapshot, z `LIVE_TENNIS_API_KEY=''`, bez production cache writes.
-12. PR → artifact → pełne zielone CI → fresh-main check → merge → post-merge verification → checkpoint do LOGIC-05.
+1. Sprawdź ponownie świeży `main`, otwarte PR-y i ostatnie CI; boty mogą przesunąć `main` po tym checkpointcie.
+2. Odczytaj `backend/player_dna_opponent_adjustment_audit.py`, `backend/player_dna_point_scorer.py`, `backend/player_dna_shadow_profiles.py`, `backend/player_dna_point_dataset.py`, Context Engine LOGIC-04 i odpowiadające testy/workflowy.
+3. Ustal `player_dna_opponent_adjustment_audit.py` jako istniejącego kanonicznego challengera/ownera LOGIC-05; nie twórz równoległego opponent engine, jeśli brak twardego powodu.
+4. Utwórz świeży branch `logic-05-opponent-strength-engine` z aktualnego `main`.
+5. Najpierw uruchom obecnego challengera na aktualnym, przywróconym cache i zapisz reprodukowalny artifact. Jeśli potrzebne jest workflow wiring, dodaj wyłącznie dedykowany audit workflow, zero PROD wiring.
+6. Zweryfikuj strict as-of, same-time leakage, opponent-own-profile semantics i brak użycia przyszłych meczów przeciwnika.
+7. Dodaj jawny ranking benchmark jako osobny sygnał porównawczy; nie używaj ręcznego prostego mnożnika rankingu jako definicji strength.
+8. Dodaj surface-aware i tour/event context tylko tam, gdzie istnieje twarde provenance; missing pozostaje missing.
+9. Zdefiniuj performance-vs-expectation residual jako SHADOW evidence, nie jako nową wagę produkcyjną.
+10. Waliduj na chronological holdout + walk-forward; porównaj z istniejącym profile/rank baseline na tej samej próbce.
+11. Raportuj Brier/match-equal Brier/log-loss wyłącznie na wspólnym holdout danego audytu; nie utożsamiaj tego z produkcyjnym unbiased ledger LOGIC-09.
+12. Hard gate: `candidate_may_replace_reference=false`, `promotion_gate=false` do osobnej decyzji po evidence.
+13. PR → artifact → pełne zielone CI → fresh-main check → merge → post-merge verification → checkpoint do LOGIC-06.
 
 ---
 
@@ -239,54 +242,57 @@ Cel: sprawdzić mieszanie ATP/WTA/Challenger i wpływ globalnych priors.
 - [x] Zaprojektować evidence-only hierarchy/fallback bez wdrażania do PROD.
 - [x] SHADOW comparison.
 - [x] Zero zmian model math / progu surface support 100 / PROD.
-- [x] Artifact + pełne CI + dwa fresh-main rebases po data-only bot drift + merge + post-merge green.
+- [x] Artifact + pełne CI + fresh-main rebases po data-only bot drift + merge + post-merge green.
 
-**Definition of Done:** spełnione dla fazy audytowej. Wiemy, że population-specific priors materialnie zmieniają profile/outputy na bieżącym snapshotcie; nie autoryzuje to jeszcze wdrożenia do PROD.
+**Definition of Done:** spełnione dla fazy audytowej; brak promocji do PROD.
 
 ---
 
 ## LOGIC-04 — Context Engine SHADOW
 
-Status: `[~] ACTIVE — SHADOW CONTEXT ENGINE`
+Status: `[x] COMPLETED — PR #392 / merge c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`
 
 Cel: jeden kanoniczny producent kontekstu meczu/historycznego rekordu, bez probability i bez runtime promotion.
 
-- [ ] Zdefiniować schema contextu.
-- [ ] current season / previous season / career prior.
-- [ ] days_old / opisowy freshness bucket.
-- [ ] surface / same_surface z missingness.
-- [ ] source tour i raw event level tylko jeśli istnieje.
-- [ ] player rank / opponent rank / rank gap.
-- [ ] opponent tier wyłącznie jako opisowy rank band, nie strength score.
-- [ ] inactivity gap i obserwowalne położenie rekordu względem przerw bez diagnozy comeback/injury.
-- [ ] provenance/reason code dla każdego pola.
-- [ ] reużyć deterministic fail-closed identity resolution.
-- [ ] strict as-of i jawna date granularity.
-- [ ] brak zgadywania kontuzji/event level/aliasów.
-- [ ] SHADOW only; brak probability.
-- [ ] testy identity/time leakage.
-- [ ] artifact na dokładnym production cache/current snapshot.
+- [x] Zdefiniować schema contextu.
+- [x] current season / previous season / career prior.
+- [x] days_old / opisowy freshness bucket.
+- [x] surface / same_surface z missingness.
+- [x] source tour i raw event level tylko jeśli istnieje.
+- [x] player rank / opponent rank / rank gap.
+- [x] opponent tier wyłącznie jako opisowy rank band, nie strength score.
+- [x] inactivity gap i obserwowalne położenie rekordu względem przerw bez diagnozy comeback/injury.
+- [x] provenance/reason code dla każdego pola.
+- [x] reużyć deterministic fail-closed identity resolution.
+- [x] strict as-of i jawna date granularity.
+- [x] brak zgadywania kontuzji/event level/aliasów.
+- [x] SHADOW only; brak probability.
+- [x] testy identity/time leakage.
+- [x] artifact na dokładnym production cache/current snapshot.
+- [x] pełne CI + fresh-main rebuild + merge + post-merge refresh/Pages GREEN.
 
-**Definition of Done:** istnieje jeden spójny SHADOW context schema z provenance, który może być później walidowany jako wspólne wejście modeli; w LOGIC-04 nie jest podłączany do Current/Player DNA/Symfonii ani PROD.
+**Definition of Done:** spełnione. Istnieje spójny SHADOW context schema z provenance; nie jest podłączony do Current/Player DNA/Symfonii ani PROD.
 
 ---
 
 ## LOGIC-05 — Opponent Strength Engine
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE — SHADOW EVIDENCE / CONSOLIDATE EXISTING CHALLENGER`
 
 Cel: wynik/statystyka ma znaczenie względem klasy przeciwnika.
 
-- [ ] Dostępne historyczne informacje o jakości rywala.
+- [~] Dostępne historyczne informacje o jakości rywala — istniejący leakage-safe opponent-own-profile challenger do formalnej konsolidacji.
 - [ ] Opponent strength bez ręcznego prostego przelicznika rankingu.
-- [ ] Ranking tier / continuous transform do walidacji.
+- [ ] Ranking tier / continuous transform jako oddzielny benchmark.
 - [ ] Surface-aware opponent strength.
-- [ ] Event/tour context.
+- [ ] Event/tour context z hard provenance.
 - [ ] Performance-vs-expectation residual.
-- [ ] Walk-forward validation.
-- [ ] SHADOW only do czasu przewagi nad baseline.
+- [ ] Chronological holdout + walk-forward validation.
+- [ ] Wspólna próbka vs profile/rank baseline.
+- [ ] Dedykowany artifact/workflow z aktualnego cache.
+- [ ] SHADOW only do osobnej decyzji o promocji.
 
-**Definition of Done:** przegrana z Top 20 i przegrana z #500 nie są identycznymi obserwacjami treningowymi.
+**Definition of Done:** istnieje jeden leakage-safe opponent-strength owner z reprodukowalnym evidence runem i walk-forward; różna klasa rywala jest mierzalna bez prostego arbitralnego rank-multiplier. W LOGIC-05 nie ma promocji do PROD.
 
 ---
 
