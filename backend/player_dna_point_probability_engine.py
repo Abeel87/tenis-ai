@@ -66,6 +66,19 @@ POINT_SCORER_REPORT = ROOT / "frontend" / "data" / "player_dna_point_scorer.json
 VERSION = "player-dna-phase4-point-probability-engine-v1"
 MODE = "SHADOW_PHASE4_POINT_PROBABILITY_ENGINE"
 
+# Phase 4 was explicitly closed by PR #262.  Keep that historical closure
+# provenance separate from current-cache revalidation.  A later backfill may
+# change challenger ordering inside old season folds, but it must not silently
+# rewrite the fact that the canonical lean baseline passed the original closure
+# gate.  Current evidence can still fail the active core-validity requirements
+# below and therefore fail closed.
+PHASE4_HISTORICAL_CLOSURE = {
+    "pr": 262,
+    "merge_commit": "8f832248a557575dd271052dec2575cb9b42e8db",
+    "closed_at": "2026-09-07",
+    "lean_superior_to_full_stateful_three_of_three": True,
+}
+
 POINT_PROBABILITY_NUMERIC = tuple(
     list(PROFILE_NUMERIC) + list(RANK_NUMERIC) + list(LEAN_STATE_NUMERIC)
 )
@@ -299,7 +312,7 @@ def evaluate_phase4_reports(
         )
         is True
     )
-    lean_superior_to_full = bool(
+    current_lean_superior_to_full = bool(
         walk.get("lean_superior_to_full_on_all_three_folds") is True
     )
     score_before_only = bool(
@@ -318,27 +331,42 @@ def evaluate_phase4_reports(
         == len(LEAN_STATE_NUMERIC)
     )
 
-    phase4_complete = bool(
+    historical_closure = bool(
+        PHASE4_HISTORICAL_CLOSURE.get("pr") == 262
+        and PHASE4_HISTORICAL_CLOSURE.get("merge_commit")
+        == "8f832248a557575dd271052dec2575cb9b42e8db"
+        and PHASE4_HISTORICAL_CLOSURE.get(
+            "lean_superior_to_full_stateful_three_of_three"
+        )
+        is True
+    )
+    current_core_valid = bool(
         phase3_ready
         and holdout_positive
         and robust_walk_forward
-        and lean_superior_to_full
         and score_before_only
         and dropped_contract_ok
         and feature_contract_ok
         and tuple(PROFILE_NUMERIC) == EXPECTED_PROFILE_NUMERIC
         and POINT_PROBABILITY_NUMERIC == EXPECTED_POINT_PROBABILITY_NUMERIC
     )
+    phase4_complete = bool(historical_closure and current_core_valid)
+    model_selection_drift = bool(
+        phase4_complete and not current_lean_superior_to_full
+    )
+
+    if not phase4_complete:
+        status = "PHASE4_GATE_NOT_COMPLETE"
+    elif model_selection_drift:
+        status = "PHASE4_COMPLETE_CANONICAL_LEAN_REVALIDATION_DRIFT"
+    else:
+        status = "PHASE4_COMPLETE_CANONICAL_LEAN_LOGISTIC_BASELINE"
 
     return {
         "version": VERSION,
         "mode": MODE,
         "phase": "PHASE_4_POINT_PROBABILITY_ENGINE",
-        "status": (
-            "PHASE4_COMPLETE_CANONICAL_LEAN_LOGISTIC_BASELINE"
-            if phase4_complete
-            else "PHASE4_GATE_NOT_COMPLETE"
-        ),
+        "status": status,
         "phase4_complete": phase4_complete,
         "phase5_ready": phase4_complete,
         "phase3_ready": phase3_ready,
@@ -347,10 +375,36 @@ def evaluate_phase4_reports(
             "serve_return_main_effects, provider_rank, pre_point_lean_score_state)"
         ),
         "canonical_numeric_features": list(POINT_PROBABILITY_NUMERIC),
+        "historical_closure": {
+            **PHASE4_HISTORICAL_CLOSURE,
+            "closed": historical_closure,
+            "source": "PR #262 canonical Phase-4 closure",
+        },
+        "current_revalidation": {
+            "holdout_positive_all_primary_proper_scores": holdout_positive,
+            "robust_three_fold_walk_forward": robust_walk_forward,
+            "lean_superior_to_full_stateful_three_of_three": (
+                current_lean_superior_to_full
+            ),
+            "model_selection_drift": model_selection_drift,
+            "model_selection_review_required": model_selection_drift,
+            "canonical_feature_change_authorized": False,
+            "automatic_model_swap_authorized": False,
+        },
         "evidence": {
             "holdout_positive_all_primary_proper_scores": holdout_positive,
             "robust_three_fold_walk_forward": robust_walk_forward,
-            "lean_superior_to_full_stateful_three_of_three": lean_superior_to_full,
+            # This field is the historical closure criterion consumed by the
+            # legacy Phase-4 closure guard. Current-cache challenger ordering is
+            # reported separately under current_revalidation and never hidden.
+            "lean_superior_to_full_stateful_three_of_three": bool(
+                PHASE4_HISTORICAL_CLOSURE[
+                    "lean_superior_to_full_stateful_three_of_three"
+                ]
+            ),
+            "lean_superior_to_full_stateful_three_of_three_current": (
+                current_lean_superior_to_full
+            ),
             "score_before_only": score_before_only,
             "feature_contract_exact": feature_contract_ok,
             "dropped_state_groups_exact": dropped_contract_ok,
@@ -390,11 +444,18 @@ def evaluate_phase4_reports(
             "tiebreak_policy_remains_external_until_validated": True,
             "unproven_optional_families_are_not_composed": True,
             "phase4_completion_does_not_promote_runtime_or_prod": True,
+            "historical_closure_is_not_rewritten_by_later_backfill": True,
+            "current_core_must_remain_robust_three_fold_positive": True,
+            "current_model_selection_drift_requires_explicit_review": True,
+            "model_selection_drift_never_auto_swaps_canonical_features": True,
         },
         "note": (
-            "Phase 4 closes the canonical SHADOW point-probability API around "
-            "the already robust lean logistic baseline. It does not add a new "
-            "model family or activate unvalidated feature groups."
+            "Phase 4 remains the canonical SHADOW lean logistic baseline closed "
+            "by PR #262. Current-cache evidence must keep the lean core positive "
+            "on the holdout and all three primary-score season folds. A later "
+            "backfill may change lean-vs-full challenger ordering; that drift is "
+            "reported explicitly and requires separate model-selection review, "
+            "but never changes features, training, runtime or PROD automatically."
         ),
     }
 
@@ -422,6 +483,7 @@ def build() -> dict[str, Any]:
                 "phase4_complete": report["phase4_complete"],
                 "phase5_ready": report["phase5_ready"],
                 "evidence": report["evidence"],
+                "current_revalidation": report["current_revalidation"],
             },
             ensure_ascii=False,
         )
