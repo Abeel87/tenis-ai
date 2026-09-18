@@ -4,6 +4,7 @@ import pytest
 from backend.player_dna_point_probability_engine import (
     EXPECTED_POINT_PROBABILITY_NUMERIC,
     MODE,
+    PHASE4_HISTORICAL_CLOSURE,
     POINT_PROBABILITY_NUMERIC,
     evaluate_phase4_reports,
     fit_point_probability_model,
@@ -240,6 +241,11 @@ def test_phase4_gate_closes_on_existing_robust_lean_baseline_only():
     assert report["status"] == "PHASE4_COMPLETE_CANONICAL_LEAN_LOGISTIC_BASELINE"
     assert report["evidence"]["robust_three_fold_walk_forward"] is True
     assert report["evidence"]["score_before_only"] is True
+    assert report["historical_closure"]["pr"] == 262
+    assert report["historical_closure"]["merge_commit"] == PHASE4_HISTORICAL_CLOSURE[
+        "merge_commit"
+    ]
+    assert report["current_revalidation"]["model_selection_drift"] is False
 
     for value in report["excluded_until_separate_gate"].values():
         assert value is True
@@ -248,6 +254,33 @@ def test_phase4_gate_closes_on_existing_robust_lean_baseline_only():
     assert report["runtime_switch_enabled"] is False
     assert report["symphony2_influence"] is False
     assert report["superbet_playable_influence"] is False
+
+
+def test_phase4_historical_closure_survives_current_model_selection_drift_only():
+    scorer = _point_scorer()
+    scorer["stateful_walk_forward"][
+        "lean_superior_to_full_on_all_three_folds"
+    ] = False
+
+    report = evaluate_phase4_reports(_phase3(), scorer)
+
+    assert report["phase4_complete"] is True
+    assert report["phase5_ready"] is True
+    assert report["status"] == "PHASE4_COMPLETE_CANONICAL_LEAN_REVALIDATION_DRIFT"
+    assert report["evidence"][
+        "lean_superior_to_full_stateful_three_of_three"
+    ] is True
+    assert report["evidence"][
+        "lean_superior_to_full_stateful_three_of_three_current"
+    ] is False
+    current = report["current_revalidation"]
+    assert current["robust_three_fold_walk_forward"] is True
+    assert current["model_selection_drift"] is True
+    assert current["model_selection_review_required"] is True
+    assert current["canonical_feature_change_authorized"] is False
+    assert current["automatic_model_swap_authorized"] is False
+    assert report["production_influence"] is False
+    assert report["training_pipeline_replaced"] is False
 
 
 def test_phase4_gate_fails_closed_if_phase3_or_walk_forward_contract_breaks():
