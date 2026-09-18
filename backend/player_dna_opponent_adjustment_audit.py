@@ -20,6 +20,7 @@ from typing import Any, Iterable
 
 try:
     from backend.player_dna_point_scorer import (
+        CATEGORICAL,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -37,6 +38,7 @@ try:
     )
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
+        CATEGORICAL,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -414,18 +416,152 @@ def _positive_gains(gains: dict[str, float]) -> bool:
     )
 
 
-def _evaluate_frames(train, test) -> dict[str, Any]:
-    base_numeric = list(PROFILE_NUMERIC) + list(RANK_NUMERIC)
+def _quantile(values: Iterable[float], q: float) -> float | None:
+    clean = sorted(float(value) for value in values if math.isfinite(float(value)))
+    if not clean:
+        return None
+    position = (len(clean) - 1) * float(q)
+    low = int(math.floor(position))
+    high = int(math.ceil(position))
+    if low == high:
+        return round(clean[low], 6)
+    weight = position - low
+    return round(clean[low] * (1.0 - weight) + clean[high] * weight, 6)
+
+
+def _pearson(left: list[float], right: list[float]) -> float | None:
+    if len(left) != len(right) or len(left) < 2:
+        return None
+    left_mean = sum(left) / len(left)
+    right_mean = sum(right) / len(right)
+    numerator = sum(
+        (x - left_mean) * (y - right_mean)
+        for x, y in zip(left, right)
+    )
+    left_ss = sum((x - left_mean) ** 2 for x in left)
+    right_ss = sum((y - right_mean) ** 2 for y in right)
+    denominator = math.sqrt(left_ss * right_ss)
+    if denominator <= 0.0:
+        return None
+    return round(numerator / denominator, 6)
+
+
+def _performance_vs_expectation_residual(
+    train,
+    test,
+    reference_probs,
+) -> dict[str, Any]:
+    probabilities = [float(value) for value in reference_probs]
+    labels = [int(value) for value in test["server_won"].tolist()]
+    if len(probabilities) != len(labels):
+        raise ValueError("reference probability length does not match holdout labels")
+
+    residuals = [label - probability for label, probability in zip(labels, probabilities)]
+    features: dict[str, Any] = {}
+    for feature in OPPONENT_STRENGTH_NUMERIC:
+        train_values = [
+            value
+            for raw in train[feature].tolist()
+            if (value := _finite(raw)) is not None
+        ]
+        quartiles = {
+            "q25": _quantile(train_values, 0.25),
+            "q50": _quantile(train_values, 0.50),
+            "q75": _quantile(train_values, 0.75),
+        }
+        observed = [
+            (value, residuals[index])
+            for index, raw in enumerate(test[feature].tolist())
+            if (value := _finite(raw)) is not None
+        ]
+
+        bins = {
+            "q1_low": [],
+            "q2": [],
+            "q3": [],
+            "q4_high": [],
+        }
+        q25 = quartiles["q25"]
+        q50 = quartiles["q50"]
+        q75 = quartiles["q75"]
+        if q25 is not None and q50 is not None and q75 is not None:
+            for value, residual in observed:
+                if value <= q25:
+                    name = "q1_low"
+                elif value <= q50:
+                    name = "q2"
+                elif value <= q75:
+                    name = "q3"
+                else:
+                    name = "q4_high"
+                bins[name].append((value, residual))
+
+        feature_values = [value for value, _ in observed]
+        feature_residuals = [residual for _, residual in observed]
+        features[feature] = {
+            "train_observed": len(train_values),
+            "holdout_observed": len(observed),
+            "holdout_missing": int(len(test) - len(observed)),
+            "train_quartiles": quartiles,
+            "pearson_feature_vs_reference_residual": _pearson(
+                feature_values,
+                feature_residuals,
+            ),
+            "bins": {
+                name: {
+                    "n": len(rows),
+                    "feature_mean": _mean(value for value, _ in rows),
+                    "mean_reference_residual": _mean(
+                        residual for _, residual in rows
+                    ),
+                }
+                for name, rows in bins.items()
+            },
+        }
+
+    return {
+        "mode": "SHADOW_PERFORMANCE_VS_EXPECTATION_DIAGNOSTIC_ONLY",
+        "reference_model": "profile_rank_plus_lean_score_state_logistic",
+        "residual_definition": "observed_server_won_minus_reference_probability",
+        "point_weighted_diagnostic": True,
+        "holdout_points": len(labels),
+        "observed_server_win_rate": _mean(float(value) for value in labels),
+        "reference_probability_mean": _mean(probabilities),
+        "mean_reference_residual": _mean(residuals),
+        "feature_diagnostics": features,
+        "binning_policy": {
+            "source": "TRAIN_ONLY_QUARTILES_OF_EACH_OBSERVED_STRENGTH_FEATURE",
+            "holdout_values_do_not_define_boundaries": True,
+            "holdout_labels_do_not_define_boundaries": True,
+            "fixed_production_thresholds_introduced": False,
+        },
+        "diagnostic_only": True,
+        "feature_activation_enabled": False,
+        "production_gate": False,
+    }
+
+
+def _evaluate_frames(
+    train,
+    test,
+    *,
+    include_residual_diagnostic: bool = True,
+) -> dict[str, Any]:
+    rank_numeric = list(RANK_NUMERIC)
+    profile_numeric = list(PROFILE_NUMERIC)
+    base_numeric = profile_numeric + rank_numeric
     lean_numeric = base_numeric + list(LEAN_STATE_NUMERIC)
     strength_numeric = base_numeric + list(OPPONENT_STRENGTH_NUMERIC)
     lean_strength_numeric = lean_numeric + list(OPPONENT_STRENGTH_NUMERIC)
     full_context_numeric = base_numeric + list(OPPONENT_NUMERIC)
     lean_full_context_numeric = lean_numeric + list(OPPONENT_NUMERIC)
 
+    rank_context, _ = _fit_candidate(train, test, rank_numeric)
+    profile_only, _ = _fit_candidate(train, test, profile_numeric)
     base, _ = _fit_candidate(train, test, base_numeric)
     strength, _ = _fit_candidate(train, test, strength_numeric)
     full_context, _ = _fit_candidate(train, test, full_context_numeric)
-    lean, _ = _fit_candidate(train, test, lean_numeric)
+    lean, lean_probs = _fit_candidate(train, test, lean_numeric)
     lean_strength, _ = _fit_candidate(train, test, lean_strength_numeric)
     lean_full_context, _ = _fit_candidate(
         train, test, lean_full_context_numeric
@@ -446,18 +582,33 @@ def _evaluate_frames(train, test) -> dict[str, Any]:
     support_gains_beyond_strength = _proper_score_gains(
         lean_strength["metrics"], lean_full_context["metrics"]
     )
+    base_gains_vs_rank = _proper_score_gains(
+        rank_context["metrics"], base["metrics"]
+    )
+    strength_gains_vs_rank = _proper_score_gains(
+        rank_context["metrics"], strength["metrics"]
+    )
     return {
+        "rank_context_benchmark": rank_context,
+        "profile_only_benchmark": profile_only,
         "profile_plus_rank": base,
         "profile_rank_plus_opponent_strength": strength,
         "profile_rank_plus_opponent_strength_and_support": full_context,
         "lean_stateful": lean,
         "lean_stateful_plus_opponent_strength": lean_strength,
         "lean_stateful_plus_opponent_strength_and_support": lean_full_context,
+        "profile_plus_rank_gains_vs_rank_context": base_gains_vs_rank,
+        "opponent_strength_candidate_gains_vs_rank_context": strength_gains_vs_rank,
         "opponent_strength_gains_vs_profile_plus_rank": strength_gains_vs_base,
         "opponent_strength_gains_vs_lean_stateful": strength_gains_vs_lean,
         "full_context_gains_vs_profile_plus_rank": full_gains_vs_base,
         "full_context_gains_vs_lean_stateful": full_gains_vs_lean,
         "support_gains_beyond_strength": support_gains_beyond_strength,
+        "performance_vs_expectation_residual": (
+            _performance_vs_expectation_residual(train, test, lean_probs)
+            if include_residual_diagnostic
+            else None
+        ),
         "positive_strength_vs_profile_plus_rank": _positive_gains(
             strength_gains_vs_base
         ),
@@ -494,7 +645,11 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
             )
             continue
 
-        result = _evaluate_frames(train, test)
+        result = _evaluate_frames(
+            train,
+            test,
+            include_residual_diagnostic=False,
+        )
         folds.append(
             {
                 **meta,
@@ -544,6 +699,8 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 "opponent_strength_gains_vs_lean_stateful", "log_loss_gain"
             ),
         },
+        "same_timestamp_groups_not_split": True,
+        "test_windows_disjoint": True,
     }
 
 
@@ -573,6 +730,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "opponent_strength_numeric_features": list(OPPONENT_STRENGTH_NUMERIC),
         "opponent_support_numeric_features": list(OPPONENT_SUPPORT_NUMERIC),
         "opponent_numeric_features": list(OPPONENT_NUMERIC),
+        "network_calls": 0,
         "production_influence": False,
         "runtime_scoring_enabled": False,
         "training_join_enabled": False,
@@ -580,7 +738,37 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "symphony2_influence": False,
         "superbet_playable_influence": False,
         "auto_promote": False,
+        "candidate_may_replace_reference": False,
         "promotion_gate": False,
+        "ranking_benchmark_contract": {
+            "numeric_features": list(RANK_NUMERIC),
+            "canonical_categorical_context": list(CATEGORICAL),
+            "same_chronological_holdout_as_opponent_strength": True,
+            "same_canonical_logistic_engine": True,
+            "manual_rank_multiplier_used": False,
+            "rank_is_benchmark_not_strength_definition": True,
+            "production_gate": False,
+        },
+        "context_provenance": {
+            "surface": {
+                "source": "target_surface_from_strict_as_of_profile_and_same_surface_opponent_history",
+                "missing_surface_is_not_inferred": True,
+            },
+            "tour": {
+                "source": "provider_backed_point_context_canonical_categorical",
+                "missing_tour_is_not_inferred": True,
+            },
+            "event_level": {
+                "available_in_this_audit_input": False,
+                "inferred_from_tour_or_name": False,
+                "reason": "no_direct_event_level_field_in_canonical_opponent_challenger_input",
+            },
+            "rank": {
+                "source": "provider_backed_pre_match_server_ranking_and_receiver_ranking_from_point_context",
+                "benchmark_only": True,
+                "opponent_strength_definition": False,
+            },
+        },
         "opponent_support_contract": {
             "support_counts_only_bidirectional_pre_match_serve_return_profiles": True,
             "raw_prior_match_count_is_not_an_opponent_strength_feature": True,
@@ -598,6 +786,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "historical_opponent_strength_is_from_opponents_own_pre_match_snapshot": True,
             "target_match_not_added_to_its_own_history": True,
             "same_timestamp_matches_never_count_as_prior": True,
+            "source_row_order_does_not_override_scheduled_time_order": True,
             "stable_provider_player_ids_only": True,
             "future_match_results_not_used": True,
         },
@@ -605,6 +794,8 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "status": "NOT_EVALUATED",
             "positive_vs_profile_plus_rank": False,
             "positive_vs_lean_stateful": False,
+            "candidate_may_replace_reference": False,
+            "promotion_gate": False,
         },
     }
 
