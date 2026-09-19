@@ -33,36 +33,34 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** phase 3 — consumer-specific readiness requirements + observability migration design. Dla każdego runtime/learning/telemetry/UI konsumenta legacy `model_ready` zdefiniować dokładne wymagane semantic dimensions/market contract, evidence owner i status polityki; bez zmiany runtime gate'ów w pierwszym kroku phase 3.
 
-**BRANCH:** bieżący docs-closeout `logic-08-consumer-audit-closeout`; po merge utworzyć świeży `logic-08-readiness-requirements-audit` ze zweryfikowanego `main`.
+**BRANCH:** `logic-08-readiness-requirements-audit` utworzony ze zweryfikowanego `main` `eec6483ed942ebab9193ef4bd4681ac352f3490c`.
 
-**PR:** LOGIC-08 phase-1 PR #402 i consumer-audit PR #403 są zmergowane. Bieżący docs-closeout jeszcze bez PR.
+**PR:** phase-1 #402, consumer-audit #403 i docs-closeout #404 są zmergowane. Phase-3 requirement-matrix PR jeszcze nieutworzony.
 
-**LAST VERIFIED MAIN:** `01d52caca2ebba9a7856e13cd49f508e2a595a0f` — merge PR #403; lokalny checkout i GitHub zgodne.
+**LAST VERIFIED MAIN:** `eec6483ed942ebab9193ef4bd4681ac352f3490c` — po merge niezależnego infrastructure hotfix PR #405; GitHub bez otwartych PR-ów, post-merge Delivery/Security i UI/Project Health GREEN, Training archive inventory `35437677789` GREEN.
 
-**LAST COMPLETED WORK:** LOGIC-08 phase 1 SHADOW semantics + phase 2 exact legacy consumer inventory. `TENIS_AI_READINESS_CONSUMER_MAP.md` zamraża 21 exact-token source files, role i migration order; contract tests potwierdzają zero runtime wiring.
+**LAST COMPLETED WORK:** phase-3 local audit zbudował `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`: 22 exact legacy `model_ready` tokens na 19 source lines, consumer-specific requirements/evidence owners/UNKNOWN semantics/risk, zero runtime wiring. Pierwszy bezpieczny observability candidate: additive SHADOW aggregate/meta w `backend/update.py` R12/R13; learning consumers deferred do LOGIC-09, prediction-integrity guard do LOGIC-10.
 
-**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; LOGIC-08 consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`.
+**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`; consumer-audit docs closeout PR #404 → `50b71c0b693feaa963b5435a13c84c1a667f6797`. Unrelated archive infrastructure repair PR #405 → `eec6483ed942ebab9193ef4bd4681ac352f3490c`.
 
-**TEST / CI BASELINE:** PR #403 final head `8c5f75d6f4d25576341436f321b1ff890927289f`: local contract/docs/readiness 23/23 GREEN, FULL 1274/1274, `git diff --check` GREEN. PR CI: UI #2610 / `35428049690`, CodeQL #234 / `35428049706`, Delivery/Security #253 / `35428049697`, LOGIC-01 #9 / `35428049662`, LOGIC-02 #10 / `35428049679`, LOGIC-03 #10 / `35428049698`, LOGIC-04 #9 / `35428049681` — all GREEN. Post-merge main: Delivery/Security #254 / `35428211678` GREEN; UI & Project Health #2611 / `35428211691` GREEN.
+**TEST / CI BASELINE:** phase-3 local requirement-matrix: targeted readiness/contracts/docs **27/27 GREEN**; FULL **1280/1280 GREEN** with explicit accessible `--basetemp`; `git diff --check` GREEN. Initial default-temp full run produced 73 setup errors from Windows `PermissionError` on `AppData/Local/Temp/pytest-of-MaDRa` (1207 tests passed before setup failures); rerun with project-owned basetemp proved code/tests green. PR CI pending.
 
 **AUTHORITATIVE PHASE-1 ARTIFACT:** Point Tape #400 `player-dna-point-foundation` ID `10579342271`, digest `sha256:474b6fc22ca92a9010095669ee773bebc9253592fe1bc3729902982a7df677c0`, exact head `691ab2266...`; readiness status `READINESS_SEMANTICS_SHADOW_EVIDENCE_READY`, 156 aligned matches, zero legacy-reference mismatches.
 
-**BLOCKERS:** brak runtime blockerów. Phase 3 jest evidence/design-first; żadnego consumer gate nie wolno migrować bez jawnych requirements + approved sufficiency policy.
+**BLOCKERS:** brak blockerów dla phase-3 audit PR. Runtime/learning migrations są celowo zablokowane bez consumer-specific sufficiency policy; R07/R08/R11 dodatkowo czekają na LOGIC-09, R14 na LOGIC-10. PBP acquisition target widening wymaga osobnego identity/provider-load evidence.
 
-**DO NOT REDO:** nie powtarzać LOGIC-00..07, LOGIC-08 phase-1 ani 21-file consumer inventory z PR #403 bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness.
+**DO NOT REDO:** nie powtarzać LOGIC-00..07, phase-1, 21-file phase-2 inventory ani 22-token/19-line phase-3 requirement audit bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness. Nie wdrażać R12/R13 w tym audit PR.
 
 **RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current Engine PROD, Player DNA PROD, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez osobnej autoryzacji. Brak fuzzy matching, ręcznych aliasów, provider-ID namespace guessing i real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Ponownie sprawdzić fresh `main`, otwarte PR-y i CI; utworzyć `logic-08-readiness-requirements-audit`.
-2. Zbudować consumer requirement matrix dla: `history_tracker`, Market Lab, PBP cache recovery/enrich, AutoLearn, specialist learning, SHADOW lab, update/meta, prediction integrity i frontend.
-3. Dla każdego use-site zapisać: obecny efekt legacy `model_ready`, wymagane semantic dimensions, market-specific contract, evidence owner, missingness/UNKNOWN semantics i ryzyko zmiany zachowania.
-4. Brak zatwierdzonej sufficiency policy oznacza `UNKNOWN` / no migration, nigdy automatyczne `NOT_READY` lub `READY`.
-5. Zachować osobno PBP `market_ready`, Symphony `learning_model_ready` i Superbet operator availability.
-6. Dodać contract tests dla requirement matrix i braku runtime wiring; nie zmieniać jeszcze gate'ów.
-7. Na podstawie evidence wybrać pierwszy bezpieczny observability-only consumer (UI/telemetry side-by-side), oddzielnie od runtime/learning migration.
-8. PR → pełne CI → fresh-main check → merge → post-merge verification → checkpoint.
+1. Sprawdzić diff phase-3 audit, potwierdzić zero runtime source changes i commitnąć branch `logic-08-readiness-requirements-audit`.
+2. Push + PR obejmujący wyłącznie requirement matrix, consumer-map/registry/checkpoint docs i contract tests.
+3. PR CI musi być pełne GREEN; przed merge ponownie sprawdzić fresh `main`. Jeśli bot przesunie `main`, ocenić drift, rebase/retest.
+4. Merge tylko GREEN → post-merge Delivery/Security + UI/Project Health verification → checkpoint.
+5. Dopiero w osobnym kolejnym PR zaprojektować/zaimplementować R12/R13 observability side-by-side: SHADOW-labeled aggregate/meta obok niezmienionego `meta.model_ready`, z exact snapshot alignment i fail-open-to-N/D dla samej obserwowalności.
+6. Nie dotykać runtime/learning gate replacement. R07/R08/R11 pozostają dla LOGIC-09; R14 dla LOGIC-10; PBP target widening wymaga osobnego evidence.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -291,7 +289,7 @@ Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
 ## LOGIC-08 — Readiness Engine
 
-Status: `[~] ACTIVE — phase-1 SHADOW semantics + phase-2 consumer inventory merged; phase-3 requirements/observability design next`
+Status: `[~] ACTIVE — phase-1/2 merged; phase-3 requirement matrix + observability selection ready locally, audit PR pending`
 
 Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 
@@ -305,10 +303,12 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 - [S] Market-specific readiness — tylko jawne PBP/Early Hold requirements; generic markets nadal `UNKNOWN`.
 - [S] Reason codes — deterministic ordering + provenance/support w phase 1.
 - [x] Legacy consumer inventory — 21 exact-token source files zamrożone i sklasyfikowane w PR #403; zero runtime wiring.
-- [ ] UI bez wymyślania danych — observability side-by-side dopiero po requirement matrix.
-- [~] Migration plan z obecnego boolean `model_ready` — inventory ukończone; consumer-specific requirements/policies pozostają otwarte.
+- [x] Consumer requirement matrix — 22 exact legacy tokeny na 19 source lines z wymaganiami, evidence ownerem, UNKNOWN semantics i ryzykiem; contract-tested lokalnie.
+- [S] Pierwszy observability candidate — R12/R13 additive SHADOW aggregate/meta w `backend/update.py`, bez implementacji w audit PR; R18/R19 jako następne UI diagnostics.
+- [ ] UI bez wymyślania danych — implementacja side-by-side dopiero po merge requirement-matrix PR i dowodzie exact snapshot alignment.
+- [~] Migration plan z obecnego boolean `model_ready` — consumer-specific requirements zdefiniowane; żaden runtime/learning gate nie ma approval do replacement.
 
-**Definition of Done:** jeszcze niespełnione. SHADOW contract i pełna mapa konsumentów istnieją, ale observability oraz runtime/learning migrations wymagają osobnych evidence gates.
+**Definition of Done:** jeszcze niespełnione. Phase-3 design/audit jest gotowy lokalnie, ale observability implementation i późniejsze consumer migrations wymagają osobnych evidence gates/PR-ów.
 
 ---
 

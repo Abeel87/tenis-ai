@@ -56,3 +56,11 @@ Audited exact-token source count: **21 files**.
 - `backend/symphony2_engine.py` / `learning_model_ready`: Symphony learning-model state, not universal match readiness.
 - `backend/superbet_direct.py` / operator market evidence: current operator offer availability, not model-data readiness.
 - `backend/apply_joint_to_results.py`: aggregates PBP market readiness; it must not be reinterpreted as legacy or semantic overall readiness.
+
+## Phase-3 requirement matrix
+
+Consumer-specific migration requirements are defined in `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`, audited on main `eec6483ed942ebab9193ef4bd4681ac352f3490c`.
+
+The matrix covers **22 exact legacy tokens on 19 source lines** across runtime/collection, learning/SHADOW, telemetry/guard and frontend consumers. No runtime/learning gate is approved for replacement. Missing sufficiency policy remains `UNKNOWN / NO MIGRATION`.
+
+The first selected observability-only path is additive aggregate/meta telemetry in `backend/update.py` (R12/R13), followed by diagnostic/admin UI counters only after exact snapshot alignment is proven. Legacy `meta.model_ready` and all current runtime behavior remain unchanged in this audit phase.

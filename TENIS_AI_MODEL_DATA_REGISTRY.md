@@ -654,17 +654,21 @@ Porównać z samym Player DNA.
 
 ## LOGIC-08 — Readiness Semantics Audit
 
-**Status:** IN PROGRESS — phase-1 SHADOW semantics and phase-2 consumer inventory merged (#402/#403); phase-3 consumer requirements/observability design next.
+**Status:** IN PROGRESS — phase-1 SHADOW semantics and phase-2 consumer inventory merged (#402/#403); phase-3 consumer requirement matrix + observability selection prepared on `logic-08-readiness-requirements-audit`, PR pending.
 
 **Canonical semantic owner:** `backend/readiness_engine_shadow.py`.
 
 **Canonical consumer inventory:** `TENIS_AI_READINESS_CONSUMER_MAP.md`.
 
+**Canonical phase-3 requirement matrix:** `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`.
+
 Phase 1 reports deterministic reason codes and `READY / NOT_READY / UNKNOWN` beside legacy `model_ready`. Coverage without an approved sufficiency policy remains `UNKNOWN`; a hard missing required input under an existing contract may be `NOT_READY`. Legacy `model_ready` remains observational/read-only for the SHADOW engine.
 
 Market/family readiness may be `READY` only through an existing explicit contract such as PBP `market_evidence_v940`. PBP `market_ready`, Symphony `learning_model_ready`, and Superbet operator availability are separate contracts and must not be collapsed into one overall readiness flag.
 
-Phase 2 is complete in PR #403: 21 exact-token source files are frozen/classified in `TENIS_AI_READINESS_CONSUMER_MAP.md` and contract-tested with zero runtime wiring. Phase 3 must define consumer-specific required dimensions, evidence owners and sufficiency-policy status before any observability or gate migration. Runtime/learning gates require separate evidence; legacy `model_ready` cannot be removed while any audited consumer still depends on it.
+Phase 2 is complete in PR #403: 21 exact-token source files are frozen/classified in `TENIS_AI_READINESS_CONSUMER_MAP.md` and contract-tested with zero runtime wiring. Phase 3 maps 22 exact legacy tokens on 19 consumer source lines to consumer-specific requirements, evidence owners, UNKNOWN/missingness semantics and behavior-change risk. No runtime/learning gate is approved for replacement. AutoLearn/specialist/history-learning consumers are deferred to LOGIC-09; the prediction-integrity guard is deferred to LOGIC-10.
+
+The first selected observability path is additive SHADOW-labeled aggregate/meta telemetry beside legacy `meta.model_ready` in `backend/update.py`, only after exact snapshot alignment is proven. Diagnostic/admin UI counters are second; moderator filtering is explicitly not observability-only. Legacy `model_ready` cannot be removed while any audited consumer still depends on it.
 
 Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
