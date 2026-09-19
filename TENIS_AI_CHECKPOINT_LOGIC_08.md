@@ -85,3 +85,37 @@ Before R12/R13 observability wiring:
 3. Prove that delivery does not create a data-commit workflow loop or execute a second model path.
 4. Add contract tests for aligned acceptance and stale/mismatched rejection.
 5. Only then publish additive SHADOW telemetry beside unchanged legacy `meta.model_ready`; no runtime/learning gate replacement.
+## Phase-4 in progress — exact-snapshot observability delivery
+
+Original phase-4 base was PR #407 merge `c6e4dc7301ffdf1eda66d3b222e61729b95c11db`; branch was later rebased through `57a5def75b14ea849abe3c9e3cfb7ce761aa305a`, `8742c48aaf40efd60b3a9d2a1f665bb9de1323e0`, `a8c3bea2a9e833a8d75fed107d3c9835d667696f`, and finally fresh `main` `de6387273eb19b10b02f94f572b53567ab3011ec` after another Superbet market-context refresh. None of those drifts overlapped phase-4 files. PR #408 does not modify Neuron. Post-merge UI & Project Health run `35440297324` is GREEN.
+
+Branch: `logic-08-readiness-observability-delivery-audit`.
+
+The delivery audit confirms the canonical readiness report is not a guaranteed current runtime input: `Point Tape Schema Audit` produces `readiness_engine_shadow.json` as an artifact and is not chained by `workflow_run` to each live Update. Several required Player State/source-audit reports are also untracked artifact-only outputs.
+
+The canonical owner `backend/readiness_engine_shadow.py` now records a deterministic full-results snapshot digest (`canonical-json-sha256-v1`) and exposes `observability_snapshot_alignment()`.
+
+Observability eligibility requires all of: readiness status READY, exact current-results digest match, history snapshot alignment, Player State snapshot alignment, and zero legacy Current Engine reference mismatches. Missing digest, stale/cross-snapshot evidence or failed alignment is unavailable/N/D — never zero and never inferred READY/NOT_READY.
+
+`tests/test_readiness_observability_delivery_contract.py` reproduces the stale-snapshot failure by changing current `model_ready` after a readiness report was created and requires `RESULTS_SNAPSHOT_MISMATCH`. It also freezes the current workflow topology: Point Tape artifact-only readiness, Player DNA SHADOW refresh chained after Update, and `frontend/data/**` classified as a heavy Update trigger.
+
+No `backend/update.py`, frontend, runtime/learning gate, probability, weights, thresholds, training, PLAYABLE or iNeed$ wiring is changed in this audit.
+
+### Phase-4 validation / next exact action
+
+Final local validation is complete: targeted readiness/delivery plus TASK-017 contract **37/37 GREEN**; full pytest **1291/1291 GREEN** with project-owned `--basetemp`; `py_compile` and `git diff --check` GREEN. `backend/history_coverage_audit.py` is unchanged versus the fresh base.
+
+The candidate delivery host is now evidence-backed: existing `Player DNA SHADOW refresh` runs after successful Update on `main`, restores the local cache, builds Player DNA points/profiles, and owns the existing SHADOW publish commit. Required readiness prerequisite modules have no network-client/API-key source paths. Existing bot commit `34285c926ce20757dab8d8ab03fda3ab736368e2` from Player DNA run `35435083725` had only FAST Pages `35437360643` and Runtime staging `35437364257` attached; no Update run was retriggered.
+
+1. Final diff audit, commit and push `logic-08-readiness-observability-delivery-audit`.
+2. Open phase-4 audit PR; full CI only, no runtime/meta/UI wiring.
+3. Fresh-main check immediately before merge; rebase/retest on drift.
+4. Merge only GREEN and verify post-merge health.
+5. Then use a separate implementation PR to add local readiness prerequisite generation/output to the existing Player DNA SHADOW post-Update host/publication path. R12/R13 remain blocked until exact digest delivery is observed in a real current payload.
+
+### Phase-4 exact history-source hardening
+
+A live drift on `main` exposed a concrete false-positive class: `results.json` changed in Superbet/data commit `57a5def75b14ea849abe3c9e3cfb7ce761aa305a` while tracked `history_coverage_audit_v949.json` still had the older generation timestamp. Counts remained 130/130 and all exception IDs were a subset, so the prior count/ID-only alignment could have passed stale evidence.
+
+The phase-4 PR now requires the run-local history coverage evidence to carry the same `canonical-json-sha256-v1` digest of the exact `results` snapshot. Point Tape regenerates coverage from restored cache, then `snapshot_digest.py` stamps only that fresh local file before semantic readiness. The generic `history_coverage_audit.py` owner remains unchanged. The same Point Tape artifact carries exact `results.json`, the stamped run-local history coverage, and `readiness_engine_shadow.json`, so post-CI verification can independently compare all snapshot evidence. Missing/wrong history digest therefore makes semantic readiness source-mismatched/N/D. Zero network and zero model/runtime influence are preserved.
+A superseded #408 head temporarily changed `history_coverage_audit.py`, which triggered the independent TASK-017 candidate-lock workflow. That audit correctly found one current visible resolution change (`Diego Duran`: baseline none -> archive exact) and went red. No identity exception or guard relaxation was accepted. The design was corrected so the generic history owner is untouched; LOGIC-08 provenance is applied only after fresh local coverage generation inside Point Tape.
