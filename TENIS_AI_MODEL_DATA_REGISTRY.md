@@ -654,7 +654,7 @@ Porównać z samym Player DNA.
 
 ## LOGIC-08 — Readiness Semantics Audit
 
-**Status:** IN PROGRESS — phase-1 SHADOW semantics and phase-2 consumer inventory merged (#402/#403); phase-3 consumer requirement matrix + observability selection prepared on `logic-08-readiness-requirements-audit`, PR pending.
+**Status:** IN PROGRESS — phase-1/2 merged; phase-3 consumer requirement matrix merged in PR #406 (`777f48b87407b14937feb7d46ce97e707dca4f71`); phase-4 exact-snapshot observability delivery audit next.
 
 **Canonical semantic owner:** `backend/readiness_engine_shadow.py`.
 
@@ -669,6 +669,8 @@ Market/family readiness may be `READY` only through an existing explicit contrac
 Phase 2 is complete in PR #403: 21 exact-token source files are frozen/classified in `TENIS_AI_READINESS_CONSUMER_MAP.md` and contract-tested with zero runtime wiring. Phase 3 maps 22 exact legacy tokens on 19 consumer source lines to consumer-specific requirements, evidence owners, UNKNOWN/missingness semantics and behavior-change risk. No runtime/learning gate is approved for replacement. AutoLearn/specialist/history-learning consumers are deferred to LOGIC-09; the prediction-integrity guard is deferred to LOGIC-10.
 
 The first selected observability path is additive SHADOW-labeled aggregate/meta telemetry beside legacy `meta.model_ready` in `backend/update.py`, only after exact snapshot alignment is proven. Diagnostic/admin UI counters are second; moderator filtering is explicitly not observability-only. Legacy `model_ready` cannot be removed while any audited consumer still depends on it.
+
+Phase-4 prerequisite discovered after PR #406: the canonical semantic readiness report and several required Player State/source-audit inputs are currently produced in the Point Tape audit artifact path, while `Update tennis data and deploy Pages` does not have a current tracked copy. A stale/cross-run artifact must not be joined to current results. Phase 4 therefore starts with delivery/provenance and stale-snapshot rejection evidence, not with direct UI/meta wiring.
 
 Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 

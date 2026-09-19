@@ -69,3 +69,19 @@ Local validation before PR: targeted readiness/contracts/docs **27/27 GREEN**; F
 2. Full PR CI → fresh-main check → rebase/retest on any bot drift → merge only GREEN.
 3. Post-merge verify Delivery/Security + UI/Project Health and update checkpoint.
 4. Only then open a separate observability implementation task for R12/R13; keep all runtime/learning gates unchanged.
+## Phase-3 merge closeout
+
+PR #406 final head `2937de67db7bed9bc3fcaea9f020d8720e53f5ef` passed all required CI and was merged as `777f48b87407b14937feb7d46ce97e707dca4f71`. Required PR runs: CodeQL `35438654239`, Delivery/Security `35438654169`, UI & Project Health `35438654189`, LOGIC-01 `35438654140`, LOGIC-02 `35438654152`, LOGIC-03 `35438654163`, LOGIC-04 `35438654170` — all GREEN. Fresh main matched PR base immediately before merge.
+
+Post-merge main verification on exact merge SHA: Delivery/Security `35438811191` GREEN and UI & Project Health `35438811207` GREEN. Phase 3 is therefore closed as an audit/design stage with zero runtime/learning gate changes.
+
+## Phase-4 delivery finding / next exact action
+
+A first delivery audit after merge found that `frontend/data/readiness_engine_shadow.json`, Player State and several readiness source-audit JSONs are produced in the Point Tape audit artifact path; most are not tracked in the normal Update-and-Pages checkout. `backend/update.py` therefore cannot safely treat a prior readiness artifact as current. Stale/cross-run data must fail to `N/D`, not be joined by approximate timing or names.
+
+Before R12/R13 observability wiring:
+1. Inventory exact producer workflow/run/snapshot provenance for `results.json`, Player State, history/readiness audits and semantic readiness.
+2. Define a hard common snapshot/run identity and stale/cross-snapshot rejection contract.
+3. Prove that delivery does not create a data-commit workflow loop or execute a second model path.
+4. Add contract tests for aligned acceptance and stale/mismatched rejection.
+5. Only then publish additive SHADOW telemetry beside unchanged legacy `meta.model_ready`; no runtime/learning gate replacement.
