@@ -199,7 +199,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B5. Player State
 
-**Status:** PLAN / SHADOW do zbudowania.
+**Status:** SHADOW EVIDENCE READY — canonical owner `backend/player_dna_player_state_shadow.py`; PR #399 merged as `7d5e66a07ba400473302966e40592a591dfd71c3`. No PROD activation.
 
 **Odpowiedzialność:** bieżący stan zawodnika.
 

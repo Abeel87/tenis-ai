@@ -319,7 +319,7 @@ Cel: Player DNA opisuje realną siłę, nie tylko surowe procenty z różnej kla
 
 ## LOGIC-07 — Player State
 
-Status: `[ ] NOT STARTED`
+Status: `[x] COMPLETED — SHADOW evidence / PR #399 / merge 7d5e66a07ba400473302966e40592a591dfd71c3`
 
 Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
@@ -342,7 +342,7 @@ Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
 ## LOGIC-08 — Readiness Engine
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE — evidence-first readiness semantics audit; no PROD model_ready migration`
 
 Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 
