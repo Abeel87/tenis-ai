@@ -31,38 +31,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-08 — Readiness Engine`
 
-**SUBSTEP:** exact-snapshot sidecar delivery is merged and post-merge verified. Active work is R12/R13 additive meta observability: expose only exact-aligned, isolated SHADOW readiness counts in `meta.semantic_readiness_shadow` beside unchanged legacy `meta.model_ready`; no UI/runtime/learning gate replacement.
+**SUBSTEP:** R12/R13 is merged and post-merge verified. Active work is R18/R19 additive UI observability: admin/diagnostic display of backend-owned SHADOW tri-state counts only; R16 moderator filtering, legacy badges, runtime and learning gates remain unchanged.
 
-**BRANCH:** `logic-08-readiness-meta-observability` based on verified `main` `3185ba47eb0a869ed09fd36a4cb188c6279f150b`.
+**BRANCH:** `logic-08-readiness-ui-observability`, cleanly rebased onto verified live `main` `5869372e4a9af1d409ff5f0770598e1576b0f664`; drift from the original `4911831d...` base was data-only with zero overlap.
 
-**PR:** delivery implementation PR #410 is merged as `57a49ade723179417cba07e77c791b1e425f38ca`; current R12/R13 meta-observability branch has no PR yet.
+**PR:** R12/R13 PR #411 merged as `0f200405f884389404d351a9264a534c7f78b00e`; active R18/R19 branch has no PR yet.
 
-**LAST VERIFIED MAIN:** `3185ba47eb0a869ed09fd36a4cb188c6279f150b` — post-merge Player DNA SHADOW bot publication on top of PR #410, with no Update-and-Pages retrigger.
+**LAST VERIFIED MAIN:** `5869372e4a9af1d409ff5f0770598e1576b0f664` ? Player DNA SHADOW publish on top of Superbet market-context refresh `d87bd3cbeeaaf0f0cc4572d7fcbb3e6d8c20edb3` and post-#411 Update bot commit `4911831dd6970486b6025b7cae6b893737c21047`.
 
-**LAST COMPLETED WORK:** PR #410 exact-snapshot SHADOW delivery is merged and production-topology verified. Exact PR Player DNA run `35450914610` passed with independently verified real-cache artifact. Post-merge run `35453848556` completed SUCCESS through cleanup/publish/FAST Pages; bot commit `3185ba47eb0a869ed09fd36a4cb188c6279f150b` published only the expected 12 SHADOW data files including `readiness_engine_shadow.json` and did not retrigger Update-and-Pages. Current sidecar is aligned for 109 matches at digest `79645fe3f81bc628b7152f1597811a09f1d5dc3c29bce3bbde2c0a15f6a7d3bd`, history/Player State aligned, legacy mismatches 0, `network_calls=0`, all isolation flags false. Six temporary refresher freezes are restored 6/6 `active`.
+**LAST COMPLETED WORK:** PR #411 exact-snapshot meta observability merged GREEN and post-merge Update-and-Pages `35462310243` proved legacy semantics on the 115-match snapshot (`results[].model_ready=true == meta.model_ready == 44`) with fail-closed `N/D / RESULTS_SNAPSHOT_MISMATCH`. Player DNA follow-up `35463366219` then completed SUCCESS and published `5869372e4a9af1d409ff5f0770598e1576b0f664`. Independent digest proof shows the published sidecar is valid SHADOW evidence for digest `63fc1166...` but stale versus current `results.json` digest `d1a13154...` because Superbet refreshed `results.json` during the long Player DNA run; `meta.semantic_readiness_shadow` correctly remains N/D, so no stale telemetry is exposed as current.
 
-**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`; consumer-audit docs closeout PR #404 → `50b71c0b693feaa963b5435a13c84c1a667f6797`; phase-3 matrix PR #406 → `777f48b87407b14937feb7d46ce97e707dca4f71`; phase-4 audit PR #408 → `4d626b2bd59f454773b350766f8207567460d07b`; docs closeout PR #409 → `f52e4bf9419a5ae9a749b7037c1a553ac816acb1`; sidecar delivery PR #410 final head `ddb040f144c75b9fbee0a984b72c553a42fd2aa6` → merge `57a49ade723179417cba07e77c791b1e425f38ca`; verified post-merge bot publication → `3185ba47eb0a869ed09fd36a4cb188c6279f150b`.
+**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`; consumer-audit docs closeout PR #404 → `50b71c0b693feaa963b5435a13c84c1a667f6797`; phase-3 matrix PR #406 → `777f48b87407b14937feb7d46ce97e707dca4f71`; phase-4 audit PR #408 → `4d626b2bd59f454773b350766f8207567460d07b`; docs closeout PR #409 → `f52e4bf9419a5ae9a749b7037c1a553ac816acb1`; sidecar delivery PR #410 final head `ddb040f144c75b9fbee0a984b72c553a42fd2aa6` → merge `57a49ade723179417cba07e77c791b1e425f38ca`; verified post-merge bot publication → `3185ba47eb0a869ed09fd36a4cb188c6279f150b`; R12/R13 PR #411 final head `24ef32e6649b0b07c8d40ad6c460e76a47cfe8cd` -> merge `0f200405f884389404d351a9264a534c7f78b00e`; post-merge Update bot publication -> `4911831dd6970486b6025b7cae6b893737c21047`.
 
-**TEST / CI BASELINE:** pre-R12/R13 main delivery baseline: PR #410 CI GREEN and post-merge Player DNA run `35453848556` SUCCESS. Current local R12/R13 branch: targeted docs/readiness consumer/matrix/delivery/engine suite **41/41 GREEN**; full pytest **1294/1294 GREEN**; `py_compile` and `git diff --check` GREEN. Direct projection against the real current 109-match sidecar returns `available=true`, exact digest `79645fe3...`, and preserved READY/NOT_READY/UNKNOWN counts. Final diff audit confirms no changes to model math, AutoLearn/dynamic weights, Symfonia, PLAYABLE, settlement or iNeed$.
+**TEST / CI BASELINE:** PR #411 exact-head full CI GREEN; UI & Project Health reported 1297/1297 GREEN, Point Tape `35458629267` 78/78 steps GREEN, Player DNA `35458629264` SUCCESS. Active R18/R19 local branch: post-rebase readiness/matrix/consumer targeted 42/42 GREEN; full pytest 1299/1299 GREEN; `py_compile` GREEN; Node syntax GREEN; real current N/D UI smoke GREEN; synthetic available=true UI smoke GREEN; synthetic N/D UI smoke GREEN; `git diff --check` GREEN.
 
 **AUTHORITATIVE PHASE-1 ARTIFACT:** Point Tape #400 `player-dna-point-foundation` ID `10579342271`, digest `sha256:474b6fc22ca92a9010095669ee773bebc9253592fe1bc3729902982a7df677c0`, exact head `691ab2266...`; readiness status `READINESS_SEMANTICS_SHADOW_EVIDENCE_READY`, 156 aligned matches, zero legacy-reference mismatches.
 
 **AUTHORITATIVE PHASE-4 ARTIFACT:** exact-head Point Tape `35446260835`, artifact ID `10586677424`, artifact digest `sha256:2d2e924777cd3c5552a3b58e8f772ac8db5c4a093a36e12bbde54455fdee5fe2`; verified canonical results/history/readiness digest `79645fe3f81bc628b7152f1597811a09f1d5dc3c29bce3bbde2c0a15f6a7d3bd`.
 
-**BLOCKERS:** brak lokalnego blockera R12/R13. Sidecar delivery/cache proof is already closed by PR #410 and post-merge run `35453848556`; current work needs ordinary full local tests + PR CI. UI/runtime/learning gate migrations beyond this metadata projection remain blocked; R07/R08/R11 -> LOGIC-09, R14 -> LOGIC-10.
+**BLOCKERS:** no functional R18/R19 blocker. Branch is rebased on `5869372e...`; the observed concurrent Superbet/Player-DNA publication race is safely contained by the exact-digest meta projection (`N/D` on mismatch) and R18/R19 reads only `meta`, never the sidecar. Future main drift must still be rechecked before PR/merge. Runtime/learning migrations remain deferred: R07/R08/R11 -> LOGIC-09, R14 -> LOGIC-10.
 
-**DO NOT REDO:** nie powtarzać LOGIC-00..07, phase-1, 21-file phase-2 inventory, 22-token/19-line phase-3 requirement audit ani #410 sidecar delivery bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness. R12/R13 wolno wire'ować tylko jako exact-aligned SHADOW metadata projection; nie używać jej do Current Engine, learningu, filtrowania, UI decyzji ani gate'ów.
+**DO NOT REDO:** do not repeat LOGIC-00..07, phase-1, the 21-file phase-2 inventory, 22-token/19-line phase-3 audit, #410 delivery or #411 R12/R13 proof without drift evidence. Do not remove/redefine legacy `model_ready`. R18/R19 may only present `meta.semantic_readiness_shadow`; do not use it for Current Engine, learning, filtering, legacy badges, PLAYABLE or any gate.
 
 **RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current Engine PROD, Player DNA PROD, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez osobnej autoryzacji. Brak fuzzy matching, ręcznych aliasów, provider-ID namespace guessing i real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Finish local R12/R13 validation: targeted contract suite, full pytest, `py_compile`, `git diff --check`, and inspect the final diff for forbidden model/learning/gate changes.
-2. Fresh-check `main`; if it moved from `3185ba47...`, audit drift, rebase safely and rerun affected tests.
-3. Commit/push `logic-08-readiness-meta-observability`, open PR, and require full exact-head CI GREEN.
-4. Immediately before merge verify fresh `main`, PR head, mergeability and all required checks; merge only GREEN.
-5. Post-merge run/verify Update once: legacy `meta.model_ready` must remain unchanged in meaning, while `meta.semantic_readiness_shadow` is either exact-aligned SHADOW telemetry or explicit `N/D` with reason code; no learning/runtime/UI gate may consume it.
-6. After R12/R13 evidence is closed, reassess LOGIC-08 DoD and choose the next approved observability-only step (R18/R19) or document deferral before transitioning to LOGIC-09.
+1. Rerun post-rebase targeted readiness/UI smokes, full pytest, JS syntax, `py_compile` and `git diff --check` on base `5869372e...`.
+2. Fresh-check `main`; if unchanged, finalize checkpoint/test counts, audit forbidden paths, commit and push `logic-08-readiness-ui-observability`.
+3. Open the R18/R19 PR and require exact-head full CI GREEN, including real/synthetic readiness UI smoke variants.
+4. Stabilize finalization if data writers threaten to move main during long CI; never merge stale-base or non-GREEN PR.
+5. Immediately before merge verify fresh main, exact PR head, mergeability and every required check; merge only GREEN.
+6. Post-merge verify admin/diagnostic UI renders backend SHADOW tri-state telemetry or explicit `N/D` without changing legacy `model_ready`, R16 filtering, PLAYABLE, probability, training or learning gates.
+7. If R18/R19 proof is closed, reassess LOGIC-08 DoD and either close it with explicit R07/R08/R11 -> LOGIC-09 and R14 -> LOGIC-10 deferrals, or record the remaining blocker.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -291,7 +292,7 @@ Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
 ## LOGIC-08 — Readiness Engine
 
-Status: `[~] ACTIVE — phase-1/2/3/4 + sidecar delivery merged; R12/R13 additive meta observability in progress`
+Status: `[~] ACTIVE ? phase-1/2/3/4 + sidecar delivery + R12/R13 meta observability merged/verified; R18/R19 additive UI observability in progress`
 
 Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 
@@ -306,12 +307,12 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 - [S] Reason codes — deterministic ordering + provenance/support w phase 1.
 - [x] Legacy consumer inventory — 21 exact-token source files zamrożone i sklasyfikowane w PR #403; zero runtime wiring.
 - [x] Consumer requirement matrix — 22 exact legacy tokeny na 19 source lines z wymaganiami, evidence ownerem, UNKNOWN semantics i ryzykiem; PR #406 merged GREEN.
-- [~] Pierwszy observability implementation — R12/R13 additive `meta.semantic_readiness_shadow` w `backend/update.py`; exact-aligned sidecar only, stale/missing/misaligned/non-isolated = explicit `N/D`; legacy `meta.model_ready` unchanged.
+- [x] Pierwszy observability implementation ? R12/R13 additive `meta.semantic_readiness_shadow` merged in PR #411 and post-merge Update proof complete; stale/missing/misaligned/non-isolated = explicit `N/D`; legacy `meta.model_ready` semantics verified unchanged (44 == 44 on 115-match snapshot).
 - [x] Exact-snapshot observability delivery — PR #410 merged; exact PR + post-merge Player DNA SHADOW runs GREEN; bot publish verified without Update loop; current 109-match sidecar aligned and isolated.
 - [ ] UI bez wymyślania danych — R18/R19 dopiero po zamknięciu meta telemetry; stale/missing = N/D, R16 nadal NO MIGRATION.
 - [~] Migration plan z obecnego boolean `model_ready` — consumer-specific requirements zdefiniowane; tylko R12/R13 telemetry projection ma approval, żaden runtime/learning gate nie ma approval do replacement.
 
-**Definition of Done:** jeszcze niespełnione. Sidecar delivery/provenance jest zamknięte; aktywny gate to R12/R13 meta telemetry + post-merge proof. Potem trzeba jawnie zdecydować R18/R19 observability-only albo odroczyć je przed przejściem do LOGIC-09.
+**Definition of Done:** jeszcze niespe?nione. Sidecar delivery/provenance i R12/R13 post-merge proof s? zamkni?te; aktywny gate to R18/R19 observability-only + post-merge UI proof. Runtime/learning migrations remain explicitly deferred to LOGIC-09/10.
 
 ---
 

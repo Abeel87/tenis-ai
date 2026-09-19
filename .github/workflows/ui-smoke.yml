@@ -59,6 +59,8 @@ jobs:
           node tests/ui_static_smoke.mjs
           node scripts/build_delivery.mjs
           node tests/ui_runtime_smoke.mjs
+          TENIS_UI_FIXTURES=tests/fixtures/readiness_ui_available node tests/ui_runtime_smoke.mjs
+          TENIS_UI_FIXTURES=tests/fixtures/readiness_ui_nd node tests/ui_runtime_smoke.mjs
           node tests/match_time_smoke.mjs
           node tests/decision_center_smoke.mjs
 
