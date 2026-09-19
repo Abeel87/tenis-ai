@@ -662,6 +662,8 @@ Porównać z samym Player DNA.
 
 **Canonical phase-3 requirement matrix:** `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`.
 
+**Canonical phase-4 delivery audit:** `TENIS_AI_READINESS_DELIVERY_AUDIT.md`.
+
 Phase 1 reports deterministic reason codes and `READY / NOT_READY / UNKNOWN` beside legacy `model_ready`. Coverage without an approved sufficiency policy remains `UNKNOWN`; a hard missing required input under an existing contract may be `NOT_READY`. Legacy `model_ready` remains observational/read-only for the SHADOW engine.
 
 Market/family readiness may be `READY` only through an existing explicit contract such as PBP `market_evidence_v940`. PBP `market_ready`, Symphony `learning_model_ready`, and Superbet operator availability are separate contracts and must not be collapsed into one overall readiness flag.
@@ -670,7 +672,9 @@ Phase 2 is complete in PR #403: 21 exact-token source files are frozen/classifie
 
 The first selected observability path is additive SHADOW-labeled aggregate/meta telemetry beside legacy `meta.model_ready` in `backend/update.py`, only after exact snapshot alignment is proven. Diagnostic/admin UI counters are second; moderator filtering is explicitly not observability-only. Legacy `model_ready` cannot be removed while any audited consumer still depends on it.
 
-Phase-4 prerequisite discovered after PR #406: the canonical semantic readiness report and several required Player State/source-audit inputs are currently produced in the Point Tape audit artifact path, while `Update tennis data and deploy Pages` does not have a current tracked copy. A stale/cross-run artifact must not be joined to current results. Phase 4 therefore starts with delivery/provenance and stale-snapshot rejection evidence, not with direct UI/meta wiring.
+Phase 4 now defines the exact-snapshot observability join contract in the canonical SHADOW owner. `backend/snapshot_digest.py` owns deterministic `canonical-json-sha256-v1`. The generic history-coverage owner is unchanged: Point Tape regenerates coverage from restored cache, then stamps only that run-local report with the exact current `results` digest before semantic readiness consumes it. `readiness_engine_shadow` rejects history evidence unless the stamped digest matches the current results snapshot, and `observability_snapshot_alignment()` rejects any stale/missing contract. This eliminates the observed false-positive where counts/IDs matched across different data snapshots without changing identity/history semantics. A semantic aggregate is eligible only when report status is ready, current/readiness/history digests align, Player State aligns, and legacy Current Engine mismatches are zero. Missing/mismatched evidence is unavailable/N/D, never inferred READY/NOT_READY or zero. Runtime delivery remains unwired.
+
+Producer-host audit result: existing `Player DNA SHADOW refresh` is the selected implementation candidate because it is already chained after successful Update on `main`, restores the local cache, builds required Player DNA derived state and owns the existing SHADOW publication commit. Required readiness prerequisite modules are local-only/zero-network by source audit. Historical bot commit `34285c9...` did not retrigger Update, but the implementation PR must re-verify this run topology. No new parallel workflow is approved.
 
 Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 

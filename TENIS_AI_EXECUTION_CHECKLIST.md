@@ -31,23 +31,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-08 — Readiness Engine`
 
-**SUBSTEP:** phase 4 — observability delivery audit for R12/R13. Phase-3 consumer requirement matrix is merged; next prove an exact-snapshot delivery path for additive SHADOW readiness telemetry before any runtime/UI wiring.
+**SUBSTEP:** phase 4 ? exact-snapshot observability delivery/provenance audit for R12/R13. Phase-3 is merged; stale/cross-snapshot rejection contract is now implemented locally in the canonical SHADOW readiness owner, with zero meta/UI wiring.
 
-**BRANCH:** bieżący docs-closeout `logic-08-readiness-requirements-closeout`; po merge utworzyć świeży branch dla phase-4 observability delivery audit ze zweryfikowanego `main`.
+**BRANCH:** `logic-08-readiness-observability-delivery-audit` przebazowany na ?wie?y `main` `de6387273eb19b10b02f94f572b53567ab3011ec` po botowym `data: refresh Superbet market context`; drift zmienia? bie??ce dane/operator context, ale nie dotyka? ?adnego pliku phase-4.
 
-**PR:** phase-1 #402, consumer-audit #403, docs-closeout #404 i phase-3 requirement matrix #406 są zmergowane. Bieżący closeout jeszcze bez PR.
+**PR:** phase-1 #402, consumer-audit #403, docs-closeout #404, phase-3 requirement matrix #406 i phase-3 closeout #407 s? zmergowane. Phase-4 audit PR #408 jest otwarty; po rebase wymaga ?wie?ego exact-head CI.
 
-**LAST VERIFIED MAIN:** `777f48b87407b14937feb7d46ce97e707dca4f71` — merge PR #406; GitHub bez otwartych PR-ów. Post-merge Delivery/Security `35438811191` GREEN i UI & Project Health `35438811207` GREEN.
+**LAST VERIFIED MAIN:** `de6387273eb19b10b02f94f572b53567ab3011ec` ? botowy `data: refresh Superbet market context`, descendant pe?nego refreshu `a8c3bea2a9e833a8d75fed107d3c9835d667696f`. Phase-4 branch jest przebazowany na ten exact main; PR nadal nie modyfikuje Neuronu ani runtime/model math.
 
-**LAST COMPLETED WORK:** phase-3 requirement matrix merged: 22 exact legacy `model_ready` tokens na 19 consumer source lines, consumer-specific requirements/evidence owners/UNKNOWN semantics/risk, zero runtime wiring. R12/R13 remain the first observability candidate, but delivery audit found the canonical `readiness_engine_shadow.json` is generated only inside Point Tape audit artifacts and is not tracked/current in the Update-and-Pages runtime checkout; exact snapshot delivery must be solved before wiring aggregate/meta telemetry.
+**LAST COMPLETED WORK:** phase-4 audit/hardening is locally complete. Live drift proved count/ID-only history alignment could false-pass stale coverage. Shared `canonical-json-sha256-v1` now covers current results, history coverage and semantic readiness; Point Tape rebuilds coverage from local cache immediately before readiness. Existing `Player DNA SHADOW refresh` remains the selected later post-Update producer host; no runtime/meta/UI wiring exists.
 
 **MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`; consumer-audit docs closeout PR #404 → `50b71c0b693feaa963b5435a13c84c1a667f6797`; phase-3 requirement matrix PR #406 final head `2937de67db7bed9bc3fcaea9f020d8720e53f5ef` → merge `777f48b87407b14937feb7d46ce97e707dca4f71`. Unrelated archive repair PR #405 → `eec6483ed942ebab9193ef4bd4681ac352f3490c`.
 
-**TEST / CI BASELINE:** phase-3 local targeted readiness/contracts/docs **27/27 GREEN**; FULL **1280/1280 GREEN** with accessible `--basetemp`; `git diff --check` GREEN. PR #406 CI all GREEN: CodeQL `35438654239`; Delivery/Security `35438654169`; UI & Project Health `35438654189`; LOGIC-01 `35438654140`; LOGIC-02 `35438654152`; LOGIC-03 `35438654163`; LOGIC-04 `35438654170`. Fresh-main check immediately before merge matched base `eec6483...`; post-merge main verification Delivery/Security `35438811191` and UI & Project Health `35438811207` GREEN.
+**TEST / CI BASELINE:** final run-local provenance-stamp design: targeted readiness/delivery + TASK-017 contract **37/37 GREEN**; FULL **1291/1291 GREEN** with project-owned `--basetemp`; `py_compile` and `git diff --check` GREEN. Final diff vs fresh base does not modify `backend/history_coverage_audit.py`, `backend/update.py`, frontend runtime, Current Engine, learning gates, PLAYABLE or iNeed$. Superseded head `610b43d...` exposed an unrelated live TASK-017 identity blocker (`Diego Duran`) only because the generic history owner was temporarily touched; no exception/guard relaxation was accepted. Fresh exact-head CI is required after final amend.
 
 **AUTHORITATIVE PHASE-1 ARTIFACT:** Point Tape #400 `player-dna-point-foundation` ID `10579342271`, digest `sha256:474b6fc22ca92a9010095669ee773bebc9253592fe1bc3729902982a7df677c0`, exact head `691ab2266...`; readiness status `READINESS_SEMANTICS_SHADOW_EVIDENCE_READY`, 156 aligned matches, zero legacy-reference mismatches.
 
-**BLOCKERS:** phase-4 observability ma realny delivery blocker: `readiness_engine_shadow.json` oraz Player State/source audits są obecnie generowane w Point Tape audit artifact, a większość nie jest tracked w runtime checkout; Update-and-Pages nie może bezpiecznie założyć świeżego/aligned readiness report. Nie wolno czytać starego artifactu jako bieżącego. Runtime/learning migrations pozostają zablokowane jak w matrix; R07/R08/R11 czekają na LOGIC-09, R14 na LOGIC-10.
+**BLOCKERS:** brak blocker?w dla phase-4 audit PR. Runtime delivery remains intentionally unwired. Implementation after this audit must reuse the existing Player DNA SHADOW post-Update host/publication path, preserve exact digest rejection, and re-verify that its bot commit does not create an Update loop. Runtime/learning migrations remain blocked; R07/R08/R11 ? LOGIC-09, R14 ? LOGIC-10.
 
 **DO NOT REDO:** nie powtarzać LOGIC-00..07, phase-1, 21-file phase-2 inventory ani 22-token/19-line phase-3 requirement audit bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness. Nie wire'ować R12/R13 przez stale/cross-run artifact albo frontendową inferencję.
 
@@ -55,12 +55,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Zmergować ten docs-closeout po GREEN CI i ponownie potwierdzić fresh `main`.
-2. Utworzyć świeży phase-4 branch i zrobić audyt delivery/provenance dla observability R12/R13: gdzie i kiedy powstają `results.json`, Player State, history/readiness source audits i `readiness_engine_shadow.json`; które pliki są tracked vs artifact-only; jaki wspólny snapshot/run ID może być twardym join key.
-3. Zdefiniować minimalny kanoniczny sposób dostarczenia bieżącego semantic readiness do meta/UI bez odpalania drugiego modelu, bez stale artifactu i bez pętli workflow/data commits. Brak bezpiecznego joinu = `N/D`, nie zero i nie guessed READY/NOT_READY.
-4. Dodać contract test reprodukujący stale/cross-snapshot rejection przed jakimkolwiek observability wiring.
-5. Dopiero po dowodzie exact alignment zaimplementować additive SHADOW-labeled telemetry obok niezmienionego `meta.model_ready`; UI diagnostics R18/R19 później, osobno.
-6. Nie dotykać runtime/learning gate replacement. R07/R08/R11 pozostają dla LOGIC-09; R14 dla LOGIC-10; PBP target widening wymaga osobnego evidence.
+1. Amend PR #408 to the final run-local provenance-stamp design; verify generic `history_coverage_audit.py` is absent from final base diff; push with explicit `--force-with-lease`.
+2. Uzyska? fresh exact-head full GREEN CI; Point Tape musi wygenerowa? readiness na ?wie?o przebudowanym coverage.
+3. Pobra? exact-head Point Tape artifact i niezale?nie zweryfikowa?: readiness/history/current results digest equality, source alignment, isolation flags i zero legacy-reference mismatches.
+4. Fresh-main check bezpo?rednio przed merge; przy kolejnym drift rebase/retest. Merge #408 tylko full GREEN.
+5. Post-merge verification + checkpoint.
+5. Nast?pny osobny PR: rozszerzy? istniej?cy `Player DNA SHADOW refresh` o lokalne readiness prerequisites + readiness output w tym samym post-Update SHADOW host/publication path; najpierw exact-snapshot artifact/sidecar, bez runtime gate replacement.
+6. R12/R13 do `meta` dopiero po zweryfikowaniu bie??cego payloadu na exact digest; mismatch/missing = N/D.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

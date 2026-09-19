@@ -1253,6 +1253,14 @@ jobs:
           )
           PY
 
+      - name: Refresh + stamp LOGIC-08 history coverage snapshot (zero network)
+        run: |
+          set -euo pipefail
+          python backend/history_coverage_audit.py
+          python backend/snapshot_digest.py stamp-report \
+            frontend/data/history_coverage_audit_v949.json \
+            frontend/data/results.json
+
       - name: Build LOGIC-08 semantic readiness audit (SHADOW, zero network)
         run: python backend/readiness_engine_shadow.py
 
@@ -4377,6 +4385,8 @@ jobs:
         with:
           name: player-dna-point-foundation
           path: |
+            frontend/data/results.json
+            frontend/data/history_coverage_audit_v949.json
             frontend/data/point_tape_schema_audit.json
             frontend/data/point_transition_audit.json
             frontend/data/player_dna_point_dataset_summary.json

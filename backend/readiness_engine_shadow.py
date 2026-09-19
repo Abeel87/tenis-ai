@@ -13,6 +13,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from .snapshot_digest import SNAPSHOT_CONTRACT, canonical_json_sha256
+except ImportError:  # pragma: no cover - direct script execution
+    from snapshot_digest import SNAPSHOT_CONTRACT, canonical_json_sha256
+
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "frontend" / "data" / "results.json"
 HISTORY_COVERAGE = ROOT / "frontend" / "data" / "history_coverage_audit_v949.json"
@@ -66,6 +71,45 @@ def _match_key(value: Any) -> str | None:
     return text or None
 
 
+def results_snapshot_sha256(results: list[dict[str, Any]]) -> str:
+    """Return the canonical digest of the exact current results snapshot."""
+    return canonical_json_sha256(results)
+
+
+def observability_snapshot_alignment(
+    results: list[dict[str, Any]],
+    report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Fail closed for observability when readiness and results are not the same snapshot."""
+    if not isinstance(report, dict) or not report:
+        return {"available": False, "reason": "READINESS_REPORT_UNAVAILABLE"}
+    if report.get("status") != STATUS:
+        return {"available": False, "reason": "READINESS_STATUS_NOT_READY"}
+    source = report.get("source_snapshot") or {}
+    if source.get("results_snapshot_contract") != SNAPSHOT_CONTRACT:
+        return {"available": False, "reason": "READINESS_SNAPSHOT_CONTRACT_MISMATCH"}
+    expected = source.get("results_snapshot_sha256")
+    if not isinstance(expected, str) or not expected:
+        return {"available": False, "reason": "READINESS_SNAPSHOT_DIGEST_MISSING"}
+    current = results_snapshot_sha256(results)
+    if expected != current:
+        return {
+            "available": False,
+            "reason": "RESULTS_SNAPSHOT_MISMATCH",
+            "expected_results_snapshot_sha256": expected,
+            "current_results_snapshot_sha256": current,
+        }
+    if source.get("history_coverage_snapshot_aligned") is not True or source.get("player_state_snapshot_aligned") is not True:
+        return {"available": False, "reason": "READINESS_SOURCE_ALIGNMENT_FAILED"}
+    if int(source.get("legacy_model_ready_reference_mismatches") or 0) != 0:
+        return {"available": False, "reason": "CURRENT_ENGINE_REFERENCE_MISMATCH"}
+    return {
+        "available": True,
+        "reason": "EXACT_RESULTS_SNAPSHOT_ALIGNED",
+        "results_snapshot_sha256": current,
+    }
+
+
 def _reason_code(value: Any) -> str:
     text = str(value or "UNKNOWN").strip().upper()
     chars = [ch if ch.isalnum() else "_" for ch in text]
@@ -95,8 +139,10 @@ def _history_index(
     report: dict[str, Any],
     result_count: int,
     result_ids: set[str],
+    results_snapshot_sha256_value: str,
 ) -> tuple[dict[str, dict[str, Any]], bool]:
     summary = report.get("summary") or {}
+    source_snapshot = report.get("source_snapshot") or {}
     try:
         audited_count = int(summary.get("visible_matches"))
     except (TypeError, ValueError):
@@ -115,6 +161,8 @@ def _history_index(
         index[key] = row
     aligned = bool(
         report
+        and source_snapshot.get("results_snapshot_contract") == SNAPSHOT_CONTRACT
+        and source_snapshot.get("results_snapshot_sha256") == results_snapshot_sha256_value
         and audited_count == result_count
         and len(result_ids) == result_count
         and not duplicate
@@ -432,10 +480,12 @@ def compose_readiness(
     result_keys = [_match_key(row.get("id")) for row in results if isinstance(row, dict)]
     result_ids = {key for key in result_keys if key is not None}
     result_ids_unique = len(result_ids) == len(results)
+    current_results_snapshot_sha256 = results_snapshot_sha256(results)
     history_index, history_aligned = _history_index(
         history_report,
         len(results),
         result_ids,
+        current_results_snapshot_sha256,
     )
     state_index = _player_state_index(player_state_report)
     player_state_aligned = bool(
@@ -540,6 +590,8 @@ def compose_readiness(
         },
         "source_snapshot": {
             "results_matches": len(results),
+            "results_snapshot_contract": SNAPSHOT_CONTRACT,
+            "results_snapshot_sha256": current_results_snapshot_sha256,
             "result_match_ids_unique": result_ids_unique,
             "history_coverage_available": bool(history_report),
             "history_coverage_snapshot_aligned": history_aligned,

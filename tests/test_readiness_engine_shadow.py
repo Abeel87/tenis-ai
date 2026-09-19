@@ -95,9 +95,14 @@ def _result(*, model_ready: bool = True, pbp: dict | None = None) -> dict:
         "model_ready": model_ready,
         "early_hold_v7": early,
     }
-def _history(*rows: dict, visible: int = 1) -> dict:
+def _history(*rows: dict, visible: int = 1, results: list[dict] | None = None) -> dict:
+    snapshot_results = results or [_result(pbp=_pbp_evidence("game_state@2"))]
     return {
         "summary": {"visible_matches": visible},
+        "source_snapshot": {
+            "results_snapshot_contract": readiness.SNAPSHOT_CONTRACT,
+            "results_snapshot_sha256": readiness.results_snapshot_sha256(snapshot_results),
+        },
         "matches": list(rows),
     }
 
@@ -107,9 +112,11 @@ def _compose(
     history: dict | None = None,
     player_state: dict | None = None,
 ) -> dict:
+    current_result = result or _result(pbp=_pbp_evidence("game_state@2"))
+    current_history = history if history is not None else _history(results=[current_result])
     return readiness.compose_readiness(
-        [result or _result(pbp=_pbp_evidence("game_state@2"))],
-        history or _history(),
+        [current_result],
+        current_history,
         player_state or _state_report(),
         source_reports={
             "profile": {"version": "profile", "gate": "AUDIT_ONLY"},
@@ -252,7 +259,10 @@ def test_reason_codes_are_deterministic_and_safety_is_hard_closed():
 
 def test_workflow_wires_readiness_engine_into_existing_point_tape_artifact():
     workflow = Path(".github/workflows/point-tape-audit.yml").read_text(encoding="utf-8")
-    assert "python backend/readiness_engine_shadow.py" in workflow
+    history_refresh = workflow.index("python backend/history_coverage_audit.py")
+    history_stamp = workflow.index("python backend/snapshot_digest.py stamp-report")
+    readiness_build = workflow.index("python backend/readiness_engine_shadow.py")
+    assert history_refresh < history_stamp < readiness_build
     assert "frontend/data/readiness_engine_shadow.json" in workflow
     assert "tests/test_readiness_engine_shadow.py" in workflow
 
@@ -266,6 +276,16 @@ def test_history_exception_ids_must_belong_to_current_results_snapshot():
         ],
     }
     report = _compose(history=_history(stale_row, visible=1))
+    assert report["status"] == "READINESS_SEMANTICS_SOURCE_MISMATCH"
+    assert report["source_snapshot"]["history_coverage_snapshot_aligned"] is False
+    assert report["matches"][0]["dimensions"]["identity"]["status"] == readiness.UNKNOWN
+
+
+def test_history_same_count_and_ids_but_wrong_results_digest_is_rejected():
+    current = _result(model_ready=True, pbp=_pbp_evidence("game_state@2"))
+    stale = deepcopy(current)
+    stale["model_ready"] = False
+    report = _compose(result=current, history=_history(visible=1, results=[stale]))
     assert report["status"] == "READINESS_SEMANTICS_SOURCE_MISMATCH"
     assert report["source_snapshot"]["history_coverage_snapshot_aligned"] is False
     assert report["matches"][0]["dimensions"]["identity"]["status"] == readiness.UNKNOWN
