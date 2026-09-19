@@ -14,7 +14,7 @@ EXPECTED_LINE_SITES = {
     "backend/autolearn_v84.py": {1223},
     "backend/specialist_learning_v79b.py": {465},
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
-    "backend/update.py": {372, 382},
+    "backend/update.py": {382, 393},
     "backend/prediction_integrity_v78a.py": {152},
     "frontend/app.js": {30, 63, 75, 82, 98},
 }
@@ -55,15 +55,24 @@ def test_requirement_matrix_keeps_distinct_contracts_and_selects_observability_o
     assert "market_evidence_v940.market_ready" in matrix
     assert "learning_model_ready" in matrix
     assert "Superbet operator availability" in matrix
-    assert "FIRST OBSERVABILITY CANDIDATE" in matrix
-    assert "backend/update.py:L372" in matrix
+    assert "FIRST OBSERVABILITY IMPLEMENTATION" in matrix
     assert "backend/update.py:L382" in matrix
-    assert "must preserve `meta.model_ready`" in matrix
+    assert "backend/update.py:L393" in matrix
+    assert "preserves `meta.model_ready`" in matrix
+    assert "meta.semantic_readiness_shadow" in matrix
     assert "No runtime/learning consumer is approved for gate replacement" in matrix
 
 
-def test_phase3_audit_still_has_zero_shadow_runtime_wiring():
+def test_only_r12_r13_meta_observability_is_wired_after_exact_snapshot_proof():
     for relative in EXPECTED_LINE_SITES:
+        if relative == "backend/update.py":
+            continue
         text = (ROOT / relative).read_text(encoding="utf-8")
         assert "readiness_engine_shadow" not in text
         assert "readiness_engine_shadow.json" not in text
+
+    update = (ROOT / "backend/update.py").read_text(encoding="utf-8")
+    assert "from readiness_engine_shadow import observability_meta_payload" in update
+    assert "semantic_readiness_shadow" in update
+    assert "compose_readiness" not in update
+    assert "readiness_engine_shadow.build" not in update

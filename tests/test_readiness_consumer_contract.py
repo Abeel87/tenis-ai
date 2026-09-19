@@ -55,8 +55,8 @@ def test_consumer_map_covers_every_exact_token_file():
     assert "Audited exact-token source count: **21 files**" in mapping
 
 
-def test_consumer_audit_does_not_wire_shadow_readiness_into_runtime_consumers():
-    runtime_consumers = (
+def test_only_approved_update_meta_observability_wires_shadow_readiness():
+    non_observability_consumers = (
         "backend/history_tracker.py",
         "backend/market_lab_v741.py",
         "backend/pbp_cache_recovery.py",
@@ -64,13 +64,18 @@ def test_consumer_audit_does_not_wire_shadow_readiness_into_runtime_consumers():
         "backend/autolearn_v84.py",
         "backend/specialist_learning_v79b.py",
         "backend/shadow_lab_v78e6.py",
-        "backend/update.py",
         "frontend/app.js",
     )
-    for name in runtime_consumers:
+    for name in non_observability_consumers:
         text = (ROOT / name).read_text(encoding="utf-8")
         assert "readiness_engine_shadow" not in text
         assert "readiness_engine_shadow.json" not in text
+
+    update = (ROOT / "backend/update.py").read_text(encoding="utf-8")
+    assert "from readiness_engine_shadow import observability_meta_payload" in update
+    assert "semantic_readiness_shadow" in update
+    assert "compose_readiness" not in update
+    assert "runtime_gating_enabled" not in update
 
 
 def test_similarly_named_readiness_contracts_remain_distinct():

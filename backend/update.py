@@ -13,6 +13,7 @@ from history_hygiene_v78a import clean_history
 from prediction_integrity_v78a import apply_pre_output_guards
 from joint_builder_v78b import add_joint_builder
 from calibration_guard_v78d import add_calibration_to_matches, build_calibration_report
+from readiness_engine_shadow import observability_meta_payload
 from history_tracker import (
     MODEL_VERSION, archive_predictions, history_stats, is_current_match, load_history as load_prediction_history,
     save_history as save_prediction_history, settle_history,
@@ -27,6 +28,7 @@ DATA.mkdir(parents=True, exist_ok=True)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 HISTORY_PATH=OUT/'history.json'
 HISTORY_STATS_PATH=OUT/'history_stats.json'
+READINESS_SHADOW_PATH=OUT/'readiness_engine_shadow.json'
 CACHE_MANIFEST='manifest.json'
 
 # refresh_hours:
@@ -317,6 +319,14 @@ def _load_existing_meta():
         return {}
 
 
+def _load_readiness_shadow_report():
+    try:
+        x=json.loads(READINESS_SHADOW_PATH.read_text(encoding='utf-8')) if READINESS_SHADOW_PATH.exists() else {}
+        return x if isinstance(x,dict) else {}
+    except Exception:
+        return {}
+
+
 def _write_json(path: Path, obj):
     path.write_text(json.dumps(obj,ensure_ascii=False,indent=2),encoding='utf-8')
 
@@ -377,9 +387,11 @@ def main():
         raise TypeError(type(o))
 
     (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2,default=default),encoding='utf-8')
+    semantic_readiness_shadow=observability_meta_payload(results,_load_readiness_shadow_report())
     meta={
         'updated_at':now.isoformat(),'fixtures_mode':mode,
         'fixtures':len(fixtures),'visible_fixtures':len(results),'hidden_stale':hidden_stale,'model_ready':ready,
+        'semantic_readiness_shadow':semantic_readiness_shadow,
         'history_rows_raw':len(hist),'player_rows':len(long_df),'download_warnings':errors,
         'history_hygiene_removed':hygiene.get('removed_rows',0),
         'history_hygiene_kept':hygiene.get('kept_rows',len(hist)),

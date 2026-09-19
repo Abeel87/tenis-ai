@@ -147,3 +147,28 @@ Local validation before PR: delivery contract 10/10 GREEN after expected pre-cha
 3. Require the Player DNA SHADOW PR run to complete on exact PR head using restored real cache; verify its artifact independently for results/history/readiness digest equality, source alignment, isolation and no runtime/meta wiring.
 4. Full required PR CI + fresh-main gate; merge only GREEN.
 5. Post-merge main run must publish at most the additive readiness sidecar through the existing single Player DNA SHADOW data commit, and its commit must not retrigger Update.
+
+
+## Phase-4 delivery closeout / R12-R13 meta observability
+
+PR #410 (`logic-08-readiness-shadow-delivery`) final head `ddb040f144c75b9fbee0a984b72c553a42fd2aa6` merged as `57a49ade723179417cba07e77c791b1e425f38ca`.
+
+Exact PR Player DNA SHADOW run `35450914610` passed with restored real cache and independently verified exact-snapshot artifact evidence. Post-merge main run `35453848556` completed SUCCESS through readiness guard, simulation, prospective evidence, isolation, artifact upload, cleanup, publish and FAST Pages dispatch.
+
+The existing Player DNA SHADOW publisher then created bot commit `3185ba47eb0a869ed09fd36a4cb188c6279f150b`. The commit changed only the expected 12 Player DNA SHADOW data outputs, including `frontend/data/readiness_engine_shadow.json`; run-local prerequisite evidence was not committed. The bot commit did not retrigger Update-and-Pages.
+
+The published current readiness sidecar is exact-snapshot aligned for 109 visible matches at canonical digest `79645fe3f81bc628b7152f1597811a09f1d5dc3c29bce3bbde2c0a15f6a7d3bd`. History coverage and Player State alignment are true, result IDs are unique, legacy Current Engine reference mismatches are zero, `network_calls=0`, and every isolation/influence flag is false.
+
+The temporary finalization freeze is fully closed: Neuron SHADOW, Player DNA SHADOW refresh, Superbet market refresh, Update-and-Pages, market watchdog and stale-run guard are all restored to `active`.
+
+Active branch: `logic-08-readiness-meta-observability`, created from verified main `3185ba47eb0a869ed09fd36a4cb188c6279f150b`.
+
+R12/R13 now implement only the previously approved side-by-side observability path. `backend/update.py` keeps legacy `meta.model_ready` unchanged and, only after writing the current `results.json`, asks the canonical `backend/readiness_engine_shadow.py` owner to project an already-published sidecar into `meta.semantic_readiness_shadow`.
+
+The projection never builds or recomputes readiness. It requires the exact current results digest, aligned history/Player State evidence, zero legacy mismatches, `network_calls=0`, the expected SHADOW mode, and all isolation fields false. Missing, stale, mismatched or non-isolated evidence is explicit `available=false`, `status=N/D` with a reason code; semantic counters are not zero-filled.
+
+Snapshot ordering is intentionally fail-closed. If a normal Update changes `results.json` before the subsequent Player DNA SHADOW host republishes its matching sidecar, R12/R13 telemetry is expected to be `N/D` for that Update. The Player DNA workflow does not mutate `meta.json` and no parallel workflow is introduced.
+
+Test-first evidence: the initial observability payload tests were RED only because the helper did not yet exist (10 passed / 2 failed). After the minimal owner implementation and consumer-contract migration, the combined readiness engine/consumer/matrix/delivery suite is 34/34 GREEN. A direct read-only projection of the real 109-match current sidecar returns `available=true`, `EXACT_RESULTS_SNAPSHOT_ALIGNED` and the exact canonical digest above.
+
+Next exact action: run the full local suite, `py_compile` and `git diff --check`; inspect the final diff for forbidden model/learning/gate changes; fresh-check main and rebase/retest on drift; then commit/push/open PR, require exact-head full GREEN CI, fresh-main gate and merge. Post-merge verify one real Update preserves legacy `meta.model_ready` semantics and emits either exact SHADOW telemetry or explicit N/D only.

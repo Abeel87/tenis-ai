@@ -42,8 +42,8 @@ This matrix defines what each legacy `model_ready` use-site would need before an
 
 | ID | Exact use-site | Current legacy effect | Required semantic contract before migration | Market / local contract | Evidence owner | UNKNOWN / missingness rule | Policy status | Risk / decision |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| R12 | `backend/update.py:L372` | Counts legacy-ready visible fixtures. | No gate replacement required. Additive telemetry may count semantic states only when joined to the exact results snapshot/match ids. | Aggregate/meta only; no market gate. | `backend/readiness_engine_shadow.py` artifact + update/meta publisher. | Report UNKNOWN explicitly; never fold UNKNOWN into NOT_READY. | **FIRST OBSERVABILITY CANDIDATE** | **Low** if side-by-side and non-gating. |
-| R13 | `backend/update.py:L382` | Publishes the legacy count as `meta.model_ready`. | Keep legacy field stable; any semantic aggregate must use a new clearly SHADOW-labeled field. | Publication metadata schema. | update/meta publisher. | Missing or stale aligned readiness artifact means semantic aggregate absent/N/D, never zero. | **FIRST OBSERVABILITY CANDIDATE** | **Low** if additive only. |
+| R12 | `backend/update.py:L382` | Counts legacy-ready visible fixtures. | No gate replacement. Additive telemetry reads only the published semantic sidecar and accepts it solely on exact results-snapshot alignment + SHADOW isolation. | Aggregate/meta only; no market gate. | `backend/readiness_engine_shadow.py::observability_meta_payload` + update/meta publisher. | Report UNKNOWN explicitly; never fold UNKNOWN into NOT_READY. Stale/missing/misaligned evidence is N/D. | **FIRST OBSERVABILITY IMPLEMENTATION** | **Low**: side-by-side and non-gating. |
+| R13 | `backend/update.py:L393` | Publishes the legacy count as `meta.model_ready`. | Legacy field stays unchanged; `meta.semantic_readiness_shadow` is a separate SHADOW-only payload. | Publication metadata schema. | update/meta publisher. | Missing/stale/misaligned sidecar publishes `available=false`, `status=N/D` and a reason code, never zero semantic counts. | **FIRST OBSERVABILITY IMPLEMENTATION** | **Low**: additive only. |
 | R14 | `backend/prediction_integrity_v78a.py:L152` | Emits a missing-`best_of` warning only when legacy ready. | The invariant is structural prediction context, not universal semantic readiness. Future change belongs to guard ownership audit. | `best_of`/BO3/BO5 integrity contract. | **LOGIC-10** guard ownership. | Missing `best_of` remains explicit missingness; semantic UNKNOWN must not suppress a structural warning by assumption. | **DEFER LOGIC-10** | **Medium** warning/guard behavior. |
 ## Frontend presentation consumers
 
@@ -67,9 +67,11 @@ This matrix defines what each legacy `model_ready` use-site would need before an
 
 ## Selected first observability path
 
-The first safe candidate is **R12/R13 (`backend/update.py` aggregate/meta telemetry), side-by-side only**. A future implementation PR may publish SHADOW-labeled semantic counts only if it can prove exact snapshot alignment by match identity/source reference. It must preserve `meta.model_ready`, must not import or execute SHADOW logic inside Current Engine calculation, and must omit/N-D the semantic aggregate when alignment is unavailable.
+R12/R13 are the first safe implementation path and remain **side-by-side observability only**. `backend/update.py` preserves `meta.model_ready`, waits until the current `results.json` payload is written, then asks the canonical readiness owner only for a projection of an already-published sidecar. It does not build/recompute readiness and does not change Current Engine output, learning, selection or gating.
 
-After that, R18/R19 are the preferred UI destinations because they are diagnostic/admin counters. R16 is explicitly **not** an observability candidate because it changes which matches are shown as problems.
+`meta.semantic_readiness_shadow` is available only when the sidecar has the exact current results digest, aligned source evidence and the SHADOW isolation contract. Missing, stale, misaligned or non-isolated evidence is published as `available=false`, `status=N/D` with a reason code and no zero-filled semantic counts. UNKNOWN remains a separate state.
+
+After R12/R13, R18/R19 remain the preferred UI destinations because they are diagnostic/admin counters. R16 is explicitly **not** an observability candidate because it changes which matches are shown as problems.
 
 ## Phase-3 conclusion
 

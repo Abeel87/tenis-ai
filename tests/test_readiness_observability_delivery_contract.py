@@ -23,7 +23,10 @@ def _results():
 
 def _report(results):
     return {
+        "mode": readiness.MODE,
         "status": readiness.STATUS,
+        "network_calls": 0,
+        **{key: False for key in readiness.OBSERVABILITY_ISOLATION_FIELDS},
         "source_snapshot": {
             "results_snapshot_contract": readiness.SNAPSHOT_CONTRACT,
             "results_snapshot_sha256": readiness.results_snapshot_sha256(results),
@@ -134,7 +137,10 @@ def test_player_dna_post_update_host_delivers_exact_snapshot_readiness_sidecar()
     assert "frontend/data/player_dna_player_state_shadow.json" in cleanup
     assert "frontend/data/readiness_engine_shadow.json" not in cleanup
 
-    assert "readiness_engine_shadow" not in backend_update
+    assert "from readiness_engine_shadow import observability_meta_payload" in backend_update
+    assert "semantic_readiness_shadow=observability_meta_payload" in backend_update
+    assert "compose_readiness" not in backend_update
+    assert "readiness_engine_shadow.build" not in backend_update
     assert "- 'frontend/data/**'" in update
     assert "path.startswith(('backend/', 'data/', 'frontend/data/'))" in scope
 
@@ -204,3 +210,58 @@ def test_candidate_readiness_modules_are_zero_network_by_source_contract():
         text = (ROOT / relative).read_text(encoding="utf-8")
         hits = [token for token in forbidden if token in text]
         assert not hits, f"{relative} contains network-capable source tokens: {hits}"
+
+
+def test_aligned_readiness_builds_shadow_only_meta_payload():
+    results = _results()
+    report = _report(results)
+    report.update({
+        "mode": readiness.MODE,
+        "generated_at": "2026-09-19T16:14:03Z",
+        "summary": {
+            "matches": 1,
+            "dimension_status_counts": {"identity": {"READY": 1, "NOT_READY": 0, "UNKNOWN": 0}},
+            "pbp_market_status_counts": {},
+        },
+    })
+    payload = readiness.observability_meta_payload(results, report)
+    assert payload["available"] is True
+    assert payload["mode"] == readiness.MODE
+    assert payload["status"] == readiness.STATUS
+    assert payload["matches"] == 1
+    assert payload["dimension_status_counts"]["identity"]["READY"] == 1
+    assert "overall_ready" not in payload
+
+
+def test_stale_readiness_meta_is_explicit_nd_without_zero_counts():
+    results = _results()
+    report = _report(results)
+    newer = deepcopy(results)
+    newer[0]["model_ready"] = False
+    payload = readiness.observability_meta_payload(newer, report)
+    assert payload == {
+        "mode": readiness.MODE,
+        "available": False,
+        "status": "N/D",
+        "reason": "RESULTS_SNAPSHOT_MISMATCH",
+    }
+
+
+def test_meta_payload_rejects_non_isolated_readiness_report():
+    results = _results()
+    report = _report(results)
+    report.update({
+        "summary": {
+            "matches": 1,
+            "dimension_status_counts": {},
+            "pbp_market_status_counts": {},
+        },
+        "production_influence": True,
+    })
+    payload = readiness.observability_meta_payload(results, report)
+    assert payload == {
+        "mode": readiness.MODE,
+        "available": False,
+        "status": "N/D",
+        "reason": "READINESS_ISOLATION_CONTRACT_FAILED",
+    }
