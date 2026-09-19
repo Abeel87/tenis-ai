@@ -1,4 +1,4 @@
-# TENIS AI — LOGIC-08 phase-1 / consumer-audit checkpoint
+# TENIS AI — LOGIC-08 readiness semantics / consumer migration checkpoint
 
 Date: 2026-09-19
 
@@ -51,3 +51,21 @@ No backend runtime or frontend runtime source file changed in PR #403. Local val
 4. Keep PBP `market_ready`, Symphony `learning_model_ready` and Superbet operator availability separate.
 5. Contract-test the matrix and zero runtime wiring first; only then select a first observability-only UI/telemetry migration.
 6. Legacy `model_ready` stays unchanged until every dependent consumer has a controlled migration.
+
+## Phase-3 result — consumer-specific requirements / observability selection
+
+Branch `logic-08-readiness-requirements-audit` was created from verified main `eec6483ed942ebab9193ef4bd4681ac352f3490c` after PR #404 had already merged phase-2 docs closeout as `50b71c0b693feaa963b5435a13c84c1a667f6797`. The later PR #405 archive-infrastructure repair is unrelated to readiness semantics and is included in the audited base.
+
+`TENIS_AI_READINESS_REQUIREMENT_MATRIX.md` covers **22 exact legacy `model_ready` tokens on 19 source lines** across the runtime/collection, learning/SHADOW, telemetry/guard and frontend consumers requested by the phase-3 checkpoint. Each use-site records current legacy effect, semantic requirement boundary, local/market contract, evidence owner, UNKNOWN/missingness semantics, policy status and behavior-change risk.
+
+No runtime/learning gate is approved for replacement. AutoLearn, specialist learning and SHADOW/history sample capture are deferred to LOGIC-09 prediction-ledger/population integrity. `prediction_integrity_v78a` is deferred to LOGIC-10 guard ownership. PBP recovery/enrichment target widening requires separate identity/provider-load evidence because missing PBP is an acquisition input, not a reason to invent global semantic readiness.
+
+The selected first observability candidate is **R12/R13: additive SHADOW-labeled aggregate/meta telemetry in `backend/update.py` beside unchanged `meta.model_ready`**. It is design-only in this audit PR. A later implementation must prove exact snapshot/match alignment and omit/N-D the semantic aggregate when alignment is unavailable. Diagnostic/admin UI counters R18/R19 are second; moderator filtering R16 is explicitly behavior-changing and not observability-only.
+
+Local validation before PR: targeted readiness/contracts/docs **27/27 GREEN**; FULL **1280/1280 GREEN** with project-owned `--basetemp`; `git diff --check` GREEN. A prior default-temp full run hit Windows temp-directory permission setup errors (73 setup errors, 1207 passed), then the controlled basetemp rerun proved the suite green. No backend/frontend runtime source file is changed by phase-3 audit.
+
+### Next exact action
+1. Commit/push the phase-3 audit-only files and open the requirement-matrix PR.
+2. Full PR CI → fresh-main check → rebase/retest on any bot drift → merge only GREEN.
+3. Post-merge verify Delivery/Security + UI/Project Health and update checkpoint.
+4. Only then open a separate observability implementation task for R12/R13; keep all runtime/learning gates unchanged.
