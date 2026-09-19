@@ -25,89 +25,44 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT — od tego miejsca ma zaczynać kolejny czat
 
-**Ostatnia aktualizacja checkpointu:** 2026-09-18
+**Ostatnia aktualizacja checkpointu:** 2026-09-19
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-05 — Opponent Strength Engine`
+**ACTIVE LOGIC/TASK:** `LOGIC-08 — Readiness Engine`
 
-**SUBSTEP:** skonsolidować istniejący leakage-safe opponent-context challenger jako jednego kanonicznego ownera LOGIC-05 i uruchomić go jako reprodukowalny SHADOW evidence run na aktualnym Player DNA/TML cache. Najpierw dowód i benchmarki, bez promocji do PROD.
+**SUBSTEP:** evidence-first readiness semantics audit. Zmapować istniejące readiness evidence i zbudować jeden SHADOW contract/orchestrator raportujący jawne dimensions + reason codes obok istniejącego PROD `model_ready`, bez zmiany jego semantyki ani konsumentów.
 
-**BRANCH:** checkpoint closeout `logic-04-checkpoint-closeout`; po jego merge utworzyć świeży `logic-05-opponent-strength-engine` z ponownie zweryfikowanego `main`.
+**BRANCH:** przed implementacją utworzyć świeży `logic-08-readiness-engine` z ponownie zweryfikowanego `main`; bieżąca naprawa checkpointu jest docs-only.
 
-**PR:** PR #392 zakończony i zmergowany. Dla LOGIC-05 jeszcze brak PR.
+**PR:** LOGIC-07 PR #399 i docs closeout PR #400 są zmergowane. Dla implementacji LOGIC-08 jeszcze brak PR.
 
-**LAST VERIFIED MAIN:** `9c1a8ca7cda5a42d4f079c2c17f6456d67e53929` — botowy `data: refresh Player DNA SHADOW` po pełnym post-merge refresh/Pages LOGIC-04. W momencie checkpointu brak otwartych PR-ów.
+**LAST VERIFIED MAIN:** `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980` — docs closeout LOGIC-07 / activation LOGIC-08. W momencie naprawy checkpointu brak otwartych PR-ów.
 
-**LAST COMPLETED WORK:** `LOGIC-04 — Context Engine SHADOW` zakończony. PR #392 miał finalny head `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`, został przebudowany na świeżym `main` po data-only drift i zmergowany jako `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`. Context Engine pozostaje wyłącznie opisowym SHADOW/audyt ownerem: strict as-of, fail-closed identity, season buckets, freshness, surface/tour/event provenance, rank context i inactivity gaps bez probability, medycznych inferencji ani runtime wiring.
+**LAST COMPLETED WORK:** LOGIC-05, LOGIC-06 i LOGIC-07 są zamknięte jako SHADOW evidence only. Szczegóły są w `TENIS_AI_CHECKPOINT_LOGIC_05.md`, `TENIS_AI_CHECKPOINT_LOGIC_06.md` i `TENIS_AI_CHECKPOINT_LOGIC_07.md`.
 
-**CHANGED FILES w PR #392:**
+**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`.
 
-- `backend/match_context_shadow.py`
-- `tests/test_match_context_shadow.py`
-- `.github/workflows/context-engine-shadow.yml`
+**TEST / CI BASELINE:** LOGIC-07 final head `c5980070123ee42fa4e53348671b16f6a1bc3af6`: Point Tape #397 / `35404311019`, UI #2600 / `35404311037`, CodeQL #226 / `35404310999`, Delivery/Security #245 / `35404311002` — GREEN. Local FAST 351/351 i FULL 1258/1258. PR #400 docs CI również GREEN.
 
-**LOGIC-04 EVIDENCE:**
+**BLOCKERS:** brak runtime blockerów. Naprawiany jest wyłącznie rozjazd dokumentacyjny: stary LIVE CHECKPOINT/statusy LOGIC-05/06 pozostały nieaktualne po merge #400.
 
-- final PR head: `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`;
-- merge commit: `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`;
-- final dedicated workflow: `35304943727` = GREEN;
-- artifact: `10531313079`;
-- digest: `sha256:99e85d6fb61c9543babb15033efa07c98a0b91aa3b35e4ec1d2a4082fa6c61b7`;
-- artifact snapshot: 214 meczów / 428 player-contexts;
-- identity resolved: 268 contexts, w tym 261 exact + 7 deterministic expanded; 160 fail-closed;
-- history rows użyte przez schema: 3626;
-- contexts z pełnym historycznym rank-gap: 3584;
-- wszystkie 75 `model_ready` mecze miały oba identity rozwiązane;
-- 46/75 `model_ready` miało brak fixture surface; wszystkie te przypadki pozostają `null/missing`, bez inferencji;
-- strict same-day protection: TML day-only rows z dnia fixture nie są traktowane jako legalne pre-match history;
-- direct-only event metadata: brak event level w źródle => `null/unavailable`, bez zgadywania z tour/name;
-- inactivity/gap jest obserwowalnym odstępem czasu, nie diagnozą kontuzji/comeback;
-- fixture provider rank jest provenance-only; nie wymyślono effective date ani nie aktywowano go jako Current feature;
-- zero Live Tennis API calls, zero production cache writes, zero probability output, zero runtime wiring, zero SHADOW→PROD promotion.
+**DO NOT REDO:** nie powtarzać LOGIC-00..07 bez nowego dowodu nieważności evidence. Nie promować SHADOW Context/Opponent/Player State do PROD na podstawie samych audytów.
 
-**TEST STATUS:** finalny PR #392: dedicated LOGIC-04 tests 8/8 GREEN, real production TML cache restored, identity/time leakage tests, season/freshness/missing-event/rank-gap/inactivity guards i hard no-probability/no-medical-inference contract = GREEN. Final `Tenis AI UI & Project Health` run `35304943712` = GREEN z pełnym pytest i wszystkimi guardami.
-
-**CI STATUS:**
-
-- final head `e4a8d70ef9889a26859ac8414420a47ea10ec0c2`: LOGIC-04 `35304943727` = GREEN; CodeQL `35304943656` = GREEN; Delivery/Security `35304943669` = GREEN; UI & Project Health `35304943712` = GREEN;
-- merge commit `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`;
-- post-merge Update tennis data and deploy Pages `35305172850` = GREEN, w tym full pytest, quota guard, settlement, AutoLearn, SHADOW modules, Surface Elo, Symphony 2.0, final PLAYABLE publication guard, final full regression v9.3.3, data commit i Pages deploy;
-- post-merge CodeQL, Delivery/Security/browser/dependencies i Project Health = GREEN;
-- botowy Player DNA SHADOW refresh przesunął `main` do `9c1a8ca7cda5a42d4f079c2c17f6456d67e53929` po zakończeniu powyższych gate’ów.
-
-**BLOCKERS:** brak blockerów.
-
-**DO NOT REDO:** nie powtarzać LOGIC-01/02/03/04 bez nowego dowodu, że evidence jest błędne. Nie promować Context Engine do PROD. Nie aktywować fixture rank, freshness policy, population priors ani opponent adjustment na podstawie samych audytów. Nie zgadywać aliasów, event level, surface, kontuzji ani przyczyny inactivity. Nie fabricować Brier/calibration bez uczciwego common ledger — owner LOGIC-09.
-
-**RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current, Player DNA, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez oddzielnej autoryzacji. LOGIC-05 jest evidence/SHADOW only. Brak fuzzy matching, ręcznych aliasów i porównywania provider IDs między namespace’ami.
-
-### Co zakończono wcześniej
-
-- [x] LOGIC-00 — Project Constitution / Operating Contract — PR #384 / merge `5269f6c467c3602fd6d557ed3385bc951008f07d`.
-- [x] LOGIC-01 — Freshness Counterfactual — PR #386 / merge `c9292b630c918f7fde0c9c48231629a10819c09f`.
-- [x] TASK 019 / PR #383 evidence skonsumowane przez LOGIC-01; #383 zamknięty bez merge.
-- [x] LOGIC-02 — Feature Provenance / Ranking Audit — PR #388 / merge `7328c0ec666272abf2a73b3b2a93d06f87d05704`.
-- [x] LOGIC-03 — Population / Priors Audit — PR #390 / merge `abc13dd7204f69bcf32160c6e1f533f5e1ccc566`.
-- [x] LOGIC-04 — Context Engine SHADOW — PR #392 / merge `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`.
+**RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current Engine PROD, Player DNA PROD, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez osobnej autoryzacji. Brak fuzzy matching, ręcznych aliasów, provider-ID namespace guessing i real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Sprawdź ponownie świeży `main`, otwarte PR-y i ostatnie CI; boty mogą przesunąć `main` po tym checkpointcie.
-2. Odczytaj `backend/player_dna_opponent_adjustment_audit.py`, `backend/player_dna_point_scorer.py`, `backend/player_dna_shadow_profiles.py`, `backend/player_dna_point_dataset.py`, Context Engine LOGIC-04 i odpowiadające testy/workflowy.
-3. Ustal `player_dna_opponent_adjustment_audit.py` jako istniejącego kanonicznego challengera/ownera LOGIC-05; nie twórz równoległego opponent engine, jeśli brak twardego powodu.
-4. Utwórz świeży branch `logic-05-opponent-strength-engine` z aktualnego `main`.
-5. Najpierw uruchom obecnego challengera na aktualnym, przywróconym cache i zapisz reprodukowalny artifact. Jeśli potrzebne jest workflow wiring, dodaj wyłącznie dedykowany audit workflow, zero PROD wiring.
-6. Zweryfikuj strict as-of, same-time leakage, opponent-own-profile semantics i brak użycia przyszłych meczów przeciwnika.
-7. Dodaj jawny ranking benchmark jako osobny sygnał porównawczy; nie używaj ręcznego prostego mnożnika rankingu jako definicji strength.
-8. Dodaj surface-aware i tour/event context tylko tam, gdzie istnieje twarde provenance; missing pozostaje missing.
-9. Zdefiniuj performance-vs-expectation residual jako SHADOW evidence, nie jako nową wagę produkcyjną.
-10. Waliduj na chronological holdout + walk-forward; porównaj z istniejącym profile/rank baseline na tej samej próbce.
-11. Raportuj Brier/match-equal Brier/log-loss wyłącznie na wspólnym holdout danego audytu; nie utożsamiaj tego z produkcyjnym unbiased ledger LOGIC-09.
-12. Hard gate: `candidate_may_replace_reference=false`, `promotion_gate=false` do osobnej decyzji po evidence.
-13. PR → artifact → pełne zielone CI → fresh-main check → merge → post-merge verification → checkpoint do LOGIC-06.
-
----
+1. Ponownie sprawdź świeży `main`, otwarte PR-y i ostatnie CI przed pierwszą zmianą LOGIC-08.
+2. Zmapuj kanoniczne źródła readiness i reason codes: identity/history, freshness audit, current-season/context, surface, serve/return, PBP, opponent context oraz market-family requirements.
+3. Zmapuj wszystkich runtime konsumentów legacy `model_ready`; pierwsza implementacja nie może zmieniać ich zachowania.
+4. Ustal jednego kanonicznego SHADOW ownera Readiness Engine jako warstwę kontraktu/orchestratora istniejących dowodów, nie drugi model.
+5. Zdefiniuj trójstan `READY / NOT_READY / UNKNOWN`; brak polityki/evidence (np. brak wybranego freshness cutoff) pozostaje `UNKNOWN`, nie jest automatycznie `NOT_READY`.
+6. Raportuj `legacy_model_ready` byte-for-byte obok nowych dimensions/reason codes; zero runtime gating i zero PROD migration w pierwszym PR.
+7. Dodaj deterministic reason-code ordering, provenance/support oraz testy identity fail-closed, missing current season/surface, PBP/opponent readiness i `UNKNOWN` semantics.
+8. Market-family readiness definiuj tylko dla jawnych wymagań wejściowych; nie utożsamiaj go z `learning_model_ready` Symfonii.
+9. UI migration i runtime consumer migration są osobnymi późniejszymi krokami po contract tests; brak danych ma pozostać brak danych.
+10. PR → pełne CI → fresh-main check → merge → post-merge verification → checkpoint. Bez promocji PROD.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -277,45 +232,41 @@ Cel: jeden kanoniczny producent kontekstu meczu/historycznego rekordu, bez proba
 
 ## LOGIC-05 — Opponent Strength Engine
 
-Status: `[~] ACTIVE — SHADOW EVIDENCE / CONSOLIDATE EXISTING CHALLENGER`
+Status: `[x] COMPLETED — SHADOW evidence / PR #394 / merge bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`
 
 Cel: wynik/statystyka ma znaczenie względem klasy przeciwnika.
 
-- [~] Dostępne historyczne informacje o jakości rywala — istniejący leakage-safe opponent-own-profile challenger do formalnej konsolidacji.
-- [ ] Opponent strength bez ręcznego prostego przelicznika rankingu.
-- [ ] Ranking tier / continuous transform jako oddzielny benchmark.
-- [ ] Surface-aware opponent strength.
-- [ ] Event/tour context z hard provenance.
-- [ ] Performance-vs-expectation residual.
-- [ ] Chronological holdout + walk-forward validation.
-- [ ] Wspólna próbka vs profile/rank baseline.
-- [ ] Dedykowany artifact/workflow z aktualnego cache.
-- [ ] SHADOW only do osobnej decyzji o promocji.
+- [x] Leakage-safe opponent-own-profile strength z strict-prior snapshotu.
+- [x] Opponent strength bez ręcznego prostego przelicznika rankingu.
+- [x] Ranking tier / continuous rank jako oddzielny benchmark, nie strength definition.
+- [x] Surface-aware opponent strength z jawna missingness.
+- [x] Event/tour context tylko z hard provenance; brak event level nie jest zgadywany.
+- [x] Performance-vs-expectation residual jako SHADOW evidence.
+- [x] Chronological holdout + 3-fold walk-forward validation.
+- [x] Common sample vs profile/rank i lean-stateful baseline.
+- [x] Dedykowane evidence w istniejącym Point Tape artifact.
+- [x] SHADOW only; candidate replacement/promotion pozostają false.
 
-**Definition of Done:** istnieje jeden leakage-safe opponent-strength owner z reprodukowalnym evidence runem i walk-forward; różna klasa rywala jest mierzalna bez prostego arbitralnego rank-multiplier. W LOGIC-05 nie ma promocji do PROD.
-
----
+**Definition of Done:** spełnione dla SHADOW evidence; szczegóły i metryki: `TENIS_AI_CHECKPOINT_LOGIC_05.md`. Brak promocji do PROD.
 
 ## LOGIC-06 — Opponent-Adjusted Serve / Return / Hold / Break
 
-Status: `[ ] NOT STARTED`
+Status: `[x] COMPLETED — SHADOW evidence / PR #397 / merge c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`
 
-Cel: Player DNA opisuje realną siłę, nie tylko surowe procenty z różnej klasy rywali.
+Cel: Player DNA evidence rozróżnia surowe procenty od kontekstu siły rywali.
 
-- [ ] Expected serve vs opponent return strength.
-- [ ] Serve residual.
-- [ ] Expected return vs opponent serve strength.
-- [ ] Return residual.
-- [ ] Hold residual.
-- [ ] Break residual.
-- [ ] Surface split.
-- [ ] Sample/confidence handling.
-- [ ] Porównanie raw vs adjusted na common test set.
-- [ ] Nie nadpisywać Player DNA przed promotion PR.
+- [x] Expected serve z strict-prior player serve + opponent return counts.
+- [x] Serve residual.
+- [x] Expected return z strict-prior player return + opponent serve counts.
+- [x] Return residual.
+- [x] Hold residual.
+- [x] Break residual.
+- [x] Overall i same-surface split.
+- [x] Jawne support/confidence metadata diagnostyczne, nie strength proxy.
+- [x] Raw vs adjusted na jednym common chronological holdout + walk-forward.
+- [x] Brak nadpisania Player DNA PROD; no runtime activation.
 
-**Definition of Done:** 72% serve przeciw słabym returnerom nie jest automatycznie równoważne 72% przeciw elicie.
-
----
+**Definition of Done:** spełnione dla SHADOW evidence; szczegóły i metryki: `TENIS_AI_CHECKPOINT_LOGIC_06.md`. Brak promocji do PROD.
 
 ## LOGIC-07 — Player State
 
@@ -323,22 +274,20 @@ Status: `[x] COMPLETED — SHADOW evidence / PR #399 / merge 7d5e66a07ba40047330
 
 Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
-- [ ] Current-season level.
-- [ ] Recent form windows wybrane na podstawie LOGIC-01.
-- [ ] Season delta vs previous baseline.
-- [ ] Ranking momentum.
-- [ ] Serve trend.
-- [ ] Return trend.
-- [ ] Opponent-adjusted performance trend.
-- [ ] Surface state.
-- [ ] Inactivity/comeback uncertainty bez zgadywania przyczyny.
-- [ ] Matches-since-return state po walidacji definicji.
-- [ ] Confidence/provenance.
-- [ ] SHADOW comparison z obecnym Current Engine.
+- [x] Current-season level.
+- [x] Recent form jako descriptive evidence; bez wymyślonego magic freshness cutoff i bez probability activation.
+- [x] Previous-season baseline + season delta z missingness.
+- [x] Ranking momentum/provenance.
+- [x] Serve trend.
+- [x] Return trend.
+- [x] Opponent-adjusted performance trend reużywający LOGIC-06.
+- [x] Current-surface state z jawnie nieznanym surface bez inferencji.
+- [x] Inactivity/gap scenarios 30/60/90/180 bez zgadywania przyczyny medycznej.
+- [x] Matches-since-observed-gap evidence bez diagnozy comeback cause.
+- [x] Support/confidence/provenance.
+- [x] Read-only comparison z obecnym Current Engine; no write/recompute/runtime activation.
 
-**Definition of Done:** system potrafi rozróżnić długoterminowy poziom od aktualnego stanu.
-
----
+**Definition of Done:** spełnione jako descriptive SHADOW evidence. Finalny artifact i isolation contract: `TENIS_AI_CHECKPOINT_LOGIC_07.md`.
 
 ## LOGIC-08 — Readiness Engine
 
