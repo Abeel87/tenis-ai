@@ -92,7 +92,9 @@ def _dimension(
         "support": support or {},
     }
 def _history_index(
-    report: dict[str, Any], result_count: int
+    report: dict[str, Any],
+    result_count: int,
+    result_ids: set[str],
 ) -> tuple[dict[str, dict[str, Any]], bool]:
     summary = report.get("summary") or {}
     try:
@@ -111,7 +113,13 @@ def _history_index(
         if key in index:
             duplicate = True
         index[key] = row
-    aligned = bool(report and audited_count == result_count and not duplicate)
+    aligned = bool(
+        report
+        and audited_count == result_count
+        and len(result_ids) == result_count
+        and not duplicate
+        and set(index).issubset(result_ids)
+    )
     return index, aligned
 
 
@@ -421,8 +429,20 @@ def compose_readiness(
 ) -> dict[str, Any]:
     """Build a descriptive readiness report without mutating source results."""
     source_reports = source_reports or {}
-    history_index, history_aligned = _history_index(history_report, len(results))
+    result_keys = [_match_key(row.get("id")) for row in results if isinstance(row, dict)]
+    result_ids = {key for key in result_keys if key is not None}
+    result_ids_unique = len(result_ids) == len(results)
+    history_index, history_aligned = _history_index(
+        history_report,
+        len(results),
+        result_ids,
+    )
     state_index = _player_state_index(player_state_report)
+    player_state_aligned = bool(
+        player_state_report
+        and result_ids_unique
+        and set(state_index) == result_ids
+    )
     dimension_counts: dict[str, Counter[str]] = {}
     market_counts: dict[str, Counter[str]] = {
         market: Counter() for market in PBP_MARKETS
@@ -490,7 +510,7 @@ def compose_readiness(
     return {
         "version": VERSION,
         "mode": MODE,
-        "status": STATUS if legacy_mismatches == 0 else "READINESS_SEMANTICS_SOURCE_MISMATCH",
+        "status": STATUS if (legacy_mismatches == 0 and history_aligned and player_state_aligned) else "READINESS_SEMANTICS_SOURCE_MISMATCH",
         "generated_at": stamp,
         "network_calls": 0,
         "production_influence": False,
@@ -520,10 +540,12 @@ def compose_readiness(
         },
         "source_snapshot": {
             "results_matches": len(results),
+            "result_match_ids_unique": result_ids_unique,
             "history_coverage_available": bool(history_report),
             "history_coverage_snapshot_aligned": history_aligned,
             "player_state_available": bool(player_state_report),
             "player_state_matches": len(state_index),
+            "player_state_snapshot_aligned": player_state_aligned,
             "legacy_model_ready_reference_mismatches": legacy_mismatches,
             "readiness_audits": {
                 name: _source_summary(report) for name, report in sorted(source_reports.items())

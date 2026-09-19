@@ -1311,6 +1311,10 @@ jobs:
               raise SystemExit('LOGIC-08 Current Engine read-only reference mismatch')
           if source.get('history_coverage_snapshot_aligned') is not True:
               raise SystemExit('LOGIC-08 history coverage snapshot is not aligned')
+          if source.get('player_state_snapshot_aligned') is not True:
+              raise SystemExit('LOGIC-08 Player State snapshot is not aligned')
+          if source.get('result_match_ids_unique') is not True:
+              raise SystemExit('LOGIC-08 results contain duplicate/missing match IDs')
 
           summary = report.get('summary') or {}
           if int(summary.get('matches') or 0) <= 0:

@@ -255,3 +255,23 @@ def test_workflow_wires_readiness_engine_into_existing_point_tape_artifact():
     assert "python backend/readiness_engine_shadow.py" in workflow
     assert "frontend/data/readiness_engine_shadow.json" in workflow
     assert "tests/test_readiness_engine_shadow.py" in workflow
+
+
+def test_history_exception_ids_must_belong_to_current_results_snapshot():
+    stale_row = {
+        "id": 999,
+        "players": [
+            {"current_identity_mode": "exact", "current_history_player_key": "a", "reason": "sufficient_history"},
+            {"current_identity_mode": "exact", "current_history_player_key": "b", "reason": "sufficient_history"},
+        ],
+    }
+    report = _compose(history=_history(stale_row, visible=1))
+    assert report["status"] == "READINESS_SEMANTICS_SOURCE_MISMATCH"
+    assert report["source_snapshot"]["history_coverage_snapshot_aligned"] is False
+    assert report["matches"][0]["dimensions"]["identity"]["status"] == readiness.UNKNOWN
+
+
+def test_player_state_match_ids_must_exactly_match_current_results_snapshot():
+    report = _compose(player_state=_state_report(match_id="999"))
+    assert report["status"] == "READINESS_SEMANTICS_SOURCE_MISMATCH"
+    assert report["source_snapshot"]["player_state_snapshot_aligned"] is False
