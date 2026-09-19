@@ -31,37 +31,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-08 — Readiness Engine`
 
-**SUBSTEP:** phase 2 — consumer inventory / migration-plan audit po merge phase-1 SHADOW semantics. Zmapować każdy producer/consumer legacy `model_ready`, przypisać mu właściwy semantic readiness contract i kolejność migracji, bez zmiany zachowania runtime w tym kroku.
+**SUBSTEP:** phase 3 — consumer-specific readiness requirements + observability migration design. Dla każdego runtime/learning/telemetry/UI konsumenta legacy `model_ready` zdefiniować dokładne wymagane semantic dimensions/market contract, evidence owner i status polityki; bez zmiany runtime gate'ów w pierwszym kroku phase 3.
 
-**BRANCH:** `logic-08-readiness-consumer-audit` utworzony ze zweryfikowanego `main` `fd44c0546b3167554046a018b9fce1d02b35cbed`.
+**BRANCH:** bieżący docs-closeout `logic-08-consumer-audit-closeout`; po merge utworzyć świeży `logic-08-readiness-requirements-audit` ze zweryfikowanego `main`.
 
-**PR:** LOGIC-08 phase-1 PR #402 zmergowany. Dla consumer-audit jeszcze brak PR.
+**PR:** LOGIC-08 phase-1 PR #402 i consumer-audit PR #403 są zmergowane. Bieżący docs-closeout jeszcze bez PR.
 
-**LAST VERIFIED MAIN:** `fd44c0546b3167554046a018b9fce1d02b35cbed` — merge PR #402; lokalny checkout na komputerze i GitHub wskazują ten sam commit.
+**LAST VERIFIED MAIN:** `01d52caca2ebba9a7856e13cd49f508e2a595a0f` — merge PR #403; lokalny checkout i GitHub zgodne.
 
-**LAST COMPLETED WORK:** LOGIC-08 phase 1 SHADOW readiness semantics merged. Canonical owner `backend/readiness_engine_shadow.py`; tri-state `READY / NOT_READY / UNKNOWN`, reason codes, provenance/support, strict source-snapshot alignment i read-only legacy `model_ready`. Szczegóły: `TENIS_AI_CHECKPOINT_LOGIC_08.md`.
+**LAST COMPLETED WORK:** LOGIC-08 phase 1 SHADOW semantics + phase 2 exact legacy consumer inventory. `TENIS_AI_READINESS_CONSUMER_MAP.md` zamraża 21 exact-token source files, role i migration order; contract tests potwierdzają zero runtime wiring.
 
-**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`.
+**MERGE EVIDENCE:** LOGIC-05 PR #394 → `bd01b3c9bc1685a36c8762a2fd3ea64871fdc801`; LOGIC-06 PR #397 → `c1d1328b38a9b71fc2b4b15f4dc5f34c86703200`; LOGIC-07 PR #399 → `7d5e66a07ba400473302966e40592a591dfd71c3`; docs closeout PR #400 → `f2de0e9b5ad4bdf7adf4a24c44d54c0c173fd980`; LOGIC-08 phase-1 PR #402 → `fd44c0546b3167554046a018b9fce1d02b35cbed`; LOGIC-08 consumer audit PR #403 → `01d52caca2ebba9a7856e13cd49f508e2a595a0f`.
 
-**TEST / CI BASELINE:** PR #402 final head `691ab2266aad2fda1afb5b694e01fca740939ce7`: Point Tape #400 / `35424237010`, UI #2608 / `35424237009`, CodeQL #232 / `35424237008`, Delivery/Security #251 / `35424237023` — GREEN. Local targeted 51/51, FULL 1270/1270, `git diff --check` GREEN. Post-merge `main`: UI #2609 / `35427628690`, CodeQL #233 / `35427628670`, Delivery/Security #252 / `35427628733` — GREEN.
+**TEST / CI BASELINE:** PR #403 final head `8c5f75d6f4d25576341436f321b1ff890927289f`: local contract/docs/readiness 23/23 GREEN, FULL 1274/1274, `git diff --check` GREEN. PR CI: UI #2610 / `35428049690`, CodeQL #234 / `35428049706`, Delivery/Security #253 / `35428049697`, LOGIC-01 #9 / `35428049662`, LOGIC-02 #10 / `35428049679`, LOGIC-03 #10 / `35428049698`, LOGIC-04 #9 / `35428049681` — all GREEN. Post-merge main: Delivery/Security #254 / `35428211678` GREEN; UI & Project Health #2611 / `35428211691` GREEN.
 
-**AUTHORITATIVE ARTIFACT:** Point Tape #400 `player-dna-point-foundation` ID `10579342271`, digest `sha256:474b6fc22ca92a9010095669ee773bebc9253592fe1bc3729902982a7df677c0`, exact head `691ab2266...`; `readiness_engine_shadow.json` status `READINESS_SEMANTICS_SHADOW_EVIDENCE_READY`, 156 aligned matches, zero legacy-reference mismatches.
+**AUTHORITATIVE PHASE-1 ARTIFACT:** Point Tape #400 `player-dna-point-foundation` ID `10579342271`, digest `sha256:474b6fc22ca92a9010095669ee773bebc9253592fe1bc3729902982a7df677c0`, exact head `691ab2266...`; readiness status `READINESS_SEMANTICS_SHADOW_EVIDENCE_READY`, 156 aligned matches, zero legacy-reference mismatches.
 
-**BLOCKERS:** brak runtime blockerów. LOGIC-08 pozostaje aktywny, ponieważ konsumenci legacy `model_ready`, UI i migration plan nie zostały jeszcze zmigrowane.
+**BLOCKERS:** brak runtime blockerów. Phase 3 jest evidence/design-first; żadnego consumer gate nie wolno migrować bez jawnych requirements + approved sufficiency policy.
 
-**DO NOT REDO:** nie powtarzać LOGIC-00..07 ani LOGIC-08 phase-1 bez nowego dowodu nieważności evidence. Nie usuwać ani nie redefiniować legacy `model_ready`. Nie utożsamiać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness.
+**DO NOT REDO:** nie powtarzać LOGIC-00..07, LOGIC-08 phase-1 ani 21-file consumer inventory z PR #403 bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness.
 
 **RISKS / HARD BANS:** zero zmian model math, probability, progów, wag, treningu, Current Engine PROD, Player DNA PROD, Surface Elo, Symfonii, Neuronu, PLAYABLE, settlementu, SHADOW→PROD i iNeed$ calculations bez osobnej autoryzacji. Brak fuzzy matching, ręcznych aliasów, provider-ID namespace guessing i real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Na świeżym `main` zamrozić source-level inventory wszystkich producerów i konsumentów legacy `model_ready`.
-2. Sklasyfikować każdy use-site: producer, runtime gate, learning/selection gate, telemetry/diagnostic copy albo UI presentation.
-3. Jawnie oddzielić inne kontrakty: PBP `market_evidence_v940.market_ready`, Symphony `learning_model_ready`, Superbet operator market availability/evidence.
-4. Dla każdego konsumenta wskazać wymagane semantic dimensions/market contract; brak zatwierdzonej sufficiency policy = brak migracji / `UNKNOWN`.
-5. Dodać audit/contract tests zamrażające inventory i potwierdzające zero zmiany zachowania runtime.
-6. Ustalić migration order; observability UI/telemetry oddzielić od późniejszych runtime gates.
-7. W consumer-audit PR nie usuwać, nie redefiniować i nie bypassować legacy `model_ready`.
+1. Ponownie sprawdzić fresh `main`, otwarte PR-y i CI; utworzyć `logic-08-readiness-requirements-audit`.
+2. Zbudować consumer requirement matrix dla: `history_tracker`, Market Lab, PBP cache recovery/enrich, AutoLearn, specialist learning, SHADOW lab, update/meta, prediction integrity i frontend.
+3. Dla każdego use-site zapisać: obecny efekt legacy `model_ready`, wymagane semantic dimensions, market-specific contract, evidence owner, missingness/UNKNOWN semantics i ryzyko zmiany zachowania.
+4. Brak zatwierdzonej sufficiency policy oznacza `UNKNOWN` / no migration, nigdy automatyczne `NOT_READY` lub `READY`.
+5. Zachować osobno PBP `market_ready`, Symphony `learning_model_ready` i Superbet operator availability.
+6. Dodać contract tests dla requirement matrix i braku runtime wiring; nie zmieniać jeszcze gate'ów.
+7. Na podstawie evidence wybrać pierwszy bezpieczny observability-only consumer (UI/telemetry side-by-side), oddzielnie od runtime/learning migration.
 8. PR → pełne CI → fresh-main check → merge → post-merge verification → checkpoint.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
@@ -291,7 +291,7 @@ Cel: oddzielić „kim gracz zwykle jest” od „jak gra teraz”.
 
 ## LOGIC-08 — Readiness Engine
 
-Status: `[~] ACTIVE — phase-1 SHADOW semantics merged; consumer audit / migration plan in progress`
+Status: `[~] ACTIVE — phase-1 SHADOW semantics + phase-2 consumer inventory merged; phase-3 requirements/observability design next`
 
 Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 
@@ -304,10 +304,11 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego.
 - [S] Opponent-context readiness — SHADOW evidence semantics gotowe.
 - [S] Market-specific readiness — tylko jawne PBP/Early Hold requirements; generic markets nadal `UNKNOWN`.
 - [S] Reason codes — deterministic ordering + provenance/support w phase 1.
-- [ ] UI bez wymyślania danych.
-- [~] Migration plan z obecnego boolean `model_ready` — source-level consumer inventory w toku.
+- [x] Legacy consumer inventory — 21 exact-token source files zamrożone i sklasyfikowane w PR #403; zero runtime wiring.
+- [ ] UI bez wymyślania danych — observability side-by-side dopiero po requirement matrix.
+- [~] Migration plan z obecnego boolean `model_ready` — inventory ukończone; consumer-specific requirements/policies pozostają otwarte.
 
-**Definition of Done:** jeszcze niespełnione. Phase 1 daje kanoniczny SHADOW contract, ale LOGIC-08 pozostaje otwarty do bezpiecznej migracji observability/konsumentów zgodnie z evidence gates.
+**Definition of Done:** jeszcze niespełnione. SHADOW contract i pełna mapa konsumentów istnieją, ale observability oraz runtime/learning migrations wymagają osobnych evidence gates.
 
 ---
 

@@ -36,3 +36,18 @@ Phase 1 and this consumer audit make no model-math, probability, threshold, weig
 6. Define migration order before changing any consumer. UI/telemetry observability may be staged separately from runtime gating.
 7. Do not remove, redefine or bypass legacy `model_ready` in the consumer-audit PR.
 8. Full CI → fresh-main check → merge → post-merge verification → update this checkpoint.
+
+## Phase-2 result — legacy consumer inventory
+PR #403 final head `8c5f75d6f4d25576341436f321b1ff890927289f` merged to `main` as `01d52caca2ebba9a7856e13cd49f508e2a595a0f`.
+
+`TENIS_AI_READINESS_CONSUMER_MAP.md` freezes **21 exact standalone `model_ready` source files** and classifies legacy producers, runtime gates, learning/selection gates, telemetry/diagnostics, UI and SHADOW/audit consumers. `tests/test_readiness_consumer_contract.py` fails on unclassified token drift and proves the audited runtime consumers are not wired to `readiness_engine_shadow` yet.
+
+No backend runtime or frontend runtime source file changed in PR #403. Local validation: targeted contract/docs/readiness 23/23 GREEN; FULL 1274/1274 GREEN; `git diff --check` GREEN. PR CI: UI #2610, CodeQL #234, Delivery/Security #253 and LOGIC-01..04 audits all GREEN. Post-merge `main` verification: Delivery/Security #254 / `35428211678` GREEN and UI & Project Health #2611 / `35428211691` GREEN.
+
+## Phase-3 next exact action
+1. Build a consumer-specific requirement matrix for all runtime/learning/telemetry/UI consumers frozen by PR #403.
+2. For every consumer record current legacy effect, required readiness dimensions/market contract, evidence owner, `UNKNOWN` semantics, policy approval status and behavior-change risk.
+3. Do not migrate any runtime/learning gate without explicit validated sufficiency policy; missing policy remains `UNKNOWN`.
+4. Keep PBP `market_ready`, Symphony `learning_model_ready` and Superbet operator availability separate.
+5. Contract-test the matrix and zero runtime wiring first; only then select a first observability-only UI/telemetry migration.
+6. Legacy `model_ready` stays unchanged until every dependent consumer has a controlled migration.
