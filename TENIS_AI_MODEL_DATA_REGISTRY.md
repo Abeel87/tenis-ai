@@ -654,7 +654,7 @@ Porównać z samym Player DNA.
 
 ## LOGIC-08 — Readiness Semantics Audit
 
-**Status:** IN PROGRESS — phase-1 SHADOW semantics merged in PR #402; consumer inventory / migration-plan audit active.
+**Status:** IN PROGRESS — phase-1 SHADOW semantics and phase-2 consumer inventory merged (#402/#403); phase-3 consumer requirements/observability design next.
 
 **Canonical semantic owner:** `backend/readiness_engine_shadow.py`.
 
@@ -664,7 +664,7 @@ Phase 1 reports deterministic reason codes and `READY / NOT_READY / UNKNOWN` bes
 
 Market/family readiness may be `READY` only through an existing explicit contract such as PBP `market_evidence_v940`. PBP `market_ready`, Symphony `learning_model_ready`, and Superbet operator availability are separate contracts and must not be collapsed into one overall readiness flag.
 
-Phase 2 freezes every producer/consumer of exact legacy `model_ready`, classifies its role, and defines migration order. No runtime/UI consumer changes behavior in the consumer-audit PR. Runtime/learning gates require consumer-specific evidence before migration; legacy `model_ready` cannot be removed while any audited consumer still depends on it.
+Phase 2 is complete in PR #403: 21 exact-token source files are frozen/classified in `TENIS_AI_READINESS_CONSUMER_MAP.md` and contract-tested with zero runtime wiring. Phase 3 must define consumer-specific required dimensions, evidence owners and sufficiency-policy status before any observability or gate migration. Runtime/learning gates require separate evidence; legacy `model_ready` cannot be removed while any audited consumer still depends on it.
 
 Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
