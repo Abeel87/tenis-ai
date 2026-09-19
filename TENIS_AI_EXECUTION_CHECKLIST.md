@@ -31,13 +31,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-08 — Readiness Engine`
 
-**SUBSTEP:** phase 4 exact-snapshot observability delivery/provenance audit is merged and verified. Current work is phase-4 closeout/checkpoint, immediately followed by a separate SHADOW delivery implementation PR in the existing `Player DNA SHADOW refresh` host. Zero meta/UI/runtime gate replacement is approved.
+**SUBSTEP:** phase-4 exact-snapshot audit and docs closeout are merged. Active work is the separate SHADOW delivery implementation in the existing `Player DNA SHADOW refresh` host. The implementation remains additive sidecar/artifact delivery only; zero meta/UI/runtime gate replacement is approved.
 
-**BRANCH:** `logic-08-readiness-delivery-closeout` based on exact `main` `4d626b2bd59f454773b350766f8207567460d07b` (merge of PR #408).
+**BRANCH:** `logic-08-readiness-shadow-delivery` based on post-closeout `main` `f52e4bf9419a5ae9a749b7037c1a553ac816acb1` (PR #409 merge).
 
-**PR:** phase-4 audit PR #408 final head `cccac2993ed05dd8fb75a4f9b57328dda2d12bd9` is MERGED as `4d626b2bd59f454773b350766f8207567460d07b`. Earlier LOGIC-08 PRs #402/#403/#404/#406/#407 remain merged.
+**PR:** phase-4 audit PR #408 is merged as `4d626b2bd59f454773b350766f8207567460d07b`; docs closeout PR #409 is merged as `f52e4bf9419a5ae9a749b7037c1a553ac816acb1`. Active implementation PR is not opened yet.
 
-**LAST VERIFIED MAIN:** `4d626b2bd59f454773b350766f8207567460d07b` ? guarded merge of PR #408 after exact-head full GREEN CI and independent artifact verification.
+**LAST VERIFIED MAIN:** `f52e4bf9419a5ae9a749b7037c1a553ac816acb1` - guarded merge of docs closeout PR #409; implementation branch is based on this exact main pending a fresh pre-push recheck.
 
 **LAST COMPLETED WORK:** phase-4 audit/hardening is merged. Exact-head Point Tape run `35446260835` completed SUCCESS and artifact `player-dna-point-foundation` ID `10586677424` (`sha256:2d2e924777cd3c5552a3b58e8f772ac8db5c4a093a36e12bbde54455fdee5fe2`) carried exact `results.json`, stamped run-local history coverage and semantic readiness. Independent canonical digest verification produced `79645fe3f81bc628b7152f1597811a09f1d5dc3c29bce3bbde2c0a15f6a7d3bd` for all three sources; history/Player State alignment true, legacy mismatches 0, all isolation flags false, network_calls 0.
 
@@ -49,7 +49,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **AUTHORITATIVE PHASE-4 ARTIFACT:** exact-head Point Tape `35446260835`, artifact ID `10586677424`, artifact digest `sha256:2d2e924777cd3c5552a3b58e8f772ac8db5c4a093a36e12bbde54455fdee5fe2`; verified canonical results/history/readiness digest `79645fe3f81bc628b7152f1597811a09f1d5dc3c29bce3bbde2c0a15f6a7d3bd`.
 
-**BLOCKERS:** no blocker for phase-4 closeout. Runtime delivery remains intentionally unwired. The next implementation must reuse the existing `Player DNA SHADOW refresh` post-Update host/publication path, preserve exact digest rejection, remain zero-network for readiness prerequisites, and prove its bot publish does not create an Update loop. Runtime/learning migrations remain blocked; R07/R08/R11 -> LOGIC-09, R14 -> LOGIC-10.
+**BLOCKERS:** local implementation has no code/test blocker. Full cache-backed workflow proof is pending PR Actions because this local worktree has no restored Actions cache/derived Player DNA files. Meta/UI/runtime/learning migrations remain blocked; R07/R08/R11 -> LOGIC-09, R14 -> LOGIC-10.
 
 **DO NOT REDO:** nie powtarzać LOGIC-00..07, phase-1, 21-file phase-2 inventory ani 22-token/19-line phase-3 requirement audit bez dowodu driftu. Nie usuwać/redefiniować legacy `model_ready`. Nie scalać PBP `market_ready`, Symphony `learning_model_ready` ani Superbet operator availability z semantic readiness. Nie wire'ować R12/R13 przez stale/cross-run artifact albo frontendową inferencję.
 
@@ -57,11 +57,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Close and merge this post-merge checkpoint/docs PR only after GREEN CI and a fresh-main check.
-2. On fresh `main`, open a separate implementation branch/PR that extends the existing `Player DNA SHADOW refresh` with local readiness prerequisites and `readiness_engine_shadow.json` output in the same post-Update SHADOW host/publication path.
-3. First implementation milestone is exact-snapshot SHADOW artifact/sidecar delivery only: no legacy `model_ready` replacement, no runtime gate, no probability/weight/threshold/training changes, no UI inference.
-4. Re-verify zero network for readiness prerequisites and prove the Player DNA bot publish does not retrigger `Update tennis data and deploy Pages`.
-5. Only after a real current payload independently passes exact digest alignment may R12/R13 additive `meta` telemetry be considered; missing/mismatch remains `N/D`.
+1. Fresh-main check; if the active Player DNA SHADOW run moves `main`, audit drift and rebase/retest this implementation branch.
+2. Commit/push `logic-08-readiness-shadow-delivery` and open the implementation PR.
+3. Require exact-head Player DNA SHADOW PR workflow with restored real cache and independently verify artifact digest/alignment/isolation evidence.
+4. Require full PR CI GREEN; fresh-main/rebase if needed; merge only GREEN.
+5. Post-merge verify the existing one-commit Player DNA SHADOW publication publishes at most the additive `readiness_engine_shadow.json` sidecar and does not retrigger Update.
+6. R12/R13 additive meta telemetry remains blocked until that real post-merge sidecar passes exact current-snapshot verification; missing/mismatch = `N/D`.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
