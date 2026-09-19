@@ -123,7 +123,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B2. Context Engine
 
-**Status:** PLAN / ma powstać najpierw w SHADOW. Nie jest obecnie kanonicznym PROD modułem.
+**Status:** SHADOW EVIDENCE READY — canonical owner `backend/match_context_shadow.py`; LOGIC-04 PR #392 merged as `c9acb27e48f41e9a5aaa0fa1bb041c65c5f45ab7`. No PROD activation.
 
 **Odpowiedzialność:** tworzyć znaczenie wokół każdego rekordu:
 
@@ -222,7 +222,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B6. Opponent Strength / Opponent Adjustment
 
-**Status:** PLAN / SHADOW.
+**Status:** SHADOW EVIDENCE READY — canonical owner `backend/player_dna_opponent_adjustment_audit.py`; LOGIC-05 PR #394 and LOGIC-06 PR #397 are merged. Opponent-strength and opponent-adjusted serve/return/hold/break remain evaluation-only; no PROD activation.
 
 **Odpowiedzialność:** osadzić wynik/statystykę w sile rywala.
 

@@ -15,6 +15,9 @@ Brak oferty lub linii Superbet nie może usuwać ani zastępować analizy MODEL 
 ## 2. Modele i uczenie
 
 - **Current Engine** — kanoniczny silnik statystyczny w `backend/model_core.py`; nie jest przedstawiany jako samouczący ML.
+- **Context Engine SHADOW** — canonical evidence owner `backend/match_context_shadow.py`; strict-as-of context/provenance only, bez probability i bez PROD wiring.
+- **Opponent Adjustment SHADOW** — canonical evidence owner `backend/player_dna_opponent_adjustment_audit.py`; opponent-strength i adjusted serve/return/hold/break pozostają evaluation-only.
+- **Player State SHADOW** — canonical evidence owner `backend/player_dna_player_state_shadow.py`; descriptive current-state evidence oddzielone od long-term Player DNA, bez probability/runtime ownership.
 - **AutoLearn** — rzeczywiste uczenie na rozliczonej historii z chronologicznym podziałem całymi meczami na TRAIN/CAL/VAL. Current/CatBoost/TabPFN/Ensemble zachowują osobne wyniki.
 - **Adaptive PROD** — ograniczona meta-warstwa ucząca się z zamrożonych, rozliczonych prognoz. Nie nadpisuje RAW Ensemble.
 - **Dynamic Weights** — używają poprzedniego snapshotu telemetryki i mają twarde limity przesunięć wag.
