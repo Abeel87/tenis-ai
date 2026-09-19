@@ -131,3 +131,19 @@ A temporary finalization freeze disabled only the six data/refresher workflows t
 ### Next exact action after closeout
 
 Open a separate implementation PR on fresh `main` that reuses the existing `Player DNA SHADOW refresh` post-Update host to generate the required readiness prerequisites and semantic readiness output from the same current snapshot. Keep delivery SHADOW-only and additive; do not wire `backend/update.py`, meta/UI, runtime/learning gates, probability, weights, thresholds, training, PLAYABLE or iNeed$ yet. Re-prove zero-network prerequisites and bounded workflow topology before any tracked publication.
+
+## Phase-4 implementation ? existing Player DNA SHADOW delivery host
+
+Branch `logic-08-readiness-shadow-delivery` starts from post-closeout main `f52e4bf9419a5ae9a749b7037c1a553ac816acb1`. Test-first contract initially failed because `player-dna-shadow-refresh.yml` did not build or publish semantic readiness.
+
+The existing workflow is extended in place, with no new workflow and no model/runtime math change. It builds local zero-network readiness prerequisites, recent-form + delegated Player State, run-local history coverage stamped with the exact `results.json` digest, then `readiness_engine_shadow.json`. A delivery guard requires equal canonical digest, source alignment, unique result IDs, zero legacy-reference mismatches and all isolation flags false. The artifact carries exact results/history/prerequisites/Player State/readiness evidence. Before the existing bot commit, stamped tracked history and untracked prerequisite evidence are cleaned; only `readiness_engine_shadow.json` is added as the new tracked sidecar.
+
+Local validation before PR: delivery contract 10/10 GREEN after expected pre-change RED; expanded readiness/prerequisite suite 75/75 GREEN; full pytest 1291/1291 GREEN; py_compile and git diff --check GREEN. Full cache-backed workflow execution must be proven by PR Actions artifact because the local worktree has no restored Actions cache/derived Player DNA files.
+
+### Next exact action
+
+1. Fresh-main check; rebase/retest if the live Player DNA SHADOW run moves main.
+2. Commit/push implementation and open PR.
+3. Require the Player DNA SHADOW PR run to complete on exact PR head using restored real cache; verify its artifact independently for results/history/readiness digest equality, source alignment, isolation and no runtime/meta wiring.
+4. Full required PR CI + fresh-main gate; merge only GREEN.
+5. Post-merge main run must publish at most the additive readiness sidecar through the existing single Player DNA SHADOW data commit, and its commit must not retrigger Update.

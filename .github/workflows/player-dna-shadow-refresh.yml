@@ -11,6 +11,15 @@ on:
       - 'backend/player_dna_match_context.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_profile_readiness.py'
+      - 'backend/history_coverage_audit.py'
+      - 'backend/snapshot_digest.py'
+      - 'backend/player_dna_service_split_source_readiness.py'
+      - 'backend/player_dna_pbp_service_split_readiness.py'
+      - 'backend/player_dna_match_state_readiness.py'
+      - 'backend/player_dna_matchup_readiness_audit.py'
+      - 'backend/player_dna_recent_form_challenger.py'
+      - 'backend/player_dna_player_state_shadow.py'
+      - 'backend/readiness_engine_shadow.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_point_probability_engine.py'
       - 'backend/player_dna_current_shadow.py'
@@ -36,6 +45,15 @@ on:
       - 'backend/player_dna_match_context.py'
       - 'backend/player_dna_shadow_profiles.py'
       - 'backend/player_dna_profile_readiness.py'
+      - 'backend/history_coverage_audit.py'
+      - 'backend/snapshot_digest.py'
+      - 'backend/player_dna_service_split_source_readiness.py'
+      - 'backend/player_dna_pbp_service_split_readiness.py'
+      - 'backend/player_dna_match_state_readiness.py'
+      - 'backend/player_dna_matchup_readiness_audit.py'
+      - 'backend/player_dna_recent_form_challenger.py'
+      - 'backend/player_dna_player_state_shadow.py'
+      - 'backend/readiness_engine_shadow.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_point_probability_engine.py'
       - 'backend/player_dna_current_shadow.py'
@@ -65,6 +83,14 @@ on:
       - 'tests/test_player_dna_hold_calibration.py'
       - 'tests/test_player_dna_hold_walk_forward.py'
       - 'tests/test_player_dna_prospective_validation.py'
+      - 'tests/test_history_coverage_audit_v949.py'
+      - 'tests/test_player_dna_service_split_source_readiness.py'
+      - 'tests/test_player_dna_pbp_service_split_readiness.py'
+      - 'tests/test_player_dna_match_state_readiness.py'
+      - 'tests/test_player_dna_matchup_readiness_audit.py'
+      - 'tests/test_player_dna_recent_form_challenger.py'
+      - 'tests/test_readiness_engine_shadow.py'
+      - 'tests/test_readiness_observability_delivery_contract.py'
       - 'tests/test_player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
 
@@ -117,6 +143,15 @@ jobs:
           python -m py_compile backend/player_dna_match_context.py
           python -m py_compile backend/player_dna_shadow_profiles.py
           python -m py_compile backend/player_dna_profile_readiness.py
+          python -m py_compile backend/history_coverage_audit.py
+          python -m py_compile backend/snapshot_digest.py
+          python -m py_compile backend/player_dna_service_split_source_readiness.py
+          python -m py_compile backend/player_dna_pbp_service_split_readiness.py
+          python -m py_compile backend/player_dna_match_state_readiness.py
+          python -m py_compile backend/player_dna_matchup_readiness_audit.py
+          python -m py_compile backend/player_dna_recent_form_challenger.py
+          python -m py_compile backend/player_dna_player_state_shadow.py
+          python -m py_compile backend/readiness_engine_shadow.py
           python -m py_compile backend/player_dna_point_scorer.py
           python -m py_compile backend/player_dna_point_probability_engine.py
           python -m py_compile backend/player_dna_current_shadow.py
@@ -128,7 +163,7 @@ jobs:
           python -m py_compile backend/player_dna_hold_calibration.py
           python -m py_compile backend/player_dna_hold_walk_forward.py
           python -m py_compile backend/player_dna_prospective_validation.py
-          python -m pytest -q             tests/test_atomic_point_transition.py             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_point_probability_engine.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_current_dynamic_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_tennis_state_engine.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_market_walk_forward.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_dna_prospective_validation.py             tests/test_player_identity.py
+          python -m pytest -q             tests/test_atomic_point_transition.py             tests/test_canonical_point_event.py             tests/test_player_dna_point_dataset.py             tests/test_player_dna_match_context.py             tests/test_player_dna_shadow_profiles.py             tests/test_player_dna_profile_readiness.py             tests/test_player_dna_point_scorer.py             tests/test_player_dna_point_probability_engine.py             tests/test_player_dna_current_shadow.py             tests/test_player_dna_current_dynamic_shadow.py             tests/test_player_dna_tennis_simulator.py             tests/test_player_dna_tennis_state_engine.py             tests/test_player_dna_market_backtest.py             tests/test_player_dna_market_walk_forward.py             tests/test_player_dna_hold_calibration.py             tests/test_player_dna_hold_walk_forward.py             tests/test_player_dna_prospective_validation.py             tests/test_history_coverage_audit_v949.py             tests/test_player_dna_service_split_source_readiness.py             tests/test_player_dna_pbp_service_split_readiness.py             tests/test_player_dna_match_state_readiness.py             tests/test_player_dna_matchup_readiness_audit.py             tests/test_player_dna_recent_form_challenger.py             tests/test_readiness_engine_shadow.py             tests/test_readiness_observability_delivery_contract.py             tests/test_player_identity.py
 
       - name: Build strict Player DNA point dataset
         run: python backend/player_dna_point_dataset.py
@@ -136,8 +171,113 @@ jobs:
       - name: Audit Player DNA profile readiness
         run: python backend/player_dna_profile_readiness.py
 
+      - name: Audit Player DNA service-split source readiness (SHADOW, zero network)
+        run: python backend/player_dna_service_split_source_readiness.py
+
+      - name: Audit PBP-native service-split readiness (SHADOW, zero network)
+        run: python backend/player_dna_pbp_service_split_readiness.py
+
+      - name: Audit comeback + BO5 match-state readiness (SHADOW, zero network)
+        run: python backend/player_dna_match_state_readiness.py
+
       - name: Build leakage-safe Player DNA profiles
         run: python backend/player_dna_shadow_profiles.py
+
+      - name: Audit Player DNA matchup readiness (SHADOW, zero network)
+        run: python backend/player_dna_matchup_readiness_audit.py
+
+      - name: Build recent-form + Player State evidence (SHADOW, zero network)
+        run: python backend/player_dna_recent_form_challenger.py
+
+      - name: Refresh + stamp LOGIC-08 history coverage snapshot (zero network)
+        run: |
+          set -euo pipefail
+          python backend/history_coverage_audit.py
+          python backend/snapshot_digest.py stamp-report \
+            frontend/data/history_coverage_audit_v949.json \
+            frontend/data/results.json
+
+      - name: Build LOGIC-08 semantic readiness sidecar (SHADOW, zero network)
+        run: python backend/readiness_engine_shadow.py
+
+      - name: Guard LOGIC-08 exact-snapshot readiness delivery
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from backend.readiness_engine_shadow import (
+              MODE, STATUS, observability_snapshot_alignment,
+          )
+          from backend.snapshot_digest import SNAPSHOT_CONTRACT, canonical_json_sha256
+
+          data = Path('frontend/data')
+
+          def load(name):
+              path = data / name
+              if not path.exists():
+                  raise SystemExit(f'LOGIC-08 delivery evidence missing: {name}')
+              return json.loads(path.read_text(encoding='utf-8'))
+
+          results = load('results.json')
+          history = load('history_coverage_audit_v949.json')
+          player_state = load('player_dna_player_state_shadow.json')
+          readiness = load('readiness_engine_shadow.json')
+
+          expected_modes = {
+              'player_dna_service_split_source_readiness.json': 'SHADOW_SOURCE_READINESS_AUDIT_ONLY',
+              'player_dna_pbp_service_split_readiness.json': 'SHADOW_PBP_SERVICE_SPLIT_READINESS_AUDIT_ONLY',
+              'player_dna_match_state_readiness.json': 'SHADOW_MATCH_STATE_READINESS_AUDIT_ONLY',
+              'player_dna_matchup_readiness_audit.json': 'SHADOW_MATCHUP_READINESS_AUDIT_ONLY',
+              'player_dna_recent_form_challenger.json': 'SHADOW_RECENT_FORM_CHALLENGER_EVAL_ONLY',
+          }
+          for name, expected_mode in expected_modes.items():
+              report = load(name)
+              if report.get('mode') != expected_mode:
+                  raise SystemExit(f'LOGIC-08 prerequisite mode mismatch: {name}')
+
+          if player_state.get('mode') != 'SHADOW_PLAYER_STATE_DESCRIPTIVE_ONLY':
+              raise SystemExit('LOGIC-08 Player State mode mismatch')
+          if readiness.get('mode') != MODE or readiness.get('status') != STATUS:
+              raise SystemExit('LOGIC-08 readiness sidecar is not evidence-ready SHADOW')
+          if readiness.get('network_calls') != 0:
+              raise SystemExit('LOGIC-08 readiness sidecar unexpectedly used network')
+
+          digest = canonical_json_sha256(results)
+          history_source = history.get('source_snapshot') or {}
+          readiness_source = readiness.get('source_snapshot') or {}
+          for label, source in (('history', history_source), ('readiness', readiness_source)):
+              if source.get('results_snapshot_contract') != SNAPSHOT_CONTRACT:
+                  raise SystemExit(f'LOGIC-08 {label} snapshot contract mismatch')
+              if source.get('results_snapshot_sha256') != digest:
+                  raise SystemExit(f'LOGIC-08 {label} results digest mismatch')
+
+          verdict = observability_snapshot_alignment(results, readiness)
+          if verdict.get('available') is not True:
+              raise SystemExit(f'LOGIC-08 exact-snapshot alignment failed: {verdict}')
+
+          for key in (
+              'production_influence', 'runtime_scoring_enabled', 'runtime_gating_enabled',
+              'training_join_enabled', 'current_engine_write_enabled',
+              'legacy_model_ready_write_enabled', 'probability_created', 'weights_created',
+              'thresholds_created', 'feature_activation', 'symphony2_influence',
+              'superbet_playable_influence', 'ineed_influence', 'auto_promote', 'promotion_gate',
+          ):
+              if readiness.get(key) is not False:
+                  raise SystemExit(f'LOGIC-08 readiness isolation violation: {key}')
+
+          source = readiness_source
+          if source.get('history_coverage_snapshot_aligned') is not True:
+              raise SystemExit('LOGIC-08 history snapshot is not aligned')
+          if source.get('player_state_snapshot_aligned') is not True:
+              raise SystemExit('LOGIC-08 Player State snapshot is not aligned')
+          if source.get('result_match_ids_unique') is not True:
+              raise SystemExit('LOGIC-08 current result IDs are not unique')
+          if int(source.get('legacy_model_ready_reference_mismatches') or 0) != 0:
+              raise SystemExit('LOGIC-08 legacy Current Engine reference mismatch')
+
+          print(f'LOGIC_08_SHADOW_DELIVERY_OK digest={digest} matches={len(results)}')
+          PY
 
       - name: Train + evaluate Player DNA scorer
         run: python backend/player_dna_point_scorer.py
@@ -1065,6 +1205,15 @@ jobs:
         with:
           name: player-dna-shadow-refresh
           path: |
+            frontend/data/results.json
+            frontend/data/history_coverage_audit_v949.json
+            frontend/data/player_dna_service_split_source_readiness.json
+            frontend/data/player_dna_pbp_service_split_readiness.json
+            frontend/data/player_dna_match_state_readiness.json
+            frontend/data/player_dna_matchup_readiness_audit.json
+            frontend/data/player_dna_recent_form_challenger.json
+            frontend/data/player_dna_player_state_shadow.json
+            frontend/data/readiness_engine_shadow.json
             frontend/data/player_dna_point_dataset_summary.json
             frontend/data/player_dna_profile_readiness.json
             frontend/data/player_dna_shadow_profile_summary.json
@@ -1084,13 +1233,25 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Clean run-local LOGIC-08 evidence before publish
+        if: github.event_name != 'pull_request'
+        run: |
+          git restore -- frontend/data/history_coverage_audit_v949.json
+          rm -f \
+            frontend/data/player_dna_service_split_source_readiness.json \
+            frontend/data/player_dna_pbp_service_split_readiness.json \
+            frontend/data/player_dna_match_state_readiness.json \
+            frontend/data/player_dna_matchup_readiness_audit.json \
+            frontend/data/player_dna_recent_form_challenger.json \
+            frontend/data/player_dna_player_state_shadow.json
+
       - name: Publish Player DNA SHADOW reports
         if: github.event_name != 'pull_request'
         id: commit
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json             frontend/data/readiness_engine_shadow.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0

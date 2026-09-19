@@ -76,21 +76,65 @@ def test_failed_source_alignment_is_rejected():
     assert verdict == {"available": False, "reason": "READINESS_SOURCE_ALIGNMENT_FAILED"}
 
 
-def test_current_workflow_topology_keeps_readiness_artifact_only():
+def test_player_dna_post_update_host_delivers_exact_snapshot_readiness_sidecar():
     point = (ROOT / ".github/workflows/point-tape-audit.yml").read_text(encoding="utf-8")
     player = (ROOT / ".github/workflows/player-dna-shadow-refresh.yml").read_text(encoding="utf-8")
     update = (ROOT / ".github/workflows/update-and-pages.yml").read_text(encoding="utf-8")
     scope = (ROOT / ".github/scripts/change_scope.py").read_text(encoding="utf-8")
+    backend_update = (ROOT / "backend/update.py").read_text(encoding="utf-8")
 
     assert "python backend/readiness_engine_shadow.py" in point
     assert "frontend/data/readiness_engine_shadow.json" in point
     assert "name: player-dna-point-foundation" in point
-    assert "frontend/data/results.json" in point
-    assert "frontend/data/history_coverage_audit_v949.json" in point
     assert "workflow_run:" not in point
+
     assert 'workflows: ["Update tennis data and deploy Pages"]' in player
-    assert "backend/readiness_engine_shadow.py" not in player
-    assert "readiness_engine_shadow.json" not in player
+    ordered_commands = [
+        "python backend/player_dna_profile_readiness.py",
+        "python backend/player_dna_service_split_source_readiness.py",
+        "python backend/player_dna_pbp_service_split_readiness.py",
+        "python backend/player_dna_match_state_readiness.py",
+        "python backend/player_dna_shadow_profiles.py",
+        "python backend/player_dna_matchup_readiness_audit.py",
+        "python backend/player_dna_recent_form_challenger.py",
+        "python backend/history_coverage_audit.py",
+        "python backend/snapshot_digest.py stamp-report",
+        "python backend/readiness_engine_shadow.py",
+    ]
+    positions = [player.index(command) for command in ordered_commands]
+    assert positions == sorted(positions)
+
+    artifact = player.split("- name: Upload Player DNA SHADOW artifacts", 1)[1].split(
+        "- name: Publish Player DNA SHADOW reports", 1
+    )[0]
+    for path in (
+        "frontend/data/results.json",
+        "frontend/data/history_coverage_audit_v949.json",
+        "frontend/data/player_dna_service_split_source_readiness.json",
+        "frontend/data/player_dna_pbp_service_split_readiness.json",
+        "frontend/data/player_dna_match_state_readiness.json",
+        "frontend/data/player_dna_matchup_readiness_audit.json",
+        "frontend/data/player_dna_recent_form_challenger.json",
+        "frontend/data/player_dna_player_state_shadow.json",
+        "frontend/data/readiness_engine_shadow.json",
+    ):
+        assert path in artifact
+
+    publish = player.split("- name: Publish Player DNA SHADOW reports", 1)[1].split(
+        "- name: Dispatch FAST Pages deploy", 1
+    )[0]
+    assert "frontend/data/readiness_engine_shadow.json" in publish
+    assert "frontend/data/history_coverage_audit_v949.json" not in publish
+    assert "frontend/data/player_dna_player_state_shadow.json" not in publish
+
+    cleanup = player.split("- name: Clean run-local LOGIC-08 evidence before publish", 1)[1].split(
+        "- name: Publish Player DNA SHADOW reports", 1
+    )[0]
+    assert "git restore -- frontend/data/history_coverage_audit_v949.json" in cleanup
+    assert "frontend/data/player_dna_player_state_shadow.json" in cleanup
+    assert "frontend/data/readiness_engine_shadow.json" not in cleanup
+
+    assert "readiness_engine_shadow" not in backend_update
     assert "- 'frontend/data/**'" in update
     assert "path.startswith(('backend/', 'data/', 'frontend/data/'))" in scope
 
