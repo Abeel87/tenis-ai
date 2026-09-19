@@ -401,3 +401,11 @@ def build() -> dict[str, Any]:
 
 if __name__ == "__main__":
     build()
+    # Point Tape already owns this CLI step. Delegate only after recent-form has
+    # written its own evidence, so LOGIC-07 gets that fresh status without
+    # creating another workflow or changing recent-form's import/build contract.
+    try:
+        from backend.player_dna_player_state_shadow import build as build_player_state
+    except ModuleNotFoundError:
+        from player_dna_player_state_shadow import build as build_player_state
+    build_player_state()
