@@ -117,6 +117,28 @@ def observability_snapshot_alignment(
     }
 
 
+def _dimension_state_totals(
+    counts: Any,
+    match_count: int,
+) -> dict[str, int] | None:
+    if not isinstance(counts, dict) or not counts:
+        return None
+    totals = {READY: 0, NOT_READY: 0, UNKNOWN: 0}
+    for row in counts.values():
+        if not isinstance(row, dict):
+            return None
+        dimension_total = 0
+        for state in (READY, NOT_READY, UNKNOWN):
+            value = row.get(state)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                return None
+            totals[state] += value
+            dimension_total += value
+        if dimension_total != match_count:
+            return None
+    return totals
+
+
 def observability_meta_payload(
     results: list[dict[str, Any]],
     report: dict[str, Any] | None,
@@ -156,6 +178,16 @@ def observability_meta_payload(
             "reason": "READINESS_SUMMARY_MISMATCH",
         }
 
+    dimension_status_counts = summary.get("dimension_status_counts")
+    dimension_state_totals = _dimension_state_totals(dimension_status_counts, len(results))
+    if dimension_state_totals is None:
+        return {
+            "mode": MODE,
+            "available": False,
+            "status": "N/D",
+            "reason": "READINESS_DIMENSION_COUNTS_INVALID",
+        }
+
     return {
         "mode": MODE,
         "available": True,
@@ -165,7 +197,8 @@ def observability_meta_payload(
         "results_snapshot_contract": SNAPSHOT_CONTRACT,
         "results_snapshot_sha256": verdict.get("results_snapshot_sha256"),
         "matches": summary.get("matches"),
-        "dimension_status_counts": summary.get("dimension_status_counts") or {},
+        "dimension_status_counts": dimension_status_counts,
+        "dimension_state_totals": dimension_state_totals,
         "pbp_market_status_counts": summary.get("pbp_market_status_counts") or {},
     }
 

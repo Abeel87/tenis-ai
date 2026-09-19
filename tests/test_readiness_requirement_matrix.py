@@ -16,7 +16,7 @@ EXPECTED_LINE_SITES = {
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {382, 393},
     "backend/prediction_integrity_v78a.py": {152},
-    "frontend/app.js": {30, 63, 75, 82, 98},
+    "frontend/app.js": {30, 63, 90, 98, 114},
 }
 
 
@@ -76,3 +76,9 @@ def test_only_r12_r13_meta_observability_is_wired_after_exact_snapshot_proof():
     assert "semantic_readiness_shadow" in update
     assert "compose_readiness" not in update
     assert "readiness_engine_shadow.build" not in update
+
+def test_r16_moderator_problem_filter_remains_legacy_only_during_r18_r19():
+    app = (ROOT / "frontend/app.js").read_text(encoding="utf-8")
+    assert "if(f==='problems')rows=rows.filter(m=>state.moderation.get(D.key(m))?.problem||!m.model_ready)" in app
+    moderator = app.split("function moderatorList", 1)[1].split("async function moderationWrite", 1)[0]
+    assert "semantic_readiness_shadow" not in moderator

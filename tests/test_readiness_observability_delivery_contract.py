@@ -230,7 +230,28 @@ def test_aligned_readiness_builds_shadow_only_meta_payload():
     assert payload["status"] == readiness.STATUS
     assert payload["matches"] == 1
     assert payload["dimension_status_counts"]["identity"]["READY"] == 1
+    assert payload["dimension_state_totals"] == {"READY": 1, "NOT_READY": 0, "UNKNOWN": 0}
     assert "overall_ready" not in payload
+
+
+def test_meta_projection_rejects_invalid_dimension_counts():
+    results = _results()
+    report = _report(results)
+    report.update({
+        "mode": readiness.MODE,
+        "summary": {
+            "matches": 1,
+            "dimension_status_counts": {"identity": {"READY": 1, "NOT_READY": 1, "UNKNOWN": 0}},
+            "pbp_market_status_counts": {},
+        },
+    })
+    payload = readiness.observability_meta_payload(results, report)
+    assert payload == {
+        "mode": readiness.MODE,
+        "available": False,
+        "status": "N/D",
+        "reason": "READINESS_DIMENSION_COUNTS_INVALID",
+    }
 
 
 def test_stale_readiness_meta_is_explicit_nd_without_zero_counts():

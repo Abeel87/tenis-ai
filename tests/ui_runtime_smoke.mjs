@@ -3,7 +3,8 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const read=n=>fs.readFileSync('frontend/'+n,'utf8');
 const fixtureDir=process.env.TENIS_UI_FIXTURES||'frontend/data';
-const feed=n=>fs.existsSync(fixtureDir+'/'+n)?JSON.parse(fs.readFileSync(fixtureDir+'/'+n)):null;
+const baseFixtureDir='frontend/data';
+const feed=n=>{const preferred=fixtureDir+'/'+n,base=baseFixtureDir+'/'+n,path=fs.existsSync(preferred)?preferred:fs.existsSync(base)?base:null;return path?JSON.parse(fs.readFileSync(path)):null};
 const matches=feed('results.json')||[{id:1,p1:'Alpha',p2:'Beta',scheduled_time:new Date(Date.now()+3600000).toISOString(),first_set_win:{Alpha:60,Beta:40},game_states:{2:{'1:1':65}}},{id:2,p1:'Gamma',p2:'Delta',scheduled_time:new Date(Date.now()+3600000).toISOString(),first_set_win:{Gamma:60,Delta:40}}];
 const symphony=feed('symphony2_current.json')||{matches};
 const deliveryIndex=feed('delivery/index.json');
@@ -74,6 +75,20 @@ assert(read('app.js').includes('class="h2h-bar"'),'H2H comparison bar renderer r
 const overview=await route('#admin/dashboard');
 assert(overview.includes('PRZEGLĄD')&&overview.includes('TECHNICZNE'));
 assert(!overview.includes('<pre>'),'Overview must not expose raw reports');
+const readinessMeta=feed('meta.json')?.semantic_readiness_shadow;
+if(readinessMeta){
+ if(readinessMeta.available===true){
+  assert(overview.includes('data-readiness-shadow="available"'),'Admin overview exposes additive SHADOW readiness');
+  for(const state of ['READY','NOT_READY','UNKNOWN'])assert(overview.includes(`data-readiness-state="${state}"`),'SHADOW tri-state totals remain distinct');
+  for(const v of Object.values(readinessMeta.dimension_state_totals||{}))assert(overview.includes(String(v)),'Backend readiness totals render without frontend inference');
+  assert(overview.includes('data-readiness-diagnostics="available"'),'Diagnostic SHADOW readiness is visible');
+  assert(overview.includes('data-readiness-dimension="identity"')&&overview.includes('data-readiness-dimension="freshness"'),'Diagnostic panel renders backend readiness dimensions');
+ }else{
+  assert(overview.includes('data-readiness-shadow="nd"'),'Unavailable semantic readiness renders explicit N/D state');
+  assert(overview.includes('data-readiness-diagnostics="nd"'),'Diagnostic readiness also remains N/D');
+  assert(overview.includes(readinessMeta.reason),'Unavailable semantic readiness exposes backend reason code');
+ }
+}
 const neuron=await ctx.TENIS_AI_NEURON_DATA.summary();
 if(neuron?.status){assert(overview.includes(neuron.status),'Read real published Neuron artifact');if(!neuron.generated_at&&!neuron.updated_at)assert(overview.includes('świeżość niepotwierdzona'),'Do not fabricate freshness without timestamp')}
 assert(!/\d{4}-\d{2}-\d{2}T\d{2}:/.test(overview),'Overview formats timestamps');
