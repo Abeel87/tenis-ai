@@ -654,17 +654,19 @@ Porównać z samym Player DNA.
 
 ## LOGIC-08 — Readiness Semantics Audit
 
-**Status:** IN PROGRESS — SHADOW semantics/reporting only.
+**Status:** IN PROGRESS — phase-1 SHADOW semantics merged in PR #402; consumer inventory / migration-plan audit active.
 
-**Canonical owner:** `backend/readiness_engine_shadow.py`.
+**Canonical semantic owner:** `backend/readiness_engine_shadow.py`.
 
-Najpierw raportować deterministic reason codes i `READY / NOT_READY / UNKNOWN` obok starego `model_ready`.
+**Canonical consumer inventory:** `TENIS_AI_READINESS_CONSUMER_MAP.md`.
 
-Pierwsza implementacja wyłącznie komponuje istniejące evidence owners. Coverage bez zatwierdzonej sufficiency policy pozostaje `UNKNOWN`; twardy brak wymaganego dowodu może być `NOT_READY`. Legacy `model_ready` jest observational/read-only.
+Phase 1 reports deterministic reason codes and `READY / NOT_READY / UNKNOWN` beside legacy `model_ready`. Coverage without an approved sufficiency policy remains `UNKNOWN`; a hard missing required input under an existing contract may be `NOT_READY`. Legacy `model_ready` remains observational/read-only for the SHADOW engine.
 
-Market/family readiness wolno oznaczyć `READY` tylko przez istniejący jawny contract (np. PBP `market_evidence_v940`). Nie utożsamiać PBP evidence, operator `market_ready` ani Symphony `learning_model_ready` z ogólną gotowością.
+Market/family readiness may be `READY` only through an existing explicit contract such as PBP `market_evidence_v940`. PBP `market_ready`, Symphony `learning_model_ready`, and Superbet operator availability are separate contracts and must not be collapsed into one overall readiness flag.
 
-Nie usuwać starego boola ani nie migrować runtime/UI konsumentów w pierwszym PR. Zero probability, threshold, weight, training, PLAYABLE lub iNeed$ influence.
+Phase 2 freezes every producer/consumer of exact legacy `model_ready`, classifies its role, and defines migration order. No runtime/UI consumer changes behavior in the consumer-audit PR. Runtime/learning gates require consumer-specific evidence before migration; legacy `model_ready` cannot be removed while any audited consumer still depends on it.
+
+Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ---
 
