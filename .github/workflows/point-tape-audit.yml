@@ -32,6 +32,7 @@ on:
       - 'backend/player_dna_pressure_challenger.py'
       - 'backend/player_dna_tiebreak_challenger.py'
       - 'backend/player_dna_recent_form_challenger.py'
+      - 'backend/readiness_engine_shadow.py'
       - 'backend/player_dna_small_sample_challenger.py'
       - 'backend/player_dna_point_scorer.py'
       - 'backend/player_dna_current_shadow.py'
@@ -74,6 +75,7 @@ on:
       - 'tests/test_player_dna_pressure_challenger.py'
       - 'tests/test_player_dna_tiebreak_challenger.py'
       - 'tests/test_player_dna_recent_form_challenger.py'
+      - 'tests/test_readiness_engine_shadow.py'
       - 'tests/test_player_dna_small_sample_challenger.py'
       - 'tests/test_player_dna_point_scorer.py'
       - 'tests/test_player_dna_current_shadow.py'
@@ -123,7 +125,7 @@ jobs:
             tennis-history-${{ runner.os }}-
 
       - name: Point tape + atomic validator + Player DNA identity/context tests
-        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_phase13_performance.py tests/test_player_dna_phase14_lifecycle.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
+        run: python -m pytest -q tests/test_point_tape_schema.py tests/test_point_transition_audit.py tests/test_atomic_point_transition.py tests/test_canonical_point_event.py tests/test_player_dna_point_dataset.py tests/test_player_dna_match_metadata_audit.py tests/test_player_dna_match_context.py tests/test_player_dna_context_time_audit.py tests/test_player_dna_ordering_authority_audit.py tests/test_player_dna_profile_readiness.py tests/test_player_dna_service_split_source_readiness.py tests/test_player_dna_pbp_service_split_readiness.py tests/test_player_dna_match_state_readiness.py tests/test_player_dna_match_state_profiles.py tests/test_player_dna_match_state_challenger.py tests/test_player_dna_shadow_profiles.py tests/test_player_dna_phase13_performance.py tests/test_player_dna_phase14_lifecycle.py tests/test_player_dna_matchup_readiness_audit.py tests/test_player_dna_matchup_challenger.py tests/test_player_dna_matchup_engine.py tests/test_player_dna_point_probability_engine.py tests/test_player_dna_opponent_context_audit.py tests/test_player_dna_opponent_adjustment_audit.py tests/test_player_dna_pressure_challenger.py tests/test_player_dna_tiebreak_challenger.py tests/test_player_dna_recent_form_challenger.py tests/test_readiness_engine_shadow.py tests/test_player_dna_point_scorer.py tests/test_player_dna_current_shadow.py tests/test_player_dna_current_dynamic_shadow.py tests/test_player_dna_tennis_simulator.py tests/test_player_dna_tennis_state_engine.py tests/test_player_dna_market_backtest.py tests/test_player_dna_market_walk_forward.py tests/test_player_dna_hold_calibration.py tests/test_player_dna_hold_walk_forward.py tests/test_player_dna_prospective_validation.py tests/test_player_identity.py
 
       - name: Audit cached PBP fields (zero network)
         run: python backend/point_tape_audit.py
@@ -1248,6 +1250,81 @@ jobs:
               f"robust={signal.get('robust_walk_forward')} "
               f"train={report.get('train_points_after_l5_support_gate')} "
               f"holdout_points={report.get('holdout_points_after_l5_support_gate')}"
+          )
+          PY
+
+      - name: Build LOGIC-08 semantic readiness audit (SHADOW, zero network)
+        run: python backend/readiness_engine_shadow.py
+
+      - name: Guard LOGIC-08 semantic readiness isolation
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          p = Path('frontend/data/readiness_engine_shadow.json')
+          if not p.exists():
+              raise SystemExit('readiness_engine_shadow.json was not generated')
+          report = json.loads(p.read_text(encoding='utf-8'))
+          if report.get('mode') != 'SHADOW_READINESS_SEMANTICS_AUDIT_ONLY':
+              raise SystemExit('LOGIC-08 readiness mode invalid')
+          if report.get('status') != 'READINESS_SEMANTICS_SHADOW_EVIDENCE_READY':
+              raise SystemExit(f"LOGIC-08 readiness status invalid: {report.get('status')}")
+          if report.get('network_calls') != 0:
+              raise SystemExit('LOGIC-08 readiness performed network calls')
+          for key in (
+              'production_influence',
+              'runtime_scoring_enabled',
+              'runtime_gating_enabled',
+              'training_join_enabled',
+              'current_engine_write_enabled',
+              'legacy_model_ready_write_enabled',
+              'probability_created',
+              'weights_created',
+              'thresholds_created',
+              'feature_activation',
+              'symphony2_influence',
+              'superbet_playable_influence',
+              'ineed_influence',
+              'auto_promote',
+              'promotion_gate',
+          ):
+              if report.get(key) is not False:
+                  raise SystemExit(f'LOGIC-08 readiness isolation violation: {key}')
+
+          contract = report.get('semantic_contract') or {}
+          if contract.get('states') != ['READY', 'NOT_READY', 'UNKNOWN']:
+              raise SystemExit('LOGIC-08 tri-state contract drifted')
+          for key in (
+              'unknown_is_not_not_ready',
+              'no_single_overall_ready_boolean',
+              'legacy_model_ready_observational_only',
+              'coverage_is_not_automatically_readiness',
+              'missing_policy_stays_unknown',
+              'market_readiness_requires_existing_explicit_contract',
+              'no_probability_or_model_recalculation',
+          ):
+              if contract.get(key) is not True:
+                  raise SystemExit(f'LOGIC-08 semantic contract violation: {key}')
+          source = report.get('source_snapshot') or {}
+          if int(source.get('legacy_model_ready_reference_mismatches') or 0) != 0:
+              raise SystemExit('LOGIC-08 Current Engine read-only reference mismatch')
+          if source.get('history_coverage_snapshot_aligned') is not True:
+              raise SystemExit('LOGIC-08 history coverage snapshot is not aligned')
+          if source.get('player_state_snapshot_aligned') is not True:
+              raise SystemExit('LOGIC-08 Player State snapshot is not aligned')
+          if source.get('result_match_ids_unique') is not True:
+              raise SystemExit('LOGIC-08 results contain duplicate/missing match IDs')
+
+          summary = report.get('summary') or {}
+          if int(summary.get('matches') or 0) <= 0:
+              raise SystemExit('LOGIC-08 readiness report has no current matches')
+          print(
+              'LOGIC-08 readiness: '
+              f"matches={summary.get('matches')} "
+              f"legacy_ready={summary.get('legacy_model_ready_true')} "
+              f"identity={((summary.get('dimension_status_counts') or {}).get('identity'))} "
+              f"pbp={((summary.get('dimension_status_counts') or {}).get('pbp'))}"
           )
           PY
 
@@ -4332,6 +4409,7 @@ jobs:
             frontend/data/player_dna_tiebreak_challenger.json
             frontend/data/player_dna_recent_form_challenger.json
             frontend/data/player_dna_player_state_shadow.json
+            frontend/data/readiness_engine_shadow.json
             frontend/data/player_dna_small_sample_challenger.json
             frontend/data/player_dna_point_scorer.json
             frontend/data/player_dna_current_shadow.json

@@ -488,6 +488,8 @@ Zweryfikować ATP/CH/WTA i event-level priors. Brak mieszania populacji bez dowo
 
 Obecny boolean nie powinien być interpretowany jako uniwersalna gotowość wszystkich rynków.
 
+SHADOW audit owner dla semantycznego readiness: `backend/readiness_engine_shadow.py`. Legacy `model_ready` pozostaje read-only i bez zmiany semantyki podczas migracji.
+
 ### P1.7 Learning Integrity
 
 Selection bias, różne sample sizes i brak pełnego ledger wymagają wspólnego benchmarku.
@@ -652,9 +654,17 @@ Porównać z samym Player DNA.
 
 ## LOGIC-08 — Readiness Semantics Audit
 
-Najpierw raportować reason codes obok starego `model_ready`.
+**Status:** IN PROGRESS — SHADOW semantics/reporting only.
 
-Sprawdzić readiness per market/family. Nie usuwać starego boola przed migracją wszystkich konsumentów.
+**Canonical owner:** `backend/readiness_engine_shadow.py`.
+
+Najpierw raportować deterministic reason codes i `READY / NOT_READY / UNKNOWN` obok starego `model_ready`.
+
+Pierwsza implementacja wyłącznie komponuje istniejące evidence owners. Coverage bez zatwierdzonej sufficiency policy pozostaje `UNKNOWN`; twardy brak wymaganego dowodu może być `NOT_READY`. Legacy `model_ready` jest observational/read-only.
+
+Market/family readiness wolno oznaczyć `READY` tylko przez istniejący jawny contract (np. PBP `market_evidence_v940`). Nie utożsamiać PBP evidence, operator `market_ready` ani Symphony `learning_model_ready` z ogólną gotowością.
+
+Nie usuwać starego boola ani nie migrować runtime/UI konsumentów w pierwszym PR. Zero probability, threshold, weight, training, PLAYABLE lub iNeed$ influence.
 
 ---
 
