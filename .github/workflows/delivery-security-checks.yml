@@ -38,4 +38,19 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - run: npm audit --package-lock-only
+      - run: npm install --global npm@11
+      - name: Audit npm dependencies with fail-closed OSV fallback
+        run: |
+          set +e
+          npm audit --package-lock-only 2>&1 | tee /tmp/npm-audit.log
+          audit_rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$audit_rc" -eq 0 ]; then
+            exit 0
+          fi
+          if grep -Eq '503 Service Unavailable|performing maintenance|ECONNRESET|ETIMEDOUT|EAI_AGAIN' /tmp/npm-audit.log; then
+            echo "npm audit service unavailable; running fail-closed OSV lockfile fallback"
+            python scripts/osv_lock_audit.py package-lock.json
+            exit $?
+          fi
+          exit "$audit_rc"

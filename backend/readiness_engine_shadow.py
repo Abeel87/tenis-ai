@@ -35,6 +35,13 @@ READY = "READY"
 NOT_READY = "NOT_READY"
 UNKNOWN = "UNKNOWN"
 VALID_STATES = {READY, NOT_READY, UNKNOWN}
+OBSERVABILITY_ISOLATION_FIELDS = (
+    "production_influence", "runtime_scoring_enabled", "runtime_gating_enabled",
+    "training_join_enabled", "current_engine_write_enabled",
+    "legacy_model_ready_write_enabled", "probability_created", "weights_created",
+    "thresholds_created", "feature_activation", "symphony2_influence",
+    "superbet_playable_influence", "ineed_influence", "auto_promote", "promotion_gate",
+)
 
 # LOGIC-01 deliberately measured freshness scenarios without selecting a magic
 # cutoff.  Until a separate evidence/promotion decision selects one, semantic
@@ -107,6 +114,59 @@ def observability_snapshot_alignment(
         "available": True,
         "reason": "EXACT_RESULTS_SNAPSHOT_ALIGNED",
         "results_snapshot_sha256": current,
+    }
+
+
+def observability_meta_payload(
+    results: list[dict[str, Any]],
+    report: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Project an exact-snapshot readiness report into additive SHADOW metadata."""
+    verdict = observability_snapshot_alignment(results, report)
+    if verdict.get("available") is not True:
+        return {
+            "mode": MODE,
+            "available": False,
+            "status": "N/D",
+            "reason": verdict.get("reason") or "READINESS_REPORT_UNAVAILABLE",
+        }
+
+    report = report if isinstance(report, dict) else {}
+    if report.get("mode") != MODE:
+        return {
+            "mode": MODE,
+            "available": False,
+            "status": "N/D",
+            "reason": "READINESS_MODE_MISMATCH",
+        }
+    if report.get("network_calls") != 0 or any(report.get(key) is not False for key in OBSERVABILITY_ISOLATION_FIELDS):
+        return {
+            "mode": MODE,
+            "available": False,
+            "status": "N/D",
+            "reason": "READINESS_ISOLATION_CONTRACT_FAILED",
+        }
+
+    summary = report.get("summary") or {}
+    if not isinstance(summary, dict) or summary.get("matches") != len(results):
+        return {
+            "mode": MODE,
+            "available": False,
+            "status": "N/D",
+            "reason": "READINESS_SUMMARY_MISMATCH",
+        }
+
+    return {
+        "mode": MODE,
+        "available": True,
+        "status": report.get("status"),
+        "reason": verdict.get("reason"),
+        "generated_at": report.get("generated_at"),
+        "results_snapshot_contract": SNAPSHOT_CONTRACT,
+        "results_snapshot_sha256": verdict.get("results_snapshot_sha256"),
+        "matches": summary.get("matches"),
+        "dimension_status_counts": summary.get("dimension_status_counts") or {},
+        "pbp_market_status_counts": summary.get("pbp_market_status_counts") or {},
     }
 
 
