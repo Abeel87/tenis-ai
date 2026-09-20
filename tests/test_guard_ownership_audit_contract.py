@@ -33,7 +33,7 @@ def test_guard_ownership_audit_matches_exact_active_workflow_inventory():
     assert audited
     assert audited == active
     text = AUDIT.read_text(encoding="utf-8")
-    assert f"Active guard/validation invocations after the phase-2 local workflow cleanup: **{len(active)}**." in text
+    assert f"Active guard/validation invocations after the phase-3 semantic naming cleanup: **{len(active)}**." in text
 
 
 def test_guard_ownership_audit_freezes_confirmed_bo5_owner_boundaries():
