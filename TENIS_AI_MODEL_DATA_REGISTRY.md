@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-2 merged (#434/#435); phase 3 exact dynamic Superbet combined-price proof implemented locally, still no runtime/economic wiring.
+**Status:** ACTIVE - phases 1-3 merged (#434/#435/#436); phase 4 pure whole-builder economics/reservation proposal implemented locally, still no runtime persistence or one-ticket settlement.
 
 **Current owner/economic unit:** `backend/ineed_scoped_runner.py` filters current playable Symphony rows and calls `backend/ineed_money.py::evaluate()` on individual signals. Each signal is qualified, priced, risked and staked independently; `build_settlements()` resolves individual open bets. Therefore current iNeed$ is single-leg economics, not final Bet Builder economics.
 
@@ -766,7 +766,11 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-3 evidence:** public Superbet PL client statically exposes read-only `v2/getSgaOddPrice` for exact selected UUID sets. Two current final Symphony compositions with complete Direct UUID mapping both returned HTTP 200, ACTIVE/ACTIVE, exact requested leg UUID sets and operator combined price 1.50 with distinct `sgaUuid` values. For one case leg-price product was 1.4342 while operator BB price was 1.50, proving no multiplication fallback. Pure parser/resolver only; zero runner/frontend/settlement consumer. Fresh `9f627af2...` proof after Superbet publication: 36 final PLAYABLE / 5 Direct / 2 exact-UUID compositions / 2 exact dynamic quotes. Canonical source URL is part of fail-closed provenance and survives attachment together with source kind, event id, SGA UUID and component UUIDs.
 
-**Next proof:** merge phase 3 after full CI and post-merge isolation proof. Only after that may a separate phase define builder-level EV/risk/stake against this exact dynamic quote; current single-leg economics remain untouched until explicitly migrated.
+**Phase-4 evidence:** #436 merged as `05e818d4...`; post-merge Delivery/Security, CodeQL, UI Health and Update+Pages `35542439634` are GREEN through final full regression and Pages deploy. `evaluate_builder_economics_shadow()` is a pure non-runtime owner for whole-ticket economics: it consumes only exact verified builder price + upstream Symphony joint probability, reuses existing V1 tax economics/risk state, and emits `SHADOW_QUALIFIED/SHADOW_REJECTED` plus one nonpersisted reservation proposal per composition. It never enters current `ineed-sync` and never emits V1 `QUALIFIED`. Fresh `5a623eac...` live proof: 56 final PLAYABLE / 5 intersect verified Direct / 3 exact UUID / 3 exact dynamic quotes; operator prices 1.45, 1.70 and 1.55 are all LOW_EV (-21.50%, -8.29%, -22.72%) and correctly create zero reservation. Validation: focused 27/27, broad 371/371, full repo 1388/1388 GREEN.
+
+**Persistence blocker:** current Supabase V1 is single-leg by schema and RPC (`ineed_shadow_bets.signal_id UNIQUE`, `ineed_system_place_bet(target_signal_id)`), while `ineed-sync` automatically places status `QUALIFIED`. Phase 4 therefore cannot be published through current V1. A separate builder-ticket schema/sync + one-ticket settlement phase is required after pure economics merge.
+
+**Next proof:** merge Phase 4 as pure SHADOW economics only after exact-head CI. Then perform post-merge isolation proof; only a separate later phase may introduce builder-ticket persistence and one-ticket settlement.
 
 ---
 

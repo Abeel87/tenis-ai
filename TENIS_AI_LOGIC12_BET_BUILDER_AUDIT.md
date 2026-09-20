@@ -128,3 +128,14 @@ Live read-only proof on the two current final Symphony compositions that had eve
 For the first proof composition, current single-leg Direct prices were `1.42` and `1.01` (product `1.4342`) while the operator dynamic BB price was `1.50`; therefore the combined price is demonstrably not synthesized by multiplying correlated leg odds.
 
 Fresh post-publication proof on `9f627af2...`: 36 final PLAYABLE, 5 intersect verified Direct, 2 have complete exact operator UUID mapping and 2/2 return exact dynamic HTTP 200 quotes at `1.50`. The parser additionally requires the canonical audited source URL generated for the exact event/UUID set; a foreign host/path is rejected before the payload can become operator-verified provenance.
+
+
+## Phase-4 whole-builder economics proof
+
+Phase 4 keeps the final Bet Builder as one economic unit. `evaluate_builder_economics_shadow()` consumes only a final Symphony composition with an exact verified combined quote. Symphony `joint_probability` is passed through unchanged; individual leg odds never participate in BB economics. The existing iNeed$ tax payout and drawdown/risk state are reused, while builder no-vig remains N/D because no verified opposing-composition market is available.
+
+Risk allocation is proposal-only: one `SHADOW_PROPOSED` reservation key `builder:<composition_id>` per whole ticket, with single/match/player/constituent-market/total exposure caps applied conservatively. The evaluator never returns current V1 status `QUALIFIED`, marks every row `runtime_publishable=false`, and writes nothing to Supabase. Duplicate compositions, missing identity/quote provenance, stale odds, LOW_EV, halted risk or insufficient exposure headroom fail closed with no reservation.
+
+Current Supabase V1 cannot safely persist this object: its shadow bet is uniquely linked to one `signal_id`, placement RPC accepts one signal, and `ineed-sync` automatically invokes placement for `QUALIFIED`. No schema/RPC/sync change is included in Phase 4.
+
+Fresh live proof on `5a623eac...`: 56 final PLAYABLE -> 5 intersect verified Direct -> 3 exact UUID compositions -> 3/3 dynamic combined quotes. Operator prices are 1.45, 1.70 and 1.55; after existing tax rules NET EV is -21.50%, -8.29% and -22.72%, so all three are `SHADOW_REJECTED / LOW_EV`, with no final stake and no reservation proposal. Focused tests 27/27 GREEN, broader owner/quote/Symphony 371/371 GREEN, full repository 1388/1388 GREEN.

@@ -4,19 +4,22 @@ from __future__ import annotations
 
 This module is intentionally not wired into the production iNeed$ runner.
 It consumes the already-published final Symphony composition and may attach
-only an exact verified operator-provided combined quote. It does not compute
-probability, EV, Kelly, stake, settlement, or real-money actions.
+only an exact verified operator-provided combined quote. Phase 4 may compute
+additive SHADOW-only builder economics/reservation proposals, but never runtime
+persistence, settlement, probability, or real-money actions.
 """
 
 from copy import deepcopy
+from datetime import datetime, timezone
 import hashlib
 import json
+import math
 
 try:
-    from .ineed_money import direct_quote
+    from .ineed_money import direct_quote, economics, risk_state
     from .superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 except ImportError:
-    from ineed_money import direct_quote
+    from ineed_money import direct_quote, economics, risk_state
     from superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 
 OPERATOR = "superbet.pl"
@@ -244,3 +247,330 @@ def attach_verified_combined_quote(composition: dict, quote: dict | None) -> dic
     }
     out["economic_ready"] = True
     return out
+
+
+_BUILDER_OPEN = {"PENDING", "SHADOW_PLACED"}
+
+
+def _num(value, default=None):
+    try:
+        out = float(value)
+        return out if math.isfinite(out) else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _iso(value) -> datetime | None:
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def _builder_kelly(p: float, effective_odds: float) -> float:
+    b = effective_odds - 1.0
+    if b <= 0:
+        return 0.0
+    return max(0.0, (b * p - (1.0 - p)) / b)
+
+
+def _builder_round_down(value: float, step: float) -> float:
+    if step <= 0:
+        return value
+    return math.floor((value + 1e-12) / step) * step
+
+
+def _builder_open(rows: list[dict]) -> list[dict]:
+    return [row for row in rows if isinstance(row, dict) and str(row.get("status")) in _BUILDER_OPEN]
+
+
+def _builder_overlap_player(bet: dict, p1: str, p2: str) -> bool:
+    snap = bet.get("placement_snapshot") or bet.get("current_snapshot") or {}
+    names = {
+        _text(snap.get("p1")).casefold(),
+        _text(snap.get("p2")).casefold(),
+    }
+    wanted = {_text(p1).casefold(), _text(p2).casefold()}
+    return bool({x for x in names if x} & {x for x in wanted if x})
+
+
+def _builder_bet_markets(bet: dict) -> set[str]:
+    snap = bet.get("placement_snapshot") or bet.get("current_snapshot") or {}
+    values = set(str(x) for x in (bet.get("builder_markets") or snap.get("builder_markets") or []) if x)
+    if bet.get("market"):
+        values.add(str(bet["market"]))
+    return values
+
+
+def _builder_reject(base: dict, reason: str, status: str = "SHADOW_REJECTED") -> dict:
+    return {
+        **base,
+        "status": status,
+        "reason_code": reason,
+        "reservation_proposal": None,
+        "runtime_publishable": False,
+        "automatic_real_betting": False,
+    }
+
+
+def _verified_builder_economic_input(row: dict) -> bool:
+    provenance = row.get("combined_price_provenance")
+    component_ids = (provenance or {}).get("component_selection_ids")
+    legs = [x for x in (row.get("legs") or []) if isinstance(x, dict)]
+    return bool(
+        row.get("mode") == "SHADOW"
+        and row.get("operator") == OPERATOR
+        and row.get("combined_price_status") == "VERIFIED"
+        and row.get("economic_ready") is True
+        and isinstance(provenance, dict)
+        and provenance.get("operator_verified") is True
+        and provenance.get("freshness_verified") is True
+        and provenance.get("quote_kind") == QUOTE_KIND
+        and _text(provenance.get("source"))
+        and _text(provenance.get("odds_timestamp"))
+        and len(legs) >= 2
+        and row.get("leg_count") == len(legs)
+        and isinstance(component_ids, list)
+        and len(component_ids) == len(legs)
+        and len(set(map(str, component_ids))) == len(component_ids)
+    )
+
+
+def evaluate_builder_economics_shadow(
+    compositions: list[dict], cfg: dict, state: dict, now: datetime | None = None
+) -> list[dict]:
+    """Evaluate whole-builder economics without publishing or reserving bankroll."""
+    now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    available = float(state.get("available_capital") or 0.0)
+    allocated = list(state.get("open_bets") or [])
+    existing_open = _builder_open(allocated)
+    existing_composition_ids = {
+        _text((x.get("placement_snapshot") or x.get("current_snapshot") or {}).get("composition_id"))
+        for x in existing_open
+        if _text((x.get("placement_snapshot") or x.get("current_snapshot") or {}).get("composition_id"))
+    }
+    exposure = sum(float(x.get("stake") or 0.0) for x in existing_open)
+    equity = float(state.get("bankroll_equity") or (available + exposure))
+    experiment = state.get("experiment") or {}
+    peak = float(
+        state.get("peak_bankroll")
+        or max(float(experiment.get("starting_bankroll") or equity), equity)
+    )
+    rstate, drawdown = risk_state(equity, peak, cfg)
+    profile = (cfg.get("risk_profiles") or {}).get(rstate) or {}
+    min_ev = float(profile.get("minimum_net_ev", cfg.get("minimum_net_ev", 0.05)))
+    min_edge = float(profile.get("minimum_edge_pp", cfg.get("minimum_edge_pp", 4.0)))
+    stake_mult = float(profile.get("stake_multiplier", 1.0))
+    exp_mult = float(profile.get("exposure_multiplier", 1.0))
+    minimum_stake = float(cfg.get("minimum_stake", 2.0))
+    results: list[dict | None] = [None] * len(compositions)
+    candidates = []
+    seen: set[str] = set()
+
+    for idx, row in enumerate(compositions or []):
+        if not isinstance(row, dict):
+            results[idx] = _builder_reject({}, "INVALID_COMPOSITION")
+            continue
+        cid = _text(row.get("composition_id"))
+        base = {
+            "composition_id": cid or None,
+            "match_id": _text(row.get("match_id")) or None,
+            "p1": row.get("p1"), "p2": row.get("p2"),
+            "leg_count": row.get("leg_count"),
+            "joint_probability": row.get("joint_probability"),
+            "odds": row.get("combined_odds"),
+            "combined_price_provenance": deepcopy(row.get("combined_price_provenance")),
+            "runtime_publishable": False,
+            "automatic_real_betting": False,
+            "reservation_proposal": None,
+        }
+        if not cid:
+            results[idx] = _builder_reject(base, "INVALID_COMPOSITION")
+            continue
+        if not _text(row.get("p1")) or not _text(row.get("p2")):
+            results[idx] = _builder_reject(base, "INVALID_COMPOSITION")
+            continue
+        if cid in existing_composition_ids:
+            results[idx] = _builder_reject(base, "DUPLICATE_COMPOSITION")
+            continue
+        if not _verified_builder_economic_input(row):
+            results[idx] = _builder_reject(base, "NO_EXACT_OPERATOR_BUILDER_QUOTE")
+            continue
+        joint = _num(row.get("joint_probability"))
+        odds = _num(row.get("combined_odds"))
+        if joint is None or not (0.0 <= joint <= 100.0) or odds is None or odds <= 1.0:
+            results[idx] = _builder_reject(base, "INVALID_ECONOMIC_INPUT")
+            continue
+        ts = _iso((row.get("combined_price_provenance") or {}).get("odds_timestamp"))
+        if ts is None:
+            results[idx] = _builder_reject(base, "INVALID_ODDS_TIMESTAMP")
+            continue
+        age_seconds = (now - ts).total_seconds()
+        if age_seconds > float(cfg.get("odds_max_age_minutes", 108)) * 60:
+            results[idx] = _builder_reject(
+                {**base, "odds_timestamp": ts.isoformat()}, "STALE_ODDS", "SHADOW_EXPIRED"
+            )
+            continue
+        if odds < float(cfg.get("minimum_odds", 1.01)):
+            results[idx] = _builder_reject(base, "ODDS_OUT_OF_RANGE")
+            continue
+        maximum_odds = cfg.get("maximum_odds")
+        if maximum_odds is not None and odds > float(maximum_odds):
+            results[idx] = _builder_reject(base, "ODDS_OUT_OF_RANGE")
+            continue
+
+        econ = economics(joint, odds, cfg, siblings=None, stake=1.0)
+        enriched = {**base, **econ, "odds": odds, "odds_timestamp": ts.isoformat()}
+        if rstate == "HALTED":
+            results[idx] = _builder_reject(enriched, "RISK_ENGINE_HALTED")
+            continue
+        if econ["expected_value_net"] < min_ev:
+            results[idx] = _builder_reject(enriched, "LOW_EV")
+            continue
+        if econ["edge_probability_points"] < min_edge:
+            results[idx] = _builder_reject(enriched, "LOW_EDGE")
+            continue
+        legs = [x for x in (row.get("legs") or []) if isinstance(x, dict)]
+        reliabilities = [_num(x.get("learning_reliability")) for x in legs]
+        confidence = min(reliabilities) if reliabilities and all(x is not None for x in reliabilities) else None
+        minimum_conf = cfg.get("minimum_confidence")
+        if minimum_conf is not None and (confidence is None or confidence < float(minimum_conf)):
+            results[idx] = _builder_reject({**enriched, "confidence": confidence}, "LOW_CONFIDENCE")
+            continue
+        markets = sorted({_text(x.get("market")) for x in legs if _text(x.get("market"))})
+        if not markets:
+            results[idx] = _builder_reject(enriched, "INVALID_COMPOSITION")
+            continue
+        if cid in seen:
+            results[idx] = _builder_reject(enriched, "DUPLICATE_COMPOSITION")
+            continue
+        seen.add(cid)
+        candidates.append({
+            "idx": idx, "row": row, "base": enriched, "econ": econ,
+            "confidence": confidence, "markets": markets,
+            "p1": _text(row.get("p1")), "p2": _text(row.get("p2")),
+        })
+
+    candidates.sort(key=lambda item: item["econ"]["expected_value_net"], reverse=True)
+
+    for item in candidates:
+        idx = item["idx"]
+        row = item["row"]
+        base = item["base"]
+        markets = item["markets"]
+        p1, p2 = item["p1"], item["p2"]
+        active = _builder_open(allocated)
+        current_total = sum(float(x.get("stake") or 0.0) for x in active)
+        same_match = sum(
+            float(x.get("stake") or 0.0) for x in active
+            if _text(x.get("match_id")) == _text(row.get("match_id"))
+        )
+        same_player = sum(
+            float(x.get("stake") or 0.0) for x in active
+            if _builder_overlap_player(x, p1, p2)
+        )
+        market_exposure = {
+            market: sum(
+                float(x.get("stake") or 0.0) for x in active
+                if market in _builder_bet_markets(x)
+            )
+            for market in markets
+        }
+        p = float(item["econ"]["model_probability"])
+        kelly = _builder_kelly(p, float(item["econ"]["effective_odds_after_tax"]))
+        stake = equity * kelly * float(cfg.get("fractional_kelly", 0.25)) * stake_mult
+        single_cap = equity * float(cfg.get("max_single_bet_pct", 0.03)) * stake_mult
+        match_cap = equity * float(cfg.get("max_match_exposure_pct", 0.03)) * exp_mult
+        player_cap = equity * float(cfg.get("max_player_exposure_pct", 0.03)) * exp_mult
+        market_cap = equity * float(cfg.get("max_market_exposure_pct", 0.15)) * exp_mult
+        total_cap = equity * float(cfg.get("max_total_exposure_pct", 0.15)) * exp_mult
+        match_headroom = max(0.0, match_cap - same_match)
+        player_headroom = max(0.0, player_cap - same_player)
+        market_headroom = min(max(0.0, market_cap - market_exposure[m]) for m in markets)
+        total_headroom = max(0.0, total_cap - current_total)
+        stake = min(
+            stake, single_cap, match_headroom, player_headroom,
+            market_headroom, total_headroom, available,
+        )
+        stake = _builder_round_down(stake, float(cfg.get("stake_rounding", 0.01)))
+        if stake < minimum_stake:
+            if match_headroom < minimum_stake:
+                reason = "MATCH_EXPOSURE_LIMIT"
+            elif player_headroom < minimum_stake:
+                reason = "CORRELATION_LIMIT"
+            elif market_headroom < minimum_stake:
+                reason = "MARKET_EXPOSURE_LIMIT"
+            elif total_headroom < minimum_stake:
+                reason = "TOTAL_EXPOSURE_LIMIT"
+            elif available < minimum_stake:
+                reason = "BANKROLL_TOO_LOW"
+            else:
+                reason = "STAKE_BELOW_MINIMUM"
+            results[idx] = _builder_reject({**base, "kelly_full": kelly}, reason)
+            continue
+
+        final_econ = economics(
+            float(row["joint_probability"]), float(row["combined_odds"]), cfg,
+            siblings=None, stake=stake,
+        )
+        reservation = {
+            "status": "SHADOW_PROPOSED",
+            "unit": "BET_BUILDER_COMPOSITION",
+            "reservation_key": f"builder:{row['composition_id']}",
+            "composition_id": row["composition_id"],
+            "amount": stake,
+            "currency": cfg.get("currency", "PLN"),
+            "runtime_publishable": False,
+        }
+        snapshot = {
+            "timestamp": now.isoformat(),
+            "operator": OPERATOR,
+            "mode": "SHADOW",
+            "economic_unit": "BET_BUILDER_COMPOSITION",
+            "composition_id": row["composition_id"],
+            "match_id": row.get("match_id"),
+            "p1": row.get("p1"), "p2": row.get("p2"),
+            "builder_markets": markets,
+            "joint_probability": row.get("joint_probability"),
+            "combined_odds": row.get("combined_odds"),
+            "combined_price_provenance": deepcopy(row.get("combined_price_provenance")),
+            "risk_state": rstate, "drawdown": drawdown,
+            "kelly_full": kelly, "fractional_kelly": cfg.get("fractional_kelly"),
+            "final_stake": stake, "automatic_real_betting": False,
+        }
+        results[idx] = {
+            **base,
+            **final_econ,
+            "status": "SHADOW_QUALIFIED",
+            "reason_code": None,
+            "confidence": item["confidence"],
+            "risk_state": rstate,
+            "drawdown": drawdown,
+            "kelly_full": kelly,
+            "proposed_stake": stake,
+            "final_stake": stake,
+            "reservation_proposal": reservation,
+            "snapshot": snapshot,
+            "runtime_publishable": False,
+            "automatic_real_betting": False,
+        }
+        allocated.append({
+            "status": "PENDING",
+            "stake": stake,
+            "match_id": row.get("match_id"),
+            "market": "BET_BUILDER",
+            "builder_markets": markets,
+            "placement_snapshot": {
+                "p1": row.get("p1"), "p2": row.get("p2"),
+                "composition_id": row.get("composition_id"),
+                "builder_markets": markets,
+            },
+        })
+        available -= stake
+
+    return [row for row in results if row is not None]
