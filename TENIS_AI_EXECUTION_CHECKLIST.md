@@ -29,39 +29,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-11 - Frontend Ownership / Data Provenance`
+**ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** phase 7 - final frontend provenance closeout. Phases 1-6 are merged as PRs #426-#431; phase 7 is locally GREEN and pending PR publication.
+**SUBSTEP:** phase 1 - current-owner / contract audit only. No iNeed$ economics, staking or settlement math changes are authorized in this substep.
 
-**BRANCH:** `logic-11-phase7-closeout` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase7-closeout`, created from phase-6 merge `2eaa60607a2be8e22782d3c5ce42f804468d2053`.
+**BRANCH:** `logic-11-closeout-docs` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-closeout-docs`, rebased onto fresh main `2db38c03aa59c317a6c0eff20d51897b59e3b1a9`.
 
-**PR:** phase-1 #426, phase-2 #427, phase-3 #428, phase-4 #429, phase-5 #430 and phase-6 #431 are MERGED. Phase-7 PR is not opened yet.
+**PR:** LOGIC-11 phases 1-7 are MERGED as PRs #426-#432. This docs-only closeout PR is not opened yet.
 
-**LAST VERIFIED MAIN:** `cba08b71007c65c5c71efe5f4f2f93cce5f12531` - bot-only `data: refresh Superbet market context` on top of `2d4a109c...`. Phase-7 branch is rebased onto this exact main.
+**LAST VERIFIED MAIN:** `2db38c03aa59c317a6c0eff20d51897b59e3b1a9` - bot `data: refresh Superbet market context`, child of post-LOGIC-11 analysis publication `da2bb105731f8f1977bf5f7666190a226f8ca4d9`.
 
-**LAST COMPLETED WORK:** phase 6 retired stale references to already-removed frontend owners without deleting active modules. Phase 7 then audited the remaining active UI for identity, missingness, SHADOW labeling, field provenance and booted no-consumer calculation helpers.
+**LAST COMPLETED WORK:** LOGIC-11 phase 7 PR #432 merged as `5ad329b0f08688bf3d2b2d32df124b0f9e71dccf` after exact-head 10/10 GREEN CI. Post-merge Update+Pages run #815 (`35533432346`) completed SUCCESS through canonical guards, Symphony/PLAYABLE, final full regression, refreshed JSON, lazy delivery and Pages deploy. Follow-up Superbet publication moved main to `2db38c03...`; Runtime Private and iNeed$ SHADOW on that SHA are GREEN.
 
-**LOGIC-11 PHASE-7 RED/GREEN:** RED found normalized-name player-profile association, history name/day match identity fallback, Neuron source counters coercing missing values to zero, Player DNA/Market Lab SHADOW values without literal SHADOW labels, Current Engine exact score mislabeled as experimental, and six no-consumer calculation helpers still booted/cached. GREEN uses canonical IDs only, fails closed on missing match/player identity, preserves N/D, labels SHADOW explicitly, labels exact score as Current Engine, and stops booting/caching/loading the unowned helpers in browser/PWA/delivery VM. Current checked-in history has canonical match identity for 1503/1503 base rows and 2390/2390 Symphony entries.
+**LOGIC-11 CLOSEOUT:** COMPLETE in code. Frontend ownership/provenance fails closed on missing/ambiguous identity, preserves N/D rather than fabricated zero, labels SHADOW explicitly, uses backend publication timestamps, and does not synthesize probability/H2H/odds/identity. Retired/no-consumer calculation helpers are not booted as active frontend runtime.
 
-**TEST STATUS:** Stage-2, UI static, Decision Center, match-time, delivery projection and Project Health are GREEN; delivery retains 315 PLAYABLE equivalence checks. Focused Python provenance/ownership pack is 30/30 GREEN. Full repository regression is GREEN: 1353/1353 passed with repo-local `--basetemp`.
+**LOGIC-12 PHASE-1 AUDIT EVIDENCE:** current canonical path is `backend/ineed_scoped_runner.py` -> `backend/ineed_money.py`. The scope adapter supplies individual playable Symphony signals; `evaluate()` prices/qualifies/stakes each signal independently, and `build_settlements()` settles one signal/bet at a time. The current iNeed$ economic unit is therefore a single leg, not the final same-match Bet Builder composition.
 
-**CI STATUS:** phase 7 has no remote CI yet because its PR has not been opened.
+**TEST STATUS:** LOGIC-11 final local suite 1353/1353 GREEN; focused provenance/ownership pack and delivery checks GREEN. Post-merge final regression, Canonical UI, Symphony and PLAYABLE guards are GREEN. Docs/project contract tests must be re-run on this closeout branch before publication.
 
-**OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** Training Archive HTTP 500 remains the known 250 MB budget-gate rejection and is unrelated to LOGIC-11.
+**CI STATUS:** PR #432 exact-head 10/10 SUCCESS. Post-merge Delivery/Security, UI Health, CodeQL, Fast deploy and Update+Pages are SUCCESS. Runtime Private and iNeed$ SHADOW are also SUCCESS on current `2db38c03...`.
 
-**BLOCKERS:** no proven phase-7 code blocker. LOGIC-11 may be marked COMPLETE only after exact-head remote CI, fresh-main/base equality, mergeability and merge of phase 7.
+**BLOCKERS:** no LOGIC-11 blocker. LOGIC-12 must first define an additive SHADOW composition contract. A same-match correlated Bet Builder must never derive combined odds by multiplying leg odds; without an exact verified Superbet combined price the BB economic result remains N/D / NO BET.
 
-**DO NOT REDO:** do not repeat phases 1-6. Do not restore normalized-name identity, history name/day identity, fake-zero missingness, decorative publication timestamps or unlabeled SHADOW presentation. Do not re-boot the retired no-consumer calculation helpers merely because their source files remain for historical tests.
+**DO NOT REDO:** do not reopen LOGIC-11 phases 1-7 or restore name/time identity, fake-zero missingness, client-clock publication provenance, unlabeled SHADOW, or retired frontend calculators. Do not change current iNeed$ math during LOGIC-12 phase-1 audit.
 
-**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, settlement, SHADOW->PROD or iNeed$ calculations. No fuzzy identity, manual aliases, provider namespace guessing or real-money execution.
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, existing settlement semantics or SHADOW->PROD. No fuzzy identity, manual aliases, provider namespace guessing, synthetic combined Bet Builder odds or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Re-run focused contracts after checkpoint/registry edits; clean temp artifacts and verify `git diff --check`.
-2. Re-check fresh `main`; if unchanged, commit/push phase 7 and open the final LOGIC-11 closeout PR.
-3. Monitor all required exact-head CI; never merge pending/red checks.
-4. Before merge, re-check fresh `main`, PR base and mergeability; rebase/rerun if bot-generated data moved main.
-5. After phase-7 merge, mark LOGIC-11 COMPLETE only after post-merge verification and set the next program action without forcing LOGIC-09 evidence maturity.
+1. Run docs/project contract tests and `git diff --check`; confirm the branch changes only the two governance docs.
+2. Re-check fresh `main`; if unchanged, commit/push and open a docs-only LOGIC-11 closeout PR.
+3. Merge only after exact-head CI is GREEN and the PR base still equals fresh `main`.
+4. Start LOGIC-12 phase 1 with RED contract tests that freeze current single-leg behavior and define a new additive final-composition SHADOW record; do not replace current iNeed$ yet.
+5. Prove exact Superbet combined-price provenance for a Bet Builder. If unavailable, publish N/D / NO BET rather than multiplying correlated leg odds.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -356,7 +356,7 @@ Cel: guardy chronia kontrakty, ale nie walcza z legalnym outputem innych modulow
 
 ## LOGIC-11 — Frontend Ownership / Data Provenance
 
-Status: `[~] ACTIVE - phases 1-6 merged; phase 7 final closeout locally GREEN, remote CI/merge pending`
+Status: `[x] COMPLETE - phases 1-7 merged through PR #432; exact-head CI and post-merge production proof GREEN`
 
 Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 
@@ -364,37 +364,35 @@ Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 - [x] One shell owner for match list/detail: `frontend/app.js`; feature extensions remain separate and explicit.
 - [x] Jeden effective PLAYABLE presentation gate: `TenisPresentation.availability()` composes backend final authority with `playable-ui.js` operator/signature validation; no competing active UI decision path found.
 - [x] Historical frontend owners are physically absent; phase 6 removed ghost workflow/health references and phase 7 stops booting six no-consumer calculation helpers.
-- [~] N/D zamiast sztucznego zero - phases 2/7 GREEN locally; final phase-7 merge pending.
-- [~] SHADOW jawnie oznaczone - readiness already explicit; phase 7 labels Player DNA simulation/evidence and Market Lab literally SHADOW; merge pending.
+- [x] N/D zamiast sztucznego zero.
+- [x] SHADOW jawnie oznaczone.
 - [x] Timestamp = backend `generated_at`; phase 5 merged in PR #430.
-- [~] Żadnych frontendowych probability/H2H/odds/identity fallbacków - phases 1/3/4 removed probability/current-route/H2H fallbacks; phase 7 removes remaining profile/history identity fallbacks; merge pending.
+- [x] Żadnych frontendowych probability/H2H/odds/identity fallbacków.
 - [x] `ARCHITECTURE.md` owner map corrected in merged phase 1.
 
-**Definition of Done:** pending only final phase-7 exact-head CI + merge/post-merge proof. Local closeout evidence satisfies the presentation/provenance contract without model-math changes.
+**Definition of Done:** COMPLETE. PR #432 merged as `5ad329b0...`; exact-head 10/10 GREEN. Post-merge Update+Pages #815 passed canonical UI, Symphony/PLAYABLE and final full regression, published refreshed data and deployed Pages. Follow-up Superbet publication and iNeed$ SHADOW are GREEN on the resulting current line.
 
 ---
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE - phase 1 owner/contract audit; SHADOW only, no economic-math replacement yet`
 
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
+- [x] Potwierdzono current state: iNeed$ ocenia/stakuje/rozlicza pojedyncze playable signals, nie finalną kompozycję BB.
 - [ ] Potwierdzić final Symphony composition jako jednostkę wejścia.
-- [ ] Joint probability całej kompozycji.
-- [ ] Exact Superbet combined odds / jawne zasady, jeśli operator nie dostarcza combined price.
+- [ ] Zdefiniować additive SHADOW composition record: composition id + min. 2 legs + canonical match/operator provenance.
+- [ ] Joint probability całej kompozycji bez zmiany istniejącej Symphony probability.
+- [ ] Exact verified Superbet combined odds; brak combined price = N/D / NO BET, nigdy iloczyn skorelowanych leg odds.
 - [ ] EV całego buildera.
 - [ ] Kelly/risk/stake całego buildera.
 - [ ] Jedna rezerwacja bankroll per BB.
 - [ ] Jeden settlement całego BB.
-- [ ] Min. 2 nogi.
-- [ ] SHADOW/DRY_RUN.
-- [ ] Brak real-money execution.
+- [ ] SHADOW/DRY_RUN; brak real-money execution.
 - [ ] Backtest na zamrożonych ofertach/operator context, jeśli dane pozwalają.
 
-**Definition of Done:** ekonomika iNeed$ odpowiada temu samemu produktowi, który użytkownik faktycznie może zbudować w Superbet.
-
----
+**Definition of Done:** ekonomika iNeed$ odpowiada temu samemu finalnemu produktowi, który użytkownik faktycznie może zbudować w Superbet, z jawnie zweryfikowanym combined price i one-ticket settlement.
 
 # 4. CHECKPOINT PRZERWANIA — obowiązkowy przed zakończeniem/przerwą
 

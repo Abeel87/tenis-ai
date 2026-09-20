@@ -736,58 +736,31 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-11 - Frontend Ownership + Provenance
 
-**Status:** ACTIVE - phases 1-6 merged through PR #431 (`2eaa60607a2be8e22782d3c5ce42f804468d2053`); phase 7 final frontend provenance closeout is locally GREEN (full repository 1353/1353) and pending PR publication.
+**Status:** COMPLETE - phases 1-7 merged through PR #432. Phase 7 merge `5ad329b0f08688bf3d2b2d32df124b0f9e71dccf`; exact-head required CI 10/10 GREEN; post-merge Update+Pages #815 and Pages deploy GREEN.
 
-**Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners. `ARCHITECTURE.md` owner correction was merged in phase 1.
+**Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners.
 
-**Phase-1 merged evidence:** PR #426 removed name/time fallback from `TenisPresentation.find()`, fails closed on missing/duplicate/conflicting canonical IDs, and removed frontend `NO = 100 - YES` synthesis. Exact-head CI and post-merge UI/Delivery/CodeQL/Fast deploy are GREEN.
+**Merged evidence:** PRs #426-#432 removed frontend probability synthesis, fake-zero missingness, noncanonical route/player/H2H identity fallbacks, client-clock publication provenance, ghost retired-owner references, unlabeled SHADOW presentation, and active boot/cache/VM loading of six no-consumer calculation helpers. Current UI fails closed on missing/ambiguous identity and leaves unavailable data as N/D.
 
-**Phase-2 merged evidence:** PR #427 fixed the latent fake-zero bug in `frontend/app.js::profileStats()`: missing `stats.matches` now renders as N/D, explicit backend `0` remains a real zero, and positive counts are preserved verbatim through `frontend/match-detail-data.js::sampleLabel()`. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were GREEN before merge.
+**Phase-7 production proof:** focused provenance/ownership pack 30/30 GREEN and full local repository 1353/1353 GREEN before publication. PR #432 exact-head 10/10 GREEN. Post-merge Update+Pages #815 passed Canonical UI presentation guard, Symphony 2.0 Guard, final PLAYABLE publication Guard and Final full regression v9.3.3, then committed refreshed JSON, built lazy delivery and deployed Pages. Subsequent `data: refresh tennis analysis` and `data: refresh Superbet market context` publications preserved the line; Runtime Private and iNeed$ SHADOW are GREEN on current `2db38c03...`.
 
-**Phase-3 merged current-route identity evidence:** PR #428 removed the `p1|p2|scheduled_time` route-key fallback. `TenisPresentation.key()` now accepts only exactly one unique canonical `id` / `match_id` / `match_key`, and `routableRows()` keeps missing/conflicting identities out of current delivery, Symphony and admin route state. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all GREEN before merge.
-
-**Phase-4 merged historical/H2H evidence:** PR #429 made cross-row player association canonical-ID only. Name-only/foreign-namespace rows remain raw historical evidence but cannot be attributed to a current player/H2H in the browser; missing identity stays N/D. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all GREEN before merge. Real-data contract: name-only H2H = 0, canonical archive H2H = 1.
-
-**Phase-5 merged timestamp provenance evidence:** PR #430 removed the page-header client/decorative clock from publication provenance. The header now renders backend delivery `generated_at` through `state.meta.updated_at`, with explicit `Dane: N/D` before publication metadata exists. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all GREEN before merge. Client clocks remain only for control/action semantics such as cache TTL, current-fixture/date filtering, freshness gates and user-action timestamps.
-
-**Phase-6 dead-runtime reference evidence:** the four historical owners named in `ARCHITECTURE.md` are already physically absent. RED contract found stale exact static `frontend/...` workflow path filters pointing to retired UI modules plus `scripts/project_health.py` reading absent `project-ui.js`. Generated `frontend/data` outputs and negative absence tests are not dead references and remain protected. Merged PR #431 GREEN removes the ghost path filters, maps Symphony UI triggers to current owners `frontend/app.js` and `frontend/presentation-data.js`, converts Project Health from a dead read to an active retired-owner absence guard, and removes an unused `MATCH_BROWSER` test constant. No active frontend module or runtime behavior is deleted.
-
-**Phase-7 final closeout evidence:** RED found the remaining active presentation violations: player-profile surface aggregation and directory de-duplication still used normalized names as fallback identity; rich history could create a name/day match key; Neuron source freshness used missing→0 coercion; Player DNA simulation/evidence and Market Lab were not literally labeled SHADOW; Current Engine `exact_match_score` was described as experimental; and six no-consumer calculator helpers still booted/cached in the browser/PWA (four also loaded in delivery VM). Local GREEN makes player/history association canonical-ID only, keeps missing counts N/D while preserving explicit zero, labels SHADOW and Current Engine provenance explicitly, and removes those no-consumer helpers from active boot/cache/producer VM without deleting their historical source files. Checked-in evidence has match identity on 1503/1503 base-history rows and 2390/2390 Symphony-history entries. Delivery remains lossless with 315 PLAYABLE equivalence checks; focused provenance pack 30/30 GREEN; full repository 1353/1353 GREEN. No model probability, thresholds, weights, training, PLAYABLE, settlement or promotion semantics changed.
-
-Classify every displayed field as one of:
-
-- RAW,
-- MODEL,
-- CALIBRATED/ENSEMBLE,
-- SHADOW,
-- SYMPHONY,
-- SUPERBET,
-- PLAYABLE,
-- iNeed$,
-- SETTLEMENT.
-
-Remove/repair source-less fields. Missing data remains missing/N-D; the browser must not fabricate probability, H2H, odds or identity.
+**Contract:** displayed fields retain explicit provenance classification (RAW / MODEL / CALIBRATED-ENSEMBLE / SHADOW / SYMPHONY / SUPERBET / PLAYABLE / iNeed$ / SETTLEMENT). The browser must not fabricate probability, H2H, odds, identity, missing counts or publication time.
 
 ---
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-Dopiero po ustabilizowaniu upstream.
+**Status:** ACTIVE - phase 1 current-owner / contract audit only. Existing iNeed$ economics, staking and settlement remain unchanged until an additive SHADOW composition path is contract-tested.
 
-Jednostka: finalna kompozycja BB.
+**Current owner/economic unit:** `backend/ineed_scoped_runner.py` filters current playable Symphony rows and calls `backend/ineed_money.py::evaluate()` on individual signals. Each signal is qualified, priced, risked and staked independently; `build_settlements()` resolves individual open bets. Therefore current iNeed$ is single-leg economics, not final Bet Builder economics.
 
-Wymagane:
+**Target unit:** one final same-match Bet Builder composition with canonical `composition_id`, at least two legs, joint probability, exact verified Superbet combined price, builder-level EV/exposure/stake, one bankroll reservation and one-ticket settlement.
 
-- composition id,
-- legs,
-- joint probability,
-- exact combined operator odds,
-- EV,
-- exposure,
-- stake,
-- one-ticket settlement.
+**Combined-price rule:** never multiply same-match leg odds to synthesize a builder price. Correlated legs require the exact operator combined price or another explicitly verified operator-provided builder quote. If unavailable/stale/ambiguous, combined odds and downstream EV/stake remain N/D and the composition is NO BET in SHADOW.
 
-Nie implementować real-money execution w tym etapie.
+**Isolation rule:** first implementation is additive SHADOW/DRY_RUN only. Do not change Current Engine math, Symphony probability, PLAYABLE, existing single-leg iNeed$ calculations, settlement behavior, SHADOW->PROD state or execute real-money bets.
+
+**Next proof:** freeze current single-leg behavior with RED/contract tests, define the new composition schema/owner, identify exact Symphony composition provenance and verify how Superbet exposes combined Bet Builder pricing before any EV/Kelly implementation.
 
 ---
 
