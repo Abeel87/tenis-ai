@@ -11,7 +11,7 @@ EXPECTED_LINE_SITES = {
     "backend/market_lab_v741.py": {112},
     "backend/pbp_cache_recovery.py": {61, 95},
     "backend/pbp_enrich.py": {1224, 1290},
-    "backend/autolearn_v84.py": {1223},
+    "backend/autolearn_v84.py": {1229},
     "backend/specialist_learning_v79b.py": {465},
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {382, 393},
