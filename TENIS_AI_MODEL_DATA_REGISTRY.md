@@ -720,27 +720,31 @@ Common-test metrics may be reported only on exact prospective rows with all thre
 
 ## LOGIC-10 - Guard Ownership Audit
 
-**Status:** ACTIVE - phases 1-2 merged/post-merge verified; phase-3 semantic closeout is PR #424 on `logic-10-semantic-closeout`, focused 24/24 and full 1349/1349 local regression GREEN. Main Player DNA publication completed SUCCESS 34/34; phase 3 is rebased onto `cb42e3003c95bf73a3ed38f20f71bc5d5d73abd2`. Awaiting rebased focused verification, exact-head CI and merge.
+**Status:** COMPLETE - PR #422, #423 and #424 merged. Phase-3 PR #424 merged as `2b81e589e3d9f78db31d7f41b2959f091fc4bc1c` after exact-head all-green CI, `BAD_OR_PENDING=0`, PR base equal to main and MERGEABLE state. Post-merge Delivery/Security and UI Health are GREEN. Final Player DNA SHADOW completed SUCCESS 34/34 and published `e17e4c4ac37f15d79d5c2c4398ed00d513614c20`. Subsequent Update/Neuron/Superbet generated-data commits advanced main to `a329444df36968a48aa92ce2e3d26ae1dea011e6`; Runtime Private and Fast frontend deploy on `a329444d...` are GREEN.
 
-Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. Current phase-2 branch base is fresh generated-data main `3a7a8dbfee3856b6e6fc447824746f575defdd85`, after Neuron SHADOW, Player DNA SHADOW (34/34 SUCCESS), scheduled Update SUCCESS and a data-only Superbet market-context refresh. The exact active named workflow inventory is enforced by `tests/test_guard_ownership_audit_contract.py`.
+Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active named workflow inventory is enforced by `tests/test_guard_ownership_audit_contract.py`.
 
 **Phase 1 / BO5:** `backend/model.py` is the Current Engine owner of legal format-aware BO5 full-match output. Legacy `backend/prediction_integrity_v78a.py::apply_pre_output_guards()` erased legal BO5 match fields. PR #422 removed the destructive rewrite and replaced it with structural BO5 score-space validation; Market Lab remains `LAB_SET1_ONLY`; Serve Props remains BO5 `ready=false` with `bo5_full_match_not_supported`. PR #422 merged as `aada53ad...`; post-merge Update #65 Prediction integrity #20, final regression #75, JSON publication and Pages deploy all GREEN.
 
-**Phase 2 / presentation guard ownership:** five historical commands (`verify_v84d1.py`, `verify_v84d2.py`, `verify_v84e11.py`, `verify_v853_runtime_ui.py`, `verify_v87_decision_center.py`) are compatibility aliases of one canonical owner: `scripts/verify_ui.py::main()` -> `tests/ui_static_smoke.mjs`. Baseline RED proof showed all five aliases active in workflows. The local cleanup removes fake distinct ownership: Update runs one canonical UI presentation guard before operator projection; Decision Center keeps its specific smoke; UI Health revalidates canonical UI only after prune and after compaction, while `tests/match_time_smoke.mjs` remains the actual match-time owner. Wrapper files remain for compatibility but are not active workflow owners. Active named guard/validation invocations drop from 97 to 94.
+**Phase 2 / presentation guard ownership:** five historical commands (`verify_v84d1.py`, `verify_v84d2.py`, `verify_v84e11.py`, `verify_v853_runtime_ui.py`, `verify_v87_decision_center.py`) were compatibility aliases of one canonical owner: `scripts/verify_ui.py::main()` -> `tests/ui_static_smoke.mjs`. PR #423 removed fake distinct workflow ownership while retaining real boundary checks: one canonical UI presentation guard in Update, dedicated Decision Center smoke, canonical revalidation after prune/compaction, and the real `tests/match_time_smoke.mjs` owner. Wrapper files remain only for compatibility. Phase-2 focused pack 19/19 GREEN and full local suite 1345/1345 GREEN.
 
-**Phase-2 evidence:** focused ownership/doc contract pack 19/19 GREEN; canonical UI static, match-time, Decision Center and audit-consistency smokes GREEN; full local repository suite **1345/1345 GREEN** with writable worktree pytest basetemp. No Current Engine math, probability, threshold, weight, training, Player DNA PROD, Surface Elo, Symphony probability, PLAYABLE, settlement, SHADOW->PROD or iNeed$ behavior changed.
+**Phase 3 / semantic closeout:** the two direct `backend/player_dna_market_walk_forward.py` workflow executions were renamed from `Validate...` to `Build ... evidence`, because the module writes SHADOW walk-forward/phase-7 evidence. Execution, training, probability and output math are unchanged. Contract tests freeze all 52 inline Python guard/validation blocks as read-only and prevent named guard/validator steps from directly executing this producer. `Central API Quota Guard` remains the intentional stateful exception because `backend/api_quota.py` owns shared quota state/report consumed by update/history/PBP. Active named guard/validation inventory is 92 across 28 workflows. Phase-3 focused pack 24/24 GREEN; full repository suite 1349/1349 GREEN. Exact-head PR checks including Player DNA SHADOW and Point Tape all completed SUCCESS before merge.
 
-**Operational note outside LOGIC-10:** Runtime private delivery and Training Archive child publishers from bot publication `80098542...` encountered external HTTP 5xx publication failures after their local preparation/inventory steps were GREEN. Runtime retry failed again at publisher prepare HTTP 500. Keep these transport/service failures separate from guard-ownership conclusions unless code evidence links them.
-
-Phase-3 semantic closeout locally renames the two direct `backend/player_dna_market_walk_forward.py` workflow executions from `Validate...` to `Build ... evidence`, because the module writes SHADOW walk-forward/phase-7 evidence. No execution, training, probability or output math changes. A new semantic contract freezes that all remaining inline Python guard/validation blocks are read-only and that no named guard/validator directly executes this producer. `Central API Quota Guard` remains the intentional stateful exception because `backend/api_quota.py` owns the shared quota state/report consumed by update/history/PBP. Active named guard/validation inventory becomes 92. Phase-3 local evidence: focused semantic/inventory/docs/walk-forward pack 24/24 GREEN; full repository suite 1349/1349 GREEN, zero failures/errors. Remaining work is phase-3 PR/CI/merge/post-merge closeout only.
+**Operational note outside LOGIC-10:** Training Archive HTTP 500 is the known 250 MB budget-gate rejection and remains separate from guard ownership. Runtime Private later returned to SUCCESS. Do not reopen LOGIC-10 for archive budget/retention or transport-service issues unless direct code evidence links them.
 
 ---
 
-## LOGIC-11 — Frontend Ownership + Provenance
+## LOGIC-11 - Frontend Ownership + Provenance
 
-Zmapować faktyczny UI po przebudowie.
+**Status:** ACTIVE - phase 1 exact identity/provenance prepared locally after completed runtime owner audit. No runtime PR until LOGIC-10 closeout merges and branch is rebased onto settled main.
 
-Każde wyświetlane pole klasyfikować jako:
+**Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners. Current `ARCHITECTURE.md` owner correction is prepared in phase 1.
+
+**Phase-1 RED evidence:** `TenisPresentation.find()` permits a missing-ID name/time join and selects the first duplicate exact-ID row. `model-guide.js::yesNo()` can fabricate `NO = 100 - YES`; current feed contains 70 `set1_exact_six_games` rows with backend YES only, so UI previously created 70 unsupported NO values. Prepared fix requires exactly one canonical ID match or `null`, and publishes YES/NO only when backend supplies each side.
+
+**Phase-1 safety evidence:** on settled main `a329444d...`, `results` has 115/115 unique IDs. Symphony has 70/70 exact visible joins and Superbet Direct 13/13. Player DNA and simulation are intentionally wider SHADOW datasets: 86/138 and 63/95 rows respectively join visible fixtures; their remaining rows are out-of-scope/orphan SHADOW rows, not identity fallbacks. Across current visible fixtures there are zero name/time fallback-only joins and zero duplicate canonical IDs; absence of exact current-layer evidence remains N/D. Prepared branch preserves real price joins and delivery/PLAYABLE equivalence; full local suite on the latest pre-publication rebase is 1350/1350 GREEN.
+
+Classify every displayed field as one of:
 
 - RAW,
 - MODEL,
@@ -752,7 +756,7 @@ Każde wyświetlane pole klasyfikować jako:
 - iNeed$,
 - SETTLEMENT.
 
-Usunąć/naprawić pola bez źródła. Brak danych = brak danych.
+Remove/repair source-less fields. Missing data remains missing/N-D; the browser must not fabricate probability, H2H, odds or identity.
 
 ---
 
