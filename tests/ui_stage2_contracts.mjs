@@ -34,6 +34,8 @@ assert(appSource.includes('MD.sampleLabel(s.matches)'),'Player profile must rend
 assert(!appSource.includes('s.matches??0'),'Missing sample count must not be coerced to zero in the profile');
 assert(appSource.includes('state.matches=D.routableRows(index.matches)'),'Current delivery index must reject unroutable identities before route state');
 assert(appSource.includes('state.symphony={...x,matches:D.routableRows(x.matches)}'),'Current Symphony route data must reject unroutable identities');
+assert(!appSource.includes('date(new Date().toISOString())'),'Page header must not present the client clock as data publication time');
+assert(appSource.includes('date(state.meta.updated_at)'),'Page header publication time must come from backend delivery generated_at');
 for(const [values,trend] of [[[.3,.5,.6],'rosnący'],[[.6,.5,.3],'spadkowy'],[[.5,.5,.5],'stabilny'],[[.3,.6,.5],'zmienny'],[[null,.5,.6],'N/D']]){
  const m={player_intelligence_v85:{profiles:{p1:{windows:Object.fromEntries([20,10,5].map((n,i)=>[n,{metrics:{won:{adjusted:values[i]}}}]))}}}};
  assert.equal(d.form(m,'p1').trend,trend);
