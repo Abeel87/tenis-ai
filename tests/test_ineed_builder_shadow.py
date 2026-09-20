@@ -128,3 +128,53 @@ def test_stale_or_unverified_freshness_quote_fails_closed():
     out = b.attach_verified_combined_quote(row, q)
     assert out["combined_odds"] is None
     assert out["economic_ready"] is False
+
+
+def _phase2_direct_feed():
+    return {
+        "generated_at": "2026-09-20T21:30:00+00:00",
+        "matches": [{
+            "match_id": "m-1", "event_id": "15000001", "direct_match_verified": True,
+            "canonical_selections": [
+                {"market": "set1_total", "pick": "over", "line": 8.5,
+                 "operator_available": True, "operator_price_verified": True,
+                 "operator_price": 1.5, "operator_selection_status": "active",
+                 "operator_selection_id": "leg-a"},
+                {"market": "match_winner", "pick": "A", "line": None,
+                 "operator_available": True, "operator_price_verified": True,
+                 "operator_price": 2.0, "operator_selection_status": "active",
+                 "operator_selection_id": "leg-b"},
+            ],
+        }],
+    }
+
+
+def _phase2_catalog():
+    return {"source_event_id": "15000001", "observed_at": "2026-09-20T21:30:00+00:00",
+            "quotes": [{"operator": "superbet.pl", "quote_kind": "SUPERBETS_PREPRICED_COMBINATION",
+                        "component_selection_ids": ["leg-b", "leg-a"], "combined_odds": 2.75,
+                        "operator_verified": True, "freshness_verified": True,
+                        "source_event_id": "15000001", "odds_timestamp": "2026-09-20T21:30:00+00:00",
+                        "source": "superbet_direct_public_event_json"}]}
+
+
+def test_phase2_resolves_only_exact_prepriced_operator_combination():
+    composition = b.build_shadow_composition(playable_match())
+    quote = b.resolve_prepriced_combined_quote(composition, _phase2_direct_feed(), _phase2_catalog())
+    assert quote is not None
+    assert quote["composition_id"] == composition["composition_id"]
+    assert quote["quote_kind"] == "BET_BUILDER_COMBINED"
+    assert quote["combined_odds"] == 2.75
+    attached = b.attach_verified_combined_quote(composition, quote)
+    assert attached["combined_price_status"] == "VERIFIED"
+    assert attached["combined_odds"] == 2.75
+
+
+def test_phase2_fails_closed_on_snapshot_misalignment_or_missing_exact_row():
+    composition = b.build_shadow_composition(playable_match())
+    stale = _phase2_catalog()
+    stale["observed_at"] = "2026-09-20T21:31:00+00:00"
+    assert b.resolve_prepriced_combined_quote(composition, _phase2_direct_feed(), stale) is None
+    missing = _phase2_catalog()
+    missing["quotes"][0]["component_selection_ids"] = ["leg-a", "leg-c"]
+    assert b.resolve_prepriced_combined_quote(composition, _phase2_direct_feed(), missing) is None

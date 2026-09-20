@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phase 1 SHADOW composition contract published as PR #434; existing iNeed$ economics/staking/settlement remain unchanged and no runtime wiring exists.
+**Status:** ACTIVE - phase 1 merged as PR #434; phase 2 exact pre-priced Superbet combination quote proof implemented locally, still no runtime/economic wiring.
 
 **Current owner/economic unit:** `backend/ineed_scoped_runner.py` filters current playable Symphony rows and calls `backend/ineed_money.py::evaluate()` on individual signals. Each signal is qualified, priced, risked and staked independently; `build_settlements()` resolves individual open bets. Therefore current iNeed$ is single-leg economics, not final Bet Builder economics.
 
@@ -762,7 +762,9 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-1 evidence:** `backend/ineed_builder_shadow.py` is the pure additive owner; focused tests freeze current single-leg iNeed$ and verify canonical identity, >=2 verified legs, upstream joint passthrough, stable composition id, no leg-odds multiplication and exact/fresh combined-quote gating. Audited snapshot `53036abd...`: 108 results rows, 33 final PLAYABLE, 33/33 valid SHADOW compositions, 0 combined prices; Superbet Direct resolved 13 matches and exposes no builder/combined quote field. See `TENIS_AI_LOGIC12_BET_BUILDER_AUDIT.md`. Validation: focused 24/24 GREEN, broader owner/runtime pack 95/95 GREEN, full repository 1365/1365 GREEN.
 
-**Next proof:** identify/prove an exact operator Bet Builder combined-price source for the exact composition. Until then combined odds, EV and stake remain N/D / NO BET in SHADOW.
+**Phase-2 evidence:** public Superbet event JSON exposes active pre-priced `superbets` combinations under `marketId=238733`; every accepted row has exact `oddComponents[].UUID` identities. On base `123d1d80...`, 13 verified Direct events yielded 1530 active rows (1198 two-leg / 143 three-leg / 189 four-leg), zero fetch failures. Aligned current proof: 33 final PLAYABLE, 4 intersect verified Direct, 2 have all legs mapped to exact Direct UUIDs, 0 have an identical pre-priced operator combination. Parser/matcher are additive SHADOW/read-only only; no runtime feed or iNeed$ economics changed.
+
+**Next proof:** publish/merge phase 2 after full CI. Then decide whether to add a SHADOW sidecar for these exact pre-priced rows or separately prove a dynamic arbitrary-composition quote endpoint. Until an exact matching operator row exists, combined odds, EV and stake remain N/D / NO BET.
 
 ---
 
