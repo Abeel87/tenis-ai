@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 import ineed_builder_shadow as b
+import superbet_direct as d
 
 
 def playable_match():
@@ -178,3 +179,36 @@ def test_phase2_fails_closed_on_snapshot_misalignment_or_missing_exact_row():
     missing = _phase2_catalog()
     missing["quotes"][0]["component_selection_ids"] = ["leg-a", "leg-c"]
     assert b.resolve_prepriced_combined_quote(composition, _phase2_direct_feed(), missing) is None
+
+
+def test_phase3_dynamic_sga_quote_resolves_exact_composition():
+    composition = b.build_shadow_composition(playable_match())
+    payload = {"price": 1.5, "sgaUuid": "sga-1", "status": "ACTIVE",
+               "combinationBettingStatus": "ACTIVE", "marketId": "238733", "outcomeId": "16603",
+               "legs": [{"oddUuid":"leg-a","status":"ACTIVE"},{"oddUuid":"leg-b","status":"ACTIVE"}]}
+    quote = b.resolve_dynamic_combined_quote(composition, _phase2_direct_feed(), payload,
+                                             observed_at="2026-09-20T21:31:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"]))
+    assert quote is not None
+    assert quote["combined_odds"] == 1.5
+    assert quote["source_quote_kind"] == "BET_BUILDER_DYNAMIC_SGA"
+    attached = b.attach_verified_combined_quote(composition, quote)
+    assert attached["combined_price_status"] == "VERIFIED"
+    assert attached["combined_odds"] == 1.5
+    prov = attached["combined_price_provenance"]
+    assert prov["source_quote_kind"] == "BET_BUILDER_DYNAMIC_SGA"
+    assert prov["source_event_id"] == "15000001"
+    assert prov["operator_combination_selection_id"] == "sga-1"
+    assert set(prov["component_selection_ids"]) == {"leg-a", "leg-b"}
+    assert prov["source_url"] == d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"])
+
+
+def test_phase3_dynamic_sga_quote_fails_closed_on_missing_or_foreign_leg():
+    composition = b.build_shadow_composition(playable_match())
+    base = {"price": 1.5, "sgaUuid": "sga-1", "status": "ACTIVE",
+            "combinationBettingStatus": "ACTIVE", "marketId": "238733", "outcomeId": "16603"}
+    missing = dict(base, legs=[{"oddUuid":"leg-a","status":"ACTIVE"}])
+    assert b.resolve_dynamic_combined_quote(composition, _phase2_direct_feed(), missing,
+                                            observed_at="2026-09-20T21:31:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"])) is None
+    foreign = dict(base, legs=[{"oddUuid":"leg-a","status":"ACTIVE"},{"oddUuid":"leg-c","status":"ACTIVE"}])
+    assert b.resolve_dynamic_combined_quote(composition, _phase2_direct_feed(), foreign,
+                                            observed_at="2026-09-20T21:31:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"])) is None

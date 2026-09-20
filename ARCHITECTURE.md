@@ -49,6 +49,8 @@ Current production iNeed$ remains single-leg economics in `backend/ineed_money.p
 
 Phase 2 keeps that path non-runtime and adds read-only operator quote provenance: `backend/superbet_direct.py` may parse active pre-priced `superbets` rows (`marketId=238733`) from the same public event JSON. `oddComponents[].UUID` is matched only to exact Direct selection UUIDs; exactly one identical component set is required. A pre-priced catalogue row is not a dynamic quote for arbitrary Bet Builder legs, and absence of an exact row remains N/D / NO BET.
 
+Phase 3 adds a second read-only provenance path for arbitrary exact compositions: the public Superbet Bet Builder `v2/getSgaOddPrice` GET returns an operator-created SGA odd with combined `price`, `sgaUuid` and exact `legs[].oddUuid`. The parser/resolver remains isolated in `superbet_direct.py` + `ineed_builder_shadow.py`; no runner, frontend, settlement or real-money execution consumes it. The dynamic payload is accepted only with the canonical audited Superbet host/path/query for the exact event and sorted UUID set; attached provenance retains source URL, event, SGA identity and components.
+
 ## 4. Frontend
 
 The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.

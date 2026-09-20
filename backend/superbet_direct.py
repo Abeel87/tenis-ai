@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from html import unescape
 from html.parser import HTMLParser
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse, urlencode
 from urllib.request import Request, urlopen
 
 try:
@@ -564,6 +564,10 @@ EVENT_API_HOST = "production-superbet-offer-pl.freetls.fastly.net"
 COMBINATION_MARKET_ID = 238733
 EVENT_JSON_SOURCE = "superbet_direct_public_event_json"
 SUPERBETS_QUOTE_KIND = "SUPERBETS_PREPRICED_COMBINATION"
+DYNAMIC_SGA_QUOTE_KIND = "BET_BUILDER_DYNAMIC_SGA"
+DYNAMIC_SGA_SOURCE = "superbet_dynamic_betbuilder_getSgaOddPrice_v2"
+DYNAMIC_SGA_HOST = "production-superbet-bmb.freetls.fastly.net"
+DYNAMIC_SGA_PATH = "/betbuilder/v2/getSgaOddPrice"
 
 
 def _superbets_tagged(odd: dict) -> bool:
@@ -649,6 +653,47 @@ def exact_combination_quote(quotes: list[dict], component_selection_ids: list[st
             continue
         hits.append(dict(quote))
     return hits[0] if len(hits) == 1 else None
+
+
+def build_dynamic_sga_quote_url(event_id: str, component_selection_ids: list[str], *, lang: str = "pl", target: str = "SB_PL") -> str | None:
+    event = str(event_id or "").strip()
+    ids = [str(x or "").strip() for x in component_selection_ids or []]
+    if not event or len(ids) < 2 or any(not x for x in ids) or len(set(ids)) != len(ids):
+        return None
+    query = urlencode({"match_id": event, "selected_odds_uuids": ",".join(sorted(ids)), "lang": lang, "target": target}, safe=",")
+    return f"https://{DYNAMIC_SGA_HOST}{DYNAMIC_SGA_PATH}?{query}"
+
+
+def parse_dynamic_sga_quote(payload: object, *, event_id: str, component_selection_ids: list[str], observed_at: str | None, source_url: str | None) -> dict | None:
+    if not isinstance(payload, dict) or not str(event_id or "").strip() or not observed_at:
+        return None
+    wanted = [str(x or "").strip() for x in component_selection_ids or []]
+    if len(wanted) < 2 or any(not x for x in wanted) or len(set(wanted)) != len(wanted):
+        return None
+    if source_url != build_dynamic_sga_quote_url(str(event_id), wanted):
+        return None
+    if str(payload.get("status") or "").casefold() != "active" or str(payload.get("combinationBettingStatus") or "").casefold() != "active":
+        return None
+    if int(payload.get("marketId") or 0) != COMBINATION_MARKET_ID:
+        return None
+    price = _float_token(payload.get("price"))
+    sga_uuid = str(payload.get("sgaUuid") or "").strip()
+    legs = payload.get("legs")
+    if price is None or price <= 1.0 or not sga_uuid or not isinstance(legs, list):
+        return None
+    ids = [str(x.get("oddUuid") or "").strip() for x in legs if isinstance(x, dict)]
+    if len(ids) != len(wanted) or len(ids) != len(legs) or any(not x for x in ids) or len(set(ids)) != len(ids) or set(ids) != set(wanted):
+        return None
+    if any(str(x.get("status") or "").casefold() != "active" for x in legs):
+        return None
+    return {
+        "operator": "superbet.pl", "quote_kind": DYNAMIC_SGA_QUOTE_KIND,
+        "source_event_id": str(event_id), "operator_market_id": COMBINATION_MARKET_ID,
+        "operator_outcome_id": payload.get("outcomeId"), "operator_combination_selection_id": sga_uuid,
+        "component_selection_ids": wanted, "component_count": len(wanted), "combined_odds": float(price),
+        "operator_verified": True, "freshness_verified": True, "odds_timestamp": str(observed_at),
+        "observed_at": str(observed_at), "source": DYNAMIC_SGA_SOURCE, "source_url": source_url,
+    }
 
 
 def _event_stub_from_url(url: str) -> dict | None:

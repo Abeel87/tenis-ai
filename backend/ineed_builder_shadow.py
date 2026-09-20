@@ -14,10 +14,10 @@ import json
 
 try:
     from .ineed_money import direct_quote
-    from .superbet_direct import exact_combination_quote
+    from .superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 except ImportError:
     from ineed_money import direct_quote
-    from superbet_direct import exact_combination_quote
+    from superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 
 OPERATOR = "superbet.pl"
 FINAL_AUTHORITY = "SYMPHONY2_FINAL_PLAYABLE"
@@ -163,6 +163,47 @@ def resolve_prepriced_combined_quote(composition: dict, direct: dict, catalog: d
     }
 
 
+def resolve_dynamic_combined_quote(composition: dict, direct: dict, payload: dict, *, observed_at: str | None, source_url: str | None) -> dict | None:
+    if not all(isinstance(x, dict) for x in (composition, direct, payload)) or not observed_at:
+        return None
+    match_id = _text(composition.get("match_id"))
+    if not match_id or not _text(direct.get("generated_at")):
+        return None
+    matches = []
+    for row in direct.get("matches") or []:
+        if not isinstance(row, dict):
+            continue
+        row_id = row.get("match_id") if row.get("match_id") is not None else row.get("id")
+        if _text(row_id) == match_id and row.get("direct_match_verified") is True:
+            matches.append(row)
+    if len(matches) != 1:
+        return None
+    event_id = _text(matches[0].get("event_id"))
+    if not event_id:
+        return None
+    component_ids = []
+    for leg in composition.get("legs") or []:
+        resolved = direct_quote(direct, match_id, leg)
+        sid = _text((resolved or {}).get("operator_selection_id"))
+        if not sid:
+            return None
+        component_ids.append(sid)
+    if len(component_ids) < 2 or len(set(component_ids)) != len(component_ids):
+        return None
+    hit = parse_dynamic_sga_quote(payload, event_id=event_id, component_selection_ids=component_ids, observed_at=observed_at, source_url=source_url)
+    if not hit:
+        return None
+    return {
+        "composition_id": composition.get("composition_id"), "operator": OPERATOR,
+        "quote_kind": QUOTE_KIND, "operator_verified": True, "freshness_verified": True,
+        "combined_odds": hit.get("combined_odds"), "odds_timestamp": hit.get("odds_timestamp"),
+        "source": hit.get("source"), "source_event_id": event_id,
+        "operator_combination_selection_id": hit.get("operator_combination_selection_id"),
+        "component_selection_ids": component_ids, "source_quote_kind": hit.get("quote_kind"),
+        "source_url": hit.get("source_url"),
+    }
+
+
 def attach_verified_combined_quote(composition: dict, quote: dict | None) -> dict:
     out = deepcopy(composition or {})
     out["combined_odds"] = None
@@ -195,6 +236,11 @@ def attach_verified_combined_quote(composition: dict, quote: dict | None) -> dic
         "operator_verified": True,
         "freshness_verified": True,
         "quote_kind": QUOTE_KIND,
+        "source_quote_kind": quote.get("source_quote_kind"),
+        "source_event_id": quote.get("source_event_id"),
+        "operator_combination_selection_id": quote.get("operator_combination_selection_id"),
+        "component_selection_ids": deepcopy(quote.get("component_selection_ids")),
+        "source_url": quote.get("source_url"),
     }
     out["economic_ready"] = True
     return out
