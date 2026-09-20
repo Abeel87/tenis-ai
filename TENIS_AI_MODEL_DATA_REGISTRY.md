@@ -688,7 +688,7 @@ Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ## LOGIC-09 ? Learning Integrity / Prediction Ledger
 
-**Status:** PHASE-2 MERGED + POST-MERGE VERIFIED; phase-3 immutable settlement/common-set SHADOW is active in PR #420. No telemetry/weight/learning migration is approved.
+**Status:** PHASES 0-3 INFRASTRUCTURE MERGED + POST-MERGE VERIFIED; prospective exact common-set evidence collection is active. Common binary settled sample is still `n=0`. No telemetry/weight/learning/runtime migration is approved.
 
 Phase-0 merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`; docs closeout PR #415 merged as `8cf20c7fd0249c84c64e6bdb87979b5db0b3197f`. Phase-0 proved unequal historical populations and froze the prospective ledger/common-test-set contract.
 
@@ -702,13 +702,19 @@ Published phase-2 evidence at that main: `ALL=2143`, exact positive `PLAYABLE=44
 
 Phase-3 audit identified the existing canonical settlement owners instead of creating a parallel rule set. `backend/live_history_settle.py` owns terminal match evidence and provenance in `frontend/data/history.json`; `backend/signal_settlement.py::settle_signal_live` owns market-specific hit/miss/void/unverifiable semantics. `game_state` deliberately remains unverifiable from final set scores. The phase-3 consumer must make zero network requests and must not mutate either owner or the immutable prediction ledger.
 
-PR #420 (`logic-09-phase3-settlement-shadow`) adds the additive SHADOW-only `backend/prediction_ledger_settlement_shadow.py` plus real-snapshot guards. A legal settlement join requires exact numeric `id:<Live Tennis match_id>`, exactly one matching history row, exact scheduled-time agreement, terminal history state, valid `settled_at` after start, settlement source/version provenance, and the canonical existing scorer. Any mismatch/ambiguity/missing provenance is `N/D`; no names, nearest time/line, provider conversion or post-start reconstruction is allowed.
+Phase-3 implementation PR #420 merged as `bf959fa23f83025851a5b6db8a329d6443836547`. Canonical additive owner `backend/prediction_ledger_settlement_shadow.py` publishes `frontend/data/prediction_ledger_settlement_shadow.json`. The legal join contract is unchanged: exact numeric `id:<Live Tennis match_id>`, exactly one matching history row, exact scheduled-time agreement, terminal history state, valid post-start `settled_at`, settlement source/version provenance and the canonical existing scorer. Any mismatch/ambiguity/missing provenance is `N/D`; no names, nearest time/line, provider conversion or post-start reconstruction is allowed.
 
 Frozen real-snapshot proof on base main `0bb7613322ce77bfafcb551bcb7dcb960fd6dda0`: ledger rows `2143`; exact history match keys `1486`; common Current+CatBoost+TabPFN rows `187`; exact PLAYABLE rows `443` with `73` common; exact Symphony rows `2` with `2` common. At audit time all prospective settlement rows are still `N/D` (`hit=0`, `miss=0`, `void=0`) because the young prospective ledger has not yet matured into canonical settled history. This is expected fail-closed behavior, not a missing-data backfill target.
 
+Post-merge Update #809 completed SUCCESS with canonical settlement #25 GREEN; selection sidecar #67/#68 GREEN; settlement common-set #69 GREEN; dedicated settlement guard #70 GREEN; Symphony guards #71/#72 GREEN; final full regression #75 GREEN; JSON commit #77 GREEN; Pages upload/deploy GREEN. Bot publication produced main `a3c9b6e8338e3fa5ca3da7edd432700e720e74bf`; later `e2d6a124325e449535c191abdd8a2feb3842e04a` changed generated data only and did not touch Prediction Ledger owners or sidecars.
+
+Published phase-3 evidence: schema `prediction-ledger-settlement-shadow-v1`, mode `SHADOW_ONLY`, rows `2460`, exact history match keys `1488`, exact three-model common Current+CatBoost+TabPFN rows `220`, settlement results `hit=0`, `miss=0`, `void=0`, `N/D=2460`, common binary settled `0`, common void `0`, status `NO_SETTLED_COMMON_ROWS`. Population reports: `ALL rows=2460/common=220`; exact `PLAYABLE rows=585/common=83`; exact `SYMPHONY_SELECTED rows=2/common=2`; exact `PLAYABLE_AND_SYMPHONY rows=2/common=2`; all have common binary settled `0`.
+
+Published isolation remains explicit: `network_fetch_enabled=false`, `source_ledger_mutated=false`, `production_influence=false`, `runtime_gating_enabled=false`, `learning_consumer_enabled=false`, `telemetry_consumer_enabled=false`, `auto_promote=false`.
+
 Common-test metrics may be reported only on exact prospective rows with all three frozen model scores and canonical `result in {hit, miss}`. `void` remains auditable but is excluded from binary accuracy/Brier/log-loss. Populations remain separate (`ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED`, exact intersection; generator/iNeed remain unavailable until their own exact owner evidence exists). Phase-3 explicitly disables model ranking, winner selection, auto-promotion, telemetry consumers, learning consumers and runtime gating. No minimum sample or promotion threshold is invented in this phase.
 
-Next evidence step after #420 is merged and post-merge Update publishes the sidecar: allow normal prospective matches to mature through the existing settlement owner, then observe factual common-set coverage/metrics when exact `hit/miss` rows appear. Do not force historical backfill, recompute predictions, rank models or migrate weights/telemetry merely to create a sample.
+**Current gate:** evidence maturity only. Allow normal prospective matches to mature through the existing settlement owner. If `common_binary_settled` remains `0`, do not add code to force it. When exact common `hit/miss` rows appear naturally, report factual coverage/Brier/log-loss/accuracy separately by population. Do not rank/promote models or migrate telemetry/weights merely to create a sample.
 
 ---
 
