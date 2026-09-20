@@ -688,6 +688,13 @@ Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ## LOGIC-09 — Learning Integrity / Prediction Ledger
 
+**Status:** PHASE-0 AUDIT ACTIVE — zero runtime/learning behavior change.
+
+Canonical owners and historical populations are mapped in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md`. Real settled evidence on audited main `57d5e9c037ae0cc4570e4c68f84a8006478de876` proves unequal comparison populations: Current/CatBoost have 12162 settled AutoLearn scores while TabPFN has 1532; the exact three-model intersection is therefore 1532. Legacy green history, AutoLearn, exact PLAYABLE, Symphony selection and iNeed$ SHADOW selection are separate populations with separate owners and must not be collapsed.
+
+The future ledger contract is prospective and pre-match: stable match/candidate identity, capture time before start, owner/version, score/probability semantics, context/readiness provenance, explicit downstream selection facts and settlement key. Direct Current/CatBoost/TabPFN ranking is allowed only on an exact common settled intersection. No existing history is retroactively relabeled as ALL.
+
+
 Wprowadzić pełny, pre-match frozen ledger oraz wspólny zbiór porównawczy Current/CatBoost/TabPFN.
 
 Oddzielić metryki:
