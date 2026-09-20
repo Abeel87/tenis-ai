@@ -720,7 +720,7 @@ Common-test metrics may be reported only on exact prospective rows with all thre
 
 ## LOGIC-10 - Guard Ownership Audit
 
-**Status:** ACTIVE - phase 1 BO5 ownership repair merged/post-merge verified; phase 2 presentation-owner deduplication is PR #423, pre-rebase 10/10 CI GREEN, now rebased to fresh main `3a7a8dbf...` and awaiting fresh exact-head CI.
+**Status:** ACTIVE - phases 1-2 merged/post-merge verified; phase-3 semantic closeout is PR #424 on `logic-10-semantic-closeout`, focused 24/24 and full 1349/1349 local regression GREEN. Main Player DNA publication completed SUCCESS 34/34; phase 3 is rebased onto `cb42e3003c95bf73a3ed38f20f71bc5d5d73abd2`. Awaiting rebased focused verification, exact-head CI and merge.
 
 Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. Current phase-2 branch base is fresh generated-data main `3a7a8dbfee3856b6e6fc447824746f575defdd85`, after Neuron SHADOW, Player DNA SHADOW (34/34 SUCCESS), scheduled Update SUCCESS and a data-only Superbet market-context refresh. The exact active named workflow inventory is enforced by `tests/test_guard_ownership_audit_contract.py`.
 
@@ -732,7 +732,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. Current phase-2 b
 
 **Operational note outside LOGIC-10:** Runtime private delivery and Training Archive child publishers from bot publication `80098542...` encountered external HTTP 5xx publication failures after their local preparation/inventory steps were GREEN. Runtime retry failed again at publisher prepare HTTP 500. Keep these transport/service failures separate from guard-ownership conclusions unless code evidence links them.
 
-Remaining LOGIC-10 work: rerun exact-head CI and merge PR #423, then phase-3 semantic closeout. Read-only scan found 52/52 active inline Python guard/validate steps without filesystem/git mutators; Symphony final PLAYABLE and Superbet runtime sanity guards are read-only validators. Two steps named `Validate dynamic lean market walk-forward robustness` actually run the report-producing `backend/player_dna_market_walk_forward.py` and should be renamed as producers, without changing training/math. `Central API Quota Guard` is the sole intentional stateful named guard because `backend/api_quota.py` owns the shared quota state/report consumed by update/history/PBP. No giant guard refactor.
+Phase-3 semantic closeout locally renames the two direct `backend/player_dna_market_walk_forward.py` workflow executions from `Validate...` to `Build ... evidence`, because the module writes SHADOW walk-forward/phase-7 evidence. No execution, training, probability or output math changes. A new semantic contract freezes that all remaining inline Python guard/validation blocks are read-only and that no named guard/validator directly executes this producer. `Central API Quota Guard` remains the intentional stateful exception because `backend/api_quota.py` owns the shared quota state/report consumed by update/history/PBP. Active named guard/validation inventory becomes 92. Phase-3 local evidence: focused semantic/inventory/docs/walk-forward pack 24/24 GREEN; full repository suite 1349/1349 GREEN, zero failures/errors. Remaining work is phase-3 PR/CI/merge/post-merge closeout only.
 
 ---
 
