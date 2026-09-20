@@ -104,15 +104,13 @@ jobs:
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/audit_history_sampling_outliers.py
 
-      - name: Runtime & UI Guard v8.5.3
+      - name: Post-prune UI presentation guard
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v853_runtime_ui.py
+        run: python scripts/verify_ui.py
 
       - name: Match Decision Center Guard v8.7
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          python scripts/verify_v87_decision_center.py
-          node tests/decision_center_smoke.mjs
+        run: node tests/decision_center_smoke.mjs
 
       - name: Project health
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
@@ -126,9 +124,9 @@ jobs:
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/runtime_health.py
 
-      - name: Global Match Time Guard v8.4E1.1
+      - name: Post-compaction UI presentation guard
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
-        run: python scripts/verify_v84e11.py
+        run: python scripts/verify_ui.py
 
       - name: Model Trend Monitor Guard v8.4E2
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'

@@ -2,9 +2,9 @@
 
 **Program:** LOGIC-10 - Guard Ownership / Dead Logic Audit
 
-**Audit base:** `5fbe321987bd271240bacd16c382efbd38e02145`
+**Audit base:** `3a7a8dbfee3856b6e6fc447824746f575defdd85` (phase-2 branch finally rebased over generated-data-only Neuron/Player-DNA/Update drift; phase-1 BO5 discovery originally audited on `5fbe321987bd271240bacd16c382efbd38e02145`).
 
-**Status:** ACTIVE - phase 1 inventory complete; first confirmed BO5 ownership collision reproduced and locally repaired; full LOGIC-10 remains open until remaining inline/high-risk guards have input/output/reason semantics reviewed.
+**Status:** ACTIVE - phase 1 BO5 ownership repair is merged/post-merge verified; phase 2 legacy presentation-guard ownership deduplication is PR #423, pre-rebase 10/10 CI GREEN and rebased onto fresh main `3a7a8dbf...`. Phase-3 semantic scan has identified the remaining producer-vs-validator naming mismatch for closeout.
 
 ## 1. Scope and rules
 
@@ -16,9 +16,9 @@ Hard boundary: this audit does not change Current Engine probability math, thres
 
 ## 2. Inventory summary
 
-- Active guard/validation invocations: **97**.
+- Active guard/validation invocations after the phase-2 local workflow cleanup: **94**.
 - Workflows containing them: **28**.
-- `update-and-pages.yml`: **27** invocations.
+- `update-and-pages.yml`: **24** invocations.
 - `point-tape-audit.yml`: **27** invocations.
 - `ui-smoke.yml`: **10** invocations.
 - File-backed verifier repeated in multiple workflows = repeated enforcement of one owner, not a second owner by itself.
@@ -47,12 +47,13 @@ Hard boundary: this audit does not change Current Engine probability math, thres
 - RED reproduction before repair: **2 BO5 tests failed** because legal full-match BO5 output was erased and invalid BO3 score-space was not rejected by the intended invariant.
 - Current Engine + integrity targeted pack: **11/11 passed** after the minimal repair.
 - BO5/downstream pack covering integrity, Current Engine, Market Lab, Superbet line coverage, Superbet market projection and TML runtime equivalence: **47/47 passed**.
+- PR #422 exact-head CI: all checks GREEN; merged as `aada53ad34d6613fbe628ad0a66a11348526658b`. Post-merge Update #65: Prediction integrity step #20 GREEN, final full regression #75 GREEN, refreshed JSON publication #77 GREEN, Pages artifact/deploy GREEN; bot publication moved main to `80098542d59f9ee402e33c997eb29200d286054c`.
 
 ## 4. High-risk execution contract
 
 | Guard / owner | Input | Output / failure channel | Reason semantics | Order / boundary | Finding |
 | --- | --- | --- | --- | --- | --- |
-| `backend/prediction_integrity_v78a.py` | `frontend/data/results.json` after Market Lab, Serve Props, PBP joint rebuild and Player Intelligence PRE | writes `integrity_report_v78a.json`, integrity fields in `meta.json`; exits non-zero on hard errors | explicit human-readable invariant errors; BO5 score-space now structural | `update-and-pages.yml` Prediction integrity gate | **Confirmed stale BO5 collision repaired locally** |
+| `backend/prediction_integrity_v78a.py` | `frontend/data/results.json` after Market Lab, Serve Props, PBP joint rebuild and Player Intelligence PRE | writes `integrity_report_v78a.json`, integrity fields in `meta.json`; exits non-zero on hard errors | explicit human-readable invariant errors; BO5 score-space now structural | `update-and-pages.yml` Prediction integrity gate | **BO5 collision repaired in PR #422; post-merge Update #65 gate GREEN** |
 | `backend/market_lab_v741.py` | Current Engine result + operator line context | enriches `market_lab_v741`; BO5 returns `LAB_SET1_ONLY` | status/note, no synthetic full-match BO5 lab | runs before prediction integrity | separate owner; keep fail-closed |
 | `backend/serve_props.py` | result + historical serve-prop evidence | enriches `serve_props_v72`; BO5 `ready=false` | `bo5_full_match_not_supported` | runs before prediction integrity | separate owner; keep fail-closed |
 | `backend/api_quota.py` | central quota state + API operation | begin/check state; workflow fails on guard violation | quota guard command result | before `backend/update.py` | no BO5 overlap |
@@ -62,14 +63,31 @@ Hard boundary: this audit does not change Current Engine probability math, thres
 
 ## 5. Duplicate invocation is not duplicate ownership
 
-The scan found repeated executions of the same canonical verifier in different CI surfaces. Examples include `scripts/verify_v84e11.py`, `scripts/verify_v84e2.py`, `scripts/verify_v853_runtime_ui.py`, `scripts/verify_v891_ensemble_player_learning.py`, `scripts/verify_v893_surface_elo_integration.py`, `scripts/verify_v894_shadow_signal_center.py`, `scripts/verify_v89_player_model_shadow.py`, and `backend/player_dna_market_walk_forward.py`. These are treated as repeated enforcement until a conflicting invariant is proven.
+Repeated execution in different CI surfaces is allowed when the same owner is intentionally revalidated at a **different mutation boundary**. Repeated aliases with no intervening relevant mutation are not separate owners and are dead CI duplication.
+
+### Phase-2 confirmed legacy presentation-owner collision
+
+Five historical commands ? `scripts/verify_v84d1.py`, `scripts/verify_v84d2.py`, `scripts/verify_v84e11.py`, `scripts/verify_v853_runtime_ui.py`, and `scripts/verify_v87_decision_center.py` ? are compatibility aliases that do nothing except import and execute `scripts/verify_ui.py::main()`. `verify_ui.py` itself runs `tests/ui_static_smoke.mjs` and never writes published data.
+
+On the phase-2 base all five aliases were active workflow commands. In `update-and-pages.yml`, multiple aliases ran consecutively after the first presentation check with no frontend/data mutation between them. The step named `Global Match Time Guard v8.4E1.1` did **not** execute the actual match-time owner; the actual specific owner is `tests/match_time_smoke.mjs`, already executed by `ui-smoke.yml`.
+
+Local ownership cleanup:
+
+- `update-and-pages.yml` has one pre-projection `Canonical UI presentation guard` calling `scripts/verify_ui.py` directly.
+- Decision Center guard steps keep their specific `tests/decision_center_smoke.mjs` (plus audit-consistency smoke in Update) and no longer re-run the generic UI alias.
+- historical Dynamic Weights UI/View aliases are removed from active Update execution because both were the same generic UI smoke, not Dynamic Weights-specific owners.
+- `ui-smoke.yml` intentionally keeps canonical UI validation at distinct payload mutation boundaries: post-prune and post-compaction; its initial UI smoke also runs the real `tests/match_time_smoke.mjs`.
+- compatibility wrapper files remain available for external/legacy command compatibility but are no longer active guard owners in these workflows.
+
+RED proof on unmodified phase-2 base: all five legacy aliases were active (`RED_BASE_COUNT=5`). A dedicated ownership contract now fails if any alias is reintroduced as an active workflow owner.
 
 ## 6. Remaining LOGIC-10 work
 
-1. Deep-review inline workflow-owned guards for explicit input/output/reason/failure semantics; inventory alone does not prove semantic uniqueness.
-2. Trace any guard whose output is consumed by another guard and verify it is validating a producer contract rather than repairing the prior guard.
-3. Run full required regression/CI on the BO5 repair PR, re-check fresh `main`, and merge only all-green.
-4. Continue collision review in small owner-scoped PRs; do not perform a giant guard refactor.
+1. Run focused + full local regression on the phase-2 presentation-owner cleanup; then PR, all-green CI, fresh-main check and merge.
+2. Post-merge verify Update/UI Health execution order and ensure canonical UI guards execute at intended mutation boundaries.
+3. Continue deep-review of inline workflow-owned guards for explicit input/output/reason/failure semantics.
+4. Trace any guard whose output is consumed by another guard and verify it validates a producer contract rather than repairing the prior guard.
+5. Continue collision fixes in small owner-scoped PRs; do not perform a giant guard refactor.
 
 ## 7. Complete active invocation inventory
 
@@ -143,10 +161,10 @@ Every row below is keyed as `workflow :: step`; YAML line and guard-order are ev
 | 64 | `ui-smoke.yml :: SHADOW experiment trend guard` | 91 | 4 | `scripts/verify_v895_shadow_experiment_trends.py` |
 | 65 | `ui-smoke.yml :: Shadow Signal Center Guard v8.9.4` | 95 | 5 | `scripts/verify_v894_shadow_signal_center.py` |
 | 66 | `ui-smoke.yml :: Full App Coherence Guard v8.9.2` | 99 | 6 | `scripts/verify_v892_full_app_coherence.py` |
-| 67 | `ui-smoke.yml :: Runtime & UI Guard v8.5.3` | 107 | 7 | `scripts/verify_v853_runtime_ui.py` |
-| 68 | `ui-smoke.yml :: Match Decision Center Guard v8.7` | 111 | 8 | `scripts/verify_v87_decision_center.py`<br>`tests/decision_center_smoke.mjs` |
-| 69 | `ui-smoke.yml :: Global Match Time Guard v8.4E1.1` | 129 | 9 | `scripts/verify_v84e11.py` |
-| 70 | `ui-smoke.yml :: Model Trend Monitor Guard v8.4E2` | 133 | 10 | `scripts/verify_v84e2.py` |
+| 67 | `ui-smoke.yml :: Post-prune UI presentation guard` | 107 | 7 | `scripts/verify_ui.py` |
+| 68 | `ui-smoke.yml :: Match Decision Center Guard v8.7` | 111 | 8 | `tests/decision_center_smoke.mjs` |
+| 69 | `ui-smoke.yml :: Post-compaction UI presentation guard` | 127 | 9 | `scripts/verify_ui.py` |
+| 70 | `ui-smoke.yml :: Model Trend Monitor Guard v8.4E2` | 131 | 10 | `scripts/verify_v84e2.py` |
 | 71 | `update-and-pages.yml :: Central API Quota Guard` | 63 | 1 | `backend/api_quota.py` |
 | 72 | `update-and-pages.yml :: Shadow Signal Center Guard v8.9.4` | 191 | 2 | `scripts/verify_v894_shadow_signal_center.py` |
 | 73 | `update-and-pages.yml :: Surface Elo Guard v8.9.3` | 193 | 3 | `scripts/verify_v893_surface_elo_integration.py` |
@@ -156,25 +174,21 @@ Every row below is keyed as `workflow :: step`; YAML line and guard-order are ev
 | 77 | `update-and-pages.yml :: AutoLearn Integration Guard v8.4A` | 201 | 7 | `scripts/verify_v84a.py` |
 | 78 | `update-and-pages.yml :: AutoLearn Hotfix Guard v8.4A.1` | 203 | 8 | `scripts/verify_v84a1.py` |
 | 79 | `update-and-pages.yml :: Quality Lock Guard v8.5.2` | 205 | 9 | `scripts/verify_v852_quality_lock.py` |
-| 80 | `update-and-pages.yml :: Runtime & UI Guard v8.5.3` | 207 | 10 | `scripts/verify_v853_runtime_ui.py` |
-| 81 | `update-and-pages.yml :: Match Decision Center Guard v8.7` | 209 | 11 | `scripts/verify_v87_decision_center.py`<br>`tests/decision_center_smoke.mjs`<br>`tests/audit_consistency_smoke.mjs` |
-| 82 | `update-and-pages.yml :: Accuracy Shadow Guard v8.6` | 214 | 12 | `scripts/verify_v86_accuracy_shadow.py` |
-| 83 | `update-and-pages.yml :: AutoLearn Calibration Guard v8.4A.2` | 216 | 13 | `scripts/verify_v84a2.py` |
-| 84 | `update-and-pages.yml :: Logic & Stability Guard v8.4B` | 218 | 14 | `scripts/verify_v84b.py` |
-| 85 | `update-and-pages.yml :: Model Telemetry Guard v8.4C` | 220 | 15 | `scripts/verify_v84c.py` |
-| 86 | `update-and-pages.yml :: Dynamic Weights Guard v8.4D` | 222 | 16 | `scripts/verify_v84d.py` |
-| 87 | `update-and-pages.yml :: Dynamic Weights UI Audit Guard v8.4D.1` | 224 | 17 | `scripts/verify_v84d1.py` |
-| 88 | `update-and-pages.yml :: Dynamic Weights View Scope Guard v8.4D.2` | 226 | 18 | `scripts/verify_v84d2.py` |
-| 89 | `update-and-pages.yml :: Signal Mapping Bridge Guard v8.4D.4` | 228 | 19 | `scripts/verify_v84d4.py` |
-| 90 | `update-and-pages.yml :: Game-State Tracking Guard v8.4E1` | 230 | 20 | `scripts/verify_v84e1.py` |
-| 91 | `update-and-pages.yml :: Global Match Time Guard v8.4E1.1` | 232 | 21 | `scripts/verify_v84e11.py` |
-| 92 | `update-and-pages.yml :: Model Trend Monitor Guard v8.4E2` | 234 | 22 | `scripts/verify_v84e2.py` |
-| 93 | `update-and-pages.yml :: Superbet exact-offer projection Guard` | 240 | 23 | `tests/test_superbet_market_v91.py`<br>`tests/test_superbet_market_v913.py`<br>`tests/test_superbet_market_v923.py`<br>`tests/test_superbet_market_v924.py`<br>`tests/test_superbet_playable_v912.py`<br>`tests/test_superbet_line_coverage_v922.py`<br>`tests/test_superbet_line_coverage_v924.py` |
-| 94 | `update-and-pages.yml :: Prediction ledger downstream SHADOW join Guard` | 248 | 24 | `tests/test_prediction_ledger_selection_shadow.py` |
-| 95 | `update-and-pages.yml :: Prediction ledger settlement SHADOW Guard` | 252 | 25 | `tests/test_prediction_ledger_settlement_shadow.py` |
-| 96 | `update-and-pages.yml :: Symphony 2.0 Guard` | 254 | 26 | `tests/test_symphony2_learning.py`<br>`tests/test_symphony2_state.py`<br>`tests/test_symphony2_tracker.py`<br>`tests/test_symphony2_exact_operator_line_gate.py`<br>`tests/test_canonical_playable_frontend.py`<br>`tests/test_playable_ui_v917.py` |
-| 97 | `update-and-pages.yml :: Symphony final PLAYABLE publication Guard` | 256 | 27 | `.github/workflows/update-and-pages.yml (inline step)` |
-
+| 80 | `update-and-pages.yml :: Canonical UI presentation guard` | 207 | 10 | `scripts/verify_ui.py` |
+| 81 | `update-and-pages.yml :: Match Decision Center Guard v8.7` | 209 | 11 | `tests/decision_center_smoke.mjs`<br>`tests/audit_consistency_smoke.mjs` |
+| 82 | `update-and-pages.yml :: Accuracy Shadow Guard v8.6` | 213 | 12 | `scripts/verify_v86_accuracy_shadow.py` |
+| 83 | `update-and-pages.yml :: AutoLearn Calibration Guard v8.4A.2` | 215 | 13 | `scripts/verify_v84a2.py` |
+| 84 | `update-and-pages.yml :: Logic & Stability Guard v8.4B` | 217 | 14 | `scripts/verify_v84b.py` |
+| 85 | `update-and-pages.yml :: Model Telemetry Guard v8.4C` | 219 | 15 | `scripts/verify_v84c.py` |
+| 86 | `update-and-pages.yml :: Dynamic Weights Guard v8.4D` | 221 | 16 | `scripts/verify_v84d.py` |
+| 87 | `update-and-pages.yml :: Signal Mapping Bridge Guard v8.4D.4` | 223 | 17 | `scripts/verify_v84d4.py` |
+| 88 | `update-and-pages.yml :: Game-State Tracking Guard v8.4E1` | 225 | 18 | `scripts/verify_v84e1.py` |
+| 89 | `update-and-pages.yml :: Model Trend Monitor Guard v8.4E2` | 227 | 19 | `scripts/verify_v84e2.py` |
+| 90 | `update-and-pages.yml :: Superbet exact-offer projection Guard` | 233 | 20 | `tests/test_superbet_market_v91.py`<br>`tests/test_superbet_market_v913.py`<br>`tests/test_superbet_market_v923.py`<br>`tests/test_superbet_market_v924.py`<br>`tests/test_superbet_playable_v912.py`<br>`tests/test_superbet_line_coverage_v922.py`<br>`tests/test_superbet_line_coverage_v924.py` |
+| 91 | `update-and-pages.yml :: Prediction ledger downstream SHADOW join Guard` | 241 | 21 | `tests/test_prediction_ledger_selection_shadow.py` |
+| 92 | `update-and-pages.yml :: Prediction ledger settlement SHADOW Guard` | 245 | 22 | `tests/test_prediction_ledger_settlement_shadow.py` |
+| 93 | `update-and-pages.yml :: Symphony 2.0 Guard` | 247 | 23 | `tests/test_symphony2_learning.py`<br>`tests/test_symphony2_state.py`<br>`tests/test_symphony2_tracker.py`<br>`tests/test_symphony2_exact_operator_line_gate.py`<br>`tests/test_canonical_playable_frontend.py`<br>`tests/test_playable_ui_v917.py` |
+| 94 | `update-and-pages.yml :: Symphony final PLAYABLE publication Guard` | 249 | 24 | `.github/workflows/update-and-pages.yml (inline step)` |
 ## 8. Audit interpretation
 
-The inventory is complete for **named workflow guard/validation invocations** on the audit base. It does not claim that every ordinary test/assertion anywhere in the repository is a guard. LOGIC-10 remains ACTIVE because semantic collision review is intentionally narrower and owner-by-owner.
+The inventory is complete for **named workflow guard/validation invocations** on the current audit base and contains exactly the active invocation set enforced by `tests/test_guard_ownership_audit_contract.py`. It does not claim that every ordinary test/assertion anywhere in the repository is a guard. LOGIC-10 remains ACTIVE because semantic collision review is intentionally narrower and owner-by-owner.

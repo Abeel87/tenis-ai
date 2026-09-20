@@ -31,34 +31,38 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-10 - Guard Ownership / Dead Logic Audit`
 
-**SUBSTEP:** phase-1 named workflow inventory is complete; the first confirmed BO5 guard collision is reproduced and repaired locally in the canonical prediction-integrity owner. Full LOGIC-10 remains ACTIVE pending full CI/merge and semantic review of remaining inline/high-risk guards.
+**SUBSTEP:** phase 1 BO5 owner repair is MERGED and post-merge verified. Phase 2 legacy presentation-guard ownership cleanup is in PR #423; its pre-rebase head completed 10/10 exact-head CI GREEN and the branch is now rebased onto fresh main `3a7a8dbf...`. Full LOGIC-10 remains ACTIVE for phase-3 semantic closeout after phase-2 merge.
 
-**BRANCH:** remote `logic-10-guard-ownership-audit`; local worktree branch `logic-10-guard-ownership-audit-local`, based on fresh main `5fbe321987bd271240bacd16c382efbd38e02145`.
+**BRANCH:** `logic-10-runtime-guard-semantics`, worktree `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic10-phase2`, originally created from `80098542...` and finally rebased cleanly onto verified main `3a7a8dbfee3856b6e6fc447824746f575defdd85`.
 
-**PR:** none yet. No parallel open PR exists for LOGIC-10.
+**PR:** #423 `LOGIC-10: consolidate canonical UI guard ownership` is OPEN and MERGEABLE. Pre-rebase head `3240a877...` completed 10/10 CI GREEN; fresh rebased head requires a new exact-head CI cycle before merge. Phase-1 PR #422 is MERGED.
 
-**LAST VERIFIED MAIN:** `5fbe321987bd271240bacd16c382efbd38e02145` - `data: refresh Player DNA SHADOW`. It is generated-data drift on top of merged LOGIC-09 closeout and does not touch the LOGIC-10 owners changed here.
+**LAST VERIFIED MAIN:** `3a7a8dbfee3856b6e6fc447824746f575defdd85` - `data: refresh Superbet market context`. Drift since `7f441a4b...` consists only of generated `frontend/data/**`: Neuron SHADOW `eb1c5f15...`, Player DNA SHADOW `fbbf8c11...` (refresh SUCCESS 34/34), scheduled Update `6c9c17e5...` (SUCCESS), then Superbet refresh `3a7a8dbf...`. No phase-2 workflow/test/doc owner changed upstream.
 
-**LAST COMPLETED WORK:** audited every named workflow step containing `guard` or `validat`: 97 invocations across 28 workflows. Wrote `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md` with exact workflow/step inventory and canonical entrypoints. Reproduced the stale BO5 conflict in `backend/prediction_integrity_v78a.py`: the legacy pre-output guard erased legal BO5 Current Engine full-match output even though `backend/model.py` now owns a format-aware BO5 distribution. Minimal local repair removes the destructive rewrite and validates BO5 score-space instead. Market Lab remains `LAB_SET1_ONLY`; Serve Props remains BO5 `ready=false` with `bo5_full_match_not_supported`.
+**LAST COMPLETED WORK:** PR #422 merged as `aada53ad34d6613fbe628ad0a66a11348526658b` after all exact-head CI GREEN. Post-merge Update #65 completed SUCCESS: Prediction integrity gate #20 GREEN, final full regression #75 GREEN, refreshed JSON commit #77 GREEN, Pages artifact and deploy GREEN. Bot publication moved main to `80098542d59f9ee402e33c997eb29200d286054c`; subsequent Superbet refresh GREEN moved main to `7f441a4b...`. Phase 2 then proved that five historical UI guard commands (`verify_v84d1.py`, `verify_v84d2.py`, `verify_v84e11.py`, `verify_v853_runtime_ui.py`, `verify_v87_decision_center.py`) are aliases of the same `verify_ui.main()` owner. Baseline RED proof found all five aliases active. Local workflow cleanup keeps canonical UI validation only at real payload mutation boundaries and preserves specific Decision Center / match-time owners. Active named guard/validation inventory drops from 97 to 94.
 
-**CHANGED FILES:** `backend/prediction_integrity_v78a.py`, `tests/test_v78a_integrity.py`, `tests/test_guard_ownership_audit_contract.py`, `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`, `TENIS_AI_EXECUTION_CHECKLIST.md`, `TENIS_AI_MODEL_DATA_REGISTRY.md`, `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`, `tests/test_readiness_requirement_matrix.py`.
+**CHANGED FILES FOR PHASE 2:** `.github/workflows/update-and-pages.yml`, `.github/workflows/ui-smoke.yml`, `tests/test_guard_owner_runtime_semantics.py`, `tests/test_guard_ownership_audit_contract.py`, `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`, `TENIS_AI_EXECUTION_CHECKLIST.md`, `TENIS_AI_MODEL_DATA_REGISTRY.md`. Compatibility wrapper files are intentionally retained but are no longer active owners in these workflows.
 
-**TEST STATUS:** RED proof before repair: 2 BO5 failures. After repair: Current Engine + integrity 11/11 GREEN; BO5/downstream regression pack 47/47 GREEN; audit-contract + BO5 targeted pack 13/13 GREEN; full local repository suite **1340/1340 GREEN** using a worktree-local writable pytest basetemp. The first full-suite attempt had 75 setup errors caused solely by Windows `PermissionError` on the global pytest temp root; rerun with writable basetemp had zero failures/errors.
+**TEST STATUS:** phase-2 baseline RED proof: 5 legacy UI aliases active. Focused ownership/doc contract pack 19/19 GREEN; canonical UI static smoke GREEN; actual match-time smoke GREEN; Decision Center smoke GREEN; audit-consistency smoke GREEN. Full local repository suite with writable worktree basetemp: **1345/1345 GREEN**, 755 warnings, zero failures/errors.
 
-**CI STATUS:** no LOGIC-10 PR CI yet. Existing main is green from the prior merged/data workflows; do not treat that as evidence for this local diff.
+**CI STATUS:** phase-1 PR #422 all required CI GREEN and merged. Phase-2 PR #423 pre-rebase head completed 10/10 GREEN (CodeQL, Delivery/Security, LOGIC-01..04, UI & Project Health). Final rebase onto `3a7a8dbf...` invalidates that head for merge authority; fresh exact-head CI is required after push.
 
-**BLOCKERS:** no code blocker for the confirmed BO5 collision. Merge is blocked until the branch is committed/pushed, PR CI is fully green, fresh main is rechecked, and post-merge Update/runtime behavior is verified. LOGIC-10 itself remains open after this PR because inline/high-risk guard input/output/reason semantics still require owner-by-owner review.
+**OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** post-Update child `Runtime private delivery staging` failed on external publisher transport: attempt 1 signed upload HTTP 520; one failed-job retry reached publisher `prepare` and returned HTTP 500. `Training archive inventory` failed the initial durable publisher step with HTTP 500 and its single failed-job retry failed again at `prepare_batch` with HTTP 500. These failures happened on unmodified bot publication `80098542...`, not on the local phase-2 branch; upstream inventory/rebuild steps were GREEN. Do not attribute them to LOGIC-10 without evidence.
 
-**DO NOT REDO:** do not repeat the 97-invocation named workflow inventory unless workflows change or the contract test reports drift. Do not reintroduce BO5 N/D erasure in prediction integrity. Do not broaden Market Lab or Serve Props BO5 support in this PR. Do not use a second guard to repair the prediction-integrity guard.
+**BLOCKERS:** no local code/test blocker for phase 2. Player DNA and the scheduled Update are complete SUCCESS and the branch is rebased to `3a7a8dbf...`. Merge is blocked only on rerunning targeted local contracts plus fresh exact-head PR CI and the mandatory immediate pre-merge main check. Publisher issues remain separate operational work.
 
-**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia, Neuron, PLAYABLE, production settlement semantics, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider namespace guessing, post-start prediction reconstruction or real-money execution.
+**DO NOT REDO:** do not repeat the 94-row phase-2 named workflow inventory unless workflows change or the exact-inventory contract reports drift. Do not reactivate legacy UI alias commands as distinct guard owners. Do not remove compatibility wrapper files merely because workflow ownership moved. Do not re-open BO5 N/D behavior already fixed by PR #422.
+
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia probability, Neuron, PLAYABLE, production settlement semantics, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider namespace guessing, post-start prediction reconstruction or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Commit and push the existing remote branch `logic-10-guard-ownership-audit`; open one owner-scoped PR.
-2. Require all PR CI GREEN; if main moves, audit the drift and rebuild/rebase before merge.
-3. After merge, verify normal Update/Prediction integrity on main and confirm no downstream BO5 regression.
-4. Continue LOGIC-10 with inline/high-risk guard input/output/reason semantics; collision fixes remain small owner-scoped PRs, never a giant refactor.
+1. Rerun phase-2 targeted ownership/doc/UI contracts on rebased head `3a7a8dbf...`, amend checkpoint docs, and force-push PR #423 with lease.
+2. Require all exact-head PR #423 CI GREEN again.
+3. Fresh-main check immediately before merge; rebase/retest only if main moved again.
+4. Merge #423 and post-merge verify Update/UI Health boundaries.
+5. Open a separate phase-3 owner-scoped closeout: rename the two `player_dna_market_walk_forward.py` producer steps so they no longer masquerade as validators, add a contract that all remaining inline guards are read-only, and document `Central API Quota Guard` as the sole intentional stateful named guard.
+6. If phase-3 CI/post-merge verification is GREEN, close LOGIC-10 and advance checkpoint to LOGIC-11.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -336,18 +340,18 @@ Cel: modele uczą się i są porównywane na uczciwej, identycznej próbce prosp
 
 ## LOGIC-10 - Guard Ownership / Dead Logic Audit
 
-Status: `[~] ACTIVE - phase-1 inventory complete; BO5 collision repair local, full CI/merge pending`
+Status: `[~] ACTIVE - phase 1 merged/verified; phase 2 local 1345/1345 GREEN, PR pending`
 
-Cel: guardy chronia kontrakty, ale nie walcza z legalnym outputem innych modulow.
+Cel: guardy chronia kontrakty, ale nie walcza z legalnym outputem innych modulow ani nie udaja roznych ownerow, gdy wywoluja ten sam verifier.
 
-- [x] Lista aktywnych named workflow guard/validation invocations i owner kazdego: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md` records 97 invocations across 28 workflows on base `5fbe3219...`.
-- [~] Input/output/reason code i kolejnosc wykonania: high-risk BO5 path mapped; remaining inline/high-risk workflow guards still require semantic review.
-- [~] Wykrycie sprzecznych guardow: first confirmed collision is the legacy BO5 N/D rewrite in `prediction_integrity_v78a`; wider collision review remains active.
-- [x] Audyt BO5 dead logic: canonical Current Engine BO5 output, Market Lab BO5 boundary and Serve Props BO5 boundary mapped and regression-tested.
-- [~] Usuniecie/naprawa tylko po testach regresyjnych: BO5 fix has RED proof plus 11/11, 47/47 and 13/13 local GREEN evidence; PR CI/merge still pending.
-- [~] Zero guardow naprawiajacych inne guardy: BO5 repair changes the stale canonical guard in place; remaining guard chains still require audit.
+- [x] Lista aktywnych named workflow guard/validation invocations i owner kazdego: phase-2 local inventory = 94 invocations across 28 workflows, exact-set contract enforced by `tests/test_guard_ownership_audit_contract.py`.
+- [~] Input/output/reason code i kolejnosc wykonania: BO5 path and presentation-guard mutation boundaries mapped; remaining inline/high-risk guards still require semantic review.
+- [~] Wykrycie sprzecznych/duplikowanych guardow: BO5 stale N/D collision fixed in PR #422; phase 2 confirmed five legacy presentation aliases mapped to one `verify_ui.main()` owner and removed them from distinct active ownership.
+- [x] Audyt BO5 dead logic: canonical Current Engine BO5 output, Market Lab BO5 boundary and Serve Props BO5 boundary mapped, merged and post-merge verified.
+- [~] Usuniecie/naprawa tylko po testach regresyjnych: phase 1 merged; phase 2 has RED proof + focused GREEN + full local 1345/1345 GREEN, PR CI pending.
+- [~] Zero guardow naprawiajacych inne guardy / zero fake-owner aliases: phase-2 workflow cleanup uses canonical UI owner directly; remaining guard chains still require audit.
 
-**Definition of Done:** kazdy guard ma jeden cel i nie blokuje legalnego kanonicznego outputu przez historyczny warunek. Nie jest jeszcze spelnione dla calego LOGIC-10.
+**Definition of Done:** kazdy guard ma jeden cel i nie blokuje legalnego kanonicznego outputu przez historyczny warunek ani nie duplikuje tego samego ownera bez realnej granicy mutacji. Nie jest jeszcze spelnione dla calego LOGIC-10.
 
 ---
 
