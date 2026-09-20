@@ -10,7 +10,7 @@ INDEX = ROOT / "frontend" / "index.html"
 # model/core/SHADOW generation identity AND that asset is actually booted. Dormant
 # experiments may remain in the repository, but they are not active runtime.
 ALLOWED_VERSIONED_FRONTEND = {
-    "serve-props-v72.js", "clean-core-v80.js", "autolearn-v84.js", "signal-mapping-v84d4.js",
+    "autolearn-v84.js", "signal-mapping-v84d4.js",
 }
 
 

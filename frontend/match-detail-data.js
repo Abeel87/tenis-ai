@@ -21,6 +21,7 @@ function winnerSide(r){
  const sides=['p1','p2'].filter(s=>nameKey(winner)&&nameKey(winner)===nameKey(r[s]));
  return sides.length===1?sides[0]:null;
 }
+function playerRows(rows,m,side){const id=m?.[side+'_id'];if(id==null)return [];return (Array.isArray(rows)?rows:[]).filter(r=>['p1','p2'].some(rs=>samePlayer(m,side,r,rs)));}
 function sampleLabel(value){const n=D.num(value);return n==null?'N/D - brak danych o liczbie mecz\u00f3w w pr\u00f3bce':`${n} mecz\u00f3w w pr\u00f3bce`; }
 function comparison(m){
  const profiles=m.player_intelligence_v85?.profiles||{};
@@ -53,5 +54,5 @@ function form(m,side){
  if(v.every(x=>x!=null))trend=v.every(x=>x===v[0])?'stabilny':v[0]<=v[1]&&v[1]<=v[2]?'rosnący':v[0]>=v[1]&&v[1]>=v[2]?'spadkowy':'zmienny';
  return {rows,trend};
 }
-window.TenisMatchDetail={nameKey,samePlayer,historyRows,winnerSide,comparison,assessment,form,sampleLabel};
+window.TenisMatchDetail={nameKey,samePlayer,playerRows,historyRows,winnerSide,comparison,assessment,form,sampleLabel};
 })();

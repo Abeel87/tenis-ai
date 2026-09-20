@@ -30,7 +30,7 @@ function score(v){const n=number(v);return n==null?'Brak danych':`${n.toFixed(1)
 function time(v){const t=Date.parse(v);return Number.isFinite(t)?new Date(t).toLocaleString('pl-PL',{timeZone:'Europe/Warsaw',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'N/D';}
 function dayKey(v){const t=Date.parse(v);return Number.isFinite(t)?new Date(t).toLocaleDateString('en-CA',{timeZone:'Europe/Warsaw'}):'bez-daty';}
 function dayLabel(v){const t=Date.parse(v);if(!Number.isFinite(t))return 'Bez potwierdzonej daty';const s=new Date(t).toLocaleDateString('pl-PL',{timeZone:'Europe/Warsaw',weekday:'long',day:'2-digit',month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1);}
-function matchKey(r){const id=r?.match_id??r?.id;if(id!=null&&String(id)!=='')return 'id:'+String(id);return 'nm:'+D.norm(r?.p1)+'|'+D.norm(r?.p2)+'|'+dayKey(r?.scheduled_time);}
+function matchKey(r){const id=r?.match_id??r?.id;return id!=null&&String(id)!==''?'id:'+String(id):null;}
 function sig(s){return [String(s?.market||''),String(s?.pick??''),String(s?.line??''),String(s?.checkpoint??''),D.norm(s?.player||'')].join('|');}
 function status(v){const x=String(v||'').toLowerCase();return STATUS[x]?x:x?'unknown':'pending';}
 function settledStatus(v){return ['hit','miss','void'].includes(status(v));}
@@ -57,9 +57,9 @@ function finalResult(entry){const r=entry?.result;return r&&typeof r==='object'?
 function resultText(entry){const r=finalResult(entry);if(!r)return 'Wynik: N/D';if(r.score_text)return String(r.score_text);if(Array.isArray(r.sets))return r.sets.map(x=>Array.isArray(x)?x.join(':'):String(x)).join(' · ');return r.match_score?String(r.match_score):'Wynik: N/D';}
 function buildModel(data){
  const map=new Map();
- const ensure=r=>{const k=matchKey(r);if(!map.has(k))map.set(k,{key:k,p1:r?.p1||'',p2:r?.p2||'',scheduled_time:r?.scheduled_time||null,tournament:r?.tournament||'',surface:r?.surface||'',tour:r?.tour||'',base:null,sym:[]});const m=map.get(k);for(const f of ['p1','p2','scheduled_time','tournament','surface','tour'])if(!m[f]&&r?.[f])m[f]=r[f];return m};
- for(const r of data.history)if(r&&typeof r==='object'){const m=ensure(r);if(!m.base||Date.parse(r.captured_at||0)>=Date.parse(m.base.captured_at||0))m.base=r}
- for(const r of data.symphonyEntries)if(r&&typeof r==='object')ensure(r).sym.push(r);
+ const ensure=r=>{const k=matchKey(r);if(!k)return null;if(!map.has(k))map.set(k,{key:k,p1:r?.p1||'',p2:r?.p2||'',scheduled_time:r?.scheduled_time||null,tournament:r?.tournament||'',surface:r?.surface||'',tour:r?.tour||'',base:null,sym:[]});const m=map.get(k);for(const f of ['p1','p2','scheduled_time','tournament','surface','tour'])if(!m[f]&&r?.[f])m[f]=r[f];return m};
+ for(const r of data.history)if(r&&typeof r==='object'){const m=ensure(r);if(m&&(!m.base||Date.parse(r.captured_at||0)>=Date.parse(m.base.captured_at||0)))m.base=r}
+ for(const r of data.symphonyEntries)if(r&&typeof r==='object'){const m=ensure(r);if(m)m.sym.push(r)};
  const matches=[...map.values()];
  for(const m of matches){m.predictions=[...basePredictions(m.base),...symPredictions(m.sym)];m.final=finalResult(m.base);m.day=dayKey(m.scheduled_time);m.time=Date.parse(m.scheduled_time)||0;m.search=D.norm([m.p1,m.p2,m.tournament,m.tour,m.surface].join(' '));}
  return matches.sort((a,b)=>b.time-a.time);
