@@ -736,13 +736,15 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-11 - Frontend Ownership + Provenance
 
-**Status:** ACTIVE - phase 1 merged as PR #426 (`8234ed74175e81ac9dec039369743176ee609863`); phase 2 fake-zero presentation contract is in local RED->GREEN validation.
+**Status:** ACTIVE - phase 1 merged as PR #426 (`8234ed74175e81ac9dec039369743176ee609863`); phase 2 merged as PR #427 (`fa3e294faabff79f6c820a833912feafae7e4688`); phase 3 current-route canonical-key contract is locally GREEN (full repository 1350/1350) and pending PR publication.
 
 **Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners. Current `ARCHITECTURE.md` owner correction is prepared in phase 1.
 
 **Phase-1 merged evidence:** PR #426 removed name/time fallback from `TenisPresentation.find()`, fails closed on missing/duplicate/conflicting canonical IDs, and removed frontend `NO = 100 - YES` synthesis. Exact-head CI and post-merge UI/Delivery/CodeQL/Fast deploy are GREEN.
 
-**Phase-2 fake-zero evidence:** `frontend/app.js::profileStats()` previously rendered missing `stats.matches` as a real `0`. Phase-2 contract now requires missing -> N/D, explicit `0` -> real zero, and published positive counts -> verbatim display through the read-only `frontend/match-detail-data.js` presentation owner. Historical/H2H identity and `key()` fallback remain separate substeps.
+**Phase-2 merged evidence:** PR #427 fixed the latent fake-zero bug in `frontend/app.js::profileStats()`: missing `stats.matches` now renders as N/D, explicit backend `0` remains a real zero, and positive counts are preserved verbatim through `frontend/match-detail-data.js::sampleLabel()`. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were GREEN before merge.
+
+**Phase-3 current-route identity evidence:** `frontend/presentation-data.js::key()` still fabricated a route identity from `p1|p2|scheduled_time` when canonical `id` / `match_id` / `match_key` was missing and accepted conflicting canonical IDs by precedence. RED contract reproduced the fallback as `A|B|2099-01-01`. The local GREEN fix makes `key()` reuse the exact canonical identity set and return `null` unless there is exactly one unique canonical ID. `routableRows()` keeps missing/conflicting identities out of current delivery, Symphony and admin route state. Current checked-in feeds are unaffected: `results.json` 115/115 and `symphony2_current.json` 70/70 have one canonical identity each, with zero missing/conflicting IDs and zero duplicate canonical keys. Historical/H2H association remains a separate substep.
 
 Classify every displayed field as one of:
 

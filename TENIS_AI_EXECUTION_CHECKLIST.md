@@ -31,37 +31,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-11 - Frontend Ownership / Data Provenance`
 
-**SUBSTEP:** phase 2 - fake-zero presentation contract. Phase 1 exact identity/probability provenance is merged as PR #426.
+**SUBSTEP:** phase 3 - current-route canonical `key()` / fail-closed identity. Phase 1 is merged as PR #426; phase 2 fake-zero contract is merged as PR #427.
 
-**BRANCH:** `logic-11-phase2-fake-zero` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase2`, created from phase-1 merge `8234ed74175e81ac9dec039369743176ee609863`.
+**BRANCH:** `logic-11-phase3-key` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase3-key`, created from phase-2 merge `fa3e294faabff79f6c820a833912feafae7e4688`.
 
-**PR:** LOGIC-11 phase-1 PR #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`. Phase-2 fake-zero PR is the next publication after full local regression.
+**PR:** LOGIC-11 phase-1 PR #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`; phase-2 PR #427 MERGED as `fa3e294faabff79f6c820a833912feafae7e4688`. Phase-3 PR is not opened yet; full local regression is the publication gate.
 
-**LAST VERIFIED MAIN:** `8234ed74175e81ac9dec039369743176ee609863` - LOGIC-11 phase-1 merge. Post-merge Fast frontend deploy, Delivery/Security, CodeQL and UI Health are GREEN. Background Player DNA from the prior data head remains SHADOW-only/in flight and may later publish generated `frontend/data/**`.
+**LAST VERIFIED MAIN:** `fa3e294faabff79f6c820a833912feafae7e4688` - LOGIC-11 phase-2 merge. PR #427 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all SUCCESS before merge.
 
-**LAST COMPLETED WORK:** LOGIC-11 phase 1 removed current-layer name/time identity fallback, made exact joins fail closed on missing/ambiguous IDs, removed frontend `NO=100-YES` probability fabrication, and replaced historical frontend-owner docs with the actual runtime owner map. PR #426 merged after exact-head all-GREEN CI.
+**LAST COMPLETED WORK:** LOGIC-11 phase 2 removed the fake-zero presentation bug for player sample counts and merged as PR #427 after exact-head all-GREEN CI. Phase 3 audit then confirmed the remaining current-route `key()` fallback still fabricated identity from names/time and accepted conflicting canonical IDs by precedence.
 
-**LOGIC-11 PHASE-2 RED/GREEN:** `profileStats()` coerced missing `stats.matches` to `0`. RED contract proved the presentation owner had no missing-aware sample formatter. Local GREEN fix routes profile rendering through `TenisMatchDetail.sampleLabel()`: null/undefined -> `N/D - brak danych o liczbie meczów w próbce`; explicit backend `0` remains `0`; positive counts remain verbatim. Current feed has no missing `stats.matches`, so this is a latent fail-closed contract repair, not a model/data change.
+**LOGIC-11 PHASE-3 RED/GREEN:** RED `ui_stage2_contracts.mjs` reproduced missing-ID routing as `A|B|2099-01-01` instead of `null`. Local GREEN changes `TenisPresentation.key()` to accept only exactly one unique canonical `id` / `match_id` / `match_key`, and adds `routableRows()` so malformed identity cannot enter current delivery/Symphony/admin route state. Checked-in feed audit: results 115/115 valid, Symphony 70/70 valid, zero missing, zero conflicts, zero duplicate canonical keys. No model/data/probability math changed.
 
-**TEST STATUS:** phase-2 `ui_stage2_contracts.mjs`, UI static smoke, match-time smoke, Decision Center and audit-consistency are GREEN. Integration contract freezes `MD.sampleLabel(s.matches)` and forbids `s.matches??0`. Full repository regression runs before PR publication.
+**TEST STATUS:** phase-3 Stage-2 contract, UI static smoke, match-time smoke, Decision Center, audit-consistency and focused Python contracts (`test_canonical_playable_frontend.py`, `test_project_contract_docs.py`: 9/9) are GREEN. Full repository regression is GREEN: 1350/1350 passed with a repo-local `--basetemp`; the earlier 1275-pass/75-error run was environment-only because Windows denied access to the global pytest temp directory.
 
-**CI STATUS:** phase-1 PR #426 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS; merge gate had `BAD_OR_PENDING=0`, base==main and MERGEABLE. Post-merge Fast frontend deploy, Delivery/Security, CodeQL and UI Health are SUCCESS on `8234ed74...`.
+**CI STATUS:** phase-2 PR #427 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS and merged as `fa3e294f...`. Phase-3 has no remote CI yet because its PR is not opened until local full regression is GREEN.
 
 **OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** Training Archive HTTP 500 is the known 250 MB budget-gate rejection, not LOGIC-10/11. Runtime Private later succeeded; keep archive budget/retention and runtime transport follow-ups separate from frontend provenance.
 
-**BLOCKERS:** no proven phase-2 code blocker. Keep historical/H2H association, `key()` fallback removal, timestamp semantics and dead-runtime cleanup out of this PR.
+**BLOCKERS:** no proven phase-3 code blocker. Historical/H2H association, timestamp semantics and dead-runtime cleanup remain separate LOGIC-11 substeps and must not be folded into the canonical-key PR.
 
-**DO NOT REDO:** do not repeat BO5/guard alias discovery or the LOGIC-11 runtime-owner pre-audit. Do not fold H2H identity, `key()` fallback, fake-zero presentation or iNeed$ into phase 1. Do not remove exact-ID/name/time checks inside `operatorPrice()`; it already fails closed on exact `match_id` and uses names/time only as additional fixture guards.
+**DO NOT REDO:** do not repeat BO5/guard alias discovery, LOGIC-11 runtime-owner pre-audit, phase-1 exact-join work or phase-2 fake-zero work. Do not restore name/time fallback in current routing. Do not remove exact-ID/name/time checks inside `operatorPrice()`; it already fails closed on exact `match_id` and uses names/time only as additional fixture guards.
 
 **RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron, PLAYABLE, settlement, SHADOW->PROD or iNeed$ calculations. No fuzzy identity, manual aliases, provider namespace guessing or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Finish full local phase-2 regression on `8234ed74...`.
-2. Push/open phase-2 fake-zero PR; exact-head CI is merge authority.
-3. Before merge, re-check fresh main and rebase only if bot data publication moved it.
-4. Merge phase 2 only after all exact-head CI is GREEN, main==base and PR is MERGEABLE.
-5. After phase-2 merge, continue separate substeps: current-route `key()` fallback, historical/H2H backend association or N/D, timestamp semantics and dead legacy runtime.
+1. Commit/push the locally GREEN phase-3 branch and open the canonical-key PR; exact-head CI is merge authority.
+2. Monitor all required exact-head CI; do not merge pending/red checks.
+3. Before merge, re-check fresh `main`; if generated-data/bot commits moved it, rebase/update and rerun exact-head CI.
+4. Merge phase 3 only with all required exact-head CI GREEN, PR base equal to fresh main and MERGEABLE state.
+5. After phase-3 merge, continue the next separate LOGIC-11 substep: historical/H2H backend association or explicit N/D; timestamp semantics and dead legacy runtime stay separate.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

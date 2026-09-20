@@ -4,7 +4,8 @@
 const num=v=>v==null||v===''||!Number.isFinite(Number(v))?null:Number(v);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-const key=m=>String(m.id??m.match_id??m.match_key??[m.p1,m.p2,m.scheduled_time].join('|'));
+function identityIds(m){return [...new Set([m?.id,m?.match_id,m?.match_key].filter(v=>v!=null&&String(v)!=='').map(String))];}
+function key(m){const ids=identityIds(m);return ids.length===1?ids[0]:null;}
 const pct=v=>num(v)==null?'Brak danych':`${Number(v).toFixed(1).replace('.0','')}%`;
 const score=v=>num(v)==null?'Brak danych':`${Number(v).toFixed(1).replace('.0','')}/100`;
 const ratio=v=>pct(num(v)==null?null:Number(v)*100);
@@ -30,8 +31,8 @@ async function json(path,force=false){
  }
  return cache.get(path).promise;
 }
-function identityIds(m){return [...new Set([m?.id,m?.match_id,m?.match_key].filter(v=>v!=null&&String(v)!=='').map(String))];}
 function find(rows,m){const ids=identityIds(m);if(ids.length!==1)return null;const matches=(Array.isArray(rows)?rows:[]).filter(r=>{const rowIds=identityIds(r);return rowIds.length===1&&rowIds[0]===ids[0]});return matches.length===1?matches[0]:null;}
+function routableRows(rows){return (Array.isArray(rows)?rows:[]).filter(m=>key(m)!=null);}
 function allEvents(m,sym){
 const out=[];const add=(s,source,value,unit)=>{if(!s||!s.market)return;out.push({...s,source,value:num(value),unit,eventKey:source+'|'+window.TENIS_AI_PLAYABLE_UI_V917.signature(s)})};
 for(const s of sym?.scored_selections||[])add(s,'Symfonia 2.0',s.operator_model_probability,'%');
@@ -75,5 +76,5 @@ function marketChoice(s){const api=window.TENIS_AI_PLAYABLE_UI_V917,market=api.c
 function marketChoiceLabel(s,m){const choice=marketChoice(s);if(choice.startsWith('game_state:')){const [,cp,kind]=choice.split(':');return kind==='draw'?`Remis ${Number(cp)/2}:${Number(cp)/2}`:`Prowadzenie po ${cp} gemach`;}if(/^p[12]_wins_a_set$/.test(choice))return `${choice[1]==='1'?'Pierwszy':'Drugi'} zawodnik wygra seta`;if(/^p[12]_exactly_1_?set$/.test(choice))return `${choice[1]==='1'?'Pierwszy':'Drugi'} zawodnik wygra dokładnie 1 set`;return label(s,m);}
 function tournamentGroups(rows){const groups=new Map();for(const m of rows){const k=JSON.stringify([m.tour||'',m.tournament||'',m.surface||'']);if(!groups.has(k))groups.set(k,{key:k,tour:m.tour,tournament:m.tournament,surface:m.surface,matches:[]});groups.get(k).matches.push(m)}return [...groups.values()];}
 
-window.TenisPresentation={operatorPrice,groupEvents,marketChoice,marketChoiceLabel,tournamentGroups,num,esc,norm,key,pct,ratio,score,best,label,pick,json,find,allEvents,availability,couponTotals,filterRows,clearCache:()=>cache.clear()};
+window.TenisPresentation={operatorPrice,groupEvents,marketChoice,marketChoiceLabel,tournamentGroups,num,esc,norm,key,pct,ratio,score,best,label,pick,json,find,routableRows,allEvents,availability,couponTotals,filterRows,clearCache:()=>cache.clear()};
 })();

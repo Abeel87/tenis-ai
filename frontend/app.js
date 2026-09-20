@@ -133,8 +133,8 @@ function routeData(route,parts){
    if(current()){details.set(D.key(m),{...bundle,detail_loaded:true});state.eventCache.delete(D.key(m));if(bundle.dna)state.dna.matches.push(bundle.dna)}
   });
  }
- if(route==='symphony'&&!symphonyLoaded)return loadRoute('symphony',async()=>{const x=await D.json('data/delivery/symphony.json',true);if(x.generated_at!==state.symphony.generated_at)throw Error('Publikacja zmieniła się. Odśwież dane.');if(current()){state.symphony=x;symphonyLoaded=true;state.eventCache.clear()}});
- if(route==='admin'&&admin()&&!['dashboard','users'].includes(parts[1])&&!adminFullLoaded)return loadRoute('admin-full',async()=>{const rows=await D.json('data/results.json');if(current()&&admin()){for(const m of rows)details.set(D.key(m),{...details.get(D.key(m)),match:m});adminFullLoaded=true}});
+ if(route==='symphony'&&!symphonyLoaded)return loadRoute('symphony',async()=>{const x=await D.json('data/delivery/symphony.json',true);if(x.generated_at!==state.symphony.generated_at)throw Error('Publikacja zmieniła się. Odśwież dane.');if(current()){state.symphony={...x,matches:D.routableRows(x.matches)};symphonyLoaded=true;state.eventCache.clear()}});
+ if(route==='admin'&&admin()&&!['dashboard','users'].includes(parts[1])&&!adminFullLoaded)return loadRoute('admin-full',async()=>{const rows=await D.json('data/results.json');if(current()&&admin()){for(const m of D.routableRows(rows))details.set(D.key(m),{...details.get(D.key(m)),match:m});adminFullLoaded=true}});
  if(route==='admin'&&admin()&&!adminLoaded)return loadRoute('admin',async()=>{const [meta,telemetry,diagnostics]=await Promise.all([D.json('data/meta.json'),D.json('data/model_telemetry_v84c.json'),D.json('data/delivery/diagnostics.json')]);if(current()&&admin()){state.meta=meta;state.diagnostics=diagnostics;window.TENIS_AI_MARKET_QUALITY.setTelemetry(telemetry);adminLoaded=true}});
  return null;
 }
@@ -153,7 +153,7 @@ async function loadData(force=false){
  if(generation!==loadGeneration||A.user?.id!==uid)return;
  const indexResult=results[0];
  if(indexResult.status==='fulfilled'&&indexResult.value?.schema===1&&Array.isArray(indexResult.value.matches)){
-  const index=indexResult.value;state.matches=index.matches;state.symphony={generated_at:index.symphony_generated_at,matches:[]};state.symphonyCount=index.symphony_count;state.meta={updated_at:index.generated_at};
+  const index=indexResult.value;state.matches=D.routableRows(index.matches);state.symphony={generated_at:index.symphony_generated_at,matches:[]};state.symphonyCount=index.symphony_count;state.meta={updated_at:index.generated_at};
  }else{state.matches=[];state.symphony={matches:[]};state.errors.push({source:'index',message:indexResult.reason?.message||'Brak indeksu meczów.'})}
  applyLoadResults([coreJobs[1]],[results[1]]);state.loaded=true;state.loading=false;render();if(force&&location.hash===viewHash&&listRoute(viewHash))requestAnimationFrame(()=>window.scrollTo(0,viewScroll));
  const backgroundJobs=[['coupons',async()=>{const r=await A.client.from('ui_coupons').select('*').eq('user_id',uid).order('updated_at',{ascending:false});if(r.error)throw r.error;return r.data}]];

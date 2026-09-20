@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 const c={window:{}};vm.createContext(c);
 for(const p of ['presentation-data.js','match-detail-data.js'])vm.runInContext(fs.readFileSync('frontend/'+p,'utf8'),c);
 const d=c.window.TenisMatchDetail;
+const presentation=c.window.TenisPresentation;
 const fixture={p1:'Łukasz Żuk',p2:'João Silva',p1_id:10,p2_id:20,scheduled_time:'2099-01-01'};
+assert.equal(presentation.key({id:'match-1',match_id:'match-1'}),'match-1','Consistent canonical IDs stay routable');
+assert.equal(presentation.key({match_id:'match-1'}),'match-1','A single canonical match_id stays routable');
+assert.equal(presentation.key({p1:'A',p2:'B',scheduled_time:'2099-01-01'}),null,'Route identity must not fall back to player names and time');
+assert.equal(presentation.key({id:'match-1',match_id:'other'}),null,'Conflicting canonical IDs must fail closed');
+assert.deepEqual(Array.from(presentation.routableRows([{id:'ok'},{p1:'A',p2:'B',scheduled_time:'2099-01-01'},{id:'x',match_id:'y'}]),x=>x.id),['ok'],'Only rows with exactly one canonical identity may enter current routes');
 const past={p1:'SILVA, JOAO',p2:'Zuk, Lukasz',scheduled_time:'2020-01-01',result:{winner:'Łukasz Żuk',score_text:'4-6 4-6'}};
 assert.equal(d.historyRows([past],fixture,'p1',true).length,1);
 assert.equal(d.winnerSide(past),'p2');
@@ -24,6 +30,8 @@ assert.equal(d.sampleLabel(12),'12 meczów w próbce','Published sample count mu
 const appSource=fs.readFileSync('frontend/app.js','utf8');
 assert(appSource.includes('MD.sampleLabel(s.matches)'),'Player profile must render the canonical sample label');
 assert(!appSource.includes('s.matches??0'),'Missing sample count must not be coerced to zero in the profile');
+assert(appSource.includes('state.matches=D.routableRows(index.matches)'),'Current delivery index must reject unroutable identities before route state');
+assert(appSource.includes('state.symphony={...x,matches:D.routableRows(x.matches)}'),'Current Symphony route data must reject unroutable identities');
 for(const [values,trend] of [[[.3,.5,.6],'rosnący'],[[.6,.5,.3],'spadkowy'],[[.5,.5,.5],'stabilny'],[[.3,.6,.5],'zmienny'],[[null,.5,.6],'N/D']]){
  const m={player_intelligence_v85:{profiles:{p1:{windows:Object.fromEntries([20,10,5].map((n,i)=>[n,{metrics:{won:{adjusted:values[i]}}}]))}}}};
  assert.equal(d.form(m,'p1').trend,trend);
