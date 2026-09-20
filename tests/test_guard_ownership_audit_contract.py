@@ -18,12 +18,22 @@ def _active_named_guard_steps() -> list[tuple[str, str]]:
     return rows
 
 
-def test_guard_ownership_audit_covers_every_named_workflow_guard_invocation():
+def _audit_named_guard_steps() -> list[tuple[str, str]]:
     text = AUDIT.read_text(encoding="utf-8")
-    rows = _active_named_guard_steps()
-    assert rows
-    missing = [f"{workflow} :: {step}" for workflow, step in rows if f"{workflow} :: {step}" not in text]
-    assert not missing, f"guard ownership audit missing active workflow invocations: {missing}"
+    rows = []
+    for match in re.finditer(r"^\| \d+ \| `([^`]+?) :: ([^`]+?)` \|", text, re.MULTILINE):
+        rows.append((match.group(1), match.group(2)))
+    return rows
+
+
+def test_guard_ownership_audit_matches_exact_active_workflow_inventory():
+    active = _active_named_guard_steps()
+    audited = _audit_named_guard_steps()
+    assert active
+    assert audited
+    assert audited == active
+    text = AUDIT.read_text(encoding="utf-8")
+    assert f"Active guard/validation invocations after the phase-2 local workflow cleanup: **{len(active)}**." in text
 
 
 def test_guard_ownership_audit_freezes_confirmed_bo5_owner_boundaries():
@@ -35,5 +45,17 @@ def test_guard_ownership_audit_freezes_confirmed_bo5_owner_boundaries():
         "backend/serve_props.py",
         "bo5_full_match_not_supported",
         "47/47 passed",
+    ):
+        assert token in text
+
+def test_guard_ownership_audit_freezes_phase2_presentation_owner_boundaries():
+    text = AUDIT.read_text(encoding="utf-8")
+    for token in (
+        "RED_BASE_COUNT=5",
+        "scripts/verify_ui.py::main()",
+        "tests/match_time_smoke.mjs",
+        "Canonical UI presentation guard",
+        "Post-prune UI presentation guard",
+        "Post-compaction UI presentation guard",
     ):
         assert token in text

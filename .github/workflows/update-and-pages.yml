@@ -204,11 +204,10 @@ jobs:
         run: python scripts/verify_v84a1.py
       - name: Quality Lock Guard v8.5.2
         run: python scripts/verify_v852_quality_lock.py
-      - name: Runtime & UI Guard v8.5.3
-        run: python scripts/verify_v853_runtime_ui.py
+      - name: Canonical UI presentation guard
+        run: python scripts/verify_ui.py
       - name: Match Decision Center Guard v8.7
         run: |
-          python scripts/verify_v87_decision_center.py
           node tests/decision_center_smoke.mjs
           node tests/audit_consistency_smoke.mjs
       - name: Accuracy Shadow Guard v8.6
@@ -221,16 +220,10 @@ jobs:
         run: python scripts/verify_v84c.py
       - name: Dynamic Weights Guard v8.4D
         run: python scripts/verify_v84d.py
-      - name: Dynamic Weights UI Audit Guard v8.4D.1
-        run: python scripts/verify_v84d1.py
-      - name: Dynamic Weights View Scope Guard v8.4D.2
-        run: python scripts/verify_v84d2.py
       - name: Signal Mapping Bridge Guard v8.4D.4
         run: python scripts/verify_v84d4.py
       - name: Game-State Tracking Guard v8.4E1
         run: python scripts/verify_v84e1.py
-      - name: Global Match Time Guard v8.4E1.1
-        run: python scripts/verify_v84e11.py
       - name: Model Trend Monitor Guard v8.4E2
         run: python scripts/verify_v84e2.py
       - name: Final API quota report v8.3B
