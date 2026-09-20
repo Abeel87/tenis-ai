@@ -736,13 +736,13 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-11 - Frontend Ownership + Provenance
 
-**Status:** ACTIVE - phase 1 exact identity/provenance implementation rebased onto merged LOGIC-10 closeout `3750d8b48953116a40bdf3a820e10de073769e1f`; runtime PR is the next publication.
+**Status:** ACTIVE - phase 1 merged as PR #426 (`8234ed74175e81ac9dec039369743176ee609863`); phase 2 fake-zero presentation contract is in local RED->GREEN validation.
 
 **Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners. Current `ARCHITECTURE.md` owner correction is prepared in phase 1.
 
-**Phase-1 RED evidence:** `TenisPresentation.find()` permits a missing-ID name/time join and selects the first duplicate exact-ID row. `model-guide.js::yesNo()` can fabricate `NO = 100 - YES`; current feed contains 70 `set1_exact_six_games` rows with backend YES only, so UI previously created 70 unsupported NO values. Prepared fix requires exactly one canonical ID match or `null`, and publishes YES/NO only when backend supplies each side.
+**Phase-1 merged evidence:** PR #426 removed name/time fallback from `TenisPresentation.find()`, fails closed on missing/duplicate/conflicting canonical IDs, and removed frontend `NO = 100 - YES` synthesis. Exact-head CI and post-merge UI/Delivery/CodeQL/Fast deploy are GREEN.
 
-**Phase-1 safety evidence:** on data head `a329444d...`, `results` has 115/115 unique IDs. Symphony has 70/70 exact visible joins and Superbet Direct 13/13. Player DNA and simulation are intentionally wider SHADOW datasets: 86/138 and 63/95 rows respectively join visible fixtures; their remaining rows are out-of-scope/orphan SHADOW rows, not identity fallbacks. Across current visible fixtures there are zero name/time fallback-only joins and zero duplicate canonical IDs; absence of exact current-layer evidence remains N/D. Focused phase-1 contracts are 9/9 GREEN after rebase onto closeout merge; delivery projection remains lossless with 345 PLAYABLE equivalence checks.
+**Phase-2 fake-zero evidence:** `frontend/app.js::profileStats()` previously rendered missing `stats.matches` as a real `0`. Phase-2 contract now requires missing -> N/D, explicit `0` -> real zero, and published positive counts -> verbatim display through the read-only `frontend/match-detail-data.js` presentation owner. Historical/H2H identity and `key()` fallback remain separate substeps.
 
 Classify every displayed field as one of:
 

@@ -17,6 +17,13 @@ assert.equal(d.assessment({...fixture,match_win:{'Łukasz Żuk':60}}).p,null,'Ne
 assert.equal(d.assessment({...fixture,match_win:{'Łukasz Żuk':60,'João Silva':40}}).winner,'p1');
 assert.equal(d.comparison({...fixture,p1_rank:150,p2_rank:100})[0].winner,'p2');
 assert.equal(d.comparison({...fixture,p1_rank:null,p2_rank:100})[0].winner,null);
+assert.equal(d.sampleLabel(null),'N/D - brak danych o liczbie meczów w próbce','Missing sample count must stay N/D');
+assert.equal(d.sampleLabel(undefined),'N/D - brak danych o liczbie meczów w próbce','Undefined sample count must stay N/D');
+assert.equal(d.sampleLabel(0),'0 meczów w próbce','Explicit backend zero must remain a real zero');
+assert.equal(d.sampleLabel(12),'12 meczów w próbce','Published sample count must be preserved');
+const appSource=fs.readFileSync('frontend/app.js','utf8');
+assert(appSource.includes('MD.sampleLabel(s.matches)'),'Player profile must render the canonical sample label');
+assert(!appSource.includes('s.matches??0'),'Missing sample count must not be coerced to zero in the profile');
 for(const [values,trend] of [[[.3,.5,.6],'rosnący'],[[.6,.5,.3],'spadkowy'],[[.5,.5,.5],'stabilny'],[[.3,.6,.5],'zmienny'],[[null,.5,.6],'N/D']]){
  const m={player_intelligence_v85:{profiles:{p1:{windows:Object.fromEntries([20,10,5].map((n,i)=>[n,{metrics:{won:{adjusted:values[i]}}}]))}}}};
  assert.equal(d.form(m,'p1').trend,trend);
