@@ -688,7 +688,9 @@ Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ## LOGIC-09 — Learning Integrity / Prediction Ledger
 
-**Status:** PHASE-0 AUDIT ACTIVE — zero runtime/learning behavior change.
+**Status:** PHASE-0 COMPLETE — PR #414 merged; phase-1 prospective SHADOW ledger is next. Zero runtime/learning behavior change in phase 0.
+
+Phase-0 merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`.
 
 Canonical owners and historical populations are mapped in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md`. Real settled evidence on audited main `57d5e9c037ae0cc4570e4c68f84a8006478de876` proves unequal comparison populations: Current/CatBoost have 12162 settled AutoLearn scores while TabPFN has 1532; the exact three-model intersection is therefore 1532. Legacy green history, AutoLearn, exact PLAYABLE, Symphony selection and iNeed$ SHADOW selection are separate populations with separate owners and must not be collapsed.
 
