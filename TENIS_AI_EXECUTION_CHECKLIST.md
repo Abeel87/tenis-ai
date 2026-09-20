@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **PR:** #420 is OPEN. Phase-2 audit PR #418 and phase-2 implementation PR #419 are MERGED and verified. Phase-0/#414/#415 and phase-1/#416 remain completed.
 
-**LAST VERIFIED MAIN:** `0bb7613322ce77bfafcb551bcb7dcb960fd6dda0` - data publication after merged #419 and successful normal Update #808. Re-check live GitHub before any merge because scheduled workflows may move main.
+**LAST VERIFIED MAIN:** `1452d65276f7a809a99bb9e98985b600454cf6fe` - one data-only `Player DNA SHADOW` refresh on top of `0bb7613...`; drift audited as SHADOW payload-only before rebasing #420. Re-check live GitHub again immediately before merge.
 
 **LAST COMPLETED WORK:** PR #418 merged the exact downstream join/common-set audit as `fe368f7308ef667be90fecb1c7dff09d47cca626`. PR #419 merged the additive exact PLAYABLE/Symphony selection sidecar as `480994ef0ba3beae3358e91bb9ee41e75b5d3ae5`. Normal Update #808 completed SUCCESS through selection sidecar generation/guard, final full regression, commit/push and Pages deployment; bot publication moved main to `0bb7613322ce77bfafcb551bcb7dcb960fd6dda0`.
 
