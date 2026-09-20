@@ -33,23 +33,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** phase 1 - current-owner / contract audit only. No iNeed$ economics, staking or settlement math changes are authorized in this substep.
 
-**BRANCH:** `logic-11-closeout-docs` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-closeout-docs`, rebased onto fresh main `2db38c03aa59c317a6c0eff20d51897b59e3b1a9`.
+**BRANCH:** `logic-12-phase1-builder-contract` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic12-phase1-builder`, rebased onto fresh main `53036abdaa586cfda5b4198b489751abe583abec`.
 
-**PR:** LOGIC-11 phases 1-7 are MERGED as PRs #426-#432. This docs-only closeout PR is not opened yet.
+**PR:** LOGIC-11 closeout PR #433 is MERGED. LOGIC-12 phase-1 PR #434 is OPEN.
 
-**LAST VERIFIED MAIN:** `2db38c03aa59c317a6c0eff20d51897b59e3b1a9` - bot `data: refresh Superbet market context`, child of post-LOGIC-11 analysis publication `da2bb105731f8f1977bf5f7666190a226f8ca4d9`.
+**LAST VERIFIED MAIN:** `53036abdaa586cfda5b4198b489751abe583abec` - bot `data: refresh Superbet market context`; phase-1 branch is rebased and fully retested on this exact SHA.
 
-**LAST COMPLETED WORK:** LOGIC-11 phase 7 PR #432 merged as `5ad329b0f08688bf3d2b2d32df124b0f9e71dccf` after exact-head 10/10 GREEN CI. Post-merge Update+Pages run #815 (`35533432346`) completed SUCCESS through canonical guards, Symphony/PLAYABLE, final full regression, refreshed JSON, lazy delivery and Pages deploy. Follow-up Superbet publication moved main to `2db38c03...`; Runtime Private and iNeed$ SHADOW on that SHA are GREEN.
+**LAST COMPLETED WORK:** PR #433 merged as `d774fa87...`. LOGIC-12 phase 1 reproduced current single-leg economics, added pure non-runtime `backend/ineed_builder_shadow.py`, contract tests and `TENIS_AI_LOGIC12_BET_BUILDER_AUDIT.md`. No production iNeed$ path was rewired.
 
 **LOGIC-11 CLOSEOUT:** COMPLETE in code. Frontend ownership/provenance fails closed on missing/ambiguous identity, preserves N/D rather than fabricated zero, labels SHADOW explicitly, uses backend publication timestamps, and does not synthesize probability/H2H/odds/identity. Retired/no-consumer calculation helpers are not booted as active frontend runtime.
 
-**LOGIC-12 PHASE-1 AUDIT EVIDENCE:** current canonical path is `backend/ineed_scoped_runner.py` -> `backend/ineed_money.py`. The scope adapter supplies individual playable Symphony signals; `evaluate()` prices/qualifies/stakes each signal independently, and `build_settlements()` settles one signal/bet at a time. The current iNeed$ economic unit is therefore a single leg, not the final same-match Bet Builder composition.
+**LOGIC-12 PHASE-1 AUDIT EVIDENCE:** current iNeed$ remains single-leg. Symphony already publishes the final recommended composition with >=2 verified legs and joint probability. Snapshot proof on 53036abd...: 108 result rows, 33 final PLAYABLE, 33/33 valid SHADOW compositions, 0 combined builder prices; Superbet Direct has 13 resolved matches but no builder/combined quote field. New SHADOW owner preserves upstream joint and never multiplies leg odds.
 
-**TEST STATUS:** LOGIC-11 final local suite 1353/1353 GREEN; focused provenance/ownership pack and delivery checks GREEN. Post-merge final regression, Canonical UI, Symphony and PLAYABLE guards are GREEN. Docs/project contract tests must be re-run on this closeout branch before publication.
+**TEST STATUS:** LOGIC-12 focused contract pack 24/24 GREEN; broader iNeed$/Symphony/Superbet/PLAYABLE/governance pack 95/95 GREEN; full repository regression 1365/1365 GREEN with repo-local --basetemp.
 
-**CI STATUS:** PR #432 exact-head 10/10 SUCCESS. Post-merge Delivery/Security, UI Health, CodeQL, Fast deploy and Update+Pages are SUCCESS. Runtime Private and iNeed$ SHADOW are also SUCCESS on current `2db38c03...`.
+**CI STATUS:** PR #434 exact-head remote CI pending. Local exact-base gates on `53036abd...`: focused 24/24, broader 95/95, full 1365/1365, UI smoke GREEN, Project Health PASS.
 
-**BLOCKERS:** no LOGIC-11 blocker. LOGIC-12 must first define an additive SHADOW composition contract. A same-match correlated Bet Builder must never derive combined odds by multiplying leg odds; without an exact verified Superbet combined price the BB economic result remains N/D / NO BET.
+**BLOCKERS:** current operator snapshots do not expose an exact combined Bet Builder quote. Therefore builder-level odds/EV/stake cannot be implemented truthfully yet; result remains N/D / NO BET until a verified fresh combined-price source is proven.
 
 **DO NOT REDO:** do not reopen LOGIC-11 phases 1-7 or restore name/time identity, fake-zero missingness, client-clock publication provenance, unlabeled SHADOW, or retired frontend calculators. Do not change current iNeed$ math during LOGIC-12 phase-1 audit.
 
@@ -57,11 +57,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Run docs/project contract tests and `git diff --check`; confirm the branch changes only the two governance docs.
-2. Re-check fresh `main`; if unchanged, commit/push and open a docs-only LOGIC-11 closeout PR.
-3. Merge only after exact-head CI is GREEN and the PR base still equals fresh `main`.
-4. Start LOGIC-12 phase 1 with RED contract tests that freeze current single-leg behavior and define a new additive final-composition SHADOW record; do not replace current iNeed$ yet.
-5. Prove exact Superbet combined-price provenance for a Bet Builder. If unavailable, publish N/D / NO BET rather than multiplying correlated leg odds.
+1. Monitor all required exact-head CI for PR #434; never merge pending/red checks.
+2. Before merge, re-check fresh `main`, PR base SHA and mergeability; rebase/rerun if bot data moved main.
+3. Merge #434 only with all required exact-head CI GREEN.
+4. Perform post-merge proof that current single-leg iNeed$ remains unchanged and the SHADOW contract has no runtime/settlement influence.
+5. Begin LOGIC-12 phase 2 only by proving an exact fresh Superbet combined Bet Builder quote source; without it keep builder economics N/D / NO BET.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -381,10 +381,10 @@ Status: `[~] ACTIVE - phase 1 owner/contract audit; SHADOW only, no economic-mat
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
 - [x] Potwierdzono current state: iNeed$ ocenia/stakuje/rozlicza pojedyncze playable signals, nie finalną kompozycję BB.
-- [ ] Potwierdzić final Symphony composition jako jednostkę wejścia.
-- [ ] Zdefiniować additive SHADOW composition record: composition id + min. 2 legs + canonical match/operator provenance.
-- [ ] Joint probability całej kompozycji bez zmiany istniejącej Symphony probability.
-- [ ] Exact verified Superbet combined odds; brak combined price = N/D / NO BET, nigdy iloczyn skorelowanych leg odds.
+- [x] Potwierdzono final Symphony composition jako jednostkę wejścia.
+- [x] Zdefiniowano additive SHADOW composition record: composition id + min. 2 legs + canonical match/operator provenance.
+- [x] Joint probability jest wyłącznie passthrough z Symfonii; iNeed$ SHADOW nie liczy nowej probability.
+- [~] Exact verified Superbet combined odds: kontrakt fail-closed gotowy, ale bieżący Direct snapshot nie publikuje combined quote; brak = N/D / NO BET, nigdy iloczyn skorelowanych leg odds.
 - [ ] EV całego buildera.
 - [ ] Kelly/risk/stake całego buildera.
 - [ ] Jedna rezerwacja bankroll per BB.

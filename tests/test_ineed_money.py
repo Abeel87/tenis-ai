@@ -120,3 +120,17 @@ def test_candidate_keeps_its_own_model_probability_after_sorting():
     assert qualified["2"]["snapshot"]["operator_model_probability"] == 60
     assert round(qualified["1"]["expected_value_net"], 3) == .232
     assert round(qualified["2"]["expected_value_net"], 3) == .056
+
+
+def test_current_ineed_remains_single_leg_until_builder_shadow_promotion():
+    match = result()[0]
+    match["symphony2_playable"]["signals"] = [
+        signal(70),
+        {"market":"match_winner","pick":"B","operator_model_probability":65,
+         "learning_reliability":.9,"fixture_line_verified":True},
+    ]
+    rows = m.evaluate([match], direct(), CFG, state(equity=1000, peak=1000))
+    assert len(rows) == 2
+    assert {row["selection"] for row in rows} == {"A", "B"}
+    assert all("composition_id" not in row for row in rows)
+    assert all("combined_odds" not in row for row in rows)
