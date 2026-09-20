@@ -76,6 +76,27 @@ def test_historical_frontend_owner_files_stay_absent():
     assert not present, f"Historical frontend owners returned: {present}"
 
 
+def test_workflow_exact_static_frontend_paths_are_live_files():
+    import re
+
+    missing = []
+    workflows = ROOT / ".github" / "workflows"
+    for workflow in (*workflows.glob("*.yml"), *workflows.glob("*.yaml")):
+        text = workflow.read_text(encoding="utf-8")
+        for token in re.findall(r"['\"](frontend/[^'\"]+)['\"]", text):
+            if token == "frontend/data" or token.startswith("frontend/data/") or "*" in token or "?" in token:
+                continue
+            if not (ROOT / token).is_file():
+                missing.append(f"{workflow.name}:{token}")
+    assert not missing, f"Workflow path filters reference retired frontend files: {missing}"
+
+
+def test_project_health_does_not_read_retired_frontend_owners():
+    text = (ROOT / "scripts" / "project_health.py").read_text(encoding="utf-8")
+    for retired in ("project-ui.js", "match-browser.js", "match-detail.js", "symphony2.js"):
+        assert f"read(frontend/'{retired}')" not in text
+
+
 def test_logic_constitution_preserves_critical_module_boundaries():
     text = _text("TENIS_AI_LOGIC_CONSTITUTION.md")
     required = (

@@ -31,37 +31,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-11 - Frontend Ownership / Data Provenance`
 
-**SUBSTEP:** phase 5 - timestamp provenance: backend publication time only. Phases 1-4 are merged as PRs #426, #427, #428 and #429.
+**SUBSTEP:** phase 6 - dead-runtime / retired frontend reference cleanup. Phases 1-5 are merged as PRs #426, #427, #428, #429 and #430.
 
-**BRANCH:** `logic-11-phase5-timestamps` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase5-timestamps`, created from phase-4 merge `7c978facf11a274e33886a67a714791677ca9c55`.
+**BRANCH:** `logic-11-phase6-dead-runtime` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase6-dead-runtime`, created from phase-5 merge `a6856265bb78b5a84dc0119f4840c9028a70fc29`.
 
-**PR:** phase-1 #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`; phase-2 #427 MERGED as `fa3e294faabff79f6c820a833912feafae7e4688`; phase-3 #428 MERGED as `11e5ff2d708a517660694b9ce5965cb7e159e4be`; phase-4 #429 MERGED as `7c978facf11a274e33886a67a714791677ca9c55`. Phase-5 PR is not opened yet.
+**PR:** phase-1 #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`; phase-2 #427 MERGED as `fa3e294faabff79f6c820a833912feafae7e4688`; phase-3 #428 MERGED as `11e5ff2d708a517660694b9ce5965cb7e159e4be`; phase-4 #429 MERGED as `7c978facf11a274e33886a67a714791677ca9c55`; phase-5 #430 MERGED as `a6856265bb78b5a84dc0119f4840c9028a70fc29`. Phase-6 PR is not opened yet.
 
-**LAST VERIFIED MAIN:** `7c978facf11a274e33886a67a714791677ca9c55` - LOGIC-11 phase-4 merge. PR #429 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all SUCCESS before merge.
+**LAST VERIFIED MAIN:** `a6856265bb78b5a84dc0119f4840c9028a70fc29` - LOGIC-11 phase-5 merge. PR #430 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all SUCCESS before merge.
 
-**LAST COMPLETED WORK:** LOGIC-11 phase 4 removed browser-side name fallback from historical/H2H player association and merged as PR #429 after exact-head 7/7 GREEN CI. Phase 5 audit then found `frontend/app.js::pageHead()` displaying the client device clock in the page header even though delivery already publishes backend `generated_at`.
+**LAST COMPLETED WORK:** LOGIC-11 phase 5 replaced the page-header client clock with backend delivery `generated_at` provenance and merged as PR #430 after exact-head 7/7 GREEN CI. Phase 6 audit then confirmed the named legacy frontend owners are already physically absent, but stale references remained in workflow path filters, Project Health and one unused test constant.
 
-**LOGIC-11 PHASE-5 RED/GREEN:** RED `ui_stage2_contracts.mjs` proved the header still contained `date(new Date().toISOString())`. Local GREEN renders `Dane: <state.meta.updated_at>` where `state.meta.updated_at` is populated only from `data/delivery/index.json::generated_at`; before backend publication metadata loads it renders explicit `Dane: N/D`. Other client-clock uses were audited and retained only for non-publication semantics such as cache TTL, current-fixture/freshness gates, date filters and user-action timestamps.
+**LOGIC-11 PHASE-6 RED/GREEN:** RED contract found exact workflow `frontend/...` path filters pointing at retired files and `scripts/project_health.py` still reading missing `project-ui.js`. Generated `frontend/data` artifacts and negative absence tests are explicitly excluded from this cleanup. Local GREEN removes retired static path filters from Superbet refresh, points Symphony checks at current owners `frontend/app.js` / `frontend/presentation-data.js`, converts Project Health to an active retired-owner absence guard, and removes the unused `MATCH_BROWSER` constant. No active frontend file was deleted.
 
-**TEST STATUS:** phase-5 Stage-2, UI static, match-time, Decision Center and audit-consistency are GREEN. Focused docs/frontend/history provenance pack is 13/13 GREEN. Full repository regression is GREEN: 1350/1350 passed with repo-local `--basetemp`.
+**TEST STATUS:** phase-6 focused contract pack is 21/21 GREEN; `scripts/project_health.py` reports 0 FAIL / 1 existing JS-count WARN; UI static, Decision Center and audit-consistency are GREEN. Full repository regression is GREEN: 1352/1352 passed with repo-local `--basetemp` (two new phase-6 contract tests increase the prior total from 1350).
 
-**CI STATUS:** phase-4 PR #429 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS before merge. Phase 5 has no remote CI yet because its PR has not been opened.
+**CI STATUS:** phase-5 PR #430 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS before merge. Phase 6 has no remote CI yet because its PR has not been opened.
 
 **OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** Training Archive HTTP 500 is the known 250 MB budget-gate rejection, not LOGIC-10/11. Runtime Private later succeeded; keep archive budget/retention and runtime transport follow-ups separate from frontend provenance.
 
-**BLOCKERS:** no proven phase-5 code blocker. Dead-runtime cleanup remains a separate later LOGIC-11 substep and must not be folded into timestamp provenance.
+**BLOCKERS:** no proven phase-6 code blocker. Remaining LOGIC-11 closeout items (SHADOW labeling / final no-fallback inventory) stay separate from dead-reference cleanup.
 
-**DO NOT REDO:** do not repeat phases 1-4 identity/fake-zero/H2H work. Do not remove client clocks that own cache TTL, date filtering, freshness validation or explicit user-action timestamps merely because they use `Date.now()` / `new Date()`. Data-publication labels alone must use backend provenance. Do not remove exact-ID/name/time fixture guards inside `operatorPrice()`; those are a separate exact-offer validation contract.
+**DO NOT REDO:** do not repeat phases 1-5. Do not delete generated `frontend/data` artifacts merely because they are absent in a clean checkout, and do not remove negative tests that intentionally assert retired owners stay absent. Do not broaden this phase into model/runtime behavior changes.
 
 **RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron, PLAYABLE, settlement, SHADOW->PROD or iNeed$ calculations. No fuzzy identity, manual aliases, provider namespace guessing or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Run Decision Center, audit-consistency, focused docs/frontend contracts and full repository regression for phase 5.
+1. Re-run focused contracts after checkpoint edits, then run Decision Center, audit-consistency and the full repository regression for phase 6.
 2. Clean local temp artifacts, verify `git diff --check`, and re-check fresh `main`.
-3. If the base is unchanged, commit/push phase 5 and open the timestamp-provenance PR; otherwise rebase and rerun required tests.
+3. If the base is unchanged, commit/push phase 6 and open the dead-runtime reference-cleanup PR; otherwise rebase and rerun required tests.
 4. Monitor all required exact-head CI and merge only with all checks GREEN, base equal to fresh main and MERGEABLE state.
-5. After phase-5 merge, continue the separate dead-runtime/legacy-file cleanup audit without deleting active owners.
+5. After phase-6 merge, perform the final LOGIC-11 closeout inventory for SHADOW labeling, N/D coverage and any remaining frontend-created fallback before deciding whether LOGIC-11 is complete.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

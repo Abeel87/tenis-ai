@@ -2,7 +2,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAYABLE_UI = ROOT / "frontend" / "playable-ui.js"
-MATCH_BROWSER = ROOT / "frontend" / "match-browser.js"
 
 
 def test_playable_ui_uses_only_final_symphony_projection():
