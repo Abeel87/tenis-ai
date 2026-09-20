@@ -49,7 +49,6 @@ if frontend.exists():
 
 index=read(frontend/'index.html')
 meta=read(frontend/'app-meta.js')
-ui=read(frontend/'project-ui.js')
 clean=read(frontend/'clean-core-v80.js')
 sw=read(frontend/'sw.js')
 
@@ -65,8 +64,10 @@ if 'history-days-v732.js' in index or 'history-days-v732.css' in index:
     failures.append('Stary renderer History v7.3.2 nadal jest ładowany.')
 if (frontend/'history-days-v732.js').exists() or (frontend/'history-days-v732.css').exists():
     failures.append('Stare pliki History v7.3.2 nadal istnieją po migracji v8.0.')
-if "Tenis AI v7.8D · Calibration Guard" in ui:
-    failures.append('project-ui nadal nadpisuje nagłówek starą wersją v7.8D.')
+retired_frontend=('project-ui.js','match-browser.js','match-detail.js','symphony2.js')
+returned=[name for name in retired_frontend if (frontend/name).exists()]
+if returned:
+    failures.append('Wycofani właściciele frontendu wrócili do runtime: '+', '.join(returned))
 if 'readability-v753.js' in index:
     failures.append('Obsolete readability-v753.js nadal jest ładowany.')
 if 'cache.addAll(ASSETS)' in sw:
