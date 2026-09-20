@@ -718,18 +718,19 @@ Common-test metrics may be reported only on exact prospective rows with all thre
 
 ---
 
-## LOGIC-10 — Guard Ownership Audit
+## LOGIC-10 - Guard Ownership Audit
 
-Lista wszystkich guardów/walidatorów:
+**Status:** ACTIVE - phase-1 named workflow inventory complete; first confirmed BO5 ownership collision locally repaired, PR CI/merge pending.
 
-- owner,
-- invariant,
-- input/output,
-- reason code,
-- czy blokuje legalny output,
-- czy duplikuje inny guard.
+Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. On base `5fbe321987bd271240bacd16c382efbd38e02145` it inventories 97 named guard/validation invocations across 28 workflows and assigns each invocation to a file-backed entrypoint or the exact workflow inline block. Repeated execution of one verifier in multiple CI surfaces is not treated as duplicate ownership unless conflicting invariants are proven.
 
-Naprawa: usuwać/zmieniać nieaktualny warunek **w kanonicznym guardzie**, nie dodawać obejść.
+**Confirmed collision:** `backend/model.py` is the Current Engine owner of legal format-aware BO5 full-match output. Legacy `backend/prediction_integrity_v78a.py::apply_pre_output_guards()` erased `match_win`, `match_over_under`, `expected_match_games`, `total_sets` and `exact_match_score`, then the validator required those legal BO5 outputs to be N/D. This historical fail-safe conflicts with the canonical Current Engine.
+
+**Owner-scoped repair:** prediction integrity no longer rewrites legal BO5 full-match output. It validates BO5 score-space instead: exact score outcomes must be BO5-compatible and total-set outcomes must be 3/4/5 sets when present. `backend/market_lab_v741.py` remains independently fail-closed as `LAB_SET1_ONLY`; `backend/serve_props.py` remains BO5 `ready=false` with reason `bo5_full_match_not_supported`. No new compensating guard is introduced.
+
+**Evidence:** RED reproduction had 2 BO5 failures. After the minimal repair, Current Engine + integrity targeted tests are 11/11 GREEN; wider BO5/downstream regression is 47/47 GREEN; audit-contract + BO5 targeted pack is 13/13 GREEN. Full local repository regression is 1340/1340 GREEN with a writable worktree-local pytest basetemp. Full PR CI and post-merge runtime verification remain required before this fix is considered merged.
+
+Remaining LOGIC-10 work: deep-review inline/high-risk guards for explicit input/output/reason/failure semantics, trace guard-to-guard consumption, and fix only proven collisions in their canonical owner with independent regression evidence. Do not perform one giant guard refactor.
 
 ---
 

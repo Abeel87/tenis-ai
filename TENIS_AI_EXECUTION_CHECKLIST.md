@@ -29,41 +29,36 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
-**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger`
+**ACTIVE LOGIC/TASK:** `LOGIC-10 - Guard Ownership / Dead Logic Audit`
 
-**SUBSTEP:** phases 0-3 infrastructure are MERGED and post-merge verified. Prospective exact common-set evidence collection is active; common binary settled sample is still `n=0`. No telemetry/weight/learning/runtime migration is approved.
+**SUBSTEP:** phase-1 named workflow inventory is complete; the first confirmed BO5 guard collision is reproduced and repaired locally in the canonical prediction-integrity owner. Full LOGIC-10 remains ACTIVE pending full CI/merge and semantic review of remaining inline/high-risk guards.
 
-**BRANCH:** `logic-09-phase3-closeout`, based on fresh main `e2d6a124325e449535c191abdd8a2feb3842e04a` after auditing the intervening data-only Superbet refresh.
+**BRANCH:** remote `logic-10-guard-ownership-audit`; local worktree branch `logic-10-guard-ownership-audit-local`, based on fresh main `5fbe321987bd271240bacd16c382efbd38e02145`.
 
-**PR:** phase-3 implementation PR #420 is MERGED. This branch is documentation-only closeout; no parallel runtime implementation exists.
+**PR:** none yet. No parallel open PR exists for LOGIC-10.
 
-**LAST VERIFIED MAIN:** `e2d6a124325e449535c191abdd8a2feb3842e04a` - bot commit `data: refresh Superbet market context` on top of phase-3 publication `a3c9b6e8338e3fa5ca3da7edd432700e720e74bf`. Drift from `a3c9b6e8...` is generated data only and does not touch Prediction Ledger owners or closeout docs.
+**LAST VERIFIED MAIN:** `5fbe321987bd271240bacd16c382efbd38e02145` - `data: refresh Player DNA SHADOW`. It is generated-data drift on top of merged LOGIC-09 closeout and does not touch the LOGIC-10 owners changed here.
 
-**LAST COMPLETED WORK:** PR #420 merged as `bf959fa23f83025851a5b6db8a329d6443836547` after exact-head 7/7 GREEN CI. Normal post-merge Update #809 completed SUCCESS: canonical settlement #25 GREEN; selection sidecar #67/#68 GREEN; phase-3 settlement common-set #69 GREEN; dedicated phase-3 guard #70 GREEN; Symphony guards #71/#72 GREEN; final full regression #75 GREEN; refreshed JSON commit #77 GREEN; Pages build/upload/deploy GREEN. Bot publication moved main to `a3c9b6e8338e3fa5ca3da7edd432700e720e74bf`, followed only by the audited data-only Superbet refresh `e2d6a124...`.
+**LAST COMPLETED WORK:** audited every named workflow step containing `guard` or `validat`: 97 invocations across 28 workflows. Wrote `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md` with exact workflow/step inventory and canonical entrypoints. Reproduced the stale BO5 conflict in `backend/prediction_integrity_v78a.py`: the legacy pre-output guard erased legal BO5 Current Engine full-match output even though `backend/model.py` now owns a format-aware BO5 distribution. Minimal local repair removes the destructive rewrite and validates BO5 score-space instead. Market Lab remains `LAB_SET1_ONLY`; Serve Props remains BO5 `ready=false` with `bo5_full_match_not_supported`.
 
-**PHASE-3 PUBLISHED EVIDENCE:** `frontend/data/prediction_ledger_settlement_shadow.json` schema `prediction-ledger-settlement-shadow-v1`, mode `SHADOW_ONLY`, generated `2026-09-20T11:04:27.100753+00:00`. Published rows `2460`; exact history match keys `1488`; settlement results `hit=0`, `miss=0`, `void=0`, `N/D=2460`; exact Current+CatBoost+TabPFN common rows `220`; common binary settled `0`; common void `0`; status `NO_SETTLED_COMMON_ROWS`. Population reports: `ALL rows=2460/common=220`; exact `PLAYABLE rows=585/common=83`; exact `SYMPHONY_SELECTED rows=2/common=2`; exact `PLAYABLE_AND_SYMPHONY rows=2/common=2`; every population has binary settled `0`. Missing evidence remains `N/D`, not false/zero.
+**CHANGED FILES:** `backend/prediction_integrity_v78a.py`, `tests/test_v78a_integrity.py`, `tests/test_guard_ownership_audit_contract.py`, `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`, `TENIS_AI_EXECUTION_CHECKLIST.md`, `TENIS_AI_MODEL_DATA_REGISTRY.md`, `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`, `tests/test_readiness_requirement_matrix.py`.
 
-**ISOLATION / OWNERS:** canonical terminal result owner remains `backend/live_history_settle.py`; canonical candidate scorer remains `backend/signal_settlement.py::settle_signal_live`; phase-3 consumer is `backend/prediction_ledger_settlement_shadow.py`. Published sidecar confirms `network_fetch_enabled=false`, `source_ledger_mutated=false`, `production_influence=false`, `runtime_gating_enabled=false`, `learning_consumer_enabled=false`, `telemetry_consumer_enabled=false`, `auto_promote=false`.
+**TEST STATUS:** RED proof before repair: 2 BO5 failures. After repair: Current Engine + integrity 11/11 GREEN; BO5/downstream regression pack 47/47 GREEN; audit-contract + BO5 targeted pack 13/13 GREEN; full local repository suite **1340/1340 GREEN** using a worktree-local writable pytest basetemp. The first full-suite attempt had 75 setup errors caused solely by Windows `PermissionError` on the global pytest temp root; rerun with writable basetemp had zero failures/errors.
 
-**CHANGED FILES FOR CLOSEOUT:** `TENIS_AI_EXECUTION_CHECKLIST.md`, `TENIS_AI_MODEL_DATA_REGISTRY.md` only. `ARCHITECTURE.md` already describes the merged phase-3 owner and isolation contract and requires no status-only rewrite.
+**CI STATUS:** no LOGIC-10 PR CI yet. Existing main is green from the prior merged/data workflows; do not treat that as evidence for this local diff.
 
-**TEST STATUS:** no runtime/model code changes in this closeout. Phase-3 implementation unit/snapshot tests and full regression already passed on PR #420 and post-merge Update #809. Documentation diff must remain scope-only and contract-consistent.
+**BLOCKERS:** no code blocker for the confirmed BO5 collision. Merge is blocked until the branch is committed/pushed, PR CI is fully green, fresh main is rechecked, and post-merge Update/runtime behavior is verified. LOGIC-10 itself remains open after this PR because inline/high-risk guard input/output/reason semantics still require owner-by-owner review.
 
-**CI STATUS:** implementation PR #420 exact-head CI 7/7 GREEN; post-merge Delivery/Security, CodeQL and UI & Project Health GREEN; Update #809 including Pages GREEN.
+**DO NOT REDO:** do not repeat the 97-invocation named workflow inventory unless workflows change or the contract test reports drift. Do not reintroduce BO5 N/D erasure in prediction integrity. Do not broaden Market Lab or Serve Props BO5 support in this PR. Do not use a second guard to repair the prediction-integrity guard.
 
-**BLOCKERS:** no implementation blocker. Evidence maturity is the only blocker for model comparison: common binary settled sample is `n=0`. It must grow naturally through the existing prospective ledger + canonical settlement pipeline. Do not manufacture rows by retroactive predictions, fuzzy joins, nearest lines/times, provider-ID guessing, changed settlement semantics or manual backfill.
-
-**DO NOT REDO:** do not repeat LOGIC-00..08 or LOGIC-09 phases 0-3 infrastructure unless a concrete regression is proven. Do not replace legacy AutoLearn history, production settlement, telemetry, dynamic weights, PLAYABLE, Symphony or iNeed$ with ledger sidecars. Do not infer missing selection/settlement evidence as false/zero.
-
-**RISKS / HARD BANS:** zero changes to Current Engine math, probability, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia, Neuron, PLAYABLE, production settlement semantics, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider namespace guessing, post-start prediction reconstruction or real-money execution.
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia, Neuron, PLAYABLE, production settlement semantics, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider namespace guessing, post-start prediction reconstruction or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Keep normal prospective collection running through the existing Update/history settlement pipeline; make no code change solely to force sample growth.
-2. On a later normal published refresh, read `prediction_ledger_settlement_shadow.json`. If `common_binary_settled` is still `0`, record that fact and continue collection; do not backfill/recompute.
-3. When exact common `hit/miss` rows appear naturally, report factual common-set coverage plus Brier/log-loss/accuracy on the identical Current/CatBoost/TabPFN intersection, separately for `ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED` and their exact intersection. `void` remains excluded from binary metrics.
-4. Do not rank/promote models, migrate telemetry/dynamic weights, invent a minimum sample threshold or activate ledger evidence in runtime without a later explicitly authorized phase.
-5. Walk-forward and market-specific comparisons remain pending until the prospective common sample is large enough to make those audits meaningful; evidence maturity, not code, is the current gate.
+1. Commit and push the existing remote branch `logic-10-guard-ownership-audit`; open one owner-scoped PR.
+2. Require all PR CI GREEN; if main moves, audit the drift and rebuild/rebase before merge.
+3. After merge, verify normal Update/Prediction integrity on main and confirm no downstream BO5 regression.
+4. Continue LOGIC-10 with inline/high-risk guard input/output/reason semantics; collision fixes remain small owner-scoped PRs, never a giant refactor.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -339,20 +334,20 @@ Cel: modele uczą się i są porównywane na uczciwej, identycznej próbce prosp
 **Definition of Done:** wagi i oceny modeli wynikaj? z por?wnywalnych prospective danych; brak dowodu przewagi nie uruchamia promocji. Infrastructure phases 0-3 s? kompletne, ale pe?ny LOGIC-09 DoD nie jest spe?niony przy common binary settled `n=0`.
 ---
 
-## LOGIC-10 — Guard Ownership / Dead Logic Audit
+## LOGIC-10 - Guard Ownership / Dead Logic Audit
 
-Status: `[ ] NOT STARTED`
+Status: `[~] ACTIVE - phase-1 inventory complete; BO5 collision repair local, full CI/merge pending`
 
-Cel: guardy chronią kontrakty, ale nie walczą z legalnym outputem innych modułów.
+Cel: guardy chronia kontrakty, ale nie walcza z legalnym outputem innych modulow.
 
-- [ ] Lista aktywnych guardów i owner każdego guardu.
-- [ ] Input/output/reason code i kolejność wykonania.
-- [ ] Wykrycie sprzecznych guardów.
-- [ ] Audyt BO5 dead logic.
-- [ ] Usunięcie/naprawa tylko po testach regresyjnych.
-- [ ] Zero guardów naprawiających inne guardy.
+- [x] Lista aktywnych named workflow guard/validation invocations i owner kazdego: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md` records 97 invocations across 28 workflows on base `5fbe3219...`.
+- [~] Input/output/reason code i kolejnosc wykonania: high-risk BO5 path mapped; remaining inline/high-risk workflow guards still require semantic review.
+- [~] Wykrycie sprzecznych guardow: first confirmed collision is the legacy BO5 N/D rewrite in `prediction_integrity_v78a`; wider collision review remains active.
+- [x] Audyt BO5 dead logic: canonical Current Engine BO5 output, Market Lab BO5 boundary and Serve Props BO5 boundary mapped and regression-tested.
+- [~] Usuniecie/naprawa tylko po testach regresyjnych: BO5 fix has RED proof plus 11/11, 47/47 and 13/13 local GREEN evidence; PR CI/merge still pending.
+- [~] Zero guardow naprawiajacych inne guardy: BO5 repair changes the stale canonical guard in place; remaining guard chains still require audit.
 
-**Definition of Done:** każdy guard ma jeden cel i nie blokuje legalnego kanonicznego outputu przez historyczny warunek.
+**Definition of Done:** kazdy guard ma jeden cel i nie blokuje legalnego kanonicznego outputu przez historyczny warunek. Nie jest jeszcze spelnione dla calego LOGIC-10.
 
 ---
 
