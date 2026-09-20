@@ -31,21 +31,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger`
 
-**SUBSTEP:** phase-0 audit/source-of-truth contract. Canonical pre-match prediction producers, frozen evidence, selection populations, settlement joins and telemetry consumers are mapped; selection bias and unequal Current/CatBoost/TabPFN coverage are proven. No training, weight, probability or gate change is approved.
+**SUBSTEP:** phase-0 audit/source-of-truth contract is merged in PR #414. Active next step is phase-1 design/implementation of a prospective SHADOW-only frozen prediction ledger before any telemetry or learning migration.
 
-**BRANCH:** `logic-09-learning-integrity-audit`, created from verified `main` `57d5e9c037ae0cc4570e4c68f84a8006478de876`.
+**BRANCH:** `logic-09-phase0-closeout`, created from verified post-#414 `main` `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`.
 
-**PR:** no PR yet for LOGIC-09 phase-0 audit; LOGIC-08 is fully closed through docs PR #413.
+**PR:** phase-0 audit PR #414 is MERGED; current closeout docs branch has no PR yet.
 
-**LAST VERIFIED MAIN:** `57d5e9c037ae0cc4570e4c68f84a8006478de876` - merge of LOGIC-08 closeout PR #413; no open PRs at LOGIC-09 phase-0 start.
+**LAST VERIFIED MAIN:** `d589b7204098fe285fe30ec66fbd6be96ee3f5a8` - merge of LOGIC-09 phase-0 audit PR #414.
 
-**LAST COMPLETED WORK:** LOGIC-08 R18/R19 additive SHADOW UI observability merged in PR #412 (final head `4a6895672fa3783c18015470f8c8ade6c3373155`, merge `f9c4f000600e4b24c863488fdf9814f3d6a968d6`). Exact-head Player DNA, Point Tape, UI/Project Health, Delivery/Security, CodeQL and LOGIC-01..04 were GREEN. Post-merge Fast frontend deploy `35495378715`, Delivery/Security `35495378694`, CodeQL `35495378755` and UI/Project Health `35495378723` all completed SUCCESS. R18/R19 renders only backend-owned SHADOW tri-state telemetry or explicit N/D. Legacy `model_ready`, R16 filtering, PLAYABLE, probability and learning gates remain unchanged. Six data/refresher workflows are restored 6/6 `active`.
+**LAST COMPLETED WORK:** LOGIC-09 phase-0 audit PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`. Audit proved unequal model populations (Current/CatBoost 12162 settled AutoLearn scores vs TabPFN/common intersection 1532), mapped separate legacy-green/AutoLearn/PLAYABLE/Symphony/iNeed$ owners, and froze the prospective ledger/common-test-set contract with zero runtime behavior change.
 
 **LOGIC-08 CLOSEOUT:** COMPLETE for the approved audit/SHADOW-observability scope. Sidecar delivery, exact-digest projection, R12/R13 metadata and R18/R19 admin/diagnostic presentation are merged and verified. Runtime/learning consumer migrations are not silently promoted: R07/R08/R11 move to LOGIC-09; R14 moves to LOGIC-10; R16 remains NO MIGRATION until an explicit UI behavior policy exists.
 
 **TEST / CI BASELINE:** LOGIC-09 phase-0 audit contract 9/9 GREEN; full pytest 1308/1308 GREEN; `git diff --check` GREEN. Current phase-0 diff is documentation + contract test only, with zero runtime/learning behavior changes. Last merged baseline remains LOGIC-08 closeout PR #413 on `57d5e9c037ae0cc4570e4c68f84a8006478de876`.
 
-**BLOCKERS:** no phase-0 audit blocker. A real implementation/migration remains intentionally blocked until the audit contract is merged: current telemetry has unequal model coverage (Current/CatBoost 12162 settled rows vs TabPFN 1532 common rows), and existing history layers represent different selected populations.
+**BLOCKERS:** no phase-0 blocker. Telemetry/learning migration remains intentionally blocked until phase-1 prospective SHADOW ledger evidence exists; current historical populations must not be retroactively relabeled as ALL.
 
 **DO NOT REDO:** do not repeat LOGIC-00..08, the readiness sidecar/digest work, the 21-file consumer inventory, the 22-token/19-line matrix, R12/R13 or R18/R19 without evidence of regression. Do not remove/redefine legacy `model_ready` as part of LOGIC-09. Do not treat PBP `market_ready`, Symphony `learning_model_ready`, Superbet availability or PLAYABLE as semantic readiness.
 
@@ -53,11 +53,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Finish the phase-0 audit PR: update registry/checkpoint, run targeted contract tests + full pytest + `git diff --check`, and confirm the diff contains no runtime/learning behavior change.
-2. Fresh-check `main`; if data/bot drift exists, audit overlap and rebase the audit-only branch safely.
-3. Commit/push `logic-09-learning-integrity-audit`, open PR, require full exact-head CI GREEN, then merge only after a fresh-main gate.
-4. After the audit contract is merged, start a separate phase-1 implementation branch for a prospective SHADOW-only frozen prediction ledger that captures supported predictions before downstream selection.
-5. Before any telemetry/learning migration, prove common-intersection Current/CatBoost/TabPFN metrics on exact frozen identities and keep ALL / PLAYABLE / SELECTED populations separate.
+1. Merge this phase-0 closeout docs update after normal GREEN CI.
+2. Fresh-check `main` and create a separate LOGIC-09 phase-1 branch from that exact SHA.
+3. Audit the canonical pre-selection producer boundary and add positive/negative tests for a prospective SHADOW-only frozen ledger; do not change existing learning/telemetry consumers.
+4. Implement only the minimal prospective capture needed to freeze supported predictions before downstream selection, with strict `captured_at < scheduled_time`, stable match/candidate identity, owner/version and provenance.
+5. Produce common-intersection Current/CatBoost/TabPFN SHADOW evidence and explicit ALL / PLAYABLE / SELECTED labels before proposing any telemetry/weight/learning migration.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -312,12 +312,12 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 
 ## LOGIC-09 — Learning Integrity / Prediction Ledger
 
-Status: `[~] ACTIVE - phase-0 audit/source-of-truth contract`
+Status: `[~] ACTIVE - phase-0 audit merged; phase-1 prospective SHADOW ledger next`
 
 Cel: modele uczą się i są porównywane na uczciwej próbce.
 
-- [x] Phase-0 owner/population inventory + real selection-bias proof documented in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md` (local audit evidence; PR pending).
-- [x] Minimal future frozen-ledger schema and fail-closed common-test-set invariants documented and contract-tested locally (PR pending).
+- [x] Phase-0 owner/population inventory + real selection-bias proof documented in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md` (PR #414 merged).
+- [x] Minimal future frozen-ledger schema and fail-closed common-test-set invariants documented and contract-tested locally (PR #414 merged).
 - [ ] Zapisywać wszystkie wspierane pre-match predictions przed selection gate.
 - [ ] Oddzielić `ALL`, `PLAYABLE`, `SELECTED`.
 - [ ] Wspólny settled common test set Current/CatBoost/TabPFN.

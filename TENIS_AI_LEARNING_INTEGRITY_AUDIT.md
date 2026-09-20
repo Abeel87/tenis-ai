@@ -1,8 +1,10 @@
 # LOGIC-09 — Learning Integrity / Prediction Ledger
 
-Status: **PHASE-0 AUDIT CONTRACT / ZERO BEHAVIOR CHANGE**
+Status: **PHASE-0 AUDIT CONTRACT / MERGED / ZERO BEHAVIOR CHANGE**
 
 Audited base: `57d5e9c037ae0cc4570e4c68f84a8006478de876`.
+
+Merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`; exact-head required CI GREEN.
 
 This document records the current prediction populations before any learning or telemetry migration. It does not authorize changes to model math, probability, thresholds, weights, training, PLAYABLE, settlement, Symphony, Neuron or iNeed$.
 
