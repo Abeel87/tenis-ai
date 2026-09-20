@@ -31,25 +31,25 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-11 - Frontend Ownership / Data Provenance`
 
-**SUBSTEP:** phase 1 - exact frontend identity/provenance boundaries. LOGIC-10 implementation is merged; closeout docs record final post-merge evidence before the LOGIC-11 runtime PR is published.
+**SUBSTEP:** phase 1 - exact frontend identity/provenance boundaries. LOGIC-10 closeout PR #425 is merged; this branch carries the first runtime provenance repair.
 
-**BRANCH:** closeout `logic-10-closeout-docs`; prepared LOGIC-11 runtime branch `logic-11-frontend-provenance-local` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-scratch`.
+**BRANCH:** `logic-11-frontend-provenance-local` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-scratch`, rebased onto closeout merge `3750d8b48953116a40bdf3a820e10de073769e1f`.
 
-**PR:** #424 `LOGIC-10: close guard ownership semantics` MERGED as `2b81e589e3d9f78db31d7f41b2959f091fc4bc1c`. Phase-2 PR #423 MERGED as `76c4f505...`; phase-1 PR #422 MERGED as `aada53ad...`. LOGIC-11 PR stays local until this closeout lands and the prepared branch is rebased onto settled main.
+**PR:** LOGIC-10 closeout PR #425 MERGED as `3750d8b48953116a40bdf3a820e10de073769e1f`. LOGIC-11 phase-1 PR is the next publication from this branch after local regression/fresh-main check.
 
-**LAST VERIFIED MAIN:** `a329444df36968a48aa92ce2e3d26ae1dea011e6` - latest settled data head after post-merge Player DNA (`e17e4c4a...`), scheduled Update (`91e0fa42...`), Neuron SHADOW (`0e82fa23...`) and Superbet refresh (`a329444d...`). Every move since merge `2b81e589...` is generated `frontend/data/**` only. Fast frontend deploy, Runtime Private and iNeed$ on `a329444d...` are GREEN.
+**LAST VERIFIED MAIN:** `3750d8b48953116a40bdf3a820e10de073769e1f` - docs-only LOGIC-10 closeout merge on top of settled data head `a329444d...`. All upstream runtime/data movement before the closeout was generated `frontend/data/**`; Player DNA workflow from `a329444d...` remains in flight and may publish another data-only head before LOGIC-11 merge.
 
 **LAST COMPLETED WORK:** LOGIC-10 mapped 92 named guard/validation invocations across 28 workflows, fixed destructive BO5 integrity collision (#422), removed five fake presentation-owner aliases and restored real boundary guards (#423), and corrected two SHADOW evidence producers mislabeled as validators (#424). All 52 inline Python guard/validation blocks are read-only; Symphony final PLAYABLE and Superbet runtime sanity are validation-only; `Central API Quota Guard` is the intentional stateful owner of quota state.
 
 **LOGIC-11 PHASE-1 PREP:** RED proof showed `TenisPresentation.find()` joined missing-ID rows by normalized names + +/-10 minutes and accepted the first duplicate exact-ID row. RED proof also showed `model-guide.js::yesNo()` fabricated `NO = 100 - YES`; backend `YES=1%` became UI `YES=1% / NO=99%`. Prepared fix is fail-closed exactly-one canonical ID join plus verbatim backend YES/NO only. On `a329444d...`, `results` has 115/115 unique IDs. Symphony has 70/70 exact visible joins; Superbet Direct 13/13; Player DNA is intentionally wider SHADOW data with 86 exact-visible + 52 orphan rows; simulation has 63 exact-visible + 32 orphan rows. There are zero duplicate canonical IDs and zero visible fixtures that require name/time fallback; missing current-layer data remains N/D.
 
-**TEST STATUS:** LOGIC-10 phase-3 focused **24/24 GREEN** and full repository **1349/1349 GREEN**. Prepared LOGIC-11 phase 1: RED->GREEN owner tests, UI/delivery smokes GREEN, delivery projection preserves **414 PLAYABLE equivalence checks**, real price joins remain valid, and full suite after rebase onto #424 merge is **1349/1349 GREEN**, 755 warnings, zero failures/errors.
+**TEST STATUS:** LOGIC-11 phase 1 focused contracts **9/9 GREEN** after rebase onto #425; UI static, Decision Center, match-time and audit-consistency smokes GREEN; delivery projection is lossless with **345 PLAYABLE equivalence checks** on the current 115-match feed; real Superbet price joins remain valid. Full repository regression is rerun before PR publication.
 
-**CI STATUS:** PR #424 exact-head CodeQL, Delivery/Security, LOGIC-01..04, UI Health, Player DNA SHADOW and Point Tape all completed SUCCESS; Point Tape had 79 GREEN steps and Player DNA 31/31 GREEN on PR head. Post-merge Delivery/Security and UI Health on merge `2b81e589...` are SUCCESS. Post-merge Player DNA SHADOW completed **SUCCESS 34/34** and published `e17e4c4a...`; scheduled Update + Pages completed SUCCESS and published `91e0fa42...`; Superbet refresh completed SUCCESS 19/19 and published `a329444d...`. Runtime Private, iNeed$ and Fast frontend deploy on `a329444d...` are SUCCESS.
+**CI STATUS:** LOGIC-10 closeout PR #425 exact-head checks all SUCCESS and merged only with `BAD_OR_PENDING=0`, base==main and MERGEABLE. Post-merge UI Health on `3750d8b4...` is running. Current background Player DNA from `a329444d...` is still SHADOW-only/in progress and may move main with generated data later.
 
 **OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** Training Archive HTTP 500 is the known 250 MB budget-gate rejection, not LOGIC-10/11. Runtime Private later succeeded; keep archive budget/retention and runtime transport follow-ups separate from frontend provenance.
 
-**BLOCKERS:** no proven LOGIC-10 code blocker. Closeout is rebased onto settled data head `a329444d...`; merge still requires focused contracts, exact-head PR CI and fresh-main equality. LOGIC-11 runtime PR remains local until this closeout merges.
+**BLOCKERS:** no proven LOGIC-11 phase-1 code blocker. Browser E2E previously passed user/moderator/admin on system Chrome; after Windows restart the local Playwright module cache is unavailable, so exact-head CI browser coverage is authoritative for this PR. Rebase if Player DNA moves main before merge.
 
 **DO NOT REDO:** do not repeat BO5/guard alias discovery or the LOGIC-11 runtime-owner pre-audit. Do not fold H2H identity, `key()` fallback, fake-zero presentation or iNeed$ into phase 1. Do not remove exact-ID/name/time checks inside `operatorPrice()`; it already fails closed on exact `match_id` and uses names/time only as additional fixture guards.
 
@@ -57,10 +57,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Rerun canonical closeout contracts on rebased main `a329444d...`.
-2. Push/open docs-only LOGIC-10 closeout PR and merge only on full GREEN CI + immediate fresh-main equality.
-3. Rebase prepared `logic-11-frontend-provenance-local` onto closeout merge/fresh main and rerun focused UI/delivery + full regression.
-4. Publish LOGIC-11 phase-1 PR: exactly-one canonical ID join or N/D; no name/time fallback in `TenisPresentation.find()`; no frontend `NO=100-YES`; update `ARCHITECTURE.md` with real runtime owners.
+1. Finish full local LOGIC-11 phase-1 regression on closeout merge `3750d8b4...`.
+2. Push/open LOGIC-11 phase-1 PR and use exact-head CI as browser authority.
+3. Before merge, re-check fresh main; if Player DNA publishes a data-only head, rebase and rerun focused identity/provenance contracts.
+4. Merge phase 1 only after all exact-head CI is GREEN, main==base and PR is MERGEABLE.
 5. After phase-1 merge, continue separate substeps: historical/H2H backend association or N/D, `key()` fallback removal, latent fake-zero presentation, timestamp semantics and dead legacy runtime.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR

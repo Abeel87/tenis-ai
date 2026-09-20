@@ -43,7 +43,7 @@ def test_readme_uses_canonical_document_entrypoint():
     assert "PLAYABLE" in text
 
 
-def test_architecture_declares_document_authority_and_frontend_audit_debt():
+def test_architecture_declares_document_authority_and_current_frontend_owners():
     text = _text("ARCHITECTURE.md")
     assert "AGENTS.md" in text
     assert "TENIS_AI_LOGIC_CONSTITUTION.md" in text
@@ -51,7 +51,29 @@ def test_architecture_declares_document_authority_and_frontend_audit_debt():
     assert "TENIS_AI_EXECUTION_CHECKLIST.md" in text
     assert "LIVE CHECKPOINT" in text
     assert "NEXT EXACT ACTION" in text
-    assert "ownership map pending LOGIC-11" in text
+    for owner in (
+        "scripts/build_delivery.mjs",
+        "frontend/app.js",
+        "frontend/presentation-data.js",
+        "frontend/runtime-data-transport.js",
+        "frontend/match-detail-data.js",
+        "frontend/account.js",
+        "frontend/neuron-data-bridge.js",
+        "frontend/history-ui.js",
+        "frontend/admin-users.js",
+        "frontend/ineed.js",
+    ):
+        assert owner in text
+    assert "ownership map pending LOGIC-11" not in text
+    for retired in ("frontend/project-ui.js", "frontend/match-browser.js", "frontend/match-detail.js", "frontend/symphony2.js"):
+        assert retired not in text
+
+
+def test_historical_frontend_owner_files_stay_absent():
+    frontend = ROOT / "frontend"
+    retired = ("project-ui.js", "match-browser.js", "match-detail.js", "symphony2.js")
+    present = [name for name in retired if (frontend / name).exists()]
+    assert not present, f"Historical frontend owners returned: {present}"
 
 
 def test_logic_constitution_preserves_critical_module_boundaries():

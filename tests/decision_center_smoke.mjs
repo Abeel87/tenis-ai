@@ -81,6 +81,14 @@ const match = {
 };
 
 const rows = center.buildRows(match);
+const sourceOnlySpecial = structuredClone(match);
+sourceOnlySpecial.market_lab_v741 = {set1_exact_six_games: 1};
+const sourceOnlyRows = center.buildRows(sourceOnlySpecial).filter(row => row.market === 'set1_exact_six_games');
+assert.deepEqual(sourceOnlyRows.map(row => [row.pick,row.lab]), [['yes',1]], 'Frontend must not fabricate NO=100-YES when backend did not publish NO');
+const explicitBinary = structuredClone(match);
+explicitBinary.market_lab_v741 = {set1_tiebreak: {yes: 12, no: 88}};
+const explicitRows = center.buildRows(explicitBinary).filter(row => row.market === 'set1_tiebreak');
+assert.deepEqual(explicitRows.map(row => [row.pick,row.lab]), [['yes',12],['no',88]], 'Explicit backend YES/NO pair must be preserved verbatim');
 const alpha = rows.find(row => row.market === 'match_win' && row.pick === 'Alpha');
 assert.ok(alpha, 'match winner market should be adapted into a card row');
 

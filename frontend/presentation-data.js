@@ -30,7 +30,8 @@ async function json(path,force=false){
  }
  return cache.get(path).promise;
 }
-function find(rows,m){const ids=[m.id,m.match_id,m.match_key].filter(v=>v!=null).map(String);return rows.find(r=>[r.id,r.match_id,r.match_key].some(v=>v!=null&&ids.includes(String(v))))||rows.find(r=>norm(r.p1)===norm(m.p1)&&norm(r.p2)===norm(m.p2)&&Math.abs(Date.parse(r.scheduled_time)-Date.parse(m.scheduled_time))<=600000)||null;}
+function identityIds(m){return [...new Set([m?.id,m?.match_id,m?.match_key].filter(v=>v!=null&&String(v)!=='').map(String))];}
+function find(rows,m){const ids=identityIds(m);if(ids.length!==1)return null;const matches=(Array.isArray(rows)?rows:[]).filter(r=>{const rowIds=identityIds(r);return rowIds.length===1&&rowIds[0]===ids[0]});return matches.length===1?matches[0]:null;}
 function allEvents(m,sym){
 const out=[];const add=(s,source,value,unit)=>{if(!s||!s.market)return;out.push({...s,source,value:num(value),unit,eventKey:source+'|'+window.TENIS_AI_PLAYABLE_UI_V917.signature(s)})};
 for(const s of sym?.scored_selections||[])add(s,'Symfonia 2.0',s.operator_model_probability,'%');

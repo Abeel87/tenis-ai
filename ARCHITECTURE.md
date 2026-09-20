@@ -45,20 +45,27 @@ Historia PLAYABLE przechowuje wyłącznie zamrożone selekcje operatorowo zweryf
 
 ## 4. Frontend
 
-> **UWAGA — ownership map pending LOGIC-11.** Poniższa lista pochodzi sprzed/ze starszej fazy przebudowy UI i nie może być używana jako jedyny dowód, że dany plik nadal jest faktycznym właścicielem funkcji. Przed zmianą UI należy prześledzić aktualny runtime/importy i ustalić kanonicznego właściciela. LOGIC-11 w `TENIS_AI_MODEL_DATA_REGISTRY.md` ma tę mapę zweryfikować i zaktualizować.
+The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.
 
-Historycznie wskazywani właściciele głównych ścieżek UI:
+- `scripts/build_delivery.mjs` - canonical producer of the lightweight UI projection: `data/delivery/index.json`, content-addressed `data/delivery/matches/<sha>.json`, `data/delivery/symphony.json`, and delivery diagnostics.
+- `frontend/presentation-data.js` - single presentation/data API `window.TenisPresentation`: JSON reads, exact identity joins, event mapping, operator-price presentation metadata, and final UI availability checks.
+- `frontend/runtime-data-transport.js` - transport-only public/dual/private wrapper around `TenisPresentation.json()`; it must not change data meaning or PLAYABLE semantics.
+- `frontend/app.js` - owner of the main shell, match list, match detail routes, Symphony presentation, coupon shell, and technical/admin shell. Normal users start from delivery index; full `results.json` remains a technical/admin path.
+- `frontend/match-detail-data.js` - read-only helper owner for detail comparison, form, winner-label interpretation, and H2H/history filtering. It must consume published identity/provenance rather than invent cross-provider identity.
+- `frontend/account.js` - authentication/profile/role owner used by the shell and feature modules.
+- `frontend/neuron-data-bridge.js` - read-only Neuron presentation bridge; Neuron model/training ownership remains backend-side.
+- `frontend/history-ui.js` - feature owner of rich snapshot/settlement history on `#history`; `app.js` provides only the host/fallback render.
+- `frontend/admin-users.js` - feature owner of the user/staff panel and staff RPC surface mounted into the shell.
+- `frontend/ineed.js` - separate staff-only owner of the iNeed$ SHADOW view; iNeed$ calculations remain outside LOGIC-11 and belong to LOGIC-12.
+- `frontend/playable-ui.js` - read-only validation of exact Superbet offer/signature and composition. Final authority remains backend `symphony2_playable`; `TenisPresentation.availability()` cannot create PLAYABLE by itself.
 
-- lista i szczegół meczu: `frontend/project-ui.js`
-- filtrowanie/sortowanie i zachowanie pozycji listy: `frontend/match-browser.js`
-- jeden gate PLAYABLE: `frontend/playable-ui.js`
-- szczegół architektury meczu: `frontend/match-detail.js`
-- Symfonia 2.0: `frontend/symphony2.js`
-- historia: `frontend/history-ui.js`
+Identity joins between current delivery layers must use canonical `id` / `match_id` / `match_key` only. A join is valid only when exactly one matching row exists; missing identity or duplicate/ambiguous identity means no join / N-D. Player names and approximate time are not identity authority for current delivery.
 
-Top sygnały SUPERBET i główna lista muszą korzystać z tego samego zbioru widocznych meczów oraz tego samego kanonicznego PLAYABLE contract.
+Missing numeric values must stay missing/N-D, never become a real zero. The frontend must not create probability, H2H, odds, complements, or identity that the backend did not explicitly publish. Superbet price is presentation of exact verified operator evidence only and cannot grant PLAYABLE.
 
-Brak wartości numerycznej w UI ma być przedstawiany jako `N/D`/brak danych, a nie jako rzeczywiste zero. Frontend nie może tworzyć probability, H2H, kursów ani innych danych, których backend nie dostarczył.
+Data-freshness timestamps must come from backend `generated_at` / `source_generated_at`. A client clock or decorative date must not be presented as data publication time.
+
+Historical files `project-ui.js`, `match-browser.js`, `match-detail.js`, and `symphony2.js` are not part of the current runtime and must not be cited as current owners.
 
 ## 5. Historia i settlement
 
