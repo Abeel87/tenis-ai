@@ -97,6 +97,21 @@ def test_project_health_does_not_read_retired_frontend_owners():
         assert f"read(frontend/'{retired}')" not in text
 
 
+def test_frontend_does_not_boot_unowned_calculation_helpers():
+    retired_boot = (
+        "clean-core-v80.js", "serve-props-v72.js", "player-analytics.js",
+        "early-hold-paths.js", "match-tendencies.js", "performance-center.js",
+    )
+    index = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+    worker = (ROOT / "frontend" / "sw.js").read_text(encoding="utf-8")
+    delivery = (ROOT / "scripts" / "build_delivery.mjs").read_text(encoding="utf-8")
+    for name in retired_boot:
+        assert f'src="{name}"' not in index, f"Unowned helper still boots in browser: {name}"
+        assert f"'{name}'" not in worker, f"Unowned helper remains in the active PWA asset cache: {name}"
+    for name in retired_boot[:4]:
+        assert f"'{name}'" not in delivery, f"Unowned helper still loads in delivery producer VM: {name}"
+
+
 def test_logic_constitution_preserves_critical_module_boundaries():
     text = _text("TENIS_AI_LOGIC_CONSTITUTION.md")
     required = (

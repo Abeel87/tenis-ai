@@ -9,7 +9,7 @@ const index=read('data/delivery/index.json');
 assert.equal(index.matches.length,before.length);
 assert(fs.statSync(root+'/data/delivery/index.json').size<1000000,'First render JSON budget: 1 MB');
 const ctx={console,Date,Map,Set,URL,JSON,Math,Number,String,Object,Array,localStorage:{getItem(){return null}},document:{querySelector(){return null},getElementById(){return{}},addEventListener(){}},setInterval(){},setTimeout(){},addEventListener(){}};ctx.window=ctx;vm.createContext(ctx);
-for(const name of ['multi-model.js','signal-mapping-v84d4.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','model-guide.js','clean-core-v80.js','serve-props-v72.js','player-analytics.js','match-time.js','playable-ui.js','early-hold-paths.js','presentation-data.js'])vm.runInContext(fs.readFileSync(root+'/'+name,'utf8'),ctx);
+for(const name of ['multi-model.js','signal-mapping-v84d4.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','model-guide.js','match-time.js','playable-ui.js','presentation-data.js'])vm.runInContext(fs.readFileSync(root+'/'+name,'utf8'),ctx);
 const D=ctx.TenisPresentation;
 let checks=0;
 for(let i=0;i<before.length;i++){

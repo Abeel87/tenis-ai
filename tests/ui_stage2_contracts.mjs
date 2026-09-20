@@ -29,6 +29,9 @@ assert.equal(d.sampleLabel(null),'N/D - brak danych o liczbie meczów w próbce'
 assert.equal(d.sampleLabel(undefined),'N/D - brak danych o liczbie meczów w próbce','Undefined sample count must stay N/D');
 assert.equal(d.sampleLabel(0),'0 meczów w próbce','Explicit backend zero must remain a real zero');
 assert.equal(d.sampleLabel(12),'12 meczów w próbce','Published sample count must be preserved');
+const profileRows=[{id:'a',p1:'Łukasz Żuk',p2:'X',p1_id:10,p2_id:30,surface:'hard'},{id:'b',p1:'Alias',p2:'Łukasz Żuk',p1_id:40,p2_id:10,surface:'clay'},{id:'c',p1:'Łukasz Żuk',p2:'Y',p1_id:99,p2_id:50,surface:'grass'}];
+assert.deepEqual(Array.from(d.playerRows(profileRows,fixture,'p1'),r=>r.surface),['hard','clay'],'Player profile cross-row association must use canonical ID across both slots');
+assert.equal(d.playerRows(profileRows,{...fixture,p1_id:null},'p1').length,0,'Missing canonical player ID must fail closed instead of falling back to name');
 const appSource=fs.readFileSync('frontend/app.js','utf8');
 assert(appSource.includes('MD.sampleLabel(s.matches)'),'Player profile must render the canonical sample label');
 assert(!appSource.includes('s.matches??0'),'Missing sample count must not be coerced to zero in the profile');
@@ -36,12 +39,26 @@ assert(appSource.includes('state.matches=D.routableRows(index.matches)'),'Curren
 assert(appSource.includes('state.symphony={...x,matches:D.routableRows(x.matches)}'),'Current Symphony route data must reject unroutable identities');
 assert(!appSource.includes('date(new Date().toISOString())'),'Page header must not present the client clock as data publication time');
 assert(appSource.includes('date(state.meta.updated_at)'),'Page header publication time must come from backend delivery generated_at');
+assert(!appSource.includes('[D.norm(r.p1),D.norm(r.p2)].includes(D.norm(m[side]))'),'Player profile surfaces must not associate rows by normalized names');
+assert(!appSource.includes("m[side+'_id']??D.norm(m[side])"),'Player directory must not use normalized name as identity');
+assert(!/source_freshness\.[a-z_]+\?\?0/.test(appSource),'Missing Neuron source counts must stay N/D, not zero');
+assert(appSource.includes('Player DNA · SHADOW'),'Player DNA SHADOW evidence must be explicitly labeled SHADOW');
+assert(appSource.includes('Scenariusze SHADOW Player DNA'),'Player DNA simulation must be explicitly labeled SHADOW');
+assert(!appSource.includes('wynik eksperymentalny'),'Current Engine exact score must not be mislabeled as experimental');
+assert(appSource.includes('Current Engine'),'Current Engine exact-score provenance must be visible');
 for(const [values,trend] of [[[.3,.5,.6],'rosnący'],[[.6,.5,.3],'spadkowy'],[[.5,.5,.5],'stabilny'],[[.3,.6,.5],'zmienny'],[[null,.5,.6],'N/D']]){
  const m={player_intelligence_v85:{profiles:{p1:{windows:Object.fromEntries([20,10,5].map((n,i)=>[n,{metrics:{won:{adjusted:values[i]}}}]))}}}};
  assert.equal(d.form(m,'p1').trend,trend);
 }
 const fixtures=JSON.parse(fs.readFileSync('frontend/data/results.json')),history=JSON.parse(fs.readFileSync('frontend/data/history.json'));
 const detailHistory=JSON.parse(fs.readFileSync('frontend/data/match_detail_history.json'))?.matches||[];
+const presentationSource=fs.readFileSync('frontend/presentation-data.js','utf8');
+assert(presentationSource.includes('Market Lab · SHADOW'),'Market Lab events must be explicitly labeled SHADOW');
+const historySource=fs.readFileSync('frontend/history-ui.js','utf8');
+assert(!historySource.includes("return 'nm:'"),'History match identity must not fall back to names/day');
+const symHistory=JSON.parse(fs.readFileSync('frontend/data/symphony2_history.json'));
+assert(history.every(r=>r.match_id!=null||r.id!=null),'Published history rows must carry canonical match identity');
+assert((symHistory.entries||[]).every(r=>r.match_id!=null||r.id!=null),'Published Symphony history entries must carry canonical match identity');
 let found=0,safeArchive=0;for(const m of fixtures){const rows=d.historyRows(history,m,'p1',true);found+=rows.length;assert(rows.every(r=>Date.parse(r.scheduled_time)<Date.parse(m.scheduled_time)));const archiveRows=d.historyRows(detailHistory,m,'p1',true);safeArchive+=archiveRows.length;assert(archiveRows.every(r=>r.p1_id!=null&&r.p2_id!=null),'Published H2H association must carry canonical player IDs')}
 assert.equal(found,0,'Name-only settled history must not fabricate current-player H2H');
 console.log('PASS Stage 2: identity, missing values, published probabilities, trends; name-only H2H:',found,'canonical archive H2H:',safeArchive);

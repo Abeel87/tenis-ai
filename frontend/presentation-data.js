@@ -38,7 +38,7 @@ const out=[];const add=(s,source,value,unit)=>{if(!s||!s.market)return;out.push(
 for(const s of sym?.scored_selections||[])add(s,'Symfonia 2.0',s.operator_model_probability,'%');
 for(const c of Object.values(sym?.compositions||{}))for(const s of c?.selection||[])if(!out.some(x=>x.eventKey==='Symfonia 2.0|'+window.TENIS_AI_PLAYABLE_UI_V917.signature(s)))add(s,'Symfonia 2.0',s.operator_model_probability,'%');
 for(const s of m.autolearn_v84?.signals||[])add(s,'Ocena AI',s.final_score??s.adaptive_prod_score??s.adaptive_prod_v79?.final_score,'/100');
-for(const s of window.TENIS_AI_DECISION_CENTER_V87.buildRows(m)){if(num(s.base)!=null)add(s,'Model bazowy',s.base,'%');if(num(s.lab)!=null)add(s,'Analiza eksperymentalna',s.lab,'%');if(num(s.joint)!=null)add(s,'Analiza łączna',s.joint,'%');}
+for(const s of window.TENIS_AI_DECISION_CENTER_V87.buildRows(m)){if(num(s.base)!=null)add(s,'Model bazowy',s.base,'%');if(num(s.lab)!=null)add(s,'Market Lab · SHADOW',s.lab,'%');if(num(s.joint)!=null)add(s,'Analiza łączna',s.joint,'%');}
 for(const [field,market]of [['over_under','set1_total'],['match_over_under','match_total']])for(const [line,v]of Object.entries(m[field]||{}))for(const pick of ['over','under'])if(num(v[pick])!=null)add({market,pick,line:Number(line)},'Model bazowy',v[pick],'%');
 for(const [p,v]of Object.entries(m.exact_first_set||{}))add({market:'set1_exact_score',pick:p},'Model bazowy',v,'%');
 for(const [field,market]of [['early_first_set_win','set1_winner'],['early_exact_first_set','set1_exact_score']])for(const [p,v]of Object.entries(m[field]||{}))add({market,pick:p},'Początek seta',v,'%');

@@ -13,7 +13,7 @@ export function buildDelivery(root='frontend') {
  const SourceDate=class extends Date{static now(){return stamp}};
  const ctx={console:{log(){},info(){}},Date:SourceDate,Map,Set,URL,JSON,Math,Number,String,Object,Array,localStorage:{getItem(){return null}},document:{querySelector(){return null},getElementById(){return {}},addEventListener(){}},setInterval(){},setTimeout(){},addEventListener(){}};
  ctx.window=ctx;vm.createContext(ctx);
- const scripts=['multi-model.js','signal-mapping-v84d4.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','model-guide.js','clean-core-v80.js','serve-props-v72.js','player-analytics.js','match-time.js','playable-ui.js','early-hold-paths.js','presentation-data.js'];
+ const scripts=['multi-model.js','signal-mapping-v84d4.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','model-guide.js','match-time.js','playable-ui.js','presentation-data.js'];
  for(const name of scripts)vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx,{filename:name});
  const D=ctx.TenisPresentation,api=ctx.TENIS_AI_PLAYABLE_UI_V917;
  const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
