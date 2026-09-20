@@ -25,43 +25,42 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**Ostatnia aktualizacja checkpointu:** 2026-09-20
+**Ostatnia aktualizacja checkpointu:** 2026-09-21
 
 **Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** phase 2 - exact pre-priced Superbet combination quote provenance/matching only. No EV, Kelly, stake, settlement or runtime promotion is authorized.
+**SUBSTEP:** phase 3 - exact dynamic Superbet Bet Builder combined-price provenance only. No EV, Kelly, stake, bankroll reservation, settlement migration or runtime promotion is authorized.
 
-**BRANCH:** `logic-12-phase2-superbets-quotes` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic12-phase2-quotes`, based on current Superbet publication `123d1d809a5648bb06ee6ab596a7de43510d49f0`.
+**BRANCH:** `logic-12-phase3-dynamic-quote-audit` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic12-phase3-quote-audit`, currently rebased onto `9f627af295228a015bd9ed08c578c32e6ada60b5`.
 
-**PR:** LOGIC-12 phase-1 PR #434 is MERGED as `17633a8d...`. LOGIC-12 phase-2 PR #435 is OPEN.
+**PR:** LOGIC-12 phase-2 PR #435 is MERGED as `dd1cdae7...`. Phase-3 PR #436 is OPEN; exact-head remote CI must be evaluated only after the final checkpoint amend/rebase SHA.
 
-**LAST VERIFIED MAIN:** `123d1d809a5648bb06ee6ab596a7de43510d49f0` - bot `data: refresh Superbet market context` after #434; phase-2 branch currently matches this SHA.
+**LAST VERIFIED MAIN:** `9f627af295228a015bd9ed08c578c32e6ada60b5` - `data: refresh Superbet market context`. A downstream Player DNA SHADOW workflow is still running and may publish one later data-only commit before phase-3 PR creation.
 
-**LAST COMPLETED WORK:** PR #434 merged as `17633a8d...` after exact-head 8/8 GREEN; post-merge Delivery/Security, CodeQL, UI Health and Update+Pages are GREEN. Phase 2 proved public pre-priced `superbets` rows with structural component UUIDs and added a local exact UUID-set matcher, still with zero runtime wiring.
+**LAST COMPLETED WORK:** phase 3 proved the public Superbet PL dynamic Bet Builder quote contract. The public client uses `https://production-superbet-bmb.freetls.fastly.net/betbuilder`, target `SB_PL`, and read-only `GET /v2/getSgaOddPrice` for exact selected UUID sets. Pure parser/resolver contracts were added with exact source-URL, event, UUID-set, ACTIVE status, market `238733`, `sgaUuid`, price and timestamp provenance. No runtime consumer was added.
 
-**LOGIC-11 CLOSEOUT:** COMPLETE in code. Frontend ownership/provenance fails closed on missing/ambiguous identity, preserves N/D rather than fabricated zero, labels SHADOW explicitly, uses backend publication timestamps, and does not synthesize probability/H2H/odds/identity. Retired/no-consumer calculation helpers are not booted as active frontend runtime.
+**PHASE-3 CURRENT LIVE EVIDENCE:** on `9f627af2...`, 36 final PLAYABLE compositions -> 5 intersect verified Direct -> 2 have every leg mapped to exact operator UUID -> 2/2 return HTTP 200 exact dynamic operator quotes. Both are ACTIVE/ACTIVE with combined price `1.50` and stable distinct `sgaUuid`. In one proof case Direct leg prices `1.42 * 1.01 = 1.4342`, while operator BB price is `1.50`, proving no multiplication fallback.
 
-**LOGIC-12 PHASE-2 AUDIT EVIDENCE:** on `123d1d80...`, 13 verified Direct events expose 1530 active pre-priced `superbets` combinations (1198 two-leg / 143 three-leg / 189 four-leg), all with exact `oddComponents[].UUID`; zero fetch failures. Aligned live proof: 33 final PLAYABLE, 4 intersect Direct, 2 have every leg mapped to exact operator UUIDs, 0 have an identical pre-priced combination. Missing exact row therefore remains N/D / NO BET.
+**TEST STATUS:** dynamic/provenance focused pack 22/22 GREEN; broader iNeed$/Superbet/Symphony/governance pack 130/130 GREEN; full repository 1376/1376 GREEN on current code after provenance hardening. Phase-2 post-merge Update+Pages `35540240394` is SUCCESS through final full regression and Pages deploy.
 
-**TEST STATUS:** phase-2 focused parser/matcher 17/17 GREEN; broader iNeed$/Superbet/Symphony/governance 136/136 GREEN; full repository 1371/1371 GREEN; UI static smoke GREEN; Project Health PASS (0 FAIL / 1 existing WARN); `git diff --check` clean.
+**CI STATUS:** phase-3 PR #436 is OPEN; exact-head remote CI is pending final amended SHA. Runtime Private downstream on the post-merge line is GREEN. Training Archive Inventory run `35541293828` failed only in external archive publication with HTTP 500 after cache restore/inventory/artifact succeeded; unrelated to LOGIC-12 code.
 
-**CI STATUS:** phase-1 PR #434 exact-head 8/8 SUCCESS and merged; post-merge main proof GREEN. Phase-2 PR #435 is open; final exact-head remote CI pending.
+**BLOCKERS:** no blocker remains for obtaining an exact operator combined price when every Symphony leg maps to an active exact Superbet UUID. Builder-level EV/risk/stake/one-ticket settlement are intentionally NOT implemented yet and require a separate phase after phase-3 merge.
 
-**BLOCKERS:** Superbet exposes exact operator-priced curated `superbets` combinations, but current final Symphony compositions have 0 exact catalogue matches. No dynamic arbitrary-composition Bet Builder quote endpoint is proven. Therefore builder economics remain N/D / NO BET.
+**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-2. Do not multiply correlated leg odds, fuzzy/text match builder legs, accept subset/ambiguous UUID sets, trust an unverified dynamic payload source, or wire phase-3 quote code into current iNeed$ runtime/economics in this phase.
 
-**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phase 1. Do not multiply leg odds, text/fuzzy-match builder legs, treat a subset as the same composition, or promote the phase-2 parser into runtime/economics without a separate audited step.
-
-**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, existing settlement semantics or SHADOW->PROD. No fuzzy identity, manual aliases, provider namespace guessing, synthetic combined Bet Builder odds or real-money execution.
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, existing single-leg iNeed$ calculations, settlement semantics or SHADOW->PROD. No real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Finish phase-2 docs/contracts and run broader iNeed$/Superbet/Symphony/governance plus full repository regression.
-2. Re-check fresh `main`; rebase on bot data drift and rerun required gates.
-3. Commit/push a focused phase-2 PR: public pre-priced combination parser + exact UUID-set matcher + audit/docs only.
-4. Merge only after exact-head CI GREEN, fresh-main/base equality and mergeable=true.
-5. After merge, keep builder economics N/D unless an exact catalogue row exists; separately audit whether a dynamic arbitrary-composition quote endpoint exists before any EV/Kelly/stake implementation.
+1. Let the active Player DNA SHADOW publication settle and re-check fresh `main`.
+2. If `main` moves, rebase phase 3; if drift is data-only, rerun focused/wide contract tests plus fresh live dynamic-quote proof. If code/workflow/tests drift, rerun the full repository suite.
+3. Update this checkpoint to the final base SHA, run UI smoke, Project Health and `git diff --check`, then commit/push phase 3.
+4. Open the focused phase-3 PR and monitor exact-head CI; never merge pending/red.
+5. Before merge verify fresh `main` == PR base, exact head unchanged and mergeable=true; rebase/rerun if bots moved main.
+6. Merge only all-GREEN, perform post-merge isolation proof, then begin a separate phase for additive builder-level economics design.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -376,7 +375,7 @@ Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign
 
-Status: `[~] ACTIVE - phase 1 merged; phase 2 exact pre-priced operator quote provenance/matching locally GREEN, no economic-math replacement yet`
+Status: `[~] ACTIVE - phases 1-2 merged; phase 3 exact dynamic operator combined-price provenance locally GREEN, no economic-math replacement yet`
 
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
@@ -384,12 +383,12 @@ Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 - [x] Potwierdzono final Symphony composition jako jednostkę wejścia.
 - [x] Zdefiniowano additive SHADOW composition record: composition id + min. 2 legs + canonical match/operator provenance.
 - [x] Joint probability jest wyłącznie passthrough z Symfonii; iNeed$ SHADOW nie liczy nowej probability.
-- [~] Exact verified Superbet combined odds: public event JSON ma pre-priced `superbets` rows z exact component UUIDs i fail-closed matcher; bieżące final compositions mają 0 exact catalogue matches, więc nadal N/D / NO BET. Dynamic arbitrary-BB quote endpoint nie jest jeszcze udowodniony.
+- [x] Exact verified Superbet combined odds: phase 2 proves curated pre-priced `superbets`; phase 3 proves read-only `v2/getSgaOddPrice` for arbitrary exact UUID sets. Two current final compositions returned exact ACTIVE operator quotes at 1.50; no leg-odds multiplication.
 - [ ] EV całego buildera.
 - [ ] Kelly/risk/stake całego buildera.
 - [ ] Jedna rezerwacja bankroll per BB.
 - [ ] Jeden settlement całego BB.
-- [x] Phase 1-2 są SHADOW/read-only; brak real-money execution i brak runtime wiring phase-2 parsera/matchera.
+- [x] Phase 1-3 są SHADOW/read-only; brak real-money execution i brak runtime wiring quote parserów/resolverów.
 - [ ] Backtest na zamrożonych ofertach/operator context, jeśli dane pozwalają.
 
 **Definition of Done:** ekonomika iNeed$ odpowiada temu samemu finalnemu produktowi, który użytkownik faktycznie może zbudować w Superbet, z jawnie zweryfikowanym combined price i one-ticket settlement.

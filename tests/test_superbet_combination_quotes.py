@@ -77,3 +77,45 @@ def test_exact_match_rejects_duplicate_or_wrong_provenance_quotes():
     assert d.exact_combination_quote([wrong_operator], ["leg-a", "leg-b"], event_id="15000001") is None
     stale = dict(base, freshness_verified=False)
     assert d.exact_combination_quote([stale], ["leg-a", "leg-b"], event_id="15000001") is None
+
+
+def dynamic_payload(price=1.5, status="ACTIVE", combo_status="ACTIVE", market_id="238733", sga="combo-sga", legs=None):
+    return {"price": price, "sgaUuid": sga, "status": status,
+            "combinationBettingStatus": combo_status, "marketId": market_id,
+            "outcomeId": "16603", "legs": legs or [
+                {"oddUuid": "leg-a", "name": "A", "status": "ACTIVE"},
+                {"oddUuid": "leg-b", "name": "B", "status": "ACTIVE"},
+            ]}
+
+
+def test_dynamic_sga_parser_accepts_only_exact_active_operator_quote():
+    q = d.parse_dynamic_sga_quote(dynamic_payload(), event_id="15000001",
+                                  component_selection_ids=["leg-b", "leg-a"],
+                                  observed_at="2026-09-20T22:00:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-b", "leg-a"]))
+    assert q["quote_kind"] == "BET_BUILDER_DYNAMIC_SGA"
+    assert q["combined_odds"] == 1.5
+    assert set(q["component_selection_ids"]) == {"leg-a", "leg-b"}
+    assert q["operator_combination_selection_id"] == "combo-sga"
+    assert q["operator_verified"] is True and q["freshness_verified"] is True
+
+
+def test_dynamic_sga_parser_fails_closed_on_status_identity_or_shape_mismatch():
+    kwargs = dict(event_id="15000001", component_selection_ids=["leg-a", "leg-b"],
+                  observed_at="2026-09-20T22:00:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"]))
+    assert d.parse_dynamic_sga_quote(dynamic_payload(status="BLOCKED"), **kwargs) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(combo_status="BLOCKED"), **kwargs) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(market_id="999"), **kwargs) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(price=1.0), **kwargs) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(sga=""), **kwargs) is None
+    extra = dynamic_payload(legs=[{"oddUuid":"leg-a"},{"oddUuid":"leg-b"},{"oddUuid":"leg-c"}])
+    assert d.parse_dynamic_sga_quote(extra, **kwargs) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(), event_id="15000001",
+                                     component_selection_ids=["leg-a", "leg-b"], observed_at=None, source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"])) is None
+
+
+def test_dynamic_sga_source_url_contract():
+    url=d.build_dynamic_sga_quote_url("15000001", ["leg-b","leg-a"])
+    assert url and "getSgaOddPrice?" in url and "target=SB_PL" in url and "lang=pl" in url
+    assert d.build_dynamic_sga_quote_url("", ["leg-a","leg-b"]) is None
+    assert d.build_dynamic_sga_quote_url("15000001", ["leg-a"]) is None
+    assert d.parse_dynamic_sga_quote(dynamic_payload(), event_id="15000001", component_selection_ids=["leg-a","leg-b"], observed_at="2026-09-20T22:00:00+00:00", source_url="https://example.com/betbuilder/v2/getSgaOddPrice") is None

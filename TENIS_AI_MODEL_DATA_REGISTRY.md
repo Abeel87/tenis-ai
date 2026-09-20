@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phase 1 merged as PR #434; phase 2 exact pre-priced Superbet combination quote proof implemented locally, still no runtime/economic wiring.
+**Status:** ACTIVE - phases 1-2 merged (#434/#435); phase 3 exact dynamic Superbet combined-price proof implemented locally, still no runtime/economic wiring.
 
 **Current owner/economic unit:** `backend/ineed_scoped_runner.py` filters current playable Symphony rows and calls `backend/ineed_money.py::evaluate()` on individual signals. Each signal is qualified, priced, risked and staked independently; `build_settlements()` resolves individual open bets. Therefore current iNeed$ is single-leg economics, not final Bet Builder economics.
 
@@ -764,7 +764,9 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-2 evidence:** public Superbet event JSON exposes active pre-priced `superbets` combinations under `marketId=238733`; every accepted row has exact `oddComponents[].UUID` identities. On base `123d1d80...`, 13 verified Direct events yielded 1530 active rows (1198 two-leg / 143 three-leg / 189 four-leg), zero fetch failures. Aligned current proof: 33 final PLAYABLE, 4 intersect verified Direct, 2 have all legs mapped to exact Direct UUIDs, 0 have an identical pre-priced operator combination. Parser/matcher are additive SHADOW/read-only only; no runtime feed or iNeed$ economics changed.
 
-**Next proof:** publish/merge phase 2 after full CI. Then decide whether to add a SHADOW sidecar for these exact pre-priced rows or separately prove a dynamic arbitrary-composition quote endpoint. Until an exact matching operator row exists, combined odds, EV and stake remain N/D / NO BET.
+**Phase-3 evidence:** public Superbet PL client statically exposes read-only `v2/getSgaOddPrice` for exact selected UUID sets. Two current final Symphony compositions with complete Direct UUID mapping both returned HTTP 200, ACTIVE/ACTIVE, exact requested leg UUID sets and operator combined price 1.50 with distinct `sgaUuid` values. For one case leg-price product was 1.4342 while operator BB price was 1.50, proving no multiplication fallback. Pure parser/resolver only; zero runner/frontend/settlement consumer. Fresh `9f627af2...` proof after Superbet publication: 36 final PLAYABLE / 5 Direct / 2 exact-UUID compositions / 2 exact dynamic quotes. Canonical source URL is part of fail-closed provenance and survives attachment together with source kind, event id, SGA UUID and component UUIDs.
+
+**Next proof:** merge phase 3 after full CI and post-merge isolation proof. Only after that may a separate phase define builder-level EV/risk/stake against this exact dynamic quote; current single-leg economics remain untouched until explicitly migrated.
 
 ---
 

@@ -1,6 +1,6 @@
-# LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW — Phase 1-2 audit
+# LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW — Phase 1-3 audit
 
-Status: **SHADOW CONTRACT + PRE-PRICED OPERATOR QUOTE PROOF**
+Status: **SHADOW CONTRACT + EXACT DYNAMIC OPERATOR QUOTE PROOF**
 
 Base audited: `53036abdaa586cfda5b4198b489751abe583abec`.
 
@@ -113,3 +113,18 @@ combination. Therefore current builder combined odds remain N/D / NO BET.
 Phase 2 adds no runtime wiring. It does not prove a dynamic quote endpoint for
 arbitrary Bet Builder compositions and does not change EV, Kelly, stake,
 bankroll reservation, settlement, PLAYABLE, Symphony probability or execution.
+
+
+## Phase-3 dynamic operator quote proof
+
+Base implementation branch started from merged phase-2 SHA `dd1cdae7c625602a19b28e01bf60dbc1f34bccf5`.
+
+Static analysis of the public Superbet PL client proves a separate Bet Builder backend. For PL, the client uses `betBuilder.host=https://production-superbet-bmb.freetls.fastly.net/betbuilder`, target `SB_PL`, and `v2` for `getBetSlipOdd`. The exact read-only combined-price request is `GET /betbuilder/v2/getSgaOddPrice` with `match_id`, sorted `selected_odds_uuids`, `lang` and `target`.
+
+The response is not a bet placement. The client maps it to a Bet Builder odd containing `price`, `sgaUuid`, `status`, `combinationBettingStatus`, `marketId=238733`, `outcomeId` and explicit `legs[].oddUuid`. SSE `/stream/getSgaOddPrice` is used only for live updates of the same quote object.
+
+Live read-only proof on the two current final Symphony compositions that had every leg mapped to exact Direct UUIDs returned HTTP 200 for both. Both responses were `ACTIVE`, had `combinationBettingStatus=ACTIVE`, contained the exact requested UUID set and returned operator combined price `1.50` with distinct `sgaUuid` identities.
+
+For the first proof composition, current single-leg Direct prices were `1.42` and `1.01` (product `1.4342`) while the operator dynamic BB price was `1.50`; therefore the combined price is demonstrably not synthesized by multiplying correlated leg odds.
+
+Fresh post-publication proof on `9f627af2...`: 36 final PLAYABLE, 5 intersect verified Direct, 2 have complete exact operator UUID mapping and 2/2 return exact dynamic HTTP 200 quotes at `1.50`. The parser additionally requires the canonical audited source URL generated for the exact event/UUID set; a foreign host/path is rejected before the payload can become operator-verified provenance.
