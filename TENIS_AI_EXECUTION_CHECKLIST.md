@@ -31,37 +31,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-11 - Frontend Ownership / Data Provenance`
 
-**SUBSTEP:** phase 3 - current-route canonical `key()` / fail-closed identity. Phase 1 is merged as PR #426; phase 2 fake-zero contract is merged as PR #427.
+**SUBSTEP:** phase 4 - historical/H2H canonical-player association or explicit N/D. Phases 1-3 are merged as PRs #426, #427 and #428.
 
-**BRANCH:** `logic-11-phase3-key` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase3-key`, created from phase-2 merge `fa3e294faabff79f6c820a833912feafae7e4688`.
+**BRANCH:** `logic-11-phase4-h2h` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic11-phase4-h2h`, created from phase-3 merge `11e5ff2d708a517660694b9ce5965cb7e159e4be` and rebased onto fresh main `93e23909fb93400122f3c84e5dd896082bd18763` (Player DNA SHADOW data refresh).
 
-**PR:** LOGIC-11 phase-1 PR #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`; phase-2 PR #427 MERGED as `fa3e294faabff79f6c820a833912feafae7e4688`. Phase-3 PR is not opened yet; full local regression is the publication gate.
+**PR:** phase-1 #426 MERGED as `8234ed74175e81ac9dec039369743176ee609863`; phase-2 #427 MERGED as `fa3e294faabff79f6c820a833912feafae7e4688`; phase-3 #428 MERGED as `11e5ff2d708a517660694b9ce5965cb7e159e4be`. Phase-4 PR is not opened yet; local regression is GREEN and publication is next.
 
-**LAST VERIFIED MAIN:** `fa3e294faabff79f6c820a833912feafae7e4688` - LOGIC-11 phase-2 merge. PR #427 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all SUCCESS before merge.
+**LAST VERIFIED MAIN:** `93e23909fb93400122f3c84e5dd896082bd18763` - bot-only Player DNA SHADOW data refresh on top of phase-3 merge `11e5ff2d...`. Phase-4 branch is rebased onto this exact main; focused tests and full repository 1350/1350 are GREEN on the rebased head.
 
-**LAST COMPLETED WORK:** LOGIC-11 phase 2 removed the fake-zero presentation bug for player sample counts and merged as PR #427 after exact-head all-GREEN CI. Phase 3 audit then confirmed the remaining current-route `key()` fallback still fabricated identity from names/time and accepted conflicting canonical IDs by precedence.
+**LAST COMPLETED WORK:** LOGIC-11 phase 3 removed the current-route name/time key fallback and merged as PR #428 after exact-head 7/7 GREEN CI. Phase 4 then audited the remaining detail/history association and found that `TenisMatchDetail.samePlayer()` still matched historical rows by normalized player names whenever canonical player IDs were absent.
 
-**LOGIC-11 PHASE-3 RED/GREEN:** RED `ui_stage2_contracts.mjs` reproduced missing-ID routing as `A|B|2099-01-01` instead of `null`. Local GREEN changes `TenisPresentation.key()` to accept only exactly one unique canonical `id` / `match_id` / `match_key`, and adds `routableRows()` so malformed identity cannot enter current delivery/Symphony/admin route state. Checked-in feed audit: results 115/115 valid, Symphony 70/70 valid, zero missing, zero conflicts, zero duplicate canonical keys. No model/data/probability math changed.
+**LOGIC-11 PHASE-4 RED/GREEN:** RED `ui_stage2_contracts.mjs` reproduced a name-only H2H row being counted (`1` instead of `0`). Provenance audit: `history.json` has 1503/1503 rows without canonical player IDs; `match_detail_history.json` has 13 rows, of which 12 TennisMyLife rows have no canonical IDs and 1 LiveTennisAPI row has both. Local GREEN makes cross-row player association canonical-ID only. Name-only/foreign-namespace rows remain raw historical evidence but cannot be attributed to a current player/H2H in the browser; missing identity renders N/D. Real-data contract: name-only H2H 0, canonical archive H2H 1. No model/data/probability/settlement math changed.
 
-**TEST STATUS:** phase-3 Stage-2 contract, UI static smoke, match-time smoke, Decision Center, audit-consistency and focused Python contracts (`test_canonical_playable_frontend.py`, `test_project_contract_docs.py`: 9/9) are GREEN. Full repository regression is GREEN: 1350/1350 passed with a repo-local `--basetemp`; the earlier 1275-pass/75-error run was environment-only because Windows denied access to the global pytest temp directory.
+**TEST STATUS:** phase-4 Stage-2, UI static, match-time, Decision Center and audit-consistency are GREEN. Focused backend/frontend provenance pack is 13/13 GREEN. Full repository regression is GREEN: 1350/1350 passed with repo-local `--basetemp`.
 
-**CI STATUS:** phase-2 PR #427 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS and merged as `fa3e294f...`. Phase-3 has no remote CI yet because its PR is not opened until local full regression is GREEN.
+**CI STATUS:** phase-3 PR #428 exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health all SUCCESS before merge. Phase 4 has no remote CI yet because its PR has not been opened.
 
 **OPERATIONAL SIDE EFFECTS / NON-LOGIC BLOCKERS:** Training Archive HTTP 500 is the known 250 MB budget-gate rejection, not LOGIC-10/11. Runtime Private later succeeded; keep archive budget/retention and runtime transport follow-ups separate from frontend provenance.
 
-**BLOCKERS:** no proven phase-3 code blocker. Historical/H2H association, timestamp semantics and dead-runtime cleanup remain separate LOGIC-11 substeps and must not be folded into the canonical-key PR.
+**BLOCKERS:** no proven phase-4 code blocker. Timestamp semantics and dead-runtime cleanup remain separate later LOGIC-11 substeps and must not be folded into the H2H/history identity PR.
 
-**DO NOT REDO:** do not repeat BO5/guard alias discovery, LOGIC-11 runtime-owner pre-audit, phase-1 exact-join work or phase-2 fake-zero work. Do not restore name/time fallback in current routing. Do not remove exact-ID/name/time checks inside `operatorPrice()`; it already fails closed on exact `match_id` and uses names/time only as additional fixture guards.
+**DO NOT REDO:** do not repeat BO5/guard alias discovery, LOGIC-11 owner pre-audit, phase-1 exact joins, phase-2 fake-zero or phase-3 route-key work. Do not restore name fallback in `samePlayer()` and do not compare TennisMyLife foreign IDs with live-provider IDs. Do not remove exact-ID/name/time fixture guards inside `operatorPrice()`; those are a separate exact-offer validation contract.
 
 **RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron, PLAYABLE, settlement, SHADOW->PROD or iNeed$ calculations. No fuzzy identity, manual aliases, provider namespace guessing or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Commit/push the locally GREEN phase-3 branch and open the canonical-key PR; exact-head CI is merge authority.
-2. Monitor all required exact-head CI; do not merge pending/red checks.
-3. Before merge, re-check fresh `main`; if generated-data/bot commits moved it, rebase/update and rerun exact-head CI.
-4. Merge phase 3 only with all required exact-head CI GREEN, PR base equal to fresh main and MERGEABLE state.
-5. After phase-3 merge, continue the next separate LOGIC-11 substep: historical/H2H backend association or explicit N/D; timestamp semantics and dead legacy runtime stay separate.
+1. Re-run focused docs/frontend contracts after checkpoint edits, clean local temp artifacts and verify `git diff --check`.
+2. Re-check fresh `main`; if it is still the phase-3 merge, commit/push phase 4 and open the historical/H2H identity PR.
+3. Monitor all required exact-head CI; do not merge pending/red checks.
+4. Before merge, re-check fresh `main`; if generated-data/bot commits moved it, rebase/update and rerun exact-head CI.
+5. Merge phase 4 only with all required exact-head CI GREEN, base equal to fresh main and MERGEABLE state; then continue a separate timestamp-provenance substep.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

@@ -736,7 +736,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-11 - Frontend Ownership + Provenance
 
-**Status:** ACTIVE - phase 1 merged as PR #426 (`8234ed74175e81ac9dec039369743176ee609863`); phase 2 merged as PR #427 (`fa3e294faabff79f6c820a833912feafae7e4688`); phase 3 current-route canonical-key contract is locally GREEN (full repository 1350/1350) and pending PR publication.
+**Status:** ACTIVE - phase 1 merged as PR #426 (`8234ed74175e81ac9dec039369743176ee609863`); phase 2 merged as PR #427 (`fa3e294faabff79f6c820a833912feafae7e4688`); phase 3 merged as PR #428 (`11e5ff2d708a517660694b9ce5965cb7e159e4be`); phase 4 historical/H2H canonical-player association is locally GREEN (full repository 1350/1350) and pending PR publication.
 
 **Confirmed runtime owners:** `scripts/build_delivery.mjs` produces delivery; `frontend/presentation-data.js` is the application data/presentation entry point; `frontend/app.js` owns shell/list/detail routes; `runtime-data-transport.js` wraps reads without changing presentation ownership; `history-ui.js`, `admin-users.js` and `ineed.js` are explicit feature owners. Current `ARCHITECTURE.md` owner correction is prepared in phase 1.
 
@@ -744,7 +744,9 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-2 merged evidence:** PR #427 fixed the latent fake-zero bug in `frontend/app.js::profileStats()`: missing `stats.matches` now renders as N/D, explicit backend `0` remains a real zero, and positive counts are preserved verbatim through `frontend/match-detail-data.js::sampleLabel()`. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were GREEN before merge.
 
-**Phase-3 current-route identity evidence:** `frontend/presentation-data.js::key()` still fabricated a route identity from `p1|p2|scheduled_time` when canonical `id` / `match_id` / `match_key` was missing and accepted conflicting canonical IDs by precedence. RED contract reproduced the fallback as `A|B|2099-01-01`. The local GREEN fix makes `key()` reuse the exact canonical identity set and return `null` unless there is exactly one unique canonical ID. `routableRows()` keeps missing/conflicting identities out of current delivery, Symphony and admin route state. Current checked-in feeds are unaffected: `results.json` 115/115 and `symphony2_current.json` 70/70 have one canonical identity each, with zero missing/conflicting IDs and zero duplicate canonical keys. Historical/H2H association remains a separate substep.
+**Phase-3 merged current-route identity evidence:** PR #428 removed the `p1|p2|scheduled_time` route-key fallback. `TenisPresentation.key()` now accepts only exactly one unique canonical `id` / `match_id` / `match_key`, and `routableRows()` keeps missing/conflicting identities out of current delivery, Symphony and admin route state. Exact-head CodeQL, Delivery/Security, LOGIC-01..04 and UI Health were all GREEN before merge.
+
+**Phase-4 historical/H2H evidence:** `frontend/match-detail-data.js::samePlayer()` still fell back to normalized names whenever either side lacked a player ID. RED reproduced a name-only H2H row being counted (`1` instead of `0`). Checked-in provenance audit found `history.json` 1503/1503 rows without canonical player IDs and `match_detail_history.json` 13 rows: 12 TennisMyLife rows without canonical IDs and 1 LiveTennisAPI row with both canonical IDs. Local GREEN makes cross-row player association canonical-ID only; missing identity stays N/D. The raw historical artifacts remain unchanged, `backend/match_detail_history.py` remains the backend presentation-export owner, and the UI now consumes only its hard ID association. Real-data contract shows name-only H2H = 0 and canonical archive H2H = 1. No model, probability, settlement or Player DNA logic changed.
 
 Classify every displayed field as one of:
 
