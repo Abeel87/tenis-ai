@@ -1,0 +1,180 @@
+# TENIS AI - Guard Ownership Audit
+
+**Program:** LOGIC-10 - Guard Ownership / Dead Logic Audit
+
+**Audit base:** `5fbe321987bd271240bacd16c382efbd38e02145`
+
+**Status:** ACTIVE - phase 1 inventory complete; first confirmed BO5 ownership collision reproduced and locally repaired; full LOGIC-10 remains open until remaining inline/high-risk guards have input/output/reason semantics reviewed.
+
+## 1. Scope and rules
+
+This audit inventories active workflow steps whose names contain `guard` or `validat`, assigns each invocation to a canonical file-backed entrypoint or to its workflow inline block, and deep-audits the first confirmed collision in the BO5 path.
+
+An **invocation** is not automatically a second owner. The same canonical verifier can run in more than one CI surface. That is duplicate execution, not duplicate ownership, unless the implementations enforce conflicting invariants.
+
+Hard boundary: this audit does not change Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, PLAYABLE policy, production settlement, SHADOW->PROD, or iNeed$ calculations.
+
+## 2. Inventory summary
+
+- Active guard/validation invocations: **97**.
+- Workflows containing them: **28**.
+- `update-and-pages.yml`: **27** invocations.
+- `point-tape-audit.yml`: **27** invocations.
+- `ui-smoke.yml`: **10** invocations.
+- File-backed verifier repeated in multiple workflows = repeated enforcement of one owner, not a second owner by itself.
+- Inline workflow guards are owned by the exact workflow step until/unless a canonical source module is extracted. No wrapper is introduced by this audit.
+
+## 3. Confirmed BO5 collision
+
+### Canonical producer
+
+`backend/model.py` is the Current Engine owner of match-format-aware full-match output. It reads `best_of`, calls `_match_distribution_conditional(..., best_of=best_of)`, uses BO5-specific total-game lines, and emits `match_win`, `match_over_under`, `expected_match_games`, `total_sets`, and `exact_match_score` for legal BO5 model-ready fixtures.
+
+### Stale conflicting guard
+
+`backend/prediction_integrity_v78a.py::apply_pre_output_guards()` previously erased all five canonical BO5 full-match outputs and added `bo5_guard_v78a=True`. The same module later rejected non-N/D BO5 full-match fields. That historical fail-safe directly contradicted the current canonical producer.
+
+### Ownership-preserving repair
+
+- `apply_pre_output_guards()` now only normalizes `best_of`; it no longer rewrites legal Current Engine markets.
+- BO5 integrity validation now checks the **format score-space** instead of demanding N/D: exact match scores must be in `{3:0, 3:1, 3:2, 2:3, 1:3, 0:3}` and total-set outcomes in `{3 sety, 4 sety, 5 sety}` when those maps are present.
+- `backend/market_lab_v741.py` remains its own owner: BO5 stays `LAB_SET1_ONLY`.
+- `backend/serve_props.py` remains its own owner: BO5 remains `ready=false` with reason `bo5_full_match_not_supported`.
+- No new guard was added to compensate for another guard.
+
+### Regression evidence
+
+- RED reproduction before repair: **2 BO5 tests failed** because legal full-match BO5 output was erased and invalid BO3 score-space was not rejected by the intended invariant.
+- Current Engine + integrity targeted pack: **11/11 passed** after the minimal repair.
+- BO5/downstream pack covering integrity, Current Engine, Market Lab, Superbet line coverage, Superbet market projection and TML runtime equivalence: **47/47 passed**.
+
+## 4. High-risk execution contract
+
+| Guard / owner | Input | Output / failure channel | Reason semantics | Order / boundary | Finding |
+| --- | --- | --- | --- | --- | --- |
+| `backend/prediction_integrity_v78a.py` | `frontend/data/results.json` after Market Lab, Serve Props, PBP joint rebuild and Player Intelligence PRE | writes `integrity_report_v78a.json`, integrity fields in `meta.json`; exits non-zero on hard errors | explicit human-readable invariant errors; BO5 score-space now structural | `update-and-pages.yml` Prediction integrity gate | **Confirmed stale BO5 collision repaired locally** |
+| `backend/market_lab_v741.py` | Current Engine result + operator line context | enriches `market_lab_v741`; BO5 returns `LAB_SET1_ONLY` | status/note, no synthetic full-match BO5 lab | runs before prediction integrity | separate owner; keep fail-closed |
+| `backend/serve_props.py` | result + historical serve-prop evidence | enriches `serve_props_v72`; BO5 `ready=false` | `bo5_full_match_not_supported` | runs before prediction integrity | separate owner; keep fail-closed |
+| `backend/api_quota.py` | central quota state + API operation | begin/check state; workflow fails on guard violation | quota guard command result | before `backend/update.py` | no BO5 overlap |
+| `tests/test_prediction_ledger_selection_shadow.py` | Prediction Ledger selection SHADOW contract | pytest pass/fail only | test assertion | late Update guard | SHADOW isolation; no runtime owner rewrite |
+| `tests/test_prediction_ledger_settlement_shadow.py` | Prediction Ledger settlement SHADOW contract | pytest pass/fail only | test assertion | late Update guard | SHADOW isolation; no runtime owner rewrite |
+| Symphony/Superbet exact-offer test packs | exact operator context + Symphony/PLAYABLE artifacts | pytest pass/fail only | test assertion | late Update guards | enforcement only; model probability remains upstream-owned |
+
+## 5. Duplicate invocation is not duplicate ownership
+
+The scan found repeated executions of the same canonical verifier in different CI surfaces. Examples include `scripts/verify_v84e11.py`, `scripts/verify_v84e2.py`, `scripts/verify_v853_runtime_ui.py`, `scripts/verify_v891_ensemble_player_learning.py`, `scripts/verify_v893_surface_elo_integration.py`, `scripts/verify_v894_shadow_signal_center.py`, `scripts/verify_v89_player_model_shadow.py`, and `backend/player_dna_market_walk_forward.py`. These are treated as repeated enforcement until a conflicting invariant is proven.
+
+## 6. Remaining LOGIC-10 work
+
+1. Deep-review inline workflow-owned guards for explicit input/output/reason/failure semantics; inventory alone does not prove semantic uniqueness.
+2. Trace any guard whose output is consumed by another guard and verify it is validating a producer contract rather than repairing the prior guard.
+3. Run full required regression/CI on the BO5 repair PR, re-check fresh `main`, and merge only all-green.
+4. Continue collision review in small owner-scoped PRs; do not perform a giant guard refactor.
+
+## 7. Complete active invocation inventory
+
+Every row below is keyed as `workflow :: step`; YAML line and guard-order are evidence from the audit base, not a stable API.
+
+| # | Workflow :: step | YAML line | Guard order in workflow | Canonical owner / entrypoint |
+| ---: | --- | ---: | ---: | --- |
+| 1 | `context-engine-shadow.yml :: Validate SHADOW context contract and evidence` | 51 | 1 | `.github/workflows/context-engine-shadow.yml (inline step)` |
+| 2 | `existing-history-source-inventory.yml :: Validate zero-network audit contract` | 60 | 1 | `.github/workflows/existing-history-source-inventory.yml (inline step)` |
+| 3 | `history-freshness-counterfactual.yml :: Validate audit contract and evidence` | 52 | 1 | `.github/workflows/history-freshness-counterfactual.yml (inline step)` |
+| 4 | `neuron-shadow.yml :: Hard isolation guard` | 54 | 1 | `backend/neuron.py` |
+| 5 | `pbp-global-history-calibration.yml :: Validate audit contract` | 65 | 1 | `.github/workflows/pbp-global-history-calibration.yml (inline step)` |
+| 6 | `pbp-history-schema-audit.yml :: Validate audit contract` | 67 | 1 | `.github/workflows/pbp-history-schema-audit.yml (inline step)` |
+| 7 | `pbp-player-summary-audit.yml :: Validate zero-network fail-closed contract` | 62 | 1 | `.github/workflows/pbp-player-summary-audit.yml (inline step)` |
+| 8 | `pbp-short-history-supply-audit.yml :: Validate audit contract` | 56 | 1 | `.github/workflows/pbp-short-history-supply-audit.yml (inline step)` |
+| 9 | `pbp-tml-dedup-audit.yml :: Validate audit contract` | 60 | 1 | `.github/workflows/pbp-tml-dedup-audit.yml (inline step)` |
+| 10 | `player-dna-service-split-depth-audit.yml :: Guard diagnostic isolation` | 47 | 1 | `.github/workflows/player-dna-service-split-depth-audit.yml (inline step)` |
+| 11 | `player-dna-shadow-refresh.yml :: Player DNA canonical guards` | 138 | 1 | `backend/atomic_point_transition.py`<br>`backend/canonical_point_event.py`<br>`backend/player_dna_point_dataset.py`<br>`backend/player_dna_match_context.py`<br>`backend/player_dna_shadow_profiles.py`<br>`backend/player_dna_profile_readiness.py`<br>`backend/history_coverage_audit.py`<br>`backend/snapshot_digest.py`<br>`backend/player_dna_service_split_source_readiness.py`<br>`backend/player_dna_pbp_service_split_readiness.py`<br>`backend/player_dna_match_state_readiness.py`<br>`backend/player_dna_matchup_readiness_audit.py`<br>`backend/player_dna_recent_form_challenger.py`<br>`backend/player_dna_player_state_shadow.py`<br>`backend/readiness_engine_shadow.py`<br>`backend/player_dna_point_scorer.py`<br>`backend/player_dna_point_probability_engine.py`<br>`backend/player_dna_current_shadow.py`<br>`backend/player_dna_current_dynamic_shadow.py`<br>`backend/player_dna_tennis_simulator.py`<br>`backend/player_dna_tennis_state_engine.py`<br>`backend/player_dna_market_backtest.py`<br>`backend/player_dna_market_walk_forward.py`<br>`backend/player_dna_hold_calibration.py`<br>`backend/player_dna_hold_walk_forward.py`<br>`backend/player_dna_prospective_validation.py`<br>`tests/test_atomic_point_transition.py`<br>`tests/test_canonical_point_event.py`<br>`tests/test_player_dna_point_dataset.py`<br>`tests/test_player_dna_match_context.py`<br>`tests/test_player_dna_shadow_profiles.py`<br>`tests/test_player_dna_profile_readiness.py`<br>`tests/test_player_dna_point_scorer.py`<br>`tests/test_player_dna_point_probability_engine.py`<br>`tests/test_player_dna_current_shadow.py`<br>`tests/test_player_dna_current_dynamic_shadow.py`<br>`tests/test_player_dna_tennis_simulator.py`<br>`tests/test_player_dna_tennis_state_engine.py`<br>`tests/test_player_dna_market_backtest.py`<br>`tests/test_player_dna_market_walk_forward.py`<br>`tests/test_player_dna_hold_calibration.py`<br>`tests/test_player_dna_hold_walk_forward.py`<br>`tests/test_player_dna_prospective_validation.py`<br>`tests/test_history_coverage_audit_v949.py`<br>`tests/test_player_dna_service_split_source_readiness.py`<br>`tests/test_player_dna_pbp_service_split_readiness.py`<br>`tests/test_player_dna_match_state_readiness.py`<br>`tests/test_player_dna_matchup_readiness_audit.py`<br>`tests/test_player_dna_recent_form_challenger.py`<br>`tests/test_readiness_engine_shadow.py`<br>`tests/test_readiness_observability_delivery_contract.py`<br>`tests/test_player_identity.py` |
+| 12 | `player-dna-shadow-refresh.yml :: Guard LOGIC-08 exact-snapshot readiness delivery` | 203 | 2 | `.github/workflows/player-dna-shadow-refresh.yml (inline step)` |
+| 13 | `player-dna-shadow-refresh.yml :: Validate dynamic lean market walk-forward robustness` | 291 | 3 | `backend/player_dna_market_walk_forward.py` |
+| 14 | `player-dna-shadow-refresh.yml :: Hard isolation + learning guard` | 309 | 4 | `backend/player_dna_tennis_simulator.py`<br>`backend/player_dna_market_walk_forward.py` |
+| 15 | `point-tape-audit.yml :: Point tape + atomic validator + Player DNA identity/context tests` | 127 | 1 | `tests/test_point_tape_schema.py`<br>`tests/test_point_transition_audit.py`<br>`tests/test_atomic_point_transition.py`<br>`tests/test_canonical_point_event.py`<br>`tests/test_player_dna_point_dataset.py`<br>`tests/test_player_dna_match_metadata_audit.py`<br>`tests/test_player_dna_match_context.py`<br>`tests/test_player_dna_context_time_audit.py`<br>`tests/test_player_dna_ordering_authority_audit.py`<br>`tests/test_player_dna_profile_readiness.py`<br>`tests/test_player_dna_service_split_source_readiness.py`<br>`tests/test_player_dna_pbp_service_split_readiness.py`<br>`tests/test_player_dna_match_state_readiness.py`<br>`tests/test_player_dna_match_state_profiles.py`<br>`tests/test_player_dna_match_state_challenger.py`<br>`tests/test_player_dna_shadow_profiles.py`<br>`tests/test_player_dna_phase13_performance.py`<br>`tests/test_player_dna_phase14_lifecycle.py`<br>`tests/test_player_dna_matchup_readiness_audit.py`<br>`tests/test_player_dna_matchup_challenger.py`<br>`tests/test_player_dna_matchup_engine.py`<br>`tests/test_player_dna_point_probability_engine.py`<br>`tests/test_player_dna_opponent_context_audit.py`<br>`tests/test_player_dna_opponent_adjustment_audit.py`<br>`tests/test_player_dna_pressure_challenger.py`<br>`tests/test_player_dna_tiebreak_challenger.py`<br>`tests/test_player_dna_recent_form_challenger.py`<br>`tests/test_readiness_engine_shadow.py`<br>`tests/test_player_dna_point_scorer.py`<br>`tests/test_player_dna_current_shadow.py`<br>`tests/test_player_dna_current_dynamic_shadow.py`<br>`tests/test_player_dna_tennis_simulator.py`<br>`tests/test_player_dna_tennis_state_engine.py`<br>`tests/test_player_dna_market_backtest.py`<br>`tests/test_player_dna_market_walk_forward.py`<br>`tests/test_player_dna_hold_calibration.py`<br>`tests/test_player_dna_hold_walk_forward.py`<br>`tests/test_player_dna_prospective_validation.py`<br>`tests/test_player_identity.py` |
+| 16 | `point-tape-audit.yml :: Guard service-split source audit isolation` | 157 | 2 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 17 | `point-tape-audit.yml :: Guard PBP-native service-split audit isolation` | 262 | 3 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 18 | `point-tape-audit.yml :: Guard comeback + BO5 stamina readiness isolation` | 344 | 4 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 19 | `point-tape-audit.yml :: Guard comeback + BO5 match-state profile isolation` | 433 | 5 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 20 | `point-tape-audit.yml :: Guard comeback + BO5 challenger isolation` | 542 | 6 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 21 | `point-tape-audit.yml :: Guard canonical Player DNA service-split profiles` | 643 | 7 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 22 | `point-tape-audit.yml :: Guard Phase-3 matchup readiness isolation` | 708 | 8 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 23 | `point-tape-audit.yml :: Guard Player DNA opponent audit isolation` | 824 | 9 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 24 | `point-tape-audit.yml :: Guard opponent-strength challenger isolation` | 872 | 10 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 25 | `point-tape-audit.yml :: Guard pressure challenger isolation` | 933 | 11 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 26 | `point-tape-audit.yml :: Guard tiebreak-profile challenger isolation` | 1074 | 12 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 27 | `point-tape-audit.yml :: Guard recent-form L5 challenger isolation` | 1165 | 13 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 28 | `point-tape-audit.yml :: Guard LOGIC-08 semantic readiness isolation` | 1267 | 14 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 29 | `point-tape-audit.yml :: Guard small-sample shrinkage challenger isolation` | 1342 | 15 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 30 | `point-tape-audit.yml :: Guard Phase-3 matchup challenger isolation` | 1477 | 16 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 31 | `point-tape-audit.yml :: Guard Phase-3 canonical matchup closure` | 1574 | 17 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 32 | `point-tape-audit.yml :: Guard Phase-4 canonical point probability closure` | 1711 | 18 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 33 | `point-tape-audit.yml :: Validate dynamic lean market walk-forward robustness (SHADOW, zero network)` | 1841 | 19 | `backend/player_dna_market_walk_forward.py` |
+| 34 | `point-tape-audit.yml :: Guard Phase-5 legal tennis state engine closure` | 1856 | 20 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 35 | `point-tape-audit.yml :: Guard Phase-6 exact DP plus Monte Carlo closure` | 1928 | 21 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 36 | `point-tape-audit.yml :: Guard Phase-7 calibration + walk-forward closure` | 2005 | 22 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 37 | `point-tape-audit.yml :: Guard Phase-9 Player DNA shared-state closure` | 2145 | 23 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 38 | `point-tape-audit.yml :: Guard Phase-10 Bet Builder dependency closure` | 2238 | 24 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 39 | `point-tape-audit.yml :: Guard Phase-12 master regression closure` | 2512 | 25 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 40 | `point-tape-audit.yml :: Guard Phase-13 observational performance closure` | 2583 | 26 | `.github/workflows/point-tape-audit.yml (inline step)` |
+| 41 | `point-tape-audit.yml :: Guard Phase-14 safe lifecycle closure` | 2723 | 27 | `backend/player_dna_phase14_lifecycle.py` |
+| 42 | `population-priors-audit.yml :: Validate audit contract and evidence` | 51 | 1 | `.github/workflows/population-priors-audit.yml (inline step)` |
+| 43 | `ranking-provenance-audit.yml :: Validate audit contract and evidence` | 53 | 1 | `.github/workflows/ranking-provenance-audit.yml (inline step)` |
+| 44 | `shadow-promotion-audit.yml :: Unit guard` | 25 | 1 | `tests/test_shadow_promotion_gate_v942.py` |
+| 45 | `shadow-promotion-audit.yml :: Isolation guard` | 29 | 2 | `.github/workflows/shadow-promotion-audit.yml (inline step)` |
+| 46 | `superbet-market-refresh.yml :: Validate orchestration guard on PR` | 94 | 1 | `tests/test_superbet_refresh_guard.py` |
+| 47 | `superbet-market-refresh.yml :: Syntax guard` | 113 | 2 | `backend/superbet_market_context.py`<br>`backend/superbet_direct.py`<br>`backend/superbet_market_core.py`<br>`backend/superbet_market_mapping.py`<br>`backend/superbet_market_audit.py`<br>`backend/superbet_fixture_matching.py`<br>`backend/superbet_line_coverage.py`<br>`backend/superbet_playable.py`<br>`backend/market_lab_v741.py`<br>`backend/player_intelligence_v85.py`<br>`backend/player_model_shadow_v89.py`<br>`backend/ensemble_player_learning_v891.py`<br>`backend/surface_elo_integration_v893.py`<br>`backend/shadow_signal_center_v894.py`<br>`backend/symphony2_learning.py`<br>`backend/symphony2_state.py`<br>`backend/symphony2_engine.py`<br>`backend/symphony2_tracker.py`<br>`scripts/verify_superbet_market_semantics.py` |
+| 48 | `superbet-market-refresh.yml :: Zero-request coverage, fixture matching and Symphony 2 guards` | 135 | 3 | `tests/test_canonical_superbet_runtime.py`<br>`tests/test_superbet_direct.py`<br>`tests/test_superbet_direct_context_fallback.py`<br>`tests/test_superbet_fixture_discovery_separation.py`<br>`tests/test_superbet_fixture_matching_v927.py`<br>`tests/test_superbet_line_coverage_v922.py`<br>`tests/test_superbet_line_coverage_v924.py`<br>`tests/test_superbet_market_v923.py`<br>`tests/test_superbet_market_v924.py`<br>`tests/test_symphony2_learning.py`<br>`tests/test_symphony2_state.py`<br>`tests/test_symphony2_tracker.py`<br>`tests/test_symphony2_exact_operator_line_gate.py`<br>`tests/test_symphony2_ui.py`<br>`tests/test_canonical_playable_frontend.py`<br>`tests/test_playable_ui_v917.py`<br>`tests/test_playable_freshness_pipeline_v928.py` |
+| 49 | `superbet-market-refresh.yml :: Runtime sanity guard` | 167 | 4 | `.github/workflows/superbet-market-refresh.yml (inline step)` |
+| 50 | `superbet-market-watchdog.yml :: Validate watchdog safety contract` | 39 | 1 | `.github/workflows/superbet-market-watchdog.yml (inline step)` |
+| 51 | `superbet-market-watchdog.yml :: Checkout orchestration guard` | 67 | 2 | `.github/workflows/superbet-market-watchdog.yml (inline step)` |
+| 52 | `tennis-data-stale-run-guard.yml :: Validate stale-guard safety contract` | 25 | 1 | `.github/workflows/tennis-data-stale-run-guard.yml (inline step)` |
+| 53 | `tml-2024-blocker-audit.yml :: Validate audit-only contract` | 67 | 1 | `.github/workflows/tml-2024-blocker-audit.yml (inline step)` |
+| 54 | `tml-2024-candidate-lock.yml :: Validate audit-only contract` | 87 | 1 | `.github/workflows/tml-2024-candidate-lock.yml (inline step)` |
+| 55 | `tml-2024-history-preview.yml :: Validate preview-only contract` | 66 | 1 | `.github/workflows/tml-2024-history-preview.yml (inline step)` |
+| 56 | `tml-2024-integration-readiness-audit.yml :: Validate fail-closed contract` | 66 | 1 | `.github/workflows/tml-2024-integration-readiness-audit.yml (inline step)` |
+| 57 | `tml-2024-integration-safety-gate.yml :: Validate audit-only contract` | 66 | 1 | `.github/workflows/tml-2024-integration-safety-gate.yml (inline step)` |
+| 58 | `tml-2024-runtime-equivalence-audit.yml :: Validate audit-only contract` | 78 | 1 | `.github/workflows/tml-2024-runtime-equivalence-audit.yml (inline step)` |
+| 59 | `tml-freshness-preview.yml :: Validate preview contract` | 59 | 1 | `.github/workflows/tml-freshness-preview.yml (inline step)` |
+| 60 | `tml-internal-id-alias-audit.yml :: Validate fail-closed contract` | 65 | 1 | `.github/workflows/tml-internal-id-alias-audit.yml (inline step)` |
+| 61 | `ui-smoke.yml :: Player Model Shadow Guard v8.9` | 79 | 1 | `scripts/verify_v89_player_model_shadow.py` |
+| 62 | `ui-smoke.yml :: Ensemble + Player Learning Guard v8.9.1` | 83 | 2 | `scripts/verify_v891_ensemble_player_learning.py` |
+| 63 | `ui-smoke.yml :: Surface Elo Guard v8.9.3` | 87 | 3 | `scripts/verify_v893_surface_elo_integration.py` |
+| 64 | `ui-smoke.yml :: SHADOW experiment trend guard` | 91 | 4 | `scripts/verify_v895_shadow_experiment_trends.py` |
+| 65 | `ui-smoke.yml :: Shadow Signal Center Guard v8.9.4` | 95 | 5 | `scripts/verify_v894_shadow_signal_center.py` |
+| 66 | `ui-smoke.yml :: Full App Coherence Guard v8.9.2` | 99 | 6 | `scripts/verify_v892_full_app_coherence.py` |
+| 67 | `ui-smoke.yml :: Runtime & UI Guard v8.5.3` | 107 | 7 | `scripts/verify_v853_runtime_ui.py` |
+| 68 | `ui-smoke.yml :: Match Decision Center Guard v8.7` | 111 | 8 | `scripts/verify_v87_decision_center.py`<br>`tests/decision_center_smoke.mjs` |
+| 69 | `ui-smoke.yml :: Global Match Time Guard v8.4E1.1` | 129 | 9 | `scripts/verify_v84e11.py` |
+| 70 | `ui-smoke.yml :: Model Trend Monitor Guard v8.4E2` | 133 | 10 | `scripts/verify_v84e2.py` |
+| 71 | `update-and-pages.yml :: Central API Quota Guard` | 63 | 1 | `backend/api_quota.py` |
+| 72 | `update-and-pages.yml :: Shadow Signal Center Guard v8.9.4` | 191 | 2 | `scripts/verify_v894_shadow_signal_center.py` |
+| 73 | `update-and-pages.yml :: Surface Elo Guard v8.9.3` | 193 | 3 | `scripts/verify_v893_surface_elo_integration.py` |
+| 74 | `update-and-pages.yml :: Ensemble + Player Learning Guard v8.9.1` | 195 | 4 | `scripts/verify_v891_ensemble_player_learning.py` |
+| 75 | `update-and-pages.yml :: Player Model Shadow Guard v8.9` | 197 | 5 | `scripts/verify_v89_player_model_shadow.py` |
+| 76 | `update-and-pages.yml :: Player Intelligence Guard v8.5` | 199 | 6 | `scripts/verify_v85.py` |
+| 77 | `update-and-pages.yml :: AutoLearn Integration Guard v8.4A` | 201 | 7 | `scripts/verify_v84a.py` |
+| 78 | `update-and-pages.yml :: AutoLearn Hotfix Guard v8.4A.1` | 203 | 8 | `scripts/verify_v84a1.py` |
+| 79 | `update-and-pages.yml :: Quality Lock Guard v8.5.2` | 205 | 9 | `scripts/verify_v852_quality_lock.py` |
+| 80 | `update-and-pages.yml :: Runtime & UI Guard v8.5.3` | 207 | 10 | `scripts/verify_v853_runtime_ui.py` |
+| 81 | `update-and-pages.yml :: Match Decision Center Guard v8.7` | 209 | 11 | `scripts/verify_v87_decision_center.py`<br>`tests/decision_center_smoke.mjs`<br>`tests/audit_consistency_smoke.mjs` |
+| 82 | `update-and-pages.yml :: Accuracy Shadow Guard v8.6` | 214 | 12 | `scripts/verify_v86_accuracy_shadow.py` |
+| 83 | `update-and-pages.yml :: AutoLearn Calibration Guard v8.4A.2` | 216 | 13 | `scripts/verify_v84a2.py` |
+| 84 | `update-and-pages.yml :: Logic & Stability Guard v8.4B` | 218 | 14 | `scripts/verify_v84b.py` |
+| 85 | `update-and-pages.yml :: Model Telemetry Guard v8.4C` | 220 | 15 | `scripts/verify_v84c.py` |
+| 86 | `update-and-pages.yml :: Dynamic Weights Guard v8.4D` | 222 | 16 | `scripts/verify_v84d.py` |
+| 87 | `update-and-pages.yml :: Dynamic Weights UI Audit Guard v8.4D.1` | 224 | 17 | `scripts/verify_v84d1.py` |
+| 88 | `update-and-pages.yml :: Dynamic Weights View Scope Guard v8.4D.2` | 226 | 18 | `scripts/verify_v84d2.py` |
+| 89 | `update-and-pages.yml :: Signal Mapping Bridge Guard v8.4D.4` | 228 | 19 | `scripts/verify_v84d4.py` |
+| 90 | `update-and-pages.yml :: Game-State Tracking Guard v8.4E1` | 230 | 20 | `scripts/verify_v84e1.py` |
+| 91 | `update-and-pages.yml :: Global Match Time Guard v8.4E1.1` | 232 | 21 | `scripts/verify_v84e11.py` |
+| 92 | `update-and-pages.yml :: Model Trend Monitor Guard v8.4E2` | 234 | 22 | `scripts/verify_v84e2.py` |
+| 93 | `update-and-pages.yml :: Superbet exact-offer projection Guard` | 240 | 23 | `tests/test_superbet_market_v91.py`<br>`tests/test_superbet_market_v913.py`<br>`tests/test_superbet_market_v923.py`<br>`tests/test_superbet_market_v924.py`<br>`tests/test_superbet_playable_v912.py`<br>`tests/test_superbet_line_coverage_v922.py`<br>`tests/test_superbet_line_coverage_v924.py` |
+| 94 | `update-and-pages.yml :: Prediction ledger downstream SHADOW join Guard` | 248 | 24 | `tests/test_prediction_ledger_selection_shadow.py` |
+| 95 | `update-and-pages.yml :: Prediction ledger settlement SHADOW Guard` | 252 | 25 | `tests/test_prediction_ledger_settlement_shadow.py` |
+| 96 | `update-and-pages.yml :: Symphony 2.0 Guard` | 254 | 26 | `tests/test_symphony2_learning.py`<br>`tests/test_symphony2_state.py`<br>`tests/test_symphony2_tracker.py`<br>`tests/test_symphony2_exact_operator_line_gate.py`<br>`tests/test_canonical_playable_frontend.py`<br>`tests/test_playable_ui_v917.py` |
+| 97 | `update-and-pages.yml :: Symphony final PLAYABLE publication Guard` | 256 | 27 | `.github/workflows/update-and-pages.yml (inline step)` |
+
+## 8. Audit interpretation
+
+The inventory is complete for **named workflow guard/validation invocations** on the audit base. It does not claim that every ordinary test/assertion anywhere in the repository is a guard. LOGIC-10 remains ACTIVE because semantic collision review is intentionally narrower and owner-by-owner.

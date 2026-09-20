@@ -15,7 +15,7 @@ EXPECTED_LINE_SITES = {
     "backend/specialist_learning_v79b.py": {465},
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {382, 393},
-    "backend/prediction_integrity_v78a.py": {152},
+    "backend/prediction_integrity_v78a.py": {156},
     "frontend/app.js": {30, 63, 90, 98, 114},
 }
 

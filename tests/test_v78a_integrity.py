@@ -73,26 +73,39 @@ def test_integrity_rejects_bad_probability_sum():
     assert any("suma=" in x for x in r["errors"])
 
 
-def test_bo5_guard_keeps_first_set_hides_full_match():
+def test_bo5_integrity_preserves_canonical_full_match_output():
     m={
         "id":4,"p1":"A","p2":"B","best_of":5,
         "first_set_win":{"A":55.0,"B":45.0},
         "over_under":{"8.5":{"over":70.0,"under":30.0}},
         "match_win":{"A":70.0,"B":30.0},
-        "match_over_under":{"18.5":{"over":70.0,"under":30.0}},
-        "expected_match_games":22.0,
-        "total_sets":{"2 sety":60.0,"3 sety":40.0},
-        "exact_match_score":{"2:0":40.0,"2:1":30.0,"1:2":20.0,"0:2":10.0},
+        "match_over_under":{"28.5":{"over":62.0,"under":38.0}},
+        "expected_match_games":31.5,
+        "total_sets":{"3 sety":45.0,"4 sety":35.0,"5 sety":20.0},
+        "exact_match_score":{"3:0":25.0,"3:1":20.0,"3:2":15.0,"2:3":10.0,"1:3":15.0,"0:3":15.0},
     }
     g=apply_pre_output_guards(m)
-    assert g["first_set_win"] is not None
-    assert g["over_under"] is not None
-    assert g["match_win"] is None
-    assert g["match_over_under"] is None
-    assert g["expected_match_games"] is None
-    assert g["total_sets"] is None
-    assert g["exact_match_score"] is None
+    assert g["best_of"] == 5
+    assert g["first_set_win"] == m["first_set_win"]
+    assert g["over_under"] == m["over_under"]
+    assert g["match_win"] == m["match_win"]
+    assert g["match_over_under"] == m["match_over_under"]
+    assert g["expected_match_games"] == m["expected_match_games"]
+    assert g["total_sets"] == m["total_sets"]
+    assert g["exact_match_score"] == m["exact_match_score"]
     assert validate([g])["status"]=="PASS"
+
+
+def test_bo5_integrity_rejects_bo3_score_space():
+    m={
+        "id":5,"p1":"A","p2":"B","best_of":5,
+        "match_win":{"A":60.0,"B":40.0},
+        "total_sets":{"2 sety":60.0,"3 sety":40.0},
+        "exact_match_score":{"2:0":40.0,"2:1":20.0,"1:2":20.0,"0:2":20.0},
+    }
+    r=validate([m])
+    assert r["status"]=="FAIL"
+    assert any("BO5" in x and "score-space" in x for x in r["errors"])
 
 
 def test_joint_future_invariant_reference():

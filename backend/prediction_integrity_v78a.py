@@ -45,19 +45,14 @@ def _near(a, b, tol):
 
 
 def apply_pre_output_guards(match: dict) -> dict:
-    """Fail-safe output guard. First-set data remains valid for BO5; full-match BO3 does not."""
+    """Normalize format metadata without erasing canonical Current Engine markets."""
     m = dict(match)
     try:
         best_of = 5 if int(m.get("best_of") or 3) == 5 else 3
     except (TypeError, ValueError):
         best_of = 3
     m["best_of"] = best_of
-    if best_of == 5:
-        for key in ("match_win", "match_over_under", "expected_match_games", "total_sets", "exact_match_score"):
-            m[key] = None
-        m["bo5_guard_v78a"] = True
     return m
-
 
 def _sum100(name, obj, errors, tag):
     if not obj:
@@ -140,9 +135,18 @@ def check_match(match: dict):
     except (TypeError, ValueError):
         best_of = 3
     if best_of == 5:
-        for key in ("match_win", "match_over_under", "expected_match_games", "total_sets", "exact_match_score"):
-            if match.get(key) not in (None, {}, []):
-                errors.append(f"{tag}: BO5 guard — {key} powinno być N/D")
+        exact = match.get("exact_match_score")
+        if isinstance(exact, dict):
+            allowed_exact = {"3:0", "3:1", "3:2", "2:3", "1:3", "0:3"}
+            invalid_exact = sorted(str(key) for key in exact if str(key) not in allowed_exact)
+            if invalid_exact:
+                errors.append(f"{tag}: BO5 score-space ma niedozwolone exact_match_score: {invalid_exact}")
+        totals = match.get("total_sets")
+        if isinstance(totals, dict):
+            allowed_totals = {"3 sety", "4 sety", "5 sety"}
+            invalid_totals = sorted(str(key) for key in totals if str(key) not in allowed_totals)
+            if invalid_totals:
+                errors.append(f"{tag}: BO5 score-space ma niedozwolone total_sets: {invalid_totals}")
         serve = match.get("serve_props_v72") or {}
         if serve.get("ready"):
             errors.append(f"{tag}: BO5 guard — Serve Props BO3 nie może być READY")
@@ -177,7 +181,7 @@ def validate(results):
             "OVER monotonic by line",
             "game-state mass",
             "PBP clean-hold decomposition",
-            "BO5 fail-safe",
+            "BO5 score-space integrity",
         ],
     }
 
