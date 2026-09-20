@@ -33,6 +33,12 @@ TAB_OUTPUT_PATH = CACHE / "tabpfn_output.json"
 TAB_MODEL_CACHE = ROOT / "data" / "cache" / "tabpfn_models"
 DYNAMIC_TELEMETRY_PATH = OUT / "model_telemetry_v84c.json"
 DYNAMIC_WEIGHTS_VERSION = "v8.4D"
+PREDICTION_LEDGER_PATH = OUT / "prediction_ledger_shadow.json"
+
+try:
+    from . import prediction_ledger_shadow
+except ImportError:
+    import prediction_ledger_shadow
 
 try:
     from .dynamic_weights_v84d import (
@@ -1589,6 +1595,39 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         dynamic_telemetry=dynamic_telemetry,
     )
     dynamic_summary = _summarize_dynamic(decorated)
+    ledger_status = {
+        "mode": prediction_ledger_shadow.MODE,
+        "status": "SHADOW_CAPTURE_UNAVAILABLE",
+        "production_influence": False,
+        "learning_consumer_enabled": False,
+    }
+    try:
+        existing_ledger = _read(PREDICTION_LEDGER_PATH, {})
+        ledger_rows = prediction_ledger_shadow.capture_rows(
+            current_rows, current_probs, cat_probs, tab_probs,
+            now=now, producer_version=VERSION,
+            readiness_snapshot=meta.get("semantic_readiness_shadow"),
+        )
+        ledger_payload = prediction_ledger_shadow.merge_ledger(
+            existing_ledger, ledger_rows, now=now
+        )
+        _write(PREDICTION_LEDGER_PATH, ledger_payload)
+        ledger_status = {
+            "mode": prediction_ledger_shadow.MODE,
+            "status": ledger_payload.get("status"),
+            "rows": (ledger_payload.get("summary") or {}).get("rows", 0),
+            "captured_this_run": (ledger_payload.get("summary") or {}).get("captured_this_run", 0),
+            "production_influence": False,
+            "learning_consumer_enabled": False,
+        }
+    except Exception as exc:
+        ledger_status = {
+            "mode": prediction_ledger_shadow.MODE,
+            "status": "SHADOW_CAPTURE_ERROR",
+            "reason": type(exc).__name__,
+            "production_influence": False,
+            "learning_consumer_enabled": False,
+        }
     history, captured = _capture_frozen(history, decorated, now)
 
     # v8.4A.2 zmienia semantykę Current Engine z raw /100 na calibrated probability.
@@ -1616,6 +1655,7 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         "weights": {k: round(float(v), 3) for k, v in weights.items()},
         "weight_policy": weight_policy,
         "dynamic_weights": dynamic_summary,
+        "prediction_ledger_shadow": ledger_status,
         "game_state_tracking": {
             "version": GAME_STATE_TRACKING_VERSION,
             "checkpoints": [2, 4, 6],

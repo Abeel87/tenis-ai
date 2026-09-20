@@ -84,3 +84,9 @@ Negative cases: different candidate identity, missing challenger score, capture 
 ## Phase-0 decision
 
 Selection bias and population mismatch are proven. This audit **does not change behavior**. The next implementation phase must first add a prospective SHADOW-only frozen ledger capable of capturing ALL supported predictions before downstream selection, while preserving every existing learning/PROD path until common-set evidence is available. Existing historical layers remain evidence sources; they are not retroactively rewritten into a fictitious ALL population.
+
+## Phase-1 implementation handoff
+
+The prospective implementation owner is `backend/prediction_ledger_shadow.py`. Capture is wired at the canonical AutoLearn pre-selection boundary: after `_decorate_results()` makes Current/CatBoost/TabPFN scores available for supported candidates and before `_capture_frozen()` applies legacy tracking limits and generator selection. The first stable pre-match snapshot is append-only and tagged `ALL`; downstream PLAYABLE/Symphony/iNeed$ membership is intentionally N/D until a later exact-owner join.
+
+This phase does not feed model telemetry, dynamic weights, AutoLearn training, Adaptive Learning, PLAYABLE, Symphony, settlement or iNeed$. A ledger capture error is isolated as SHADOW evidence and must not stop the existing runtime.

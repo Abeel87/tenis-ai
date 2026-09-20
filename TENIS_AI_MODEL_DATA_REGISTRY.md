@@ -686,26 +686,21 @@ Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ---
 
-## LOGIC-09 — Learning Integrity / Prediction Ledger
+## LOGIC-09 ? Learning Integrity / Prediction Ledger
 
-**Status:** PHASE-0 COMPLETE — PR #414 merged; phase-1 prospective SHADOW ledger is next. Zero runtime/learning behavior change in phase 0.
+**Status:** PHASE-1 ACTIVE ? prospective SHADOW-only frozen ledger implemented locally on `logic-09-ledger-shadow-phase1`; PR/CI not yet complete. Phase-0 PR #414 and closeout PR #415 are merged.
 
-Phase-0 merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`.
+Phase-0 merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`; docs closeout PR #415 merged as `8cf20c7fd0249c84c64e6bdb87979b5db0b3197f`.
 
-Canonical owners and historical populations are mapped in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md`. Real settled evidence on audited main `57d5e9c037ae0cc4570e4c68f84a8006478de876` proves unequal comparison populations: Current/CatBoost have 12162 settled AutoLearn scores while TabPFN has 1532; the exact three-model intersection is therefore 1532. Legacy green history, AutoLearn, exact PLAYABLE, Symphony selection and iNeed$ SHADOW selection are separate populations with separate owners and must not be collapsed.
+Canonical owners and historical populations are mapped in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md`. Real settled evidence proves unequal comparison populations: Current/CatBoost have 12162 settled AutoLearn scores while TabPFN has 1532; the exact historical three-model intersection is 1532. Legacy green history, AutoLearn, exact PLAYABLE, Symphony selection and iNeed$ SHADOW selection remain separate populations.
 
-The future ledger contract is prospective and pre-match: stable match/candidate identity, capture time before start, owner/version, score/probability semantics, context/readiness provenance, explicit downstream selection facts and settlement key. Direct Current/CatBoost/TabPFN ranking is allowed only on an exact common settled intersection. No existing history is retroactively relabeled as ALL.
+Phase-1 canonical owner is `backend/prediction_ledger_shadow.py`. `backend/autolearn_v84.py` calls it only after `_decorate_results()` has frozen Current/CatBoost/TabPFN probabilities for the full supported candidate set and before `_capture_frozen()` applies legacy tracking/generator selection. The ledger is append-only SHADOW evidence in `frontend/data/prediction_ledger_shadow.json`; capture errors are isolated and cannot alter AutoLearn/PROD. Existing telemetry, dynamic weights, learning and downstream selection owners do not consume it.
 
+The phase-1 row contract is prospective and pre-match: stable match/candidate identity, strict `captured_at < scheduled_time`, owner/version, probability semantics, context digest, readiness reference, settlement key and explicit `ALL` population membership. Missing TabPFN remains unavailable. PLAYABLE/Symphony/iNeed$ selection facts remain N/D (`null`) until later exact-owner joins; they are never inferred from thresholds. No existing history is retroactively relabeled as ALL.
 
-Wprowadzić pełny, pre-match frozen ledger oraz wspólny zbiór porównawczy Current/CatBoost/TabPFN.
+Real current evidence at phase-1 implementation time: 115 visible matches; 1072 `build_current_rows()` candidates exactly equal 1072 published pre-selection AutoLearn signal identities; Current/CatBoost availability 1072, TabPFN/common intersection 300. A read-only prospective capture at `2026-09-20T07:57:04Z` produced 702 strict pre-start rows with TabPFN/common intersection 199.
 
-Oddzielić metryki:
-
-- ALL,
-- PLAYABLE,
-- SELECTED.
-
-Usunąć błędne porównania dopiero po udowodnieniu i migracji telemetryki.
+Next: merge phase-1 only after full GREEN CI and post-merge Update proof. Then design exact PLAYABLE/Symphony/iNeed$ selection joins and settled common-test-set evidence before any telemetry/weight/learning migration.
 
 ---
 

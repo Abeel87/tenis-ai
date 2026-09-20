@@ -31,33 +31,35 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger`
 
-**SUBSTEP:** phase-0 audit/source-of-truth contract is merged in PR #414. Active next step is phase-1 design/implementation of a prospective SHADOW-only frozen prediction ledger before any telemetry or learning migration.
+**SUBSTEP:** phase-1 prospective SHADOW-only frozen ledger implementation. Capture boundary is after AutoLearn score decoration and before legacy tracking/generator selection; existing learning/telemetry consumers remain unwired.
 
-**BRANCH:** `logic-09-phase0-closeout`, created from verified post-#414 `main` `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`.
+**BRANCH:** `logic-09-ledger-shadow-phase1`, created from verified `main` `8cf20c7fd0249c84c64e6bdb87979b5db0b3197f` (PR #415 phase-0 closeout merge).
 
-**PR:** phase-0 audit PR #414 is MERGED; current closeout docs branch has no PR yet.
+**PR:** none yet for phase-1. Phase-0 audit PR #414 and docs closeout PR #415 are MERGED.
 
-**LAST VERIFIED MAIN:** `d589b7204098fe285fe30ec66fbd6be96ee3f5a8` - merge of LOGIC-09 phase-0 audit PR #414.
+**LAST VERIFIED MAIN:** `8cf20c7fd0249c84c64e6bdb87979b5db0b3197f`. No open PRs at phase-1 start.
 
-**LAST COMPLETED WORK:** LOGIC-09 phase-0 audit PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`. Audit proved unequal model populations (Current/CatBoost 12162 settled AutoLearn scores vs TabPFN/common intersection 1532), mapped separate legacy-green/AutoLearn/PLAYABLE/Symphony/iNeed$ owners, and froze the prospective ledger/common-test-set contract with zero runtime behavior change.
+**LAST COMPLETED WORK:** LOGIC-09 phase-0 is closed. PR #414 mapped unequal historical populations and froze the prospective ledger/common-test-set contract; PR #415 closed the phase-0 docs. Phase-1 local implementation adds canonical owner `backend/prediction_ledger_shadow.py` and an additive capture call inside `backend/autolearn_v84.py` after `_decorate_results()` but before `_capture_frozen()`.
 
-**LOGIC-08 CLOSEOUT:** COMPLETE for the approved audit/SHADOW-observability scope. Sidecar delivery, exact-digest projection, R12/R13 metadata and R18/R19 admin/diagnostic presentation are merged and verified. Runtime/learning consumer migrations are not silently promoted: R07/R08/R11 move to LOGIC-09; R14 moves to LOGIC-10; R16 remains NO MIGRATION until an explicit UI behavior policy exists.
+**PHASE-1 CONTRACT:** append-only first pre-match snapshot per stable `match_key + candidate_key + producer_version`; strict `captured_at < scheduled_time`; population tag `ALL`; explicit Current/CatBoost/TabPFN availability; context digest + readiness reference; downstream generator/PLAYABLE/Symphony/iNeed$ selection remains `null` until separately joined from canonical owners. Ledger errors are SHADOW-only and cannot stop existing AutoLearn/PROD flow. No telemetry or learning consumer reads the ledger in this phase.
 
-**TEST / CI BASELINE:** LOGIC-09 phase-0 audit contract 9/9 GREEN; full pytest 1308/1308 GREEN; `git diff --check` GREEN. Current phase-0 diff is documentation + contract test only, with zero runtime/learning behavior changes. Last merged baseline remains LOGIC-08 closeout PR #413 on `57d5e9c037ae0cc4570e4c68f84a8006478de876`.
+**REAL-DATA EVIDENCE:** current 115-match snapshot exposes 1072 `build_current_rows()` candidates and exactly 1072 published pre-selection AutoLearn signals with identical key sets. Current/CatBoost availability is 1072/1072; TabPFN/common intersection is 300. At read-only prospective capture time `2026-09-20T07:57:04Z`, 702 rows were still strictly pre-start; Current/CatBoost availability 702, TabPFN/common intersection 199; PLAYABLE/SELECTED remain N/D (`null`).
 
-**BLOCKERS:** no phase-0 blocker. Telemetry/learning migration remains intentionally blocked until phase-1 prospective SHADOW ledger evidence exists; current historical populations must not be retroactively relabeled as ALL.
+**TEST / CI BASELINE:** phase-1 targeted ledger + AutoLearn + phase-0 integrity contracts **27/27 GREEN**; `py_compile` and `git diff --check` GREEN. Full pytest and PR CI are still required before merge.
 
-**DO NOT REDO:** do not repeat LOGIC-00..08, the readiness sidecar/digest work, the 21-file consumer inventory, the 22-token/19-line matrix, R12/R13 or R18/R19 without evidence of regression. Do not remove/redefine legacy `model_ready` as part of LOGIC-09. Do not treat PBP `market_ready`, Symphony `learning_model_ready`, Superbet availability or PLAYABLE as semantic readiness.
+**BLOCKERS:** no local phase-1 blocker. Historical data is not retroactively relabeled as ALL. PLAYABLE/Symphony/iNeed$ selection joins, settlement enrichment and any telemetry/weight/learning migration remain blocked until prospective evidence exists and exact owner joins are designed.
+
+**DO NOT REDO:** do not repeat LOGIC-00..08 or LOGIC-09 phase-0 without evidence of regression. Do not replace legacy AutoLearn frozen history, telemetry, dynamic weights, PLAYABLE, Symphony or iNeed$ with the phase-1 ledger. Do not infer missing TabPFN, PLAYABLE or selected state.
 
 **RISKS / HARD BANS:** zero changes to Current Engine math, probability, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia, Neuron, PLAYABLE, settlement, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider-ID namespace guessing or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Merge this phase-0 closeout docs update after normal GREEN CI.
-2. Fresh-check `main` and create a separate LOGIC-09 phase-1 branch from that exact SHA.
-3. Audit the canonical pre-selection producer boundary and add positive/negative tests for a prospective SHADOW-only frozen ledger; do not change existing learning/telemetry consumers.
-4. Implement only the minimal prospective capture needed to freeze supported predictions before downstream selection, with strict `captured_at < scheduled_time`, stable match/candidate identity, owner/version and provenance.
-5. Produce common-intersection Current/CatBoost/TabPFN SHADOW evidence and explicit ALL / PLAYABLE / SELECTED labels before proposing any telemetry/weight/learning migration.
+1. Finish phase-1 local validation: targeted suite, full pytest, `py_compile`, `git diff --check`, and forbidden-path diff audit.
+2. Fresh-check `main`; audit/rebase any bot drift before commit.
+3. Commit/push `logic-09-ledger-shadow-phase1`, open PR and require full exact-head CI GREEN.
+4. Post-merge run/observe one normal Update and verify `prediction_ledger_shadow.json` is published append-only with strict pre-start rows while all existing learning/telemetry outputs remain unchanged in ownership.
+5. Only after prospective evidence exists, design the next LOGIC-09 phase for exact PLAYABLE/Symphony/iNeed$ selection joins and settled common-test-set evidence; do not migrate telemetry/weights/learning yet.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
