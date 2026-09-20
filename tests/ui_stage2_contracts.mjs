@@ -12,13 +12,15 @@ assert.equal(presentation.key({p1:'A',p2:'B',scheduled_time:'2099-01-01'}),null,
 assert.equal(presentation.key({id:'match-1',match_id:'other'}),null,'Conflicting canonical IDs must fail closed');
 assert.deepEqual(Array.from(presentation.routableRows([{id:'ok'},{p1:'A',p2:'B',scheduled_time:'2099-01-01'},{id:'x',match_id:'y'}]),x=>x.id),['ok'],'Only rows with exactly one canonical identity may enter current routes');
 const past={p1:'SILVA, JOAO',p2:'Zuk, Lukasz',scheduled_time:'2020-01-01',result:{winner:'Łukasz Żuk',score_text:'4-6 4-6'}};
-assert.equal(d.historyRows([past],fixture,'p1',true).length,1);
+const exactPast={...past,p1_id:20,p2_id:10};
+assert.equal(d.historyRows([past],fixture,'p1',true).length,0,'Name-only history must stay unassociated / N/D');
+assert.equal(d.historyRows([exactPast],fixture,'p1',true).length,1,'Canonical player IDs may associate H2H even with reversed sides');
 assert.equal(d.winnerSide(past),'p2');
-assert.equal(d.historyRows([{...past,p1_id:99,p2_id:10}],fixture,'p1',true).length,0,'Conflicting IDs override similar names');
-assert.equal(d.historyRows([{...past,p1:'J. Silva'}],fixture,'p1',true).length,0,'No guesses based on initials');
-assert.equal(d.historyRows([{...past,scheduled_time:'2100-01-01'}],fixture,'p1',true).length,0);
-assert.equal(d.historyRows([past,past],fixture,'p1',true).length,1);
-assert.equal(d.historyRows([{...past,result:null}],fixture,'p1',true).length,0);
+assert.equal(d.historyRows([{...past,p1_id:99,p2_id:10}],fixture,'p1',true).length,0,'Partial/conflicting IDs must not fall back to names');
+assert.equal(d.historyRows([{...exactPast,p1:'Alias B',p2:'Alias A'}],fixture,'p1',true).length,1,'Canonical IDs, not player-name spelling, own the association');
+assert.equal(d.historyRows([{...exactPast,scheduled_time:'2100-01-01'}],fixture,'p1',true).length,0);
+assert.equal(d.historyRows([exactPast,exactPast],fixture,'p1',true).length,1);
+assert.equal(d.historyRows([{...exactPast,result:null}],fixture,'p1',true).length,0);
 assert.equal(d.assessment({...fixture,match_win:{'Łukasz Żuk':60}}).p,null,'Never generate missing complement');
 assert.equal(d.assessment({...fixture,match_win:{'Łukasz Żuk':60,'João Silva':40}}).winner,'p1');
 assert.equal(d.comparison({...fixture,p1_rank:150,p2_rank:100})[0].winner,'p2');
@@ -37,5 +39,7 @@ for(const [values,trend] of [[[.3,.5,.6],'rosnący'],[[.6,.5,.3],'spadkowy'],[[.
  assert.equal(d.form(m,'p1').trend,trend);
 }
 const fixtures=JSON.parse(fs.readFileSync('frontend/data/results.json')),history=JSON.parse(fs.readFileSync('frontend/data/history.json'));
-let found=0;for(const m of fixtures){const rows=d.historyRows(history,m,'p1',true);found+=rows.length;assert(rows.every(r=>Date.parse(r.scheduled_time)<Date.parse(m.scheduled_time)))}
-console.log('PASS Stage 2: identity, missing values, published probabilities, trends; real prior H2H rows:',found);
+const detailHistory=JSON.parse(fs.readFileSync('frontend/data/match_detail_history.json'))?.matches||[];
+let found=0,safeArchive=0;for(const m of fixtures){const rows=d.historyRows(history,m,'p1',true);found+=rows.length;assert(rows.every(r=>Date.parse(r.scheduled_time)<Date.parse(m.scheduled_time)));const archiveRows=d.historyRows(detailHistory,m,'p1',true);safeArchive+=archiveRows.length;assert(archiveRows.every(r=>r.p1_id!=null&&r.p2_id!=null),'Published H2H association must carry canonical player IDs')}
+assert.equal(found,0,'Name-only settled history must not fabricate current-player H2H');
+console.log('PASS Stage 2: identity, missing values, published probabilities, trends; name-only H2H:',found,'canonical archive H2H:',safeArchive);
