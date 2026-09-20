@@ -31,35 +31,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger`
 
-**SUBSTEP:** phase-2 exact downstream selection evidence is MERGED and post-merge verified. Phase-3 immutable settlement/common-set SHADOW is active in PR #420. No telemetry/weight/learning/runtime migration is approved.
+**SUBSTEP:** phases 0-3 infrastructure are MERGED and post-merge verified. Prospective exact common-set evidence collection is active; common binary settled sample is still `n=0`. No telemetry/weight/learning/runtime migration is approved.
 
-**BRANCH:** `logic-09-phase3-settlement-shadow`, created from verified bot-published main `0bb7613322ce77bfafcb551bcb7dcb960fd6dda0`.
+**BRANCH:** `logic-09-phase3-closeout`, based on fresh main `e2d6a124325e449535c191abdd8a2feb3842e04a` after auditing the intervening data-only Superbet refresh.
 
-**PR:** #420 is OPEN. Phase-2 audit PR #418 and phase-2 implementation PR #419 are MERGED and verified. Phase-0/#414/#415 and phase-1/#416 remain completed.
+**PR:** phase-3 implementation PR #420 is MERGED. This branch is documentation-only closeout; no parallel runtime implementation exists.
 
-**LAST VERIFIED MAIN:** `1452d65276f7a809a99bb9e98985b600454cf6fe` - one data-only `Player DNA SHADOW` refresh on top of `0bb7613...`; drift audited as SHADOW payload-only before rebasing #420. Re-check live GitHub again immediately before merge.
+**LAST VERIFIED MAIN:** `e2d6a124325e449535c191abdd8a2feb3842e04a` - bot commit `data: refresh Superbet market context` on top of phase-3 publication `a3c9b6e8338e3fa5ca3da7edd432700e720e74bf`. Drift from `a3c9b6e8...` is generated data only and does not touch Prediction Ledger owners or closeout docs.
 
-**LAST COMPLETED WORK:** PR #418 merged the exact downstream join/common-set audit as `fe368f7308ef667be90fecb1c7dff09d47cca626`. PR #419 merged the additive exact PLAYABLE/Symphony selection sidecar as `480994ef0ba3beae3358e91bb9ee41e75b5d3ae5`. Normal Update #808 completed SUCCESS through selection sidecar generation/guard, final full regression, commit/push and Pages deployment; bot publication moved main to `0bb7613322ce77bfafcb551bcb7dcb960fd6dda0`.
+**LAST COMPLETED WORK:** PR #420 merged as `bf959fa23f83025851a5b6db8a329d6443836547` after exact-head 7/7 GREEN CI. Normal post-merge Update #809 completed SUCCESS: canonical settlement #25 GREEN; selection sidecar #67/#68 GREEN; phase-3 settlement common-set #69 GREEN; dedicated phase-3 guard #70 GREEN; Symphony guards #71/#72 GREEN; final full regression #75 GREEN; refreshed JSON commit #77 GREEN; Pages build/upload/deploy GREEN. Bot publication moved main to `a3c9b6e8338e3fa5ca3da7edd432700e720e74bf`, followed only by the audited data-only Superbet refresh `e2d6a124...`.
 
-**PHASE-2 PUBLISHED EVIDENCE:** `prediction_ledger_selection_shadow.json` on main contains `ALL=2143`, exact positive `PLAYABLE=443`, exact positive `SYMPHONY_SELECTED=2`; Current+CatBoost+TabPFN common intersection `187`, common+PLAYABLE `73`, common+Symphony `2`, common+both `2`. Missing downstream evidence stays `N/D`; iNeed$ remains `N/D` because no local prospective owner proves exact identity + pre-match placement chronology.
+**PHASE-3 PUBLISHED EVIDENCE:** `frontend/data/prediction_ledger_settlement_shadow.json` schema `prediction-ledger-settlement-shadow-v1`, mode `SHADOW_ONLY`, generated `2026-09-20T11:04:27.100753+00:00`. Published rows `2460`; exact history match keys `1488`; settlement results `hit=0`, `miss=0`, `void=0`, `N/D=2460`; exact Current+CatBoost+TabPFN common rows `220`; common binary settled `0`; common void `0`; status `NO_SETTLED_COMMON_ROWS`. Population reports: `ALL rows=2460/common=220`; exact `PLAYABLE rows=585/common=83`; exact `SYMPHONY_SELECTED rows=2/common=2`; exact `PLAYABLE_AND_SYMPHONY rows=2/common=2`; every population has binary settled `0`. Missing evidence remains `N/D`, not false/zero.
 
-**PHASE-3 AUDIT / LOCAL FROZEN EVIDENCE:** canonical terminal result owner is `backend/live_history_settle.py`; canonical candidate scorer is `backend/signal_settlement.py::settle_signal_live`. PR #420 adds only an additive SHADOW consumer/output. Exact join requires numeric Live Tennis `id:<match_id>`, unique matching history row, exact scheduled-time agreement, terminal state, valid post-start `settled_at`, source/version provenance and the existing scorer. Real frozen snapshot on base `0bb7613...`: 2143 ledger rows, 1486 exact history match keys, 187 three-model common rows, 443 PLAYABLE/73 common, 2 Symphony/2 common. Current prospective settlement result is correctly `N/D` for all 2143 rows (`hit=0`, `miss=0`, `void=0`) because no prospective common rows have matured into canonical settlement yet.
+**ISOLATION / OWNERS:** canonical terminal result owner remains `backend/live_history_settle.py`; canonical candidate scorer remains `backend/signal_settlement.py::settle_signal_live`; phase-3 consumer is `backend/prediction_ledger_settlement_shadow.py`. Published sidecar confirms `network_fetch_enabled=false`, `source_ledger_mutated=false`, `production_influence=false`, `runtime_gating_enabled=false`, `learning_consumer_enabled=false`, `telemetry_consumer_enabled=false`, `auto_promote=false`.
 
-**CURRENT PR #420 IMPLEMENTATION:** new owner `backend/prediction_ledger_settlement_shadow.py`; output `frontend/data/prediction_ledger_settlement_shadow.json`; zero network fetches, zero source-ledger mutation, zero runtime/learning/telemetry/auto-promotion influence. `game_state` remains canonical `unverifiable`; no checkpoint is reconstructed from final scores. Binary metrics use only exact common Current+CatBoost+TabPFN rows with `hit/miss`; `void` is excluded. Model ranking/winner selection is disabled.
+**CHANGED FILES FOR CLOSEOUT:** `TENIS_AI_EXECUTION_CHECKLIST.md`, `TENIS_AI_MODEL_DATA_REGISTRY.md` only. `ARCHITECTURE.md` already describes the merged phase-3 owner and isolation contract and requires no status-only rewrite.
 
-**BLOCKERS:** no implementation blocker is known. Evidence maturity is the only current limitation: common binary settled sample is `n=0`. This must grow naturally through the normal existing settlement pipeline. Do not manufacture a sample by retroactive predictions, fuzzy joins, nearest lines/times, provider-ID guessing or changed settlement rules.
+**TEST STATUS:** no runtime/model code changes in this closeout. Phase-3 implementation unit/snapshot tests and full regression already passed on PR #420 and post-merge Update #809. Documentation diff must remain scope-only and contract-consistent.
 
-**DO NOT REDO:** do not repeat LOGIC-00..08 or LOGIC-09 phases 0-2 unless a concrete regression is proven. Do not replace legacy AutoLearn history, production settlement, model telemetry, dynamic weights, PLAYABLE, Symphony or iNeed$ with ledger sidecars. Do not infer missing selection/settlement evidence as false/zero.
+**CI STATUS:** implementation PR #420 exact-head CI 7/7 GREEN; post-merge Delivery/Security, CodeQL and UI & Project Health GREEN; Update #809 including Pages GREEN.
+
+**BLOCKERS:** no implementation blocker. Evidence maturity is the only blocker for model comparison: common binary settled sample is `n=0`. It must grow naturally through the existing prospective ledger + canonical settlement pipeline. Do not manufacture rows by retroactive predictions, fuzzy joins, nearest lines/times, provider-ID guessing, changed settlement semantics or manual backfill.
+
+**DO NOT REDO:** do not repeat LOGIC-00..08 or LOGIC-09 phases 0-3 infrastructure unless a concrete regression is proven. Do not replace legacy AutoLearn history, production settlement, telemetry, dynamic weights, PLAYABLE, Symphony or iNeed$ with ledger sidecars. Do not infer missing selection/settlement evidence as false/zero.
 
 **RISKS / HARD BANS:** zero changes to Current Engine math, probability, thresholds, weights, training, Player DNA PROD, Surface Elo, Symfonia, Neuron, PLAYABLE, production settlement semantics, SHADOW->PROD or iNeed$ calculations without separate authorization. No fuzzy identity, manual aliases, provider namespace guessing, post-start prediction reconstruction or real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Finish PR #420: keep exact settlement/common-set sidecar SHADOW-only, update registry/checkpoint/architecture, and require all exact-head CI GREEN.
-2. Immediately before merge re-check live `main`; if bot/workflow moved it, assess drift, refresh the PR onto fresh main and rerun full required CI.
-3. Merge #420 only after all required checks are GREEN.
-4. Verify post-merge normal Update on main generates `prediction_ledger_settlement_shadow.json`, its dedicated guard passes, final full regression passes and published data remains isolation-safe.
-5. Read the published sidecar. If common binary settled remains `n=0`, continue prospective collection through normal settlement and do not force/backfill it. When exact common `hit/miss` rows appear naturally, report factual common-set coverage/Brier/log-loss/accuracy by population; do not rank/promote models or migrate telemetry/weights without a later explicitly authorized phase.
+1. Keep normal prospective collection running through the existing Update/history settlement pipeline; make no code change solely to force sample growth.
+2. On a later normal published refresh, read `prediction_ledger_settlement_shadow.json`. If `common_binary_settled` is still `0`, record that fact and continue collection; do not backfill/recompute.
+3. When exact common `hit/miss` rows appear naturally, report factual common-set coverage plus Brier/log-loss/accuracy on the identical Current/CatBoost/TabPFN intersection, separately for `ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED` and their exact intersection. `void` remains excluded from binary metrics.
+4. Do not rank/promote models, migrate telemetry/dynamic weights, invent a minimum sample threshold or activate ledger evidence in runtime without a later explicitly authorized phase.
+5. Walk-forward and market-specific comparisons remain pending until the prospective common sample is large enough to make those audits meaningful; evidence maturity, not code, is the current gate.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -314,7 +318,7 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 
 ## LOGIC-09 - Learning Integrity / Prediction Ledger
 
-Status: `[~] ACTIVE - phases 0-2 merged/verified; phase-3 immutable settlement/common-set SHADOW in PR #420`
+Status: `[~] ACTIVE - phases 0-3 infrastructure merged/post-merge verified; prospective common-set evidence collection active (binary n=0)`
 
 Cel: modele uczą się i są porównywane na uczciwej, identycznej próbce prospective evidence.
 
@@ -323,16 +327,16 @@ Cel: modele uczą się i są porównywane na uczciwej, identycznej próbce prosp
 - [x] Phase-1: zapisywać wszystkie wspierane pre-match predictions przed selection gate w immutable append-only `prediction_ledger_shadow.json` (PR #416).
 - [x] Phase-2 audit: exact owner/identity/chronology contracts dla PLAYABLE, Symphony i iNeed$ bez fuzzy/backfill (PR #418).
 - [x] Phase-2 implementation: addytywny exact PLAYABLE/Symphony selection sidecar; brak dowodu = `N/D`; iNeed$ pozostaje N/D (PR #419 + Update #808).
-- [~] Oddzielić populacje `ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED` i ich intersection; `GENERATOR_SELECTED`/`INEED_SELECTED` dopiero po istnieniu kanonicznego prospective owner evidence.
-- [~] Wspólny settled common test set Current/CatBoost/TabPFN: phase-3 infrastructure/owner contract w PR #420; real frozen snapshot ma common=187, ale common binary settled `n=0`, więc brak jeszcze próbki do porównania.
-- [ ] Zebrać naturalnie dojrzewające exact common `hit/miss` rows przez normalny settlement; zero retroactive prediction/backfill.
+- [x] Oddzielone i opublikowane populacje `ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED` oraz exact `PLAYABLE_AND_SYMPHONY`; `GENERATOR_SELECTED`/`INEED_SELECTED` pozostaj? jawnie niedost?pne do czasu istnienia ich kanonicznego prospective owner evidence.
+- [x] Wsp?lny settled common test set Current/CatBoost/TabPFN ma zako?czon? infrastruktur? phase-3: PR #420 merged jako `bf959fa23f83025851a5b6db8a329d6443836547`; post-merge Update #809, dedicated guard, final regression i Pages GREEN. Published snapshot: rows=2460, common=220, PLAYABLE=585/common=83, Symphony=2/common=2, common binary settled `n=0`.
+- [~] Zbiera? naturalnie dojrzewaj?ce exact common `hit/miss` rows przez normalny settlement; obecnie `n=0`, zero retroactive prediction/backfill/recompute.
 - [ ] Walk-forward split bez leakage na prospective common set, gdy próbka będzie wystarczająca do sensownego audytu.
 - [ ] Brier/log-loss/calibration/accuracy na identycznej próbce i osobno per population/market po pojawieniu się settled common rows.
 - [ ] Market-specific metrics na tej samej exact prospective population.
 - [ ] Audyt/migracja telemetryki i usunięcie selection bias dopiero po zebraniu evidence i osobnej autoryzacji.
 - [ ] Nie zmieniać wag ensemble ani SHADOW->PROD przed wynikami audytu i jawną decyzją właściciela.
 
-**Definition of Done:** wagi i oceny modeli wynikają z porównywalnych prospective danych; brak dowodu przewagi nie uruchamia promocji.
+**Definition of Done:** wagi i oceny modeli wynikaj? z por?wnywalnych prospective danych; brak dowodu przewagi nie uruchamia promocji. Infrastructure phases 0-3 s? kompletne, ale pe?ny LOGIC-09 DoD nie jest spe?niony przy common binary settled `n=0`.
 ---
 
 ## LOGIC-10 — Guard Ownership / Dead Logic Audit
