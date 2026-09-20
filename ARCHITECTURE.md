@@ -43,6 +43,10 @@ PLAYABLE jest warstwą fail-closed: brak zweryfikowanego operator context, brak 
 
 Historia PLAYABLE przechowuje wyłącznie zamrożone selekcje operatorowo zweryfikowane. Brak score nie jest interpretowany jako `0`.
 
+### iNeed$ Bet Builder SHADOW contract
+
+Current production iNeed$ remains single-leg economics in `backend/ineed_money.py`. `backend/ineed_builder_shadow.py` is an additive, non-runtime LOGIC-12 contract owner for the future final Bet Builder economic unit: it consumes only final `symphony2_playable`, preserves upstream joint probability, requires canonical match/operator leg identity, and accepts only an exact verified + fresh operator combined quote. It never synthesizes combined odds from leg prices and does not compute EV/Kelly/stake/settlement or execute bets.
+
 ## 4. Frontend
 
 The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.
