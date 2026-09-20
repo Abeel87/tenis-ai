@@ -186,3 +186,15 @@ R16 moderator problem filtering remains byte-for-byte legacy in behavior (`probl
 Player DNA workflow-run `35463366219` completed SUCCESS and published main `5869372e4a9af1d409ff5f0770598e1576b0f664` on top of Superbet refresh `d87bd3cbeeaaf0f0cc4572d7fcbb3e6d8c20edb3`. Independent canonical digest verification found current `results.json` digest `d1a1315452e34308168465c890673b0ca53bb92fb36d7b5ab5a1b0a92ab5873f` while the published readiness sidecar references `63fc116666b67f6ea0051ccefcc044dec03ebfad93c12dd6790fbdb03b5b2c4f`. This is expected stale-snapshot evidence caused by Superbet changing `results.json` during the long Player DNA run; it is not eligible as current telemetry. `meta.semantic_readiness_shadow` remains `N/D / RESULTS_SNAPSHOT_MISMATCH`, proving the exact-digest projection contains the race safely.
 
 The R18/R19 branch was stashed, cleanly rebased from `4911831d...` to `5869372e...`, and restored with **zero overlap** between branch files and drift files (all drift was `frontend/data/**`). Next exact action: rerun full post-rebase validation, fresh-check main, then commit/push/open PR and require full exact-head GREEN CI before merge.
+
+## Final closeout - R18/R19 merged and LOGIC-08 complete
+
+PR #412 final head `4a6895672fa3783c18015470f8c8ade6c3373155` merged as `f9c4f000600e4b24c863488fdf9814f3d6a968d6`. Exact-head required CI was fully GREEN, including Player DNA SHADOW refresh `35465731067`, Point Tape Schema Audit `35465731059`, Tenis AI UI & Project Health `35465731093`, Delivery/Security `35465731052`, CodeQL `35465731078` and LOGIC-01..04.
+
+Post-merge verification on exact merge SHA also completed SUCCESS: Fast frontend deploy `35495378715`, Delivery/Security `35495378694`, CodeQL `35495378755`, and UI/Project Health `35495378723`. The post-merge UI smoke exercised the normal production N/D state plus synthetic exact-aligned `available=true` and explicit N/D fixtures.
+
+R18/R19 is additive presentation only. Admin overview shows backend-owned `dimension_state_totals`; diagnostics show backend-owned per-dimension READY/NOT_READY/UNKNOWN counts. The frontend never builds semantic readiness or an overall-ready match count. Malformed dimension counts fail closed in the canonical backend projection as `READINESS_DIMENSION_COUNTS_INVALID`. Legacy `Modele gotowe`, moderator R16 `problem || !m.model_ready`, PLAYABLE, model probability and learning gates remain unchanged.
+
+The temporary finalization freeze is closed and all six data/refresher workflows are restored to `active`.
+
+LOGIC-08 is complete for its approved audit/SHADOW-observability scope. Runtime/learning migrations R07/R08/R11 explicitly continue under LOGIC-09; R14 guard ownership continues under LOGIC-10. The next task is a read-only LOGIC-09 inventory of prediction producers, frozen pre-match evidence, ALL/PLAYABLE/SELECTED populations, settlement joins and telemetry consumers before defining a prediction-ledger contract.
