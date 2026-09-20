@@ -110,9 +110,8 @@ function buildRows(m){
   }));
   const yesNo=(market,label,x)=>{
     const yes=number(x?.yes??x),no=number(x?.no);
-    if(yes==null)return;
-    add({category:'special',market,label,pick:'yes',displayPick:'TAK',lab:yes});
-    add({category:'special',market,label,pick:'no',displayPick:'NIE',lab:no??(yes<=100?100-yes:null)});
+    if(yes!=null)add({category:'special',market,label,pick:'yes',displayPick:'TAK',lab:yes});
+    if(no!=null)add({category:'special',market,label,pick:'no',displayPick:'NIE',lab:no});
   };
   yesNo('set1_exact_six_games','Dokładnie 6 gemów 1S',lab.set1_exact_six_games);
   yesNo('set1_tiebreak','Tie-break 1S',lab.set1_tiebreak);
