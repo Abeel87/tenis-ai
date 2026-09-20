@@ -1,6 +1,6 @@
-# LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW — Phase 1 audit
+# LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW — Phase 1-2 audit
 
-Status: **SHADOW CONTRACT ONLY**
+Status: **SHADOW CONTRACT + PRE-PRICED OPERATOR QUOTE PROOF**
 
 Base audited: `53036abdaa586cfda5b4198b489751abe583abec`.
 
@@ -83,3 +83,33 @@ The next phase may build an additive quote adapter only after proving how the
 operator exposes an exact combined Bet Builder price for the exact composition.
 If that proof is unavailable, the correct result is N/D / NO BET, not a
 synthetic product of leg odds.
+
+## Phase-2 exact operator quote proof
+
+Base audited: `123d1d809a5648bb06ee6ab596a7de43510d49f0`.
+
+The same public event JSON already used by Superbet Direct exposes operator-
+priced combination rows under `marketId=238733`. These rows are a curated
+`superbets` catalogue, not proof that any arbitrary Bet Builder composition can
+be priced. Every accepted row must be active, tagged `superbets`, have a
+positive operator price and at least two unique `oddComponents[].UUID` values.
+
+Across the 13 currently verified Direct events the live read-only audit found
+1530 accepted pre-priced combinations with zero fetch failures: 1198 two-leg,
+143 three-leg and 189 four-leg rows. All 1530 carried explicit component UUIDs.
+
+`oddComponents[].UUID` matches the raw single-selection `uuid` in the same
+event payload, so no text/fuzzy join is required. Phase 2 maps each Symphony
+leg through the existing fail-closed Direct signature resolver to exactly one
+operator selection UUID, then accepts a combined quote only when exactly one
+pre-priced row has the identical UUID set. Order is irrelevant; subsets,
+duplicates, wrong event/operator/kind, stale snapshot or ambiguity fail closed.
+
+Aligned live proof from one fresh payload per relevant event: 33 final
+PLAYABLE compositions, 4 present in verified Direct, 2 with every leg mapped
+to an exact operator UUID, and 0 with an identical pre-priced operator
+combination. Therefore current builder combined odds remain N/D / NO BET.
+
+Phase 2 adds no runtime wiring. It does not prove a dynamic quote endpoint for
+arbitrary Bet Builder compositions and does not change EV, Kelly, stake,
+bankroll reservation, settlement, PLAYABLE, Symphony probability or execution.

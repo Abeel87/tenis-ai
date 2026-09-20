@@ -563,6 +563,92 @@ def parse_visible_offer_text(
 EVENT_API_HOST = "production-superbet-offer-pl.freetls.fastly.net"
 COMBINATION_MARKET_ID = 238733
 EVENT_JSON_SOURCE = "superbet_direct_public_event_json"
+SUPERBETS_QUOTE_KIND = "SUPERBETS_PREPRICED_COMBINATION"
+
+
+def _superbets_tagged(odd: dict) -> bool:
+    extra = odd.get("extra") if isinstance(odd.get("extra"), dict) else {}
+    return str(extra.get("tag") or "").casefold() == "superbets" or bool(extra.get("superbets"))
+
+
+def parse_event_combination_quotes(payload: object, *, event_id: str | None = None, observed_at: str | None = None) -> dict:
+    event = _event_record(payload, event_id)
+    resolved = str((event or {}).get("eventId") or event_id or "") or None
+    quotes = []
+    if isinstance(event, dict):
+        for odd in event.get("odds") or []:
+            if not isinstance(odd, dict):
+                continue
+            if int(odd.get("marketId") or 0) != COMBINATION_MARKET_ID:
+                continue
+            if str(odd.get("status") or "").casefold() != "active" or not _superbets_tagged(odd):
+                continue
+            components = odd.get("oddComponents")
+            if not isinstance(components, list) or len(components) < 2:
+                continue
+            ids = [str(x.get("UUID") or "").strip() for x in components if isinstance(x, dict)]
+            if len(ids) != len(components) or any(not x for x in ids) or len(set(ids)) != len(ids):
+                continue
+            price = _float_token(odd.get("price"))
+            if price is None or price <= 1.0 or not observed_at:
+                continue
+            quotes.append({
+                "operator": "superbet.pl",
+                "quote_kind": SUPERBETS_QUOTE_KIND,
+                "source_event_id": resolved,
+                "operator_market_id": COMBINATION_MARKET_ID,
+                "operator_outcome_id": odd.get("outcomeId"),
+                "operator_selection_id": odd.get("uuid"),
+                "component_selection_ids": ids,
+                "component_count": len(ids),
+                "combined_odds": float(price),
+                "operator_verified": True,
+                "freshness_verified": True,
+                "odds_timestamp": str(observed_at),
+                "observed_at": str(observed_at),
+                "source": EVENT_JSON_SOURCE,
+                "raw_label": odd.get("marketName") or odd.get("name"),
+            })
+    return {
+        "mode": "READ_ONLY_PUBLIC_SUPERBET_PREPRICED_COMBINATIONS",
+        "operator": "superbet.pl",
+        "source_event_id": resolved,
+        "observed_at": str(observed_at) if observed_at else None,
+        "quotes": quotes,
+        "quotes_count": len(quotes),
+        "status": "OK" if quotes else "NO_EXACT_PREPRICED_COMBINATIONS",
+        "production_influence": False,
+        "playable_influence": False,
+        "symphony_influence": False,
+        "ineed_runtime_influence": False,
+    }
+
+
+def exact_combination_quote(quotes: list[dict], component_selection_ids: list[str], *, event_id: str) -> dict | None:
+    wanted = [str(x or "").strip() for x in component_selection_ids]
+    if len(wanted) < 2 or any(not x for x in wanted) or len(set(wanted)) != len(wanted):
+        return None
+    wanted_set = set(wanted)
+    hits = []
+    for quote in quotes or []:
+        if not isinstance(quote, dict):
+            continue
+        ids = [str(x or "").strip() for x in (quote.get("component_selection_ids") or [])]
+        if len(ids) != len(wanted) or len(set(ids)) != len(ids) or set(ids) != wanted_set:
+            continue
+        if str(quote.get("source_event_id") or "") != str(event_id):
+            continue
+        if quote.get("operator") != "superbet.pl" or quote.get("quote_kind") != SUPERBETS_QUOTE_KIND:
+            continue
+        if quote.get("operator_verified") is not True or quote.get("freshness_verified") is not True:
+            continue
+        if not quote.get("odds_timestamp") or not quote.get("source"):
+            continue
+        price = _float_token(quote.get("combined_odds"))
+        if price is None or price <= 1.0:
+            continue
+        hits.append(dict(quote))
+    return hits[0] if len(hits) == 1 else None
 
 
 def _event_stub_from_url(url: str) -> dict | None:

@@ -47,6 +47,8 @@ Historia PLAYABLE przechowuje wyłącznie zamrożone selekcje operatorowo zweryf
 
 Current production iNeed$ remains single-leg economics in `backend/ineed_money.py`. `backend/ineed_builder_shadow.py` is an additive, non-runtime LOGIC-12 contract owner for the future final Bet Builder economic unit: it consumes only final `symphony2_playable`, preserves upstream joint probability, requires canonical match/operator leg identity, and accepts only an exact verified + fresh operator combined quote. It never synthesizes combined odds from leg prices and does not compute EV/Kelly/stake/settlement or execute bets.
 
+Phase 2 keeps that path non-runtime and adds read-only operator quote provenance: `backend/superbet_direct.py` may parse active pre-priced `superbets` rows (`marketId=238733`) from the same public event JSON. `oddComponents[].UUID` is matched only to exact Direct selection UUIDs; exactly one identical component set is required. A pre-priced catalogue row is not a dynamic quote for arbitrary Bet Builder legs, and absence of an exact row remains N/D / NO BET.
+
 ## 4. Frontend
 
 The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.

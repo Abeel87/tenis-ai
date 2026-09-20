@@ -12,6 +12,13 @@ from copy import deepcopy
 import hashlib
 import json
 
+try:
+    from .ineed_money import direct_quote
+    from .superbet_direct import exact_combination_quote
+except ImportError:
+    from ineed_money import direct_quote
+    from superbet_direct import exact_combination_quote
+
 OPERATOR = "superbet.pl"
 FINAL_AUTHORITY = "SYMPHONY2_FINAL_PLAYABLE"
 QUOTE_KIND = "BET_BUILDER_COMBINED"
@@ -102,6 +109,57 @@ def build_shadow_composition(match: dict) -> dict | None:
         "combined_price_provenance": None,
         "economic_ready": False,
         "automatic_real_betting": False,
+    }
+
+
+def resolve_prepriced_combined_quote(composition: dict, direct: dict, catalog: dict) -> dict | None:
+    if not all(isinstance(x, dict) for x in (composition, direct, catalog)):
+        return None
+    match_id = _text(composition.get("match_id"))
+    direct_ts = _text(direct.get("generated_at"))
+    catalog_ts = _text(catalog.get("observed_at"))
+    if not match_id or not direct_ts or catalog_ts != direct_ts:
+        return None
+
+    matches = []
+    for row in direct.get("matches") or []:
+        if not isinstance(row, dict):
+            continue
+        row_id = row.get("match_id") if row.get("match_id") is not None else row.get("id")
+        if _text(row_id) == match_id and row.get("direct_match_verified") is True:
+            matches.append(row)
+    if len(matches) != 1:
+        return None
+    event_id = _text(matches[0].get("event_id"))
+    if not event_id or _text(catalog.get("source_event_id")) != event_id:
+        return None
+
+    component_ids = []
+    for leg in composition.get("legs") or []:
+        resolved = direct_quote(direct, match_id, leg)
+        selection_id = _text((resolved or {}).get("operator_selection_id"))
+        if not selection_id:
+            return None
+        component_ids.append(selection_id)
+    if len(component_ids) < 2 or len(set(component_ids)) != len(component_ids):
+        return None
+
+    hit = exact_combination_quote(catalog.get("quotes") or [], component_ids, event_id=event_id)
+    if not hit or _text(hit.get("odds_timestamp")) != catalog_ts:
+        return None
+    return {
+        "composition_id": composition.get("composition_id"),
+        "operator": OPERATOR,
+        "quote_kind": QUOTE_KIND,
+        "operator_verified": True,
+        "freshness_verified": True,
+        "combined_odds": hit.get("combined_odds"),
+        "odds_timestamp": hit.get("odds_timestamp"),
+        "source": hit.get("source"),
+        "source_event_id": event_id,
+        "operator_combination_selection_id": hit.get("operator_selection_id"),
+        "component_selection_ids": list(component_ids),
+        "source_quote_kind": hit.get("quote_kind"),
     }
 
 
