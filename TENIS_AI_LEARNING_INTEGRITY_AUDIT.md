@@ -90,3 +90,17 @@ Selection bias and population mismatch are proven. This audit **does not change 
 The prospective implementation owner is `backend/prediction_ledger_shadow.py`. Capture is wired at the canonical AutoLearn pre-selection boundary: after `_decorate_results()` makes Current/CatBoost/TabPFN scores available for supported candidates and before `_capture_frozen()` applies legacy tracking limits and generator selection. The first stable pre-match snapshot is append-only and tagged `ALL`; downstream PLAYABLE/Symphony/iNeed$ membership is intentionally N/D until a later exact-owner join.
 
 This phase does not feed model telemetry, dynamic weights, AutoLearn training, Adaptive Learning, PLAYABLE, Symphony, settlement or iNeed$. A ledger capture error is isolated as SHADOW evidence and must not stop the existing runtime.
+
+## Phase-1 production closeout
+
+PR #416 (`ef2c46956c3a43afdb85ba0626d9634f63cec592`) merged as `039740786ae7026980fa0931465d03e632450879`. Post-merge Update `35498754494` completed SUCCESS and bot commit `d6c23007bc59052eb9e9be63e5a4fd11758b6944` published the first real `prediction_ledger_shadow.json`.
+
+The published ledger contains **2131** immutable pre-selection ALL rows captured strictly before scheduled match start. Current and CatBoost are available on all 2131 rows; TabPFN is available on **187**, so the first prospective exact three-model common intersection is **187**. All 2131 prediction ids are unique. PLAYABLE, Symphony and iNeed$ selection facts remain explicitly unknown/null; settlement result/source/time remain null. Every row and the top-level report preserve zero production/runtime/learning/telemetry/settlement influence.
+
+The Update exposed only additive ledger status through AutoLearn. Model telemetry, Adaptive Learning, dynamic weights and specialist learning still do not consume the ledger. This closes phase 1 and provides the first prospective ALL evidence needed for phase 2.
+
+## Phase-2 audit handoff
+
+Before any downstream join implementation, map exact identities and capture chronology for canonical PLAYABLE history, Symphony frozen compositions and iNeed$ SHADOW placement snapshots. Positive joins must prove identical match/candidate/signal semantics and a valid frozen pre-match decision. Negative cases (missing line/signature, different candidate, ambiguous identity, post-start-only evidence or absent selection) must remain N/D and must not be inferred from score thresholds.
+
+Settlement/common-test-set work must preserve separate populations and compare models only on an exact settled intersection. Phase 2 remains SHADOW evidence only and does not migrate telemetry, dynamic weights or learning.
