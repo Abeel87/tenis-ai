@@ -102,10 +102,34 @@ def build_builder_shadow_runtime(state: dict, *, now: datetime | None = None) ->
     }
 
 
+def _builder_shadow_unavailable(reason_code: str) -> dict:
+    return {
+        "mode": "SHADOW",
+        "economic_unit": "BET_BUILDER_COMPOSITION",
+        "status": "SOURCE_UNAVAILABLE",
+        "reason_code": reason_code,
+        "quote_artifact_status": None,
+        "compositions": [],
+        "evaluations": [],
+        "tickets": [],
+        "compositions_count": 0,
+        "evaluations_count": 0,
+        "qualified_count": 0,
+        "tickets_count": 0,
+        "edge_sync_enabled": False,
+        "reservation_writes_enabled": False,
+        "settlement_enabled": False,
+        "automatic_real_betting": False,
+    }
+
+
+
 def _builder_shadow_summary(payload: dict) -> dict:
     return {
         "mode": payload.get("mode"),
         "economic_unit": payload.get("economic_unit"),
+        "status": payload.get("status", "OK"),
+        "reason_code": payload.get("reason_code"),
         "quote_artifact_status": payload.get("quote_artifact_status"),
         "compositions_count": payload.get("compositions_count"),
         "evaluations_count": payload.get("evaluations_count"),
@@ -160,7 +184,12 @@ def main() -> int:
     ap.add_argument("--oidc-token", required=True)
     args = ap.parse_args()
     state = post(args.edge_url, args.oidc_token, {"action": "state"})
-    builder_shadow = build_builder_shadow_runtime(state)
+    try:
+        builder_shadow = build_builder_shadow_runtime(state)
+    except Exception:
+        # Builder evidence is additive SHADOW only. It must never block or
+        # alter the established V1 sync path when its local evidence is bad.
+        builder_shadow = _builder_shadow_unavailable("BUILDER_SHADOW_PRODUCER_FAILED")
     payload = build_payload(state)
     result = post(args.edge_url, args.oidc_token, {"action": "sync", "payload": payload})
     print(json.dumps({

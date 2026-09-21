@@ -47,7 +47,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **RUNTIME ISOLATION:** canonical exact quote artifact now exists. The active runner change constructs Phase-4/5 builder evidence only in memory from the frozen published Direct snapshot + aligned quote artifact. V1 `build_payload()` stays separate, builder data is not sent to `ineed-sync`, no reservation RPC caller exists, active experiment has no `builder_reservation` enable block, and builder settlement remains `NOT_IMPLEMENTED`.
 
-**CURRENT TEST PROOF:** active runner branch focused workflow guard pack **74/74 GREEN**, broad iNeed + quote-artifact pack **171/171 GREEN**, full repository pytest **1504/1504 GREEN** using repo-local `--basetemp`, UI static PASS (**175 current matches / all 74 Symphony**), Project Health **0 FAIL / 1 existing WARN**, and `git diff --check` clean. Exact-head CI is still required before merge.
+**CURRENT TEST PROOF:** active runner branch focused workflow guard pack **75/75 GREEN**, broad iNeed + quote-artifact pack **172/172 GREEN**, full repository pytest **1505/1505 GREEN** using repo-local `--basetemp`, UI static PASS (**175 current matches / all 74 Symphony**), Project Health **0 FAIL / 1 existing WARN**, and `git diff --check` clean. Regression proof also confirms a builder-producer exception degrades only to empty `SOURCE_UNAVAILABLE` SHADOW evidence while the unchanged V1 sync still runs. Exact-head CI is still required before merge.
 
 **DO NOT REDO:** do not recreate the exact quote artifact or redeploy the shared-exposure bundle/writer/Edge v11 without drift evidence. Do not enable the builder reservation flag/caller in this runner PR. Do not infer builder settlement from V1 semantics.
 

@@ -158,3 +158,41 @@ def test_v1_sync_payload_remains_separate_from_builder_shadow(monkeypatch):
     assert "builder_shadow" not in payload
     assert "tickets" not in payload
     assert payload["health"]["automatic_real_betting"] is False
+
+
+
+def test_builder_runtime_failure_cannot_block_v1_sync(monkeypatch, capsys):
+    state = _state()
+    v1_payload = {
+        "experiment_id": "exp-1",
+        "operator": "superbet.pl",
+        "mode": "SHADOW",
+        "evaluations": [{"fingerprint": "v1-still-runs", "status": "REJECTED"}],
+        "settlements": [],
+        "health": {"automatic_real_betting": False},
+    }
+    calls = []
+
+    def fake_post(url, token, body):
+        calls.append(body)
+        if body == {"action": "state"}:
+            return state
+        assert body == {"action": "sync", "payload": v1_payload}
+        return {"ok": True, "processed": 1}
+
+    monkeypatch.setattr(runner, "post", fake_post)
+    monkeypatch.setattr(runner, "build_builder_shadow_runtime", lambda _state: (_ for _ in ()).throw(RuntimeError("bad builder evidence")))
+    monkeypatch.setattr(runner, "build_payload", lambda _state: v1_payload)
+    monkeypatch.setattr("sys.argv", ["ineed_scoped_runner.py", "--edge-url", "https://edge.test", "--oidc-token", "token"])
+
+    assert runner.main() == 0
+    assert calls == [
+        {"action": "state"},
+        {"action": "sync", "payload": v1_payload},
+    ]
+    printed = __import__("json").loads(capsys.readouterr().out)
+    assert printed["sync"]["ok"] is True
+    assert printed["builder_shadow"]["status"] == "SOURCE_UNAVAILABLE"
+    assert printed["builder_shadow"]["reason_code"] == "BUILDER_SHADOW_PRODUCER_FAILED"
+    assert printed["builder_shadow"]["tickets_count"] == 0
+    assert printed["builder_shadow"]["reservation_writes_enabled"] is False
