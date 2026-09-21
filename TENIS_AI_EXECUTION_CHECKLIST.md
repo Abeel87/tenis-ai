@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
-**PR:** none yet for the writer step.
+**PR:** #452 - LOGIC-12 dormant SHADOW builder reservation writer; base 0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc; pre-checkpoint head 79d0cf7549e856752ddbb0c8ffcb1a75281b007c.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
@@ -57,7 +57,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 1. Finish repository-only writer contract/docs/tests; keep production untouched.
 2. Run full iNeed pack, full repository pytest, UI smoke, Project Health and diff/scope checks.
-3. Fresh-main check, commit/push, open writer PR and require exact-head CI GREEN.
+3. PR #452 is open; require exact-head CI GREEN before merge.
 4. Merge only after fresh-main equality/rebase proof.
 5. After merge, keep production writer/flag/caller disabled. Any deployment/enablement is a separate controlled step; settlement remains separate.
 
