@@ -29,22 +29,24 @@ def test_atomicity_audit_freezes_single_owner_single_ledger_design():
         assert fragment in text
 
 
-def test_post_audit_phase_adds_only_dormant_schema_not_write_rpc():
+def test_post_audit_schema_stays_dormant_and_writer_is_later_fail_closed_step():
     paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_builder_shared_exposure_dormant.sql"))
     assert len(paths) == 1
     migration = _text(paths[0]).lower()
-    migrations = "\n".join(_text(path) for path in sorted((ROOT / "supabase/migrations").glob("*.sql"))).lower()
+    writer_paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_builder_reservation_writer_shadow.sql"))
+    assert len(writer_paths) == 1
+    writer = _text(writer_paths[0]).lower()
     edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
     assert "create table public.ineed_builder_tickets" in migration
     assert "create view public.ineed_open_risk_exposures" in migration
     assert "create function" not in migration
-    assert "create or replace function" not in migration
     assert "insert into public.ineed_builder_tickets" not in migration
-    assert "ineed_system_reserve_builder_ticket" not in migrations
+    assert "create or replace function public.ineed_system_reserve_builder_ticket" in writer
+    assert "{builder_reservation,enabled}" in writer
+    assert "from public.ineed_open_risk_exposures r" in writer
     assert "ineed_system_reserve_builder_ticket" not in edge.lower()
     assert 'from("ineed_open_risk_exposures").select("*")' in edge
     assert 'open_bets: openBets || []' in edge
-
 
 def test_current_v1_database_readers_use_shared_risk_source_but_keep_open_bets_v1_only():
     reader_paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_shared_exposure_readers.sql"))

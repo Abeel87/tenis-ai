@@ -46,14 +46,17 @@ def test_database_bundle_and_advisor_fix_are_frozen():
     assert "on public.ineed_bankroll_ledger(builder_ticket_id)" in fk_fix
 
 
-def test_schema_still_has_no_builder_writer():
+def test_closeout_bundle_stays_read_side_and_later_writer_is_separate_dormant_step():
     migration = _text(MIGRATIONS / ORDER[0]).lower()
-    all_sql = "\n".join(_text(path) for path in sorted(MIGRATIONS.glob("*.sql"))).lower()
+    closeout_sql = "\n".join(_text(MIGRATIONS / name) for name in ORDER).lower()
+    writer = _text(MIGRATIONS / "20260921123000_ineed_builder_reservation_writer_shadow.sql").lower()
     assert "create table public.ineed_builder_tickets" in migration
     assert "create view public.ineed_open_risk_exposures" in migration
-    assert "insert into public.ineed_builder_tickets" not in all_sql
-    assert "ineed_system_reserve_builder_ticket" not in all_sql
-
+    assert "insert into public.ineed_builder_tickets" not in closeout_sql
+    assert "ineed_system_reserve_builder_ticket" not in closeout_sql
+    assert "create or replace function public.ineed_system_reserve_builder_ticket" in writer
+    assert "{builder_reservation,enabled}" in writer
+    assert "to service_role" in writer
 
 def test_deployed_readers_share_one_exposure_source():
     placement = _text(MIGRATIONS / ORDER[1]).lower()
