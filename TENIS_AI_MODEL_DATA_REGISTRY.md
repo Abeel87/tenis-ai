@@ -411,6 +411,8 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 **Lifecycle blocker:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. Current market-238733/public quote evidence proves exact pricing identity but not a terminal one-ticket result or payout. Completed sampled public event payloads expose no retained `odds` / `oddsResults` builder result. Current official generic Bet Builder and later tennis-specific communications also state different void-selection treatment, so code must not select a payout rule by inference.
 
+**Terminal-evidence capture:** `backend/superbet_builder_terminal_evidence.py` is the bounded read-only owner for observing three exact frozen event/combination/component identities from source blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`. It records exact raw operator identity hits or `N/D` only. It has no outcome mapping, payout calculation, V1/builder settlement call, Supabase/Edge/iNeed persistence, model influence or real-betting capability.
+
 **Hard isolation:** V1 `ineed_system_settle_bet`, `backend/ineed_settlement_runner.py`, generic leg scoring and Symphony tracking are not builder one-ticket settlement owners. Builder table/ledger lifecycle remains `SHADOW_RESERVED` + `STAKE_RESERVED` only.
 
 **Target contract:** composition -> joint probability -> combined odd -> whole-BB EV -> one whole-BB stake -> exact operator-evidenced one-ticket lifecycle/settlement.
@@ -756,7 +758,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6, shared-exposure read/accounting/presentation, the dormant SHADOW reservation writer, and the canonical exact Bet Builder quote artifact are merged. PR #455 merged the read-only quote artifact as `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`. The active bounded step is an ephemeral Phase-4/5 SHADOW producer inside the existing scoped runner. The writer remains disabled by absent experiment config and has no runtime caller; one-ticket builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
+**Status:** ACTIVE - phases 1-6, shared exposure, atomic reservation writer, exact quote artifact, scoped Phase-4/5 producer and guarded OIDC persistence caller are merged. PR #457 is production-proven with the reservation flag still absent/false; PR #458 merged the lifecycle operator-evidence blocker. The active bounded step is read-only exact terminal-evidence capture for three frozen market-238733 identities. One-ticket builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 

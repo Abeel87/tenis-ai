@@ -91,6 +91,8 @@ PR #457 merged the separate guarded persistence caller as `3fa6fc5602a1c1cfebbe8
 
 The lifecycle operator-evidence audit keeps settlement blocked. Market `238733` and the exact quote artifact are authoritative for pre-match pricing/identity only; active combination rows contain no terminal payout/result field, while sampled completed public events returned no retained `odds`/`oddsResults`. Published generic Bet Builder and later tennis-specific Superbet communications currently describe different void-selection treatment. Therefore V1 settlement, generic leg scoring and Symphony aggregation must not be promoted into a builder ticket result. Missing exact operator terminal evidence is `N/D` and the reservation gate remains OFF.
 
+The active evidence-capture step uses `backend/superbet_builder_terminal_evidence.py` plus `audits/logic12_builder_terminal_evidence_manifest.json` to follow three exact frozen market-238733 identities from Git blob `3f7b5821...` through a bounded post-start observation window. The collector only preserves exact operator UUID-bearing raw evidence or `N/D`; it never interprets a result, computes payout, calls iNeed/Supabase/Edge, or changes settlement authority. Its SHADOW sidecar is `frontend/data/superbet_builder_terminal_evidence.json` and has zero production/PLAYABLE/Symphony/iNeed influence.
+
 ## 4. Frontend
 
 The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.
