@@ -31,35 +31,35 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** Phase 6 persistence/sync ownership audit + contract design ACTIVE. Audit is read-only/design-only: no Supabase migration/write path, Edge deploy, settlement change, runtime promotion or real-money execution.
+**SUBSTEP:** Phase 6 COMPLETE / MERGED. Active bounded step: reconcile the already-deployed `ineed-sync` v10 source back into Git with **no production deployment and no intended production behavior change**.
 
-**BRANCH:** `logic-12-phase6-persistence-audit` from exact merged main `06d0b06579b95d4a23106f2173ccd4e991558aa3`.
+**BRANCH:** `logic-12-edge-source-parity` from exact post-Phase-6 main `5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace`.
 
-**PR:** #440 — `LOGIC-12: audit builder persistence and sync contract`; audit-only, zero runtime/schema write changes.
+**PR:** #441 — `LOGIC-12: reconcile deployed iNeed sync v10 source`; source-parity only, no Supabase deploy.
 
-**LAST VERIFIED MAIN:** `06d0b06579b95d4a23106f2173ccd4e991558aa3` — merge of docs-only Phase-5 closeout PR #439 after rebasing onto data-only main `6f3fcf9f...` and exact-head 7/7 GREEN CI.
+**LAST VERIFIED MAIN:** `d63c59961ecb7f8e363ce59bf640690c44bc7300` — three bot data-refresh commits after #440 (`Neuron SHADOW`, tennis analysis, Superbet context). Drift touches only `frontend/data/*.json`, with zero overlap against source-parity files; #441 was rebased onto this exact main.
 
-**LAST COMPLETED WORK:** Phase 6 read-only persistence/sync audit and contract design are locally complete on the audit branch. Focused Phase-6/V1 isolation pack is 30/30 GREEN, full repository pytest 1405/1405 GREEN, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN and `git diff --check` clean.
+**LAST COMPLETED WORK:** Phase 6 persistence/sync audit merged. It proved V1 single-leg persistence/settlement boundaries, froze deterministic future builder ticket identity/idempotency requirements, identified shared-bankroll exposure as the reservation blocker and identified deployed/repository `ineed-sync` source drift.
 
-**PHASE-6 V1 PROOF:** current runtime is single-leg end-to-end: `ineed_signals` unique `(experiment_id,fingerprint)`, `ineed_shadow_bets.signal_id UNIQUE`, V1 `QUALIFIED` auto-placement, single-leg market insert guard, one-bet settlement and V1-only exposure queries.
+**SOURCE-PARITY EVIDENCE:** live Supabase `ineed-sync` is ACTIVE version 10 with custom GitHub OIDC auth. Its persistence/placement/settlement core matches V1, while the deployed source adds SMTP/env fallbacks, configuration-state detail and `operator_event_url` email metadata that were absent from Git `main`. The source-parity branch copies those already-live semantics into Git only.
 
-**PHASE-6 DESIGN:** future builder persistence must use separate experiment-scoped `builder-ticket:<composition_id>` identity plus immutable `ticket_digest`. Same ticket+digest replay is idempotent; same identity with changed evidence fails closed. Ticket persistence/reservation must eventually have an atomic transaction or equivalently proven durable state machine.
+**LOCAL PARITY GATE:** `deno check --node-modules-dir=auto` GREEN; focused source-parity + V1/Phase-6/docs pack 22/22 GREEN; full repository pytest 1408/1408 GREEN; UI static smoke PASS; Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. No Supabase deploy has been executed.
 
-**NEW BLOCKERS:** (1) shared bankroll/exposure accounting currently sees only `ineed_shadow_bets`, so an independent builder reservation would distort exposure/equity or permit double allocation; (2) deployed `ineed-sync` v10 contains SMTP/email source changes not present in fetched Git branches, so source parity must be restored before any future Edge deploy.
+**BLOCKER AFTER PARITY:** current bankroll/exposure reads still account for V1 `ineed_shadow_bets` only. No builder reservation write is allowed until a shared V1 + builder exposure read model is audited/designed.
 
-**SETTLEMENT:** remains `NOT_IMPLEMENTED`; no builder WIN/LOSS/VOID/CANCELLED or payout semantics are defined in Phase 6.
+**SETTLEMENT:** builder settlement remains `NOT_IMPLEMENTED`. Current V1 settlement semantics must remain unchanged.
 
-**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-5. Do not route builder tickets through V1 `payload.evaluations`, `ineed_signals`, `ineed_shadow_bets`, existing placement/settlement RPCs or current single-leg email semantics.
+**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-6. Do not route builder tickets into V1 signal/bet rows. Do not deploy Edge Function changes as part of source parity.
 
 **RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current iNeed$ calculations, current settlement semantics or SHADOW->PROD. No real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Run exact-head CI for PR #440 and perform a fresh-main drift check; merge only all-green.
-2. Confirm post-merge that current V1 runtime/Supabase behavior remains unchanged.
-3. After Phase 6 is merged, reconcile deployed `ineed-sync` v10 source into Git in a separate no-behavior-change source-parity PR before any Edge deployment.
-4. Audit/design a shared V1 + builder bankroll/exposure read model before enabling any builder reservation write.
-5. Keep builder settlement and all real-money execution disabled.
+1. Run exact-head CI for rebased PR #441 and require a fresh-main check immediately before merge.
+2. Merge only if every required check is GREEN; no Supabase deployment in this PR.
+4. Post-merge, verify Git source now reflects deployed v10 while live function version/runtime remains unchanged.
+5. Then start the shared V1 + builder bankroll/exposure read-model audit/design before any builder reservation write.
+6. Keep builder settlement and all real-money execution disabled.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

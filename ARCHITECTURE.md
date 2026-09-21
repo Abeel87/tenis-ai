@@ -61,7 +61,7 @@ Phase 6 audits persistence/sync ownership without adding a write path. Any futur
 
 Replay of identical immutable evidence must be idempotent; an identity/evidence mismatch must fail closed. Ticket persistence and any later reservation require an atomic durable boundary. Reservation remains blocked until shared bankroll/exposure accounting can see both current V1 open bets and builder reservations; current V1 exposure queries see only `ineed_shadow_bets`.
 
-The deployed `ineed-sync` v10 contains non-core SMTP/email source changes not present in fetched Git branches. Repository/deployment source parity must be restored in a separate no-behavior-change step before any Edge Function deployment.
+Phase 6 found that deployed `ineed-sync` v10 contains non-core SMTP/email source changes that were absent from Git. The active source-parity step tracks those already-live v10 semantics in Git without deploying the Edge Function: env aliases/fallback sender selection, configuration-state detail and `operator_event_url` email metadata. V1 placement, settlement and exposure semantics remain unchanged.
 
 Builder settlement remains `NOT_IMPLEMENTED` until a separate operator-evidence audit proves one-ticket outcome/void/cancel/payout semantics. Real-money execution remains out of scope.
 

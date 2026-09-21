@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-5 merged (#434/#435/#436/#437/#438), Phase-5 closeout #439 merged as `06d0b06579b95d4a23106f2173ccd4e991558aa3`. Phase 6 persistence/sync ownership audit + contract design is active; no runtime builder persistence, reservation or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6 merged through PR #440 (`5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace`). Active bounded step is source parity for already-deployed `ineed-sync` v10; no builder persistence, reservation or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -776,11 +776,15 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Shared-bankroll blocker:** current available/exposure/equity reads account for V1 `ineed_shadow_bets`, not builder reservations. Builder reservation writes stay disabled until one shared bankroll/exposure view can account for V1 + builder open exposure without changing existing calculations silently.
 
-**Deployment blocker:** deployed `ineed-sync` v10 contains SMTP/email source changes absent from fetched Git branches. A separate no-behavior-change source-parity reconciliation is required before any future Edge deployment.
+**Source-parity step:** deployed `ineed-sync` v10 contains SMTP/email source changes absent from pre-Phase-6 Git: env aliases/fallback sender selection, explicit configuration-state detail and `operator_event_url` email metadata. The active source-parity branch copies those already-live semantics into Git only; no Supabase deployment is part of this step.
 
 **Phase-6 local proof:** focused persistence/V1-isolation/Phase-5/docs pack 30/30 GREEN, full repository pytest 1405/1405 GREEN, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN and clean `git diff --check`; audit changes only docs plus a contract/isolation test.
 
-**Next proof:** finish and merge the Phase-6 audit-only PR with contract tests and zero runtime/schema changes. Then reconcile Edge source parity and design the shared V1+builder exposure read model. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
+**Phase-6 merge proof:** PR #440 exact head `96b248b1c8aebe5d161976c29d5f02b0e80d9b6f` passed 7/7 GREEN workflows and merged as `5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace` after fresh-main equality.
+
+**Source-parity local proof:** deployed-v10 markers + V1 isolation tests 22/22 GREEN, full repository pytest 1408/1408 GREEN, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN, Deno type-check GREEN and clean `git diff --check`; no Supabase deployment executed.
+
+**Next proof:** finish and merge the `ineed-sync` source-parity PR with no deployment and no builder wiring. Then design the shared V1+builder exposure read model. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
 
 ---
 
