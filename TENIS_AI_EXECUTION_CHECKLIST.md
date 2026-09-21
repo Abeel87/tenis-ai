@@ -43,7 +43,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **FRONTEND BEHAVIOR:** `frontend/ineed.js` uses the aggregate for exposure/equity/open-unit presentation. Before the dormant DB migrations are deployed it may use the existing V1 calculation only when the RPC is genuinely absent (`PGRST202` / PostgreSQL `42883`); permission, network and other database errors remain fail-closed. V1 bet history and settlement presentation remain unchanged.
 
-**LOCAL SAFETY PROOF:** focused frontend/shared-summary 25/25 GREEN; iNeed 133/133 GREEN; full repository 1466/1466 GREEN; 500-state V1 fallback equivalence GREEN; SQL parse 3 statements; `node --check frontend/ineed.js` GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; git diff --check clean.
+**LOCAL SAFETY PROOF:** focused post-docs pack 18/18 GREEN; full iNeed 133/133 GREEN; full repository 1466/1466 GREEN; 500-state V1 fallback equivalence GREEN; SQL parse 3 statements; `node --check frontend/ineed.js` GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; git diff --check clean.
 
 **RUNTIME / DEPLOY STATUS:** repository shared-exposure migrations remain dormant and are not applied to live Supabase. Live `ineed-sync` remains ACTIVE v10 with hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`. No builder table write, reserve RPC/caller or builder settlement exists.
 
