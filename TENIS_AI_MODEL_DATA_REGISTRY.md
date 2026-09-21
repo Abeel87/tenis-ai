@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-4 merged (#434/#435/#436/#437); phase 5 pure builder-ticket SHADOW envelope active in PR #438. No runtime persistence or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-5 merged (#434/#435/#436/#437/#438). Phase 5 merged as `73926853e4439f41a97c08ffd4be93f55e16c24f`; Phase 6 persistence/sync audit is next. No runtime builder persistence or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -768,11 +768,11 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-5 safety contract:** `status=SHADOW_TICKET_PROPOSED`, `economic_unit=BET_BUILDER_COMPOSITION`, `runtime_publishable=false`, `persistence_ready=false`, `settlement_ready=false`, `settlement_contract_status=NOT_IMPLEMENTED`, `automatic_real_betting=false`. The ticket has no V1 `signal_id`, fingerprint, single-market selection/outcome or payout semantics and is not consumed by runner, frontend, workflow, Supabase or settlement.
 
-**Current Phase-5 proof:** after rebase onto current data-only main `e7cf3153...`, Phase 4+5 focused tests are 38/38 GREEN, broad iNeed$/Superbet/Symphony 410/410 GREEN and full repository 1399/1399 GREEN. PR #438 exact-head CI must be rerun after the rebased/docs head is pushed.
+**Phase-5 merge proof:** exact head `ac9d6d024336aa9f0fa56c155020959e13e09769` passed 8/8 GREEN workflows (LOGIC-01/02/03/04, iNeed$ SHADOW, Delivery/Security, CodeQL, UI/Project Health) and merged via PR #438 as `73926853e4439f41a97c08ffd4be93f55e16c24f`. Local validation: focused 38/38, broad 410/410, full 1399/1399. Post-merge grep shows no runtime/frontend/workflow/Supabase consumer; current `ineed-sync` and settlement runner blobs are unchanged.
 
 **Persistence blocker:** current Supabase V1 remains structurally single-leg (`ineed_shadow_bets.signal_id UNIQUE`, `ineed_system_place_bet(target_signal_id)`), and `ineed-sync` auto-places V1 `QUALIFIED`. Builder persistence therefore requires a separate schema/object keyed by composition/ticket, separate sync contract and one-ticket settlement; it must not be faked as `market=builder` V1.
 
-**Next proof:** merge Phase 5 only after exact-head all-GREEN CI + fresh-main/base equality + mergeable state, then prove post-merge isolation. Only a later separately audited phase may design builder-ticket persistence/sync and settlement semantics.
+**Next proof:** Phase 6 is a read-only persistence/sync ownership audit and contract design. Define a separate ticket/composition identity, idempotency/retry/replay semantics and strict V1 isolation before any schema or write implementation. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
 
 ---
 
