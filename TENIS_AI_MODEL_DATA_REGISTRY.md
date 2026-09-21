@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6 merged through PR #440, deployed-source parity merged via #441, and shared-exposure audit merged via #442 (`f21e6e5a0da796bac7e21a91b8feb1606eb3b24e`). Active bounded step is the backend-only normalized `risk_exposures` read-model implementation; no builder persistence, reservation or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6/source parity/shared-exposure are merged, and normalized `risk_exposures` read model merged via PR #443 as `8666d37e41b79d959d1be9c9d5846a9289cbb979`. Active bounded step is builder-reservation atomicity AUDIT/DESIGN only; no builder persistence/reservation or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -798,7 +798,17 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Read-model local proof:** deterministic old-vs-new V1 comparison 500/500 identical; focused implementation pack 46/46 GREEN; focused + docs 59/59 GREEN; full repository pytest 1426/1426 GREEN; UI static smoke PASS (389 current matches / 103 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. After data-only main drift to `f8174f53a9a8f8f88c304af356ae89d5a2536f44`, the branch was rebased and the full pytest/UI/health gates passed again. Live Supabase contains 0 builder-shaped rows in `ineed_shadow_bets`.
 
-**Next proof:** commit/push and merge a read-model-only PR with exact-head CI and fresh-main equality. Then audit/design one atomic durable builder exposure owner + ledger reservation transaction before any write. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
+**Read-model merge proof:** PR #443 exact head `850c48a8b662a897aa88b0303688bbd20851216d` passed 8/8 GREEN workflows, fresh main remained `f8174f53a9a8f8f88c304af356ae89d5a2536f44`, and merged as `8666d37e41b79d959d1be9c9d5846a9289cbb979`. Post-merge `ineed-sync` remained ACTIVE v10 with unchanged source hash and no Supabase deployment.
+
+**Atomic reservation audit:** current V1 place + settle RPCs serialize bankroll mutation through the same experiment-row `FOR UPDATE` lock. A future builder reservation must use this same mutex and cannot be enabled until one shared DB exposure source is also used by V1 placement and `ineed-sync`; otherwise V1 could ignore open builder exposure and over-allocate.
+
+**Atomic physical design (not implemented):** one future `ineed_builder_tickets` table is the immutable ticket/exposure owner; the existing `ineed_bankroll_ledger` stays the only ledger; a future `ineed_open_risk_exposures` normalized source unions V1 open bets with builder `SHADOW_RESERVED` owners. One transaction creates owner + exactly one `STAKE_RESERVED` debit or neither. Database-owned SHA-256 via live `pgcrypto` protects immutable replay.
+
+**Status namespace correction:** builder open exposure uses `SHADOW_RESERVED`; V1 remains `PENDING` / `SHADOW_PLACED`. This prevents builder persistence from impersonating V1 state without altering current V1 runtime calculations.
+
+**Atomicity-audit local proof:** after rebase onto fresh main `15bafdc21571394ee960682e95cc7bbac7331ad4`, focused risk/builder/audit/settlement pack 42/42 GREEN; full repository pytest 1435/1435 GREEN; UI static smoke PASS (377 current matches / 102 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. The intervening bot drift was generated `frontend/data/*.json` only. No migration, RPC, Edge write, settlement change or deploy is present.
+
+**Next proof:** finish/merge the atomicity audit-only PR. Only afterward may a separately controlled implementation introduce dormant shared DB schema/read source plus exact V1-only equivalence tests. Builder reserve runtime, settlement and real-money execution remain disabled.
 
 ---
 
