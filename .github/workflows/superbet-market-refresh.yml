@@ -105,13 +105,17 @@ jobs:
           python -m pip install "selenium==4.49.0" -c requirements.lock -c requirements-optional.lock
           python backend/superbet_direct.py refresh-selected
       - name: Refresh exact Bet Builder quote sidecar
-        id: builder_quote_refresh
-        if: steps.freshness.outputs.refresh == 'true' && steps.direct_refresh.outcome == 'success'
-        continue-on-error: true
-        run: python backend/superbet_builder_quotes.py refresh-current
-      - name: Invalidate Bet Builder quote sidecar after refresh failure
-        if: ${{ always() && steps.freshness.outputs.refresh == 'true' && (steps.direct_refresh.outcome != 'success' || steps.builder_quote_refresh.outcome == 'failure') }}
-        run: python backend/superbet_builder_quotes.py invalidate UPSTREAM_REFRESH_FAILED
+        if: steps.freshness.outputs.refresh == 'true'
+        env:
+          DIRECT_OUTCOME: ${{ steps.direct_refresh.outcome }}
+        run: |
+          if [ "$DIRECT_OUTCOME" != "success" ]; then
+            python backend/superbet_builder_quotes.py invalidate DIRECT_REFRESH_FAILED
+            exit 0
+          fi
+          if ! python backend/superbet_builder_quotes.py refresh-current; then
+            python backend/superbet_builder_quotes.py invalidate BUILDER_REFRESH_FAILED
+          fi
       - name: Syntax guard
         if: steps.freshness.outputs.refresh == 'true'
         run: |
