@@ -33,11 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** normalized `risk_exposures` read model COMPLETE / MERGED. Active bounded step: **builder reservation atomicity AUDIT/DESIGN + read-contract correction only**; no table/view/RPC/Edge write, no builder reservation and no settlement implementation.
 
-**BRANCH:** `logic-12-builder-reservation-atomicity-audit` rebased onto exact fresh main `15bafdc21571394ee960682e95cc7bbac7331ad4`; drift from post-read-model merge `8666d37e...` was a data-only `frontend/data/*.json` tennis-analysis refresh with zero overlap.
+**BRANCH:** `logic-12-builder-reservation-atomicity-audit` rebased onto exact fresh main `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1`. Two bot drifts after PR #443 were audited as generated `frontend/data/*.json` only: tennis-analysis refresh `15bafdc2...`, then Superbet market-context refresh `b1b3eb22...`; both had zero overlap.
 
-**PR:** #444 ? `LOGIC-12: audit atomic builder reservation boundary`; base `15bafdc21571394ee960682e95cc7bbac7331ad4`; pre-checkpoint head `91cf96afa32d2533965edef2e2b4431d634c0e2d`.
+**PR:** #444 ? `LOGIC-12: audit atomic builder reservation boundary`; rebased base `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1`; current pre-checkpoint-rebase head `ec9f3f784ee1496db696c5674947118d4adb37f1`.
 
-**LAST VERIFIED MAIN:** `15bafdc21571394ee960682e95cc7bbac7331ad4` ? bot `data: refresh tennis analysis`, parent `8666d37e41b79d959d1be9c9d5846a9289cbb979` (merge of PR #443). Drift audit found only generated `frontend/data/*.json` changes and zero overlap with this audit branch.
+**LAST VERIFIED MAIN:** `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1` ? bot `data: refresh Superbet market context`, parent `15bafdc21571394ee960682e95cc7bbac7331ad4`. Drift audit found only generated `frontend/data/*.json` changes and zero overlap with this audit branch.
 
 **POST-MERGE PROOF:** PR #443 did not touch `backend/ineed_settlement_runner.py`, `supabase/functions/ineed-sync/index.ts` or migrations. Live Supabase `ineed-sync` remains ACTIVE v10 with unchanged hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`; no Edge deployment occurred.
 

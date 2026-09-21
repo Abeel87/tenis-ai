@@ -806,7 +806,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Status namespace correction:** builder open exposure uses `SHADOW_RESERVED`; V1 remains `PENDING` / `SHADOW_PLACED`. This prevents builder persistence from impersonating V1 state without altering current V1 runtime calculations.
 
-**Atomicity-audit local proof:** after rebase onto fresh main `15bafdc21571394ee960682e95cc7bbac7331ad4`, focused risk/builder/audit/settlement pack 42/42 GREEN; full repository pytest 1435/1435 GREEN; UI static smoke PASS (377 current matches / 102 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. The intervening bot drift was generated `frontend/data/*.json` only. No migration, RPC, Edge write, settlement change or deploy is present.
+**Atomicity-audit local proof:** after final rebase onto fresh main `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1`, focused risk/builder/audit/settlement pack 42/42 GREEN; full repository pytest 1435/1435 GREEN; UI static smoke PASS (377 current matches / 102 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. Both intervening bot drifts were generated `frontend/data/*.json` only with zero overlap. No migration, RPC, Edge write, settlement change or deploy is present.
 
 **Next proof:** finish/merge the atomicity audit-only PR. Only afterward may a separately controlled implementation introduce dormant shared DB schema/read source plus exact V1-only equivalence tests. Builder reserve runtime, settlement and real-money execution remain disabled.
 
