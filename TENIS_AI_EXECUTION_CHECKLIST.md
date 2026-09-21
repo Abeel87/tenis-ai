@@ -37,6 +37,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`.
 
+**PR:** #448 — `LOGIC-12: migrate settlement exposure bookkeeping`; base `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`; pre-checkpoint head `f71c9a212ecb6be0a822baa7ab280e6e4fdfde21`.
+
 **ADMIN-START MERGE PROOF:** PR #447 exact head `8e5be0747fc7dc68759cd6a8f086219b9de0f597` passed 8/8 GREEN on base `979d4b3238ab7458e870145af5f6d4bbdd2cc184` and merged as `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`. No live DDL or Edge deploy occurred.
 
 **SETTLEMENT SOURCE-PARITY FINDING:** live read-only `pg_get_functiondef(public.ineed_system_settle_bet(...))` proves production already locks both the V1 bet and its owning `ineed_experiments` row `FOR UPDATE`. Historical Git migration `20260910221444_ineed_v1.sql` lacks the experiment lock, and live migration history contains no separate named migration for that correction. The repo therefore had DB-to-Git source drift.
@@ -59,8 +61,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 1. Keep settlement outcome/payout/status semantics byte-for-contract stable; only shared `other_exposure` bookkeeping plus live mutex source-parity are in scope.
 2. Re-run full iNeed/full-repo/UI/Project Health/SQL parse after documentation updates.
-3. Fetch fresh `main`; audit/rebase any bot drift before commit/PR.
-4. Open PR, require exact-head CI and fresh-main equality immediately before merge.
+3. Push this checkpoint update to PR #448; the resulting head is the only valid exact-head CI target.
+4. Require exact-head CI; immediately before merge fetch fresh `main`, audit/rebase any drift and rerun CI if needed.
 5. Do not `apply_migration` and do not deploy Edge without separate explicit authorization.
 6. After merge, audit `frontend/ineed.js` exposure presentation as the last known pre-writer blocker. Keep builder reserve writer, builder settlement and real-money execution disabled.
 
