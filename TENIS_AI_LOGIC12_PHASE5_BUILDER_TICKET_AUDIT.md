@@ -1,6 +1,6 @@
 # LOGIC-12 Phase 5 — Builder Ticket SHADOW audit
 
-Status: **GREEN CONTRACT / NON-RUNTIME — FULL REPO CI PENDING**
+Status: **LOCAL FULL GREEN / NON-RUNTIME — EXACT-HEAD PR CI PENDING**
 
 ## Current V1 ownership proof
 
@@ -59,7 +59,7 @@ The isolated executable proof validates:
 - no V1 signal-shaped or settlement-shaped top-level fields,
 - deterministic deep-copy behavior.
 
-This is not yet full repository CI. `MaDMachiN` is currently offline, and commits made through the GitHub App did not create Actions runs for PR #438. The PR is **not merge-ready** until normal exact-head CI or equivalent full repository execution is available.
+After `MaDMachiN` returned online, the branch was rebased onto fresh data-only main `e7cf3153...`. Local validation is GREEN: Phase 4+5 focused **38/38**, broad iNeed$/Superbet/Symphony **410/410**, and full repository **1399/1399**. The previous remote Phase-5 head `89e2f2f7...` also has iNeed$ SHADOW bankroll, CodeQL, Delivery/Security and UI/Project Health GREEN. Because the branch was rebased and documentation updated afterward, PR #438 is **not merge-ready** until the final pushed exact head receives all required GREEN CI and fresh `main` still equals the PR base.
 
 ## Fail-closed rules
 
