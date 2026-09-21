@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-admin-start-shared-exposure`, based on exact fresh main `979d4b3238ab7458e870145af5f6d4bbdd2cc184`.
 
-**PR:** not opened yet; local implementation/validation complete.
+**PR:** #447 - `LOGIC-12: migrate admin start exposure guard`; base `979d4b3238ab7458e870145af5f6d4bbdd2cc184`; pre-checkpoint head `16887d504c63f054b86683c465ed112e608ad2b4`.
 
 **LAST VERIFIED MAIN:** `979d4b3238ab7458e870145af5f6d4bbdd2cc184` - merge of PR #446.
 
@@ -61,9 +61,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Fetch fresh `main`; if bot drift exists, audit/rebase and rerun local gates.
-2. Commit/push this bounded admin-start migration + tests/docs and open a PR.
-3. Require exact-head CI; immediately before merge fetch fresh `main` again and rebase/rerun if it moved.
+1. Push this checkpoint update to PR #447; the resulting head is the only valid exact-head CI target.
+2. Require all triggered workflows GREEN.
+3. Immediately before merge fetch fresh `main`; if it moved, audit/rebase/rerun exact-head CI.
 4. Merge only all-green/mergeable. Do not `apply_migration` and do not deploy Edge.
 5. After merge, audit V1 settlement `other_exposure` bookkeeping as a separate read/accounting step without changing settlement outcome semantics.
 6. Then separately audit frontend exposure presentation. Keep builder reserve writer, builder settlement and all real-money execution disabled.
