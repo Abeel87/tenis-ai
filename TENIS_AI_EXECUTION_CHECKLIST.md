@@ -31,13 +31,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** dormant SHADOW builder reservation writer DEPLOYED / VERIFIED, still disabled. Active bounded step: **caller/enablement audit only**. No flag enablement, no runtime caller, no builder settlement, no real-money execution.
+**SUBSTEP:** caller/enablement audit COMPLETE. Hard blocker: production has no canonical exact combined Bet Builder quote artifact and no runtime Phase-4/5 ticket producer. Active bounded step: **exact builder quote acquisition artifact only**. Writer flag/caller remain disabled.
 
-**BRANCH:** `logic-12-builder-writer-deployment-closeout`, exact base `4e8a0304397d6b569921977c7d0a51bfb7ba29bc` (PR #452 merge).
+**BRANCH:** logic-12-builder-caller-enablement-audit, exact base 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e after clean data-only rebase.
 
-**LAST VERIFIED MAIN:** `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
+**LAST VERIFIED MAIN:** 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e.
 
-**PR:** #453 - LOGIC-12 dormant builder writer deployment closeout; base `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`; pre-checkpoint head `c3fbf9f266189c42e788acff4c821c1cda5c30ad`. PR #452 exact head `4e224f630112447b442bded3e1e5150335ba5b0e` passed 8/8 GREEN and merged as `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
+**PR:** #454 - LOGIC-12 builder caller/enablement audit; base 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e; pre-checkpoint head 745c6a5168eb3dec7946437bd72bb3cda9523f9c. PR #453 exact head e324ac5a03b59db58f9aa5afb7ad3baed130e218 passed 7/7 GREEN and merged as 3480810fe9dd929dfb51b549b4b692592aa2ba27.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
@@ -45,9 +45,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **WRITER IMPLEMENTATION:** `20260921123000_ineed_builder_reservation_writer_shadow.sql` defines `ineed_system_reserve_builder_ticket(uuid,jsonb)` as service-role-only, experiment-row-locked, immutable/idempotent and fail-closed. It requires explicit `builder_reservation.enabled=true` plus contract version; the active production experiment currently has no such config block.
 
-**RUNTIME ISOLATION:** production now contains only the dormant service-role RPC. No Edge/workflow/frontend/scoped-runner caller exists; the active experiment has no builder_reservation enable block; `open_bets` remains V1-only; builder settlement remains `NOT_IMPLEMENTED`.
+**RUNTIME ISOLATION:** dormant service-role RPC is deployed, but no Edge/workflow/frontend/scoped-runner caller exists and the active experiment has no builder_reservation enable block. Audit proves Phase-4/5 builder functions are test-only and current Direct runtime artifact has no exact combined builder quote catalog. `open_bets` remains V1-only; builder settlement remains `NOT_IMPLEMENTED`.
 
-**CURRENT TEST PROOF:** focused writer + Phase-5/6/shared-exposure/V1 isolation pack **41/41 GREEN**; closeout focused **24/24 GREEN**; full iNeed pack **150/150 GREEN**; full repository pytest **1483/1483 GREEN** using repo-local `--basetemp` after the Windows user Temp directory returned permission errors; UI static smoke PASS (**377 current matches / all 82 Symphony**); Project Health **0 FAIL / 1 existing WARN**; `git diff --check` clean.
+**CURRENT TEST PROOF:** caller/enablement audit focused pack **57/57 GREEN**; full iNeed pack **154/154 GREEN**; full repository pytest **1487/1487 GREEN** using repo-local --basetemp; UI static PASS (**175 current matches / all 81 Symphony**); Project Health **0 FAIL / 1 existing WARN**; git diff --check clean. Current audit changes are docs/tests only and keep production untouched.
 
 **DO NOT REDO:** do not redeploy the shared-exposure bundle, writer migration or Edge v11 without drift evidence. Do not enable the builder flag or add a caller during closeout. Do not infer builder settlement from V1 semantics.
 
@@ -55,11 +55,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Record dormant writer deployment closeout in Git; keep production flag disabled and caller absent.
-2. PR #453 is open; require exact-head CI GREEN, fresh-main equality and merge.
-3. After closeout, audit the exact Phase-5 ticket production/caller lifecycle without wiring or enabling it yet.
-4. Any caller wiring or builder_reservation.enabled=true change requires a separate SHADOW-only PR and live gate.
-5. Builder one-ticket settlement remains a separate operator-semantics phase; real-money execution remains out of scope.
+1. Add a canonical read-only exact Bet Builder quote artifact in the Superbet refresh owner; never synthesize combined odds from leg prices.
+2. Artifact must freeze event id, exact component selection ids, combined price, timestamp, source and operator combination id, with fail-closed identity/freshness.
+3. Keep `builder_reservation.enabled` absent/false and do not add any RPC caller in that artifact PR.
+4. After artifact proof, wire the existing pure Phase-4/5 producer into SHADOW scoped runner in a separate PR, still without reservation writes.
+5. Only after those proofs may a separate caller/enablement PR be considered. Builder settlement and real-money execution remain out of scope.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
