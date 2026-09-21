@@ -21,7 +21,9 @@ except ImportError:
 
 MODE = "SHADOW_SUPERBET_EXACT_BUILDER_QUOTE_FEED"
 QUOTE_POLICY = "EXACT_PREPRICED_OPERATOR_ONLY"
-SAFE_STATUSES = {"OK", "NO_EXACT_BUILDER_QUOTES", "NO_CURRENT_OVERLAP"}
+SAFE_STATUSES = {"OK", "NO_EXACT_BUILDER_QUOTES", "NO_CURRENT_OVERLAP", "SOURCE_UNAVAILABLE"}
+MAX_DIRECT_AGE_SECONDS = 2 * 60 * 60
+MAX_FUTURE_SKEW_SECONDS = 5 * 60
 DATA_DIR = Path(__file__).resolve().parents[1] / "frontend" / "data"
 DIRECT_PATH = DATA_DIR / "superbet_direct_current.json"
 OUTPUT_PATH = DATA_DIR / "superbet_builder_quotes_current.json"
@@ -30,6 +32,19 @@ MAX_MATCHES = 64
 
 def _text(value) -> str:
     return str(value or "").strip()
+
+
+def _parse_utc(value) -> datetime | None:
+    token = _text(value)
+    if not token:
+        return None
+    try:
+        parsed = datetime.fromisoformat(token.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc)
 
 
 def _empty(status: str, *, generated_at: str, direct_generated_at=None) -> dict:
@@ -70,6 +85,14 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
 
     direct_status = _text(direct_feed.get("status"))
     direct_generated_at = direct_feed.get("generated_at")
+    direct_stamp = _parse_utc(direct_generated_at)
+    now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    if direct_feed.get("prices_used") is not False:
+        return _empty(
+            "DIRECT_INPUT_UNSAFE",
+            generated_at=stamp,
+            direct_generated_at=direct_generated_at,
+        )
     if direct_status == "NO_CURRENT_OVERLAP":
         return _empty(
             "NO_CURRENT_OVERLAP",
@@ -79,6 +102,19 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
     if direct_status != "OK":
         return _empty(
             "DIRECT_INPUT_UNSAFE",
+            generated_at=stamp,
+            direct_generated_at=direct_generated_at,
+        )
+    if direct_stamp is None:
+        return _empty(
+            "DIRECT_INPUT_STALE",
+            generated_at=stamp,
+            direct_generated_at=direct_generated_at,
+        )
+    age_seconds = (now_utc - direct_stamp).total_seconds()
+    if age_seconds > MAX_DIRECT_AGE_SECONDS or age_seconds < -MAX_FUTURE_SKEW_SECONDS:
+        return _empty(
+            "DIRECT_INPUT_STALE",
             generated_at=stamp,
             direct_generated_at=direct_generated_at,
         )
@@ -100,12 +136,30 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
     for match in raw_matches:
         match_id = match.get("match_id")
         event_id = _text(match.get("event_id"))
-        if match.get("direct_match_verified") is not True or not event_id.isdigit():
+        if (
+            match.get("direct_match_verified") is not True
+            or match.get("prices_used") is not False
+            or not event_id.isdigit()
+        ):
             rejected.append({"match_id": match_id, "event_id": event_id or None, "status": "UNVERIFIED_DIRECT_MATCH"})
             continue
         try:
             requests += 1
             payload = event_fetch(event_id)
+            event_row = direct._event_record(payload, event_id)
+            if not isinstance(event_row, dict):
+                raise ValueError("current event fixture missing")
+            fixture_p1, fixture_p2 = direct._players_from_event(event_row)
+            candidate = {
+                "fixture_id": event_id,
+                "event_id": event_id,
+                "p1": fixture_p1,
+                "p2": fixture_p2,
+                "start_time": event_row.get("utcDate"),
+            }
+            selected = direct.fixture_matching.select_cached_fixture(match, [candidate])
+            if not isinstance(selected, dict) or _text(selected.get("fixture_id")) != event_id:
+                raise ValueError("current event fixture identity mismatch")
             parsed = direct.parse_event_combination_quotes(
                 payload,
                 event_id=event_id,
@@ -212,17 +266,44 @@ def write_artifact(feed: dict, path: Path | str = OUTPUT_PATH) -> Path:
     return target
 
 
-def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path | str = OUTPUT_PATH, fetcher=None) -> dict:
+def _persist_unavailable(*, source_status: str, output_path: Path | str, direct_generated_at=None, external_requests: int = 0, now: datetime | None = None) -> dict:
+    stamp = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
+    safe = _empty("SOURCE_UNAVAILABLE", generated_at=stamp, direct_generated_at=direct_generated_at)
+    safe["source_status"] = _text(source_status) or "UNKNOWN"
+    safe["external_requests"] = int(external_requests or 0)
+    path = write_artifact(safe, output_path)
+    return {
+        "status": "SOURCE_UNAVAILABLE",
+        "source_status": safe["source_status"],
+        "written": True,
+        "path": str(path),
+        "generated_at": safe.get("generated_at"),
+        "matches": 0,
+        "quotes_count": 0,
+        "external_requests": safe.get("external_requests"),
+        "prices_used": False,
+        "ineed_runtime_influence": False,
+        "automatic_real_betting": False,
+    }
+
+
+def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path | str = OUTPUT_PATH, fetcher=None, now: datetime | None = None) -> dict:
     source = Path(direct_path)
     if not source.exists():
-        return {"status": "DIRECT_INPUT_MISSING", "written": False}
+        return _persist_unavailable(source_status="DIRECT_INPUT_MISSING", output_path=output_path, now=now)
     try:
         direct_feed = json.loads(source.read_text(encoding="utf-8"))
     except (OSError, ValueError, TypeError):
-        return {"status": "DIRECT_INPUT_INVALID", "written": False}
-    artifact = build_artifact(direct_feed, fetcher=fetcher)
+        return _persist_unavailable(source_status="DIRECT_INPUT_INVALID", output_path=output_path, now=now)
+    artifact = build_artifact(direct_feed, fetcher=fetcher, now=now)
     if artifact.get("status") not in SAFE_STATUSES:
-        return {"status": artifact.get("status"), "written": False, "external_requests": artifact.get("external_requests", 0)}
+        return _persist_unavailable(
+            source_status=_text(artifact.get("status")) or "ARTIFACT_UNSAFE",
+            output_path=output_path,
+            direct_generated_at=artifact.get("direct_generated_at"),
+            external_requests=int(artifact.get("external_requests") or 0),
+            now=now,
+        )
     path = write_artifact(artifact, output_path)
     return {
         "status": artifact.get("status"),
@@ -240,9 +321,13 @@ def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path 
 
 def main() -> None:
     mode = _text(sys.argv[1] if len(sys.argv) > 1 else "refresh-current").casefold()
-    if mode != "refresh-current":
-        raise SystemExit("usage: superbet_builder_quotes.py refresh-current")
-    result = refresh_current()
+    if mode == "refresh-current":
+        result = refresh_current()
+    elif mode == "invalidate":
+        source_status = _text(sys.argv[2] if len(sys.argv) > 2 else "UPSTREAM_REFRESH_FAILED")
+        result = _persist_unavailable(source_status=source_status, output_path=OUTPUT_PATH)
+    else:
+        raise SystemExit("usage: superbet_builder_quotes.py [refresh-current|invalidate [reason]]")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if result.get("status") not in SAFE_STATUSES:
         raise SystemExit(2)
