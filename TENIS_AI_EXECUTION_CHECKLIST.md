@@ -31,35 +31,35 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** exact builder quote artifact COMPLETE via PR #455. Active bounded step: wire the existing pure Phase-4/5 producer into the existing SHADOW scoped runner as ephemeral evidence only. No builder output may enter V1 `evaluations`/`settlements` or Edge sync; writer flag/caller remain disabled.
+**SUBSTEP:** PR #456 ephemeral Phase-4/5 scoped-runner producer is MERGED and production-proven. Active bounded step: separate builder-ticket persistence/sync contract. The runner may call a dedicated OIDC `reserve_builder_tickets` Edge action only when the active experiment explicitly enables `builder_reservation` with the exact contract version; current production config keeps the gate absent/false. V1 sync/email/settlement remain separate.
 
-**BRANCH:** `logic-12-builder-shadow-runner`, created clean from merge commit `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`.
+**BRANCH:** `logic-12-builder-persistence-sync`, created from current `main` commit `e3401f3d7209d9a9a05781af584dd6a7139d7363` (tree `45c6e20bbccb94881946e94be9d8918af744298a`).
 
-**LAST VERIFIED MAIN:** `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1` at branch creation; re-check before PR/merge because data workflows may move `main`.
+**LAST VERIFIED MAIN:** `e3401f3d7209d9a9a05781af584dd6a7139d7363`. Two technical noop create/remove commits occurred while starting this branch; the final tree is exactly the same `45c6e20b...` tree as the prior `6e806c7b...` data-refresh main, so no project file/content drift remains from that mistake.
 
-**PR:** #456 - LOGIC-12 Phase-4/5 SHADOW scoped-runner producer; initial implementation head `53350b3afa1368ebdc7ad55f1ee7b9f60d04ebc5`, base `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`. PR #455 exact head `c03c8930660fdb2eac87f263d6fa8c314df5dedc` passed its required exact-head checks and merged as `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`.
+**PR:** #457 - `LOGIC-12: add guarded builder persistence sync contract`; initial implementation head `59c938e394295c6035accd9c6e18ceb2ad9a61c1`, base `e3401f3d7209d9a9a05781af584dd6a7139d7363`. Exact-head GitHub CI remains mandatory before merge.
 
-**PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
+**PR #456 MERGE/PRODUCTION PROOF:** exact-head CI passed 8/8 GREEN and merged as `7a0ab396655293d3f2757f1d1dbffb0f86205ded`. Normal Superbet refresh #1781 completed GREEN and published data commit `6e806c7bcf42daebfb0715be407880c72f866396`. Normal iNeed$ SHADOW #537/#538 completed GREEN. Live builder summary was `status=OK`, quote artifact `OK`, with zero qualified tickets in that snapshot; `edge_sync_enabled=false`, `reservation_writes_enabled=false`, `settlement_enabled=false`, `automatic_real_betting=false`.
 
-**LIVE BASELINE AFTER #451:** `ineed-sync` ACTIVE v11/hash `5e6cd2eea5937fd66de98754dbd40afe2906f6d70fbe5588116f218ef45c673f`; open V1 bets `0`; active exposure `0`; builder rows `0`; email `36 SENT / 0 unsent`; invalid reservation owners `0`.
+**LIVE BASELINE AFTER #456:** production `builder_reservation` flag absent/false; builder ticket rows `0`; builder open exposures `0`; email `36 SENT / 0 unsent`; runtime health `OK`; no builder mail/persistence regression observed.
 
-**WRITER IMPLEMENTATION:** `20260921123000_ineed_builder_reservation_writer_shadow.sql` defines `ineed_system_reserve_builder_ticket(uuid,jsonb)` as service-role-only, experiment-row-locked, immutable/idempotent and fail-closed. It requires explicit `builder_reservation.enabled=true` plus contract version; the active production experiment currently has no such config block.
+**WRITER IMPLEMENTATION:** existing deployed `ineed_system_reserve_builder_ticket(uuid,jsonb)` remains the sole atomic writer, service-role-only, experiment-row-locked, immutable/idempotent and fail-closed. No new schema/RPC is required by the caller contract.
 
-**RUNTIME ISOLATION:** canonical exact quote artifact now exists. The active runner change constructs Phase-4/5 builder evidence only in memory from the frozen published Direct snapshot + aligned quote artifact. V1 `build_payload()` stays separate, builder data is not sent to `ineed-sync`, no reservation RPC caller exists, active experiment has no `builder_reservation` enable block, and builder settlement remains `NOT_IMPLEMENTED`.
+**ACTIVE PERSISTENCE CONTRACT:** runner-side gate checks active experiment config before any builder POST. Enabled source path uses only GitHub OIDC -> `ineed-sync::reserve_builder_tickets` -> service-role RPC; the runner never receives service-role credentials. Edge independently rechecks experiment/operator/mode/contract version/real-betting=false and bounded unique tickets. Current V1 `sync` payload still contains only V1 evaluations/settlements and existing email behavior.
 
-**CURRENT TEST PROOF:** active runner branch focused workflow guard pack **75/75 GREEN**, broad iNeed + quote-artifact pack **172/172 GREEN**, full repository pytest **1505/1505 GREEN** using repo-local `--basetemp`, UI static PASS (**175 current matches / all 74 Symphony**), Project Health **0 FAIL / 1 existing WARN**, and `git diff --check` clean. Regression proof also confirms a builder-producer exception degrades only to empty `SOURCE_UNAVAILABLE` SHADOW evidence while the unchanged V1 sync still runs. Exact-head CI is still required before merge.
+**CURRENT TEST PROOF:** full iNeed + exact builder quote pack **178/178 GREEN**; full repository pytest **1511/1511 GREEN** with repo-local `--basetemp`; Python syntax GREEN; `git diff --check` clean. Exact-head GitHub CI is still required before merge.
 
-**DO NOT REDO:** do not recreate the exact quote artifact or redeploy the shared-exposure bundle/writer/Edge v11 without drift evidence. Do not enable the builder reservation flag/caller in this runner PR. Do not infer builder settlement from V1 semantics.
+**DO NOT REDO:** do not recreate exact quote artifact, Phase-4/5 producer, shared-exposure schema or reservation writer. Do not add service-role secrets to the runner. Do not mix builder tickets into V1 `evaluations`/`settlements`. Do not enable production `builder_reservation` in this PR.
 
-**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. No builder settlement.
+**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`; durable reservation enablement stays blocked until a separate whole-ticket settlement/cancel/release contract exists.
 
 ### NEXT EXACT ACTION
 
-1. Finish the ephemeral Phase-4/5 scoped-runner producer using only the frozen published Direct snapshot + aligned exact builder quote artifact; fail closed on snapshot/event/component mismatch.
-2. Keep current V1 `evaluations`, `settlements`, Edge sync and email path byte-for-behavior unchanged; builder tickets remain `runtime_publishable=false`, nonpersisted and never call `ineed_system_reserve_builder_ticket`.
-3. Run focused + full iNeed + full repository gates, then refresh `main`, rebase/merge data-only drift if needed, open the separate runner PR and require exact-head full GREEN CI.
-4. After merge, prove one normal SHADOW workflow produces only builder summary evidence with zero builder rows/reservation ledger writes and no V1/email regression.
-5. Only after that proof may a separate reservation caller/enablement PR be considered. Builder settlement and real-money execution remain out of scope.
+1. Finish the separate OIDC builder reservation sync contract using the existing writer RPC; current config must still make zero builder reservation calls/writes.
+2. Prove caller and Edge fail closed on disabled/mismatched gate, preserve V1 payload/email/settlement behavior, and never expose service-role credentials to the runner.
+3. Run full iNeed + full repository tests, refresh `main`, reconcile only proven drift, open a separate PR and require exact-head full GREEN CI.
+4. After merge, deploy the updated `ineed-sync` source with the gate still disabled, then prove one normal SHADOW workflow reports builder persistence `DISABLED`/zero writes with no V1/email regression.
+5. Only after a separate one-ticket settlement/cancel/release contract is implemented and validated may `builder_reservation.enabled=true` be considered. Real-money execution remains out of scope.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -374,7 +374,7 @@ Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign
 
-Status: `[~] ACTIVE - exact quote artifact merged; ephemeral Phase-4/5 scoped-runner producer active; no builder persistence/reservation caller/settlement`
+Status: `[~] ACTIVE - Phase-4/5 runtime evidence production-proven; guarded builder persistence/sync contract in progress; reservation enable flag still OFF; settlement not implemented`
 
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
@@ -385,8 +385,8 @@ Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 - [x] Exact verified Superbet combined odds: phase 2 curated pre-priced rows + phase 3 dynamic `v2/getSgaOddPrice`; zero leg-odds multiplication.
 - [x] Phase 4: EV/Kelly/risk/stake całego buildera + jedna niepersistowana `SHADOW_PROPOSED` reservation per `composition_id`; PR #437 merged as `9a0ad2fe84298e847a2af7a6bc5afabdafee6963`.
 - [x] Phase 5: pure `builder-ticket` SHADOW envelope freezes exact composition, quote provenance, Phase-4 economics and one reservation proposal; output cannot resemble current V1 signal and explicitly claims no persistence/settlement readiness.
-- [~] Phase 1-5 remain SHADOW. Exact quote artifact is runtime-produced by the canonical Superbet refresh; Phase-4/5 are being wired as ephemeral scoped-runner evidence only, with no Edge/Supabase persistence or real-money execution.
-- [ ] Separate builder-ticket persistence/sync contract.
+- [x] Phase 1-5 remain SHADOW and are runtime-produced by the canonical Superbet refresh/scoped runner; PR #456 merged and normal production workflow proved summary-only evidence with zero builder rows/reservation writes and no V1/email regression.
+- [~] Separate builder-ticket persistence/sync contract: branch `logic-12-builder-persistence-sync`; dedicated OIDC Edge action + existing atomic writer, double-gated by `builder_reservation.enabled=true` and exact contract version. Production flag remains absent/false, so current runtime performs zero builder writes.
 - [ ] Jeden settlement całego BB z exact operator semantics dla WIN/LOSS/VOID/PUSH/CANCEL/retirement i leg-void behavior.
 - [ ] Backtest na zamrożonych ofertach/operator context, jeśli dane pozwalają.
 

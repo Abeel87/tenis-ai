@@ -11,6 +11,8 @@ import argparse
 from datetime import datetime, timezone
 import json
 
+BUILDER_RESERVATION_CONTRACT_VERSION = "logic12-builder-reservation-shadow-v1"
+
 try:
     from .ineed_money import evaluate, build_settlements
     from .ineed_runner import (
@@ -141,6 +143,75 @@ def _builder_shadow_summary(payload: dict) -> dict:
         "automatic_real_betting": False,
     }
 
+def _builder_reservation_gate(state: dict) -> tuple[bool, str | None]:
+    experiment = state.get("experiment") if isinstance(state, dict) else None
+    cfg = experiment.get("config") if isinstance(experiment, dict) else None
+    reservation = cfg.get("builder_reservation") if isinstance(cfg, dict) else None
+    if not isinstance(reservation, dict) or reservation.get("enabled") is not True:
+        return False, "BUILDER_RESERVATION_DISABLED"
+    if str(reservation.get("contract_version") or "").strip() != BUILDER_RESERVATION_CONTRACT_VERSION:
+        return False, "BUILDER_RESERVATION_CONTRACT_MISMATCH"
+    return True, None
+
+
+def sync_builder_ticket_reservations(edge_url: str, oidc_token: str, state: dict, builder_shadow: dict) -> dict:
+    """Persist qualified builder tickets only behind the explicit SHADOW reservation gate."""
+    enabled, reason_code = _builder_reservation_gate(state)
+    tickets = builder_shadow.get("tickets") if isinstance(builder_shadow, dict) else None
+    ticket_rows = tickets if isinstance(tickets, list) else []
+    summary = {
+        "mode": "SHADOW",
+        "contract_version": BUILDER_RESERVATION_CONTRACT_VERSION,
+        "status": "DISABLED",
+        "reason_code": reason_code,
+        "tickets_count": len(ticket_rows),
+        "attempted_count": 0,
+        "reservations_count": 0,
+        "reserved_count": 0,
+        "idempotent_count": 0,
+        "reservation_writes_enabled": enabled,
+        "settlement_enabled": False,
+        "automatic_real_betting": False,
+    }
+    if not enabled:
+        return summary
+    if builder_shadow.get("status", "OK") != "OK":
+        summary.update(status="SKIPPED_SOURCE_UNAVAILABLE", reason_code=builder_shadow.get("reason_code"))
+        return summary
+    if not ticket_rows:
+        summary.update(status="NO_TICKETS", reason_code=None)
+        return summary
+
+    experiment = state.get("experiment") if isinstance(state, dict) else None
+    experiment_id = experiment.get("id") if isinstance(experiment, dict) else None
+    if not experiment_id:
+        raise RuntimeError("BUILDER_RESERVATION_EXPERIMENT_MISSING")
+
+    result = post(edge_url, oidc_token, {
+        "action": "reserve_builder_tickets",
+        "payload": {
+            "experiment_id": experiment_id,
+            "operator": "superbet.pl",
+            "mode": "SHADOW",
+            "contract_version": BUILDER_RESERVATION_CONTRACT_VERSION,
+            "automatic_real_betting": False,
+            "tickets": ticket_rows,
+        },
+    })
+    reservations = result.get("reservations") if isinstance(result, dict) else None
+    if result.get("ok") is not True or not isinstance(reservations, list):
+        raise RuntimeError("BUILDER_RESERVATION_SYNC_INVALID_RESPONSE")
+    summary.update(
+        status="OK",
+        reason_code=None,
+        attempted_count=len(ticket_rows),
+        reservations_count=len(reservations),
+        reserved_count=sum(1 for row in reservations if isinstance(row, dict) and row.get("status") == "RESERVED"),
+        idempotent_count=sum(1 for row in reservations if isinstance(row, dict) and row.get("status") == "IDEMPOTENT"),
+    )
+    return summary
+
+
 def build_payload(state: dict) -> dict:
     results = read(RESULTS, [])
     direct = read(DIRECT, {})
@@ -192,9 +263,14 @@ def main() -> int:
         builder_shadow = _builder_shadow_unavailable("BUILDER_SHADOW_PRODUCER_FAILED")
     payload = build_payload(state)
     result = post(args.edge_url, args.oidc_token, {"action": "sync", "payload": payload})
+    sync_state = result.get("state") if isinstance(result, dict) and isinstance(result.get("state"), dict) else state
+    builder_persistence = sync_builder_ticket_reservations(
+        args.edge_url, args.oidc_token, sync_state, builder_shadow
+    )
     print(json.dumps({
         "sync": result,
         "builder_shadow": _builder_shadow_summary(builder_shadow),
+        "builder_persistence": builder_persistence,
     }, ensure_ascii=False, indent=2))
     return 0 if result.get("ok") else 1
 

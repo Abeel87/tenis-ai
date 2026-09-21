@@ -52,31 +52,33 @@ def test_phase5_ticket_stays_nonpersistent_and_nonsettling():
     assert '"automatic_real_betting": False' in owner
 
 
-def test_scoped_builder_runtime_wiring_stays_ephemeral_and_outside_persistence():
+def test_scoped_builder_runtime_keeps_v1_separate_and_uses_guarded_edge_reservation_action():
     scoped = _text(ROOT / "backend/ineed_scoped_runner.py")
     settlement = _text(ROOT / "backend/ineed_settlement_runner.py")
     edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
-    workflow = _text(ROOT / ".github/workflows/ineed-shadow.yml")
+    config = _text(ROOT / "config/ineed_superbet_pl.json")
 
-    # Phase-4/5 may now be constructed in the scoped SHADOW runner.
     assert "ineed_builder_ticket_shadow" in scoped
     assert "build_builder_shadow_runtime(state)" in scoped
     assert '"edge_sync_enabled": False' in scoped
-    assert '"reservation_writes_enabled": False' in scoped
     assert '"settlement_enabled": False' in scoped
 
-    # The V1 persistence boundary remains the only sync payload owner.
+    # V1 sync remains byte-shape separate from the builder reservation action.
     assert '{"action": "sync", "payload": payload}' in scoped
-    assert "builder_shadow" not in edge
+    assert '"action": "reserve_builder_tickets"' in scoped
     assert "payload.builder_shadow" not in edge
     assert "ineed_builder_ticket_shadow" not in edge
+
+    # Runner never receives service-role access; the OIDC Edge boundary owns the RPC call.
+    assert "ineed_system_reserve_builder_ticket" not in scoped
+    assert 'body.action === "reserve_builder_tickets"' in edge
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in edge
+
+    # Settlement and real-money paths remain out of scope; production config stays disabled.
     assert "ineed_builder_ticket_shadow" not in settlement
     assert "builder-ticket:" not in settlement
-
-    # The dormant reservation writer is still not called from runtime/workflow.
-    assert "ineed_system_reserve_builder_ticket" not in scoped
-    assert "reserve_builder_ticket" not in workflow.lower()
-    assert "reserve_builder_ticket" not in edge.lower()
+    assert '"builder_reservation"' not in config
+    assert '"automatic_real_betting": false' in config
 
 
 def test_phase6_is_superseded_by_dormant_schema_then_separate_fail_closed_writer():

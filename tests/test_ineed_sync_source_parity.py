@@ -44,8 +44,13 @@ def test_v1_persistence_and_auth_core_remain_unchanged_in_shape():
         assert marker in text
 
 
-def test_no_builder_runtime_wiring_was_added_to_v1_edge_function():
-    text = _edge().lower()
-    assert "builder-ticket:" not in text
-    assert "builder_ticket" not in text
-    assert "ineed_builder_ticket_shadow" not in text
+def test_builder_runtime_wiring_is_separate_from_v1_sync_shape():
+    text = _edge()
+    lower = text.lower()
+    assert "builder-ticket:" not in lower
+    assert "ineed_builder_ticket_shadow" not in lower
+    assert 'body.action === "reserve_builder_tickets"' in text
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in text
+    assert 'payload.evaluations || []' in text
+    assert 'payload.settlements || []' in text
+    assert text.count("flushEmails(supabase)") == 1
