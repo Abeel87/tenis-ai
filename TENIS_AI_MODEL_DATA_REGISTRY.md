@@ -401,19 +401,21 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B18. iNeed$
 
-**Status:** SHADOW / experimental risk layer. Final-composition quote/economics/ticket evidence is runtime-produced; a separate builder persistence/sync caller contract is being added behind a disabled production gate.
+**Status:** SHADOW / experimental risk layer. Exact builder quote, whole-composition economics/ticket production, shared exposure, atomic reservation writer and guarded OIDC persistence caller are implemented. Production reservation remains disabled.
 
-**Responsibility:** bankroll/risk/EV/stake after PLAYABLE. For Bet Builder, the economic unit is the whole final composition, not an individual leg.
+**Responsibility:** bankroll/risk/EV/stake after PLAYABLE. For Bet Builder, the economic unit is the whole final composition, never an individual leg.
 
-**Current SHADOW contract:** final Symphony composition -> upstream joint probability -> exact verified Superbet combined odd -> whole-builder EV/risk/stake -> immutable `builder-ticket:<composition_id>`. V1 single-bet `evaluations`/`settlements` remain a separate contract.
+**Current SHADOW contract:** final Symphony composition -> upstream joint probability -> exact verified Superbet combined odd -> whole-builder EV/risk/stake -> immutable `builder-ticket:<composition_id>` -> guarded OIDC reservation boundary.
 
-**Persistence boundary:** the caller may use only OIDC `ineed-sync::reserve_builder_tickets`; service-role credentials remain inside Edge, and existing `ineed_system_reserve_builder_ticket()` is the sole writer. Caller and Edge both require `builder_reservation.enabled=true` plus the exact contract version. Current production config has no such flag, so builder persistence performs zero writes.
+**Production proof:** PR #457 merged as `3fa6fc5602a1c1cfebbe86a68d6425a8e5c20e2d`; `ineed-sync` is ACTIVE v12. Normal SHADOW run `35641902429` proved persistence `DISABLED` / `BUILDER_RESERVATION_DISABLED`, zero builder writes, V1/email health preserved and `automatic_real_betting=false`. Active experiment config still has no `builder_reservation` block.
 
-**Unresolved blocker:** whole-ticket settlement/void/cancel/release semantics remain `NOT_IMPLEMENTED`. Reservation enablement must stay OFF until a separate settlement/lifecycle contract exists, because a durable SHADOW reservation could strand bankroll without a correct release path.
+**Lifecycle blocker:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. Current market-238733/public quote evidence proves exact pricing identity but not a terminal one-ticket result or payout. Completed sampled public event payloads expose no retained `odds` / `oddsResults` builder result. Current official generic Bet Builder and later tennis-specific communications also state different void-selection treatment, so code must not select a payout rule by inference.
 
-**Target contract:** composition -> joint probability -> combined odd -> whole-BB EV -> whole-BB stake -> one settlement.
+**Hard isolation:** V1 `ineed_system_settle_bet`, `backend/ineed_settlement_runner.py`, generic leg scoring and Symphony tracking are not builder one-ticket settlement owners. Builder table/ledger lifecycle remains `SHADOW_RESERVED` + `STAKE_RESERVED` only.
 
-**Hard ban:** no real-money automation without a separate explicit owner decision and full safety validation.
+**Target contract:** composition -> joint probability -> combined odd -> whole-BB EV -> one whole-BB stake -> exact operator-evidenced one-ticket lifecycle/settlement.
+
+**Hard ban:** keep `builder_reservation.enabled` absent/false until exact operator terminal evidence and an atomic lifecycle contract are separately validated. No real-money automation without a separate explicit owner decision and full safety validation.
 
 ---
 
