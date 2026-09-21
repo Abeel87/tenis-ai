@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1` at branch creation; re-check before PR/merge because data workflows may move `main`.
 
-**PR:** pending for the scoped-runner producer. PR #455 exact head `c03c8930660fdb2eac87f263d6fa8c314df5dedc` passed its required exact-head checks and merged as `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`.
+**PR:** #456 - LOGIC-12 Phase-4/5 SHADOW scoped-runner producer; initial implementation head `53350b3afa1368ebdc7ad55f1ee7b9f60d04ebc5`, base `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`. PR #455 exact head `c03c8930660fdb2eac87f263d6fa8c314df5dedc` passed its required exact-head checks and merged as `033227f670d46c53b6f4dbdd7e3822fe5d91a6e1`.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
