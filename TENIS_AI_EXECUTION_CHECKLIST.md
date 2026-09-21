@@ -33,11 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** caller/enablement audit COMPLETE. Hard blocker: production has no canonical exact combined Bet Builder quote artifact and no runtime Phase-4/5 ticket producer. Active bounded step: **exact builder quote acquisition artifact only**. Writer flag/caller remain disabled.
 
-**BRANCH:** `logic-12-builder-caller-enablement-audit`, exact base `3480810fe9dd929dfb51b549b4b692592aa2ba27` (PR #453 merge).
+**BRANCH:** logic-12-builder-caller-enablement-audit, exact base 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e after clean data-only rebase.
 
-**LAST VERIFIED MAIN:** `3480810fe9dd929dfb51b549b4b692592aa2ba27`.
+**LAST VERIFIED MAIN:** 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e.
 
-**PR:** caller/enablement audit PR not opened yet. PR #453 exact head `e324ac5a03b59db58f9aa5afb7ad3baed130e218` passed 7/7 GREEN and merged as `3480810fe9dd929dfb51b549b4b692592aa2ba27`.
+**PR:** #454 - LOGIC-12 builder caller/enablement audit; base 6c5dcba3d404eea79d9fc5d49b9fe271b5ac1e1e; pre-checkpoint head 745c6a5168eb3dec7946437bd72bb3cda9523f9c. PR #453 exact head e324ac5a03b59db58f9aa5afb7ad3baed130e218 passed 7/7 GREEN and merged as 3480810fe9dd929dfb51b549b4b692592aa2ba27.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
