@@ -70,18 +70,21 @@ async function activeState(supabase: any) {
   const { data: experiment, error } = await supabase.from("ineed_experiments").select("*").eq("status", "ACTIVE").maybeSingle();
   if (error) throw error;
   if (!experiment) throw new Error("No active iNeed$ experiment");
-  const [{ data: ledger, error: ledgerError }, { data: openBets, error: betsError }, { data: settled, error: settledError }] = await Promise.all([
+  const [{ data: ledger, error: ledgerError }, { data: openBets, error: betsError }, { data: riskExposures, error: riskError }, { data: settled, error: settledError }] = await Promise.all([
     supabase.from("ineed_bankroll_ledger").select("bankroll_after,created_at,id").eq("experiment_id", experiment.id).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(1),
     supabase.from("ineed_shadow_bets").select("*").eq("experiment_id", experiment.id).in("status", ["SHADOW_PLACED", "PENDING"]),
+    supabase.from("ineed_open_risk_exposures").select("*").eq("experiment_id", experiment.id),
     supabase.from("ineed_shadow_bets").select("bankroll_after").eq("experiment_id", experiment.id).not("bankroll_after", "is", null),
   ]);
   if (ledgerError) throw ledgerError;
   if (betsError) throw betsError;
+  if (riskError) throw riskError;
   if (settledError) throw settledError;
   const available = Number(ledger?.[0]?.bankroll_after ?? 0);
-  const exposure = (openBets || []).reduce((sum: number, row: Json) => sum + Number(row.stake || 0), 0);
+  const normalizedRiskExposures = riskExposures || [];
+  const exposure = normalizedRiskExposures.reduce((sum: number, row: Json) => sum + Number(row.stake || 0), 0);
   const peak = Math.max(Number(experiment.starting_bankroll || 0), available + exposure, ...(settled || []).map((x: Json) => Number(x.bankroll_after || 0)));
-  return { experiment, available_capital: available, active_exposure: exposure, bankroll_equity: available + exposure, peak_bankroll: peak, open_bets: openBets || [] };
+  return { experiment, available_capital: available, active_exposure: exposure, bankroll_equity: available + exposure, peak_bankroll: peak, open_bets: openBets || [], risk_exposures: normalizedRiskExposures };
 }
 
 async function upsertEvaluation(supabase: any, experiment: Json, evaluation: Json) {

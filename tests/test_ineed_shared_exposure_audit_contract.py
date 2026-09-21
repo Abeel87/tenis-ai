@@ -25,22 +25,27 @@ def test_shared_exposure_audit_freezes_read_model_only():
         assert fragment in text
 
 
-def test_current_edge_state_is_v1_bet_backed():
+def test_current_edge_keeps_v1_open_bets_but_uses_shared_risk_exposure():
     edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
     assert 'from("ineed_shadow_bets").select("*")' in edge
     assert '.in("status", ["SHADOW_PLACED", "PENDING"])' in edge
+    assert 'from("ineed_open_risk_exposures").select("*")' in edge
     assert "available + exposure" in edge
     assert 'open_bets: openBets || []' in edge
+    assert 'risk_exposures: normalizedRiskExposures' in edge
 
 
-def test_v1_sql_exposure_is_currently_shadow_bet_only():
-    sql = _text(ROOT / "supabase/migrations/20260910222554_ineed_v1_risk_guards.sql").lower()
-    compact = "".join(sql.split())
-    assert "sum(stake),0)intototal_exposurefrompublic.ineed_shadow_bets" in compact
-    assert "intomatch_exposurefrompublic.ineed_shadow_bets" in compact
-    assert "intomarket_exposurefrompublic.ineed_shadow_bets" in compact
-    assert "intoplayer_exposurefrompublic.ineed_shadow_bets" in compact
-    assert "equity:=available+total_exposure" in compact
+def test_v1_sql_exposure_reader_migrates_from_legacy_bets_to_shared_view():
+    legacy = _text(ROOT / "supabase/migrations/20260910222554_ineed_v1_risk_guards.sql").lower()
+    assert "total_exposure from public.ineed_shadow_bets" in legacy
+    reader_paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_shared_exposure_readers.sql"))
+    assert len(reader_paths) == 1
+    reader = _text(reader_paths[0]).lower()
+    assert "total_exposure from public.ineed_open_risk_exposures" in reader
+    assert "match_exposure from public.ineed_open_risk_exposures" in reader
+    assert "market_exposure from public.ineed_open_risk_exposures" in reader
+    assert "player_exposure from public.ineed_open_risk_exposures" in reader
+    assert "equity:=available+total_exposure" in reader
 
 
 def test_phase4_builder_consumes_normalized_ephemeral_risk_exposures():
@@ -52,13 +57,14 @@ def test_phase4_builder_consumes_normalized_ephemeral_risk_exposures():
     assert '"runtime_publishable": False' in builder
 
 
-def test_shared_schema_is_dormant_without_edge_or_settlement_wiring():
+def test_shared_schema_is_consumed_by_readers_but_not_settlement_or_builder_writer():
     migrations = list((ROOT / "supabase/migrations").glob("*.sql"))
-    shared = [path for path in migrations if "risk_exposures" in _text(path)]
-    assert len(shared) == 1
-    assert shared[0].name.endswith("_ineed_builder_shared_exposure_dormant.sql")
-    assert "create view public.ineed_open_risk_exposures" in _text(shared[0]).lower()
-    assert "risk_exposures" not in _text(ROOT / "supabase/functions/ineed-sync/index.ts")
+    schema = [path for path in migrations if path.name.endswith("_ineed_builder_shared_exposure_dormant.sql")]
+    readers = [path for path in migrations if path.name.endswith("_ineed_shared_exposure_readers.sql")]
+    assert len(schema) == 1 and len(readers) == 1
+    assert "create view public.ineed_open_risk_exposures" in _text(schema[0]).lower()
+    assert "from public.ineed_open_risk_exposures" in _text(readers[0]).lower()
+    assert 'from("ineed_open_risk_exposures").select("*")' in _text(ROOT / "supabase/functions/ineed-sync/index.ts")
     assert "normalize_risk_exposures" in _text(ROOT / "backend/ineed_money.py")
     assert "risk_exposure_state" in _text(ROOT / "backend/ineed_builder_shadow.py")
     settlement = _text(ROOT / "backend/ineed_settlement_runner.py")

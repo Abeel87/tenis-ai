@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6/source parity/shared-exposure are merged, and normalized `risk_exposures` read model merged via PR #443 as `8666d37e41b79d959d1be9c9d5846a9289cbb979`. Active bounded step is builder-reservation atomicity AUDIT/DESIGN only; no builder persistence/reservation or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6, source parity, normalized `risk_exposures`, atomicity audit and dormant shared-DB schema are merged through PR #445 (`ab2d1034f8e34539fc1d905f95205567915f86bb`). Active bounded step migrates V1 placement + `ineed-sync` risk read-side to the shared DB source; no builder reserve writer or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -806,13 +806,17 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Atomicity-audit merge proof:** PR #444 exact head `b9ef35874f2cbd1ca92468abd140507d6441d2e9` passed 8/8 GREEN workflows on fresh base `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1` and merged as `6f0fa7b204b232e398cf095e2e85b0017206f102`. Live `ineed-sync` remained ACTIVE v10 with unchanged source hash; no Supabase deploy occurred.
 
-**Dormant shared-DB schema (active implementation):** `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines the builder owner, generated ticket/reservation identities, DB-owned `pgcrypto` SHA-256 digest, ledger `builder_ticket_id` ownership constraints/uniqueness, RLS and service-only `security_invoker` view. The migration contains no RPC/function, no insert path, no Edge change and no runtime caller.
+**Dormant shared-DB schema (merged, not deployed):** `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines the builder owner, generated ticket/reservation identities, DB-owned `pgcrypto` SHA-256 digest, ledger `builder_ticket_id` ownership constraints/uniqueness, RLS and service-only `security_invoker` view. PR #445 merged it as `ab2d1034f8e34539fc1d905f95205567915f86bb`; no live DDL or Edge deployment occurred.
 
 **Status namespace correction:** builder open exposure uses `SHADOW_RESERVED`; V1 remains `PENDING` / `SHADOW_PLACED`. This prevents builder persistence from impersonating V1 state without altering current V1 runtime calculations.
 
 **Dormant-schema local proof:** live read-only compatibility shows PostgreSQL 17.6, `pgcrypto` in schema `extensions`, immutable `digest(text,text)`, and 35/35 existing `STAKE_RESERVED` rows owned by V1 `bet_id`. Migration parses as 14 PostgreSQL statements; focused schema/risk/builder/audit pack 41/41 GREEN; full iNeed pack 109/109 GREEN; full repository pytest 1442/1442 GREEN; UI static smoke PASS (377 current matches / 101 Symphony) after data-only rebase to `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; Project Health 0 FAIL / 1 existing WARN. The equivalence test covers 250 deterministic V1 view-vs-backend states. No live DDL has been executed.
 
-**Next proof:** complete full pytest/UI/Project Health, then open/merge a dormant-schema/read-source PR with exact-head CI and fresh-main verification. Only afterward migrate V1 placement and `ineed-sync` read-side to the shared DB source; builder reserve runtime, settlement and real-money execution remain disabled.
+**Shared-reader candidate:** `supabase/migrations/20260921091005_ineed_shared_exposure_readers.sql` moves V1 placement total/match/player/market exposure queries to `ineed_open_risk_exposures`. Repository `ineed-sync::activeState()` separately reads the same view for `risk_exposures`/equity while keeping `open_bets` V1-only for settlement. Exact V1 exposure metrics are compared old-vs-new across 500 deterministic legal states. Local proof: iNeed 114/114 GREEN, full repo 1447/1447 GREEN, SQL parse + Deno check GREEN, UI smoke PASS (377 / 101 Symphony), Project Health 0 FAIL / 1 existing WARN. This candidate is not deployed; live Edge remains v10.
+
+**Remaining pre-writer consumers:** `ineed_admin_start_experiment()` open-exposure guard, V1 settlement `other_exposure` bookkeeping and `frontend/ineed.js` exposure presentation still read V1-only sources. They must be separately audited/migrated or proven irrelevant before any builder reserve writer can be enabled.
+
+**Next proof:** full repository/UI/Project Health + exact-head PR CI/fresh-main merge for the placement/Edge reader migration. Then close the remaining pre-writer consumer blockers. Builder reserve runtime, settlement and real-money execution remain disabled.
 
 ---
 

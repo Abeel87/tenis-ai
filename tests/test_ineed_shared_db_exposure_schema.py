@@ -16,6 +16,9 @@ MIGRATION = MIGRATION_PATHS[0].read_text(encoding="utf-8")
 MIGRATION_LOWER = MIGRATION.lower()
 EDGE = (ROOT / "supabase/functions/ineed-sync/index.ts").read_text(encoding="utf-8")
 PLACE = (MIGRATIONS / "20260910222554_ineed_v1_risk_guards.sql").read_text(encoding="utf-8")
+READER_PATHS = sorted(MIGRATIONS.glob("*_ineed_shared_exposure_readers.sql"))
+assert len(READER_PATHS) == 1
+READER = READER_PATHS[0].read_text(encoding="utf-8")
 
 
 def _view_v1_rows(open_bets):
@@ -107,12 +110,14 @@ def test_shared_view_has_security_invoker_and_both_economic_units():
     assert "grant select on table public.ineed_open_risk_exposures to service_role" in MIGRATION_LOWER
 
 
-def test_runtime_is_still_v1_only_until_separate_migration():
+def test_reader_migration_uses_shared_source_without_changing_v1_open_bets():
     assert "from public.ineed_shadow_bets" in PLACE.lower()
     assert "ineed_open_risk_exposures" not in PLACE
+    assert "from public.ineed_open_risk_exposures r" in READER.lower()
+    assert 'from("ineed_open_risk_exposures").select("*")' in EDGE
     assert 'from("ineed_shadow_bets").select("*")' in EDGE
-    assert "ineed_open_risk_exposures" not in EDGE
-    assert "risk_exposures" not in EDGE
+    assert 'open_bets: openBets || []' in EDGE
+    assert 'risk_exposures: normalizedRiskExposures' in EDGE
 
 
 def test_v1_view_projection_matches_backend_normalization_exactly():
