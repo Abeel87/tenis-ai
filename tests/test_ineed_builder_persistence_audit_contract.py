@@ -65,20 +65,25 @@ def test_phase6_does_not_add_builder_runtime_wiring():
         assert "builder-ticket:" not in text
 
 
-def test_phase6_is_superseded_only_by_the_dormant_builder_schema_migration():
+def test_phase6_is_superseded_by_dormant_schema_then_separate_fail_closed_writer():
     migrations = ROOT / "supabase" / "migrations"
     dormant = sorted(migrations.glob("*_ineed_builder_shared_exposure_dormant.sql"))
+    writers = sorted(migrations.glob("*_ineed_builder_reservation_writer_shadow.sql"))
     assert len(dormant) == 1
+    assert len(writers) == 1
+    dormant_text = _text(dormant[0]).lower()
+    writer_text = _text(writers[0]).lower()
+    assert "create table public.ineed_builder_tickets" in dormant_text
+    assert "create view public.ineed_open_risk_exposures" in dormant_text
+    assert "ineed_system_reserve_builder_ticket" not in dormant_text
+    assert "create or replace function public.ineed_system_reserve_builder_ticket" in writer_text
+    assert "builder_reservation_disabled" in writer_text
+    assert "to service_role" in writer_text
     for path in migrations.glob("*.sql"):
-        text = _text(path).lower()
-        if path == dormant[0]:
-            assert "create table public.ineed_builder_tickets" in text
-            assert "create view public.ineed_open_risk_exposures" in text
-            assert "ineed_system_reserve_builder_ticket" not in text
-        else:
+        if path not in dormant + writers:
+            text = _text(path).lower()
             assert "create table public.ineed_builder_tickets" not in text
-            assert "ineed_system_reserve_builder_ticket" not in text
-
+            assert "create or replace function public.ineed_system_reserve_builder_ticket" not in text
 
 def test_audit_records_edge_source_parity_precondition():
     text = _text(AUDIT)
