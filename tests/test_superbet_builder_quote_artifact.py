@@ -191,11 +191,13 @@ def test_workflow_guards_quote_artifact_module():
     assert "python -m py_compile backend/superbet_builder_quotes.py" in workflow
     direct_pos = workflow.index("python backend/superbet_direct.py refresh-selected")
     builder_pos = workflow.index("python backend/superbet_builder_quotes.py refresh-current")
-    invalidate_pos = workflow.index("python backend/superbet_builder_quotes.py invalidate UPSTREAM_REFRESH_FAILED")
-    assert direct_pos < builder_pos < invalidate_pos
+    invalidate_direct_pos = workflow.index("python backend/superbet_builder_quotes.py invalidate DIRECT_REFRESH_FAILED")
+    invalidate_builder_pos = workflow.index("python backend/superbet_builder_quotes.py invalidate BUILDER_REFRESH_FAILED")
+    assert direct_pos < invalidate_direct_pos < builder_pos < invalidate_builder_pos
     assert "id: direct_refresh" in workflow
-    assert "id: builder_quote_refresh" in workflow
-    assert "steps.direct_refresh.outcome == 'success'" in workflow
+    assert "DIRECT_OUTCOME: ${{ steps.direct_refresh.outcome }}" in workflow
+    assert 'if [ "$DIRECT_OUTCOME" != "success" ]; then' in workflow
+    assert 'if ! python backend/superbet_builder_quotes.py refresh-current; then' in workflow
 
 
 def test_stale_direct_feed_fails_closed_before_event_request():
