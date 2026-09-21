@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6, source parity, normalized `risk_exposures`, atomicity audit, dormant shared-DB schema, placement/Edge shared readers and admin-start shared exposure are merged through PR #447 (`59ec7d99cadd95ce6cea545f6db6a888ed644f1c`). Active bounded step repairs settlement source parity and migrates only V1 `other_exposure` bookkeeping to the shared view; no builder reserve writer or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6 and the shared-exposure read/accounting/presentation rollout are merged, deployed and V1-live-verified through PR #450 + production Edge v11. Builder reserve writer is still absent; one-ticket builder settlement remains `NOT_IMPLEMENTED`; real-money execution remains disabled.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -774,7 +774,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-6 persistence contract:** future builder persistence is a separate experiment-scoped logical object keyed by deterministic `builder-ticket:<composition_id>` plus immutable `ticket_digest`. Exact replay returns idempotent success; same identity with different immutable evidence fails closed. No builder object may become a fake V1 signal/bet or use current V1 statuses to imply unimplemented semantics.
 
-**Shared-bankroll blocker:** current available/exposure/equity reads account for V1 `ineed_shadow_bets`, not builder reservations. Builder reservation writes stay disabled until one shared bankroll/exposure view can account for V1 + builder open exposure without changing existing calculations silently.
+**Shared-bankroll read-side:** the deployed `ineed_open_risk_exposures` source now accounts for V1 open bets and future `SHADOW_RESERVED` builder owners in placement, admin-start, settlement bookkeeping, Edge state and staff presentation. Builder reservation writes remain disabled because no reserve writer/RPC exists and builder settlement is still unimplemented.
 
 **Source-parity step:** deployed `ineed-sync` v10 contains SMTP/email source changes absent from pre-Phase-6 Git: env aliases/fallback sender selection, explicit configuration-state detail and `operator_event_url` email metadata. The active source-parity branch copies those already-live semantics into Git only; no Supabase deployment is part of this step.
 
@@ -806,7 +806,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Atomicity-audit merge proof:** PR #444 exact head `b9ef35874f2cbd1ca92468abd140507d6441d2e9` passed 8/8 GREEN workflows on fresh base `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1` and merged as `6f0fa7b204b232e398cf095e2e85b0017206f102`. Live `ineed-sync` remained ACTIVE v10 with unchanged source hash; no Supabase deploy occurred.
 
-**Dormant shared-DB schema (merged, not deployed):** `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines the builder owner, generated ticket/reservation identities, DB-owned `pgcrypto` SHA-256 digest, ledger `builder_ticket_id` ownership constraints/uniqueness, RLS and service-only `security_invoker` view. PR #445 merged it as `ab2d1034f8e34539fc1d905f95205567915f86bb`; no live DDL or Edge deployment occurred.
+**Shared-DB schema merge history (originally dormant; deployed 2026-09-21):** `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines the builder owner, generated ticket/reservation identities, DB-owned `pgcrypto` SHA-256 digest, ledger `builder_ticket_id` ownership constraints/uniqueness, RLS and service-only `security_invoker` view. PR #445 merged it as `ab2d1034f8e34539fc1d905f95205567915f86bb`; no live DDL or Edge deployment occurred.
 
 **Status namespace correction:** builder open exposure uses `SHADOW_RESERVED`; V1 remains `PENDING` / `SHADOW_PLACED`. This prevents builder persistence from impersonating V1 state without altering current V1 runtime calculations.
 
@@ -820,9 +820,13 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Frontend shared-exposure merge proof:** `supabase/migrations/20260921101354_ineed_staff_exposure_summary.sql` adds a staff-authorized aggregate RPC over service-only `ineed_open_risk_exposures`; `frontend/ineed.js` uses it for exposure/equity/open-unit presentation and accepts V1 fallback only when the RPC is absent (`PGRST202` / `42883`). PR #449 exact head `81bff0eaeca09e25295a6d678d0944cc8327d6de` passed 8/8 GREEN and merged as `5e2f008bafc516ccc47ac79a9844b46c98a71281`; no live DDL or Edge deploy occurred.
 
-**Deployment-readiness audit:** live production still lacks `ineed_builder_tickets`, `ineed_open_risk_exposures`, ledger `builder_ticket_id` and the staff summary RPC; placement/admin-start/settlement remain V1-only readers while live settlement retains both `FOR UPDATE` locks. Live `ineed-sync` remains v10/hash `0752efce...`; repo Edge already depends on the shared view. Therefore rollout is DB-first with verification after every migration and Edge last. The existing `ineed_email_events` / `QUALIFIED` Gmail SMTP alert path is a required non-regression contract for the Edge step. `TENIS_AI_LOGIC12_DEPLOYMENT_READINESS_AUDIT.md` owns that order.
+**Deployment closeout:** PR #450 exact head `345cf2245748a23be513f2bc02ff50d9feaca1e5` passed 7/7 GREEN and merged as `8f6795e4670b32f601f04e8822a4dc40875e4d6f`. Production then received the five reviewed shared-exposure migrations in dependency order plus advisor-driven `ineed_builder_ticket_fk_index`. `ineed-sync` is ACTIVE v11/hash `5e6cd2eea5937fd66de98754dbd40afe2906f6d70fbe5588116f218ef45c673f`; normal SHADOW workflow run `35596941111` passed guard, settlement and scoped sync on `main`.
 
-**Pre-writer deployment boundary:** there are no known repository-side V1-only read/presentation consumers, but builder reserve runtime remains blocked until a separately authorized controlled rollout proves live V1 equivalence, ACL/RLS and advisor-delta safety. Builder settlement and real-money execution remain disabled.
+**Live V1 proof after rollout:** 41 real scoped evaluations were processed, all `REJECTED`, with `0` placed; `active_exposure=0`, `open_bets=[]`, `risk_exposures=[]`, available/equity `191.2532 PLN`, and `automatic_real_betting=false`. Staff aggregate returned `source=SHARED_DB` with zero V1/builder units. Email non-regression remains live: 36 historical events are `SENT` with provider IDs, zero events are pending/failed, and no synthetic email was generated during rollout.
+
+**Advisor closeout:** the post-DB unindexed-FK finding for `builder_ticket_id` was fixed by `20260921115606_ineed_builder_ticket_fk_index.sql`. Remaining new `unused_index` INFO is expected with zero builder rows. Service-only RLS/no-policy and authenticated staff-summary SECURITY DEFINER findings are intentional and explicitly reviewed against ACL + internal `is_staff(auth.uid())` guard.
+
+**Pre-writer boundary:** shared read-side is deployed and verified, but builder reserve runtime remains blocked because no writer/RPC/caller exists. Builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
 
 ---
 
