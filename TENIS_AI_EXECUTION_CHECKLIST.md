@@ -37,6 +37,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `5e2f008bafc516ccc47ac79a9844b46c98a71281`; open PRs: 0 at audit start.
 
+**PR:** #450 ? `LOGIC-12: freeze shared exposure deployment readiness`; base `5e2f008bafc516ccc47ac79a9844b46c98a71281`; pre-checkpoint head `de4bda24c431c2651565290afe9beea8cb2795b6`.
+
+
 **FRONTEND MERGE PROOF:** PR #449 exact head `81bff0eaeca09e25295a6d678d0944cc8327d6de` passed 8/8 GREEN on base `af9621f6a91e40e478c61edb3f2c00e5e61944d4` and merged as `5e2f008bafc516ccc47ac79a9844b46c98a71281`. No live DDL or Edge deploy occurred.
 
 **LIVE PRE-DEPLOY MATRIX:** `ineed_builder_tickets`, `ineed_open_risk_exposures`, `ineed_staff_exposure_summary(uuid)` and ledger `builder_ticket_id` are absent live. Placement/admin-start/settlement still read V1-only sources. Live settlement retains two `FOR UPDATE` locks. Live `ineed-sync` remains ACTIVE v10 hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`.
