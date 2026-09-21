@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **PR:** Phase-5 PR #438 MERGED as `73926853e4439f41a97c08ffd4be93f55e16c24f` from exact head `ac9d6d024336aa9f0fa56c155020959e13e09769`.
 
-**LAST VERIFIED MAIN:** `73926853e4439f41a97c08ffd4be93f55e16c24f` — merge of #438. Immediately before merge, fresh main/base equality was `e7cf31532008c03d620a49318f89f47e428c134c` and PR was mergeable.
+**LAST VERIFIED MAIN:** `6f3fcf9f8640dfe357501d083fd2bd058b66d1b1` — data-only Superbet refresh after #438. Drift from `73926853...` touches only generated `frontend/data/*.json`; zero overlap with the Phase-5 closeout docs. Closeout branch is rebased onto this fresh main.
 
 **LAST COMPLETED WORK:** Phase 5 pure builder-ticket SHADOW envelope merged. Exact-head CI on `ac9d6d02...` finished 8/8 GREEN: LOGIC-01/02/03/04, iNeed$ SHADOW bankroll, Delivery/Security, CodeQL and Tenis AI UI & Project Health. Local validation was focused 38/38, broad iNeed$/Superbet/Symphony 410/410, full repository 1399/1399, docs 11/11, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN, `git diff --check` clean.
 
