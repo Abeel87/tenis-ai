@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-phase6-persistence-audit` from exact merged main `06d0b06579b95d4a23106f2173ccd4e991558aa3`.
 
-**PR:** not opened yet; Phase-6 audit branch is local until focused validation passes.
+**PR:** #440 — `LOGIC-12: audit builder persistence and sync contract`; audit-only, zero runtime/schema write changes.
 
 **LAST VERIFIED MAIN:** `06d0b06579b95d4a23106f2173ccd4e991558aa3` — merge of docs-only Phase-5 closeout PR #439 after rebasing onto data-only main `6f3fcf9f...` and exact-head 7/7 GREEN CI.
 
@@ -55,8 +55,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Commit/push the validated Phase-6 audit-only branch and open its PR; no migration, Edge Function change or runtime wiring.
-2. Run exact-head CI and fresh-main drift check; merge only all-green.
+1. Run exact-head CI for PR #440 and perform a fresh-main drift check; merge only all-green.
+2. Confirm post-merge that current V1 runtime/Supabase behavior remains unchanged.
 3. After Phase 6 is merged, reconcile deployed `ineed-sync` v10 source into Git in a separate no-behavior-change source-parity PR before any Edge deployment.
 4. Audit/design a shared V1 + builder bankroll/exposure read model before enabling any builder reservation write.
 5. Keep builder settlement and all real-money execution disabled.
