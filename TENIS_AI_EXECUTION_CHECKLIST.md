@@ -33,11 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** PR #458 lifecycle operator-evidence audit is MERGED and post-merge checks are GREEN. Active bounded step: **read-only exact Bet Builder terminal-evidence capture**. Settlement remains blocked; the collector may only preserve exact operator evidence or `N/D`.
 
-**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` and synchronized without conflict to fresh data-only main `5778c3bd96081da2a299919b6b8f64122969399b` via merge commit `c676f08152aa50dd4384caf378aed60f7a68e667`.
+**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` and synchronized without conflict through fresh bot main `907edf8ebaffdca963272d91ee9a559a704c1f3b`; latest sync merge is `826d468e91805876db9406e4eed43912cccb0b1c`.
 
 **PR:** #459 - `LOGIC-12: capture exact Bet Builder terminal evidence read-only`. Exact-head full GitHub CI remains mandatory before merge.
 
-**LAST VERIFIED MAIN:** `5778c3bd96081da2a299919b6b8f64122969399b` (`data: refresh rebuilt Neuron SHADOW`, tenis-ai-bot), direct child of PR #458 merge. Drift from `6e4f0a2e...` changed only `frontend/data/neuron_current.json`; no overlap with PR #459 files.
+**LAST VERIFIED MAIN:** `907edf8ebaffdca963272d91ee9a559a704c1f3b` (`data: refresh tennis analysis`, tenis-ai-bot), direct child of `5778c3bd96081da2a299919b6b8f64122969399b`. Drift inspection found only generated `frontend/data/*` changes and no overlap with any of the 9 PR #459 paths.
 
 **PR #458 MERGE PROOF:** final head `3457af5bf2722e4a687ae32439b5cdc6dd6b3e94` passed 8/8 exact-head workflows and merged as `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`. Post-merge Delivery/Security and UI/Project Health push workflows both completed GREEN.
 
