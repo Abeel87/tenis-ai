@@ -1,6 +1,6 @@
 # LOGIC-12 Phase 5 — Builder Ticket SHADOW audit
 
-Status: **RED CONTRACT / NON-RUNTIME**
+Status: **GREEN CONTRACT / NON-RUNTIME — FULL REPO CI PENDING**
 
 ## Current V1 ownership proof
 
@@ -16,14 +16,14 @@ Therefore a final Bet Builder must not be represented as a fake V1 signal or fak
 
 ## Phase-5 bounded objective
 
-Phase 5 first defines only a pure SHADOW **builder-ticket envelope**. It is not persistence and it is not settlement.
+Phase 5 defines only a pure SHADOW **builder-ticket envelope**. It is not persistence and it is not settlement.
 
 Input must be both:
 
 1. the exact final builder composition containing canonical legs and exact combined-price provenance, and
 2. the matching Phase-4 whole-builder `SHADOW_QUALIFIED` economics result containing exactly one reservation proposal.
 
-The ticket must retain, without recomputation:
+The ticket retains, without recomputation:
 
 - deterministic identity `builder-ticket:<composition_id>`,
 - operator/match/player identity,
@@ -33,6 +33,33 @@ The ticket must retain, without recomputation:
 - exact source event, SGA/combination selection ID and component UUIDs,
 - Phase-4 economics/risk snapshot,
 - exactly one whole-ticket reservation proposal.
+
+## Canonical owner
+
+`backend/ineed_builder_ticket_shadow.py::build_builder_ticket_shadow()` is the sole Phase-5 owner.
+
+It only freezes already-verified Phase-4 evidence. It has no database, network, runner, settlement, workflow or frontend dependency and creates no side effect.
+
+## RED → GREEN evidence
+
+The test-only commit `846818991a9f1d0c26c3d4d380d25c1dfb463e17` intentionally omitted the owner module. Executing `tests/test_ineed_builder_ticket_shadow.py` in isolation failed during collection exactly as designed:
+
+`ModuleNotFoundError: No module named 'backend.ineed_builder_ticket_shadow'`
+
+The same exact test file executed with the implementation from commit `ff9b1479aacaaf033352e58108f855046f414d9b` passes **11/11 GREEN**.
+
+The isolated executable proof validates:
+
+- one deterministic ticket from exact Phase-4 evidence,
+- rejection of V1 `QUALIFIED` and all non-Phase-4 statuses,
+- identity/joint/odds mismatch rejection,
+- exactly one whole-builder reservation,
+- exact operator quote provenance and unique component UUIDs,
+- complete verified leg contract,
+- no V1 signal-shaped or settlement-shaped top-level fields,
+- deterministic deep-copy behavior.
+
+This is not yet full repository CI. `MaDMachiN` is currently offline, and commits made through the GitHub App did not create Actions runs for PR #438. The PR is **not merge-ready** until normal exact-head CI or equivalent full repository execution is available.
 
 ## Fail-closed rules
 
@@ -47,7 +74,7 @@ Do not create a ticket if any of these are false:
 - exact SGA/combination selection ID, source event and source URL are present,
 - final stake is positive and equals the one reservation amount,
 - reservation key is exactly `builder:<composition_id>`,
-- all source rows remain `runtime_publishable=false` and `automatic_real_betting=false`.
+- source evidence remains non-runtime and real betting remains disabled.
 
 ## Explicit non-goals
 
@@ -62,7 +89,7 @@ Phase 5 does **not**:
 - reserve bankroll,
 - execute any real-money transaction.
 
-Ticket output must explicitly state:
+Ticket output explicitly states:
 
 - `runtime_publishable=false`,
 - `persistence_ready=false`,
