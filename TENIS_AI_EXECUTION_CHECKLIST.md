@@ -33,11 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** PR #458 lifecycle operator-evidence audit is MERGED and post-merge checks are GREEN. Active bounded step: **read-only exact Bet Builder terminal-evidence capture**. Settlement remains blocked; the collector may only preserve exact operator evidence or `N/D`.
 
-**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` and synchronized without conflict through fresh bot main `907edf8ebaffdca963272d91ee9a559a704c1f3b`; latest sync merge is `826d468e91805876db9406e4eed43912cccb0b1c`.
+**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` and synchronized without conflict through fresh bot main `c5aa9039d26240c83e49ea73a4f630dfec803a2c`; latest sync merge is `c7c459422c0aab202f09b80b06f4c3fdb9348119`.
 
 **PR:** #459 - `LOGIC-12: capture exact Bet Builder terminal evidence read-only`. Exact-head full GitHub CI remains mandatory before merge.
 
-**LAST VERIFIED MAIN:** `907edf8ebaffdca963272d91ee9a559a704c1f3b` (`data: refresh tennis analysis`, tenis-ai-bot), direct child of `5778c3bd96081da2a299919b6b8f64122969399b`. Drift inspection found only generated `frontend/data/*` changes and no overlap with any of the 9 PR #459 paths.
+**LAST VERIFIED MAIN:** `c5aa9039d26240c83e49ea73a4f630dfec803a2c` (`data: refresh Superbet market context`, tenis-ai-bot), direct child of `907edf8ebaffdca963272d91ee9a559a704c1f3b`. Drift inspection found only generated `frontend/data/*` changes and no overlap with any of the 9 PR #459 paths.
 
 **PR #458 MERGE PROOF:** final head `3457af5bf2722e4a687ae32439b5cdc6dd6b3e94` passed 8/8 exact-head workflows and merged as `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`. Post-merge Delivery/Security and UI/Project Health push workflows both completed GREEN.
 
