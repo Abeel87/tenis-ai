@@ -71,7 +71,11 @@ The post-read-model atomicity audit freezes the database ownership boundary. Liv
 
 The dormant schema still has no builder writer/RPC. PR #446 merged the shared read-side contract: `ineed_system_place_bet()` reads total/match/player/market exposure from `ineed_open_risk_exposures`, and repository `ineed-sync::activeState()` reads the same view into `risk_exposures` for exposure/equity while preserving V1-only `open_bets` for settlement. The repository Edge source is newer than live; production remains deployed v10 until an explicit deployment decision.
 
-PR #447 merged the admin-start exposure guard onto `ineed_open_risk_exposures` without changing admin auth or experiment rollover semantics. The next bounded step repairs a DB-to-Git settlement source-parity drift and changes only V1 settlement `other_exposure` bookkeeping to the shared view: the live production bet lock + experiment lock, idempotency, WIN/LOSS/VOID/CANCELLED payout rules, ledger credit and V1 updates remain unchanged. After that, `frontend/ineed.js` exposure presentation is the last known V1-only pre-writer consumer.
+PR #447 merged the admin-start exposure guard onto `ineed_open_risk_exposures`. PR #448 then repaired the DB-to-Git settlement source-parity drift while preserving the live bet + experiment mutex and V1 settlement semantics; only `other_exposure` moved to the shared view. The final repository-side presentation step keeps `ineed_open_risk_exposures` service-only and exposes only a staff-authorized aggregate RPC for total exposure/open-unit counts, which `frontend/ineed.js` consumes. Before those dormant DB objects are deployed, the frontend falls back to the existing V1-only calculation only for a genuinely missing RPC; all other RPC errors fail closed.
+
+
+
+Closing repository read/presentation consumers does not authorize builder persistence. A separate deployment/readiness phase must apply and verify the dormant migrations and candidate Edge read-side in a controlled environment, prove V1 equivalence and ACL/RLS behavior, and keep builder reservation + settlement disabled until separately approved.
 
 Builder settlement remains `NOT_IMPLEMENTED` until a separate operator-evidence audit proves one-ticket outcome/void/cancel/payout semantics. Real-money execution remains out of scope.
 
