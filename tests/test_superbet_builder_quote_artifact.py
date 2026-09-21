@@ -23,6 +23,7 @@ def direct_feed(status="OK"):
             "event_id": "15000001",
             "event_url": "https://superbet.pl/kursy/tenis/alice-vs-betty-15000001",
             "direct_match_verified": True,
+            "prices_used": False,
         }],
         "prices_used": False,
     }
@@ -173,3 +174,84 @@ def test_refresh_current_writes_safe_empty_artifact_for_no_overlap(tmp_path):
     assert result["written"] is True
     assert result["external_requests"] == 0
     assert json.loads(target.read_text(encoding="utf-8"))["status"] == "NO_CURRENT_OVERLAP"
+
+
+def test_direct_input_must_be_metadata_only():
+    feed = direct_feed()
+    feed["prices_used"] = True
+    out = bq.build_artifact(feed, fetcher=lambda event_id: payload([combo()]), now=NOW)
+    assert out["status"] == "DIRECT_INPUT_UNSAFE"
+    assert out["external_requests"] == 0
+
+
+def test_workflow_guards_quote_artifact_module():
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "superbet-market-refresh.yml").read_text(encoding="utf-8")
+    assert "backend/superbet_builder_quotes.py" in workflow
+    assert "tests/test_superbet_builder_quote_artifact.py" in workflow
+    assert "python -m py_compile backend/superbet_builder_quotes.py" in workflow
+    direct_pos = workflow.index("python backend/superbet_direct.py refresh-selected")
+    builder_pos = workflow.index("python backend/superbet_builder_quotes.py refresh-current")
+    invalidate_pos = workflow.index("python backend/superbet_builder_quotes.py invalidate UPSTREAM_REFRESH_FAILED")
+    assert direct_pos < builder_pos < invalidate_pos
+    assert "id: direct_refresh" in workflow
+    assert "id: builder_quote_refresh" in workflow
+    assert "steps.direct_refresh.outcome == 'success'" in workflow
+
+
+def test_stale_direct_feed_fails_closed_before_event_request():
+    called = []
+    feed = direct_feed()
+    feed["generated_at"] = "2026-09-21T10:00:00+00:00"
+    out = bq.build_artifact(feed, fetcher=lambda event_id: called.append(event_id), now=NOW)
+    assert out["status"] == "DIRECT_INPUT_STALE"
+    assert out["external_requests"] == 0
+    assert called == []
+
+
+def test_refresh_failure_overwrites_stale_quotes_with_source_unavailable(tmp_path):
+    source = tmp_path / "direct.json"
+    target = tmp_path / "builder.json"
+    source.write_text(json.dumps(direct_feed()), encoding="utf-8")
+    target.write_text(json.dumps({"status": "OK", "quotes_count": 99}), encoding="utf-8")
+
+    def broken(event_id):
+        raise RuntimeError("offline")
+
+    result = bq.refresh_current(direct_path=source, output_path=target, fetcher=broken, now=NOW)
+    loaded = json.loads(target.read_text(encoding="utf-8"))
+    assert result["status"] == "SOURCE_UNAVAILABLE"
+    assert result["source_status"] == "EVENT_FETCH_FAILED"
+    assert loaded["status"] == "SOURCE_UNAVAILABLE"
+    assert loaded["source_status"] == "EVENT_FETCH_FAILED"
+    assert loaded["quotes_count"] == 0
+    assert loaded["contains_prices"] is False
+    assert loaded["prices_used"] is False
+
+
+def test_current_event_identity_is_reverified_before_quotes_are_published():
+    wrong = {
+        "data": [{
+            "eventId": 15000001,
+            "matchName": "Carol·Diana",
+            "utcDate": "2026-09-21T16:00:00Z",
+            "odds": [combo()],
+        }]
+    }
+    out = bq.build_artifact(direct_feed(), fetcher=lambda event_id: wrong, now=NOW)
+    assert out["status"] == "EVENT_FETCH_FAILED"
+    assert out["quotes_count"] == 0
+
+
+def test_invalidate_writes_safe_empty_artifact(tmp_path):
+    target = tmp_path / "builder.json"
+    target.write_text(json.dumps({"status": "OK", "quotes_count": 5}), encoding="utf-8")
+    result = bq._persist_unavailable(
+        source_status="UPSTREAM_REFRESH_FAILED",
+        output_path=target,
+        now=NOW,
+    )
+    loaded = json.loads(target.read_text(encoding="utf-8"))
+    assert result["status"] == "SOURCE_UNAVAILABLE"
+    assert loaded["source_status"] == "UPSTREAM_REFRESH_FAILED"
+    assert loaded["quotes_count"] == 0
+    assert loaded["contains_prices"] is False
