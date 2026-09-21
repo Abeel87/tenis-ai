@@ -802,13 +802,17 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Atomic reservation audit:** current V1 place + settle RPCs serialize bankroll mutation through the same experiment-row `FOR UPDATE` lock. A future builder reservation must use this same mutex and cannot be enabled until one shared DB exposure source is also used by V1 placement and `ineed-sync`; otherwise V1 could ignore open builder exposure and over-allocate.
 
-**Atomic physical design (not implemented):** one future `ineed_builder_tickets` table is the immutable ticket/exposure owner; the existing `ineed_bankroll_ledger` stays the only ledger; a future `ineed_open_risk_exposures` normalized source unions V1 open bets with builder `SHADOW_RESERVED` owners. One transaction creates owner + exactly one `STAKE_RESERVED` debit or neither. Database-owned SHA-256 via live `pgcrypto` protects immutable replay.
+**Atomic physical design:** one `ineed_builder_tickets` table is the immutable ticket/exposure owner; the existing `ineed_bankroll_ledger` stays the only ledger; `ineed_open_risk_exposures` is the normalized source spanning V1 open bets with builder `SHADOW_RESERVED` owners. The atomicity design remains owner + exactly one `STAKE_RESERVED` debit under the experiment lock or neither.
+
+**Atomicity-audit merge proof:** PR #444 exact head `b9ef35874f2cbd1ca92468abd140507d6441d2e9` passed 8/8 GREEN workflows on fresh base `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1` and merged as `6f0fa7b204b232e398cf095e2e85b0017206f102`. Live `ineed-sync` remained ACTIVE v10 with unchanged source hash; no Supabase deploy occurred.
+
+**Dormant shared-DB schema (active implementation):** `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines the builder owner, generated ticket/reservation identities, DB-owned `pgcrypto` SHA-256 digest, ledger `builder_ticket_id` ownership constraints/uniqueness, RLS and service-only `security_invoker` view. The migration contains no RPC/function, no insert path, no Edge change and no runtime caller.
 
 **Status namespace correction:** builder open exposure uses `SHADOW_RESERVED`; V1 remains `PENDING` / `SHADOW_PLACED`. This prevents builder persistence from impersonating V1 state without altering current V1 runtime calculations.
 
-**Atomicity-audit local proof:** after final rebase onto fresh main `b1b3eb22fb827e83bd36f20e8562a18d84e6c6e1`, focused risk/builder/audit/settlement pack 42/42 GREEN; full repository pytest 1435/1435 GREEN; UI static smoke PASS (377 current matches / 102 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. Both intervening bot drifts were generated `frontend/data/*.json` only with zero overlap. No migration, RPC, Edge write, settlement change or deploy is present.
+**Dormant-schema local proof:** live read-only compatibility shows PostgreSQL 17.6, `pgcrypto` in schema `extensions`, immutable `digest(text,text)`, and 35/35 existing `STAKE_RESERVED` rows owned by V1 `bet_id`. Migration parses as 14 PostgreSQL statements; focused schema/risk/builder/audit pack 41/41 GREEN; full iNeed pack 109/109 GREEN; full repository pytest 1442/1442 GREEN; UI static smoke PASS (377 current matches / 101 Symphony) after data-only rebase to `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; Project Health 0 FAIL / 1 existing WARN. The equivalence test covers 250 deterministic V1 view-vs-backend states. No live DDL has been executed.
 
-**Next proof:** finish/merge the atomicity audit-only PR. Only afterward may a separately controlled implementation introduce dormant shared DB schema/read source plus exact V1-only equivalence tests. Builder reserve runtime, settlement and real-money execution remain disabled.
+**Next proof:** complete full pytest/UI/Project Health, then open/merge a dormant-schema/read-source PR with exact-head CI and fresh-main verification. Only afterward migrate V1 placement and `ineed-sync` read-side to the shared DB source; builder reserve runtime, settlement and real-money execution remain disabled.
 
 ---
 
