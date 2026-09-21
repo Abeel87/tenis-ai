@@ -31,13 +31,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** shared-exposure production rollout + source closeout COMPLETE / VERIFIED. Active bounded step: **repository-only dormant SHADOW builder reservation writer**. No live deployment, no runtime caller, no builder settlement, no real-money execution.
+**SUBSTEP:** dormant SHADOW builder reservation writer DEPLOYED / VERIFIED, still disabled. Active bounded step: **caller/enablement audit only**. No flag enablement, no runtime caller, no builder settlement, no real-money execution.
 
-**BRANCH:** `logic-12-builder-reservation-writer-shadow`, exact base `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc` (PR #451 merge).
+**BRANCH:** `logic-12-builder-writer-deployment-closeout`, exact base `4e8a0304397d6b569921977c7d0a51bfb7ba29bc` (PR #452 merge).
 
-**LAST VERIFIED MAIN:** `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
+**LAST VERIFIED MAIN:** `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
 
-**PR:** #452 - LOGIC-12 dormant SHADOW builder reservation writer; base 0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc; pre-checkpoint head 79d0cf7549e856752ddbb0c8ffcb1a75281b007c.
+**PR:** deployment closeout PR not opened yet. PR #452 exact head `4e224f630112447b442bded3e1e5150335ba5b0e` passed 8/8 GREEN and merged as `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
@@ -45,21 +45,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **WRITER IMPLEMENTATION:** `20260921123000_ineed_builder_reservation_writer_shadow.sql` defines `ineed_system_reserve_builder_ticket(uuid,jsonb)` as service-role-only, experiment-row-locked, immutable/idempotent and fail-closed. It requires explicit `builder_reservation.enabled=true` plus contract version; the active production experiment currently has no such config block.
 
-**RUNTIME ISOLATION:** no Edge/workflow/frontend/scoped-runner caller is added. `open_bets` remains V1-only. Builder settlement remains `NOT_IMPLEMENTED`. Production has not received the writer migration.
+**RUNTIME ISOLATION:** production now contains only the dormant service-role RPC. No Edge/workflow/frontend/scoped-runner caller exists; the active experiment has no builder_reservation enable block; `open_bets` remains V1-only; builder settlement remains `NOT_IMPLEMENTED`.
 
-**CURRENT TEST PROOF:** focused writer + Phase-5/6/shared-exposure/V1 isolation pack **41/41 GREEN**; full iNeed pack **149/149 GREEN**; full repository pytest **1482/1482 GREEN** using repo-local `--basetemp` after the Windows user Temp directory returned permission errors; UI static smoke PASS (**377 current matches / all 82 Symphony**); Project Health **0 FAIL / 1 existing WARN**; `git diff --check` clean.
+**CURRENT TEST PROOF:** focused writer + Phase-5/6/shared-exposure/V1 isolation pack **41/41 GREEN**; closeout focused **24/24 GREEN**; full iNeed pack **150/150 GREEN**; full repository pytest **1483/1483 GREEN** using repo-local `--basetemp` after the Windows user Temp directory returned permission errors; UI static smoke PASS (**377 current matches / all 82 Symphony**); Project Health **0 FAIL / 1 existing WARN**; `git diff --check` clean.
 
-**DO NOT REDO:** do not redeploy the shared-exposure bundle or Edge v11. Do not enable the builder flag or add a caller in this PR. Do not infer builder settlement from V1 semantics.
+**DO NOT REDO:** do not redeploy the shared-exposure bundle, writer migration or Edge v11 without drift evidence. Do not enable the builder flag or add a caller during closeout. Do not infer builder settlement from V1 semantics.
 
 **RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. No builder settlement.
 
 ### NEXT EXACT ACTION
 
-1. Finish repository-only writer contract/docs/tests; keep production untouched.
-2. Run full iNeed pack, full repository pytest, UI smoke, Project Health and diff/scope checks.
-3. PR #452 is open; require exact-head CI GREEN before merge.
-4. Merge only after fresh-main equality/rebase proof.
-5. After merge, keep production writer/flag/caller disabled. Any deployment/enablement is a separate controlled step; settlement remains separate.
+1. Record dormant writer deployment closeout in Git; keep production flag disabled and caller absent.
+2. Verify closeout docs/contracts, fresh main, open PR, exact-head CI and merge.
+3. After closeout, audit the exact Phase-5 ticket production/caller lifecycle without wiring or enabling it yet.
+4. Any caller wiring or builder_reservation.enabled=true change requires a separate SHADOW-only PR and live gate.
+5. Builder one-ticket settlement remains a separate operator-semantics phase; real-money execution remains out of scope.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

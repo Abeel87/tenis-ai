@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6 and the shared-exposure read/accounting/presentation rollout are merged, deployed and V1-live-verified through PR #451 + production Edge v11. Active bounded step: repository-only dormant SHADOW builder reservation writer; production writer/runtime caller remain absent, one-ticket builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
+**Status:** ACTIVE - phases 1-6, shared-exposure read/accounting/presentation, and the dormant SHADOW reservation writer are merged and deployed through PR #452 + production Edge v11. The writer remains disabled by absent experiment config and has no runtime caller; one-ticket builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -774,7 +774,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-6 persistence contract:** future builder persistence is a separate experiment-scoped logical object keyed by deterministic `builder-ticket:<composition_id>` plus immutable `ticket_digest`. Exact replay returns idempotent success; same identity with different immutable evidence fails closed. No builder object may become a fake V1 signal/bet or use current V1 statuses to imply unimplemented semantics.
 
-**Shared-bankroll read-side:** the deployed `ineed_open_risk_exposures` source now accounts for V1 open bets and future `SHADOW_RESERVED` builder owners in placement, admin-start, settlement bookkeeping, Edge state and staff presentation. Builder reservation writes remain disabled because no reserve writer/RPC exists and builder settlement is still unimplemented.
+**Shared-bankroll read-side:** the deployed `ineed_open_risk_exposures` source now accounts for V1 open bets and future `SHADOW_RESERVED` builder owners in placement, admin-start, settlement bookkeeping, Edge state and staff presentation. Builder reservation writes remain disabled because the deployed reserve RPC has no caller and the active experiment lacks the required enable flag/version; builder settlement is still unimplemented.
 
 **Source-parity step:** deployed `ineed-sync` v10 contains SMTP/email source changes absent from pre-Phase-6 Git: env aliases/fallback sender selection, explicit configuration-state detail and `operator_event_url` email metadata. The active source-parity branch copies those already-live semantics into Git only; no Supabase deployment is part of this step.
 
@@ -826,7 +826,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Advisor closeout:** the post-DB unindexed-FK finding for `builder_ticket_id` was fixed by `20260921115606_ineed_builder_ticket_fk_index.sql`. Remaining new `unused_index` INFO is expected with zero builder rows. Service-only RLS/no-policy and authenticated staff-summary SECURITY DEFINER findings are intentional and explicitly reviewed against ACL + internal `is_staff(auth.uid())` guard.
 
-**Writer boundary:** shared read-side is deployed and verified. The repository now contains `20260921123000_ineed_builder_reservation_writer_shadow.sql`, a service-role-only SHADOW reserve RPC that uses the experiment mutex, immutable DB digest, shared exposure caps and one owner + one ledger debit transaction. It is not deployed in this PR, has no Edge/workflow/frontend caller, and requires an explicit `builder_reservation.enabled=true` plus matching contract version in experiment config. The active production experiment currently has no such config block. Builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
+**Writer boundary:** shared read-side and dormant reserve RPC are deployed and verified. Live migration `20260921134348 ineed_builder_reservation_writer_shadow` installs the service-role-only RPC using the experiment mutex, immutable DB digest, shared exposure caps and one owner + one ledger debit transaction. It has no Edge/workflow/frontend caller and requires explicit `builder_reservation.enabled=true` plus matching contract version; the active production experiment has no such config block. Builder settlement remains `NOT_IMPLEMENTED`, and real-money execution remains disabled.
 
 
 **Dormant writer implementation:** canonical audit `TENIS_AI_LOGIC12_BUILDER_RESERVATION_WRITER_AUDIT.md`. The RPC accepts only the frozen Phase-5 ticket contract, resolves identical replay as `IDEMPOTENT`, rejects digest drift as `IMMUTABLE_TICKET_CONFLICT`, and never recomputes probability/joint probability/combined odds/EV/Kelly/stake. The frozen stake is only revalidated against current V1 risk caps on `ineed_open_risk_exposures`; if it no longer fits, the transaction fails closed rather than resizing immutable evidence.

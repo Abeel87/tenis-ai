@@ -106,3 +106,19 @@ def test_ticket_owner_and_reservation_debit_are_one_atomic_function_body():
     assert "returning * into ledger_row" in LOWER
     assert "'status','reserved'" in LOWER
     assert "'automatic_real_betting',false" in LOWER
+
+
+def test_deployment_closeout_keeps_writer_dormant_and_edge_unchanged():
+    audit = (ROOT / "TENIS_AI_LOGIC12_BUILDER_RESERVATION_WRITER_AUDIT.md").read_text(encoding="utf-8")
+    required = (
+        "20260921134348 ineed_builder_reservation_writer_shadow",
+        "BUILDER_RESERVATION_DISABLED",
+        "builder ticket rows = 0",
+        "unsent email events = 0",
+        "ineed-sync` remains ACTIVE v11",
+        "Caller wiring and enablement remain a separate SHADOW-only phase",
+        "Builder settlement remains `NOT_IMPLEMENTED`",
+    )
+    for marker in required:
+        assert marker in audit
+    assert "ineed_system_reserve_builder_ticket" not in EDGE.lower()
