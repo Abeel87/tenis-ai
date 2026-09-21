@@ -101,3 +101,22 @@ one-ticket settlement is still unavailable. Deployment/enablement needs its own 
 proof and must preserve SHADOW-only behavior.
 
 Builder one-ticket settlement and real-money execution remain out of scope.
+
+## 9. Production dormant deployment closeout
+
+PR #452 exact head `4e224f630112447b442bded3e1e5150335ba5b0e` passed 8/8 GREEN and merged as `4e8a0304397d6b569921977c7d0a51bfb7ba29bc` after fresh-main equality.
+
+Production migration `20260921134348 ineed_builder_reservation_writer_shadow` then installed only the RPC. Post-deploy proof:
+
+- function exists exactly once and remains `SECURITY DEFINER` with `search_path=''`,
+- `PUBLIC`, `anon`, and `authenticated` have no EXECUTE; only `service_role` has EXECUTE,
+- experiment-row `FOR UPDATE`, shared exposure reads, and `BUILDER_RESERVATION_DISABLED` are present in the live function body,
+- active experiment has no `builder_reservation.enabled` / contract version and keeps `automatic_real_betting=false`,
+- fail-closed smoke with an empty ticket stopped at `BUILDER_RESERVATION_DISABLED`,
+- builder ticket rows = 0, builder-owned ledger rows = 0, open V1 bets = 0, total exposure = 0,
+- unsent email events = 0,
+- `ineed-sync` remains ACTIVE v11 with unchanged source hash `5e6cd2eea5937fd66de98754dbd40afe2906f6d70fbe5588116f218ef45c673f`.
+
+Security advisors do not list the new writer as executable by anon/authenticated. The existing `ineed_builder_tickets` RLS-with-no-policy INFO remains intentional service-only isolation. Performance advisors show only the expected unused builder FK index while there are zero builder rows.
+
+Deployment does not enable reservations. Caller wiring and enablement remain a separate SHADOW-only phase. Builder settlement remains `NOT_IMPLEMENTED`; real-money execution remains out of scope.
