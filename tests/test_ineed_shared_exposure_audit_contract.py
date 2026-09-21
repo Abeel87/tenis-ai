@@ -52,9 +52,12 @@ def test_phase4_builder_consumes_normalized_ephemeral_risk_exposures():
     assert '"runtime_publishable": False' in builder
 
 
-def test_read_model_adds_no_shared_exposure_schema_edge_or_settlement_wiring():
+def test_shared_schema_is_dormant_without_edge_or_settlement_wiring():
     migrations = list((ROOT / "supabase/migrations").glob("*.sql"))
-    assert all("risk_exposures" not in _text(path) for path in migrations)
+    shared = [path for path in migrations if "risk_exposures" in _text(path)]
+    assert len(shared) == 1
+    assert shared[0].name.endswith("_ineed_builder_shared_exposure_dormant.sql")
+    assert "create view public.ineed_open_risk_exposures" in _text(shared[0]).lower()
     assert "risk_exposures" not in _text(ROOT / "supabase/functions/ineed-sync/index.ts")
     assert "normalize_risk_exposures" in _text(ROOT / "backend/ineed_money.py")
     assert "risk_exposure_state" in _text(ROOT / "backend/ineed_builder_shadow.py")

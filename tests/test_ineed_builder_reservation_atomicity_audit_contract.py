@@ -29,17 +29,19 @@ def test_atomicity_audit_freezes_single_owner_single_ledger_design():
         assert fragment in text
 
 
-def test_audit_does_not_add_builder_write_schema_or_rpc():
-    migrations = "\n".join(_text(path) for path in sorted((ROOT / "supabase/migrations").glob("*.sql")))
+def test_post_audit_phase_adds_only_dormant_schema_not_write_rpc():
+    paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_builder_shared_exposure_dormant.sql"))
+    assert len(paths) == 1
+    migration = _text(paths[0]).lower()
+    migrations = "\n".join(_text(path) for path in sorted((ROOT / "supabase/migrations").glob("*.sql"))).lower()
     edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
-    forbidden = (
-        "create table public.ineed_builder_tickets",
-        "create view public.ineed_open_risk_exposures",
-        "ineed_system_reserve_builder_ticket",
-    )
-    for fragment in forbidden:
-        assert fragment not in migrations.lower()
-        assert fragment not in edge.lower()
+    assert "create table public.ineed_builder_tickets" in migration
+    assert "create view public.ineed_open_risk_exposures" in migration
+    assert "create function" not in migration
+    assert "create or replace function" not in migration
+    assert "insert into public.ineed_builder_tickets" not in migration
+    assert "ineed_system_reserve_builder_ticket" not in migrations
+    assert "ineed_system_reserve_builder_ticket" not in edge.lower()
     assert "risk_exposures" not in edge
 
 

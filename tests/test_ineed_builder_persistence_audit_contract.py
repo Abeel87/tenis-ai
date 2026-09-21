@@ -65,12 +65,19 @@ def test_phase6_does_not_add_builder_runtime_wiring():
         assert "builder-ticket:" not in text
 
 
-def test_phase6_adds_no_builder_supabase_migration():
+def test_phase6_is_superseded_only_by_the_dormant_builder_schema_migration():
     migrations = ROOT / "supabase" / "migrations"
+    dormant = sorted(migrations.glob("*_ineed_builder_shared_exposure_dormant.sql"))
+    assert len(dormant) == 1
     for path in migrations.glob("*.sql"):
         text = _text(path).lower()
-        assert "builder_ticket" not in text
-        assert "builder-ticket:" not in text
+        if path == dormant[0]:
+            assert "create table public.ineed_builder_tickets" in text
+            assert "create view public.ineed_open_risk_exposures" in text
+            assert "ineed_system_reserve_builder_ticket" not in text
+        else:
+            assert "create table public.ineed_builder_tickets" not in text
+            assert "ineed_system_reserve_builder_ticket" not in text
 
 
 def test_audit_records_edge_source_parity_precondition():
