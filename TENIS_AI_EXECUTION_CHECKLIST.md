@@ -31,39 +31,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** builder persistence/sync rollout is MERGED and production-proven with the reservation gate still disabled. Active bounded step: **Bet Builder one-ticket lifecycle operator-evidence audit**. No lifecycle implementation is allowed until exact Superbet terminal evidence is proven.
+**SUBSTEP:** PR #458 lifecycle operator-evidence audit is MERGED and post-merge checks are GREEN. Active bounded step: **read-only exact Bet Builder terminal-evidence capture**. Settlement remains blocked; the collector may only preserve exact operator evidence or `N/D`.
 
-**BRANCH:** `logic-12-builder-lifecycle-operator-evidence-audit`, created from fresh `main` `935a2d1b2119c061fcda2ecdb3333ef395327125`.
+**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from fresh `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`.
 
-**PR:** #458 - `LOGIC-12: freeze Bet Builder lifecycle operator-evidence blocker`; audit-only head will be re-verified by exact-head full GitHub CI before any merge.
+**PR:** not opened yet; exact-head full GitHub CI will be mandatory before merge.
 
-**LAST VERIFIED MAIN:** `935a2d1b2119c061fcda2ecdb3333ef395327125` (`data: refresh Superbet market context`, tenis-ai-bot), direct descendant of the LOGIC-12 persistence merge lineage. No open PR existed at branch creation.
+**LAST VERIFIED MAIN:** `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`, merge commit of PR #458. No newer main existed at branch creation.
 
-**PERSISTENCE MERGE:** PR #457 passed exact-head 8/8 GREEN and merged as `3fa6fc5602a1c1cfebbe86a68d6425a8e5c20e2d`. Production `ineed-sync` is ACTIVE v12 and contains the guarded OIDC `reserve_builder_tickets` action.
+**PR #458 MERGE PROOF:** final head `3457af5bf2722e4a687ae32439b5cdc6dd6b3e94` passed 8/8 exact-head workflows and merged as `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`. Post-merge Delivery/Security and UI/Project Health push workflows both completed GREEN.
 
-**PRODUCTION PROOF:** normal iNeed$ SHADOW run `35641902429` completed GREEN. `builder_persistence.status=DISABLED`, reason `BUILDER_RESERVATION_DISABLED`, attempted/reservations/reserved/idempotent counts all `0`, settlement disabled, `automatic_real_betting=false`. Post-run live SQL: `builder_reservation=null`, builder tickets `0`, open risk `0`, open shadow bets `0`, email `36 SENT / 0 pending`, runtime health `OK`.
+**PERSISTENCE PROOF:** production `ineed-sync` remains ACTIVE v12. Normal iNeed$ SHADOW run `35641902429` proved `builder_persistence=DISABLED` / `BUILDER_RESERVATION_DISABLED`, zero builder writes, V1/email health preserved and `automatic_real_betting=false`. Production config still has no `builder_reservation` block.
 
-**CURRENT OPERATOR EVIDENCE:** exact market `238733` quote rows preserve price/selection/component identity only. Active raw combination rows have no terminal result/payout field. Read-only checks of completed event IDs `15059403`, `15059404`, `15063421`, `15074747`, `15075651` returned `offerStateStatus=finished` but `odds=[]`, `oddsResults=[]`, `matchResults=null`.
+**FROZEN SOURCE:** current exact quote artifact is preserved by Git commit `935a2d1b2119c061fcda2ecdb3333ef395327125`, blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`, generated `2026-09-21T18:56:50.924941+00:00`. `audits/logic12_builder_terminal_evidence_manifest.json` deterministically freezes the lexicographically smallest exact combination UUID per each captured event `15059409`, `15059413`, `15063427`, including exact component UUIDs and 24-hour post-start probe windows.
 
-**RULES BLOCKER:** Superbet Bet Builder communication NR 22/2023 is headed for football/basketball but its point 1 uses broader wording for an annulled constituent outside football; that scope is not sufficient authority to extend it to tennis automatically. The later tennis-specific communication dated 31.07.2026 explicitly says void tennis BB selections are removed and the total odds recalculated from valid selections (with its stated exception). The repository must not reconstruct payout or rule precedence by inference.
+**ACTIVE EVIDENCE OWNER:** `backend/superbet_builder_terminal_evidence.py`. It reuses the exact public event fetcher + canonical pair/time verification, searches only operator result containers for exact frozen UUIDs, preserves raw matching objects, and never maps them to WIN/LOSS/VOID/CANCELLED or payout. `frontend/data/superbet_builder_terminal_evidence.json` is SHADOW evidence only.
 
-**FIRST SETTLED SAMPLE:** none yet. Current exact builder quote artifact first captured quote-bearing events scheduled for 2026-09-22 (`15059409`, `15059413`, `15063427`), so no exact before/after terminal composition sample exists yet.
+**LIVE PRE-WINDOW PROOF:** invocation at `2026-09-21T19:35:16.998556+00:00` produced 3 x `NOT_PROBE_WINDOW`, `external_requests=0`, `settlement_enabled=false`, `result_inferred=false`, `automatic_real_betting=false`.
 
-**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. V1 settlement, `signal_settlement` and Symphony leg aggregation are not valid substitutes for operator-authoritative one-ticket builder settlement.
+**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` remains in force. Exact combination UUID presence is evidence, not yet settlement semantics. V1 settlement, `signal_settlement`, Symphony aggregation, quote disappearance and synthetic payout remain forbidden substitutes.
 
-**CURRENT TEST PROOF:** focused lifecycle/persistence pack **36/36 GREEN**; full iNeed + exact builder quote pack **185/185 GREEN**; full repository pytest **1518/1518 GREEN**; `git diff --check` clean. Exact-head GitHub CI remains mandatory before merge.
+**CURRENT TEST PROOF:** terminal-evidence tests **11/11 GREEN**; exact Superbet/Symphony workflow pack **207/207 GREEN**; full iNeed + quote/evidence pack **196/196 GREEN**; full repository pytest **1529/1529 GREEN**; Python syntax GREEN; `git diff --check` clean. Exact-head GitHub CI remains mandatory before merge.
 
-**DO NOT REDO:** do not recreate quote artifact, Phase-4/5 ticket producer, shared exposure, reservation writer or OIDC caller. Do not redeploy v12 merely for this audit. Do not enable `builder_reservation`.
+**DO NOT REDO:** do not recreate quote artifact, Phase-4/5 producer, shared exposure, reservation writer, OIDC caller or #458 audit. Do not redeploy `ineed-sync` v12 for evidence capture. Do not enable `builder_reservation`.
 
-**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No builder DB lifecycle changes in this audit. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`.
+**RISKS / HARD BANS:** zero model math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. Zero builder DB/Edge lifecycle writes. No builder result inference. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`.
 
 ### NEXT EXACT ACTION
 
-1. Freeze the operator-evidence audit and static guard tests in a separate audit-only PR; require exact-head full GREEN CI.
-2. Preserve the exact event/combination/component identity for at least one currently captured quote through match completion.
-3. After that event is terminal, inspect operator-provided post-match evidence and determine whether an exact combination result/recalculated odds/payout can be tied to the same frozen identity without fuzzy/name inference.
-4. Reconcile observed operator behavior with the current tennis-specific and general Bet Builder communications; absence/ambiguity remains `N/D` and blocks settlement.
-5. Only after exact evidence is sufficient may a separate SHADOW one-ticket lifecycle design/implementation PR be created. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false` until then.
+1. Finish and validate the bounded read-only terminal-evidence collector + frozen manifest; full iNeed and full repository GREEN are required.
+2. Refresh `main`, reconcile only proven bot/data drift, open a separate PR and require exact-head full GREEN CI before merge.
+3. After merge, let the existing hourly Superbet refresh observe only the three frozen event IDs inside their explicit probe windows; PR runs must perform zero live evidence requests.
+4. Preserve any exact combination-UUID operator result object without interpretation; if completed events still expose no exact result, record `N/D` / `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`.
+5. After terminal samples exist, audit their raw operator semantics against the current tennis-specific/general Bet Builder rules. Only a separate later PR may design settlement if evidence is sufficient. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false`.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

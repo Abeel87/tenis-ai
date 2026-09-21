@@ -13,6 +13,8 @@ on:
       - 'backend/superbet_market_context.py'
       - 'backend/superbet_direct.py'
       - 'backend/superbet_builder_quotes.py'
+      - 'backend/superbet_builder_terminal_evidence.py'
+      - 'audits/logic12_builder_terminal_evidence_manifest.json'
       - 'backend/superbet_market_core.py'
       - 'backend/superbet_market_mapping.py'
       - 'backend/superbet_market_audit.py'
@@ -35,6 +37,7 @@ on:
       - 'tests/test_canonical_superbet_runtime.py'
       - 'tests/test_superbet_direct.py'
       - 'tests/test_superbet_builder_quote_artifact.py'
+      - 'tests/test_superbet_builder_terminal_evidence.py'
       - 'tests/test_superbet_direct_context_fallback.py'
       - 'tests/test_match_browser_filter_coherence.py'
       - 'tests/test_superbet_fixture_discovery_separation.py'
@@ -116,12 +119,16 @@ jobs:
           if ! python backend/superbet_builder_quotes.py refresh-current; then
             python backend/superbet_builder_quotes.py invalidate BUILDER_REFRESH_FAILED
           fi
+      - name: Refresh read-only Bet Builder terminal evidence
+        if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        run: python backend/superbet_builder_terminal_evidence.py refresh
       - name: Syntax guard
         if: steps.freshness.outputs.refresh == 'true'
         run: |
           python -m py_compile backend/superbet_market_context.py
           python -m py_compile backend/superbet_direct.py
           python -m py_compile backend/superbet_builder_quotes.py
+          python -m py_compile backend/superbet_builder_terminal_evidence.py
           python -m py_compile backend/superbet_market_core.py
           python -m py_compile backend/superbet_market_mapping.py
           python -m py_compile backend/superbet_market_audit.py
@@ -141,7 +148,7 @@ jobs:
           python -m py_compile scripts/verify_superbet_market_semantics.py
       - name: Zero-request coverage, fixture matching and Symphony 2 guards
         if: steps.freshness.outputs.refresh == 'true'
-        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_builder_quote_artifact.py tests/test_superbet_direct_context_fallback.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py
+        run: python -m pytest -q tests/test_canonical_superbet_runtime.py tests/test_superbet_direct.py tests/test_superbet_builder_quote_artifact.py tests/test_superbet_builder_terminal_evidence.py tests/test_superbet_direct_context_fallback.py tests/test_superbet_fixture_discovery_separation.py tests/test_superbet_fixture_matching_v927.py tests/test_superbet_line_coverage_v922.py tests/test_superbet_line_coverage_v924.py tests/test_superbet_market_v923.py tests/test_superbet_market_v924.py tests/test_symphony2_learning.py tests/test_symphony2_state.py tests/test_symphony2_tracker.py tests/test_symphony2_exact_operator_line_gate.py tests/test_symphony2_ui.py tests/test_canonical_playable_frontend.py tests/test_playable_ui_v917.py tests/test_playable_freshness_pipeline_v928.py
       - name: Refresh real Superbet catalogue + map audited families
         if: steps.freshness.outputs.refresh == 'true'
         env:
