@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-shared-exposure-audit` from exact post-source-parity main `54c0c84e1e37fc8905a26993b1464ee1d6d4d48e`.
 
-**PR:** not opened yet; shared-exposure audit branch is under local validation.
+**PR:** #442 — `LOGIC-12: audit shared V1 + builder exposure read model`; audit-only, zero runtime/schema writes.
 
 **LAST VERIFIED MAIN:** `54c0c84e1e37fc8905a26993b1464ee1d6d4d48e` — merge of source-parity PR #441 after exact-head 8/8 GREEN CI and fresh-main equality.
 
@@ -57,8 +57,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Commit/push the validated shared-exposure audit-only branch and open its PR; no runtime/schema changes.
-2. Require exact-head CI plus fresh-main verification.
+1. Run exact-head CI for PR #442 and perform fresh-main verification immediately before merge.
+2. Merge only all-green.
 3. Merge only all-green.
 4. Then design the smallest normalized `risk_exposures` implementation with V1-only equivalence tests before any builder reservation write.
 5. Keep builder settlement and all real-money execution disabled.
