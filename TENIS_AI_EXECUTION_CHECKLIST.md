@@ -33,11 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** PR #458 lifecycle operator-evidence audit is MERGED and post-merge checks are GREEN. Active bounded step: **read-only exact Bet Builder terminal-evidence capture**. Settlement remains blocked; the collector may only preserve exact operator evidence or `N/D`.
 
-**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from fresh `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`.
+**BRANCH:** `logic-12-builder-terminal-evidence-capture`, created clean from `main` `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` and synchronized without conflict to fresh data-only main `5778c3bd96081da2a299919b6b8f64122969399b` via merge commit `c676f08152aa50dd4384caf378aed60f7a68e667`.
 
-**PR:** not opened yet; exact-head full GitHub CI will be mandatory before merge.
+**PR:** #459 - `LOGIC-12: capture exact Bet Builder terminal evidence read-only`. Exact-head full GitHub CI remains mandatory before merge.
 
-**LAST VERIFIED MAIN:** `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`, merge commit of PR #458. No newer main existed at branch creation.
+**LAST VERIFIED MAIN:** `5778c3bd96081da2a299919b6b8f64122969399b` (`data: refresh rebuilt Neuron SHADOW`, tenis-ai-bot), direct child of PR #458 merge. Drift from `6e4f0a2e...` changed only `frontend/data/neuron_current.json`; no overlap with PR #459 files.
 
 **PR #458 MERGE PROOF:** final head `3457af5bf2722e4a687ae32439b5cdc6dd6b3e94` passed 8/8 exact-head workflows and merged as `6e4f0a2e671f527e742dd8cc1d51abf25d89001c`. Post-merge Delivery/Security and UI/Project Health push workflows both completed GREEN.
 

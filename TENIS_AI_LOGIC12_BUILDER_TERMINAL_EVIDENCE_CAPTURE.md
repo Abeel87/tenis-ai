@@ -2,7 +2,7 @@
 
 Status: **SHADOW READ-ONLY EVIDENCE CAPTURE ? NO SETTLEMENT AUTHORITY**
 
-Base: `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` (PR #458 merged).
+Branch base: `6e4f0a2e671f527e742dd8cc1d51abf25d89001c` (PR #458 merged). Before PR exact-head validation the branch was synchronized without conflict to data-only main `5778c3bd96081da2a299919b6b8f64122969399b`, which changed only `frontend/data/neuron_current.json`.
 
 ## Purpose
 
