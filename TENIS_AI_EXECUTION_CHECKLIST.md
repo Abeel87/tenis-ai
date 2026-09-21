@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `e3401f3d7209d9a9a05781af584dd6a7139d7363`. Two technical noop create/remove commits occurred while starting this branch; the final tree is exactly the same `45c6e20b...` tree as the prior `6e806c7b...` data-refresh main, so no project file/content drift remains from that mistake.
 
-**PR:** not opened yet; implementation/tests in progress on `logic-12-builder-persistence-sync`.
+**PR:** #457 - `LOGIC-12: add guarded builder persistence sync contract`; initial implementation head `59c938e394295c6035accd9c6e18ceb2ad9a61c1`, base `e3401f3d7209d9a9a05781af584dd6a7139d7363`. Exact-head GitHub CI remains mandatory before merge.
 
 **PR #456 MERGE/PRODUCTION PROOF:** exact-head CI passed 8/8 GREEN and merged as `7a0ab396655293d3f2757f1d1dbffb0f86205ded`. Normal Superbet refresh #1781 completed GREEN and published data commit `6e806c7bcf42daebfb0715be407880c72f866396`. Normal iNeed$ SHADOW #537/#538 completed GREEN. Live builder summary was `status=OK`, quote artifact `OK`, with zero qualified tickets in that snapshot; `edge_sync_enabled=false`, `reservation_writes_enabled=false`, `settlement_enabled=false`, `automatic_real_betting=false`.
 
