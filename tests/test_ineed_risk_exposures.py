@@ -100,7 +100,7 @@ def test_explicit_risk_exposures_reconstruct_shared_equity_once():
         "risk_exposures": [
             {"economic_unit": money.RISK_UNIT_V1, "status": "PENDING", "stake": 5.0,
              "match_id": "m-v1", "players": ["A", "B"], "markets": ["match_winner"]},
-            {"economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 7.0,
+            {"economic_unit": money.RISK_UNIT_BUILDER, "status": "SHADOW_RESERVED", "stake": 7.0,
              "match_id": "m-bb", "players": ["C", "D"],
              "markets": ["set1_total", "match_winner"], "composition_id": "bb-1"},
         ],
@@ -128,7 +128,7 @@ def test_explicit_builder_exposure_limits_v1_without_entering_open_bets():
         "peak_bankroll": 200.0,
         "open_bets": [],
         "risk_exposures": [{
-            "economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 6.0,
+            "economic_unit": money.RISK_UNIT_BUILDER, "status": "SHADOW_RESERVED", "stake": 6.0,
             "match_id": "m-1", "players": ["A", "B"],
             "markets": ["set1_total", "match_winner"], "composition_id": "bb-existing",
             "source_id": "builder-ticket:bb-existing",
@@ -181,7 +181,7 @@ def test_existing_builder_composition_is_rejected_from_shared_risk_model():
         "experiment": {"starting_bankroll": 200.0}, "available_capital": 198.0,
         "peak_bankroll": 200.0, "open_bets": [],
         "risk_exposures": [{
-            "economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 2.0,
+            "economic_unit": money.RISK_UNIT_BUILDER, "status": "SHADOW_RESERVED", "stake": 2.0,
             "match_id": "other-match", "players": ["X", "Y"], "markets": ["other"],
             "composition_id": row["composition_id"], "source_id": f"builder-ticket:{row['composition_id']}",
         }],
@@ -217,7 +217,7 @@ def test_explicit_v1_exposure_rejects_composition_identity():
 def test_explicit_builder_exposure_requires_two_players():
     with pytest.raises(ValueError, match="two players"):
         money.normalize_risk_exposures({"risk_exposures": [{
-            "economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 2.0,
+            "economic_unit": money.RISK_UNIT_BUILDER, "status": "SHADOW_RESERVED", "stake": 2.0,
             "match_id": "m-1", "players": ["A"], "markets": ["match_winner"],
             "composition_id": "bb-1",
         }]})
@@ -233,7 +233,7 @@ def test_builder_market_concentration_counts_existing_builder_stake_once_per_mar
         "experiment": {"starting_bankroll": 200.0}, "available_capital": 171.0,
         "peak_bankroll": 200.0, "open_bets": [],
         "risk_exposures": [{
-            "economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 29.0,
+            "economic_unit": money.RISK_UNIT_BUILDER, "status": "SHADOW_RESERVED", "stake": 29.0,
             "match_id": "other-match", "players": ["X", "Y"],
             "markets": ["set1_total", "other"], "composition_id": "bb-other",
         }],
@@ -241,3 +241,20 @@ def test_builder_market_concentration_counts_existing_builder_stake_once_per_mar
     out = builder.evaluate_builder_economics_shadow([quoted_builder()], c, state, now=NOW)[0]
     assert out["status"] == "SHADOW_REJECTED"
     assert out["reason_code"] == "MARKET_EXPOSURE_LIMIT"
+
+
+def test_explicit_builder_exposure_rejects_v1_pending_status():
+    with pytest.raises(ValueError, match="SHADOW_RESERVED"):
+        money.normalize_risk_exposures({"risk_exposures": [{
+            "economic_unit": money.RISK_UNIT_BUILDER, "status": "PENDING", "stake": 2.0,
+            "match_id": "m-1", "players": ["A", "B"], "markets": ["match_winner"],
+            "composition_id": "bb-1",
+        }]})
+
+
+def test_explicit_v1_exposure_rejects_builder_reserved_status():
+    with pytest.raises(ValueError, match="V1 risk exposure status"):
+        money.normalize_risk_exposures({"risk_exposures": [{
+            "economic_unit": money.RISK_UNIT_V1, "status": "SHADOW_RESERVED", "stake": 2.0,
+            "match_id": "m-1", "players": ["A", "B"], "markets": ["match_winner"],
+        }]})

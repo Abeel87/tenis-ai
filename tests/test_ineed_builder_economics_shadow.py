@@ -212,7 +212,7 @@ def test_component_identity_count_must_match_builder_leg_count():
 def test_existing_shared_risk_same_composition_is_idempotently_rejected():
     row = quoted_builder()
     existing = {
-        "economic_unit": "BET_BUILDER_COMPOSITION", "status": "PENDING", "stake": 2.0,
+        "economic_unit": "BET_BUILDER_COMPOSITION", "status": "SHADOW_RESERVED", "stake": 2.0,
         "match_id": "other-match", "players": ["X", "Y"], "markets": ["other"],
         "composition_id": row["composition_id"],
         "source_id": f"builder-ticket:{row['composition_id']}",

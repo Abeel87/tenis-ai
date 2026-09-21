@@ -23,6 +23,7 @@ OPERATOR = "superbet.pl"
 FINAL_AUTHORITY = "SYMPHONY2_FINAL_PLAYABLE"
 TERMINAL = {"WIN", "LOSS", "VOID", "CANCELLED", "SETTLED"}
 OPEN = {"PENDING", "SHADOW_PLACED"}
+BUILDER_OPEN = {"SHADOW_RESERVED"}
 
 
 def _num(value: Any, default=None):
@@ -206,11 +207,13 @@ def normalize_risk_exposures(state: dict) -> list[dict]:
         if not isinstance(raw, dict):
             raise ValueError("risk_exposure row must be an object")
         status = str(raw.get("status") or "")
-        if status not in OPEN:
-            raise ValueError("risk_exposure must be open")
         unit = str(raw.get("economic_unit") or "")
         if unit not in RISK_UNITS:
             raise ValueError("risk_exposure economic_unit is invalid")
+        if unit == RISK_UNIT_V1 and status not in OPEN:
+            raise ValueError("V1 risk exposure status is invalid")
+        if unit == RISK_UNIT_BUILDER and status not in BUILDER_OPEN:
+            raise ValueError("builder risk exposure status must be SHADOW_RESERVED")
         stake = _num(raw.get("stake"))
         if stake is None or stake < 0:
             raise ValueError("risk_exposure stake is invalid")
