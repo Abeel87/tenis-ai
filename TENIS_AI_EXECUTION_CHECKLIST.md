@@ -37,6 +37,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `8f6795e4670b32f601f04e8822a4dc40875e4d6f` at closeout start.
 
+**PR:** #451 — `LOGIC-12: close shared exposure production rollout`; base `8f6795e4670b32f601f04e8822a4dc40875e4d6f`; pre-checkpoint head `eb81aa8bb885f460b6bb6df6e963078a9fa8fd06`.
+
+
 **PR #450 MERGE PROOF:** exact head `345cf2245748a23be513f2bc02ff50d9feaca1e5` passed 7/7 GREEN on base `5e2f008bafc516ccc47ac79a9844b46c98a71281` and merged as `8f6795e4670b32f601f04e8822a4dc40875e4d6f`.
 
 **LIVE DB DEPLOYMENT:** production received the five reviewed shared-exposure migrations in dependency order plus one advisor-driven FK index: `20260921115222 ineed_builder_shared_exposure_dormant`, `20260921115316 ineed_shared_exposure_readers`, `20260921115347 ineed_admin_start_shared_exposure`, `20260921115431 ineed_settlement_shared_exposure`, `20260921115506 ineed_staff_exposure_summary`, `20260921115606 ineed_builder_ticket_fk_index`.
