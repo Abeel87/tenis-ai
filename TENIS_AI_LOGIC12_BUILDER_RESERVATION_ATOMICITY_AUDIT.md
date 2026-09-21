@@ -14,7 +14,7 @@ The only code correction allowed in this audit is the already-proven read-contra
 
 Current `ineed_system_place_bet(uuid)` is already one database transaction. It locks the target V1 signal and then locks the owning `ineed_experiments` row `FOR UPDATE` before reading the bankroll ledger, calculating exposure, inserting the V1 bet, inserting one `STAKE_RESERVED` ledger row, and updating the signal.
 
-Current `ineed_system_settle_bet(...)` locks the V1 bet and the same owning experiment row `FOR UPDATE` before mutating the ledger and settlement state. Therefore the experiment row is already the canonical serialization mutex for bankroll mutations.
+Live read-only `pg_get_functiondef(ineed_system_settle_bet(...))` proves production locks the V1 bet and the same owning experiment row `FOR UPDATE` before mutating the ledger and settlement state. Historical Git migration `20260910221444_ineed_v1.sql` is stale and omits the experiment lock; live migration history has no separate named migration for that correction. The experiment row is therefore the live canonical serialization mutex, and the later settlement source-parity migration must preserve it explicitly.
 
 Current V1 exposure SQL reads only `ineed_shadow_bets`. Current `ineed-sync::activeState()` also calculates active exposure only from open `ineed_shadow_bets`. A builder-only RPC beside those readers would therefore be unsafe: later V1 placement could ignore the builder and over-allocate bankroll.
 
