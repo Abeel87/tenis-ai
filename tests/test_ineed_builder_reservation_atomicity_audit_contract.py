@@ -42,16 +42,21 @@ def test_post_audit_phase_adds_only_dormant_schema_not_write_rpc():
     assert "insert into public.ineed_builder_tickets" not in migration
     assert "ineed_system_reserve_builder_ticket" not in migrations
     assert "ineed_system_reserve_builder_ticket" not in edge.lower()
-    assert "risk_exposures" not in edge
+    assert 'from("ineed_open_risk_exposures").select("*")' in edge
+    assert 'open_bets: openBets || []' in edge
 
 
-def test_current_v1_database_readers_are_still_v1_only_so_write_remains_blocked():
-    place = _text(ROOT / "supabase/migrations/20260910222554_ineed_v1_risk_guards.sql").lower()
+def test_current_v1_database_readers_use_shared_risk_source_but_keep_open_bets_v1_only():
+    reader_paths = sorted((ROOT / "supabase/migrations").glob("*_ineed_shared_exposure_readers.sql"))
+    assert len(reader_paths) == 1
+    place = _text(reader_paths[0]).lower()
     edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
-    assert "from public.ineed_shadow_bets" in place
+    assert "from public.ineed_open_risk_exposures r" in place
     assert "for update" in place
+    assert 'from("ineed_open_risk_exposures").select("*")' in edge
     assert 'from("ineed_shadow_bets").select("*")' in edge
     assert 'open_bets: openBets || []' in edge
+    assert 'risk_exposures: normalizedRiskExposures' in edge
 
 
 def test_builder_and_v1_open_status_namespaces_are_separate():

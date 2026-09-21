@@ -31,42 +31,42 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** atomic builder reservation audit COMPLETE / MERGED via PR #444. Active bounded step: **dormant shared DB exposure schema/read source + exact V1-equivalence tests**; repository migration only, no live Supabase apply, no reserve RPC/caller, no builder settlement.
+**SUBSTEP:** dormant shared DB schema COMPLETE / MERGED via PR #445. Active bounded step: **migrate V1 placement + `ineed-sync` risk read-side to `ineed_open_risk_exposures` with exact V1-only equivalence**; repository candidate only, no live Supabase apply/deploy, no builder reserve writer, no builder settlement.
 
-**BRANCH:** `logic-12-shared-db-exposure-schema` rebased onto exact fresh main `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; drift from `6f0fa7b2...` was bot `data: refresh Superbet market context`, 12 generated `frontend/data/*.json` files only, zero overlap.
+**BRANCH:** `logic-12-shared-exposure-readers`, rebased onto exact fresh main `1ad726112feedaacca36bfef958297e6e205203e`. Intervening bot drift after PR #445 was two generated-data commits only: `75c880d3` rebuilt Neuron SHADOW and `1ad72611` Player DNA SHADOW; zero overlap with this branch.
 
-**PR:** #445 ? `LOGIC-12: add dormant shared DB exposure schema`; base `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; pre-checkpoint head `d6cd38fa770e32359446ff4284e85ac5877b2558`.
+**PR:** #446 ? `LOGIC-12: migrate V1 risk readers to shared exposure view`; base `1ad726112feedaacca36bfef958297e6e205203e`; pre-checkpoint head `9be89c5ea8e718c79d30c7746e9b2043896355c4`.
 
-**LAST VERIFIED MAIN:** `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d` ? bot `data: refresh Superbet market context`, parent `6f0fa7b204b232e398cf095e2e85b0017206f102`; drift audit found generated data only and zero overlap with this branch.
+**LAST VERIFIED MAIN:** `1ad726112feedaacca36bfef958297e6e205203e` ? bot `data: refresh Player DNA SHADOW`, parent `75c880d3510ac5a766177f9ebe2db91ceef59c19`; drift since PR #445 is generated `frontend/data/*` only.
 
-**ATOMICITY-AUDIT MERGE PROOF:** #444 merged the single-owner/single-ledger design and `SHADOW_RESERVED` status separation. Post-merge live `ineed-sync` remained ACTIVE v10 with hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`; no Supabase deploy occurred.
+**DORMANT-SCHEMA MERGE PROOF:** PR #445 exact head `766436fc76a5923ed6601a286adae722642a64d4` passed 8/8 GREEN workflows on base `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d` and merged as `ab2d1034f8e34539fc1d905f95205567915f86bb`. Live Supabase was not migrated; `ineed-sync` remains ACTIVE v10 with unchanged hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`.
 
-**DORMANT SCHEMA IMPLEMENTATION:** migration `supabase/migrations/20260921084010_ineed_builder_shared_exposure_dormant.sql` defines `ineed_builder_tickets`, generated `builder-ticket:<composition_id>` / `builder:<composition_id>` identities, DB-owned SHA-256 digest from immutable `ticket_snapshot`, ledger `builder_ticket_id` owner constraints, one-builder-reservation uniqueness, and service-only `ineed_open_risk_exposures` with `security_invoker=true`.
+**SHARED READER IMPLEMENTATION:** migration `supabase/migrations/20260921091005_ineed_shared_exposure_readers.sql` replaces only current-exposure reads inside `ineed_system_place_bet()` with `ineed_open_risk_exposures`. Signal/experiment `FOR UPDATE`, idempotent V1 bet ownership, V1 bet insert, V1 ledger debit and current stake/risk formulas remain unchanged.
 
-**SECURITY / DORMANCY:** the new builder table has RLS enabled; `public`, `anon`, `authenticated` and direct `service_role` writes are not granted. The migration creates no function/RPC, no insert path, no Edge change and no runtime caller. Current `ineed_system_place_bet()` and `ineed-sync::activeState()` remain V1-only on `ineed_shadow_bets`, so builder reservation remains impossible.
+**EDGE CANDIDATE:** repository `supabase/functions/ineed-sync/index.ts::activeState()` now reads `ineed_open_risk_exposures` into separate `risk_exposures` and calculates active exposure/equity from it. `open_bets` remains V1-only from `ineed_shadow_bets` for the settlement runner. Existing deployed-v10 SMTP/auth/persistence markers remain tracked. This source is a **candidate newer source and is NOT deployed**; live Edge remains v10.
 
-**LIVE READ-ONLY COMPATIBILITY:** production is PostgreSQL 17.6; `pgcrypto` is installed in schema `extensions` and `digest(text,text)` is immutable. All 35 existing `STAKE_RESERVED` ledger rows had a V1 `bet_id` and zero lacked a bet owner at audit time. No DDL was executed against live Supabase.
+**V1 EQUIVALENCE:** placement exposure metrics (total/match/market/player) are regression-compared old V1 SQL vs shared-view semantics across 500 deterministic randomized legal V1 states using exact decimal stake arithmetic. Previous DB-view vs backend normalization proof across 250 states remains valid.
 
-**V1 EQUIVALENCE PROOF:** permanent regression test projects V1 open bets through the new DB-view contract and compares them with `backend/ineed_money.py::normalize_risk_exposures()` across 250 deterministic randomized states, including open/terminal statuses, player trimming/deduplication and market trimming. Focused schema/risk/builder/audit pack is 41/41 GREEN; full iNeed pack is 109/109 GREEN; full repository pytest is 1442/1442 GREEN.
+**CURRENT LOCAL GATE:** full iNeed pack 114/114 GREEN; full repository pytest 1447/1447 GREEN; reader migration parses as 3 PostgreSQL statements; Deno check for candidate `ineed-sync` GREEN; new 500-state placement equivalence GREEN; UI static smoke PASS (377 current matches / all 101 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean.
 
-**LOCAL IMPLEMENTATION GATE:** migration parses successfully as 14 PostgreSQL statements with `pglast`; full iNeed pack 109/109 GREEN; full repository pytest 1442/1442 GREEN; UI static smoke PASS (377 current matches / all 101 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. Docker Desktop is unavailable on this host, so no local `supabase db reset` was possible; this is not replaced by live DDL.
+**NEWLY DISCOVERED PRE-WRITER BLOCKERS:** repo-wide reader audit found three additional V1-only consumers: `ineed_admin_start_experiment()` open-exposure guard, `ineed_system_settle_bet()` `other_exposure` bookkeeping, and `frontend/ineed.js` exposure presentation. They are **not changed in this step**. No builder reserve writer may be enabled until their required shared-exposure behavior is separately audited/migrated or explicitly proven irrelevant.
 
-**RUNTIME STATUS:** no V1 placement migration, no `ineed-sync` shared-state migration, no builder reserve RPC, no builder writer and no Edge deployment exist in this step. Phase-5 tickets remain non-runtime.
+**RUNTIME / DEPLOY STATUS:** no `apply_migration`, no Edge deploy, no builder table write, no reserve RPC/caller and no builder settlement. The merged dormant schema and this reader migration both remain unapplied to live Supabase.
 
-**SETTLEMENT:** builder settlement remains `NOT_IMPLEMENTED`; V1 settlement and `open_bets` semantics remain unchanged.
+**SETTLEMENT:** builder settlement remains `NOT_IMPLEMENTED`; V1 settlement code and `open_bets` semantics remain unchanged in this branch.
 
-**DO NOT REDO:** do not reopen LOGIC-11, LOGIC-12 phases 1-6, source parity, shared-exposure/read-model work or atomicity audit unless new evidence invalidates them.
+**DO NOT REDO:** do not reopen LOGIC-11, LOGIC-12 phases 1-6, source parity, shared-exposure/read-model work, atomicity audit or dormant-schema design unless new evidence invalidates them.
 
 **RISKS / HARD BANS:** zero changes to model probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current V1 iNeed$ formulas, settlement semantics or SHADOW->PROD. No real-money execution. No live Supabase schema apply/deploy in this branch.
 
 ### NEXT EXACT ACTION
 
-1. Push this checkpoint update to PR #445 and require exact-head CI on the resulting head.
-2. Require all triggered workflows GREEN; no `apply_migration`, no RPC, no Edge write/deploy.
-3. Immediately before merge fetch fresh `main`; if it moved, audit drift/rebase/rerun exact-head CI.
-4. Merge only all-green and mergeable.
-5. After merge, next controlled step is to migrate V1 placement and `ineed-sync` read-side to `ineed_open_risk_exposures` with exact V1-only equivalence **before** any builder reserve writer can exist.
-6. Keep builder settlement and all real-money execution disabled.
+1. Run full repository pytest, UI static smoke, Project Health, SQL parse, Deno check and final scope review on this branch.
+2. Push this checkpoint update to PR #446; the resulting head is the only valid exact-head CI target.
+3. Require exact-head CI; immediately before merge fetch fresh `main`, audit/rebase any drift and rerun CI if needed.
+4. Merge only all-green/mergeable. Do not `apply_migration` and do not deploy Edge without separate explicit authorization.
+5. After merge, separately audit/migrate the remaining pre-writer consumers: admin experiment-start exposure guard, V1 settlement `other_exposure` bookkeeping and frontend exposure presentation.
+6. Keep builder reserve writer, builder settlement and all real-money execution disabled.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
