@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-shared-exposure-readers`, rebased onto exact fresh main `1ad726112feedaacca36bfef958297e6e205203e`. Intervening bot drift after PR #445 was two generated-data commits only: `75c880d3` rebuilt Neuron SHADOW and `1ad72611` Player DNA SHADOW; zero overlap with this branch.
 
-**PR:** not opened yet for the shared-reader step.
+**PR:** #446 ? `LOGIC-12: migrate V1 risk readers to shared exposure view`; base `1ad726112feedaacca36bfef958297e6e205203e`; pre-checkpoint head `9be89c5ea8e718c79d30c7746e9b2043896355c4`.
 
 **LAST VERIFIED MAIN:** `1ad726112feedaacca36bfef958297e6e205203e` ? bot `data: refresh Player DNA SHADOW`, parent `75c880d3510ac5a766177f9ebe2db91ceef59c19`; drift since PR #445 is generated `frontend/data/*` only.
 
@@ -62,7 +62,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 ### NEXT EXACT ACTION
 
 1. Run full repository pytest, UI static smoke, Project Health, SQL parse, Deno check and final scope review on this branch.
-2. If GREEN, commit/push and open one PR for placement + Edge shared-risk readers only.
+2. Push this checkpoint update to PR #446; the resulting head is the only valid exact-head CI target.
 3. Require exact-head CI; immediately before merge fetch fresh `main`, audit/rebase any drift and rerun CI if needed.
 4. Merge only all-green/mergeable. Do not `apply_migration` and do not deploy Edge without separate explicit authorization.
 5. After merge, separately audit/migrate the remaining pre-writer consumers: admin experiment-start exposure guard, V1 settlement `other_exposure` bookkeeping and frontend exposure presentation.
