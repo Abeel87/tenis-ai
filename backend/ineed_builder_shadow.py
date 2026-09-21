@@ -17,14 +17,15 @@ import math
 
 try:
     from .ineed_money import RISK_UNIT_BUILDER, direct_quote, economics, risk_exposure_overlaps_player, risk_exposure_state, risk_state
-    from .superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
+    from .superbet_direct import EVENT_API_HOST, exact_combination_quote, parse_dynamic_sga_quote
 except ImportError:
     from ineed_money import RISK_UNIT_BUILDER, direct_quote, economics, risk_exposure_overlaps_player, risk_exposure_state, risk_state
-    from superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
+    from superbet_direct import EVENT_API_HOST, exact_combination_quote, parse_dynamic_sga_quote
 
 OPERATOR = "superbet.pl"
 FINAL_AUTHORITY = "SYMPHONY2_FINAL_PLAYABLE"
 QUOTE_KIND = "BET_BUILDER_COMBINED"
+BUILDER_QUOTE_ARTIFACT_MODE = "SHADOW_SUPERBET_EXACT_BUILDER_QUOTE_FEED"
 
 
 def _text(value) -> str:
@@ -163,6 +164,89 @@ def resolve_prepriced_combined_quote(composition: dict, direct: dict, catalog: d
         "operator_combination_selection_id": hit.get("operator_selection_id"),
         "component_selection_ids": list(component_ids),
         "source_quote_kind": hit.get("quote_kind"),
+    }
+
+
+def resolve_artifact_combined_quote(composition: dict, direct_feed: dict, artifact: dict) -> dict | None:
+    """Resolve one exact pre-priced quote from the frozen Superbet artifact.
+
+    The artifact must be aligned to the same published Direct snapshot. Runtime
+    Direct enrichment is deliberately not accepted here because it would break
+    the quote/component provenance frozen by the hourly Superbet refresh.
+    """
+    if not all(isinstance(x, dict) for x in (composition, direct_feed, artifact)):
+        return None
+    if (
+        artifact.get("mode") != BUILDER_QUOTE_ARTIFACT_MODE
+        or artifact.get("status") != "OK"
+        or artifact.get("operator") != OPERATOR
+        or artifact.get("prices_used") is not False
+        or artifact.get("synthetic_prices") is not False
+        or artifact.get("production_influence") is not False
+        or artifact.get("playable_influence") is not False
+        or artifact.get("symphony_influence") is not False
+        or artifact.get("ineed_runtime_influence") is not False
+        or artifact.get("automatic_real_betting") is not False
+    ):
+        return None
+    direct_ts = _text(direct_feed.get("generated_at"))
+    if not direct_ts or _text(artifact.get("direct_generated_at")) != direct_ts:
+        return None
+
+    match_id = _text(composition.get("match_id"))
+    direct_matches = [
+        row for row in (direct_feed.get("matches") or [])
+        if isinstance(row, dict)
+        and _text(row.get("match_id") if row.get("match_id") is not None else row.get("id")) == match_id
+        and row.get("direct_match_verified") is True
+    ]
+    artifact_matches = [
+        row for row in (artifact.get("matches") or [])
+        if isinstance(row, dict)
+        and _text(row.get("match_id") if row.get("match_id") is not None else row.get("id")) == match_id
+        and row.get("direct_match_verified") is True
+    ]
+    if len(direct_matches) != 1 or len(artifact_matches) != 1:
+        return None
+    direct_match, quote_match = direct_matches[0], artifact_matches[0]
+    event_id = _text(direct_match.get("event_id"))
+    if not event_id or _text(quote_match.get("event_id")) != event_id:
+        return None
+    for key in ("p1", "p2"):
+        expected = _text(composition.get(key))
+        if not expected or _text(direct_match.get(key)) != expected or _text(quote_match.get(key)) != expected:
+            return None
+    observed_at = _text(quote_match.get("observed_at"))
+    if not observed_at:
+        return None
+
+    component_ids = []
+    for leg in composition.get("legs") or []:
+        resolved = direct_quote(direct_feed, match_id, leg)
+        selection_id = _text((resolved or {}).get("operator_selection_id"))
+        if not selection_id:
+            return None
+        component_ids.append(selection_id)
+    if len(component_ids) < 2 or len(set(component_ids)) != len(component_ids):
+        return None
+
+    hit = exact_combination_quote(quote_match.get("quotes") or [], component_ids, event_id=event_id)
+    if not hit or _text(hit.get("odds_timestamp")) != observed_at:
+        return None
+    return {
+        "composition_id": composition.get("composition_id"),
+        "operator": OPERATOR,
+        "quote_kind": QUOTE_KIND,
+        "operator_verified": True,
+        "freshness_verified": True,
+        "combined_odds": hit.get("combined_odds"),
+        "odds_timestamp": hit.get("odds_timestamp"),
+        "source": hit.get("source"),
+        "source_event_id": event_id,
+        "operator_combination_selection_id": hit.get("operator_selection_id"),
+        "component_selection_ids": list(component_ids),
+        "source_quote_kind": hit.get("quote_kind"),
+        "source_url": f"https://{EVENT_API_HOST}/v2/pl-PL/events/{event_id}",
     }
 
 

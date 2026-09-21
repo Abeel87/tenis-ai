@@ -52,17 +52,31 @@ def test_phase5_ticket_stays_nonpersistent_and_nonsettling():
     assert '"automatic_real_betting": False' in owner
 
 
-def test_phase6_does_not_add_builder_runtime_wiring():
-    runtime_paths = (
-        ROOT / "backend/ineed_scoped_runner.py",
-        ROOT / "backend/ineed_settlement_runner.py",
-        ROOT / "supabase/functions/ineed-sync/index.ts",
-        ROOT / ".github/workflows/ineed-shadow.yml",
-    )
-    for path in runtime_paths:
-        text = _text(path)
-        assert "ineed_builder_ticket_shadow" not in text
-        assert "builder-ticket:" not in text
+def test_scoped_builder_runtime_wiring_stays_ephemeral_and_outside_persistence():
+    scoped = _text(ROOT / "backend/ineed_scoped_runner.py")
+    settlement = _text(ROOT / "backend/ineed_settlement_runner.py")
+    edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
+    workflow = _text(ROOT / ".github/workflows/ineed-shadow.yml")
+
+    # Phase-4/5 may now be constructed in the scoped SHADOW runner.
+    assert "ineed_builder_ticket_shadow" in scoped
+    assert "build_builder_shadow_runtime(state)" in scoped
+    assert '"edge_sync_enabled": False' in scoped
+    assert '"reservation_writes_enabled": False' in scoped
+    assert '"settlement_enabled": False' in scoped
+
+    # The V1 persistence boundary remains the only sync payload owner.
+    assert '{"action": "sync", "payload": payload}' in scoped
+    assert "builder_shadow" not in edge
+    assert "payload.builder_shadow" not in edge
+    assert "ineed_builder_ticket_shadow" not in edge
+    assert "ineed_builder_ticket_shadow" not in settlement
+    assert "builder-ticket:" not in settlement
+
+    # The dormant reservation writer is still not called from runtime/workflow.
+    assert "ineed_system_reserve_builder_ticket" not in scoped
+    assert "reserve_builder_ticket" not in workflow.lower()
+    assert "reserve_builder_ticket" not in edge.lower()
 
 
 def test_phase6_is_superseded_by_dormant_schema_then_separate_fail_closed_writer():

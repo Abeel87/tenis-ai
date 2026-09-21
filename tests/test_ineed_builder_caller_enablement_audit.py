@@ -6,17 +6,24 @@ BUILDER = (ROOT / "backend/ineed_builder_shadow.py").read_text(encoding="utf-8")
 TICKET = (ROOT / "backend/ineed_builder_ticket_shadow.py").read_text(encoding="utf-8")
 SCOPED = (ROOT / "backend/ineed_scoped_runner.py").read_text(encoding="utf-8")
 DIRECT = (ROOT / "backend/superbet_direct.py").read_text(encoding="utf-8")
+EDGE = (ROOT / "supabase/functions/ineed-sync/index.ts").read_text(encoding="utf-8")
 WORKFLOW = (ROOT / ".github/workflows/ineed-shadow.yml").read_text(encoding="utf-8")
 DATA = json.loads((ROOT / "frontend/data/superbet_direct_current.json").read_text(encoding="utf-8"))
 
 
-def test_phase4_and_phase5_are_not_runtime_called_yet():
-    assert "ineed_builder_shadow" not in SCOPED
-    assert "ineed_builder_ticket_shadow" not in SCOPED
-    assert "build_shadow_composition(" not in SCOPED
-    assert "evaluate_builder_economics_shadow(" not in SCOPED
-    assert "build_builder_ticket_shadow(" not in SCOPED
+def test_phase4_and_phase5_are_runtime_produced_but_not_synced_or_reserved():
+    assert "ineed_builder_shadow" in SCOPED
+    assert "ineed_builder_ticket_shadow" in SCOPED
+    assert "build_shadow_composition(" in SCOPED
+    assert "evaluate_builder_economics_shadow(" in SCOPED
+    assert "build_builder_ticket_shadow(" in SCOPED
+    assert "build_builder_shadow_runtime(state)" in SCOPED
+    assert '{"action": "sync", "payload": payload}' in SCOPED
+    assert '"edge_sync_enabled": False' in SCOPED
+    assert '"reservation_writes_enabled": False' in SCOPED
     assert "ineed_system_reserve_builder_ticket" not in SCOPED
+    assert "reserve_builder_ticket" not in EDGE
+    assert "payload.builder_shadow" not in EDGE
 
 
 def test_standard_direct_feed_intentionally_excludes_builder_rows():
@@ -34,9 +41,10 @@ def test_current_runtime_direct_artifact_has_no_builder_quote_catalog():
         assert forbidden not in DATA
 
 
-def test_ineed_workflow_has_no_builder_runtime_stage():
+def test_ineed_workflow_guards_builder_modules_without_reservation_stage():
     lower = WORKFLOW.lower()
-    assert "ineed_builder_shadow" not in lower
-    assert "ineed_builder_ticket_shadow" not in lower
+    assert "backend/ineed_builder_shadow.py" in WORKFLOW
+    assert "backend/ineed_builder_ticket_shadow.py" in WORKFLOW
+    assert "tests/test_ineed_builder_scoped_runtime.py" in WORKFLOW
     assert "reserve_builder_ticket" not in lower
     assert "backend/ineed_scoped_runner.py" in WORKFLOW
