@@ -31,38 +31,45 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** settlement shared exposure COMPLETE / MERGED via PR #448. Active bounded step: **migrate staff-facing iNeed$ exposure presentation to a staff-only shared-exposure aggregate**. No live Supabase apply/deploy, no builder reserve writer, no builder settlement.
+**SUBSTEP:** frontend shared exposure COMPLETE / MERGED via PR #449. Active bounded step: **deployment/readiness audit only** for the already-merged shared-exposure DB/Edge read-side. No `apply_migration`, no Edge deploy, no builder reserve writer, no builder settlement.
 
-**BRANCH:** `logic-12-frontend-shared-exposure`, exact base `af9621f6a91e40e478c61edb3f2c00e5e61944d4` after data-only Superbet refresh drift from PR #448 merge.
+**BRANCH:** `logic-12-deployment-readiness-audit`, exact base `5e2f008bafc516ccc47ac79a9844b46c98a71281` (PR #449 merge).
 
-**LAST VERIFIED MAIN:** `af9621f6a91e40e478c61edb3f2c00e5e61944d4`.
+**LAST VERIFIED MAIN:** `5e2f008bafc516ccc47ac79a9844b46c98a71281`; open PRs: 0 at audit start.
 
-**SETTLEMENT MERGE PROOF:** PR #448 exact head `9f24dd9071375a4eb6506d2c37609354bd5bfc37` passed 8/8 GREEN on base `59ec7d99cadd95ce6cea545f6db6a888ed644f1c` and merged as `03cb21f741d5621c8851ebed692a8443f0562b8f`. No live DDL or Edge deploy occurred.
+**PR:** #450 ? `LOGIC-12: freeze shared exposure deployment readiness`; base `5e2f008bafc516ccc47ac79a9844b46c98a71281`; pre-checkpoint head `de4bda24c431c2651565290afe9beea8cb2795b6`.
 
-**FRONTEND SHARED-EXPOSURE CANDIDATE:** `supabase/migrations/20260921101354_ineed_staff_exposure_summary.sql` adds `public.ineed_staff_exposure_summary(uuid)`, a staff-only aggregate RPC over service-only `ineed_open_risk_exposures`. It returns only total exposure and open-unit counts, keeps the underlying view unavailable to browser clients, uses `SECURITY DEFINER` with empty search path, checks `is_staff(auth.uid())`, revokes default/public execution and grants execute only to `authenticated`.
 
-**FRONTEND BEHAVIOR:** `frontend/ineed.js` uses the aggregate for exposure/equity/open-unit presentation. Before the dormant DB migrations are deployed it may use the existing V1 calculation only when the RPC is genuinely absent (`PGRST202` / PostgreSQL `42883`); permission, network and other database errors remain fail-closed. V1 bet history and settlement presentation remain unchanged.
+**FRONTEND MERGE PROOF:** PR #449 exact head `81bff0eaeca09e25295a6d678d0944cc8327d6de` passed 8/8 GREEN on base `af9621f6a91e40e478c61edb3f2c00e5e61944d4` and merged as `5e2f008bafc516ccc47ac79a9844b46c98a71281`. No live DDL or Edge deploy occurred.
 
-**LOCAL SAFETY PROOF:** focused post-docs pack 18/18 GREEN; full iNeed 133/133 GREEN; full repository 1466/1466 GREEN; 500-state V1 fallback equivalence GREEN; SQL parse 3 statements; `node --check frontend/ineed.js` GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; git diff --check clean.
+**LIVE PRE-DEPLOY MATRIX:** `ineed_builder_tickets`, `ineed_open_risk_exposures`, `ineed_staff_exposure_summary(uuid)` and ledger `builder_ticket_id` are absent live. Placement/admin-start/settlement still read V1-only sources. Live settlement retains two `FOR UPDATE` locks. Live `ineed-sync` remains ACTIVE v10 hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`.
 
-**RUNTIME / DEPLOY STATUS:** repository shared-exposure migrations remain dormant and are not applied to live Supabase. Live `ineed-sync` remains ACTIVE v10 with hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`. No builder table write, reserve RPC/caller or builder settlement exists.
+**CURRENT SHADOW EVIDENCE:** ACTIVE experiment starting bankroll 200.0000 PLN, latest available 191.2532 PLN, open V1 exposure 0 and open V1 bets 0 at audit time. Historical ledger has 35 `STAKE_RESERVED`, all 35 owned by V1 `bet_id`, zero ownerless reservations. These are point-in-time compatibility facts, not permanent invariants.
 
-**PRE-WRITER STATUS:** this candidate closes the last known V1-only read/presentation consumer in repository code. That does **not** authorize a builder writer. Before any reservation writer can exist, a separate deployment/readiness phase must apply and verify the dormant shared-exposure schema/readers/RPCs in a controlled environment, prove V1 equivalence live, verify RLS/ACL/advisors and only then consider a writer design.
+**DEPLOYMENT BUNDLE:** five merged DB migrations in required order: dormant owner/view → V1 placement reader → admin-start reader → settlement bookkeeping reader → staff aggregate. All parse clean (14 + 3 + 2 + 3 + 3 statements). Repository `ineed-sync` candidate depends on `ineed_open_risk_exposures` and passes Deno check.
 
-**SETTLEMENT BOUNDARY:** builder settlement remains `NOT_IMPLEMENTED`; no builder WIN/LOSS/VOID/CANCELLED, payout, retirement, leg-void or ticket outcome semantics are introduced.
+**ROLLOUT ORDER:** DB first, verify after every migration, advisor delta check, Edge last. Initial controlled rollout should require zero open V1 bets unless separately proven safe. Edge verification must preserve the existing `ineed_email_events` / `QUALIFIED` Gmail SMTP alert pipeline; do not send a synthetic betting alert merely as a smoke test. Do not create a test bet, start a new experiment or settle a bet merely as a migration smoke test.
 
-**DO NOT REDO:** do not reopen LOGIC-11, LOGIC-12 phases 1-6, source parity, normalized risk read model, atomicity audit, dormant schema, placement/Edge readers, admin-start or settlement migration unless new evidence invalidates them.
+**ENVIRONMENT BLOCKER:** no Supabase development branch exists. Creating one requires cost confirmation and explicit authorization. No deployment/cost authorization has been given.
 
-**RISKS / HARD BANS:** zero changes to model probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current V1 stake/risk formulas or SHADOW->PROD. No real-money execution. No live Supabase schema apply/deploy in this branch.
+**PRE-WRITER STATUS:** repository read/presentation consumers are closed, but builder writer remains blocked until deployed read-side V1 equivalence, ACL/RLS and advisor deltas are proven. Builder settlement remains `NOT_IMPLEMENTED`.
+
+**AUDIT ARTIFACT:** `TENIS_AI_LOGIC12_DEPLOYMENT_READINESS_AUDIT.md`.
+
+**LOCAL READINESS PROOF:** focused readiness contract 8/8 GREEN; full iNeed pack 141/141 GREEN; full repository pytest 1474/1474 GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; five DB migrations parse clean (14 + 3 + 2 + 3 + 3 statements); candidate `ineed-sync` Deno check GREEN; `git diff --check` clean. Email non-regression is contract-tested (`ineed_email_events`, `QUALIFIED`, Gmail SMTP aliases/config and `flushEmails`).
+
+
+**DO NOT REDO:** do not reopen LOGIC-12 phases 1-6, source parity, risk read model, atomicity audit, dormant schema, reader migrations, settlement or frontend migration unless new evidence invalidates them.
+
+**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. No live Supabase write/deploy in this audit branch.
 
 ### NEXT EXACT ACTION
 
-1. Re-run frontend/shared-summary focused tests, full iNeed, full repository pytest, SQL parse, JS syntax, UI smoke and Project Health on exact base `af9621f6...`.
-2. Fetch fresh `main`; audit/rebase any bot drift before commit/PR.
-3. Commit/push this bounded frontend/read-only step and open PR; require exact-head CI.
-4. Immediately before merge fetch fresh `main`; if it moved, audit/rebase and rerun exact-head CI.
-5. Do not `apply_migration` and do not deploy Edge without separate explicit authorization.
-6. After merge, perform a deployment/readiness audit only. Do not implement or enable builder reservation writer or builder settlement.
+1. Validate this audit/docs contract locally and with full repository gates.
+2. Fresh-main check; rebase any bot drift before commit/PR.
+3. Open audit-only PR and require exact-head CI + fresh-main equality before merge.
+4. After merge, stop before deployment and obtain explicit authorization for a controlled environment: preferably a cost-confirmed Supabase development branch, otherwise an explicitly authorized production rollout.
+5. If deployment is authorized later, follow DB migration order and verify every step before Edge; do not implement builder writer or settlement in that rollout.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

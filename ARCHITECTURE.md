@@ -75,7 +75,9 @@ PR #447 merged the admin-start exposure guard onto `ineed_open_risk_exposures`. 
 
 
 
-Closing repository read/presentation consumers does not authorize builder persistence. A separate deployment/readiness phase must apply and verify the dormant migrations and candidate Edge read-side in a controlled environment, prove V1 equivalence and ACL/RLS behavior, and keep builder reservation + settlement disabled until separately approved.
+PR #449 merged the staff-only aggregate presentation boundary, so there are no known repository-side V1-only exposure readers/presentation consumers left. Closing those consumers does not authorize builder persistence. The active deployment/readiness audit freezes DB-first rollout order: dormant owner/view, placement reader, admin-start reader, settlement reader, staff aggregate, advisor-delta verification, and only then the candidate `ineed-sync`. Live production remains on v10 and has none of the shared-exposure DB objects yet.
+
+`TENIS_AI_LOGIC12_DEPLOYMENT_READINESS_AUDIT.md` is the rollout contract. No migration or Edge deployment is authorized by that document; first application requires a separately authorized controlled environment and verification after every dependency step. The existing iNeed$ email path (`ineed_email_events` + `QUALIFIED` Gmail SMTP delivery in `ineed-sync`) is part of the rollout regression contract and must remain intact.
 
 Builder settlement remains `NOT_IMPLEMENTED` until a separate operator-evidence audit proves one-ticket outcome/void/cancel/payout semantics. Real-money execution remains out of scope.
 
