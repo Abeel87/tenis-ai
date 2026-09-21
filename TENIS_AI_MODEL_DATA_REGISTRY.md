@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6, source parity, normalized `risk_exposures`, atomicity audit, dormant shared-DB schema and placement/Edge shared readers are merged through PR #446 (`979d4b3238ab7458e870145af5f6d4bbdd2cc184`). Active bounded step migrates only the admin experiment-start exposure guard; no builder reserve writer or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6, source parity, normalized `risk_exposures`, atomicity audit, dormant shared-DB schema, placement/Edge shared readers and admin-start shared exposure are merged through PR #447 (`59ec7d99cadd95ce6cea545f6db6a888ed644f1c`). Active bounded step repairs settlement source parity and migrates only V1 `other_exposure` bookkeeping to the shared view; no builder reserve writer or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -814,9 +814,11 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Shared-reader merge proof:** `supabase/migrations/20260921091005_ineed_shared_exposure_readers.sql` moves V1 placement total/match/player/market exposure queries to `ineed_open_risk_exposures`; repository `ineed-sync::activeState()` reads the same view for `risk_exposures`/equity while keeping `open_bets` V1-only for settlement. PR #446 exact head `699076da8144c40549a2f36d7287f947954acea1` passed 8/8 GREEN and merged as `979d4b3238ab7458e870145af5f6d4bbdd2cc184`. Live Edge remains v10 and no live DDL was executed.
 
-**Admin-start shared exposure candidate:** `supabase/migrations/20260921093354_ineed_admin_start_shared_exposure.sql` changes only the previous-experiment open exposure read in `ineed_admin_start_experiment()` to `ineed_open_risk_exposures`. V1-only exposure is exact across 500 deterministic randomized Decimal states; auth, experiment locking, final-bankroll/config rollover and new-experiment initialization remain unchanged. Local proof: focused 33/33, iNeed 120/120, full repo 1453/1453, SQL parse 2 statements, UI 377/101 PASS, Project Health 0 FAIL / 1 WARN.
+**Admin-start merge proof:** `supabase/migrations/20260921093354_ineed_admin_start_shared_exposure.sql` changes only the previous-experiment open exposure read in `ineed_admin_start_experiment()` to `ineed_open_risk_exposures`. PR #447 exact head `8e5be0747fc7dc68759cd6a8f086219b9de0f597` passed 8/8 GREEN and merged as `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`; no live DDL or Edge deploy occurred.
 
-**Remaining pre-writer consumers:** V1 settlement `other_exposure` bookkeeping and `frontend/ineed.js` exposure presentation still use V1-only sources. First merge the bounded admin-start reader migration with exact-head CI/fresh-main verification. Then audit settlement bookkeeping separately without changing settlement outcome semantics, followed by frontend presentation. Builder reserve runtime, builder settlement and real-money execution remain disabled.
+**Settlement source-parity + shared-bookkeeping candidate:** live read-only function definition proves production `ineed_system_settle_bet()` already locks the target V1 bet and owning experiment row `FOR UPDATE`, while historical Git migration `20260910221444_ineed_v1.sql` lacks the experiment lock. `supabase/migrations/20260921095220_ineed_settlement_shared_exposure.sql` therefore preserves the live mutex and all current V1 outcome/payout/ledger/status semantics while changing only `other_exposure` to `ineed_open_risk_exposures` with explicit exclusion of the target V1 bet. Local proof: focused 29/29, iNeed 126/126, full repo 1459/1459, exact 500-state V1 equivalence, SQL parse 3 statements, UI 377/101 PASS, Project Health 0 FAIL / 1 WARN. No live DDL executed.
+
+**Remaining pre-writer consumer:** after the settlement bookkeeping candidate, `frontend/ineed.js` exposure presentation is the last known V1-only consumer. Builder reserve runtime, builder settlement and real-money execution remain disabled.
 
 ---
 
