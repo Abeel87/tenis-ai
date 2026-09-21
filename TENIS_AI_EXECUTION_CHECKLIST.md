@@ -37,7 +37,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LAST VERIFIED MAIN:** `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
 
-**PR:** deployment closeout PR not opened yet. PR #452 exact head `4e224f630112447b442bded3e1e5150335ba5b0e` passed 8/8 GREEN and merged as `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
+**PR:** #453 - LOGIC-12 dormant builder writer deployment closeout; base `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`; pre-checkpoint head `c3fbf9f266189c42e788acff4c821c1cda5c30ad`. PR #452 exact head `4e224f630112447b442bded3e1e5150335ba5b0e` passed 8/8 GREEN and merged as `4e8a0304397d6b569921977c7d0a51bfb7ba29bc`.
 
 **PR #451 MERGE PROOF:** exact head `c995dc861e617124226c37cc983181f262605b57` passed 8/8 GREEN, fresh main remained `8f6795e4670b32f601f04e8822a4dc40875e4d6f`, and PR #451 merged as `0f98112c97ae7c22a99c7a5c2dd9e1aef26f00dc`.
 
@@ -56,7 +56,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 ### NEXT EXACT ACTION
 
 1. Record dormant writer deployment closeout in Git; keep production flag disabled and caller absent.
-2. Verify closeout docs/contracts, fresh main, open PR, exact-head CI and merge.
+2. PR #453 is open; require exact-head CI GREEN, fresh-main equality and merge.
 3. After closeout, audit the exact Phase-5 ticket production/caller lifecycle without wiring or enabling it yet.
 4. Any caller wiring or builder_reservation.enabled=true change requires a separate SHADOW-only PR and live gate.
 5. Builder one-ticket settlement remains a separate operator-semantics phase; real-money execution remains out of scope.
