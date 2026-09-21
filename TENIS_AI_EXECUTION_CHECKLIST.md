@@ -31,37 +31,42 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** Source parity COMPLETE / MERGED. Active bounded step: shared V1 + future-builder bankroll/exposure **audit and read-model contract only**; no schema/write/reservation implementation is authorized.
+**SUBSTEP:** Shared-exposure audit COMPLETE / MERGED. Active bounded step: implement the smallest normalized backend-only `risk_exposures` read model with exact V1 equivalence; **no schema, Edge wiring, persistence or builder reservation write**.
 
-**BRANCH:** `logic-12-shared-exposure-audit` from exact post-source-parity main `54c0c84e1e37fc8905a26993b1464ee1d6d4d48e`.
+**BRANCH:** `logic-12-risk-exposures-read-model` rebased onto exact fresh main `f8174f53a9a8f8f88c304af356ae89d5a2536f44` (bot drift from `f21e6e5a...` was data-only Player DNA SHADOW refresh with zero overlap).
 
-**PR:** #442 — `LOGIC-12: audit shared V1 + builder exposure read model`; audit-only, zero runtime/schema writes.
+**PR:** #443 ? `LOGIC-12: add normalized risk exposure read model`; current pre-checkpoint head `96e5781e07692c88eaf4dc86abbf97a93daa4c62`, base `f8174f53a9a8f8f88c304af356ae89d5a2536f44`.
 
-**LAST VERIFIED MAIN:** `54c0c84e1e37fc8905a26993b1464ee1d6d4d48e` — merge of source-parity PR #441 after exact-head 8/8 GREEN CI and fresh-main equality.
+**LAST VERIFIED MAIN:** `f21e6e5a0da796bac7e21a91b8feb1606eb3b24e` — merge of shared-exposure audit PR #442 after exact-head 7/7 GREEN CI and fresh-main equality.
 
-**LAST COMPLETED WORK:** PR #441 restored deployed `ineed-sync` v10 source parity in Git without deployment. Post-merge live Supabase remained ACTIVE version 10 with unchanged deployment metadata/source, proving the Git merge did not redeploy production.
+**LAST COMPLETED WORK:** PR #442 froze the shared-risk contract: `open_bets` stays V1 settlement-only, while risk accounting uses a separate normalized logical interface spanning `V1_SINGLE_BET` + `BET_BUILDER_COMPOSITION`.
 
-**SHARED-EXPOSURE PROOF:** current V1 derives available capital from latest ledger balance and open exposure exclusively from `ineed_shadow_bets`; equity is available + open reserved stake. Phase-4 builder economics already counts proposed builders correctly only inside one pure call by appending an ephemeral `PENDING / BET_BUILDER` row to local `allocated` state.
+**READ-MODEL IMPLEMENTATION:** `backend/ineed_money.py` now owns normalization. When `risk_exposures` is absent it derives only open V1 exposures from legacy `open_bets`; this path is the current runtime compatibility path. An explicit `risk_exposures` list can represent V1 and builder economic units for read-only risk calculations. `backend/ineed_builder_shadow.py` consumes the same owner instead of maintaining duplicate exposure parsing.
 
-**DESIGN DECISION:** future state keeps `open_bets` V1-only for settlement compatibility and adds a separate logical `risk_exposures` read model spanning `V1_SINGLE_BET` + `BET_BUILDER_COMPOSITION`. Total/match/player counts each economic stake once; builder market concentration counts full stake once per distinct constituent market.
+**V1 EQUIVALENCE PROOF:** direct old-file vs new-file comparison across 500 deterministic legal V1 states was 500/500 identical. Focused V1/builder/read-model/settlement/audit pack is 46/46 GREEN. Legacy state vs explicit normalized V1 state is also covered by permanent regression tests.
 
-**LOCAL AUDIT GATE:** focused shared-exposure/V1/builder/settlement/source-parity/docs pack 47/47 GREEN; full repository pytest 1413/1413 GREEN; UI static smoke PASS (389 current matches / 103 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean.
+**LOCAL IMPLEMENTATION GATE:** focused + docs pack 59/59 GREEN; full repository pytest 1426/1426 GREEN; UI static smoke PASS (389 current matches / all 103 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean.
 
-**RESERVATION BLOCKER:** a future builder ledger debit must have one durable builder exposure owner in the same atomic transaction/equivalent state machine. A naked ledger debit or naked builder row is unsafe. No builder reservation write is authorized yet.
+**ISOLATION / FAIL-CLOSED:** builder-shaped records in V1 `open_bets` fail closed. Explicit V1 exposures require exactly one market and no `composition_id`; explicit builder exposures require `composition_id`, exactly two players and at least one market. Live Supabase read-only verification found 0 builder-market rows, 0 composition snapshots and 0 open builder-shaped rows in `ineed_shadow_bets`.
 
-**SETTLEMENT:** builder settlement remains `NOT_IMPLEMENTED`; `backend/ineed_settlement_runner.py` stays V1-only.
+**PERSISTENCE STATUS:** Supabase schema/RPCs and `ineed-sync` remain unchanged and do not expose `risk_exposures`; no Edge deploy is part of this step. `backend/ineed_settlement_runner.py` remains V1-only on `open_bets`.
 
-**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-6/source parity. Do not add builder rows to current `open_bets`, `ineed_signals`, `ineed_shadow_bets` or V1 settlement.
+**RESERVATION BLOCKER:** no builder ledger debit or durable builder exposure owner exists yet. A future write must atomically/idempotently create the durable builder exposure owner and ledger reservation; no builder reservation write is authorized in this step.
 
-**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current iNeed$ calculations, current settlement semantics or SHADOW->PROD. No real-money execution.
+**SETTLEMENT:** builder settlement remains `NOT_IMPLEMENTED`; current V1 settlement semantics remain unchanged.
+
+**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-6, source parity or the shared-exposure audit. Do not add builder rows to `open_bets`, `ineed_signals`, `ineed_shadow_bets` or V1 settlement.
+
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current iNeed$ economic formulas, current settlement semantics or SHADOW->PROD. No real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Run exact-head CI for PR #442 and perform fresh-main verification immediately before merge.
-2. Merge only all-green.
-3. Merge only all-green.
-4. Then design the smallest normalized `risk_exposures` implementation with V1-only equivalence tests before any builder reservation write.
-5. Keep builder settlement and all real-money execution disabled.
+1. Push the checkpoint update to PR #443 and require exact-head CI on the resulting head.
+2. Immediately before merge, fetch fresh `main`; if it moved, audit drift/rebase/rerun CI.
+3. Merge only all-green and mergeable.
+4. Post-merge verify current V1 runtime/settlement and live Supabase deployment remain unchanged.
+5. Then audit/design the smallest atomic durable builder exposure owner + ledger reservation transaction before any write implementation.
+6. Keep builder settlement and all real-money execution disabled.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 

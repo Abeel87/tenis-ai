@@ -165,14 +165,85 @@ def _round_down(value: float, step: float) -> float:
     return math.floor((value + 1e-12) / step) * step
 
 
-def _open_exposures(open_bets: list[dict]) -> dict:
-    total = sum(float(x.get("stake") or 0) for x in open_bets if str(x.get("status")) in OPEN)
-    return {"total": total}
+RISK_UNIT_V1 = "V1_SINGLE_BET"
+RISK_UNIT_BUILDER = "BET_BUILDER_COMPOSITION"
+RISK_UNITS = {RISK_UNIT_V1, RISK_UNIT_BUILDER}
 
 
-def _overlap_player(bet: dict, p1: str, p2: str) -> bool:
+def _risk_texts(values) -> list[str]:
+    out = []
+    for value in values or []:
+        text = str(value or "").strip()
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def _v1_risk_exposure(bet: dict) -> dict:
     snap = bet.get("placement_snapshot") or bet.get("current_snapshot") or {}
-    names = {str(snap.get("p1") or "").strip().casefold(), str(snap.get("p2") or "").strip().casefold()}
+    if str(bet.get("market") or "").strip().upper() == "BET_BUILDER" or str(snap.get("composition_id") or "").strip():
+        raise ValueError("builder exposure must not use V1 open_bets")
+    return {
+        "economic_unit": RISK_UNIT_V1,
+        "status": str(bet.get("status") or ""),
+        "stake": float(bet.get("stake") or 0.0),
+        "match_id": str(bet.get("match_id") or ""),
+        "players": _risk_texts([snap.get("p1"), snap.get("p2")]),
+        "markets": _risk_texts([bet.get("market")]),
+        "source_id": str(bet.get("id") or bet.get("signal_id") or "") or None,
+        "composition_id": None,
+    }
+
+
+def normalize_risk_exposures(state: dict) -> list[dict]:
+    explicit = state.get("risk_exposures")
+    if explicit is None:
+        return [_v1_risk_exposure(bet) for bet in (state.get("open_bets") or []) if isinstance(bet, dict) and str(bet.get("status")) in OPEN]
+    if not isinstance(explicit, list):
+        raise ValueError("risk_exposures must be a list")
+    rows = []
+    for raw in explicit:
+        if not isinstance(raw, dict):
+            raise ValueError("risk_exposure row must be an object")
+        status = str(raw.get("status") or "")
+        if status not in OPEN:
+            raise ValueError("risk_exposure must be open")
+        unit = str(raw.get("economic_unit") or "")
+        if unit not in RISK_UNITS:
+            raise ValueError("risk_exposure economic_unit is invalid")
+        stake = _num(raw.get("stake"))
+        if stake is None or stake < 0:
+            raise ValueError("risk_exposure stake is invalid")
+        match_id = str(raw.get("match_id") or "").strip()
+        if not match_id:
+            raise ValueError("risk_exposure match_id is required")
+        players = _risk_texts(raw.get("players"))
+        markets = _risk_texts(raw.get("markets"))
+        composition_id = str(raw.get("composition_id") or "").strip() or None
+        if unit == RISK_UNIT_V1 and (len(markets) != 1 or composition_id is not None):
+            raise ValueError("V1 risk exposure must have one market and no composition_id")
+        if unit == RISK_UNIT_BUILDER and (not composition_id or not markets or len(players) != 2):
+            raise ValueError("builder risk exposure requires composition_id, two players and markets")
+        rows.append({
+            "economic_unit": unit, "status": status, "stake": float(stake),
+            "match_id": match_id, "players": players, "markets": markets,
+            "source_id": str(raw.get("source_id") or "").strip() or None,
+            "composition_id": composition_id,
+        })
+    return rows
+
+
+def risk_exposure_state(state: dict) -> dict:
+    exposures = normalize_risk_exposures(state)
+    available = float(state.get("available_capital") or 0.0)
+    total = sum(float(row["stake"]) for row in exposures)
+    explicit = state.get("risk_exposures") is not None
+    equity = available + total if explicit else float(state.get("bankroll_equity") or (available + total))
+    return {"available_capital": available, "bankroll_equity": equity, "risk_exposures": exposures, "active_exposure": total}
+
+
+def risk_exposure_overlaps_player(exposure: dict, p1: str, p2: str) -> bool:
+    names = {str(x).strip().casefold() for x in (exposure.get("players") or []) if str(x).strip()}
     return bool({p1.casefold(), p2.casefold()} & names)
 
 
@@ -183,10 +254,10 @@ def _reject(base: dict, reason: str, status: str = "REJECTED") -> dict:
 def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: datetime | None = None) -> list[dict]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     experiment = state.get("experiment") or {}
-    available = float(state.get("available_capital") or 0.0)
-    open_bets = list(state.get("open_bets") or [])
-    exposure = _open_exposures(open_bets)["total"]
-    equity = float(state.get("bankroll_equity") or (available + exposure))
+    risk = risk_exposure_state(state)
+    available = risk["available_capital"]
+    equity = risk["bankroll_equity"]
+    risk_exposures = list(risk["risk_exposures"])
     peak = float(state.get("peak_bankroll") or max(float(experiment.get("starting_bankroll") or equity), equity))
     rstate, drawdown = risk_state(equity, peak, cfg)
     profile = (cfg.get("risk_profiles") or {}).get(rstate) or {}
@@ -234,7 +305,7 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
             candidates.append((econ_unit["expected_value_net"], model_p, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2))
 
     candidates.sort(key=lambda x: x[0], reverse=True)
-    allocated = list(open_bets)
+    allocated = list(risk_exposures)
     for _, model_p, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2 in candidates:
         odds = float(quote["operator_price"])
         if rstate == "HALTED":
@@ -248,10 +319,10 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
         if minimum_conf is not None and (confidence is None or confidence < float(minimum_conf)):
             rows.append(_reject(base, "LOW_CONFIDENCE")); continue
 
-        current_total = sum(float(b.get("stake") or 0) for b in allocated if str(b.get("status")) in OPEN)
-        same_match = sum(float(b.get("stake") or 0) for b in allocated if str(b.get("status")) in OPEN and str(b.get("match_id")) == base["match_id"])
-        same_market = sum(float(b.get("stake") or 0) for b in allocated if str(b.get("status")) in OPEN and str(b.get("market")) == base["market"])
-        same_player = sum(float(b.get("stake") or 0) for b in allocated if str(b.get("status")) in OPEN and _overlap_player(b, p1, p2))
+        current_total = sum(float(b.get("stake") or 0) for b in allocated)
+        same_match = sum(float(b.get("stake") or 0) for b in allocated if str(b.get("match_id")) == base["match_id"])
+        same_market = sum(float(b.get("stake") or 0) for b in allocated if base["market"] in (b.get("markets") or []))
+        same_player = sum(float(b.get("stake") or 0) for b in allocated if risk_exposure_overlaps_player(b, p1, p2))
 
         k = _kelly(econ_unit["model_probability"], econ_unit["effective_odds_after_tax"])
         stake = equity * k * float(cfg.get("fractional_kelly", 0.25)) * stake_mult
@@ -296,7 +367,11 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
             "data_quality": snapshot["data_quality"], "proposed_stake": stake, "final_stake": stake, "snapshot": snapshot,
         }
         rows.append(row)
-        allocated.append({"status": "PENDING", "stake": stake, "match_id": base["match_id"], "market": base["market"], "placement_snapshot": snapshot})
+        allocated.append({
+            "economic_unit": RISK_UNIT_V1, "status": "PENDING", "stake": stake,
+            "match_id": base["match_id"], "players": _risk_texts([p1, p2]),
+            "markets": _risk_texts([base["market"]]), "source_id": None, "composition_id": None,
+        })
         available -= stake
     return rows
 

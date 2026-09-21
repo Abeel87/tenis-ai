@@ -74,11 +74,16 @@ def test_playable_and_symphony_are_separate_exact_frozen_owners():
     assert 'HISTORY = DATA / "symphony2_history.json"' in symphony
 
 def test_ineed_shadow_selection_has_separate_fingerprint_and_placement_snapshot():
-    text = _text("backend/ineed_money.py")
-    assert "def _stable_fingerprint" in text
-    assert '"placement_snapshot": snapshot' in text
-    assert '"timestamp": now.isoformat()' in text
-    assert '"automatic_real_betting": False' in text
+    money = _text("backend/ineed_money.py")
+    edge = _text("supabase/functions/ineed-sync/index.ts")
+    risk_sql = _text("supabase/migrations/20260910222554_ineed_v1_risk_guards.sql")
+    assert "def _stable_fingerprint" in money
+    assert '"snapshot": snapshot' in money
+    assert '"timestamp": now.isoformat()' in money
+    assert '"automatic_real_betting": False' in money
+    assert 'current_snapshot: protectedStatus ? current.current_snapshot : (evaluation.snapshot || {})' in edge
+    assert 'placement_snapshot)' in risk_sql
+    assert 's.current_snapshot) returning * into bet_row' in risk_sql
 
 
 def test_prediction_integrity_guard_is_not_a_historical_ledger_owner():

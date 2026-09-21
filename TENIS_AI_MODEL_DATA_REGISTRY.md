@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6 merged through PR #440 and deployed-source parity merged via PR #441 (`54c0c84e1e37fc8905a26993b1464ee1d6d4d48e`). Active bounded step is the shared V1 + builder exposure read-model audit; no builder persistence, reservation or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6 merged through PR #440, deployed-source parity merged via #441, and shared-exposure audit merged via #442 (`f21e6e5a0da796bac7e21a91b8feb1606eb3b24e`). Active bounded step is the backend-only normalized `risk_exposures` read-model implementation; no builder persistence, reservation or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -790,7 +790,15 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Shared-exposure local proof:** focused shared-exposure/V1/builder/settlement/source-parity/docs pack 47/47 GREEN, full repository pytest 1413/1413 GREEN, UI static smoke PASS (389 current matches / 103 Symphony), Project Health 0 FAIL / 1 existing WARN and clean `git diff --check`; audit changes only docs plus a contract/isolation test.
 
-**Next proof:** finish and merge the shared-exposure audit-only PR with zero runtime/schema changes. Then design the smallest normalized `risk_exposures` implementation with exact V1-only equivalence tests before any builder reservation write. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
+**Shared-exposure merge proof:** PR #442 exact head `673df0e8c6c303e28876b6e5ade9d2f8478a0c88` passed 7/7 GREEN workflows and merged as `f21e6e5a0da796bac7e21a91b8feb1606eb3b24e` after fresh-main equality.
+
+**Normalized risk read model:** `backend/ineed_money.py` is the canonical owner of `risk_exposures`. With no explicit `risk_exposures`, current runtime V1 `open_bets` are normalized to `V1_SINGLE_BET` and current decision semantics are preserved. Explicit read-only state may contain `V1_SINGLE_BET` + `BET_BUILDER_COMPOSITION`; `backend/ineed_builder_shadow.py` consumes the same normalized owner. `open_bets` remains V1 settlement-only.
+
+**Read-model safety:** builder-shaped V1 `open_bets` fail closed; explicit V1 rows require one market and no composition identity; explicit builder rows require composition identity, two players and constituent markets. Supabase/Edge are unchanged and do not emit `risk_exposures`; no durable builder exposure or ledger reservation is created.
+
+**Read-model local proof:** deterministic old-vs-new V1 comparison 500/500 identical; focused implementation pack 46/46 GREEN; focused + docs 59/59 GREEN; full repository pytest 1426/1426 GREEN; UI static smoke PASS (389 current matches / 103 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean. After data-only main drift to `f8174f53a9a8f8f88c304af356ae89d5a2536f44`, the branch was rebased and the full pytest/UI/health gates passed again. Live Supabase contains 0 builder-shaped rows in `ineed_shadow_bets`.
+
+**Next proof:** commit/push and merge a read-model-only PR with exact-head CI and fresh-main equality. Then audit/design one atomic durable builder exposure owner + ledger reservation transaction before any write. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
 
 ---
 

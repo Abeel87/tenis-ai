@@ -16,10 +16,10 @@ import json
 import math
 
 try:
-    from .ineed_money import direct_quote, economics, risk_state
+    from .ineed_money import RISK_UNIT_BUILDER, direct_quote, economics, risk_exposure_overlaps_player, risk_exposure_state, risk_state
     from .superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 except ImportError:
-    from ineed_money import direct_quote, economics, risk_state
+    from ineed_money import RISK_UNIT_BUILDER, direct_quote, economics, risk_exposure_overlaps_player, risk_exposure_state, risk_state
     from superbet_direct import exact_combination_quote, parse_dynamic_sga_quote
 
 OPERATOR = "superbet.pl"
@@ -249,9 +249,6 @@ def attach_verified_combined_quote(composition: dict, quote: dict | None) -> dic
     return out
 
 
-_BUILDER_OPEN = {"PENDING", "SHADOW_PLACED"}
-
-
 def _num(value, default=None):
     try:
         out = float(value)
@@ -283,28 +280,6 @@ def _builder_round_down(value: float, step: float) -> float:
     if step <= 0:
         return value
     return math.floor((value + 1e-12) / step) * step
-
-
-def _builder_open(rows: list[dict]) -> list[dict]:
-    return [row for row in rows if isinstance(row, dict) and str(row.get("status")) in _BUILDER_OPEN]
-
-
-def _builder_overlap_player(bet: dict, p1: str, p2: str) -> bool:
-    snap = bet.get("placement_snapshot") or bet.get("current_snapshot") or {}
-    names = {
-        _text(snap.get("p1")).casefold(),
-        _text(snap.get("p2")).casefold(),
-    }
-    wanted = {_text(p1).casefold(), _text(p2).casefold()}
-    return bool({x for x in names if x} & {x for x in wanted if x})
-
-
-def _builder_bet_markets(bet: dict) -> set[str]:
-    snap = bet.get("placement_snapshot") or bet.get("current_snapshot") or {}
-    values = set(str(x) for x in (bet.get("builder_markets") or snap.get("builder_markets") or []) if x)
-    if bet.get("market"):
-        values.add(str(bet["market"]))
-    return values
 
 
 def _builder_reject(base: dict, reason: str, status: str = "SHADOW_REJECTED") -> dict:
@@ -346,16 +321,13 @@ def evaluate_builder_economics_shadow(
 ) -> list[dict]:
     """Evaluate whole-builder economics without publishing or reserving bankroll."""
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    available = float(state.get("available_capital") or 0.0)
-    allocated = list(state.get("open_bets") or [])
-    existing_open = _builder_open(allocated)
+    risk = risk_exposure_state(state)
+    available = risk["available_capital"]
+    allocated = list(risk["risk_exposures"])
     existing_composition_ids = {
-        _text((x.get("placement_snapshot") or x.get("current_snapshot") or {}).get("composition_id"))
-        for x in existing_open
-        if _text((x.get("placement_snapshot") or x.get("current_snapshot") or {}).get("composition_id"))
+        _text(x.get("composition_id")) for x in allocated if _text(x.get("composition_id"))
     }
-    exposure = sum(float(x.get("stake") or 0.0) for x in existing_open)
-    equity = float(state.get("bankroll_equity") or (available + exposure))
+    equity = risk["bankroll_equity"]
     experiment = state.get("experiment") or {}
     peak = float(
         state.get("peak_bankroll")
@@ -464,7 +436,7 @@ def evaluate_builder_economics_shadow(
         base = item["base"]
         markets = item["markets"]
         p1, p2 = item["p1"], item["p2"]
-        active = _builder_open(allocated)
+        active = list(allocated)
         current_total = sum(float(x.get("stake") or 0.0) for x in active)
         same_match = sum(
             float(x.get("stake") or 0.0) for x in active
@@ -472,12 +444,12 @@ def evaluate_builder_economics_shadow(
         )
         same_player = sum(
             float(x.get("stake") or 0.0) for x in active
-            if _builder_overlap_player(x, p1, p2)
+            if risk_exposure_overlaps_player(x, p1, p2)
         )
         market_exposure = {
             market: sum(
                 float(x.get("stake") or 0.0) for x in active
-                if market in _builder_bet_markets(x)
+                if market in (x.get("markets") or [])
             )
             for market in markets
         }
@@ -560,16 +532,11 @@ def evaluate_builder_economics_shadow(
             "automatic_real_betting": False,
         }
         allocated.append({
-            "status": "PENDING",
-            "stake": stake,
-            "match_id": row.get("match_id"),
-            "market": "BET_BUILDER",
-            "builder_markets": markets,
-            "placement_snapshot": {
-                "p1": row.get("p1"), "p2": row.get("p2"),
-                "composition_id": row.get("composition_id"),
-                "builder_markets": markets,
-            },
+            "economic_unit": RISK_UNIT_BUILDER, "status": "PENDING", "stake": stake,
+            "match_id": _text(row.get("match_id")),
+            "players": [x for x in (_text(row.get("p1")), _text(row.get("p2"))) if x],
+            "markets": list(markets), "source_id": f"builder:{row['composition_id']}",
+            "composition_id": row.get("composition_id"),
         })
         available -= stake
 
