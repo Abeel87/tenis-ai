@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-6 merged through PR #440 (`5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace`). Active bounded step is source parity for already-deployed `ineed-sync` v10; no builder persistence, reservation or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-6 merged through PR #440 and deployed-source parity merged via PR #441 (`54c0c84e1e37fc8905a26993b1464ee1d6d4d48e`). Active bounded step is the shared V1 + builder exposure read-model audit; no builder persistence, reservation or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -784,7 +784,13 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Source-parity local proof:** deployed-v10 markers + V1 isolation tests 22/22 GREEN, full repository pytest 1408/1408 GREEN, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN, Deno type-check GREEN and clean `git diff --check`; no Supabase deployment executed.
 
-**Next proof:** finish and merge the `ineed-sync` source-parity PR with no deployment and no builder wiring. Then design the shared V1+builder exposure read model. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
+**Source-parity merge proof:** PR #441 exact head `b9755be1c7248f389dcb646108cedccb5f079269` passed 8/8 GREEN workflows and merged as `54c0c84e1e37fc8905a26993b1464ee1d6d4d48e`; post-merge live Supabase remained ACTIVE `ineed-sync` v10 with unchanged deployment metadata, so no Edge deployment occurred.
+
+**Shared-exposure audit:** current V1 available capital comes from latest ledger balance while all open concentration/exposure comes from `ineed_shadow_bets`. Phase-4 builder economics can model proposed builder exposure only ephemerally inside one evaluation call. The future logical interface therefore keeps `open_bets` V1-only and introduces a separate normalized `risk_exposures` view across V1 single bets + builder compositions. Builder stake counts once for total/match/player and once per distinct constituent market for market concentration.
+
+**Shared-exposure local proof:** focused shared-exposure/V1/builder/settlement/source-parity/docs pack 47/47 GREEN, full repository pytest 1413/1413 GREEN, UI static smoke PASS (389 current matches / 103 Symphony), Project Health 0 FAIL / 1 existing WARN and clean `git diff --check`; audit changes only docs plus a contract/isolation test.
+
+**Next proof:** finish and merge the shared-exposure audit-only PR with zero runtime/schema changes. Then design the smallest normalized `risk_exposures` implementation with exact V1-only equivalence tests before any builder reservation write. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
 
 ---
 

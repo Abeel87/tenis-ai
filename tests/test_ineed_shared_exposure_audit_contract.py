@@ -1,0 +1,60 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+AUDIT = ROOT / "TENIS_AI_LOGIC12_SHARED_EXPOSURE_READ_MODEL_AUDIT.md"
+
+
+def _text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def test_shared_exposure_audit_freezes_read_model_only():
+    text = _text(AUDIT)
+    required = (
+        "AUDIT + CONTRACT DESIGN ONLY",
+        "available_capital",
+        "risk_exposures",
+        "V1_SINGLE_BET",
+        "BET_BUILDER_COMPOSITION",
+        "bankroll_equity = available_capital + active_exposure",
+        "Do **not** overload `open_bets` with builder records",
+        "builder settlement `NOT_IMPLEMENTED`",
+    )
+    for fragment in required:
+        assert fragment in text
+
+
+def test_current_edge_state_is_v1_bet_backed():
+    edge = _text(ROOT / "supabase/functions/ineed-sync/index.ts")
+    assert 'from("ineed_shadow_bets").select("*")' in edge
+    assert '.in("status", ["SHADOW_PLACED", "PENDING"])' in edge
+    assert "available + exposure" in edge
+    assert 'open_bets: openBets || []' in edge
+
+
+def test_v1_sql_exposure_is_currently_shadow_bet_only():
+    sql = _text(ROOT / "supabase/migrations/20260910222554_ineed_v1_risk_guards.sql").lower()
+    compact = "".join(sql.split())
+    assert "sum(stake),0)intototal_exposurefrompublic.ineed_shadow_bets" in compact
+    assert "intomatch_exposurefrompublic.ineed_shadow_bets" in compact
+    assert "intomarket_exposurefrompublic.ineed_shadow_bets" in compact
+    assert "intoplayer_exposurefrompublic.ineed_shadow_bets" in compact
+    assert "equity:=available+total_exposure" in compact
+
+
+def test_phase4_builder_only_adds_ephemeral_allocated_exposure():
+    builder = _text(ROOT / "backend/ineed_builder_shadow.py")
+    assert 'allocated = list(state.get("open_bets") or [])' in builder
+    assert '"market": "BET_BUILDER"' in builder
+    assert '"builder_markets": markets' in builder
+    assert '"status": "SHADOW_PROPOSED"' in builder
+    assert '"runtime_publishable": False' in builder
+
+
+def test_audit_adds_no_shared_exposure_runtime_or_schema():
+    migrations = list((ROOT / "supabase/migrations").glob("*.sql"))
+    assert all("risk_exposures" not in _text(path) for path in migrations)
+    assert "risk_exposures" not in _text(ROOT / "supabase/functions/ineed-sync/index.ts")
+    assert "risk_exposures" not in _text(ROOT / "backend/ineed_money.py")
+    assert "risk_exposures" not in _text(ROOT / "backend/ineed_builder_shadow.py")

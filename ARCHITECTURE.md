@@ -63,6 +63,8 @@ Replay of identical immutable evidence must be idempotent; an identity/evidence 
 
 Phase 6 found that deployed `ineed-sync` v10 contains non-core SMTP/email source changes that were absent from Git. The active source-parity step tracks those already-live v10 semantics in Git without deploying the Edge Function: env aliases/fallback sender selection, configuration-state detail and `operator_event_url` email metadata. V1 placement, settlement and exposure semantics remain unchanged.
 
+Source parity is now merged in Git; live Supabase remained on the same ACTIVE v10 deployment. The next LOGIC-12 boundary is shared risk exposure: current `open_bets` remains V1-only because the V1 settlement runner consumes it. A future shared state must expose a separate normalized `risk_exposures` collection spanning V1 single bets and builder compositions. Available capital remains ledger-derived; shared equity adds each open economic stake back exactly once. Builder stake counts once toward total/match/player exposure and once against each distinct constituent market, matching Phase-4 SHADOW economics. No schema or reservation write is implemented by the audit.
+
 Builder settlement remains `NOT_IMPLEMENTED` until a separate operator-evidence audit proves one-ticket outcome/void/cancel/payout semantics. Real-money execution remains out of scope.
 
 ## 4. Frontend
