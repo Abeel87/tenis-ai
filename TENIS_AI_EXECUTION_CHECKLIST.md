@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-shared-db-exposure-schema` rebased onto exact fresh main `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; drift from `6f0fa7b2...` was bot `data: refresh Superbet market context`, 12 generated `frontend/data/*.json` files only, zero overlap.
 
-**PR:** not opened yet; implementation is under local validation.
+**PR:** #445 ? `LOGIC-12: add dormant shared DB exposure schema`; base `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d`; pre-checkpoint head `d6cd38fa770e32359446ff4284e85ac5877b2558`.
 
 **LAST VERIFIED MAIN:** `9fd45f4938413f4e81bb9c701d3a6077ce75bf7d` ? bot `data: refresh Superbet market context`, parent `6f0fa7b204b232e398cf095e2e85b0017206f102`; drift audit found generated data only and zero overlap with this branch.
 
@@ -61,11 +61,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Audit fresh `main` immediately before commit/PR; if bot drift is generated data only, rebase and rerun the required gates.
-2. Open a **dormant-schema/read-source** PR only; no `apply_migration`, no RPC, no Edge write/deploy.
-3. Require exact-head CI and fresh-main equality; merge only all-green.
-4. After merge, next controlled step is to migrate V1 placement and `ineed-sync` read-side to `ineed_open_risk_exposures` with exact V1-only equivalence **before** any builder reserve writer can exist.
-5. Keep builder settlement and all real-money execution disabled.
+1. Push this checkpoint update to PR #445 and require exact-head CI on the resulting head.
+2. Require all triggered workflows GREEN; no `apply_migration`, no RPC, no Edge write/deploy.
+3. Immediately before merge fetch fresh `main`; if it moved, audit drift/rebase/rerun exact-head CI.
+4. Merge only all-green and mergeable.
+5. After merge, next controlled step is to migrate V1 placement and `ineed-sync` read-side to `ineed_open_risk_exposures` with exact V1-only equivalence **before** any builder reserve writer can exist.
+6. Keep builder settlement and all real-money execution disabled.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
