@@ -57,7 +57,13 @@ Phase 5 adds `backend/ineed_builder_ticket_shadow.py::build_builder_ticket_shado
 
 The Phase-5 ticket is explicitly non-runtime and nonpersistent: `status=SHADOW_TICKET_PROPOSED`, `persistence_ready=false`, `settlement_ready=false`, `settlement_contract_status=NOT_IMPLEMENTED`, `automatic_real_betting=false`. It has no V1 `signal_id` and must not be projected into current `payload.evaluations`, `ineed_signals`, `ineed_shadow_bets` or the existing single-bet settlement RPC.
 
-A future builder persistence/settlement phase must use a separate ticket/composition identity and prove one-ticket operator settlement semantics before any runtime promotion. Real-money execution remains out of scope.
+Phase 6 audits persistence/sync ownership without adding a write path. Any future builder persistence must use a separate experiment-scoped `builder-ticket:<composition_id>` identity plus immutable ticket digest; it must never project the ticket into V1 `ineed_signals` / `ineed_shadow_bets` or current `QUALIFIED` auto-placement.
+
+Replay of identical immutable evidence must be idempotent; an identity/evidence mismatch must fail closed. Ticket persistence and any later reservation require an atomic durable boundary. Reservation remains blocked until shared bankroll/exposure accounting can see both current V1 open bets and builder reservations; current V1 exposure queries see only `ineed_shadow_bets`.
+
+The deployed `ineed-sync` v10 contains non-core SMTP/email source changes not present in fetched Git branches. Repository/deployment source parity must be restored in a separate no-behavior-change step before any Edge Function deployment.
+
+Builder settlement remains `NOT_IMPLEMENTED` until a separate operator-evidence audit proves one-ticket outcome/void/cancel/payout semantics. Real-money execution remains out of scope.
 
 ## 4. Frontend
 

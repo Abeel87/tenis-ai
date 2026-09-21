@@ -750,7 +750,7 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign SHADOW
 
-**Status:** ACTIVE - phases 1-5 merged (#434/#435/#436/#437/#438). Phase 5 merged as `73926853e4439f41a97c08ffd4be93f55e16c24f`; Phase 6 persistence/sync audit is next. No runtime builder persistence or one-ticket settlement is implemented.
+**Status:** ACTIVE - phases 1-5 merged (#434/#435/#436/#437/#438), Phase-5 closeout #439 merged as `06d0b06579b95d4a23106f2173ccd4e991558aa3`. Phase 6 persistence/sync ownership audit + contract design is active; no runtime builder persistence, reservation or one-ticket settlement is implemented.
 
 **Current production owner/economic unit:** `backend/ineed_scoped_runner.py` + `backend/ineed_money.py` remain the current single-leg V1 path. Existing V1 calculations, persistence, sync and settlement are unchanged.
 
@@ -770,9 +770,17 @@ Canonical audit artifact: `TENIS_AI_GUARD_OWNERSHIP_AUDIT.md`. The exact active 
 
 **Phase-5 merge proof:** exact head `ac9d6d024336aa9f0fa56c155020959e13e09769` passed 8/8 GREEN workflows (LOGIC-01/02/03/04, iNeed$ SHADOW, Delivery/Security, CodeQL, UI/Project Health) and merged via PR #438 as `73926853e4439f41a97c08ffd4be93f55e16c24f`. Local validation: focused 38/38, broad 410/410, full 1399/1399. Post-merge grep shows no runtime/frontend/workflow/Supabase consumer; current `ineed-sync` and settlement runner blobs are unchanged.
 
-**Persistence blocker:** current Supabase V1 remains structurally single-leg (`ineed_shadow_bets.signal_id UNIQUE`, `ineed_system_place_bet(target_signal_id)`), and `ineed-sync` auto-places V1 `QUALIFIED`. Builder persistence therefore requires a separate schema/object keyed by composition/ticket, separate sync contract and one-ticket settlement; it must not be faked as `market=builder` V1.
+**Phase-6 runtime proof:** repository plus live Supabase read-only audit confirms V1 is single-leg at every persistence boundary: signal fingerprint identity, `signal_id UNIQUE` bet ownership, `QUALIFIED` auto-placement, single-leg insert guard, V1-only exposure accounting and one-bet settlement. The deployed `ineed-sync` v10 persistence core matches this contract.
 
-**Next proof:** Phase 6 is a read-only persistence/sync ownership audit and contract design. Define a separate ticket/composition identity, idempotency/retry/replay semantics and strict V1 isolation before any schema or write implementation. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
+**Phase-6 persistence contract:** future builder persistence is a separate experiment-scoped logical object keyed by deterministic `builder-ticket:<composition_id>` plus immutable `ticket_digest`. Exact replay returns idempotent success; same identity with different immutable evidence fails closed. No builder object may become a fake V1 signal/bet or use current V1 statuses to imply unimplemented semantics.
+
+**Shared-bankroll blocker:** current available/exposure/equity reads account for V1 `ineed_shadow_bets`, not builder reservations. Builder reservation writes stay disabled until one shared bankroll/exposure view can account for V1 + builder open exposure without changing existing calculations silently.
+
+**Deployment blocker:** deployed `ineed-sync` v10 contains SMTP/email source changes absent from fetched Git branches. A separate no-behavior-change source-parity reconciliation is required before any future Edge deployment.
+
+**Phase-6 local proof:** focused persistence/V1-isolation/Phase-5/docs pack 30/30 GREEN, full repository pytest 1405/1405 GREEN, UI static smoke PASS, Project Health 0 FAIL / 1 existing WARN and clean `git diff --check`; audit changes only docs plus a contract/isolation test.
+
+**Next proof:** finish and merge the Phase-6 audit-only PR with contract tests and zero runtime/schema changes. Then reconcile Edge source parity and design the shared V1+builder exposure read model. Settlement stays `NOT_IMPLEMENTED` and requires a separate operator-evidence phase plus explicit authorization.
 
 ---
 
