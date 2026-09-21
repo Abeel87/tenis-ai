@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-builder-reservation-atomicity-audit` rebased onto exact fresh main `15bafdc21571394ee960682e95cc7bbac7331ad4`; drift from post-read-model merge `8666d37e...` was a data-only `frontend/data/*.json` tennis-analysis refresh with zero overlap.
 
-**PR:** not opened yet; audit branch is under local validation.
+**PR:** #444 ? `LOGIC-12: audit atomic builder reservation boundary`; base `15bafdc21571394ee960682e95cc7bbac7331ad4`; pre-checkpoint head `91cf96afa32d2533965edef2e2b4431d634c0e2d`.
 
 **LAST VERIFIED MAIN:** `15bafdc21571394ee960682e95cc7bbac7331ad4` ? bot `data: refresh tennis analysis`, parent `8666d37e41b79d959d1be9c9d5846a9289cbb979` (merge of PR #443). Drift audit found only generated `frontend/data/*.json` changes and zero overlap with this audit branch.
 
@@ -65,8 +65,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Commit/push the fully validated audit branch and open an audit/design PR only; no Supabase migration/RPC/Edge write.
-2. Require exact-head CI on the resulting head.
+1. Push this checkpoint update to PR #444 and require exact-head CI on the resulting head.
+2. Require all triggered workflows GREEN; no Supabase migration/RPC/Edge write.
 3. Immediately before merge, fetch fresh `main`; if it moved, audit drift/rebase/rerun exact-head CI; merge only all-green.
 4. After merge, next separately controlled step may implement the **dormant shared DB schema/read source + V1 equivalence tests**; builder reserve runtime remains disabled.
 5. Do not enable a builder reserve RPC/caller until the shared DB source, V1 placement migration and `ineed-sync` shared state are proven together and explicitly authorized.
