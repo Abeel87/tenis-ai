@@ -31,40 +31,38 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** admin-start shared exposure COMPLETE / MERGED via PR #447. Active bounded step: **repair settlement source parity and migrate only V1 `other_exposure` bookkeeping to `ineed_open_risk_exposures`**. No live Supabase apply/deploy, no builder settlement, no builder reserve writer.
+**SUBSTEP:** settlement shared exposure COMPLETE / MERGED via PR #448. Active bounded step: **migrate staff-facing iNeed$ exposure presentation to a staff-only shared-exposure aggregate**. No live Supabase apply/deploy, no builder reserve writer, no builder settlement.
 
-**BRANCH:** `logic-12-settlement-shared-exposure`, exact base `59ec7d99cadd95ce6cea545f6db6a888ed644f1c` (PR #447 merge).
+**BRANCH:** `logic-12-frontend-shared-exposure`, exact base `af9621f6a91e40e478c61edb3f2c00e5e61944d4` after data-only Superbet refresh drift from PR #448 merge.
 
-**LAST VERIFIED MAIN:** `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`.
+**LAST VERIFIED MAIN:** `af9621f6a91e40e478c61edb3f2c00e5e61944d4`.
 
-**PR:** #448 — `LOGIC-12: migrate settlement exposure bookkeeping`; base `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`; pre-checkpoint head `f71c9a212ecb6be0a822baa7ab280e6e4fdfde21`.
+**SETTLEMENT MERGE PROOF:** PR #448 exact head `9f24dd9071375a4eb6506d2c37609354bd5bfc37` passed 8/8 GREEN on base `59ec7d99cadd95ce6cea545f6db6a888ed644f1c` and merged as `03cb21f741d5621c8851ebed692a8443f0562b8f`. No live DDL or Edge deploy occurred.
 
-**ADMIN-START MERGE PROOF:** PR #447 exact head `8e5be0747fc7dc68759cd6a8f086219b9de0f597` passed 8/8 GREEN on base `979d4b3238ab7458e870145af5f6d4bbdd2cc184` and merged as `59ec7d99cadd95ce6cea545f6db6a888ed644f1c`. No live DDL or Edge deploy occurred.
+**FRONTEND SHARED-EXPOSURE CANDIDATE:** `supabase/migrations/20260921101354_ineed_staff_exposure_summary.sql` adds `public.ineed_staff_exposure_summary(uuid)`, a staff-only aggregate RPC over service-only `ineed_open_risk_exposures`. It returns only total exposure and open-unit counts, keeps the underlying view unavailable to browser clients, uses `SECURITY DEFINER` with empty search path, checks `is_staff(auth.uid())`, revokes default/public execution and grants execute only to `authenticated`.
 
-**SETTLEMENT SOURCE-PARITY FINDING:** live read-only `pg_get_functiondef(public.ineed_system_settle_bet(...))` proves production already locks both the V1 bet and its owning `ineed_experiments` row `FOR UPDATE`. Historical Git migration `20260910221444_ineed_v1.sql` lacks the experiment lock, and live migration history contains no separate named migration for that correction. The repo therefore had DB-to-Git source drift.
+**FRONTEND BEHAVIOR:** `frontend/ineed.js` uses the aggregate for exposure/equity/open-unit presentation. Before the dormant DB migrations are deployed it may use the existing V1 calculation only when the RPC is genuinely absent (`PGRST202` / PostgreSQL `42883`); permission, network and other database errors remain fail-closed. V1 bet history and settlement presentation remain unchanged.
 
-**SETTLEMENT CANDIDATE:** `supabase/migrations/20260921095220_ineed_settlement_shared_exposure.sql` is built from the live production settlement baseline. It preserves the bet lock, experiment lock, idempotency, WIN/LOSS/VOID/CANCELLED outcome set, payout/credit rules, settlement ledger entry, V1 bet/signal updates and service-role-only execution. The only accounting change is `other_exposure`: it reads `ineed_open_risk_exposures` and explicitly excludes the target `V1_SINGLE_BET`, so all other V1 exposure plus future `SHADOW_RESERVED` builder exposure remains in equity without entering V1 settlement semantics.
+**LOCAL SAFETY PROOF:** focused post-docs pack 18/18 GREEN; full iNeed 133/133 GREEN; full repository 1466/1466 GREEN; 500-state V1 fallback equivalence GREEN; SQL parse 3 statements; `node --check frontend/ineed.js` GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; git diff --check clean.
 
-**V1 EQUIVALENCE / LOCAL GATE:** focused settlement/shared pack 29/29 GREEN; full iNeed pack 126/126 GREEN; full repository pytest 1459/1459 GREEN; exact 500-state V1-only `other_exposure` equivalence GREEN using Decimal arithmetic; migration parses as 3 PostgreSQL statements; UI static smoke PASS (377 current matches / all 101 Symphony); Project Health 0 FAIL / 1 existing WARN; `git diff --check` clean.
+**RUNTIME / DEPLOY STATUS:** repository shared-exposure migrations remain dormant and are not applied to live Supabase. Live `ineed-sync` remains ACTIVE v10 with hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`. No builder table write, reserve RPC/caller or builder settlement exists.
 
-**RUNTIME / DEPLOY STATUS:** no `apply_migration`, no live DDL, no Edge deploy, no builder table write, no reserve RPC/caller and no builder settlement. Live `ineed-sync` remains ACTIVE v10 with unchanged hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`.
+**PRE-WRITER STATUS:** this candidate closes the last known V1-only read/presentation consumer in repository code. That does **not** authorize a builder writer. Before any reservation writer can exist, a separate deployment/readiness phase must apply and verify the dormant shared-exposure schema/readers/RPCs in a controlled environment, prove V1 equivalence live, verify RLS/ACL/advisors and only then consider a writer design.
 
-**REMAINING PRE-WRITER BLOCKER:** after this settlement bookkeeping step, `frontend/ineed.js` exposure presentation is the last known V1-only shared-exposure consumer. It must be audited/migrated separately before any builder reserve writer can be enabled.
+**SETTLEMENT BOUNDARY:** builder settlement remains `NOT_IMPLEMENTED`; no builder WIN/LOSS/VOID/CANCELLED, payout, retirement, leg-void or ticket outcome semantics are introduced.
 
-**SETTLEMENT BOUNDARY:** builder settlement remains `NOT_IMPLEMENTED`; this step does not interpret builder WIN/LOSS/VOID/CANCELLED, payout, retirement, leg-void or ticket outcome semantics.
-
-**DO NOT REDO:** do not reopen LOGIC-11, LOGIC-12 phases 1-6, source parity, shared exposure read model, atomicity audit, dormant schema, placement/Edge readers or admin-start migration unless new evidence invalidates them.
+**DO NOT REDO:** do not reopen LOGIC-11, LOGIC-12 phases 1-6, source parity, normalized risk read model, atomicity audit, dormant schema, placement/Edge readers, admin-start or settlement migration unless new evidence invalidates them.
 
 **RISKS / HARD BANS:** zero changes to model probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current V1 stake/risk formulas or SHADOW->PROD. No real-money execution. No live Supabase schema apply/deploy in this branch.
 
 ### NEXT EXACT ACTION
 
-1. Keep settlement outcome/payout/status semantics byte-for-contract stable; only shared `other_exposure` bookkeeping plus live mutex source-parity are in scope.
-2. Re-run full iNeed/full-repo/UI/Project Health/SQL parse after documentation updates.
-3. Push this checkpoint update to PR #448; the resulting head is the only valid exact-head CI target.
-4. Require exact-head CI; immediately before merge fetch fresh `main`, audit/rebase any drift and rerun CI if needed.
+1. Re-run frontend/shared-summary focused tests, full iNeed, full repository pytest, SQL parse, JS syntax, UI smoke and Project Health on exact base `af9621f6...`.
+2. Fetch fresh `main`; audit/rebase any bot drift before commit/PR.
+3. Commit/push this bounded frontend/read-only step and open PR; require exact-head CI.
+4. Immediately before merge fetch fresh `main`; if it moved, audit/rebase and rerun exact-head CI.
 5. Do not `apply_migration` and do not deploy Edge without separate explicit authorization.
-6. After merge, audit `frontend/ineed.js` exposure presentation as the last known pre-writer blocker. Keep builder reserve writer, builder settlement and real-money execution disabled.
+6. After merge, perform a deployment/readiness audit only. Do not implement or enable builder reservation writer or builder settlement.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
