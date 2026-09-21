@@ -31,45 +31,47 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** frontend shared exposure COMPLETE / MERGED via PR #449. Active bounded step: **deployment/readiness audit only** for the already-merged shared-exposure DB/Edge read-side. No `apply_migration`, no Edge deploy, no builder reserve writer, no builder settlement.
+**SUBSTEP:** shared-exposure production rollout COMPLETE / VERIFIED. Active bounded step: **post-deploy closeout/source parity only**. Builder reserve writer is still absent; builder one-ticket settlement remains `NOT_IMPLEMENTED`; real-money execution remains disabled.
 
-**BRANCH:** `logic-12-deployment-readiness-audit`, exact base `5e2f008bafc516ccc47ac79a9844b46c98a71281` (PR #449 merge).
+**BRANCH:** `logic-12-deployment-readiness-closeout`, exact base `8f6795e4670b32f601f04e8822a4dc40875e4d6f` (PR #450 merge).
 
-**LAST VERIFIED MAIN:** `5e2f008bafc516ccc47ac79a9844b46c98a71281`; open PRs: 0 at audit start.
+**LAST VERIFIED MAIN:** `8f6795e4670b32f601f04e8822a4dc40875e4d6f` at closeout start.
 
-**PR:** #450 ? `LOGIC-12: freeze shared exposure deployment readiness`; base `5e2f008bafc516ccc47ac79a9844b46c98a71281`; pre-checkpoint head `de4bda24c431c2651565290afe9beea8cb2795b6`.
-
-
-**FRONTEND MERGE PROOF:** PR #449 exact head `81bff0eaeca09e25295a6d678d0944cc8327d6de` passed 8/8 GREEN on base `af9621f6a91e40e478c61edb3f2c00e5e61944d4` and merged as `5e2f008bafc516ccc47ac79a9844b46c98a71281`. No live DDL or Edge deploy occurred.
-
-**LIVE PRE-DEPLOY MATRIX:** `ineed_builder_tickets`, `ineed_open_risk_exposures`, `ineed_staff_exposure_summary(uuid)` and ledger `builder_ticket_id` are absent live. Placement/admin-start/settlement still read V1-only sources. Live settlement retains two `FOR UPDATE` locks. Live `ineed-sync` remains ACTIVE v10 hash `0752efcece199bcc69c5f8e0387dff756cac90b0afd369b5364c8657e8e696e4`.
-
-**CURRENT SHADOW EVIDENCE:** ACTIVE experiment starting bankroll 200.0000 PLN, latest available 191.2532 PLN, open V1 exposure 0 and open V1 bets 0 at audit time. Historical ledger has 35 `STAKE_RESERVED`, all 35 owned by V1 `bet_id`, zero ownerless reservations. These are point-in-time compatibility facts, not permanent invariants.
-
-**DEPLOYMENT BUNDLE:** five merged DB migrations in required order: dormant owner/view → V1 placement reader → admin-start reader → settlement bookkeeping reader → staff aggregate. All parse clean (14 + 3 + 2 + 3 + 3 statements). Repository `ineed-sync` candidate depends on `ineed_open_risk_exposures` and passes Deno check.
-
-**ROLLOUT ORDER:** DB first, verify after every migration, advisor delta check, Edge last. Initial controlled rollout should require zero open V1 bets unless separately proven safe. Edge verification must preserve the existing `ineed_email_events` / `QUALIFIED` Gmail SMTP alert pipeline; do not send a synthetic betting alert merely as a smoke test. Do not create a test bet, start a new experiment or settle a bet merely as a migration smoke test.
-
-**ENVIRONMENT BLOCKER:** no Supabase development branch exists. Creating one requires cost confirmation and explicit authorization. No deployment/cost authorization has been given.
-
-**PRE-WRITER STATUS:** repository read/presentation consumers are closed, but builder writer remains blocked until deployed read-side V1 equivalence, ACL/RLS and advisor deltas are proven. Builder settlement remains `NOT_IMPLEMENTED`.
-
-**AUDIT ARTIFACT:** `TENIS_AI_LOGIC12_DEPLOYMENT_READINESS_AUDIT.md`.
-
-**LOCAL READINESS PROOF:** focused readiness contract 8/8 GREEN; full iNeed pack 141/141 GREEN; full repository pytest 1474/1474 GREEN; UI static smoke PASS (377 current matches / all 82 Symphony); Project Health 0 FAIL / 1 existing WARN; five DB migrations parse clean (14 + 3 + 2 + 3 + 3 statements); candidate `ineed-sync` Deno check GREEN; `git diff --check` clean. Email non-regression is contract-tested (`ineed_email_events`, `QUALIFIED`, Gmail SMTP aliases/config and `flushEmails`).
+**PR:** #451 — `LOGIC-12: close shared exposure production rollout`; base `8f6795e4670b32f601f04e8822a4dc40875e4d6f`; pre-checkpoint head `eb81aa8bb885f460b6bb6df6e963078a9fa8fd06`.
 
 
-**DO NOT REDO:** do not reopen LOGIC-12 phases 1-6, source parity, risk read model, atomicity audit, dormant schema, reader migrations, settlement or frontend migration unless new evidence invalidates them.
+**PR #450 MERGE PROOF:** exact head `345cf2245748a23be513f2bc02ff50d9feaca1e5` passed 7/7 GREEN on base `5e2f008bafc516ccc47ac79a9844b46c98a71281` and merged as `8f6795e4670b32f601f04e8822a4dc40875e4d6f`.
 
-**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. No live Supabase write/deploy in this audit branch.
+**LIVE DB DEPLOYMENT:** production received the five reviewed shared-exposure migrations in dependency order plus one advisor-driven FK index: `20260921115222 ineed_builder_shared_exposure_dormant`, `20260921115316 ineed_shared_exposure_readers`, `20260921115347 ineed_admin_start_shared_exposure`, `20260921115431 ineed_settlement_shared_exposure`, `20260921115506 ineed_staff_exposure_summary`, `20260921115606 ineed_builder_ticket_fk_index`.
+
+**LIVE EDGE:** `ineed-sync` is ACTIVE v11, `verify_jwt=false` with the existing internal GitHub OIDC authorization, source hash `5e6cd2eea5937fd66de98754dbd40afe2906f6d70fbe5588116f218ef45c673f`.
+
+**PRODUCTION SHADOW PROOF:** workflow run `35596941111` completed GREEN: guard GREEN, settlement runner GREEN (`0` settlements / `0` errors), scoped iNeed$ sync GREEN with 41 evaluations, all `REJECTED`, `0` placed. Returned state: available/equity `191.2532 PLN`, `active_exposure=0`, `open_bets=[]`, `risk_exposures=[]`, `automatic_real_betting=false`.
+
+**EMAIL NON-REGRESSION:** live v11 retains `ineed_email_events`, `QUALIFIED` alert generation, Gmail SMTP aliases/config and `flushEmails()`. The rollout run had no QUALIFIED signal, therefore sent `0` new emails and left `0` pending. Historical live evidence remains 36 `SENT` email events and 36 provider message IDs, with zero unsent events after rollout.
+
+**STAFF UI PROOF:** `ineed_staff_exposure_summary(uuid)` executed under an authenticated real staff JWT context and returned `source=SHARED_DB`, `open_units=0`, `v1_open_units=0`, `builder_open_units=0`, `total_exposure=0`. `anon` has no execute privilege.
+
+**ADVISOR DELTA:** the only new performance blocker was an unindexed `builder_ticket_id` FK; production migration `ineed_builder_ticket_fk_index` removed that warning. The new `unused_index` INFO is expected with zero builder rows. RLS/no-policy on `ineed_builder_tickets` is intentional service-only isolation. The authenticated `SECURITY DEFINER` warning for staff summary is explicitly reviewed: the function uses `search_path=''` and internal `is_staff(auth.uid())` authorization.
+
+**PRE-WRITER STATUS:** shared read/accounting/presentation is now deployed and live-verified for V1-only state. Builder rows remain `0`; no builder reserve RPC/caller exists. Builder settlement remains `NOT_IMPLEMENTED`. This rollout does **not** authorize builder writes or real-money execution.
+
+**CLOSEOUT ARTIFACT:** `TENIS_AI_LOGIC12_DEPLOYMENT_READINESS_AUDIT.md` now records the production rollout proof.
+
+**LOCAL CLOSEOUT PROOF:** full iNeed pack **142/142 GREEN**; full repository pytest **1475/1475 GREEN**; UI static smoke PASS (**377 current matches / all 82 Symphony**); Project Health **0 FAIL / 1 existing WARN**; advisor-index migration parses as 1 PostgreSQL statement; `ineed-sync` Deno check exit 0; `git diff --check` clean.
+
+
+**DO NOT REDO:** do not redeploy the shared-exposure bundle or Edge v11 unless fresh evidence shows drift/failure. Do not reopen LOGIC-12 phases 1-6 or read-side migrations without evidence.
+
+**RISKS / HARD BANS:** zero model-math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No real-money execution. No builder settlement inference from V1 semantics.
 
 ### NEXT EXACT ACTION
 
-1. Validate this audit/docs contract locally and with full repository gates.
-2. Fresh-main check; rebase any bot drift before commit/PR.
-3. Open audit-only PR and require exact-head CI + fresh-main equality before merge.
-4. After merge, stop before deployment and obtain explicit authorization for a controlled environment: preferably a cost-confirmed Supabase development branch, otherwise an explicitly authorized production rollout.
-5. If deployment is authorized later, follow DB migration order and verify every step before Edge; do not implement builder writer or settlement in that rollout.
+1. Add the advisor-driven FK index migration to Git and update deployment closeout docs/tests.
+2. Run focused iNeed/readiness contracts, full repository pytest, UI smoke and Project Health.
+3. Fresh-main check, then open a closeout/source-parity PR; exact-head CI must be GREEN before merge.
+4. After closeout merge, keep builder writer disabled. Any builder reservation implementation requires a separate SHADOW-only design/PR and must reuse the experiment-row mutex + shared exposure owner.
+5. Builder settlement remains a separate future operator-semantics phase; real-money execution remains out of scope.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
