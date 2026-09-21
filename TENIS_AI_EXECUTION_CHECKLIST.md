@@ -35,9 +35,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-edge-source-parity` from exact post-Phase-6 main `5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace`.
 
-**PR:** not opened yet; source-parity branch is under local validation.
+**PR:** #441 — `LOGIC-12: reconcile deployed iNeed sync v10 source`; source-parity only, no Supabase deploy.
 
-**LAST VERIFIED MAIN:** `5fd2d45d1c8b55d663e2a05f181a48e7d3e80ace` — merge of Phase-6 audit PR #440 after exact-head 7/7 GREEN CI and fresh-main equality.
+**LAST VERIFIED MAIN:** `d63c59961ecb7f8e363ce59bf640690c44bc7300` — three bot data-refresh commits after #440 (`Neuron SHADOW`, tennis analysis, Superbet context). Drift touches only `frontend/data/*.json`, with zero overlap against source-parity files; #441 was rebased onto this exact main.
 
 **LAST COMPLETED WORK:** Phase 6 persistence/sync audit merged. It proved V1 single-leg persistence/settlement boundaries, froze deterministic future builder ticket identity/idempotency requirements, identified shared-bankroll exposure as the reservation blocker and identified deployed/repository `ineed-sync` source drift.
 
@@ -55,9 +55,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Finish local validation of the `ineed-sync` v10 source-parity branch, including full repository tests, UI smoke/Project Health and clean diff.
-2. Open a source-parity-only PR; no Supabase deployment in that PR.
-3. Require exact-head CI + fresh-main check before merge.
+1. Run exact-head CI for rebased PR #441 and require a fresh-main check immediately before merge.
+2. Merge only if every required check is GREEN; no Supabase deployment in this PR.
 4. Post-merge, verify Git source now reflects deployed v10 while live function version/runtime remains unchanged.
 5. Then start the shared V1 + builder bankroll/exposure read-model audit/design before any builder reservation write.
 6. Keep builder settlement and all real-money execution disabled.
