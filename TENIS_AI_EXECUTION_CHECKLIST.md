@@ -35,6 +35,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-builder-lifecycle-operator-evidence-audit`, created from fresh `main` `935a2d1b2119c061fcda2ecdb3333ef395327125`.
 
+**PR:** #458 - `LOGIC-12: freeze Bet Builder lifecycle operator-evidence blocker`; audit-only head will be re-verified by exact-head full GitHub CI before any merge.
+
 **LAST VERIFIED MAIN:** `935a2d1b2119c061fcda2ecdb3333ef395327125` (`data: refresh Superbet market context`, tenis-ai-bot), direct descendant of the LOGIC-12 persistence merge lineage. No open PR existed at branch creation.
 
 **PERSISTENCE MERGE:** PR #457 passed exact-head 8/8 GREEN and merged as `3fa6fc5602a1c1cfebbe86a68d6425a8e5c20e2d`. Production `ineed-sync` is ACTIVE v12 and contains the guarded OIDC `reserve_builder_tickets` action.
