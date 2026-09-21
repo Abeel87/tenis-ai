@@ -88,13 +88,14 @@ def test_staff_summary_keeps_normalized_view_private():
     assert "from public.ineed_open_risk_exposures" in summary
 
 
-def test_edge_keeps_open_bets_v1_only_and_builder_writer_absent():
+def test_edge_keeps_open_bets_v1_only_and_builder_writer_is_separate_action():
     edge = _text(EDGE)
     assert 'from("ineed_shadow_bets").select("*")' in edge
     assert 'open_bets: openBets || []' in edge
     assert 'risk_exposures: normalizedRiskExposures' in edge
-    assert "ineed_builder_tickets" not in edge
-    assert "ineed_system_reserve_builder_ticket" not in edge
+    assert 'from("ineed_builder_tickets")' not in edge
+    assert 'body.action === "reserve_builder_tickets"' in edge
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in edge
 
 
 def test_edge_preserves_email_alert_contract_after_v11_rollout():

@@ -106,9 +106,9 @@ def test_edge_state_reads_shared_risk_but_keeps_v1_open_bets():
     assert 'const exposure = (openBets || []).reduce' not in EDGE
 
 
-def test_reader_step_does_not_add_builder_runtime_or_settlement():
+def test_reader_step_has_no_direct_builder_table_write_and_settlement_stays_v1_only():
     edge_lower = EDGE.lower()
-    assert "ineed_system_reserve_builder_ticket" not in edge_lower
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in edge_lower
     assert "insert into public.ineed_builder_tickets" not in edge_lower
     assert "builder-ticket:" not in edge_lower
     assert "bet_builder_composition" not in SETTLEMENT

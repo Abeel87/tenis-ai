@@ -9,6 +9,8 @@ const EXPECTED_WORKFLOW_REF = `${EXPECTED_REPOSITORY}/.github/workflows/ineed-sh
 const TENIS_AI_SITE = "https://abeel87.github.io/tenis-ai/";
 const ISSUER = "https://token.actions.githubusercontent.com";
 const JWKS = createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
+const BUILDER_RESERVATION_CONTRACT_VERSION = "logic12-builder-reservation-shadow-v1";
+const MAX_BUILDER_TICKETS_PER_SYNC = 25;
 
 type Json = Record<string, any>;
 
@@ -173,6 +175,55 @@ async function upsertEvaluation(supabase: any, experiment: Json, evaluation: Jso
   return { signal_id: saved.id, status: saved.status, placed };
 }
 
+function requireBuilderReservationGate(experiment: Json) {
+  const config = experiment?.config && typeof experiment.config === "object" ? experiment.config : {};
+  const gate = config?.builder_reservation;
+  if (!gate || gate.enabled !== true) throw new Error("BUILDER_RESERVATION_DISABLED");
+  if (String(gate.contract_version || "") !== BUILDER_RESERVATION_CONTRACT_VERSION) {
+    throw new Error("BUILDER_RESERVATION_CONTRACT_MISMATCH");
+  }
+}
+
+async function reserveBuilderTickets(supabase: any, state: Json, payload: Json) {
+  if (String(payload.experiment_id || "") !== String(state.experiment.id)) throw new Error("BUILDER_EXPERIMENT_MISMATCH");
+  if (payload.operator !== "superbet.pl" || payload.mode !== "SHADOW") throw new Error("INVALID_BUILDER_OPERATOR_MODE");
+  if (payload.contract_version !== BUILDER_RESERVATION_CONTRACT_VERSION) throw new Error("BUILDER_RESERVATION_CONTRACT_MISMATCH");
+  if (payload.automatic_real_betting !== false) throw new Error("REAL_BETTING_MUST_REMAIN_DISABLED");
+  requireBuilderReservationGate(state.experiment);
+
+  const tickets = payload.tickets;
+  if (!Array.isArray(tickets)) throw new Error("INVALID_BUILDER_TICKET_BATCH");
+  if (tickets.length > MAX_BUILDER_TICKETS_PER_SYNC) throw new Error("BUILDER_TICKET_BATCH_TOO_LARGE");
+
+  const seen = new Set<string>();
+  const reservations = [];
+  for (const ticket of tickets) {
+    if (!ticket || typeof ticket !== "object" || Array.isArray(ticket)) throw new Error("INVALID_BUILDER_TICKET");
+    const ticketKey = String(ticket.ticket_key || "").trim();
+    if (!ticketKey || seen.has(ticketKey)) throw new Error("DUPLICATE_OR_MISSING_BUILDER_TICKET_KEY");
+    if (ticket.automatic_real_betting !== false) throw new Error("REAL_BETTING_MUST_REMAIN_DISABLED");
+    seen.add(ticketKey);
+    const { data, error } = await supabase.rpc("ineed_system_reserve_builder_ticket", {
+      target_experiment_id: state.experiment.id,
+      ticket_snapshot: ticket,
+    });
+    if (error) throw error;
+    const status = String(data?.status || "");
+    if (!["RESERVED", "IDEMPOTENT"].includes(status)) throw new Error("INVALID_BUILDER_RESERVATION_RESULT");
+    reservations.push(data);
+  }
+  return {
+    ok: true,
+    mode: "SHADOW",
+    contract_version: BUILDER_RESERVATION_CONTRACT_VERSION,
+    attempted: tickets.length,
+    reservations,
+    settlement_enabled: false,
+    automatic_real_betting: false,
+  };
+}
+
+
 async function settle(supabase: any, settlement: Json) {
   const { data, error } = await supabase.rpc("ineed_system_settle_bet", { target_bet_id: settlement.bet_id, settlement_outcome: settlement.outcome, settlement_payout: settlement.payout, settlement_detail: settlement.settlement_snapshot || {} });
   if (error) throw error;
@@ -295,6 +346,14 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey(), { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json().catch(() => ({}));
     if (body.action === "state") return response(await activeState(supabase));
+    if (body.action === "reserve_builder_tickets") {
+      const state = await activeState(supabase);
+      try {
+        return response(await reserveBuilderTickets(supabase, state, body.payload || {}));
+      } catch (err) {
+        return response({ error: "Builder reservation sync failed", detail: String(err) }, 409);
+      }
+    }
     if (body.action !== "sync") return response({ error: "Unknown action" }, 400);
 
     const state = await activeState(supabase);

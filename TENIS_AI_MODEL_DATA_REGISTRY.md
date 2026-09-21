@@ -401,15 +401,19 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B18. iNeed$
 
-**Status:** SHADOW / eksperymentalny risk layer.
+**Status:** SHADOW / experimental risk layer. Final-composition quote/economics/ticket evidence is runtime-produced; a separate builder persistence/sync caller contract is being added behind a disabled production gate.
 
-**Odpowiedzialność:** bankroll/risk/EV/stake po PLAYABLE.
+**Responsibility:** bankroll/risk/EV/stake after PLAYABLE. For Bet Builder, the economic unit is the whole final composition, not an individual leg.
 
-**Znany problem P0 przed realnym execution:** obecna jednostka ekonomiczna jest zbyt bliska pojedynczemu signal/leg zamiast finalnemu Bet Builderowi jako całości.
+**Current SHADOW contract:** final Symphony composition -> upstream joint probability -> exact verified Superbet combined odd -> whole-builder EV/risk/stake -> immutable `builder-ticket:<composition_id>`. V1 single-bet `evaluations`/`settlements` remain a separate contract.
 
-**Docelowy kontrakt:** composition -> joint probability -> combined odd -> EV całego BB -> stake całego BB -> jeden settlement.
+**Persistence boundary:** the caller may use only OIDC `ineed-sync::reserve_builder_tickets`; service-role credentials remain inside Edge, and existing `ineed_system_reserve_builder_ticket()` is the sole writer. Caller and Edge both require `builder_reservation.enabled=true` plus the exact contract version. Current production config has no such flag, so builder persistence performs zero writes.
 
-**Zakaz:** żadnego real-money automation do czasu osobnej, jawnej decyzji i pełnej walidacji bezpieczeństwa.
+**Unresolved blocker:** whole-ticket settlement/void/cancel/release semantics remain `NOT_IMPLEMENTED`. Reservation enablement must stay OFF until a separate settlement/lifecycle contract exists, because a durable SHADOW reservation could strand bankroll without a correct release path.
+
+**Target contract:** composition -> joint probability -> combined odd -> whole-BB EV -> whole-BB stake -> one settlement.
+
+**Hard ban:** no real-money automation without a separate explicit owner decision and full safety validation.
 
 ---
 

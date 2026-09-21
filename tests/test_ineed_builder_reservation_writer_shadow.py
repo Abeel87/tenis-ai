@@ -8,18 +8,22 @@ WRITER = WRITER_PATH.read_text(encoding="utf-8")
 LOWER = WRITER.lower()
 EDGE = (ROOT / "supabase/functions/ineed-sync/index.ts").read_text(encoding="utf-8")
 SETTLEMENT = (ROOT / "backend/ineed_settlement_runner.py").read_text(encoding="utf-8")
+CONFIG = (ROOT / "config/ineed_superbet_pl.json").read_text(encoding="utf-8")
 
 
-def test_writer_is_dormant_service_role_only_and_fail_closed():
+def test_writer_is_service_role_only_and_caller_stays_edge_gated():
     assert "create or replace function public.ineed_system_reserve_builder_ticket" in LOWER
     assert "security definer" in LOWER
-    assert "where id = target_experiment_id\n  for update" in LOWER
+    assert "where id = target_experiment_id" in LOWER
+    assert "for update" in LOWER
     assert "{builder_reservation,enabled}" in LOWER
     assert "coalesce(e.config #>> '{builder_reservation,enabled}', 'false')" in LOWER
     assert "builder_reservation_disabled" in LOWER
     assert "from public, anon, authenticated" in LOWER
     assert "to service_role" in LOWER
-    assert "ineed_system_reserve_builder_ticket" not in EDGE.lower()
+    assert 'body.action === "reserve_builder_tickets"' in EDGE
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in EDGE
+    assert '"builder_reservation"' not in CONFIG
     assert "bet_builder_composition" not in SETTLEMENT.lower()
     assert "shadow_reserved" not in SETTLEMENT.lower()
 
@@ -108,7 +112,7 @@ def test_ticket_owner_and_reservation_debit_are_one_atomic_function_body():
     assert "'automatic_real_betting',false" in LOWER
 
 
-def test_deployment_closeout_keeps_writer_dormant_and_edge_unchanged():
+def test_historical_deployment_closeout_remains_valid_while_new_caller_is_disabled():
     audit = (ROOT / "TENIS_AI_LOGIC12_BUILDER_RESERVATION_WRITER_AUDIT.md").read_text(encoding="utf-8")
     required = (
         "20260921134348 ineed_builder_reservation_writer_shadow",
@@ -121,4 +125,6 @@ def test_deployment_closeout_keeps_writer_dormant_and_edge_unchanged():
     )
     for marker in required:
         assert marker in audit
-    assert "ineed_system_reserve_builder_ticket" not in EDGE.lower()
+    assert 'body.action === "reserve_builder_tickets"' in EDGE
+    assert 'supabase.rpc("ineed_system_reserve_builder_ticket"' in EDGE
+    assert '"builder_reservation"' not in CONFIG
