@@ -43,18 +43,21 @@ def test_v1_sql_exposure_is_currently_shadow_bet_only():
     assert "equity:=available+total_exposure" in compact
 
 
-def test_phase4_builder_only_adds_ephemeral_allocated_exposure():
+def test_phase4_builder_consumes_normalized_ephemeral_risk_exposures():
     builder = _text(ROOT / "backend/ineed_builder_shadow.py")
-    assert 'allocated = list(state.get("open_bets") or [])' in builder
-    assert '"market": "BET_BUILDER"' in builder
-    assert '"builder_markets": markets' in builder
+    assert 'risk = risk_exposure_state(state)' in builder
+    assert 'allocated = list(risk["risk_exposures"])' in builder
+    assert '"economic_unit": RISK_UNIT_BUILDER' in builder
     assert '"status": "SHADOW_PROPOSED"' in builder
     assert '"runtime_publishable": False' in builder
 
 
-def test_audit_adds_no_shared_exposure_runtime_or_schema():
+def test_read_model_adds_no_shared_exposure_schema_edge_or_settlement_wiring():
     migrations = list((ROOT / "supabase/migrations").glob("*.sql"))
     assert all("risk_exposures" not in _text(path) for path in migrations)
     assert "risk_exposures" not in _text(ROOT / "supabase/functions/ineed-sync/index.ts")
-    assert "risk_exposures" not in _text(ROOT / "backend/ineed_money.py")
-    assert "risk_exposures" not in _text(ROOT / "backend/ineed_builder_shadow.py")
+    assert "normalize_risk_exposures" in _text(ROOT / "backend/ineed_money.py")
+    assert "risk_exposure_state" in _text(ROOT / "backend/ineed_builder_shadow.py")
+    settlement = _text(ROOT / "backend/ineed_settlement_runner.py")
+    assert 'state.get("open_bets") or []' in settlement
+    assert "risk_exposures" not in settlement

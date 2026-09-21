@@ -33,14 +33,17 @@ def cfg():
     }
 
 
-def state(*, available=200.0, equity=200.0, peak=200.0, open_bets=None):
-    return {
+def state(*, available=200.0, equity=200.0, peak=200.0, open_bets=None, risk_exposures=None):
+    out = {
         "available_capital": available,
         "bankroll_equity": equity,
         "peak_bankroll": peak,
         "open_bets": list(open_bets or []),
         "experiment": {"starting_bankroll": 200.0},
     }
+    if risk_exposures is not None:
+        out["risk_exposures"] = list(risk_exposures)
+    return out
 
 
 def quoted_builder(*, match_id="m-1", p1="A", p2="B", joint=90.0, odds=1.5, ts="2026-09-20T21:31:00+00:00"):
@@ -206,16 +209,13 @@ def test_component_identity_count_must_match_builder_leg_count():
     assert out["reservation_proposal"] is None
 
 
-def test_existing_open_same_composition_is_idempotently_rejected():
+def test_existing_shared_risk_same_composition_is_idempotently_rejected():
     row = quoted_builder()
     existing = {
-        "status": "PENDING", "stake": 2.0, "match_id": "other-match", "market": "BET_BUILDER",
-        "builder_markets": ["other"],
-        "placement_snapshot": {
-            "p1": "X", "p2": "Y",
-            "composition_id": row["composition_id"],
-            "builder_markets": ["other"],
-        },
+        "economic_unit": "BET_BUILDER_COMPOSITION", "status": "PENDING", "stake": 2.0,
+        "match_id": "other-match", "players": ["X", "Y"], "markets": ["other"],
+        "composition_id": row["composition_id"],
+        "source_id": f"builder-ticket:{row['composition_id']}",
     }
     c = cfg()
     c["max_single_bet_pct"] = 1.0
@@ -224,7 +224,7 @@ def test_existing_open_same_composition_is_idempotently_rejected():
     c["max_market_exposure_pct"] = 1.0
     c["max_total_exposure_pct"] = 1.0
     out = b.evaluate_builder_economics_shadow(
-        [row], c, state(available=198.0, equity=200.0, open_bets=[existing]), now=NOW
+        [row], c, state(available=198.0, equity=200.0, risk_exposures=[existing]), now=NOW
     )[0]
     assert out["status"] == "SHADOW_REJECTED"
     assert out["reason_code"] == "DUPLICATE_COMPOSITION"
