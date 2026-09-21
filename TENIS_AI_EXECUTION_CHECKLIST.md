@@ -31,40 +31,38 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** phase 4 - pure whole-builder EV/risk/stake + one-reservation proposal only. No Supabase persistence, settlement migration, current iNeed$ runner wiring or real-money execution is authorized.
+**SUBSTEP:** phase 5 - pure builder-ticket SHADOW envelope. No Supabase persistence, settlement migration, current iNeed$ runner wiring or real-money execution is authorized.
 
-**BRANCH:** `logic-12-phase4-builder-economics-shadow` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic12-phase4-builder-economics`, rebased onto `5a623eac73ef8caf75f7d6d7a6d2c15a2f965ba2`.
+**BRANCH:** `logic-12-phase5-builder-ticket-shadow` in `C:/Users/MaDRa/.copilot/worktrees/tenis-ai-logic12-phase5-builder-ticket`, rebased onto `e7cf3153...`.
 
-**PR:** Phase-3 PR #436 is MERGED as `05e818d4...`. Phase-4 PR #437 is OPEN; exact-head remote CI must be counted only on the final checkpoint-amended SHA.
+**PR:** Phase-4 PR #437 MERGED as `9a0ad2fe84298e847a2af7a6bc5afabdafee6963`. Phase-5 PR #438 is OPEN and non-draft.
 
-**LAST VERIFIED MAIN:** `5a623eac73ef8caf75f7d6d7a6d2c15a2f965ba2` - bot `data: refresh Superbet market context`; cumulative drift from the prior Phase-4 base remains data-only across `frontend/data/*.json` (50 files), with zero backend/workflow/test changes. PR #437 is rebased on this refreshed base.
+**LAST VERIFIED MAIN:** `e7cf3153...` - bot `data: refresh Player DNA SHADOW`; drift from prior base `22819536...` changes only four `frontend/data/*.json` SHADOW payloads and has zero backend/workflow/test overlap.
 
-**LAST COMPLETED WORK:** #436 passed exact-head 10/10 GREEN and merged as `05e818d4...`. Post-merge Delivery/Security, CodeQL, UI Health and Update+Pages run `35542439634` are GREEN; final full regression, refreshed JSON commit, lazy delivery and Pages deployment all succeeded. Post-merge grep proves phase-3 dynamic quote code has zero runner/frontend/workflow consumers.
+**LAST COMPLETED WORK:** Phase 4 merged. Phase 5 defines `backend/ineed_builder_ticket_shadow.py::build_builder_ticket_shadow()` as a pure deterministic non-runtime envelope over one exact Phase-4 `SHADOW_QUALIFIED` whole-builder composition.
 
-**PHASE-4 CONTRACT:** `backend/ineed_builder_shadow.py::evaluate_builder_economics_shadow()` is additive and non-runtime. It consumes only a final composition with exact verified combined price, uses Symphony `joint_probability` unchanged, reuses V1 tax economics + risk state, never multiplies leg odds, leaves builder no-vig N/D, and emits only `SHADOW_QUALIFIED` / `SHADOW_REJECTED` plus `runtime_publishable=false`. A proposed stake is one `BET_BUILDER_COMPOSITION` reservation keyed by `builder:<composition_id>`; it is never persisted.
+**PHASE-5 CONTRACT:** ticket identity is `builder-ticket:<composition_id>`, economic unit `BET_BUILDER_COMPOSITION`; exact legs, Symphony joint probability, exact verified Superbet combined price provenance, Phase-4 economics snapshot and exactly one whole-builder reservation proposal are frozen together. Fail closed on identity/economic/provenance/reservation mismatch.
 
-**PHASE-4 SAFETY BLOCKER:** current Supabase V1 is structurally single-leg (`ineed_shadow_bets.signal_id UNIQUE`, `ineed_system_place_bet(target_signal_id)`), and `ineed-sync` automatically places any evaluation with status `QUALIFIED`. Therefore Phase 4 MUST NOT enter current `payload.evaluations`, use status `QUALIFIED`, or write current V1 tables. Separate builder-ticket persistence is a later audited phase.
+**PHASE-5 SAFETY:** output is `SHADOW_TICKET_PROPOSED`, `runtime_publishable=false`, `persistence_ready=false`, `settlement_ready=false`, `settlement_contract_status=NOT_IMPLEMENTED`, `automatic_real_betting=false`. No `signal_id`, V1 `QUALIFIED`, current `ineed-sync`, Supabase write, runner/frontend/workflow consumer or settlement implementation.
 
-**PHASE-4 LIVE EVIDENCE:** on fresh `5a623eac...`, 56 final PLAYABLE -> 5 intersect verified Direct -> 3 complete exact UUID compositions -> 3/3 dynamic quotes. Operator combined prices are 1.45, 1.70 and 1.55; NET EV is -21.50%, -8.29% and -22.72%. All three are `SHADOW_REJECTED / LOW_EV`, final stake N/D, zero reservation proposal.
+**TEST STATUS:** after rebase onto `e7cf3153...`: Phase 4+5 focused 38/38 GREEN; broad iNeed$/Superbet/Symphony 410/410 GREEN; full repository 1399/1399 GREEN. Existing pandas/NumPy deprecation warnings only.
 
-**TEST STATUS:** phase-4 focused 27/27 GREEN; broader iNeed$/Superbet/Symphony 371/371 GREEN; full repository 1388/1388 GREEN on fresh `5a623eac...`. UI static smoke PASS; Project Health PASS (0 FAIL / 1 existing WARN); `git diff --check` clean.
+**CI STATUS:** previous remote Phase-5 head `89e2f2f7...` has iNeed$ SHADOW bankroll, CodeQL, Delivery/Security and UI/Project Health GREEN. Because branch was rebased onto newer main, exact-head CI must be rerun on the pushed final head before merge.
 
-**CI STATUS:** #436 post-merge proof COMPLETE/GREEN. Phase-4 PR #437 previous heads `9a0f27cb...`, `10b7d063...` and `bbd6bbad...` reached exact-head 8/8 GREEN but became stale after bot-driven `main` drift. Branch is now rebased on `5a623eac...`; count remote CI only on the next final post-rebase head. Separate current-main failures remain outside LOGIC-12: Training Archive publication, and Runtime private delivery staging because `data/results.json` exceeds the 47,185,920-byte private-object limit.
+**BLOCKERS:** no blocker for pure Phase-5 envelope. Persistence and one-ticket settlement remain intentionally unimplemented and require a separate audited phase/schema/sync/settlement contract.
 
-**BLOCKERS:** no economic blocker for pure SHADOW evaluation. Runtime persistence/one-ticket settlement remain intentionally blocked by the single-leg Supabase V1 schema/sync contract and require a separate phase/migration after Phase 4 evidence is merged.
+**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-4. Do not fake builder as a V1 signal, use `market=builder`, emit current V1 `QUALIFIED`, multiply leg odds, synthesize builder no-vig, or modify current single-leg iNeed$ / settlement.
 
-**DO NOT REDO:** do not reopen LOGIC-11 or LOGIC-12 phases 1-3. Do not multiply leg odds, derive synthetic builder no-vig, publish Phase-4 rows through current iNeed-sync, create fake `market=builder` V1 signals, or modify existing single-leg iNeed$ behavior.
-
-**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, existing single-leg iNeed$ calculations, current settlement semantics or SHADOW->PROD. No real-money execution.
+**RISKS / HARD BANS:** zero changes to Current Engine probability math, thresholds, weights, training, Player DNA PROD, Surface Elo, Symphony probability, Neuron math, PLAYABLE, current iNeed$ calculations, current settlement semantics or SHADOW->PROD. No real-money execution.
 
 ### NEXT EXACT ACTION
 
-1. Let downstream Superbet/Player DNA publication settle and re-check fresh `main`.
-2. Rebase Phase 4 if main moves; data-only drift -> focused/wide/live proof, code drift -> full repository suite.
-3. Finish docs/architecture registry and run focused/wide/full + UI smoke/Project Health + `git diff --check`.
-4. Monitor PR #437 exact-head CI; no runtime/Supabase changes.
-5. Merge only after exact-head all-GREEN + fresh-main/base equality + mergeable=true.
-6. Post-merge prove isolation again; only then design a separate builder-ticket persistence/one-ticket settlement phase.
+1. Update registry/architecture/checkpoint for Phase 4 merged + Phase 5 active.
+2. Run UI static smoke, Project Health and `git diff --check`; keep tests GREEN.
+3. Commit and push the rebased Phase-5 branch so GitHub emits exact-head PR CI.
+4. Re-check fresh `main`; if it moves, inspect drift and rebase/retest as required.
+5. Merge #438 only after exact-head all-GREEN + fresh-main/base equality + mergeable=true.
+6. Post-merge prove zero runtime/Supabase/settlement consumers; only then design a separate builder-ticket persistence/one-ticket settlement phase.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -379,7 +377,7 @@ Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign
 
-Status: `[~] ACTIVE - phases 1-3 merged; phase 4 whole-builder EV/risk/stake + one-reservation proposal locally GREEN, still no runtime persistence/settlement migration`
+Status: `[~] ACTIVE - phases 1-4 merged; phase 5 pure builder-ticket SHADOW envelope implemented and locally GREEN; no persistence/settlement migration`
 
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
@@ -387,15 +385,17 @@ Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 - [x] Potwierdzono final Symphony composition jako jednostkę wejścia.
 - [x] Zdefiniowano additive SHADOW composition record: composition id + min. 2 legs + canonical match/operator provenance.
 - [x] Joint probability jest wyłącznie passthrough z Symfonii; iNeed$ SHADOW nie liczy nowej probability.
-- [x] Exact verified Superbet combined odds: phase 2 proves curated pre-priced `superbets`; phase 3 proves read-only `v2/getSgaOddPrice` for arbitrary exact UUID sets. Two current final compositions returned exact ACTIVE operator quotes at 1.50; no leg-odds multiplication.
-- [x] EV całego buildera w pure SHADOW evaluatorze; exact combined price + upstream joint probability, bez synthetic no-vig.
-- [x] Kelly/risk/stake całego buildera w pure SHADOW evaluatorze z istniejącymi tax/risk limits; zero zmian V1.
-- [x] Jedna niepersistowana `SHADOW_PROPOSED` reservation per `composition_id`; brak zapisu do obecnego Supabase V1.
-- [ ] Jeden settlement całego BB.
-- [x] Phase 1-4 są SHADOW/non-runtime; brak real-money execution, brak current iNeed-sync consumer i brak Supabase builder write.
+- [x] Exact verified Superbet combined odds: phase 2 curated pre-priced rows + phase 3 dynamic `v2/getSgaOddPrice`; zero leg-odds multiplication.
+- [x] Phase 4: EV/Kelly/risk/stake całego buildera + jedna niepersistowana `SHADOW_PROPOSED` reservation per `composition_id`; PR #437 merged as `9a0ad2fe84298e847a2af7a6bc5afabdafee6963`.
+- [x] Phase 5: pure `builder-ticket` SHADOW envelope freezes exact composition, quote provenance, Phase-4 economics and one reservation proposal; output cannot resemble current V1 signal and explicitly claims no persistence/settlement readiness.
+- [x] Phase 1-5 remain SHADOW/non-runtime; no current iNeed-sync/Supabase/runner/frontend consumer and no real-money execution.
+- [ ] Separate builder-ticket persistence/sync contract.
+- [ ] Jeden settlement całego BB z exact operator semantics dla WIN/LOSS/VOID/PUSH/CANCEL/retirement i leg-void behavior.
 - [ ] Backtest na zamrożonych ofertach/operator context, jeśli dane pozwalają.
 
-**Definition of Done:** ekonomika iNeed$ odpowiada temu samemu finalnemu produktowi, który użytkownik faktycznie może zbudować w Superbet, z jawnie zweryfikowanym combined price i one-ticket settlement.
+**Current Phase-5 validation:** focused 38/38 GREEN; broad iNeed$/Superbet/Symphony 410/410 GREEN; full repository 1399/1399 GREEN after rebase onto `e7cf3153...`. Exact-head PR CI must be rerun after push.
+
+**Definition of Done:** ekonomika iNeed$ odpowiada temu samemu finalnemu produktowi, który użytkownik faktycznie może zbudować w Superbet, z jawnie zweryfikowanym combined price i one-ticket settlement. Phase 5 closes only the pure ticket-envelope contract; persistence and settlement remain separate future phases.
 
 # 4. CHECKPOINT PRZERWANIA — obowiązkowy przed zakończeniem/przerwą
 

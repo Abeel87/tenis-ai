@@ -45,13 +45,19 @@ Historia PLAYABLE przechowuje wyłącznie zamrożone selekcje operatorowo zweryf
 
 ### iNeed$ Bet Builder SHADOW contract
 
-Current production iNeed$ remains single-leg economics in `backend/ineed_money.py`. `backend/ineed_builder_shadow.py` is the additive, non-runtime LOGIC-12 owner for the final Bet Builder SHADOW unit: it consumes only final `symphony2_playable`, preserves upstream joint probability, requires canonical match/operator leg identity, accepts only an exact verified + fresh operator combined quote, and never synthesizes combined odds from leg prices. Phase 4 may compute pure SHADOW whole-ticket EV/risk/stake and a nonpersisted reservation proposal; settlement, persistence and execution remain out of scope.
+Current production iNeed$ remains single-leg economics in `backend/ineed_money.py`; the V1 Supabase signal/place/settlement path is intentionally unchanged.
 
-Phase 2 keeps that path non-runtime and adds read-only operator quote provenance: `backend/superbet_direct.py` may parse active pre-priced `superbets` rows (`marketId=238733`) from the same public event JSON. `oddComponents[].UUID` is matched only to exact Direct selection UUIDs; exactly one identical component set is required. A pre-priced catalogue row is not a dynamic quote for arbitrary Bet Builder legs, and absence of an exact row remains N/D / NO BET.
+`backend/ineed_builder_shadow.py` is the additive non-runtime LOGIC-12 owner for the final Bet Builder composition and whole-builder economics. It consumes only final `symphony2_playable`, preserves upstream joint probability, requires canonical match/operator leg identity, accepts only an exact verified + fresh operator combined quote, and never synthesizes combined odds from leg prices.
 
-Phase 3 adds a second read-only provenance path for arbitrary exact compositions: the public Superbet Bet Builder `v2/getSgaOddPrice` GET returns an operator-created SGA odd with combined `price`, `sgaUuid` and exact `legs[].oddUuid`. The parser/resolver remains isolated in `superbet_direct.py` + `ineed_builder_shadow.py`; no runner, frontend, settlement or real-money execution consumes it. The dynamic payload is accepted only with the canonical audited Superbet host/path/query for the exact event and sorted UUID set; attached provenance retains source URL, event, SGA identity and components.
+Phase 2 proves exact pre-priced Superbet `superbets` composition rows and exact component UUID identity. Phase 3 adds the read-only public `v2/getSgaOddPrice` provenance path for arbitrary exact UUID compositions, retaining event, SGA id, component ids and canonical source URL. No runner/frontend/settlement consumer is introduced.
 
-Phase 4 adds only pure SHADOW economics in `ineed_builder_shadow.py`. One composition is one economic unit and one reservation proposal; existing tax/risk limits are reused without modifying V1. Builder rows use `SHADOW_QUALIFIED/SHADOW_REJECTED`, `runtime_publishable=false`, and never enter current `ineed-sync`. Current Supabase V1 remains single-leg and is intentionally unchanged.
+Phase 4 evaluates the whole composition as one SHADOW economic unit: exact combined odds + upstream joint probability -> existing tax/risk semantics -> EV/Kelly/risk/stake -> at most one nonpersisted `SHADOW_PROPOSED` reservation keyed by `builder:<composition_id>`. It emits only `SHADOW_QUALIFIED/SHADOW_REJECTED`, remains `runtime_publishable=false`, and never enters current `ineed-sync`.
+
+Phase 5 adds `backend/ineed_builder_ticket_shadow.py::build_builder_ticket_shadow()` as a pure deterministic envelope owner. It accepts only an exact Phase-4 `SHADOW_QUALIFIED` result matched to the same composition and one whole-builder reservation, then freezes legs, match/player identity, joint probability, exact combined-price provenance, economics snapshot and reservation evidence into `builder-ticket:<composition_id>`.
+
+The Phase-5 ticket is explicitly non-runtime and nonpersistent: `status=SHADOW_TICKET_PROPOSED`, `persistence_ready=false`, `settlement_ready=false`, `settlement_contract_status=NOT_IMPLEMENTED`, `automatic_real_betting=false`. It has no V1 `signal_id` and must not be projected into current `payload.evaluations`, `ineed_signals`, `ineed_shadow_bets` or the existing single-bet settlement RPC.
+
+A future builder persistence/settlement phase must use a separate ticket/composition identity and prove one-ticket operator settlement semantics before any runtime promotion. Real-money execution remains out of scope.
 
 ## 4. Frontend
 
