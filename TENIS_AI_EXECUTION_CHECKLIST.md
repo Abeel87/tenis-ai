@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-risk-exposures-read-model` rebased onto exact fresh main `f8174f53a9a8f8f88c304af356ae89d5a2536f44` (bot drift from `f21e6e5a...` was data-only Player DNA SHADOW refresh with zero overlap).
 
-**PR:** not opened yet; implementation branch passed full local validation and is ready to commit/push.
+**PR:** #443 ? `LOGIC-12: add normalized risk exposure read model`; current pre-checkpoint head `96e5781e07692c88eaf4dc86abbf97a93daa4c62`, base `f8174f53a9a8f8f88c304af356ae89d5a2536f44`.
 
 **LAST VERIFIED MAIN:** `f21e6e5a0da796bac7e21a91b8feb1606eb3b24e` — merge of shared-exposure audit PR #442 after exact-head 7/7 GREEN CI and fresh-main equality.
 
@@ -61,11 +61,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Commit/push the validated read-model branch and open a read-model-only PR; no Supabase migration/deploy and no builder reservation write.
-2. Require exact-head CI plus fresh-main verification before merge.
-3. Post-merge verify current V1 runtime/settlement and live Supabase deployment remain unchanged.
-4. Then audit/design the smallest atomic durable builder exposure owner + ledger reservation transaction before any write implementation.
-5. Keep builder settlement and all real-money execution disabled.
+1. Push the checkpoint update to PR #443 and require exact-head CI on the resulting head.
+2. Immediately before merge, fetch fresh `main`; if it moved, audit drift/rebase/rerun CI.
+3. Merge only all-green and mergeable.
+4. Post-merge verify current V1 runtime/settlement and live Supabase deployment remain unchanged.
+5. Then audit/design the smallest atomic durable builder exposure owner + ledger reservation transaction before any write implementation.
+6. Keep builder settlement and all real-money execution disabled.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
