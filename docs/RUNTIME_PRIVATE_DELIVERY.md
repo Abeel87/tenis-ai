@@ -63,6 +63,12 @@ This does **not** alter model probability, thresholds, weights, training,
 Player DNA, Surface Elo, Symphony 2, rebuilt Neuron, PLAYABLE, settlement, or
 iNeed$ calculations.
 
+## Staging retention and shared Storage budget
+
+While private delivery remains dual-write staging, GC always preserves every active head and the staged grace window, but it does not retain a second full retired generation per layer (`retired_per_layer=0`). GitHub Pages remains the production delivery and rollback/fallback authority during this phase.
+
+This avoids duplicating hundreds of megabytes of runtime snapshots in the same Free-plan Storage quota used by the durable training archive. The retired-generation policy must be reviewed again before any private-delivery cutover or removal of the Pages fallback.
+
 ## Cutover gate
 
 Do not remove the existing generated-data commits or exclude B/C files from

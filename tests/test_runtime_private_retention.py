@@ -41,9 +41,9 @@ def test_gc_is_bound_to_exact_repo_owner_main_and_runtime_workflow():
     assert "workflow_ref" in GC_FUNCTION
 
 
-def test_gc_never_deletes_active_head_and_preserves_one_rollback_generation():
+def test_gc_never_deletes_active_head_and_does_not_retain_retired_staging_generations():
     assert "runtime_data_heads" in GC_FUNCTION
-    assert "RETIRED_KEEP_PER_LAYER = 1" in GC_FUNCTION
+    assert "RETIRED_KEEP_PER_LAYER = 0" in GC_FUNCTION
     assert "STAGED_GRACE_MS = 6 * 60 * 60 * 1000" in GC_FUNCTION
     assert 'row.status === "retired" || row.status === "staged"' in GC_FUNCTION
     assert '.in("status", ["retired", "staged"])' in GC_FUNCTION
