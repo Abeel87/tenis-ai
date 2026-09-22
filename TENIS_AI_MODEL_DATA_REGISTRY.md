@@ -698,7 +698,7 @@ Zero probability, threshold, weight, training, PLAYABLE or iNeed$ influence.
 
 ## LOGIC-09 ? Learning Integrity / Prediction Ledger
 
-**Status:** PHASES 0-3 INFRASTRUCTURE MERGED + POST-MERGE VERIFIED; prospective exact common-set evidence collection is active. Common binary settled sample is still `n=0`. No telemetry/weight/learning/runtime migration is approved.
+**Status:** PHASES 0-3 MERGED + POST-MERGE VERIFIED; natural prospective common-set evidence has matured to `common_binary_settled=261`. Phase-4 leakage-safe descriptive temporal/market audit is active in PR #470. No telemetry/weight/learning/runtime migration, model ranking or promotion is approved.
 
 Phase-0 merge evidence: PR #414 final head `8532212b0a3292112dc33ae6ec052d766b5058d7` merged as `d589b7204098fe285fe30ec66fbd6be96ee3f5a8`; docs closeout PR #415 merged as `8cf20c7fd0249c84c64e6bdb87979b5db0b3197f`. Phase-0 proved unequal historical populations and froze the prospective ledger/common-test-set contract.
 
@@ -724,7 +724,13 @@ Published isolation remains explicit: `network_fetch_enabled=false`, `source_led
 
 Common-test metrics may be reported only on exact prospective rows with all three frozen model scores and canonical `result in {hit, miss}`. `void` remains auditable but is excluded from binary accuracy/Brier/log-loss. Populations remain separate (`ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED`, exact intersection; generator/iNeed remain unavailable until their own exact owner evidence exists). Phase-3 explicitly disables model ranking, winner selection, auto-promotion, telemetry consumers, learning consumers and runtime gating. No minimum sample or promotion threshold is invented in this phase.
 
-**Current gate:** evidence maturity only. Allow normal prospective matches to mature through the existing settlement owner. If `common_binary_settled` remains `0`, do not add code to force it. When exact common `hit/miss` rows appear naturally, report factual coverage/Brier/log-loss/accuracy separately by population. Do not rank/promote models or migrate telemetry/weights merely to create a sample.
+Phase-4 evidence on live main `1de61e69645ed92e70b06b3e740691f93fc7fa3b` proves natural maturity without backfill: ledger rows `8516`, exact common rows `854`, common binary settled `261`, common void `70`, exact PLAYABLE common binary `97`. Immutable audit: `audits/logic09_common_set_phase4_audit_20260922T131840Z.json`.
+
+Phase-4 extends the SAME canonical settlement SHADOW owner additively with descriptive fixed 10-bin calibration, per-market/per-population metrics and strict chronology diagnostics. It does not retrain/recalibrate any model and cannot rank, select, promote or gate runtime. Complete-day chronology policy is `EXPANDING_PRIOR_COMPLETE_UTC_DAYS_TO_NEXT_COMPLETE_UTC_DAY`; train membership additionally requires `settled_at < test_day_start`. Current first fold: scheduled train candidates `117`, leakage-safe train `102`, late labels excluded `15`, test `81`, exact match-key overlap `0`; 63 rows on the incomplete current UTC day are excluded from fold evaluation.
+
+Current market evidence is concentrated: `set1_total=153`, `match_total=93`, while other markets have only `n=2..5`. Therefore Phase-4 is evidence/diagnostics, not a model verdict. `minimum_sample_gate_defined=false` remains authoritative; no model ranking/winner or SHADOW->PROD promotion is permitted.
+
+**Current gate:** accumulate additional natural exact settlements and complete UTC days until multiple chronology folds and broader market coverage exist. Report factual metrics and small-N explicitly. Do not change model math, weights, telemetry, learning consumers or runtime gates from current evidence without a separate reviewed authorization.
 
 ---
 

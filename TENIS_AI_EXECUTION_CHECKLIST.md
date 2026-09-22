@@ -27,45 +27,33 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Ostatnia aktualizacja checkpointu:** 2026-09-22
 
-**Aktywny program:** reorganizacja logiki/danych/modeli Tenis AI
+**Active program:** Tenis AI logic/data/model reorganization.
 
-**ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
+**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` - Phase-4 leakage-safe common-set audit. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged.
 
-**SUBSTEP:** PR #468 (`LOGIC-12: freeze post-gate builder evidence`) is MERGED as `581e3a2d23ba63572c668f45744e5e98d5c0d522`. The first eligible non-PR delivery run after #467 is now proven: `Superbet hourly market refresh` #1814 / run `35729926740`, `workflow_dispatch` on `ba299e25b2e17ce64a726c79636b209c01509f56`, completed SUCCESS. Its dynamic quote step and terminal-evidence step both executed successfully and published `data: refresh Superbet market context` as `06b85831f22cf42223552d27ce7d2da453b44e2d`. Dynamic pricing remained fail-closed with zero eligible compositions / zero requests; terminal evidence made exactly 3 bounded frozen-event requests and still found zero exact whole-ticket result hits. Builder settlement remains blocked; no result/payout may be inferred.
+**SUBSTEP:** PR #469 (`LOGIC-12: freeze first non-PR builder delivery evidence`) merged as `1de61e69645ed92e70b06b3e740691f93fc7fa3b`. A fresh LOGIC-09 audit proved the old `common binary settled n=0` gate is stale: canonical `frontend/data/prediction_ledger_settlement_shadow.json` now has `rows=8516`, exact three-model common `854`, naturally settled common binary `261`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`, and exact PLAYABLE common binary `97`.
 
-**BRANCH:** `logic-12-first-nonpr-delivery-evidence`, created from exact live `main` `06b85831f22cf42223552d27ce7d2da453b44e2d`.
+**ACTIVE BRANCH:** `logic-09-common-set-phase4-audit`, created from exact live `main` `1de61e69645ed92e70b06b3e740691f93fc7fa3b`.
 
-**PR:** first non-PR dynamic-delivery evidence/checkpoint closeout is being prepared on the branch above; evidence/docs only, no runtime behavior change.
+**ACTIVE PR:** #470 - `LOGIC-09: add leakage-safe common-set temporal audit`. Code/audit commit: `f439df74be1892ff3c4eabdab7c60d962af79137`; read the exact PR head live after documentation commits. Scope is additive SHADOW-only metrics/calibration/per-market + chronology audit in the existing canonical owner `backend/prediction_ledger_settlement_shadow.py`; zero retraining/recalibration/ranking/promotion/runtime influence.
 
-**LAST VERIFIED MAIN:** `06b85831f22cf42223552d27ce7d2da453b44e2d` (`data: refresh Superbet market context` from successful non-PR run #1814). Its parent is `ba299e25b2e17ce64a726c79636b209c01509f56` (`data: refresh Player DNA SHADOW`), which descends from PR #468 merge `581e3a2d23ba63572c668f45744e5e98d5c0d522`.
+**LAST VERIFIED MAIN:** `1de61e69645ed92e70b06b3e740691f93fc7fa3b` (merge PR #469). Before merge #470 always refresh live `main`, because data bots can move it.
 
-**MERGED PROGRESSION:** #455 exact quote artifact -> #456 ephemeral Phase-4/5 SHADOW runner -> #457 guarded OIDC persistence caller (flag still disabled) -> #458 lifecycle evidence blocker -> #459 bounded terminal-evidence collector -> #460 first immutable terminal sample -> #461 96h observation-window extension -> #462 live observation checkpoint -> #463 second bounded operator observation sample -> #464 checkpoint second observation -> #465 bounded single-void reprice evidence contract -> #466 bounded Phase-3 dynamic quote artifact + PR network-isolation repair -> #467 eligible non-PR hourly delivery for the dynamic quote sidecar -> #468 first post-gate evidence freeze/checkpoint.
+**LOGIC-09 CURRENT EVIDENCE:** immutable audit `audits/logic09_common_set_phase4_audit_20260922T131840Z.json`. Common binary market N: `set1_total=153`, `match_total=93`, `match_winner=5`, `set2_winner=4`, `set1_winner=2`, `set3_winner=2`, `total_sets=2`. First leakage-safe complete-day fold: scheduled train day `2026-09-20` -> test day `2026-09-21`; 117 candidate train rows by schedule date, but only 102 had `settled_at` before test-day start; 15 late labels were excluded. Test `n=81`, exact train/test match-key overlap `0`. Current UTC day `2026-09-22` has 63 common binary rows and is intentionally excluded from complete-day folds because the day is incomplete.
 
-**FROZEN SOURCE:** quote source commit `935a2d1b2119c061fcda2ecdb3333ef395327125`, blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`. `audits/logic12_builder_terminal_evidence_manifest.json` freezes only events `15059409`, `15059413`, `15063427` and their exact combination/component UUIDs. Probe windows end at `2026-09-26T03:00:00Z`, `2026-09-26T07:00:00Z`, `2026-09-26T12:00:00Z` respectively.
+**LOGIC-09 SAFETY:** Current/CatBoost/TabPFN probability snapshots stay frozen. Phase-4 only reports descriptive accuracy/Brier/log-loss/fixed 10-bin calibration, per-market/per-population N/metrics and chronological folds. `retraining_enabled=false`, `recalibration_enabled=false`, `ranking_enabled=false`, `promotion_enabled=false`, `minimum_sample_gate_defined=false`; zero changes to probability/weights/thresholds/training/PLAYABLE/Symphony/Player DNA/Neuron/iNeed$.
 
-**ACTIVE EVIDENCE OWNERS:** `backend/superbet_builder_dynamic_quotes.py` owns pricing evidence; `backend/superbet_builder_terminal_evidence.py` owns terminal-result evidence. They stay separate. Neither may map public operator state to WIN/LOSS/VOID/CANCELLED or payout, and neither may influence PROD/PLAYABLE/Symphony/iNeed runtime.
+**LOGIC-09 REMAINING GATE:** full DoD is NOT met. There is only one closed complete-day temporal fold. Evidence is concentrated in `set1_total` and `match_total`; other markets have `n=2..5`. Do not rank models, select a winner, change weights or migrate telemetry/runtime from this phase. Accumulate additional naturally settled exact prospective rows and full UTC days first.
 
-**POST-GATE DYNAMIC SAMPLE:** `audits/logic12_builder_dynamic_quote_sample_20260922T120101Z.json` was produced after the `15063427` gate on the fresh post-#839/Superbet data snapshot. It validated successfully with the canonical dynamic artifact validator and returned `status=NO_ELIGIBLE_COMPOSITIONS`, `candidate_count=0`, `external_requests=0`, `quotes_count=0`, `contains_prices=false`. This is fail-closed pricing evidence only; it does not prove any settlement fact.
-
-**POST-GATE TERMINAL SAMPLE:** `audits/logic12_builder_terminal_observation_sample_20260922T120125Z.json` was produced at `2026-09-22T12:01:25Z` with exactly 3 public read-only requests, one per frozen event. Exact whole-ticket result hits remained `0/3`: event `15059409` identity verified, finished, no exact offer/result hit -> `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`; event `15059413` identity verified and now finished, no exact offer/result hit -> `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`; event `15063427` identity verified and active, exact frozen combination offer still present, zero exact/component result hits -> `NO_EXACT_RESULT_EVIDENCE`. `settlement_result=null`, `payout=null`, `result_inferred=false`, `automatic_real_betting=false` throughout.
-
-**FIRST NON-PR DELIVERY PROOF:** run #1814 / `35729926740` completed SUCCESS on `2026-09-22T12:59:42Z`. `Refresh exact dynamic Bet Builder quote sidecar` and `Refresh read-only Bet Builder terminal evidence` both executed (not skipped). Published artifacts are frozen as `audits/logic12_builder_dynamic_quote_delivery_sample_20260922T125703Z.json` and `audits/logic12_builder_terminal_delivery_sample_20260922T125704Z.json`. Dynamic artifact: `status=NO_ELIGIBLE_COMPOSITIONS`, `candidate_count=0`, `quotes_count=0`, `external_requests=0`, scope `230 -> 34` matches and `74 -> 34` signals. This is expected fail-closed behavior because the current in-scope Symphony compositions retain only one iNeed-allowed leg after scope filtering, below the >=2-leg Bet Builder minimum; do not broaden iNeed scope to manufacture a quote. Terminal artifact: exactly 3 requests, zero exact whole-ticket result hits; `15059409` and `15059413` remain finished/no exact result evidence, while `15063427` remains active with the exact frozen combination offer present and no exact result evidence. Its current offer price drift is pricing metadata only and must not be interpreted as settlement/result evidence.
-
-**LIVE SAFETY PROOF:** iNeed$ remains SHADOW; `builder_reservation` remains absent/disabled and `automatic_real_betting=false`. PR #466 repaired PR network isolation, and #467 preserved it: PR-triggered hourly refresh sets `refresh=false / pull_request_validation_only`, so Direct, pre-priced builder quote, dynamic builder quote, terminal evidence, operator catalogue/model refresh, commit and deploy steps are all skipped on PR. No real-money execution exists in this path.
-
-**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. The tennis-specific operator communication effective 2026-07-31 proves that voided tennis Bet Builder selections leave the ticket active and trigger recalculation from remaining valid selections, but public Direct/SGA evidence still does not provide exact terminal whole-ticket result semantics or payout. Event completion, quote disappearance, `stop/active` labels, V1 settlement, Symphony output or locally reconstructed payout remain forbidden substitutes.
-
-**DO NOT REDO:** do not recreate Phase-2 quote artifact, Phase-3 dynamic producer, Phase-4/5 producer, shared exposure, reserve RPC, guarded OIDC persistence caller, lifecycle audit, terminal collector or #465 single-void evidence contract. Do not add a second dynamic-SGA producer. Do not wire the dynamic sidecar into iNeed$/runner until a separate consumer audit has real exact dynamic quote evidence to validate. Do not enable `builder_reservation`; do not implement settlement from current N/D observations.
-
-**RISKS / HARD BANS:** zero model math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No inferred builder outcome/payout. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`.
+**LOGIC-12 PARALLEL OBSERVATION:** non-PR dynamic delivery was proven by Superbet refresh #1814 / run `35729926740`; PR #469 froze the published artifacts. Dynamic evidence stayed fail-closed `NO_ELIGIBLE_COMPOSITIONS`, 0 candidates/quotes/requests. Terminal evidence made exactly 3 bounded frozen-event requests and still found 0 exact whole-ticket result hits. `builder_reservation.enabled` remains absent/false, `automatic_real_betting=false`, and settlement/payout inference is forbidden. Continue only the existing 96h windows for events `15059409`, `15059413`, `15063427`; do not expand scope or wire the dynamic sidecar into iNeed$ without a real exact quote row plus a separate consumer audit.
 
 ### NEXT EXACT ACTION
 
-1. Finish the first non-PR delivery evidence/checkpoint closeout from `logic-12-first-nonpr-delivery-evidence`: canonical artifact validation -> full CI -> fresh-main comparison -> merge only GREEN.
-2. Continue the bounded terminal observation for only the same three frozen identities through their existing 96h windows. Preserve raw exact operator objects only; never derive terminal outcome/payout from event state, quote disappearance or price drift.
-3. Keep `superbet_builder_dynamic_quotes_current.json` out of `ineed_scoped_runner.py` until a separate consumer audit has at least one real exact dynamic quote row and proves snapshot/component/provenance alignment. No live request may originate from iNeed$.
-4. Treat current `NO_ELIGIBLE_COMPOSITIONS` as valid fail-closed evidence. Do not broaden the iNeed market scope or alter Symphony composition logic merely to manufacture >=2 eligible legs.
-5. If all 96h terminal windows complete without exact whole-ticket result evidence, open a separate read-only evidence-surface audit (for example an authenticated ticket-history surface if legally/technically available) rather than guessing settlement semantics. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false` throughout.
+1. Finish PR #470: docs/registry/architecture -> full exact-head CI -> fresh `main` comparison/rebase if needed -> merge only GREEN -> post-merge generated-artifact verification.
+2. After #470 merge, let normal Update/settlement runs naturally increase the exact common sample. Phase-4 temporal folds use complete UTC days only and train labels with `settled_at < test_day_start`; zero backfill/recompute.
+3. Do not invent a promotion threshold or model winner. As more complete UTC days mature, report additional chronology folds and factual per-market/per-population metrics; small-N segments stay explicitly small-N.
+4. Continue LOGIC-12 only as observation-only through the frozen 96h windows. Missing exact whole-ticket terminal evidence remains `N/D`, never settlement inference.
+5. Without separate authorization do not change model math/probability/thresholds/weights/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk/iNeed$ calculations or SHADOW->PROD.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -319,25 +307,25 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 
 ## LOGIC-09 - Learning Integrity / Prediction Ledger
 
-Status: `[~] ACTIVE - phases 0-3 infrastructure merged/post-merge verified; prospective common-set evidence collection active (binary n=0)`
+Status: `[~] ACTIVE - phases 0-3 merged; natural common-set evidence matured to binary n=261; Phase-4 leakage-safe temporal/market audit in PR #470`
 
-Cel: modele uczą się i są porównywane na uczciwej, identycznej próbce prospective evidence.
+Goal: compare frozen prospective model outputs on the same exact population without selection leakage.
 
-- [x] Phase-0 owner/population inventory + real selection-bias proof documented in `TENIS_AI_LEARNING_INTEGRITY_AUDIT.md` (PR #414 merged; docs closeout #415).
+- [x] Phase-0 owner/population inventory + real selection-bias proof (`TENIS_AI_LEARNING_INTEGRITY_AUDIT.md`, PR #414; docs closeout #415).
 - [x] Minimal frozen-ledger/common-test-set invariants documented and contract-tested.
-- [x] Phase-1: zapisywać wszystkie wspierane pre-match predictions przed selection gate w immutable append-only `prediction_ledger_shadow.json` (PR #416).
-- [x] Phase-2 audit: exact owner/identity/chronology contracts dla PLAYABLE, Symphony i iNeed$ bez fuzzy/backfill (PR #418).
-- [x] Phase-2 implementation: addytywny exact PLAYABLE/Symphony selection sidecar; brak dowodu = `N/D`; iNeed$ pozostaje N/D (PR #419 + Update #808).
-- [x] Oddzielone i opublikowane populacje `ALL`, exact `PLAYABLE`, exact `SYMPHONY_SELECTED` oraz exact `PLAYABLE_AND_SYMPHONY`; `GENERATOR_SELECTED`/`INEED_SELECTED` pozostaj? jawnie niedost?pne do czasu istnienia ich kanonicznego prospective owner evidence.
-- [x] Wsp?lny settled common test set Current/CatBoost/TabPFN ma zako?czon? infrastruktur? phase-3: PR #420 merged jako `bf959fa23f83025851a5b6db8a329d6443836547`; post-merge Update #809, dedicated guard, final regression i Pages GREEN. Published snapshot: rows=2460, common=220, PLAYABLE=585/common=83, Symphony=2/common=2, common binary settled `n=0`.
-- [~] Zbiera? naturalnie dojrzewaj?ce exact common `hit/miss` rows przez normalny settlement; obecnie `n=0`, zero retroactive prediction/backfill/recompute.
-- [ ] Walk-forward split bez leakage na prospective common set, gdy próbka będzie wystarczająca do sensownego audytu.
-- [ ] Brier/log-loss/calibration/accuracy na identycznej próbce i osobno per population/market po pojawieniu się settled common rows.
-- [ ] Market-specific metrics na tej samej exact prospective population.
-- [ ] Audyt/migracja telemetryki i usunięcie selection bias dopiero po zebraniu evidence i osobnej autoryzacji.
-- [ ] Nie zmieniać wag ensemble ani SHADOW->PROD przed wynikami audytu i jawną decyzją właściciela.
+- [x] Phase-1 immutable pre-selection prediction ledger for all supported prospective candidates (PR #416).
+- [x] Phase-2 exact PLAYABLE/Symphony population evidence with strict chronology; missing evidence = `N/D` (PR #418/#419).
+- [x] Phase-3 exact terminal settlement common-set owner using existing canonical terminal/scorer semantics; zero network, zero source-ledger mutation (PR #420).
+- [x] Natural evidence maturity confirmed on 2026-09-22: `rows=8516`, exact common `854`, common binary settled `261`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`; PLAYABLE common binary `97`. Zero retroactive prediction/backfill/recompute.
+- [~] Phase-4 PR #470: descriptive Brier/log-loss/accuracy + fixed 10-bin calibration on the identical common sample, per population and per market; no ranking/winner/promotion.
+- [~] Leakage-safe chronological audit: complete UTC days only, expanding prior-day train -> next complete-day test; train labels require `settled_at < test_day_start`; current evidence has one fold (2026-09-20 -> 2026-09-21), train 102 after excluding 15 late labels, test 81, match-key overlap 0.
+- [~] Market evidence is not broad yet: `set1_total=153`, `match_total=93`, remaining markets `n=2..5`; keep small-N explicit.
+- [ ] Accumulate additional full UTC days / natural exact settlements for multiple temporal folds and broader market coverage.
+- [ ] Audit/migrate telemetry only after broader evidence and separate authorization.
+- [ ] Do not change ensemble weights or SHADOW->PROD; Phase-4 defines no minimum promotion threshold and no model winner.
 
-**Definition of Done:** wagi i oceny modeli wynikaj? z por?wnywalnych prospective danych; brak dowodu przewagi nie uruchamia promocji. Infrastructure phases 0-3 s? kompletne, ale pe?ny LOGIC-09 DoD nie jest spe?niony przy common binary settled `n=0`.
+**Definition of Done:** infrastructure and factual common-set metrics now exist, but full LOGIC-09 DoD is NOT met: only one closed complete-day temporal fold exists and market breadth outside `set1_total`/`match_total` is too thin for robust multi-period review. No ranking or promotion follows from current Phase-4 evidence.
+
 ---
 
 ## LOGIC-10 - Guard Ownership / Dead Logic Audit
