@@ -33,11 +33,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SUBSTEP:** PR #470 (`LOGIC-09: add leakage-safe common-set temporal audit`) merged as `361e279e83ebb25a2986374906da215dd350ccaa` after exact-head 7/7 GREEN and fresh-main rebase. Post-merge `Update tennis data and deploy Pages` #841 completed SUCCESS, including Prediction Ledger generation/guard, final full regression, refreshed JSON publication and Pages deploy.
 
-**ACTIVE BRANCH:** none.
+**ACTIVE BRANCH:** `fix-training-archive-gc-apply`; implementation commit `b20bb37562e0a55b100071d5feb8f9104db174e7` plus checkpoint-only documentation update.
 
-**ACTIVE PR:** none.
+**ACTIVE PR:** #476 (`Add grace-safe training archive GC apply`). Local validation on the fresh base is 1569/1569 GREEN; SQL migration was executed against live Supabase PostgreSQL inside `BEGIN ... ROLLBACK` with zero syntax/dependency errors and rollback was verified. PR CI/merge is still pending.
 
-**LAST VERIFIED MAIN:** `05beaab652a12c6977ca4097b163d610fa931478` (`data: refresh Superbet market context`) after successful post-merge publication.
+**LAST VERIFIED MAIN:** `6971bd4784d26eb51c63193bdc7ab662ea85a133` (`data: refresh Superbet market context`) as the fresh data-only base of PR #476.
+
+**INFRASTRUCTURE REPAIR CHECKPOINT:** PR #474 merged as `5d60cae8a9833ed3eab0804940282728dbdddd6b`, changing staging-only runtime-private retention from one retired generation/layer to zero. After deploying the canonical runtime GC and rerunning it, runtime-private storage fell from `533399438` B to `269128814` B, reclaiming exactly `264270624` B with `missing_active_objects=0`. PR #475 merged as `a2c7393de043b0b2966e7cc6332f12ca7c6c1159`, adding fail-closed source/live Edge Function contract checks and bounded GitHub OIDC token reuse/retry for training-archive publication. Runtime-private rerun #416 was GREEN after deploying Edge Function v8, proving the drift guard.
+
+**TRAINING ARCHIVE CURRENT BLOCKER:** run #93 / `35773952284` proved the OIDC fix by reaching 9600/9736 entries without the previous HTTP 503, then correctly stopped on the archive's own hard 250,000,000 B cap (`reserved bytes 262829667 > 250000000`). Existing retention metadata reports 52 current candidates / `16029838` B with a 168h grace ending around `2026-09-23T14:05:13Z`; today 0/15 expirable complete manifests are legal to expire. The prior retention phase was deliberately observation-only and had no apply executor. PR #476 adds that missing grace-safe executor without reducing grace or raising the 250 MB / 750 MB guards.
 
 **LOGIC-09 CURRENT EVIDENCE:** canonical `frontend/data/prediction_ledger_settlement_shadow.json` generated `2026-09-22T15:43:03.708713+00:00` has `rows=8927`, exact three-model common `893`, naturally settled common binary `274`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`, and exact PLAYABLE common binary `105`. Common binary market N: `set1_total=161`, `match_total=98`, `match_winner=5`, `set2_winner=4`, `set1_winner=2`, `set3_winner=2`, `total_sets=2`.
 
@@ -51,11 +55,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 ### NEXT EXACT ACTION
 
-1. Let normal Update/settlement runs continue natural LOGIC-09 accumulation. Do not backfill or recompute historical probabilities for Phase-4 evidence.
-2. After another full UTC schedule day closes and its labels mature, regenerate/read the canonical artifact and verify whether an additional leakage-safe chronology fold exists. Train labels must satisfy `settled_at < test_day_start`.
-3. Report factual per-market/per-population N and chronology metrics only. Small-N segments remain explicitly small-N; do not invent a promotion threshold, model winner, ranking or weight change.
-4. Continue LOGIC-12 observation-only through the existing 96h windows for frozen events `15059409`, `15059413`, `15063427`. Missing exact whole-ticket terminal evidence remains `N/D`; never infer settlement from offer disappearance, stop/active state or per-leg evidence.
-5. Without separate authorization do not change model math/probability/thresholds/weights/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk/iNeed$ calculations or SHADOW->PROD.
+1. Finish PR #476 only after exact-head required CI is fully GREEN. Immediately before merge fetch fresh `main`; if bot/data drift exists, rebase and rerun CI.
+2. After merge, apply migration `20260922203000_training_archive_gc_apply.sql` to Supabase, deploy canonical `training-archive-gc` Edge Function with `verify_jwt=false`, and manually dispatch `Training archive retention GC` once. Before `2026-09-23T14:05:13Z` the destructive apply must be a factual NO-OP; any deletion before grace is a blocker.
+3. After the 168h candidate grace matures, let/dispatch the GC workflow, verify latest-2 complete manifests, active pins and all staged/in-flight references remain intact, verify reclaimed bytes against the durable GC audit, then rerun Training Archive. Do not raise the 250 MB archive cap or shorten grace as a workaround.
+4. Let normal Update/settlement runs continue natural LOGIC-09 accumulation. Do not backfill or recompute historical probabilities for Phase-4 evidence.
+5. After another full UTC schedule day closes and its labels mature, regenerate/read the canonical LOGIC-09 artifact and verify whether an additional leakage-safe chronology fold exists. Train labels must satisfy `settled_at < test_day_start`; report factual per-market/per-population N only and do not rank/promote models.
+6. Continue LOGIC-12 observation-only for the frozen operator-settlement evidence. Missing exact whole-ticket terminal evidence remains `N/D`; never infer settlement from offer disappearance, stop/active state or per-leg evidence.
+7. Without separate authorization do not change model math/probability/thresholds/weights/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk/iNeed$ calculations or SHADOW->PROD.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
