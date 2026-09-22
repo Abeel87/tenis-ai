@@ -37,6 +37,8 @@ Kanoniczne backendowe wejścia operatora to:
 - `backend/superbet_line_coverage.py`
 - `backend/superbet_playable.py`
 
+`Superbet Direct Source Probe` keeps PR validation network-free: pull requests run only syntax/parser isolation checks, while the live browser listing probe and selected-match sidecar refresh are guarded with `github.event_name != 'pull_request'`. Live Direct probing is reserved for explicit/non-PR workflow execution.
+
 PLAYABLE jest warstwą fail-closed: brak zweryfikowanego operator context, brak dokładnej linii albo brak dopasowania selekcji oznacza brak PLAYABLE. Nie wolno używać najbliższej linii ani RAW jako operatorowego fallbacku.
 
 `backend/superbet_playable.py` jest projekcją addytywną. Może dopisać osobne `superbet_playable_v912` i dedykowane warstwy historii PLAYABLE, ale nie może nadpisywać `match_win`, `first_set_win`, `over_under`, `match_over_under`, exact score, `autolearn_v84` ani źródłowych feedów SHADOW. MODEL / RAW pozostaje niezależny od tego, czy Superbet ma dany rynek lub dokładną linię.
