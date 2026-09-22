@@ -247,6 +247,10 @@ def test_common_metrics_use_only_hit_miss_and_never_emit_ranking():
     assert report["models"]["tabpfn"]["n"] == 2
     assert doc["metric_contract"]["ranking_enabled"] is False
     assert doc["metric_contract"]["automatic_winner_selection_enabled"] is False
+    assert doc["metric_contract"]["calibration_is_descriptive_only"] is True
+    assert len(report["models"]["current"]["calibration_bins_10"]) == 10
+    assert sum(row["n"] for row in report["models"]["current"]["calibration_bins_10"]) == 2
+    assert report["market_reports"]["match_total"]["n"] == 2
     assert "ranking" not in report
 
 
@@ -256,3 +260,60 @@ def test_ledger_capture_after_start_is_never_settled():
     fact = doc["rows"][0]["settlement"]
     assert fact["status"] == "N/D"
     assert fact["reason"] == "LEDGER_NOT_VALID_PREMATCH_EVIDENCE"
+
+def test_temporal_walk_forward_uses_only_complete_prior_utc_days():
+    rows = [
+        _row(
+            prediction_id="pred_d1",
+            match_key="id:100",
+            candidate_key="match_total|19.5|over",
+            line=19.5,
+            scheduled="2026-09-20T10:00:00+00:00",
+            captured="2026-09-20T09:00:00+00:00",
+        ),
+        _row(
+            prediction_id="pred_d2",
+            match_key="id:101",
+            candidate_key="match_total|20.5|over",
+            line=20.5,
+            scheduled="2026-09-21T10:00:00+00:00",
+            captured="2026-09-21T09:00:00+00:00",
+        ),
+        _row(
+            prediction_id="pred_today",
+            match_key="id:102",
+            candidate_key="match_total|19.5|over",
+            line=19.5,
+            scheduled="2026-09-22T10:00:00+00:00",
+            captured="2026-09-22T09:00:00+00:00",
+        ),
+    ]
+    history = [
+        _history_entry(match_id=100, scheduled="2026-09-20T10:00:00+00:00", settled_at="2026-09-20T11:30:00+00:00"),
+        _history_entry(match_id=101, scheduled="2026-09-21T10:00:00+00:00", settled_at="2026-09-21T11:30:00+00:00"),
+        _history_entry(match_id=102, scheduled="2026-09-22T10:00:00+00:00", settled_at="2026-09-22T11:30:00+00:00"),
+    ]
+    doc = settlement.build_sidecar(
+        _ledger(rows),
+        history,
+        _selection(),
+        now=datetime(2026, 9, 22, 12, 0, tzinfo=timezone.utc),
+    )
+    temporal = doc["summary"]["population_reports"]["ALL"]["temporal_walk_forward"]
+
+    assert temporal["status"] == "CHRONOLOGICAL_FOLDS_AVAILABLE"
+    assert temporal["distinct_complete_utc_dates"] == ["2026-09-20", "2026-09-21"]
+    assert temporal["incomplete_or_future_utc_day_binary_rows"] == 1
+    assert temporal["fold_count"] == 1
+    fold = temporal["folds"][0]
+    assert fold["train_start_date"] == "2026-09-20"
+    assert fold["train_end_date"] == "2026-09-20"
+    assert fold["test_date"] == "2026-09-21"
+    assert fold["train_rows"] == 1
+    assert fold["test_rows"] == 1
+    assert fold["match_key_overlap"] == 0
+    assert fold["test_metrics"]["models"]["current"]["n"] == 1
+    assert temporal["retraining_enabled"] is False
+    assert temporal["recalibration_enabled"] is False
+    assert temporal["ranking_enabled"] is False
+    assert temporal["promotion_enabled"] is False
