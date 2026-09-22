@@ -1,0 +1,35 @@
+name: Training archive retention GC
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 2,8,14,20 * * *'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: training-archive-maintenance
+  cancel-in-progress: false
+
+jobs:
+  gc:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Preview seven-day retention gate
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: python scripts/gc_training_archive.py --dry-run
+
+      - name: Apply grace-ready archive retention
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: python scripts/gc_training_archive.py
