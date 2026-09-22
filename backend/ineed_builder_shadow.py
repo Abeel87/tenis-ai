@@ -291,6 +291,138 @@ def resolve_dynamic_combined_quote(composition: dict, direct: dict, payload: dic
     }
 
 
+SINGLE_VOID_REPRICE_SCHEMA = "logic12-builder-single-void-reprice-v1"
+MAX_BUILDER_LEGS = 6
+
+
+def _single_void_reprice_plan(composition: dict, direct: dict) -> dict | None:
+    if not all(isinstance(x, dict) for x in (composition, direct)):
+        return None
+    if composition.get("mode") != "SHADOW" or composition.get("operator") != OPERATOR:
+        return None
+    match_id = _text(composition.get("match_id"))
+    legs = [deepcopy(x) for x in (composition.get("legs") or []) if isinstance(x, dict)]
+    if not match_id or len(legs) != composition.get("leg_count") or not (2 <= len(legs) <= MAX_BUILDER_LEGS):
+        return None
+    if not _text(direct.get("generated_at")):
+        return None
+
+    matches = [
+        row for row in (direct.get("matches") or [])
+        if isinstance(row, dict)
+        and _text(row.get("match_id") if row.get("match_id") is not None else row.get("id")) == match_id
+        and row.get("direct_match_verified") is True
+    ]
+    if len(matches) != 1 or not _text(matches[0].get("event_id")):
+        return None
+    component_ids = []
+    for leg in legs:
+        resolved = direct_quote(direct, match_id, leg)
+        selection_id = _text((resolved or {}).get("operator_selection_id"))
+        if not selection_id:
+            return None
+        component_ids.append(selection_id)
+    if len(set(component_ids)) != len(component_ids):
+        return None
+
+    source_composition_id = _text(composition.get("composition_id"))
+    if not source_composition_id:
+        return None
+    scenarios = []
+    for index, (voided_leg, voided_component_id) in enumerate(zip(legs, component_ids)):
+        remaining_legs = [deepcopy(leg) for i, leg in enumerate(legs) if i != index]
+        remaining_component_ids = [cid for i, cid in enumerate(component_ids) if i != index]
+        quote_required = len(remaining_legs) >= 2
+        reprice_composition_id = _composition_id(match_id, remaining_legs) if quote_required else None
+        scenario_key = json.dumps(
+            {"composition_id": source_composition_id, "voided_component_selection_id": voided_component_id},
+            sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+        )
+        scenario_id = "svr-" + hashlib.sha256(scenario_key.encode("utf-8")).hexdigest()[:20]
+        scenarios.append({
+            "scenario_id": scenario_id,
+            "voided_leg_index": index,
+            "voided_leg_identity": _leg_identity(voided_leg),
+            "voided_component_selection_id": voided_component_id,
+            "remaining_leg_count": len(remaining_legs),
+            "remaining_component_selection_ids": remaining_component_ids,
+            "reprice_composition_id": reprice_composition_id,
+            "quote_required": quote_required,
+            "evidence_status": "AWAITING_EXACT_OPERATOR_REPRICE" if quote_required else "N/D_SINGLE_LEG_REMAINDER",
+            "combined_odds": None,
+            "quote_provenance": None,
+        })
+
+    return {
+        "schema_version": SINGLE_VOID_REPRICE_SCHEMA,
+        "mode": "SHADOW",
+        "operator": OPERATOR,
+        "match_id": match_id,
+        "source_composition_id": source_composition_id,
+        "source_leg_count": len(legs),
+        "scenario_count": len(scenarios),
+        "scenarios": scenarios,
+        "single_void_only": True,
+        "multi_void_supported": False,
+        "settlement_enabled": False,
+        "settlement_ready": False,
+        "payout_computed": False,
+        "result_inferred": False,
+        "automatic_real_betting": False,
+    }
+
+
+def build_single_void_reprice_plan(composition: dict, direct: dict) -> dict | None:
+    return _single_void_reprice_plan(composition, direct)
+
+
+def resolve_single_void_reprice_evidence(composition: dict, direct: dict, observations: dict) -> dict | None:
+    plan = _single_void_reprice_plan(composition, direct)
+    if plan is None or not isinstance(observations, dict):
+        return None
+    out = deepcopy(plan)
+    legs = [deepcopy(x) for x in (composition.get("legs") or []) if isinstance(x, dict)]
+
+    for scenario in out["scenarios"]:
+        if scenario.get("quote_required") is not True:
+            continue
+        scenario_id = _text(scenario.get("scenario_id"))
+        observation = observations.get(scenario_id)
+        if not isinstance(observation, dict):
+            scenario["evidence_status"] = "N/D_EXACT_OPERATOR_REPRICE_UNAVAILABLE"
+            continue
+        remaining_legs = [leg for i, leg in enumerate(legs) if i != scenario.get("voided_leg_index")]
+        derived = deepcopy(composition)
+        derived["legs"] = remaining_legs
+        derived["leg_count"] = len(remaining_legs)
+        derived["composition_id"] = scenario.get("reprice_composition_id")
+        quote = resolve_dynamic_combined_quote(
+            derived,
+            direct,
+            observation.get("payload"),
+            observed_at=_text(observation.get("observed_at")) or None,
+            source_url=_text(observation.get("source_url")) or None,
+        )
+        expected = set(scenario.get("remaining_component_selection_ids") or [])
+        observed = set((quote or {}).get("component_selection_ids") or [])
+        if not quote or observed != expected or _text(quote.get("composition_id")) != _text(scenario.get("reprice_composition_id")):
+            scenario["evidence_status"] = "N/D_EXACT_OPERATOR_REPRICE_UNAVAILABLE"
+            continue
+        scenario["evidence_status"] = "EXACT_OPERATOR_REPRICE"
+        scenario["combined_odds"] = quote.get("combined_odds")
+        scenario["quote_provenance"] = {
+            "source": quote.get("source"),
+            "odds_timestamp": quote.get("odds_timestamp"),
+            "source_event_id": quote.get("source_event_id"),
+            "operator_combination_selection_id": quote.get("operator_combination_selection_id"),
+            "component_selection_ids": deepcopy(quote.get("component_selection_ids")),
+            "source_quote_kind": quote.get("source_quote_kind"),
+            "source_url": quote.get("source_url"),
+            "operator_verified": True,
+            "freshness_verified": True,
+        }
+    return out
+
 def attach_verified_combined_quote(composition: dict, quote: dict | None) -> dict:
     out = deepcopy(composition or {})
     out["combined_odds"] = None
