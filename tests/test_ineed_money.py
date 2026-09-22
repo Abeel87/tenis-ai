@@ -134,3 +134,42 @@ def test_current_ineed_remains_single_leg_until_builder_shadow_promotion():
     assert {row["selection"] for row in rows} == {"A", "B"}
     assert all("composition_id" not in row for row in rows)
     assert all("combined_odds" not in row for row in rows)
+
+
+def test_rejected_odds_out_of_range_keeps_auditable_snapshot():
+    rows = m.evaluate(result(), direct(odds=1.005), CFG, state())
+    row = rows[0]
+    assert row["status"] == "REJECTED"
+    assert row["reason_code"] == "ODDS_OUT_OF_RANGE"
+    snap = row["snapshot"]
+    assert (snap["p1"], snap["p2"]) == ("A", "B")
+    assert snap["market"] == "match_winner"
+    assert snap["selection"] == "A"
+    assert snap["raw_odds"] == 1.005
+    assert snap["data_quality"] == "CURRENT_VERIFIED_SUPERBET_DIRECT"
+    assert snap["risk_state"] == "NORMAL"
+    assert snap["automatic_real_betting"] is False
+
+
+def test_rejected_low_ev_keeps_economics_in_snapshot():
+    rows = m.evaluate(result(signal(70)), direct(odds=1.05), CFG, state())
+    row = rows[0]
+    assert row["status"] == "REJECTED"
+    assert row["reason_code"] == "LOW_EV"
+    snap = row["snapshot"]
+    assert (snap["p1"], snap["p2"]) == ("A", "B")
+    assert snap["raw_odds"] == 1.05
+    assert snap["expected_value_net"] == row["expected_value_net"]
+    assert snap["edge_probability_points"] == row["edge_probability_points"]
+    assert snap["config_version"] == "test"
+
+
+def test_rejected_missing_quote_still_keeps_match_context_snapshot():
+    d = direct()
+    d["matches"][0]["canonical_selections"] = []
+    row = m.evaluate(result(), d, CFG, state())[0]
+    assert row["reason_code"] == "MARKET_NOT_AVAILABLE"
+    assert row["snapshot"]["p1"] == "A"
+    assert row["snapshot"]["p2"] == "B"
+    assert row["snapshot"]["raw_odds"] is None
+    assert row["snapshot"]["data_quality"] == "N/D"
