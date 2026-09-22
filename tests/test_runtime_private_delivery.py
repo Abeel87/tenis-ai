@@ -53,6 +53,8 @@ def test_runtime_objects_are_content_addressed_and_cas_activated():
     assert "Activation rejected by CAS guard" in PUBLISHER
     assert "createSignedUploadUrl" in PUBLISHER
     assert "upsert: false" in PUBLISHER
+    assert "const SIGNED_UPLOAD_BATCH_SIZE = 8" in PUBLISHER
+    assert "await Promise.all(batch.map" in PUBLISHER
 
 
 def test_publisher_is_bound_to_this_repo_main_and_one_workflow():
@@ -130,6 +132,22 @@ def test_runtime_publisher_oidc_does_not_retry_nontransient_failure(monkeypatch)
     else:
         raise AssertionError("non-transient OIDC failure must fail closed")
     assert len(calls) == 1
+
+
+def test_runtime_publisher_uses_longer_bounded_edge_timeout(monkeypatch):
+    helper = _load_helper()
+    seen = []
+    monkeypatch.setattr(helper, "oidc_token", lambda: "oidc-token")
+
+    def fake_request(*args, **kwargs):
+        seen.append(kwargs.get("timeout"))
+        return 200, {"ok": True}
+
+    monkeypatch.setattr(helper, "_json_request", fake_request)
+    status, data = helper.publisher_call({"action": "prepare"})
+    assert status == 200
+    assert data == {"ok": True}
+    assert seen == [120]
 
 
 def test_layer_scoping_and_history_chunking_are_bounded(tmp_path, monkeypatch):

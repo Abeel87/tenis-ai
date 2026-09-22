@@ -12,6 +12,7 @@ const EXPECTED_WORKFLOW_REF = `${REPOSITORY}/${WORKFLOW}@${REF}`;
 const ISSUER = "https://token.actions.githubusercontent.com";
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`));
 const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch"]);
+const SIGNED_UPLOAD_BATCH_SIZE = 8;
 
 type Layer = "core" | "market" | "dna" | "neuron";
 type AccessTier = "b" | "c";
@@ -162,19 +163,30 @@ async function prepare(supabase: any, auth: Awaited<ReturnType<typeof authorize>
 
   const existing = await activeHashes(supabase);
   const uploadByHash = new Map<string, any>();
-  for (const file of files) {
-    if (existing.has(file.sha256) || uploadByHash.has(file.sha256)) continue;
-    const storagePath = `objects/${file.sha256}.json`;
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUploadUrl(storagePath, { upsert: false });
-    if (error) throw error;
-    uploadByHash.set(file.sha256, {
-      sha256: file.sha256,
-      storage_path: storagePath,
-      signed_url: data.signedUrl,
-      token: data.token,
-    });
+  const uploadCandidates = [...new Map(
+    files
+      .filter((file) => !existing.has(file.sha256))
+      .map((file) => [file.sha256, file]),
+  ).values()];
+
+  for (let i = 0; i < uploadCandidates.length; i += SIGNED_UPLOAD_BATCH_SIZE) {
+    const batch = uploadCandidates.slice(i, i + SIGNED_UPLOAD_BATCH_SIZE);
+    const signed = await Promise.all(batch.map(async (file) => {
+      const storagePath = `objects/${file.sha256}.json`;
+      const { data, error } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUploadUrl(storagePath, { upsert: false });
+      if (error) throw error;
+      return { file, storagePath, data };
+    }));
+    for (const { file, storagePath, data } of signed) {
+      uploadByHash.set(file.sha256, {
+        sha256: file.sha256,
+        storage_path: storagePath,
+        signed_url: data.signedUrl,
+        token: data.token,
+      });
+    }
   }
 
   return response({
