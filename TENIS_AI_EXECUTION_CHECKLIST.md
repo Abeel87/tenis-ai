@@ -31,37 +31,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** PR #461 (`LOGIC-12: extend terminal evidence observation window`) is MERGED. Active bounded step: **96h read-only operator-evidence observation of the same three frozen Bet Builder terminal-evidence identities**. Builder settlement remains blocked and no result may be inferred.
+**SUBSTEP:** PR #463 (`LOGIC-12: preserve second builder operator observation`) is MERGED as `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` after 4/4 exact-head GREEN. Active bounded step remains the **96h read-only operator-evidence observation** of the same three frozen Bet Builder identities. Builder settlement remains blocked and no result may be inferred.
 
-**BRANCH:** `logic-12-builder-terminal-observation-checkpoint`, created from exact `main` `69ef2c19a3e631040a0aa1650ce0df775b3abe57` after generated-data drift reconciliation.
+**BRANCH:** `logic-12-builder-observation-checkpoint-2`, created from exact `main` `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` for checkpoint-only documentation.
 
-**PR:** none yet for this observation/checkpoint update.
+**PR:** pending for this checkpoint-only documentation update; no runtime change is included.
 
-**LAST VERIFIED MAIN:** `69ef2c19a3e631040a0aa1650ce0df775b3abe57` (`data: refresh Superbet market context`, tenis-ai-bot), child of `ce68feb44800a55ad64163e9272539d3d42c6f42`. The refresh updated the canonical terminal-evidence JSON itself, so bot output is authoritative and the manual local JSON was discarded. Open PR check returned none.
+**LAST VERIFIED MAIN:** `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` (merge PR #463). No open PRs remained after merge at verification time.
 
-**MERGED PROGRESSION:** #455 exact quote artifact -> #456 ephemeral Phase-4/5 SHADOW runner -> #457 guarded OIDC persistence caller (flag still disabled) -> #458 lifecycle evidence blocker -> #459 bounded terminal-evidence collector -> #460 first immutable terminal sample -> #461 96h observation-window extension.
+**MERGED PROGRESSION:** #455 exact quote artifact -> #456 ephemeral Phase-4/5 SHADOW runner -> #457 guarded OIDC persistence caller (flag still disabled) -> #458 lifecycle evidence blocker -> #459 bounded terminal-evidence collector -> #460 first immutable terminal sample -> #461 96h observation-window extension -> #462 live observation checkpoint -> #463 second bounded operator observation sample.
 
-**FROZEN SOURCE:** quote source commit `935a2d1b2119c061fcda2ecdb3333ef395327125`, blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`. `audits/logic12_builder_terminal_evidence_manifest.json` freezes events `15059409`, `15059413`, `15063427` and exact combination/component UUIDs. Probe windows now end at `2026-09-26T03:00:00Z`, `2026-09-26T07:00:00Z`, `2026-09-26T12:00:00Z` respectively.
+**FROZEN SOURCE:** quote source commit `935a2d1b2119c061fcda2ecdb3333ef395327125`, blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`. `audits/logic12_builder_terminal_evidence_manifest.json` freezes only events `15059409`, `15059413`, `15063427` and their exact combination/component UUIDs. Probe windows end at `2026-09-26T03:00:00Z`, `2026-09-26T07:00:00Z`, `2026-09-26T12:00:00Z` respectively.
 
-**ACTIVE EVIDENCE OWNER:** `backend/superbet_builder_terminal_evidence.py`. It may fetch only exact frozen event IDs inside their windows, reverify pair/time identity, preserve raw exact operator result objects, and emit explicit N/D states. It never maps evidence to WIN/LOSS/VOID/CANCELLED or payout.
+**ACTIVE EVIDENCE OWNER:** `backend/superbet_builder_terminal_evidence.py`. It may fetch only exact frozen event IDs inside their bounded windows, reverify pair/time identity, preserve raw exact operator result objects and emit explicit N/D states. It never maps evidence to WIN/LOSS/VOID/CANCELLED or payout.
 
-**OBSERVATION PROOF:** immutable sample #460 captured event `15059409` at `2026-09-22T05:31:50Z`: event finished, identity verified, zero exact combination result hits, `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`. Fresh exact-main observations at `06:56:46Z` and `06:59:23Z` reproduced the same N/D state. At `2026-09-22T07:00:41Z`, a bounded manual run made exactly 2 public requests: `15059409` remained finished with zero exact result hits; `15059413` identity verified but operator state remained active with `NO_EXACT_RESULT_EVIDENCE`; `15063427` remained `NOT_PROBE_WINDOW`. The canonical hourly refresh then published equivalent evidence at `2026-09-22T07:04:49Z`: 2 requests, `15059409` still finished/N-D, `15059413` active with its exact combination offer still present but zero result hits, and `15063427` still outside its window.
+**OBSERVATION PROOF:** immutable sample #460 preserved event `15059409` as finished with zero exact whole-ticket result evidence. Canonical hourly evidence at `2026-09-22T07:04:49Z` still showed `15059409` finished/N-D, `15059413` active with its exact combination offer present but zero result hits, and `15063427` outside its probe window. A fresh bounded run from exact main `e679eb59cee33049dba78be208ba390764e4a1f6` at `2026-09-22T07:44:41Z` made exactly 2 public requests: `15059409` remained `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`; `15059413` identity remained verified, operator state changed to `{1: stop, 2: active}`, its exact combination offer disappeared, but exact whole-ticket result hits remained empty and status stayed `NO_EXACT_RESULT_EVIDENCE`; `15063427` remained `NOT_PROBE_WINDOW` and was not requested. PR #463 freezes this second observation in `audits/logic12_builder_observation_sample_15059413_20260922T074441Z.json` and explicitly records that quote disappearance is not settlement evidence.
 
-**SAFETY PROOF:** observation run kept `settlement_enabled=false`, `settlement_result_available=false`, `payout_computed=false`, `result_inferred=false`, `production_influence=false`, `ineed_runtime_influence=false`, `automatic_real_betting=false`. No Supabase/Edge mutation and no builder reservation enablement occurred.
+**LIVE SAFETY PROOF:** after the observation, the active iNeed$ experiment remained `SHADOW`, `builder_reservation` config remained absent/null, `automatic_real_betting=false`, builder tickets = 0, builder reservation ledger rows = 0, open exposure = 0, total exposure = 0, mail pipeline = 36 SENT / 0 pending. `ineed-sync` remained ACTIVE v12 with hash `1c95b957bc5a4b4dc3ca8bc3fa326b51f5a7cd2f0c67c2bad301753b51b2ec59`.
 
-**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. Event completion, quote disappearance, per-leg results, V1 settlement, Symphony output or locally reconstructed payout remain forbidden substitutes for exact operator-owned whole-ticket evidence.
+**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. Event completion, quote disappearance, `stop/active` offer-state labels, per-leg results, V1 settlement, Symphony output or locally reconstructed payout remain forbidden substitutes for exact operator-owned whole-ticket evidence.
 
-**DO NOT REDO:** do not recreate quote artifact, Phase-4/5 producer, shared exposure, reserve RPC, guarded OIDC persistence caller, lifecycle audit or terminal collector. Do not enable `builder_reservation`; do not implement settlement from current N/D observations.
+**DO NOT REDO:** do not recreate quote artifact, Phase-4/5 producer, shared exposure, reserve RPC, guarded OIDC persistence caller, lifecycle audit or terminal collector. Do not continue the stale `logic-12-builder-quote-artifact` branch. Do not enable `builder_reservation`; do not implement settlement from current N/D observations.
 
 **RISKS / HARD BANS:** zero model math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No inferred builder outcome/payout. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`.
 
 ### NEXT EXACT ACTION
 
-1. Continue bounded read-only observation of the same frozen identities only. `15059413` is now inside its window but was still active at `07:00:41Z`; preserve evidence only when the operator surface changes naturally. `15063427` must not be requested before `2026-09-22T12:00:00Z`.
-2. Preserve any exact combination-UUID result object raw and uninterpreted. If a terminal event still exposes no exact result, retain explicit `N/D` / `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`.
-3. Keep the 96h windows and request cap unchanged; do not add candidates, fuzzy matching, dynamic discovery or settlement mapping.
-4. After all three bounded windows complete, compare the frozen samples and decide in a separate audit whether another authenticated/read-only operator surface is necessary.
-5. Keep `builder_reservation.enabled` absent/false, builder settlement blocked and `automatic_real_betting=false`.
+1. Do not request frozen event `15063427` before its exact `probe_from=2026-09-22T12:00:00Z` (14:00 CEST). Until then, do not generate extra polling just to fill time.
+2. Continue bounded read-only observation of only the same three frozen identities. Preserve any exact combination-UUID result object raw and uninterpreted. If a terminal event still exposes no exact result, retain explicit N/D / `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`.
+3. Treat the `15059413` quote disappearance and `stop/active` state as evidence of operator-surface change only, never as WIN/LOSS/VOID/CANCELLED or payout evidence.
+4. Keep the 96h windows and request cap unchanged; do not add candidates, fuzzy matching, dynamic discovery or settlement mapping.
+5. After all three bounded windows complete, compare the frozen samples and decide in a separate audit whether another authenticated/read-only operator surface is necessary. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false` throughout.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
@@ -311,7 +311,6 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 - [x] Migration plan from legacy boolean - consumer-specific requirements are documented; runtime/learning migrations are explicitly deferred to LOGIC-09 and guard ownership to LOGIC-10 rather than silently promoted.
 
 **Definition of Done:** met for LOGIC-08 approved scope. Exact-snapshot SHADOW evidence, provenance, fail-closed metadata observability and additive UI observability are merged and verified. No runtime/learning gate replacement was authorized in this logic. R07/R08/R11 continue in LOGIC-09; R14 continues in LOGIC-10.
-
 ---
 
 ## LOGIC-09 - Learning Integrity / Prediction Ledger
