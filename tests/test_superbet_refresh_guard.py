@@ -90,6 +90,12 @@ def test_workflow_gates_all_expensive_steps_and_retains_triggers():
     for step in re.split(r'(?=^      - (?:name:|uses:))', downstream, flags=re.M):
         if step.strip():
             assert "if: steps.freshness.outputs.refresh == 'true'" in step
+    assert "backend/superbet_builder_dynamic_quotes.py" in refresh
+    assert "tests/test_superbet_builder_dynamic_quote_artifact.py" in refresh
+    dynamic_step = refresh[refresh.index("      - name: Refresh exact dynamic Bet Builder quote sidecar"):refresh.index("      - name: Refresh read-only Bet Builder terminal evidence")]
+    assert "if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'" in dynamic_step
+    assert "python backend/superbet_builder_dynamic_quotes.py refresh" in dynamic_step
+    assert "python -m py_compile backend/superbet_builder_dynamic_quotes.py" in refresh
     assert 'superbet_refresh_guard.py watchdog' in watchdog
     assert 'gh workflow run "$TARGET_WORKFLOW"' in watchdog
     assert "if: steps.inspect.outputs.dispatch == 'true'" in watchdog
