@@ -96,6 +96,42 @@ def test_unknown_runtime_json_defaults_to_admin_technical_tier():
     assert "ACTIONS_ID_TOKEN_REQUEST_TOKEN" in HELPER
 
 
+def test_runtime_publisher_oidc_retries_transient_failure_and_reuses_cached_token(monkeypatch):
+    helper = _load_helper()
+    responses = iter([(503, {}), (200, {"value": "oidc-token"})])
+    calls = []
+    sleeps = []
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://oidc.example/token")
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "request-token")
+    monkeypatch.setattr(helper, "_oidc_cached_token", None)
+    monkeypatch.setattr(helper, "_oidc_cached_at", 0.0)
+    monkeypatch.setattr(helper, "_json_request", lambda *a, **k: (calls.append(1), next(responses))[1])
+    monkeypatch.setattr(helper.time, "sleep", lambda delay: sleeps.append(delay))
+
+    assert helper.oidc_token() == "oidc-token"
+    assert helper.oidc_token() == "oidc-token"
+    assert len(calls) == 2
+    assert sleeps == [1]
+
+
+def test_runtime_publisher_oidc_does_not_retry_nontransient_failure(monkeypatch):
+    helper = _load_helper()
+    calls = []
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://oidc.example/token")
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "request-token")
+    monkeypatch.setattr(helper, "_oidc_cached_token", None)
+    monkeypatch.setattr(helper, "_oidc_cached_at", 0.0)
+    monkeypatch.setattr(helper, "_json_request", lambda *a, **k: (calls.append(1), (401, {}))[1])
+
+    try:
+        helper.oidc_token()
+    except helper.PublishError as exc:
+        assert "HTTP 401" in str(exc)
+    else:
+        raise AssertionError("non-transient OIDC failure must fail closed")
+    assert len(calls) == 1
+
+
 def test_layer_scoping_and_history_chunking_are_bounded(tmp_path, monkeypatch):
     helper = _load_helper()
     frontend = tmp_path / "frontend"
