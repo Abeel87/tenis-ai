@@ -212,3 +212,124 @@ def test_phase3_dynamic_sga_quote_fails_closed_on_missing_or_foreign_leg():
     foreign = dict(base, legs=[{"oddUuid":"leg-a","status":"ACTIVE"},{"oddUuid":"leg-c","status":"ACTIVE"}])
     assert b.resolve_dynamic_combined_quote(composition, _phase2_direct_feed(), foreign,
                                             observed_at="2026-09-20T21:31:00+00:00", source_url=d.build_dynamic_sga_quote_url("15000001", ["leg-a", "leg-b"])) is None
+
+
+def _phase6_match(leg_count=4):
+    m = playable_match()
+    extra = [
+        {"market": "set2_total", "pick": "over", "line": 8.5,
+         "operator_market_id": "30", "operator_outcome_id": "31", "fixture_line_verified": True},
+        {"market": "player_aces", "pick": "A over", "line": 2.5,
+         "operator_market_id": "40", "operator_outcome_id": "41", "fixture_line_verified": True},
+        {"market": "match_total", "pick": "over", "line": 20.5,
+         "operator_market_id": "50", "operator_outcome_id": "51", "fixture_line_verified": True},
+        {"market": "total_sets", "pick": "over", "line": 2.5,
+         "operator_market_id": "60", "operator_outcome_id": "61", "fixture_line_verified": True},
+        {"market": "set3_total", "pick": "over", "line": 8.5,
+         "operator_market_id": "70", "operator_outcome_id": "71", "fixture_line_verified": True},
+    ]
+    m["symphony2_playable"]["signals"].extend(extra[:max(0, leg_count - 2)])
+    m["symphony2_playable"]["recommended_leg_count"] = len(m["symphony2_playable"]["signals"])
+    return m
+
+
+def _phase6_direct_feed(leg_count=4):
+    m = _phase6_match(leg_count)
+    rows = []
+    for index, leg in enumerate(m["symphony2_playable"]["signals"]):
+        rows.append({
+            "market": leg["market"], "pick": leg["pick"], "line": leg.get("line"),
+            "operator_available": True, "operator_price_verified": True,
+            "operator_price": 1.5 + index / 10, "operator_selection_status": "active",
+            "operator_selection_id": f"leg-{chr(ord('a') + index)}",
+        })
+    return {
+        "generated_at": "2026-09-22T09:00:00+00:00",
+        "matches": [{
+            "match_id": "m-1", "event_id": "15000001", "direct_match_verified": True,
+            "canonical_selections": rows,
+        }],
+    }
+
+
+def test_phase6a_single_void_plan_is_bounded_and_deterministic():
+    composition = b.build_shadow_composition(_phase6_match(4))
+    plan = b.build_single_void_reprice_plan(composition, _phase6_direct_feed(4))
+    assert plan["scenario_count"] == 4
+    assert len(plan["scenarios"]) == 4
+    assert plan["single_void_only"] is True
+    assert plan["multi_void_supported"] is False
+    assert plan["settlement_enabled"] is False
+    assert plan["payout_computed"] is False
+    assert all(x["remaining_leg_count"] == 3 for x in plan["scenarios"])
+    assert all(x["quote_required"] is True for x in plan["scenarios"])
+    assert len({x["scenario_id"] for x in plan["scenarios"]}) == 4
+    again = b.build_single_void_reprice_plan(composition, _phase6_direct_feed(4))
+    assert [x["scenario_id"] for x in plan["scenarios"]] == [x["scenario_id"] for x in again["scenarios"]]
+
+
+def test_phase6a_two_leg_single_void_is_explicit_nd_not_synthetic_price():
+    composition = b.build_shadow_composition(playable_match())
+    plan = b.build_single_void_reprice_plan(composition, _phase2_direct_feed())
+    assert plan["scenario_count"] == 2
+    assert all(x["remaining_leg_count"] == 1 for x in plan["scenarios"])
+    assert all(x["quote_required"] is False for x in plan["scenarios"])
+    assert all(x["evidence_status"] == "N/D_SINGLE_LEG_REMAINDER" for x in plan["scenarios"])
+    assert all(x["combined_odds"] is None for x in plan["scenarios"])
+
+
+def test_phase6a_rejects_more_than_six_legs():
+    composition = b.build_shadow_composition(_phase6_match(7))
+    assert composition["leg_count"] == 7
+    assert b.build_single_void_reprice_plan(composition, _phase6_direct_feed(7)) is None
+
+
+def test_phase6a_resolves_exact_operator_reprice_without_settlement():
+    composition = b.build_shadow_composition(_phase6_match(4))
+    direct = _phase6_direct_feed(4)
+    plan = b.build_single_void_reprice_plan(composition, direct)
+    target = plan["scenarios"][0]
+    remaining = target["remaining_component_selection_ids"]
+    payload = {
+        "price": 2.35, "sgaUuid": "reprice-1", "status": "ACTIVE",
+        "combinationBettingStatus": "ACTIVE", "marketId": "238733", "outcomeId": "16603",
+        "legs": [{"oddUuid": sid, "status": "ACTIVE"} for sid in remaining],
+    }
+    observations = {
+        target["scenario_id"]: {
+            "payload": payload,
+            "observed_at": "2026-09-22T09:01:00+00:00",
+            "source_url": d.build_dynamic_sga_quote_url("15000001", remaining),
+        }
+    }
+    evidence = b.resolve_single_void_reprice_evidence(composition, direct, observations)
+    resolved = evidence["scenarios"][0]
+    assert resolved["evidence_status"] == "EXACT_OPERATOR_REPRICE"
+    assert resolved["combined_odds"] == 2.35
+    assert resolved["quote_provenance"]["operator_combination_selection_id"] == "reprice-1"
+    assert evidence["settlement_enabled"] is False
+    assert evidence["settlement_ready"] is False
+    assert evidence["payout_computed"] is False
+    assert evidence["result_inferred"] is False
+
+
+def test_phase6a_missing_or_foreign_reprice_stays_nd():
+    composition = b.build_shadow_composition(_phase6_match(4))
+    direct = _phase6_direct_feed(4)
+    plan = b.build_single_void_reprice_plan(composition, direct)
+    target = plan["scenarios"][1]
+    observations = {
+        target["scenario_id"]: {
+            "payload": {
+                "price": 9.99, "sgaUuid": "foreign", "status": "ACTIVE",
+                "combinationBettingStatus": "ACTIVE", "marketId": "238733", "outcomeId": "16603",
+                "legs": [{"oddUuid": "foreign-leg", "status": "ACTIVE"}],
+            },
+            "observed_at": "2026-09-22T09:01:00+00:00",
+            "source_url": "https://example.invalid/not-authority",
+        }
+    }
+    evidence = b.resolve_single_void_reprice_evidence(composition, direct, observations)
+    assert evidence["scenarios"][1]["evidence_status"] == "N/D_EXACT_OPERATOR_REPRICE_UNAVAILABLE"
+    assert evidence["scenarios"][1]["combined_odds"] is None
+    assert all(row["combined_odds"] is None for i, row in enumerate(evidence["scenarios"]) if i != 1)
