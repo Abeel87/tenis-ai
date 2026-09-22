@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **BRANCH:** `logic-12-builder-observation-checkpoint-2`, created from exact `main` `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` for checkpoint-only documentation.
 
-**PR:** pending for this checkpoint-only documentation update; no runtime change is included.
+**PR:** #464 - `LOGIC-12: checkpoint second builder observation`; docs-only checkpoint update, exact-head CI required before merge.
 
 **LAST VERIFIED MAIN:** `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` (merge PR #463). No open PRs remained after merge at verification time.
 
