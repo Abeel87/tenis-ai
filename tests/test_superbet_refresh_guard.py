@@ -105,8 +105,11 @@ def test_cli_noop_and_stale_fallback(monkeypatch, tmp_path):
     assert 'dispatch=true' in (tmp_path / 'output').read_text()
     monkeypatch.setenv('GITHUB_EVENT_NAME', 'pull_request')
     monkeypatch.setattr('sys.argv', ['guard', 'refresh'])
+    (tmp_path / 'output').write_text('')
     guard.main()
-    assert 'refresh=true' in (tmp_path / 'output').read_text()
+    output = (tmp_path / 'output').read_text()
+    assert 'refresh=false' in output
+    assert 'pull_request_validation_only' in output
 
 
 def test_delayed_workflow_run_noop_before_runtime(monkeypatch, tmp_path):
@@ -148,3 +151,15 @@ def test_guard_api_failure_stops_before_dispatch(monkeypatch, tmp_path):
     monkeypatch.setattr(guard, 'runs', unavailable)
     with pytest.raises(RuntimeError, match='API unavailable'):
         guard.main()
+
+
+def test_pull_request_refresh_guard_is_network_free(monkeypatch, tmp_path):
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'pull_request')
+    monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
+    monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
+    monkeypatch.setattr('sys.argv', ['guard', 'refresh'])
+    monkeypatch.setattr(guard, 'runs', lambda *_: (_ for _ in ()).throw(AssertionError('runs API must not be called')))
+    guard.main()
+    output = (tmp_path / 'output').read_text()
+    assert 'refresh=false' in output
+    assert 'reason=pull_request_validation_only' in output

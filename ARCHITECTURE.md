@@ -37,7 +37,7 @@ Kanoniczne backendowe wejścia operatora to:
 - `backend/superbet_line_coverage.py`
 - `backend/superbet_playable.py`
 
-`Superbet Direct Source Probe` keeps PR validation network-free: pull requests run only syntax/parser isolation checks, while the live browser listing probe and selected-match sidecar refresh are guarded with `github.event_name != 'pull_request'`. Live Direct probing is reserved for explicit/non-PR workflow execution.
+Superbet PR validation is network-free. `Superbet Direct Source Probe` runs only syntax/parser isolation checks on pull requests; its live browser listing probe and selected-match sidecar refresh are guarded with `github.event_name != 'pull_request'`. `superbet_refresh_guard.py` likewise returns `refresh=false` / `pull_request_validation_only` for PR-triggered `Superbet hourly market refresh`, so all refresh-dependent Direct/operator/API/model-refresh/publish steps are skipped. Live operator probing/refresh remains reserved for explicit or other eligible non-PR workflow execution.
 
 PLAYABLE jest warstwą fail-closed: brak zweryfikowanego operator context, brak dokładnej linii albo brak dopasowania selekcji oznacza brak PLAYABLE. Nie wolno używać najbliższej linii ani RAW jako operatorowego fallbacku.
 
