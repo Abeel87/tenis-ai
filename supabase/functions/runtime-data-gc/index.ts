@@ -12,7 +12,10 @@ const EXPECTED_WORKFLOW_REF = `${REPOSITORY}/${WORKFLOW}@${REF}`;
 const ISSUER = "https://token.actions.githubusercontent.com";
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`));
 const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch", "push"]);
-const RETIRED_KEEP_PER_LAYER = 1;
+// Private delivery is staging-only; Pages remains the production fallback.
+// Keeping a full retired generation per layer duplicates hundreds of MB and can
+// block the durable training archive behind the shared Free-plan storage budget.
+const RETIRED_KEEP_PER_LAYER = 0;
 const STAGED_GRACE_MS = 6 * 60 * 60 * 1000;
 const MAX_OBJECT_BYTES = 47185920;
 const REMOVE_BATCH = 100;
