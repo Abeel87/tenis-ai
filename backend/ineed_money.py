@@ -292,6 +292,22 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
             base = {
                 "fingerprint": fp, "match_id": mid, "market": signal.get("market") or "unknown",
                 "selection": signal.get("pick"), "model_probability": None if model_p is None else model_p / 100.0,
+                "snapshot": {
+                    "timestamp": now.isoformat(), "operator": OPERATOR, "match_id": mid,
+                    "p1": p1, "p2": p2, "market": signal.get("market"), "pick": signal.get("pick"),
+                    "selection": signal.get("pick"), "line": signal.get("line"),
+                    "checkpoint": signal.get("checkpoint"), "player": signal.get("player"),
+                    "raw_odds": None, "odds_timestamp": None, "event_url": None,
+                    "operator_market_id": None, "operator_outcome_id": None,
+                    "operator_model_probability": model_p,
+                    "raw_model_probability": signal.get("raw_model_probability"),
+                    "calibrated_model_probability": signal.get("calibrated_model_probability"),
+                    "learning_reliability": _num(signal.get("learning_reliability")),
+                    "learning_support_rows": signal.get("learning_support_rows"),
+                    "data_quality": "N/D", "bankroll_before": equity,
+                    "available_capital_before": available, "risk_state": rstate, "drawdown": drawdown,
+                    "config_version": cfg.get("version"), "automatic_real_betting": False,
+                },
             }
             quote = direct_quote(direct, mid, signal)
             if model_p is None:
@@ -299,12 +315,31 @@ def evaluate(results: list[dict], direct: dict, cfg: dict, state: dict, now: dat
             if quote is None:
                 rows.append(_reject(base, "MARKET_NOT_AVAILABLE")); continue
             odds = float(quote["operator_price"])
+            base["snapshot"] = {
+                **base["snapshot"],
+                "raw_odds": odds, "odds_timestamp": quote.get("odds_timestamp"),
+                "event_url": quote.get("event_url"),
+                "operator_market_id": quote.get("operator_market_id"),
+                "operator_outcome_id": quote.get("operator_outcome_id"),
+                "data_quality": "CURRENT_VERIFIED_SUPERBET_DIRECT",
+            }
             ts = _iso(quote.get("odds_timestamp"))
             if ts is None or (now - ts).total_seconds() > float(cfg.get("odds_max_age_minutes", 108)) * 60:
                 rows.append(_reject({**base, "odds": odds, "odds_timestamp": quote.get("odds_timestamp")}, "STALE_ODDS", "EXPIRED")); continue
             if odds < float(cfg.get("minimum_odds", 1.01)) or (cfg.get("maximum_odds") is not None and odds > float(cfg["maximum_odds"])):
                 rows.append(_reject({**base, "odds": odds, "odds_timestamp": quote.get("odds_timestamp")}, "ODDS_OUT_OF_RANGE")); continue
             econ_unit = economics(model_p, odds, cfg, sibling_quotes(direct, mid, quote), 1.0)
+            base["snapshot"] = {
+                **base["snapshot"],
+                "potential_payout": econ_unit["potential_payout"],
+                "expected_value_net": econ_unit["expected_value_net"],
+                "edge_probability_points": econ_unit["edge_probability_points"],
+                "fair_odds": econ_unit["fair_odds"],
+                "break_even_probability": econ_unit["break_even_probability"],
+                "no_vig_probability": econ_unit["no_vig_probability"],
+                "raw_implied_probability": econ_unit["raw_implied_probability"],
+                "estimated_bookmaker_margin": econ_unit["estimated_bookmaker_margin"],
+            }
             candidates.append((econ_unit["expected_value_net"], model_p, match, signal, quote, econ_unit, base, rstate, drawdown, p1, p2))
 
     candidates.sort(key=lambda x: x[0], reverse=True)
