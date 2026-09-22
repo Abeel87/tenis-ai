@@ -67,18 +67,58 @@ def _payload(*, odds=None, odds_results=None, match_results=None, state=None):
 def test_manifest_is_frozen_from_exact_git_artifact_and_has_three_deterministic_candidates():
     data = json.loads(MANIFEST.read_text(encoding="utf-8"))
     evidence.validate_manifest(data)
+    assert data["source_path"] == "frontend/data/superbet_builder_quotes_current.json"
     assert data["source_commit_sha"] == "935a2d1b2119c061fcda2ecdb3333ef395327125"
     assert data["source_blob_sha"] == "3f7b58212540f7c5a4b28f42457b3c747a9fb6f7"
+    assert data["source_generated_at"] == "2026-09-21T18:56:50.924941+00:00"
     assert data["selection_policy"] == "LEXICOGRAPHICALLY_SMALLEST_OPERATOR_SELECTION_ID_PER_EVENT"
-    assert [row["event_id"] for row in data["candidates"]] == ["15059409", "15059413", "15063427"]
+
+    # The source artifact is pinned by commit+blob above. Do not compare this
+    # frozen manifest with the mutable current sidecar: the hourly PR workflow
+    # deliberately refreshes that sidecar before this test runs.
+    expected = [
+        {
+            "event_id": "15059409",
+            "operator_selection_id": "0155873a-f67d-5288-a8a7-14e6b0f0e652",
+            "component_selection_ids": [
+                "aedacd3b-c001-5ef5-ae42-3e53e7aac1a5",
+                "9398c9c3-6d51-5339-a5b3-fba8f2611742",
+            ],
+            "combined_odds": 2.9,
+        },
+        {
+            "event_id": "15059413",
+            "operator_selection_id": "006b60ca-3498-50c4-97f8-5f1a1f327749",
+            "component_selection_ids": [
+                "4934a0b0-f4b9-5467-ab9a-1fe76d30bb7d",
+                "2fc3d96a-6cf0-5df2-a75c-bf80bca32254",
+                "835120ba-8b8a-5aee-a22f-cd7652230a79",
+                "1b29f7e5-cb50-5d87-9b0f-f58f3805b178",
+            ],
+            "combined_odds": 10.0,
+        },
+        {
+            "event_id": "15063427",
+            "operator_selection_id": "041c4d76-7e31-5acb-a1b3-3a060ae7e4e2",
+            "component_selection_ids": [
+                "411a2a33-cb90-5d94-a1af-d2fc64ef065d",
+                "dae85cfa-d343-5441-a70e-3a40027925a9",
+                "0d950a41-975d-5c1f-b2a6-4f9bda9b2d19",
+                "11112831-888c-5148-a3e2-41687abf293b",
+            ],
+            "combined_odds": 4.25,
+        },
+    ]
+    actual = [
+        {key: row[key] for key in (
+            "event_id", "operator_selection_id",
+            "component_selection_ids", "combined_odds",
+        )}
+        for row in data["candidates"]
+    ]
+    assert actual == expected
     assert len({row["operator_selection_id"] for row in data["candidates"]}) == 3
     assert all(row["probe_from"] == row["scheduled_time"] for row in data["candidates"])
-    source = json.loads((ROOT / data["source_path"]).read_text(encoding="utf-8"))
-    by_event = {str(m["event_id"]): m for m in source["matches"]}
-    for row in data["candidates"]:
-        quotes = sorted(by_event[row["event_id"]]["quotes"], key=lambda q: q["operator_selection_id"])
-        assert row["operator_selection_id"] == quotes[0]["operator_selection_id"]
-        assert row["component_selection_ids"] == quotes[0]["component_selection_ids"]
 
 
 def test_before_probe_window_performs_zero_external_requests():
