@@ -31,15 +31,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE LOGIC/TASK:** `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW`
 
-**SUBSTEP:** PR #463 (`LOGIC-12: preserve second builder operator observation`) is MERGED as `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` after 4/4 exact-head GREEN. Active bounded step remains the **96h read-only operator-evidence observation** of the same three frozen Bet Builder identities. Builder settlement remains blocked and no result may be inferred.
+**SUBSTEP:** PR #465 (`LOGIC-12: add bounded single-void builder reprice evidence`) is MERGED as `22a8a67fa62bb1265645f1cb0e8e69455ff3fc37` after 4/4 exact-head GREEN. PR #466 now adds a separate bounded, source-only Phase-3 dynamic SGA quote artifact; it is not wired to scheduled refresh/runtime. The active **96h read-only terminal operator-evidence observation** of the same three frozen Bet Builder identities remains in force. Builder settlement remains blocked and no result/payout may be inferred.
 
-**BRANCH:** `logic-12-builder-observation-checkpoint-2`, created from exact `main` `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` for checkpoint-only documentation.
+**BRANCH:** `logic-12-builder-dynamic-quote-artifact`, created from exact live `main` `35988bad3ac8b8c9dbd8f6e42aec670129de46ac` after the bot's `data: refresh Superbet market context` commit.
 
-**PR:** #464 - `LOGIC-12: checkpoint second builder observation`; docs-only checkpoint update, exact-head CI required before merge.
+**PR:** #466 - `LOGIC-12: add bounded dynamic builder quote artifact`; source-only SHADOW evidence producer, exact-head CI required before merge.
 
-**LAST VERIFIED MAIN:** `16621bb98a028a9f24ec77b42fcf2f5cbefa0fbc` (merge PR #463). No open PRs remained after merge at verification time.
+**LAST VERIFIED MAIN:** `35988bad3ac8b8c9dbd8f6e42aec670129de46ac`. It is a data-only bot child of PR #465 merge `22a8a67fa62bb1265645f1cb0e8e69455ff3fc37`. PR #466 is the only open PR at this checkpoint.
 
-**MERGED PROGRESSION:** #455 exact quote artifact -> #456 ephemeral Phase-4/5 SHADOW runner -> #457 guarded OIDC persistence caller (flag still disabled) -> #458 lifecycle evidence blocker -> #459 bounded terminal-evidence collector -> #460 first immutable terminal sample -> #461 96h observation-window extension -> #462 live observation checkpoint -> #463 second bounded operator observation sample.
+**MERGED PROGRESSION:** #455 exact quote artifact -> #456 ephemeral Phase-4/5 SHADOW runner -> #457 guarded OIDC persistence caller (flag still disabled) -> #458 lifecycle evidence blocker -> #459 bounded terminal-evidence collector -> #460 first immutable terminal sample -> #461 96h observation-window extension -> #462 live observation checkpoint -> #463 second bounded operator observation sample -> #464 checkpoint second observation -> #465 bounded single-void reprice evidence contract.
 
 **FROZEN SOURCE:** quote source commit `935a2d1b2119c061fcda2ecdb3333ef395327125`, blob `3f7b58212540f7c5a4b28f42457b3c747a9fb6f7`. `audits/logic12_builder_terminal_evidence_manifest.json` freezes only events `15059409`, `15059413`, `15063427` and their exact combination/component UUIDs. Probe windows end at `2026-09-26T03:00:00Z`, `2026-09-26T07:00:00Z`, `2026-09-26T12:00:00Z` respectively.
 
@@ -49,19 +49,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **LIVE SAFETY PROOF:** after the observation, the active iNeed$ experiment remained `SHADOW`, `builder_reservation` config remained absent/null, `automatic_real_betting=false`, builder tickets = 0, builder reservation ledger rows = 0, open exposure = 0, total exposure = 0, mail pipeline = 36 SENT / 0 pending. `ineed-sync` remained ACTIVE v12 with hash `1c95b957bc5a4b4dc3ca8bc3fa326b51f5a7cd2f0c67c2bad301753b51b2ec59`.
 
-**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. Event completion, quote disappearance, `stop/active` offer-state labels, per-leg results, V1 settlement, Symphony output or locally reconstructed payout remain forbidden substitutes for exact operator-owned whole-ticket evidence.
+**DYNAMIC QUOTE PREFLIGHT:** live main `35988bad...` contains 376 result rows, 33 final Symphony playable compositions (all 2-leg), 3 verified Direct matches and 2 composition/Direct overlaps. Only one overlap has every required component UUID; 0/33 final compositions have an exact Phase-2 pre-priced combination quote. PR #466 therefore adds a bounded exact dynamic-SGA sidecar producer but deliberately performs no live request or workflow wiring before the `15063427` time gate.
 
-**DO NOT REDO:** do not recreate quote artifact, Phase-4/5 producer, shared exposure, reserve RPC, guarded OIDC persistence caller, lifecycle audit or terminal collector. Do not continue the stale `logic-12-builder-quote-artifact` branch. Do not enable `builder_reservation`; do not implement settlement from current N/D observations.
+**ACTIVE BLOCKER:** `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`. The tennis-specific operator communication effective 2026-07-31 proves that voided tennis Bet Builder selections leave the ticket active and trigger recalculation from remaining valid selections, but it does not prove the exact numeric one-leg remainder reprice or final whole-ticket result/payout. Event completion, quote disappearance, `stop/active` labels, V1 settlement, Symphony output or locally reconstructed payout remain forbidden substitutes.
+
+**DO NOT REDO:** do not recreate Phase-2 quote artifact, Phase-4/5 producer, shared exposure, reserve RPC, guarded OIDC persistence caller, lifecycle audit, terminal collector or the #465 single-void evidence contract. Do not create a second dynamic-SGA producer beside `backend/superbet_builder_dynamic_quotes.py`. Do not enable `builder_reservation`; do not implement settlement from current N/D observations.
 
 **RISKS / HARD BANS:** zero model math/probability/threshold/weight/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk changes. No inferred builder outcome/payout. No real-money execution. Builder settlement remains `NOT_IMPLEMENTED`.
 
 ### NEXT EXACT ACTION
 
-1. Do not request frozen event `15063427` before its exact `probe_from=2026-09-22T12:00:00Z` (14:00 CEST). Until then, do not generate extra polling just to fill time.
-2. Continue bounded read-only observation of only the same three frozen identities. Preserve any exact combination-UUID result object raw and uninterpreted. If a terminal event still exposes no exact result, retain explicit N/D / `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`.
-3. Treat the `15059413` quote disappearance and `stop/active` state as evidence of operator-surface change only, never as WIN/LOSS/VOID/CANCELLED or payout evidence.
-4. Keep the 96h windows and request cap unchanged; do not add candidates, fuzzy matching, dynamic discovery or settlement mapping.
-5. After all three bounded windows complete, compare the frozen samples and decide in a separate audit whether another authenticated/read-only operator surface is necessary. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false` throughout.
+1. Finish PR #466 on its final exact HEAD: full required CI -> fresh-main comparison -> merge only GREEN. The PR must remain source-only; do not wire its dynamic sidecar into scheduled refresh or the scoped runner yet.
+2. Do not make any live request involving frozen event `15063427` before its exact `probe_from=2026-09-22T12:00:00Z` (14:00 CEST). The Phase-3 producer may be tested only with mocks/synthetic payloads before that gate.
+3. After the gate, continue bounded terminal observation of only the same three frozen identities. Separately, the new dynamic quote producer may make only its exact, Direct-verified composition request under its own max-8 fail-closed contract; do not mix pricing evidence with terminal-result evidence.
+4. Preserve any exact terminal combination-UUID result object raw and uninterpreted. Quote disappearance, `stop/active` state and dynamic/pre-priced quotes remain pricing/surface evidence only, never WIN/LOSS/VOID/CANCELLED or payout evidence.
+5. Keep the 96h terminal windows/request cap and candidate set unchanged. After all three windows complete, compare frozen samples and decide in a separate audit whether an authenticated read-only ticket surface is necessary. Keep `builder_reservation.enabled` absent/false and `automatic_real_betting=false` throughout.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
 
