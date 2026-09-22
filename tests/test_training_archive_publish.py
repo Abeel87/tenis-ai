@@ -11,6 +11,7 @@ from scripts.publish_training_archive import (
     batches,
     content_type,
     prepare_candidates,
+    publisher_call,
 )
 
 
@@ -87,6 +88,49 @@ def test_batches_are_bounded_and_lossless():
     groups = list(batches(rows, 200))
     assert [len(group) for group in groups] == [200, 200, 1]
     assert [row for group in groups for row in group] == rows
+
+
+def test_publisher_call_surfaces_only_bounded_safe_error_detail(monkeypatch):
+    def fake_request(*args, **kwargs):
+        return 500, {
+            "error": "training-archive-publish: error",
+            "detail": {
+                "code": "PGRST204",
+                "name": "PostgrestError",
+                "message": "schema\ncache mismatch",
+                "token": "DO_NOT_LOG_TOKEN",
+            },
+            "raw_secret": "DO_NOT_LOG_RAW",
+        }
+
+    monkeypatch.setattr("scripts.publish_training_archive.oidc_token", lambda: "oidc-token")
+    monkeypatch.setattr("scripts.publish_training_archive._json_request", fake_request)
+
+    with pytest.raises(ArchivePublishError) as exc_info:
+        publisher_call({"action": "start"})
+
+    message = str(exc_info.value)
+    assert "HTTP 500" in message
+    assert "training-archive-publish: error" in message
+    assert "code=PGRST204" in message
+    assert "name=PostgrestError" in message
+    assert "message=schema cache mismatch" in message
+    assert "DO_NOT_LOG_TOKEN" not in message
+    assert "DO_NOT_LOG_RAW" not in message
+
+
+def test_publisher_call_does_not_log_unstructured_error_detail(monkeypatch):
+    monkeypatch.setattr("scripts.publish_training_archive.oidc_token", lambda: "oidc-token")
+    monkeypatch.setattr(
+        "scripts.publish_training_archive._json_request",
+        lambda *args, **kwargs: (500, {"error": "publisher failed", "detail": "DO_NOT_LOG_BODY"}),
+    )
+
+    with pytest.raises(ArchivePublishError) as exc_info:
+        publisher_call({"action": "start"})
+
+    assert str(exc_info.value) == "publisher start failed: HTTP 500: publisher failed"
+    assert "DO_NOT_LOG_BODY" not in str(exc_info.value)
 
 
 def test_archive_infrastructure_is_private_oidc_pinned_and_service_role_only():
