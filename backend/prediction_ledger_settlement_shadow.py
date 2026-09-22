@@ -274,6 +274,27 @@ def _probability(row: dict[str, Any], name: str) -> float | None:
     return p
 
 
+def _calibration_bins_10(scored: list[tuple[float, int]]) -> list[dict[str, Any]]:
+    """Return descriptive fixed decile calibration bins; never a promotion score."""
+    buckets: list[list[tuple[float, int]]] = [[] for _ in range(10)]
+    for probability, label in scored:
+        index = min(9, int(probability * 10.0))
+        buckets[index].append((probability, label))
+    out: list[dict[str, Any]] = []
+    for index, bucket in enumerate(buckets):
+        n = len(bucket)
+        out.append({
+            "index": index,
+            "lower_inclusive": round(index / 10.0, 1),
+            "upper": round((index + 1) / 10.0, 1),
+            "upper_inclusive": index == 9,
+            "n": n,
+            "mean_probability": round(sum(p for p, _ in bucket) / n, 6) if n else None,
+            "observed_hit_rate": round(sum(y for _, y in bucket) / n, 6) if n else None,
+        })
+    return out
+
+
 def _model_metrics(records: list[dict[str, Any]], model: str) -> dict[str, Any]:
     scored: list[tuple[float, int]] = []
     for record in records:
@@ -291,6 +312,7 @@ def _model_metrics(records: list[dict[str, Any]], model: str) -> dict[str, Any]:
             "brier": None,
             "log_loss": None,
             "mean_probability": None,
+            "calibration_bins_10": _calibration_bins_10([]),
         }
     n = len(scored)
     correct = sum(1 for p, y in scored if (p >= 0.5) == bool(y))
@@ -303,6 +325,7 @@ def _model_metrics(records: list[dict[str, Any]], model: str) -> dict[str, Any]:
         "brier": round(brier, 6),
         "log_loss": round(log_loss, 6),
         "mean_probability": round(sum(p for p, _ in scored) / n, 6),
+        "calibration_bins_10": _calibration_bins_10(scored),
     }
 
 
@@ -319,21 +342,115 @@ def _in_population(record: dict[str, Any], population: str) -> bool:
     return False
 
 
-def _population_report(records: list[dict[str, Any]], population: str) -> dict[str, Any]:
+def _common_binary_records(records: list[dict[str, Any]], population: str) -> list[dict[str, Any]]:
+    return [
+        record
+        for record in records
+        if _in_population(record, population)
+        and record.get("common_current_catboost_tabpfn") is True
+        and (record.get("settlement") or {}).get("result") in BINARY_RESULTS
+    ]
+
+
+def _binary_report(records: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "n": len(records),
+        "hit_rate": round(sum(1 for r in records if (r.get("settlement") or {}).get("result") == "hit") / len(records), 6) if records else None,
+        "models": {
+            name: _model_metrics(records, name)
+            for name in ("current", "catboost", "tabpfn")
+        },
+    }
+
+
+def _market_reports(records: list[dict[str, Any]], population: str) -> dict[str, Any]:
+    binary = _common_binary_records(records, population)
+    markets = sorted({str(record.get("market") or "N/D") for record in binary})
+    return {
+        market: _binary_report([record for record in binary if str(record.get("market") or "N/D") == market])
+        for market in markets
+    }
+
+
+def _scheduled_utc_day(record: dict[str, Any]) -> str | None:
+    parsed = _parse_dt(record.get("scheduled_time"))
+    return parsed.date().isoformat() if parsed is not None else None
+
+
+def _temporal_walk_forward(records: list[dict[str, Any]], population: str, *, as_of: datetime) -> dict[str, Any]:
+    """Descriptive expanding-window audit over complete UTC schedule days.
+
+    Frozen probabilities are never retrained, recalibrated or selected from the
+    training window. Prior days exist only to prove strict chronology and sample
+    growth; every test window is the next disjoint UTC day.
+    """
+    binary = _common_binary_records(records, population)
+    dated = [(record, _scheduled_utc_day(record)) for record in binary]
+    eligible = [(record, day) for record, day in dated if day is not None]
+    as_of_day = as_of.astimezone(timezone.utc).date().isoformat()
+    complete = [(record, day) for record, day in eligible if day < as_of_day]
+    incomplete = [(record, day) for record, day in eligible if day >= as_of_day]
+    dates = sorted({day for _, day in complete})
+    folds: list[dict[str, Any]] = []
+    for index, test_day in enumerate(dates[1:], start=1):
+        test_start = datetime.fromisoformat(test_day + "T00:00:00+00:00")
+        train_candidates = [record for record, day in complete if day < test_day]
+        train = [
+            record
+            for record in train_candidates
+            if (_parse_dt((record.get("settlement") or {}).get("settled_at")) or as_of) < test_start
+        ]
+        train_late_labels = len(train_candidates) - len(train)
+        test = [record for record, day in complete if day == test_day]
+        train_match_keys = {str(record.get("match_key") or "") for record in train}
+        test_match_keys = {str(record.get("match_key") or "") for record in test}
+        folds.append({
+            "fold": index,
+            "train_start_date": dates[0],
+            "train_end_date": dates[index - 1],
+            "test_date": test_day,
+            "train_rows": len(train),
+            "train_rows_excluded_late_settlement": train_late_labels,
+            "test_rows": len(test),
+            "match_key_overlap": len(train_match_keys & test_match_keys),
+            "test_metrics": _binary_report(test),
+            "test_markets": {
+                market: _binary_report([record for record in test if str(record.get("market") or "N/D") == market])
+                for market in sorted({str(record.get("market") or "N/D") for record in test})
+            },
+        })
+    return {
+        "status": "CHRONOLOGICAL_FOLDS_AVAILABLE" if folds else "INSUFFICIENT_DISTINCT_UTC_DATES",
+        "policy": "EXPANDING_PRIOR_COMPLETE_UTC_DAYS_TO_NEXT_COMPLETE_UTC_DAY",
+        "frozen_predictions_only": True,
+        "retraining_enabled": False,
+        "recalibration_enabled": False,
+        "ranking_enabled": False,
+        "promotion_enabled": False,
+        "as_of_utc_date": as_of_day,
+        "distinct_complete_utc_dates": dates,
+        "undated_binary_rows": len(dated) - len(eligible),
+        "incomplete_or_future_utc_day_binary_rows": len(incomplete),
+        "fold_count": len(folds),
+        "folds": folds,
+    }
+
+
+def _population_report(records: list[dict[str, Any]], population: str, *, as_of: datetime) -> dict[str, Any]:
     rows = [r for r in records if _in_population(r, population)]
     common = [r for r in rows if r.get("common_current_catboost_tabpfn") is True]
-    binary = [r for r in common if (r.get("settlement") or {}).get("result") in BINARY_RESULTS]
+    binary = _common_binary_records(records, population)
     void = [r for r in common if (r.get("settlement") or {}).get("result") == "void"]
+    report = _binary_report(binary)
     return {
         "rows": len(rows),
         "common_model_rows": len(common),
         "common_binary_settled_rows": len(binary),
         "common_void_rows": len(void),
-        "hit_rate": round(sum(1 for r in binary if (r.get("settlement") or {}).get("result") == "hit") / len(binary), 6) if binary else None,
-        "models": {
-            name: _model_metrics(binary, name)
-            for name in ("current", "catboost", "tabpfn")
-        },
+        "hit_rate": report["hit_rate"],
+        "models": report["models"],
+        "market_reports": _market_reports(records, population),
+        "temporal_walk_forward": _temporal_walk_forward(records, population, as_of=as_of),
     }
 
 
@@ -394,7 +511,7 @@ def build_sidecar(
             result_counts["N/D"] += 1
 
     population_reports = {
-        population: _population_report(records, population)
+        population: _population_report(records, population, as_of=parsed_now)
         for population in ("ALL", "PLAYABLE", "SYMPHONY_SELECTED", "PLAYABLE_AND_SYMPHONY")
     }
     common_binary = population_reports["ALL"]["common_binary_settled_rows"]
@@ -426,6 +543,12 @@ def build_sidecar(
             "binary_results": ["hit", "miss"],
             "void_excluded_from_binary_metrics": True,
             "common_intersection_required": ["current", "catboost", "tabpfn"],
+            "calibration_bins": 10,
+            "calibration_is_descriptive_only": True,
+            "market_reports_are_descriptive_only": True,
+            "temporal_policy": "EXPANDING_PRIOR_COMPLETE_UTC_DAYS_TO_NEXT_COMPLETE_UTC_DAY",
+            "temporal_retraining_enabled": False,
+            "temporal_recalibration_enabled": False,
             "ranking_enabled": False,
             "automatic_winner_selection_enabled": False,
             "minimum_sample_gate_defined": False,
