@@ -29,30 +29,32 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Active program:** Tenis AI logic/data/model reorganization.
 
-**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` - Phase-4 leakage-safe common-set audit. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged.
+**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` is in natural prospective accumulation after merged Phase-4 leakage-safe common-set audit. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged.
 
-**SUBSTEP:** PR #469 (`LOGIC-12: freeze first non-PR builder delivery evidence`) merged as `1de61e69645ed92e70b06b3e740691f93fc7fa3b`. A fresh LOGIC-09 audit proved the old `common binary settled n=0` gate is stale: canonical `frontend/data/prediction_ledger_settlement_shadow.json` now has `rows=8516`, exact three-model common `854`, naturally settled common binary `261`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`, and exact PLAYABLE common binary `97`.
+**SUBSTEP:** PR #470 (`LOGIC-09: add leakage-safe common-set temporal audit`) merged as `361e279e83ebb25a2986374906da215dd350ccaa` after exact-head 7/7 GREEN and fresh-main rebase. Post-merge `Update tennis data and deploy Pages` #841 completed SUCCESS, including Prediction Ledger generation/guard, final full regression, refreshed JSON publication and Pages deploy.
 
-**ACTIVE BRANCH:** `logic-09-common-set-phase4-audit`, created from exact live `main` `1de61e69645ed92e70b06b3e740691f93fc7fa3b`.
+**ACTIVE BRANCH:** none.
 
-**ACTIVE PR:** #470 - `LOGIC-09: add leakage-safe common-set temporal audit`. Code/audit commit: `f439df74be1892ff3c4eabdab7c60d962af79137`; read the exact PR head live after documentation commits. Scope is additive SHADOW-only metrics/calibration/per-market + chronology audit in the existing canonical owner `backend/prediction_ledger_settlement_shadow.py`; zero retraining/recalibration/ranking/promotion/runtime influence.
+**ACTIVE PR:** none.
 
-**LAST VERIFIED MAIN:** `1de61e69645ed92e70b06b3e740691f93fc7fa3b` (merge PR #469). Before merge #470 always refresh live `main`, because data bots can move it.
+**LAST VERIFIED MAIN:** `05beaab652a12c6977ca4097b163d610fa931478` (`data: refresh Superbet market context`) after successful post-merge publication.
 
-**LOGIC-09 CURRENT EVIDENCE:** immutable audit `audits/logic09_common_set_phase4_audit_20260922T131840Z.json`. Common binary market N: `set1_total=153`, `match_total=93`, `match_winner=5`, `set2_winner=4`, `set1_winner=2`, `set3_winner=2`, `total_sets=2`. First leakage-safe complete-day fold: scheduled train day `2026-09-20` -> test day `2026-09-21`; 117 candidate train rows by schedule date, but only 102 had `settled_at` before test-day start; 15 late labels were excluded. Test `n=81`, exact train/test match-key overlap `0`. Current UTC day `2026-09-22` has 63 common binary rows and is intentionally excluded from complete-day folds because the day is incomplete.
+**LOGIC-09 CURRENT EVIDENCE:** canonical `frontend/data/prediction_ledger_settlement_shadow.json` generated `2026-09-22T15:43:03.708713+00:00` has `rows=8927`, exact three-model common `893`, naturally settled common binary `274`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`, and exact PLAYABLE common binary `105`. Common binary market N: `set1_total=161`, `match_total=98`, `match_winner=5`, `set2_winner=4`, `set1_winner=2`, `set3_winner=2`, `total_sets=2`.
 
-**LOGIC-09 SAFETY:** Current/CatBoost/TabPFN probability snapshots stay frozen. Phase-4 only reports descriptive accuracy/Brier/log-loss/fixed 10-bin calibration, per-market/per-population N/metrics and chronological folds. `retraining_enabled=false`, `recalibration_enabled=false`, `ranking_enabled=false`, `promotion_enabled=false`, `minimum_sample_gate_defined=false`; zero changes to probability/weights/thresholds/training/PLAYABLE/Symphony/Player DNA/Neuron/iNeed$.
+**LOGIC-09 TEMPORAL EVIDENCE:** complete-day fold count remains `1`. Fold 1 is scheduled train day `2026-09-20` -> test day `2026-09-21`; 102 train rows had labels available before test-day start, 15 late settlements were excluded, test `n=81`, exact train/test match-key overlap `0`. Current UTC day `2026-09-22` remains incomplete and is not a closed test fold.
 
-**LOGIC-09 REMAINING GATE:** full DoD is NOT met. There is only one closed complete-day temporal fold. Evidence is concentrated in `set1_total` and `match_total`; other markets have `n=2..5`. Do not rank models, select a winner, change weights or migrate telemetry/runtime from this phase. Accumulate additional naturally settled exact prospective rows and full UTC days first.
+**LOGIC-09 SAFETY:** Current/CatBoost/TabPFN probability snapshots stay frozen. Phase-4 is descriptive SHADOW evidence only: accuracy/Brier/log-loss/fixed 10-bin calibration, per-market/per-population N/metrics and chronological folds. `retraining_enabled=false`, `recalibration_enabled=false`, `ranking_enabled=false`, `promotion_enabled=false`, `minimum_sample_gate_defined=false`; zero changes to probability/weights/thresholds/training/PLAYABLE/Symphony/Player DNA/Neuron/iNeed$.
 
-**LOGIC-12 PARALLEL OBSERVATION / operator-evidence:** non-PR dynamic delivery was proven by Superbet refresh #1814 / run `35729926740`; PR #469 froze the published artifacts. Dynamic evidence stayed fail-closed `NO_ELIGIBLE_COMPOSITIONS`, 0 candidates/quotes/requests. Terminal evidence made exactly 3 bounded frozen-event requests and still found 0 exact whole-ticket result hits. `builder_reservation.enabled` remains absent/false, `automatic_real_betting=false`, and settlement/payout inference is forbidden. Continue only the existing 96h windows for events `15059409`, `15059413`, `15063427`; do not expand scope or wire the dynamic sidecar into iNeed$ without a real exact quote row plus a separate consumer audit.
+**LOGIC-09 REMAINING GATE:** full DoD is NOT met. There is still only one closed complete-day temporal fold and evidence remains concentrated in `set1_total` / `match_total`. Do not rank models, select a winner, change weights or migrate telemetry/runtime from this phase. Accumulate additional naturally settled exact prospective rows and full UTC days first.
+
+**LOGIC-12 PARALLEL OBSERVATION / operator-evidence:** non-PR dynamic delivery was proven by Superbet refresh #1814 / run `35729926740`; PR #469 froze that delivery evidence. Latest published terminal artifact generated `2026-09-22T14:35:15.647173+00:00` still has 0 exact whole-ticket result hits across the same 3 frozen identities; events `15059409` and `15059413` are finished without exact result evidence, while `15063427` remains `stop/active` with `NO_EXACT_RESULT_EVIDENCE`. `builder_reservation.enabled` remains absent/false, `automatic_real_betting=false`, and settlement/payout inference is forbidden.
 
 ### NEXT EXACT ACTION
 
-1. Finish PR #470: docs/registry/architecture -> full exact-head CI -> fresh `main` comparison/rebase if needed -> merge only GREEN -> post-merge generated-artifact verification.
-2. After #470 merge, let normal Update/settlement runs naturally increase the exact common sample. Phase-4 temporal folds use complete UTC days only and train labels with `settled_at < test_day_start`; zero backfill/recompute.
-3. Do not invent a promotion threshold or model winner. As more complete UTC days mature, report additional chronology folds and factual per-market/per-population metrics; small-N segments stay explicitly small-N.
-4. Continue LOGIC-12 only as observation-only through the frozen 96h windows. Missing exact whole-ticket terminal evidence remains `N/D`, never settlement inference.
+1. Let normal Update/settlement runs continue natural LOGIC-09 accumulation. Do not backfill or recompute historical probabilities for Phase-4 evidence.
+2. After another full UTC schedule day closes and its labels mature, regenerate/read the canonical artifact and verify whether an additional leakage-safe chronology fold exists. Train labels must satisfy `settled_at < test_day_start`.
+3. Report factual per-market/per-population N and chronology metrics only. Small-N segments remain explicitly small-N; do not invent a promotion threshold, model winner, ranking or weight change.
+4. Continue LOGIC-12 observation-only through the existing 96h windows for frozen events `15059409`, `15059413`, `15063427`. Missing exact whole-ticket terminal evidence remains `N/D`; never infer settlement from offer disappearance, stop/active state or per-leg evidence.
 5. Without separate authorization do not change model math/probability/thresholds/weights/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk/iNeed$ calculations or SHADOW->PROD.
 
 # 2. Obowiązkowa checklista KAŻDEGO zadania / PR
