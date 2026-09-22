@@ -82,65 +82,33 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
     stamp = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
     if not isinstance(direct_feed, dict):
         return _empty("DIRECT_INPUT_INVALID", generated_at=stamp)
-
     direct_status = _text(direct_feed.get("status"))
     direct_generated_at = direct_feed.get("generated_at")
     direct_stamp = _parse_utc(direct_generated_at)
     now_utc = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     if direct_feed.get("prices_used") is not False:
-        return _empty(
-            "DIRECT_INPUT_UNSAFE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
+        return _empty("DIRECT_INPUT_UNSAFE", generated_at=stamp, direct_generated_at=direct_generated_at)
     if direct_status == "NO_CURRENT_OVERLAP":
-        return _empty(
-            "NO_CURRENT_OVERLAP",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
+        return _empty("NO_CURRENT_OVERLAP", generated_at=stamp, direct_generated_at=direct_generated_at)
     if direct_status != "OK":
-        return _empty(
-            "DIRECT_INPUT_UNSAFE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
+        return _empty("DIRECT_INPUT_UNSAFE", generated_at=stamp, direct_generated_at=direct_generated_at)
     if direct_stamp is None:
-        return _empty(
-            "DIRECT_INPUT_STALE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
+        return _empty("DIRECT_INPUT_STALE", generated_at=stamp, direct_generated_at=direct_generated_at)
     age_seconds = (now_utc - direct_stamp).total_seconds()
     if age_seconds > MAX_DIRECT_AGE_SECONDS or age_seconds < -MAX_FUTURE_SKEW_SECONDS:
-        return _empty(
-            "DIRECT_INPUT_STALE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
-
+        return _empty("DIRECT_INPUT_STALE", generated_at=stamp, direct_generated_at=direct_generated_at)
     raw_matches = [x for x in (direct_feed.get("matches") or []) if isinstance(x, dict)]
     if len(raw_matches) > MAX_MATCHES:
-        return _empty(
-            "DIRECT_INPUT_UNSAFE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
-
+        return _empty("DIRECT_INPUT_UNSAFE", generated_at=stamp, direct_generated_at=direct_generated_at)
     event_fetch = fetcher or direct.fetch_event_payload_public
     out = _empty("NO_EXACT_BUILDER_QUOTES", generated_at=stamp, direct_generated_at=direct_generated_at)
     quote_matches: list[dict] = []
     rejected: list[dict] = []
     requests = 0
-
     for match in raw_matches:
         match_id = match.get("match_id")
         event_id = _text(match.get("event_id"))
-        if (
-            match.get("direct_match_verified") is not True
-            or match.get("prices_used") is not False
-            or not event_id.isdigit()
-        ):
+        if match.get("direct_match_verified") is not True or match.get("prices_used") is not False or not event_id.isdigit():
             rejected.append({"match_id": match_id, "event_id": event_id or None, "status": "UNVERIFIED_DIRECT_MATCH"})
             continue
         try:
@@ -150,32 +118,16 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
             if not isinstance(event_row, dict):
                 raise ValueError("current event fixture missing")
             fixture_p1, fixture_p2 = direct._players_from_event(event_row)
-            candidate = {
-                "fixture_id": event_id,
-                "event_id": event_id,
-                "p1": fixture_p1,
-                "p2": fixture_p2,
-                "start_time": event_row.get("utcDate"),
-            }
+            candidate = {"fixture_id": event_id, "event_id": event_id, "p1": fixture_p1, "p2": fixture_p2, "start_time": event_row.get("utcDate")}
             selected = direct.fixture_matching.select_cached_fixture(match, [candidate])
             if not isinstance(selected, dict) or _text(selected.get("fixture_id")) != event_id:
                 raise ValueError("current event fixture identity mismatch")
-            parsed = direct.parse_event_combination_quotes(
-                payload,
-                event_id=event_id,
-                observed_at=stamp,
-            )
+            parsed = direct.parse_event_combination_quotes(payload, event_id=event_id, observed_at=stamp)
         except Exception as exc:
             failed = _empty("EVENT_FETCH_FAILED", generated_at=stamp, direct_generated_at=direct_generated_at)
-            failed["rejected"] = rejected + [{
-                "match_id": match_id,
-                "event_id": event_id,
-                "status": "EVENT_FETCH_FAILED",
-                "error": type(exc).__name__,
-            }]
+            failed["rejected"] = rejected + [{"match_id": match_id, "event_id": event_id, "status": "EVENT_FETCH_FAILED", "error": type(exc).__name__}]
             failed["external_requests"] = requests
             return failed
-
         quotes = [dict(x) for x in (parsed.get("quotes") or []) if isinstance(x, dict)]
         quotes.sort(key=lambda row: _text(row.get("operator_selection_id")))
         operator_ids = [_text(row.get("operator_selection_id")) for row in quotes]
@@ -183,29 +135,9 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
             failed = _empty("QUOTE_IDENTITY_CONFLICT", generated_at=stamp, direct_generated_at=direct_generated_at)
             failed["external_requests"] = requests
             return failed
-
-        quote_matches.append({
-            "match_id": match_id,
-            "p1": match.get("p1"),
-            "p2": match.get("p2"),
-            "scheduled_time": match.get("scheduled_time"),
-            "event_id": event_id,
-            "event_url": match.get("event_url"),
-            "direct_match_verified": True,
-            "observed_at": stamp,
-            "quotes": quotes,
-            "quotes_count": len(quotes),
-        })
-
+        quote_matches.append({"match_id": match_id, "p1": match.get("p1"), "p2": match.get("p2"), "scheduled_time": match.get("scheduled_time"), "event_id": event_id, "event_url": match.get("event_url"), "direct_match_verified": True, "observed_at": stamp, "quotes": quotes, "quotes_count": len(quotes)})
     quotes_count = sum(int(row.get("quotes_count") or 0) for row in quote_matches)
-    out.update({
-        "status": "OK" if quotes_count > 0 else "NO_EXACT_BUILDER_QUOTES",
-        "matches": quote_matches,
-        "rejected": rejected,
-        "quotes_count": quotes_count,
-        "contains_prices": quotes_count > 0,
-        "external_requests": requests,
-    })
+    out.update({"status": "OK" if quotes_count > 0 else "NO_EXACT_BUILDER_QUOTES", "matches": quote_matches, "rejected": rejected, "quotes_count": quotes_count, "contains_prices": quotes_count > 0, "external_requests": requests})
     return out
 
 
@@ -239,7 +171,6 @@ def validate_artifact(feed: object) -> dict:
     for key in ("production_influence", "playable_influence", "player_dna_influence", "symphony_influence", "ineed_runtime_influence", "automatic_real_betting"):
         if feed.get(key) is not False:
             raise ValueError(f"builder quote artifact must keep {key}=false")
-
     counted = 0
     for match in feed.get("matches") or []:
         if not isinstance(match, dict) or match.get("direct_match_verified") is not True or not _text(match.get("event_id")):
@@ -272,19 +203,7 @@ def _persist_unavailable(*, source_status: str, output_path: Path | str, direct_
     safe["source_status"] = _text(source_status) or "UNKNOWN"
     safe["external_requests"] = int(external_requests or 0)
     path = write_artifact(safe, output_path)
-    return {
-        "status": "SOURCE_UNAVAILABLE",
-        "source_status": safe["source_status"],
-        "written": True,
-        "path": str(path),
-        "generated_at": safe.get("generated_at"),
-        "matches": 0,
-        "quotes_count": 0,
-        "external_requests": safe.get("external_requests"),
-        "prices_used": False,
-        "ineed_runtime_influence": False,
-        "automatic_real_betting": False,
-    }
+    return {"status": "SOURCE_UNAVAILABLE", "source_status": safe["source_status"], "written": True, "path": str(path), "generated_at": safe.get("generated_at"), "matches": 0, "quotes_count": 0, "external_requests": safe.get("external_requests"), "prices_used": False, "ineed_runtime_influence": False, "automatic_real_betting": False}
 
 
 def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path | str = OUTPUT_PATH, fetcher=None, now: datetime | None = None) -> dict:
@@ -297,26 +216,9 @@ def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path 
         return _persist_unavailable(source_status="DIRECT_INPUT_INVALID", output_path=output_path, now=now)
     artifact = build_artifact(direct_feed, fetcher=fetcher, now=now)
     if artifact.get("status") not in SAFE_STATUSES:
-        return _persist_unavailable(
-            source_status=_text(artifact.get("status")) or "ARTIFACT_UNSAFE",
-            output_path=output_path,
-            direct_generated_at=artifact.get("direct_generated_at"),
-            external_requests=int(artifact.get("external_requests") or 0),
-            now=now,
-        )
+        return _persist_unavailable(source_status=_text(artifact.get("status")) or "ARTIFACT_UNSAFE", output_path=output_path, direct_generated_at=artifact.get("direct_generated_at"), external_requests=int(artifact.get("external_requests") or 0), now=now)
     path = write_artifact(artifact, output_path)
-    return {
-        "status": artifact.get("status"),
-        "written": True,
-        "path": str(path),
-        "generated_at": artifact.get("generated_at"),
-        "matches": len(artifact.get("matches") or []),
-        "quotes_count": artifact.get("quotes_count"),
-        "external_requests": artifact.get("external_requests"),
-        "prices_used": False,
-        "ineed_runtime_influence": False,
-        "automatic_real_betting": False,
-    }
+    return {"status": artifact.get("status"), "written": True, "path": str(path), "generated_at": artifact.get("generated_at"), "matches": len(artifact.get("matches") or []), "quotes_count": artifact.get("quotes_count"), "external_requests": artifact.get("external_requests"), "prices_used": False, "ineed_runtime_influence": False, "automatic_real_betting": False}
 
 
 def main() -> None:
