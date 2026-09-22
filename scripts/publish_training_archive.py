@@ -143,6 +143,29 @@ def oidc_token() -> str:
     return token
 
 
+def _bounded_single_line(value: Any, limit: int) -> str:
+    if value is None:
+        return ""
+    return " ".join(str(value).split())[:limit]
+
+
+def _publisher_error_text(data: Any) -> str:
+    if not isinstance(data, dict):
+        return "publisher error"
+
+    error = _bounded_single_line(data.get("error"), 200) or "publisher error"
+    detail = data.get("detail")
+    if not isinstance(detail, dict):
+        return error
+
+    parts: list[str] = []
+    for key, limit in (("code", 120), ("name", 120), ("message", 400)):
+        value = _bounded_single_line(detail.get(key), limit)
+        if value:
+            parts.append(f"{key}={value}")
+    return f"{error}; detail {'; '.join(parts)}" if parts else error
+
+
 def publisher_call(body: dict[str, Any]) -> dict[str, Any]:
     status, data = _json_request(
         PUBLISHER_URL,
@@ -151,10 +174,12 @@ def publisher_call(body: dict[str, Any]) -> dict[str, Any]:
         body=body,
         timeout=90,
     )
-    if not isinstance(data, dict):
-        data = {"detail": data}
     if status != 200:
-        raise ArchivePublishError(f"publisher {body.get('action')} failed: HTTP {status} {data.get('error') or data}")
+        raise ArchivePublishError(
+            f"publisher {body.get('action')} failed: HTTP {status}: {_publisher_error_text(data)}"
+        )
+    if not isinstance(data, dict):
+        raise ArchivePublishError(f"publisher {body.get('action')} returned a non-object response")
     return data
 
 
