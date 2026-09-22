@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import scripts.publish_training_archive as archive_publish
 from scripts.publish_training_archive import (
     ArchivePublishError,
     batches,
@@ -88,6 +89,23 @@ def test_batches_are_bounded_and_lossless():
     groups = list(batches(rows, 200))
     assert [len(group) for group in groups] == [200, 200, 1]
     assert [row for group in groups for row in group] == rows
+
+
+def test_oidc_token_retries_transient_failure_and_reuses_cached_token(monkeypatch):
+    responses = iter([(503, {}), (200, {"value": "oidc-token"})])
+    calls = []
+    sleeps = []
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://oidc.example/token")
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "request-token")
+    monkeypatch.setattr(archive_publish, "_oidc_cached_token", None)
+    monkeypatch.setattr(archive_publish, "_oidc_cached_at", 0.0)
+    monkeypatch.setattr(archive_publish, "_json_request", lambda *a, **k: (calls.append(1), next(responses))[1])
+    monkeypatch.setattr(archive_publish.time, "sleep", lambda delay: sleeps.append(delay))
+
+    assert archive_publish.oidc_token() == "oidc-token"
+    assert archive_publish.oidc_token() == "oidc-token"
+    assert len(calls) == 2
+    assert sleeps == [1]
 
 
 def test_publisher_call_surfaces_only_bounded_safe_error_detail(monkeypatch):

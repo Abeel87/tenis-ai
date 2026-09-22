@@ -13,6 +13,7 @@ import urllib.request
 
 AUDIENCE = "tenis-ai-runtime-gc"
 GC_URL = "https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/runtime-data-gc"
+EXPECTED_CONTRACT_REVISION = "sha256:5af26e956079eb2328162f144ef35746cd8c0b729d08dfa4617c556db9b1c032"
 
 
 class GCError(RuntimeError):
@@ -62,6 +63,13 @@ def collect(*, dry_run: bool) -> dict:
     )
     if status != 200 or not isinstance(data, dict) or data.get("ok") is not True:
         raise GCError(f"runtime GC failed: HTTP {status} {data}")
+    revision = data.get("contract_revision")
+    if revision != EXPECTED_CONTRACT_REVISION:
+        raise GCError(
+            "deployed runtime-data-gc contract is stale: "
+            f"expected {EXPECTED_CONTRACT_REVISION!r}, got {revision!r}; "
+            "deploy the canonical Supabase Edge Function from current main"
+        )
     return data
 
 

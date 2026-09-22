@@ -69,6 +69,10 @@ While private delivery remains dual-write staging, GC always preserves every act
 
 This avoids duplicating hundreds of megabytes of runtime snapshots in the same Free-plan Storage quota used by the durable training archive. The retired-generation policy must be reviewed again before any private-delivery cutover or removal of the Pages fallback.
 
+## Edge Function deployment drift guard
+
+The repository does not hold a Supabase management access token, so source changes under `supabase/functions/runtime-data-gc/` are not automatically deployed. The GC endpoint therefore returns a versioned `contract_revision`, and `scripts/gc_runtime_private.py` fails closed when the live revision does not match the canonical caller on `main`. A function-source change must be deployed to Supabase and the runtime-private workflow rerun before the rollout is considered green.
+
 ## Cutover gate
 
 Do not remove the existing generated-data commits or exclude B/C files from
