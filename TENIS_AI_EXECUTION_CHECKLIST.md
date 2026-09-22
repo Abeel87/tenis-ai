@@ -309,7 +309,7 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 
 ## LOGIC-09 - Learning Integrity / Prediction Ledger
 
-Status: `[~] ACTIVE - phases 0-3 merged; natural common-set evidence matured to binary n=261; Phase-4 leakage-safe temporal/market audit in PR #470`
+Status: `[~] ACTIVE - phases 0-4 merged and post-merge production-proven; natural common-set evidence matured to binary n=274; one closed complete-day temporal fold exists; broader multi-day/market evidence still accumulating`
 
 Goal: compare frozen prospective model outputs on the same exact population without selection leakage.
 
@@ -318,10 +318,10 @@ Goal: compare frozen prospective model outputs on the same exact population with
 - [x] Phase-1 immutable pre-selection prediction ledger for all supported prospective candidates (PR #416).
 - [x] Phase-2 exact PLAYABLE/Symphony population evidence with strict chronology; missing evidence = `N/D` (PR #418/#419).
 - [x] Phase-3 exact terminal settlement common-set owner using existing canonical terminal/scorer semantics; zero network, zero source-ledger mutation (PR #420).
-- [x] Natural evidence maturity confirmed on 2026-09-22: `rows=8516`, exact common `854`, common binary settled `261`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`; PLAYABLE common binary `97`. Zero retroactive prediction/backfill/recompute.
-- [~] Phase-4 PR #470: descriptive Brier/log-loss/accuracy + fixed 10-bin calibration on the identical common sample, per population and per market; no ranking/winner/promotion.
-- [~] Leakage-safe chronological audit: complete UTC days only, expanding prior-day train -> next complete-day test; train labels require `settled_at < test_day_start`; current evidence has one fold (2026-09-20 -> 2026-09-21), train 102 after excluding 15 late labels, test 81, match-key overlap 0.
-- [~] Market evidence is not broad yet: `set1_total=153`, `match_total=93`, remaining markets `n=2..5`; keep small-N explicit.
+- [x] Natural evidence maturity confirmed and post-merge refreshed on 2026-09-22: `rows=8927`, exact common `893`, common binary settled `274`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`; PLAYABLE common binary `105`. Zero retroactive prediction/backfill/recompute.
+- [x] Phase-4 PR #470 merged as `361e279e83ebb25a2986374906da215dd350ccaa`: descriptive Brier/log-loss/accuracy + fixed 10-bin calibration on the identical common sample, per population and per market; no ranking/winner/promotion. Post-merge Update #841 and generated-artifact guard are GREEN.
+- [x] Leakage-safe chronological audit implemented and production-proven: complete UTC days only, expanding prior-day train -> next complete-day test; train labels require `settled_at < test_day_start`; current evidence has one fold (2026-09-20 -> 2026-09-21), train 102 after excluding 15 late labels, test 81, match-key overlap 0.
+- [~] Market evidence is not broad yet: `set1_total=161`, `match_total=98`, remaining markets `n=2..5`; keep small-N explicit.
 - [ ] Accumulate additional full UTC days / natural exact settlements for multiple temporal folds and broader market coverage.
 - [ ] Audit/migrate telemetry only after broader evidence and separate authorization.
 - [ ] Do not change ensemble weights or SHADOW->PROD; Phase-4 defines no minimum promotion threshold and no model winner.
@@ -369,7 +369,7 @@ Cel: UI pokazuje dokładnie to, co backend faktycznie wyprodukował.
 
 ## LOGIC-12 — iNeed$ Bet Builder Redesign
 
-Status: `[~] ACTIVE - Phase-4/5 runtime evidence production-proven; guarded builder persistence/sync contract in progress; reservation enable flag still OFF; settlement not implemented`
+Status: `[~] ACTIVE - Phase-4/5 runtime evidence and guarded persistence/sync contract are merged/production-proven; exact pricing/terminal evidence collection is active; reservation enable flag remains OFF; settlement is blocked by `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE`
 
 Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 
@@ -381,8 +381,10 @@ Cel: iNeed$ ocenia rzeczywisty finalny Bet Builder, nie niezależne single.
 - [x] Phase 4: EV/Kelly/risk/stake całego buildera + jedna niepersistowana `SHADOW_PROPOSED` reservation per `composition_id`; PR #437 merged as `9a0ad2fe84298e847a2af7a6bc5afabdafee6963`.
 - [x] Phase 5: pure `builder-ticket` SHADOW envelope freezes exact composition, quote provenance, Phase-4 economics and one reservation proposal; output cannot resemble current V1 signal and explicitly claims no persistence/settlement readiness.
 - [x] Phase 1-5 remain SHADOW and are runtime-produced by the canonical Superbet refresh/scoped runner; PR #456 merged and normal production workflow proved summary-only evidence with zero builder rows/reservation writes and no V1/email regression.
-- [~] Separate builder-ticket persistence/sync contract: branch `logic-12-builder-persistence-sync`; dedicated OIDC Edge action + existing atomic writer, double-gated by `builder_reservation.enabled=true` and exact contract version. Production flag remains absent/false, so current runtime performs zero builder writes.
-- [ ] Jeden settlement całego BB z exact operator semantics dla WIN/LOSS/VOID/PUSH/CANCEL/retirement i leg-void behavior.
+- [x] Separate builder-ticket persistence/sync contract merged in PR #457: dedicated OIDC Edge action + existing atomic writer, double-gated by `builder_reservation.enabled=true` and exact contract version. Production flag remains absent/false, so current runtime performs zero builder writes.
+- [x] Exact pricing/reprice evidence plumbing is merged and production-proven through PR #465-#469: separate bounded dynamic sidecar, no leg-odds multiplication, fail-closed first non-PR delivery `NO_ELIGIBLE_COMPOSITIONS` with 0 external requests.
+- [~] Bounded read-only terminal operator-evidence observation is active for the same 3 frozen identities through their 96h windows; latest published sample still has 0 exact whole-ticket result hits. Missing evidence = `N/D`; no result/payout inference.
+- [ ] One whole-ticket BB settlement with exact operator semantics for WIN/LOSS/VOID/PUSH/CANCEL/retirement and leg-void behavior remains blocked until exact whole-ticket operator evidence exists.
 - [ ] Backtest na zamrożonych ofertach/operator context, jeśli dane pozwalają.
 
 **Phase-5 merge proof:** PR #438 exact head `ac9d6d02...` passed 8/8 GREEN required workflows and merged as `73926853e4439f41a97c08ffd4be93f55e16c24f`. Post-merge isolation proves zero runtime/Supabase/settlement consumer.
