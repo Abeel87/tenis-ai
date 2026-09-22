@@ -32,6 +32,12 @@ DATA = FRONTEND / "data"
 # the free project. A bucket-specific 100 MiB limit cannot raise that global cap.
 MAX_OBJECT_SIZE = 45 * 1024 * 1024
 HISTORY_CHUNK_TARGET = 20 * 1024 * 1024
+OIDC_TOKEN_REUSE_SECONDS = 240
+OIDC_TRANSIENT_STATUSES = {429, 500, 502, 503, 504}
+OIDC_RETRY_DELAYS_SECONDS = (1, 2, 4, 8)
+
+_oidc_cached_token: str | None = None
+_oidc_cached_at = 0.0
 
 # B = data required by an authenticated normal product view.
 # Everything else defaults to C (admin/technical) so an unknown file can never
@@ -280,6 +286,12 @@ def _json_request(
 
 
 def oidc_token() -> str:
+    global _oidc_cached_token, _oidc_cached_at
+
+    now = time.monotonic()
+    if _oidc_cached_token and now - _oidc_cached_at < OIDC_TOKEN_REUSE_SECONDS:
+        return _oidc_cached_token
+
     request_url = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL", "")
     request_token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "")
     if not request_url or not request_token:
@@ -287,15 +299,25 @@ def oidc_token() -> str:
 
     separator = "&" if "?" in request_url else "?"
     url = f"{request_url}{separator}audience={urllib.parse.quote(AUDIENCE)}"
-    status, data = _json_request(
-        url,
-        headers={"Authorization": f"Bearer {request_token}"},
-        timeout=30,
-    )
-    token = data.get("value") if isinstance(data, dict) else None
-    if status != 200 or not isinstance(token, str) or not token:
-        raise PublishError(f"GitHub OIDC token request failed: HTTP {status}")
-    return token
+    attempts = len(OIDC_RETRY_DELAYS_SECONDS) + 1
+    last_status = 0
+    for attempt in range(attempts):
+        status, data = _json_request(
+            url,
+            headers={"Authorization": f"Bearer {request_token}"},
+            timeout=30,
+        )
+        token = data.get("value") if isinstance(data, dict) else None
+        if status == 200 and isinstance(token, str) and token:
+            _oidc_cached_token = token
+            _oidc_cached_at = time.monotonic()
+            return token
+        last_status = status
+        if status not in OIDC_TRANSIENT_STATUSES or attempt >= len(OIDC_RETRY_DELAYS_SECONDS):
+            break
+        time.sleep(OIDC_RETRY_DELAYS_SECONDS[attempt])
+
+    raise PublishError(f"GitHub OIDC token request failed: HTTP {last_status}")
 
 
 def publisher_call(body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
