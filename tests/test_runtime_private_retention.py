@@ -1,3 +1,5 @@
+import hashlib
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +73,24 @@ def test_gc_paginates_every_metadata_source_deterministically():
     assert '.from("runtime_data_objects")' in GC_FUNCTION
     assert '.order("logical_path", { ascending: true })' in GC_FUNCTION
     assert "scanned:" in GC_FUNCTION
+
+
+def test_gc_function_and_client_share_fail_closed_deployment_contract():
+    function_match = re.search(r'const CONTRACT_REVISION = "(sha256:[0-9a-f]{64})";', GC_FUNCTION)
+    client_match = re.search(r'EXPECTED_CONTRACT_REVISION = "(sha256:[0-9a-f]{64})"', GC_CLIENT)
+    assert function_match is not None
+    assert client_match is not None
+    assert function_match.group(1) == client_match.group(1)
+    normalized = re.sub(
+        r'const CONTRACT_REVISION = "sha256:[0-9a-f]{64}";',
+        'const CONTRACT_REVISION = "sha256:<SOURCE>";',
+        GC_FUNCTION,
+        count=1,
+    )
+    assert function_match.group(1) == "sha256:" + hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    assert "contract_revision: CONTRACT_REVISION" in GC_FUNCTION
+    assert "deployed runtime-data-gc contract is stale" in GC_CLIENT
+    assert "deploy the canonical Supabase Edge Function from current main" in GC_CLIENT
 
 
 def test_gc_client_uses_distinct_oidc_audience_and_no_service_secret():

@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.2.12";
 
 const BUCKET = "tenis-ai-runtime-private";
 const AUDIENCE = "tenis-ai-runtime-gc";
+const CONTRACT_REVISION = "sha256:5af26e956079eb2328162f144ef35746cd8c0b729d08dfa4617c556db9b1c032";
 const REPOSITORY = "Abeel87/tenis-ai";
 const REPOSITORY_ID = "1339352577";
 const REPOSITORY_OWNER_ID = "198365428";
@@ -185,6 +186,7 @@ async function collect(supabase: any, dryRun: boolean) {
 
   return {
     ok: true,
+    contract_revision: CONTRACT_REVISION,
     dry_run: dryRun,
     scanned: { generations: rows.length, heads: heads.length, objects: allObjects.length },
     invalid_staged_generations: rows.filter((row) => row.status === "staged" && invalidStaged.has(key(row.layer, row.generation))).length,

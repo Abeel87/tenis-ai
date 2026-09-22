@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,6 +26,12 @@ DEFAULT_CACHE_ROOT = Path("data/cache")
 DEFAULT_INVENTORY = Path("artifacts/training_archive_inventory.json")
 MAX_OBJECT_BYTES = 45 * 1024 * 1024
 BATCH_SIZE = 200
+OIDC_TOKEN_REUSE_SECONDS = 240
+OIDC_TRANSIENT_STATUSES = {429, 500, 502, 503, 504}
+OIDC_RETRY_DELAYS_SECONDS = (1, 2, 4, 8)
+
+_oidc_cached_token: str | None = None
+_oidc_cached_at = 0.0
 
 
 class ArchivePublishError(RuntimeError):
@@ -130,18 +137,38 @@ def _json_request(
 
 
 def oidc_token() -> str:
+    global _oidc_cached_token, _oidc_cached_at
+
+    now = time.monotonic()
+    if _oidc_cached_token and now - _oidc_cached_at < OIDC_TOKEN_REUSE_SECONDS:
+        return _oidc_cached_token
+
     request_url = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL", "")
     request_token = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "")
     if not request_url or not request_token:
         raise ArchivePublishError("GitHub OIDC environment is unavailable")
     separator = "&" if "?" in request_url else "?"
     url = f"{request_url}{separator}audience={urllib.parse.quote(AUDIENCE)}"
-    status, data = _json_request(url, headers={"Authorization": f"Bearer {request_token}"}, timeout=30)
-    token = data.get("value") if isinstance(data, dict) else None
-    if status != 200 or not isinstance(token, str) or not token:
-        raise ArchivePublishError(f"GitHub OIDC token request failed: HTTP {status}")
-    return token
 
+    attempts = len(OIDC_RETRY_DELAYS_SECONDS) + 1
+    last_status = 0
+    for attempt in range(attempts):
+        status, data = _json_request(
+            url,
+            headers={"Authorization": f"Bearer {request_token}"},
+            timeout=30,
+        )
+        token = data.get("value") if isinstance(data, dict) else None
+        if status == 200 and isinstance(token, str) and token:
+            _oidc_cached_token = token
+            _oidc_cached_at = time.monotonic()
+            return token
+        last_status = status
+        if status not in OIDC_TRANSIENT_STATUSES or attempt >= len(OIDC_RETRY_DELAYS_SECONDS):
+            break
+        time.sleep(OIDC_RETRY_DELAYS_SECONDS[attempt])
+
+    raise ArchivePublishError(f"GitHub OIDC token request failed: HTTP {last_status}")
 
 def _bounded_single_line(value: Any, limit: int) -> str:
     if value is None:
