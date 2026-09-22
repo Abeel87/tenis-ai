@@ -401,13 +401,13 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## B18. iNeed$
 
-**Status:** SHADOW / experimental risk layer. Exact builder quote, whole-composition economics/ticket production, shared exposure, atomic reservation writer and guarded OIDC persistence caller are implemented. A bounded source-only Phase-3 dynamic quote artifact producer is also implemented for exact final compositions, but it is not scheduled or consumed by runtime. Production reservation remains disabled.
+**Status:** SHADOW / experimental risk layer. Exact builder quote, whole-composition economics/ticket production, shared exposure, atomic reservation writer and guarded OIDC persistence caller are implemented. The bounded Phase-3 dynamic quote artifact producer for exact final compositions is delivered by eligible non-PR hourly Superbet refresh runs, but it is still not consumed by iNeed$/runtime. Production reservation remains disabled.
 
 **Responsibility:** bankroll/risk/EV/stake after PLAYABLE. For Bet Builder, the economic unit is the whole final composition, never an individual leg.
 
 **Current SHADOW contract:** final Symphony composition -> upstream joint probability -> exact verified Superbet combined odd -> whole-builder EV/risk/stake -> immutable `builder-ticket:<composition_id>` -> guarded OIDC reservation boundary.
 
-**Dynamic quote evidence owner:** `backend/superbet_builder_dynamic_quotes.py` intersects only final Symphony compositions with the already-verified current Direct feed, requires every exact component UUID and uses the canonical `superbet_direct.py` dynamic SGA URL/parser/fetch source. It is bounded to at most 8 candidates per refresh; overflow fails closed with zero requests. The artifact keeps all PROD/PLAYABLE/Symphony/iNeed/settlement influences false and currently has no workflow/runtime consumer.
+**Dynamic quote evidence owner:** `backend/superbet_builder_dynamic_quotes.py` intersects only final Symphony compositions with the already-verified current Direct feed, requires every exact component UUID and uses the canonical `superbet_direct.py` dynamic SGA URL/parser/fetch source. It is bounded to at most 8 candidates per refresh; overflow fails closed with zero requests. Eligible non-PR `Superbet hourly market refresh` runs publish the sidecar after Direct/exact-quote refresh; PR validation remains network-free. The artifact keeps all PROD/PLAYABLE/Symphony/iNeed/settlement influences false and still has no runtime/iNeed consumer.
 
 **Production proof:** PR #457 merged as `3fa6fc5602a1c1cfebbe86a68d6425a8e5c20e2d`; `ineed-sync` is ACTIVE v12. Normal SHADOW run `35641902429` proved persistence `DISABLED` / `BUILDER_RESERVATION_DISABLED`, zero builder writes, V1/email health preserved and `automatic_real_betting=false`. Active experiment config still has no `builder_reservation` block.
 
