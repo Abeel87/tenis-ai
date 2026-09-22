@@ -39,9 +39,11 @@ jobs:
           python -m pytest -q tests/test_superbet_direct.py
 
       - name: Probe JS-rendered public Superbet listing and one concrete match
+        if: github.event_name != 'pull_request'
         run: python backend/superbet_direct.py probe-browser
 
       - name: Build selected-match SHADOW sidecar end-to-end
+        if: github.event_name != 'pull_request'
         run: |
           python backend/superbet_direct.py refresh-selected
           python - <<'PY'

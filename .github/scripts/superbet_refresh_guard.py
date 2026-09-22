@@ -88,8 +88,8 @@ def main():
     event_name = os.environ['GITHUB_EVENT_NAME']
     reason, after = None, None
     if mode == 'refresh' and event_name == 'pull_request':
-        # Preserve the existing PR validation path; never use PRs as freshness evidence.
-        pass
+        # PRs validate orchestration/tests only. Never run live operator/API refresh work.
+        reason = 'pull_request_validation_only'
     else:
         refreshes = runs(REFRESH)
         if mode == 'watchdog':

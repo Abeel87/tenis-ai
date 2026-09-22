@@ -37,6 +37,8 @@ Kanoniczne backendowe wejścia operatora to:
 - `backend/superbet_line_coverage.py`
 - `backend/superbet_playable.py`
 
+Superbet PR validation is network-free. `Superbet Direct Source Probe` runs only syntax/parser isolation checks on pull requests; its live browser listing probe and selected-match sidecar refresh are guarded with `github.event_name != 'pull_request'`. `superbet_refresh_guard.py` likewise returns `refresh=false` / `pull_request_validation_only` for PR-triggered `Superbet hourly market refresh`, so all refresh-dependent Direct/operator/API/model-refresh/publish steps are skipped. Live operator probing/refresh remains reserved for explicit or other eligible non-PR workflow execution.
+
 PLAYABLE jest warstwą fail-closed: brak zweryfikowanego operator context, brak dokładnej linii albo brak dopasowania selekcji oznacza brak PLAYABLE. Nie wolno używać najbliższej linii ani RAW jako operatorowego fallbacku.
 
 `backend/superbet_playable.py` jest projekcją addytywną. Może dopisać osobne `superbet_playable_v912` i dedykowane warstwy historii PLAYABLE, ale nie może nadpisywać `match_win`, `first_set_win`, `over_under`, `match_over_under`, exact score, `autolearn_v84` ani źródłowych feedów SHADOW. MODEL / RAW pozostaje niezależny od tego, czy Superbet ma dany rynek lub dokładną linię.
@@ -49,7 +51,7 @@ Current production iNeed$ remains single-leg economics in `backend/ineed_money.p
 
 `backend/ineed_builder_shadow.py` is the additive non-runtime LOGIC-12 owner for the final Bet Builder composition and whole-builder economics. It consumes only final `symphony2_playable`, preserves upstream joint probability, requires canonical match/operator leg identity, accepts only an exact verified + fresh operator combined quote, and never synthesizes combined odds from leg prices.
 
-Phase 2 proves exact pre-priced Superbet `superbets` composition rows and exact component UUID identity. Phase 3 adds the read-only public `v2/getSgaOddPrice` provenance path for arbitrary exact UUID compositions, retaining event, SGA id, component ids and canonical source URL. No runner/frontend/settlement consumer is introduced.
+Phase 2 proves exact pre-priced Superbet `superbets` composition rows and exact component UUID identity. Phase 3 adds the read-only public `v2/getSgaOddPrice` provenance path for arbitrary exact UUID compositions, retaining event, SGA id, component ids and canonical source URL. `backend/superbet_builder_dynamic_quotes.py` is the bounded Phase-3 artifact owner: it intersects final Symphony compositions with the already-verified current Direct feed, requires every exact component UUID, makes at most 8 exact public quote requests per refresh and fails closed before any request if that cap would be exceeded. Its sidecar is metadata-only SHADOW evidence with zero PROD/PLAYABLE/Symphony/iNeed/settlement influence. It is intentionally not wired to the scheduled refresh or runner while the active frozen operator-evidence observation gate remains in force.
 
 Phase 4 evaluates the whole composition as one SHADOW economic unit: exact combined odds + upstream joint probability -> existing tax/risk semantics -> EV/Kelly/risk/stake -> at most one nonpersisted `SHADOW_PROPOSED` reservation keyed by `builder:<composition_id>`. It emits only `SHADOW_QUALIFIED/SHADOW_REJECTED`, remains `runtime_publishable=false`, and never enters current `ineed-sync`.
 

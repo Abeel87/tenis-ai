@@ -664,6 +664,36 @@ def build_dynamic_sga_quote_url(event_id: str, component_selection_ids: list[str
     return f"https://{DYNAMIC_SGA_HOST}{DYNAMIC_SGA_PATH}?{query}"
 
 
+def fetch_dynamic_sga_payload_public(event_id: str, component_selection_ids: list[str], timeout: int = 20) -> dict:
+    """Fetch one exact public dynamic Bet Builder quote payload without login/cookies."""
+    url = build_dynamic_sga_quote_url(event_id, component_selection_ids)
+    if not url:
+        raise ValueError("invalid dynamic SGA identity")
+    request = Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "pl-PL,pl;q=0.9,en;q=0.7",
+            "Origin": BASE,
+            "Referer": TENNIS_LISTING_URL,
+            "Cache-Control": "no-cache",
+        },
+    )
+    with urlopen(request, timeout=timeout) as response:
+        content_type = str(response.headers.get("Content-Type") or "")
+        if "json" not in content_type.casefold():
+            raise RuntimeError(f"unexpected dynamic SGA content type: {content_type}")
+        raw = response.read(MAX_EVENT_JSON_BYTES + 1)
+        if len(raw) > MAX_EVENT_JSON_BYTES:
+            raise RuntimeError("dynamic SGA JSON exceeds safety limit")
+        charset = response.headers.get_content_charset() or "utf-8"
+        payload = json.loads(raw.decode(charset, errors="strict"))
+    if not isinstance(payload, dict):
+        raise RuntimeError("dynamic SGA response was not a JSON object")
+    return payload
+
+
 def parse_dynamic_sga_quote(payload: object, *, event_id: str, component_selection_ids: list[str], observed_at: str | None, source_url: str | None) -> dict | None:
     if not isinstance(payload, dict) or not str(event_id or "").strip() or not observed_at:
         return None
