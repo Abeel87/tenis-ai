@@ -1,0 +1,45 @@
+{
+  "schema_version": "logic12-builder-tennis-void-reprice-sources-v1",
+  "status": "FROZEN_SOURCE_AUDIT",
+  "observed_at": "2026-09-22",
+  "operator": "superbet.pl",
+  "sources": [
+    {
+      "kind": "OFFICIAL_COMMUNICATION",
+      "url": "https://superbet.pl/wiki/oficjalny-komunikat-nr-01-2020",
+      "effective_date": "2026-07-31",
+      "scope": "TENNIS_SUPERBETS_AND_BET_BUILDER",
+      "evidence": "If one or more selections are voided, the whole Bet Builder is not cancelled; total odds are recalculated using only remaining valid selections. The rule also applies to retirement or disqualification during the match."
+    },
+    {
+      "kind": "OPERATOR_SUPPORT",
+      "url": "https://support.superbet.pl/hc/pl-pl/articles/25922091195666-Status-selekcji-w-zak%C5%82adach-Bet-Builder-oraz-Superbets",
+      "published_date": "2025-04-09",
+      "scope": "AUTHENTICATED_TICKET_SELECTION_STATUS",
+      "evidence": "The player account ticket view exposes per-selection pending, won, lost and refund status for Bet Builder/Superbets selections."
+    }
+  ],
+  "proven": {
+    "tennis_void_keeps_builder_active": true,
+    "tennis_void_reprices_remaining_valid_selections": true,
+    "per_selection_status_exists_in_authenticated_ticket_view": true
+  },
+  "not_proven": {
+    "exact_numeric_one_leg_remainder_reprice": true,
+    "whole_ticket_terminal_result": true,
+    "whole_ticket_payout": true,
+    "public_terminal_result_surface": true
+  },
+  "safety": {
+    "settlement_enabled": false,
+    "result_inference_allowed": false,
+    "payout_inference_allowed": false,
+    "builder_reservation_enabled": false,
+    "production_influence": false,
+    "playable_influence": false,
+    "symphony_influence": false,
+    "ineed_runtime_influence": false,
+    "automatic_real_betting": false
+  },
+  "interpretation": "This evidence narrows void/reprice semantics only. It does not authorize settlement mapping, payout reconstruction, reservation enablement or real-money execution."
+}
