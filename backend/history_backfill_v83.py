@@ -223,6 +223,60 @@ def _interval_due(state: dict, now: datetime, min_hours: float) -> bool:
     return not last or now - last >= timedelta(hours=max(0.0, min_hours))
 
 
+def _optional_date(value: Any) -> date | None:
+    try:
+        return date.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _prepare_sweep(state: dict, now: datetime, stop_date: date, force_full: bool = False):
+    newest = _initial_cursor(now)
+    cursor = _parse_date(state.get("cursor_date"), newest)
+    active_floor = _optional_date(state.get("sweep_floor_date"))
+    active_ceiling = _optional_date(state.get("sweep_ceiling_date"))
+    complete_through = _optional_date(state.get("complete_through_date"))
+
+    if active_floor is not None and active_ceiling is not None:
+        return cursor, active_floor, active_ceiling, complete_through, False
+
+    if force_full:
+        cursor, floor, ceiling = newest, stop_date, newest
+        state["offset"] = 0
+        state["pending"] = []
+    elif complete_through is not None:
+        if newest <= complete_through:
+            return newest, stop_date, complete_through, complete_through, True
+        cursor, floor, ceiling = newest, complete_through + timedelta(days=1), newest
+        state["offset"] = 0
+        state["pending"] = []
+    else:
+        # Legacy in-flight sweep: preserve its exact cursor, but start tracking
+        # an explicit ceiling so completion can transition to incremental mode.
+        floor, ceiling = stop_date, newest
+
+    state["sweep_floor_date"] = floor.isoformat()
+    state["sweep_ceiling_date"] = ceiling.isoformat()
+    state["cursor_date"] = cursor.isoformat()
+    return cursor, floor, ceiling, complete_through, False
+
+
+def _mark_sweep_complete(state: dict, ceiling: date, now: datetime) -> date:
+    previous = _optional_date(state.get("complete_through_date"))
+    complete_through = max(previous, ceiling) if previous is not None else ceiling
+    state["complete_through_date"] = complete_through.isoformat()
+    state.pop("sweep_floor_date", None)
+    state.pop("sweep_ceiling_date", None)
+    state["cursor_date"] = complete_through.isoformat()
+    state["offset"] = 0
+    state["pending"] = []
+    state["page_has_more"] = True
+    state["page_size"] = 0
+    state["last_run_at"] = now.isoformat()
+    state["updated_at"] = now.isoformat()
+    return complete_through
+
+
 def _page_rows(payload: dict) -> tuple[list[dict], dict]:
     rows = payload.get("data") or []
     meta = payload.get("meta") or {}
@@ -295,12 +349,11 @@ def run_backfill(now: datetime | None = None) -> dict:
     CACHE.mkdir(parents=True, exist_ok=True)
     MATCH_CACHE.mkdir(parents=True, exist_ok=True)
     state = _state_for_today(_read_json(STATE_PATH, {}), now.date())
-    cursor = _parse_date(state.get("cursor_date"), _initial_cursor(now))
     stop_date = _stop_date()
-    if cursor < stop_date:
-        cursor = _initial_cursor(now)
-        state["offset"] = 0
-        state["pending"] = []
+    force_full = _truthy_env("HISTORY_BACKFILL_FORCE_FULL_SWEEP", False)
+    cursor, sweep_floor, sweep_ceiling, complete_through, sweep_idle = _prepare_sweep(
+        state, now, stop_date, force_full=force_full
+    )
 
     base_report = {
         "version": "v8.3B",
@@ -309,6 +362,10 @@ def run_backfill(now: datetime | None = None) -> dict:
         "policy": "critical-current-jobs-first; spare-quota-only; fail-closed",
         "cursor_date": cursor.isoformat(),
         "stop_date": stop_date.isoformat(),
+        "sweep_floor_date": sweep_floor.isoformat(),
+        "sweep_ceiling_date": sweep_ceiling.isoformat(),
+        "complete_through_date": complete_through.isoformat() if complete_through else None,
+        "sweep_mode": "forced-full" if force_full else ("idle" if sweep_idle else ("incremental" if complete_through else "full")),
         "calls_this_run": 0,
         "downloaded_tapes": 0,
         "cache_hits": 0,
@@ -321,6 +378,15 @@ def run_backfill(now: datetime | None = None) -> dict:
 
     if not enabled:
         base_report["status"] = "disabled"
+        _write_report(base_report)
+        return base_report
+    if sweep_idle or cursor < sweep_floor:
+        completed = _mark_sweep_complete(state, sweep_ceiling, now)
+        _write_json(STATE_PATH, state)
+        base_report["status"] = "history-complete"
+        base_report["cursor_date"] = completed.isoformat()
+        base_report["complete_through_date"] = completed.isoformat()
+        base_report["sweep_mode"] = "idle"
         _write_report(base_report)
         return base_report
     if not key:
@@ -417,7 +483,7 @@ def run_backfill(now: datetime | None = None) -> dict:
                     state["cursor_date"] = cursor.isoformat()
                     state["offset"] = 0
                     state["pending"] = []
-                    if cursor < stop_date:
+                    if cursor < sweep_floor:
                         break
                     continue
 
@@ -430,7 +496,7 @@ def run_backfill(now: datetime | None = None) -> dict:
                     state["cursor_date"] = cursor.isoformat()
                     state["offset"] = offset
                     state["pending"] = []
-                    if cursor < stop_date:
+                    if cursor < sweep_floor:
                         break
                     continue
 
@@ -481,7 +547,7 @@ def run_backfill(now: datetime | None = None) -> dict:
                 state["page_has_more"] = True
                 state["page_size"] = 0
                 _write_json(STATE_PATH, state)
-                if cursor < stop_date:
+                if cursor < sweep_floor:
                     break
 
     except requests.HTTPError as exc:
@@ -489,10 +555,17 @@ def run_backfill(now: datetime | None = None) -> dict:
     except Exception as exc:
         fatal = type(exc).__name__
 
-    state["cursor_date"] = cursor.isoformat()
-    state["offset"] = offset
-    state["pending"] = pending
-    state["last_run_at"] = now.isoformat()
+    sweep_completed_now = cursor < sweep_floor and fatal is None
+    if sweep_completed_now:
+        complete_through = _mark_sweep_complete(state, sweep_ceiling, now)
+        cursor = complete_through
+        offset = 0
+        pending = []
+    else:
+        state["cursor_date"] = cursor.isoformat()
+        state["offset"] = offset
+        state["pending"] = pending
+        state["last_run_at"] = now.isoformat()
     # /usage is shared once per workflow by Central Quota Guard v8.3B.
     spent_run = api.calls
     state["backfill_calls_today"] = int(state.get("backfill_calls_today") or 0) + spent_run
@@ -500,8 +573,10 @@ def run_backfill(now: datetime | None = None) -> dict:
     _write_json(STATE_PATH, state)
 
     base_report.update({
-        "status": "rate-limit-stop" if api.rate_limited else ("safe-stop:" + fatal if fatal else "ok"),
+        "status": "rate-limit-stop" if api.rate_limited else ("safe-stop:" + fatal if fatal else ("history-complete" if sweep_completed_now else "ok")),
         "cursor_date": cursor.isoformat(),
+        "complete_through_date": (state.get("complete_through_date")),
+        "sweep_mode": "idle" if sweep_completed_now else base_report.get("sweep_mode"),
         "offset": offset,
         "pending": len(pending),
         "pages": pages,
