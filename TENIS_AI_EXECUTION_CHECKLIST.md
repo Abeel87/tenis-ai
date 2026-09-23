@@ -35,7 +35,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **ACTIVE BRANCH:** none for runtime/model work. This checkpoint-only documentation update is isolated from runtime changes.
 
-**ACTIVE PR:** none for runtime/model changes. PR #490 is merged and production-verified; this checkpoint-only documentation update records the result.
+**UI PRESENTATION CHECKPOINT (2026-09-23):** PR #492 merged as `53d62e8e505b867a69653a0c63dc2b17e2c82fa1`. Match browsing keeps quick filters and search visible; tour/surface/sort are expandable with active-choice summary. Cards show published pick, probability and match status first; forecast, form and serve metrics remain available in expandable details. No model, offer, PLAYABLE or iNeed$ calculation changes. PR UI & Project Health, Symphony 2, CodeQL and Delivery/security checks are GREEN. Public GitHub Pages served updated `app.js` and `style.css` containing these controls after merge.\n\n**ACTIVE PR:** none for runtime/model changes. PR #490 is merged and production-verified; this checkpoint-only documentation update records the result.
 
 **LAST VERIFIED MAIN:** `9df4c2c82f7bd7ef97d996a25048a4748cfbe446` (PR #490 merge). PR #490 Project Health, CodeQL, Delivery/security and LOGIC-01/02/03/04 audit workflows are GREEN. Production GC rerun #35833818115 attempt 2 checked out this SHA and completed preview and apply GREEN.
 
