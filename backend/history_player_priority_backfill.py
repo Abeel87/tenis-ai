@@ -92,8 +92,76 @@ def _current_player_keys(results: Any) -> set[str]:
     return out
 
 
+def _current_exact_targets(results: Any) -> tuple[dict[str, dict], set[str]]:
+    """Use only exact Live Tennis fixture player IDs; conflicting names fail closed."""
+    targets: dict[str, dict] = {}
+    conflicts: set[str] = set()
+    for row in results if isinstance(results, list) else []:
+        if not isinstance(row, dict):
+            continue
+        for side in ("p1", "p2"):
+            key = _key(row.get(side))
+            try:
+                player_id = int(row.get(f"{side}_id"))
+            except (TypeError, ValueError):
+                continue
+            if not key or player_id <= 0 or key in conflicts:
+                continue
+            existing = targets.get(key)
+            if existing is not None and existing["player_id"] != player_id:
+                conflicts.add(key)
+                targets.pop(key, None)
+                continue
+            targets[key] = {
+                "key": key,
+                "player": row.get(side) or key,
+                "player_id": player_id,
+            }
+    return targets, conflicts
+
+
+def _augment_index_with_current_exact(
+    index: dict,
+    exact_targets: dict[str, dict],
+    conflicts: set[str],
+) -> tuple[dict, set[str], int]:
+    source_players = index.get("players") if isinstance(index, dict) else {}
+    source_players = source_players if isinstance(source_players, dict) else {}
+    players = dict(source_players)
+    blocked = set(conflicts)
+    added = 0
+
+    for key, target in exact_targets.items():
+        if key in blocked:
+            continue
+        existing = players.get(key)
+        existing_id = None
+        if isinstance(existing, dict):
+            try:
+                existing_id = int(existing.get("player_id"))
+            except (TypeError, ValueError):
+                existing_id = None
+        if existing_id and existing_id != int(target["player_id"]):
+            blocked.add(key)
+            continue
+        if existing_id == int(target["player_id"]):
+            continue
+        players[key] = {
+            "player": target.get("player") or key,
+            "player_id": int(target["player_id"]),
+            "matches": [],
+            "identity_source": "current_fixture_exact",
+        }
+        added += 1
+
+    for key in blocked:
+        players.pop(key, None)
+    out = dict(index) if isinstance(index, dict) else {}
+    out["players"] = players
+    return out, blocked, added
+
 def _upcoming_player_times(results: Any, now: datetime) -> dict[str, datetime]:
-    """Scheduling only; existing exact indexed provider IDs remain the authority."""
+    """Scheduling only; identity comes from exact cache-index or current fixture provider IDs."""
     out: dict[str, datetime] = {}
     for row in results if isinstance(results, list) else []:
         if not isinstance(row, dict):
@@ -215,6 +283,10 @@ def run(now: datetime | None = None) -> dict:
     results = _read_json(RESULTS_PATH, [])
     current_keys = _current_player_keys(results)
     upcoming_times = _upcoming_player_times(results, now)
+    exact_targets, fixture_conflicts = _current_exact_targets(results)
+    priority_index, identity_conflicts, ephemeral_added = _augment_index_with_current_exact(
+        index, exact_targets, fixture_conflicts
+    )
 
     report = {
         "version": VERSION,
@@ -226,6 +298,12 @@ def run(now: datetime | None = None) -> dict:
         "current_target_players": 0,
         "upcoming_players": len(upcoming_times),
         "upcoming_players_missing_exact_index": sum(k not in (index.get("players") or {}) for k in upcoming_times),
+        "current_fixture_exact_targets": len(exact_targets),
+        "current_fixture_identity_conflicts": len(identity_conflicts),
+        "ephemeral_fixture_targets_added": ephemeral_added,
+        "upcoming_players_missing_exact_target": sum(
+            k not in (priority_index.get("players") or {}) for k in upcoming_times
+        ),
         "players_attempted": 0,
         "list_pages": 0,
         "downloaded_tapes": 0,
@@ -244,7 +322,7 @@ def run(now: datetime | None = None) -> dict:
         return report
 
     candidates = _priority_players(
-        index,
+        priority_index,
         current_keys,
         state,
         now,

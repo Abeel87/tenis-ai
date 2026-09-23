@@ -68,6 +68,38 @@ def test_current_player_keys_are_normalized_and_deduplicated():
     assert priority._current_player_keys(rows) == {"ilia simakin", "max purcell"}
 
 
+def test_current_exact_targets_use_fixture_ids_and_fail_closed_on_name_conflict():
+    rows = [
+        {"p1": "Unique Player", "p1_id": 101},
+        {"p1": "Same Name", "p1_id": 201},
+        {"p1": "Same  Name", "p1_id": 202},
+        {"p2": "No Id", "p2_id": None},
+    ]
+    targets, conflicts = priority._current_exact_targets(rows)
+    assert targets["unique player"]["player_id"] == 101
+    assert "same name" in conflicts
+    assert "same name" not in targets
+    assert "no id" not in targets
+
+
+def test_exact_fixture_targets_fill_missing_index_but_block_id_conflict(tmp_path):
+    index = {"players": {
+        "known": _entry(11, [1]),
+        "conflict": _entry(31, [2]),
+    }}
+    exact = {
+        "known": {"key": "known", "player": "Known", "player_id": 11},
+        "new": {"key": "new", "player": "New", "player_id": 21},
+        "conflict": {"key": "conflict", "player": "Conflict", "player_id": 32},
+    }
+    merged, blocked, added = priority._augment_index_with_current_exact(index, exact, set())
+    assert merged["players"]["known"]["player_id"] == 11
+    assert merged["players"]["new"]["player_id"] == 21
+    assert merged["players"]["new"]["identity_source"] == "current_fixture_exact"
+    assert "conflict" in blocked
+    assert "conflict" not in merged["players"]
+    assert added == 1
+
 def test_detail_quality_requires_point_tape_and_from_start():
     ok = {"tape": [{}] * 20, "meta": {"coverage": "from_start"}}
     assert priority._detail_quality_ok(ok)
