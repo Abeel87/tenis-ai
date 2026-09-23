@@ -25,31 +25,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**Ostatnia aktualizacja checkpointu:** 2026-09-22
+**Ostatnia aktualizacja checkpointu:** 2026-09-23
 
 **Active program:** Tenis AI logic/data/model reorganization.
 
-**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` remains in natural prospective accumulation after merged Phase-4 leakage-safe common-set audit. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged. Training Archive GC infrastructure is deployed and is waiting only for the existing 168h grace to mature.
+**ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` remains observation-only after the first post-midnight audit reached two leakage-safe complete-day folds for ALL and PLAYABLE; market breadth is still too thin for ranking/promotion. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged. Training Archive GC remains gated by the existing 168h grace.
 
 **SUBSTEP:** PR #476 (`Add grace-safe training archive GC apply`) merged as `f0c345723e4ba9ca13a1d1581d347a7ddc9b0baa`. The production Supabase migration is present as `training_archive_gc_apply`; Edge Function `training-archive-gc` v1 is ACTIVE with `verify_jwt=false` and matches the canonical source contract revision `sha256:35602d6b005e10d2fc56d566efc06c56b5fffed128a478ab9e4ffa80ca0ab331`. Manual `Training archive retention GC` run #2 / `35780215151` completed SUCCESS on `cfe4ed973f4c543c76b7396fed0ba5b5f86130af`.
 
 **ACTIVE BRANCH:** none for runtime/model work. This checkpoint-only documentation update is isolated from runtime changes.
 
-**ACTIVE PR:** none before this checkpoint-only documentation update; all implementation work through PR #476 is merged.
+**ACTIVE PR:** none before this checkpoint-only documentation update; implementation work through PR #480 is merged and production-verified.
 
-**LAST VERIFIED MAIN:** `453f40f8190da50094d3e3b145825af57ab5446c` (`data: refresh Superbet market context`). Latest visible main workflows on that SHA are GREEN; no open PRs were present at verification time.
+**LAST VERIFIED MAIN:** `4eed7d0a306b3603e880ccaf2664b4cd7d8754b4` (PR #480 merge). Post-merge Project Health #2844 is GREEN. Manual Runtime private delivery `core` run `35800379357` is GREEN for both publish and GC, and no open PRs were present at verification time.
 
-**INFRASTRUCTURE REPAIR CHECKPOINT:** PR #474 merged as `5d60cae8a9833ed3eab0804940282728dbdddd6b`, reducing staging-only runtime-private retention from one retired generation/layer to zero. Runtime-private storage previously fell from `533399438` B to `269128814` B with `missing_active_objects=0`. PR #475 merged as `a2c7393de043b0b2966e7cc6332f12ca7c6c1159`, adding fail-closed source/live Edge Function contract checks and bounded GitHub OIDC token reuse/retry for training-archive publication. PR #476 then added the grace-safe destructive executor without lowering grace or raising storage guards.
+**INFRASTRUCTURE REPAIR CHECKPOINT:** PR #474/#475/#476 remain complete. PR #478 (`60ee8d56...`) fixed iNeed$ rejected-decision snapshots without changing calculations and was production-proven 20/20. PR #479 (`8470fd4b...`) added bounded retry/cache for transient runtime publisher GitHub OIDC failures and was production-proven on `market`. PR #480 merged as `4eed7d0a306b3603e880ccaf2664b4cd7d8754b4`, bounded `runtime-data-publish` signed-URL generation in batches of 8 and raised the client Edge response timeout from 60s to 120s without timeout retry. Edge Function `runtime-data-publish` v3 is ACTIVE; production `core` run `35800379357` activated generation `f308e99e-cb0a-464e-8644-48b0243d683d` with `311/311` physical objects and GC GREEN.
 
 **TRAINING ARCHIVE CURRENT BLOCKER:** the 250,000,000 B archive hard cap remains intentionally unchanged. Production GC apply audits prove pre-grace safety: apply #1 and apply #2 both completed with `expired_manifests=0`, `planned_objects=0`, `deleted_objects=0`, `deleted_bytes=0`. Current retention observation has `grace_ready_now=0`; earliest eligible grace maturity is `2026-09-23T14:05:13.238755Z`. Current eligible candidate inventory is 1035 objects / `147406562` B. No destructive deletion is legal before grace maturity.
 
-**LOGIC-09 CURRENT EVIDENCE:** canonical `frontend/data/prediction_ledger_settlement_shadow.json` generated `2026-09-22T20:20:16.658290+00:00` has `rows=9642`, exact three-model common `950`, naturally settled common binary `291`, common void `75`, status `HAS_SETTLED_COMMON_ROWS`. Probability snapshots remain frozen and this remains descriptive SHADOW evidence only.
+**LOGIC-09 CURRENT EVIDENCE:** canonical source artifact `frontend/data/prediction_ledger_settlement_shadow.json` generated `2026-09-22T23:07:57.982774+00:00` has `rows=9854`, exact three-model common `960`, naturally settled common binary `308`, common void `75`, status `HAS_SETTLED_COMMON_ROWS`. Probability snapshots remain frozen and this remains descriptive SHADOW evidence only.
 
-**LOGIC-09 TEMPORAL EVIDENCE:** complete-day fold count remains `1` for both ALL and PLAYABLE. ALL fold 1 is train day `2026-09-20` -> test day `2026-09-21`: `train_rows=102`, `train_rows_excluded_late_settlement=15`, `test_rows=81`, exact train/test match-key overlap `0`. The UTC day `2026-09-22` is still incomplete in the artifact and cannot yet become a closed leakage-safe test fold.
+**LOGIC-09 TEMPORAL EVIDENCE:** deterministic read-only recomputation after UTC rollover (`as_of_utc_date=2026-09-23`) over the same frozen artifact rows gives `fold_count=2` for ALL and PLAYABLE. ALL fold 1: train `2026-09-20`, `train_rows=102`, late-settlement exclusions `15`, test `2026-09-21`, `test_rows=81`, overlap `0`. ALL fold 2: train through `2026-09-21`, `train_rows=190`, late exclusions `8`, test `2026-09-22`, `test_rows=110`, overlap `0`. PLAYABLE fold 1: train `48`, late exclusions `3`, test `10`, overlap `0`; fold 2: train `61`, late exclusions `0`, test `58`, overlap `0`. SYMPHONY_SELECTED and PLAYABLE_AND_SYMPHONY remain at `fold_count=1`.
 
 **LOGIC-09 SAFETY:** Current/CatBoost/TabPFN probability snapshots stay frozen. `retraining_enabled=false`, `recalibration_enabled=false`, `ranking_enabled=false`, `promotion_enabled=false`; zero changes to probability/weights/thresholds/training/PLAYABLE/Symphony/Player DNA/Neuron/iNeed$.
 
-**LOGIC-09 REMAINING GATE:** full DoD is NOT met. There is still only one closed complete-day temporal fold. Do not rank models, select a winner, change weights or migrate telemetry/runtime from this phase. Accumulate additional naturally settled exact prospective rows and full UTC days first.
+**LOGIC-09 REMAINING GATE:** full DoD is NOT met. The chronology gate now has multiple folds for ALL/PLAYABLE, but market breadth remains thin: ALL common binary is `set1_total=181`, `match_total=112`, `match_winner=5`, `set2_winner=4`, and only `n=2` each for `set1_winner`, `set3_winner`, `total_sets`; PLAYABLE is `set1_total=91`, `match_total=22`, `match_winner=5`, `set2_winner=1`. Do not rank models, select a winner, change weights or migrate telemetry/runtime. Continue natural accumulation and keep small-N explicit.
 
 **LOGIC-12 PARALLEL OBSERVATION / operator-evidence:** canonical `frontend/data/superbet_builder_terminal_evidence.json` generated `2026-09-22T20:29:18.033665+00:00` has 3 frozen candidates and still `settlement_result_available=false`, `payout_computed=false`, `result_inferred=false`. Events `15059409`, `15059413`, and `15063427` are all now `finished/finished`, but all remain `EVENT_FINISHED_NO_EXACT_RESULT_EVIDENCE`. Missing exact whole-ticket settlement stays `N/D`; inference from offer disappearance, event state or per-leg evidence remains forbidden.
 
@@ -59,7 +59,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 2. Until `2026-09-23T14:05:13.238755Z`, Training Archive GC must remain a factual no-delete state. Any deletion before that timestamp is a blocker.
 3. After the 168h grace matures, let/dispatch `Training archive retention GC`, verify latest-2 complete manifests, active pins and all staged/in-flight references remain intact, reconcile reclaimed bytes and object counts against `training_archive_gc_apply_audit`, then rerun Training Archive. Do not raise the 250 MB archive cap or shorten grace as a workaround.
 4. Let normal Update/settlement runs continue natural LOGIC-09 accumulation. Do not backfill or recompute historical probabilities for Phase-4 evidence.
-5. After UTC day `2026-09-22` is closed and labels have matured, regenerate/read the canonical LOGIC-09 artifact and verify whether an additional leakage-safe chronology fold exists. Train labels must satisfy `settled_at < test_day_start`; report factual per-market/per-population N only and do not rank/promote models.
+5. UTC day `2026-09-22` is now closed and the same frozen rows yield two leakage-safe folds for ALL/PLAYABLE. Let the next normal Update persist the post-midnight canonical artifact, then verify the persisted fold counts match the deterministic audit. Continue factual per-market/per-population N accumulation; do not rank/promote models while market breadth remains thin.
 6. Continue LOGIC-12 observation-only for the same 3 frozen operator-settlement identities. Missing exact whole-ticket terminal evidence remains `N/D`; never infer settlement or payout.
 7. Without separate authorization do not change model math/probability/thresholds/weights/training/Player DNA/Surface Elo/Symphony/Neuron/PLAYABLE/current V1 risk/iNeed$ calculations or SHADOW->PROD.
 
@@ -315,7 +315,7 @@ Cel: koniec z jednym prostym `model_ready` dla wszystkiego, bez nieautoryzowanej
 
 ## LOGIC-09 - Learning Integrity / Prediction Ledger
 
-Status: `[~] ACTIVE - phases 0-4 merged and post-merge production-proven; natural common-set evidence matured to binary n=274; one closed complete-day temporal fold exists; broader multi-day/market evidence still accumulating`
+Status: `[~] ACTIVE - phases 0-4 merged and production-proven; natural common-set evidence is binary n=308; two closed complete-day folds exist for ALL/PLAYABLE, while market breadth remains too thin for robust ranking/promotion`
 
 Goal: compare frozen prospective model outputs on the same exact population without selection leakage.
 
@@ -324,15 +324,16 @@ Goal: compare frozen prospective model outputs on the same exact population with
 - [x] Phase-1 immutable pre-selection prediction ledger for all supported prospective candidates (PR #416).
 - [x] Phase-2 exact PLAYABLE/Symphony population evidence with strict chronology; missing evidence = `N/D` (PR #418/#419).
 - [x] Phase-3 exact terminal settlement common-set owner using existing canonical terminal/scorer semantics; zero network, zero source-ledger mutation (PR #420).
-- [x] Natural evidence maturity confirmed and post-merge refreshed on 2026-09-22: `rows=8927`, exact common `893`, common binary settled `274`, common void `70`, status `HAS_SETTLED_COMMON_ROWS`; PLAYABLE common binary `105`. Zero retroactive prediction/backfill/recompute.
+- [x] Natural evidence maturity refreshed through the 2026-09-22 source artifact: `rows=9854`, exact common `960`, common binary settled `308`, common void `75`, status `HAS_SETTLED_COMMON_ROWS`; PLAYABLE common binary `119`. Zero retroactive prediction/backfill/recompute.
 - [x] Phase-4 PR #470 merged as `361e279e83ebb25a2986374906da215dd350ccaa`: descriptive Brier/log-loss/accuracy + fixed 10-bin calibration on the identical common sample, per population and per market; no ranking/winner/promotion. Post-merge Update #841 and generated-artifact guard are GREEN.
-- [x] Leakage-safe chronological audit implemented and production-proven: complete UTC days only, expanding prior-day train -> next complete-day test; train labels require `settled_at < test_day_start`; current evidence has one fold (2026-09-20 -> 2026-09-21), train 102 after excluding 15 late labels, test 81, match-key overlap 0.
-- [~] Market evidence is not broad yet: `set1_total=161`, `match_total=98`, remaining markets `n=2..5`; keep small-N explicit.
-- [ ] Accumulate additional full UTC days / natural exact settlements for multiple temporal folds and broader market coverage.
+- [x] Leakage-safe chronological audit implemented and production-proven: complete UTC days only, expanding prior-day train -> next complete-day test; train labels require `settled_at < test_day_start`. Post-midnight deterministic audit has two folds for ALL/PLAYABLE with zero train/test match-key overlap; fold 2 tests `2026-09-22` with ALL `test_rows=110` and PLAYABLE `test_rows=58`.
+- [~] Market evidence is not broad yet: ALL common binary `set1_total=181`, `match_total=112`, `match_winner=5`, `set2_winner=4`, with `set1_winner`/`set3_winner`/`total_sets` at `n=2`; PLAYABLE is concentrated in `set1_total=91` and `match_total=22`. Keep small-N explicit.
+- [x] Accumulate enough full UTC days / natural exact settlements to establish multiple temporal folds for ALL and PLAYABLE (2 folds as of UTC 2026-09-23 rollover).
+- [ ] Continue natural exact settlement accumulation for broader market coverage and additional periods/populations.
 - [ ] Audit/migrate telemetry only after broader evidence and separate authorization.
 - [ ] Do not change ensemble weights or SHADOW->PROD; Phase-4 defines no minimum promotion threshold and no model winner.
 
-**Definition of Done:** infrastructure and factual common-set metrics now exist, but full LOGIC-09 DoD is NOT met: only one closed complete-day temporal fold exists and market breadth outside `set1_total`/`match_total` is too thin for robust multi-period review. No ranking or promotion follows from current Phase-4 evidence.
+**Definition of Done:** infrastructure, factual common-set metrics and multiple complete-day folds now exist for ALL/PLAYABLE, but full LOGIC-09 DoD is NOT met because market breadth outside `set1_total`/`match_total` remains too thin and Symphony-selected chronology still has only one fold. No ranking or promotion follows from current Phase-4 evidence.
 
 ---
 
