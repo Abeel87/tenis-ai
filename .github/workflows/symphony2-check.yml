@@ -10,6 +10,7 @@ on:
       - 'backend/apply_joint_to_results.py'
       - 'scripts/compact_frontend_data.py'
       - 'frontend/app.js'
+      - 'frontend/index.html'
       - 'frontend/presentation-data.js'
       - 'frontend/style.css'
       - 'frontend/playable-ui.js'
@@ -52,6 +53,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           index = Path('frontend/index.html').read_text(encoding='utf-8')
           forbidden_ui = [
@@ -62,7 +64,7 @@ jobs:
           for token in forbidden_ui:
               assert token not in index, token
           assert 'href="#symphony"' in index
-          assert '<script src="app.js"></script>' in index
+          assert len(re.findall(r'<script src="app\\.js(?:\\?v=[A-Za-z0-9._-]+)?"></script>', index)) == 1
           assert 'style.css' in index
           assert 'symphony2.css' not in index
 
