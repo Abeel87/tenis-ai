@@ -326,7 +326,7 @@ def publisher_call(body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         method="POST",
         headers={"Authorization": f"Bearer {oidc_token()}"},
         body=body,
-        timeout=60,
+        timeout=120,
     )
     if not isinstance(data, dict):
         data = {"detail": data}
