@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ACTIVE = {'queued', 'in_progress', 'waiting', 'requested', 'pending'}
-STALE_MINUTES = 55
+STALE_MINUTES = 40
 FULL_GRACE_MINUTES = 5
 REFRESH = 'superbet-market-refresh.yml'
 FULL = 'update-and-pages.yml'
@@ -41,8 +41,7 @@ def completed_refresh(run, jobs, now, after=None):
     """A successful NO-OP is not evidence of newly refreshed data."""
     finished = timestamp(run.get('updated_at'))
     if (not main_runs([run]) or run.get('status') != 'completed'
-            or run.get('conclusion') != 'success' or not finished
-            or not 0 <= (now - finished).total_seconds() < STALE_MINUTES * 60):
+            or run.get('conclusion') != 'success' or not finished):
         return False
     for job in jobs:
         steps = {s['name']: s for s in job.get('steps', [])}
@@ -50,6 +49,7 @@ def completed_refresh(run, jobs, now, after=None):
         started = timestamp(work.get('started_at'))
         if (job.get('conclusion') == 'success' and work.get('conclusion') == 'success'
                 and publish.get('conclusion') == 'success' and started
+                and 0 <= (now - started).total_seconds() < STALE_MINUTES * 60
                 and (after is None or started >= after)):
             return True
     return False
