@@ -22,7 +22,7 @@ permissions:
 
 env:
   TARGET_WORKFLOW: superbet-market-refresh.yml
-  STALE_AFTER_MINUTES: '55'
+  STALE_AFTER_MINUTES: '40'
 
 concurrency:
   group: superbet-market-refresh-watchdog
@@ -45,7 +45,7 @@ jobs:
           assert "cron: '20,50 * * * *'" in workflow
           assert 'push:' in workflow
           assert "TARGET_WORKFLOW: superbet-market-refresh.yml" in workflow
-          assert "STALE_AFTER_MINUTES: '55'" in workflow
+          assert "STALE_AFTER_MINUTES: '40'" in workflow
           assert "github.event_name != 'pull_request'" in workflow
           assert 'actions: write' in workflow
           assert 'gh workflow run "$TARGET_WORKFLOW"' in workflow

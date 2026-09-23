@@ -27,6 +27,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **Ostatnia aktualizacja checkpointu:** 2026-09-23
 
+**PLAYABLE refresh-gap diagnosis (2026-09-23 20:10 CEST screenshot):** Published `main` snapshot `b8c2b79` has 204 matches and 31 backend final PLAYABLE matches. All 31 use operator context timestamp `2026-09-23T16:36:04.107281Z`, while Symphony was published at `17:17:37Z`. At screenshot time `18:10Z`, the operator context is ~94 minutes old and exceeds the UI's 90-minute safety bound. Isolated local branch `fix/playable-refresh-gap` changes the Superbet orchestration guard to count freshness from the operator work step start instead of workflow completion and uses a 40-minute guard horizon. Existing start-time/operator-verification safety remains unchanged. Local targeted tests: 28/28 GREEN. No push, PR, CI, production deployment, or real bet. NEXT: review actual Actions run durations and quota, publish branch only after remote-write authorization, pass full CI, then monitor source timestamp and UI PLAYABLE count around consecutive refresh boundaries.
+
 **Active program:** Tenis AI logic/data/model reorganization.
 
 **ACTIVE LOGIC/TASK:** `LOGIC-09 - Learning Integrity / Prediction Ledger` remains observation-only after the first post-midnight audit reached two leakage-safe complete-day folds for ALL and PLAYABLE; market breadth is still too thin for ranking/promotion. `LOGIC-12 - iNeed$ Bet Builder Redesign SHADOW` remains a parallel observation-only track with blocker `BLOCKED_BY_OPERATOR_SETTLEMENT_EVIDENCE` unchanged. Training Archive GC remains gated by the existing 168h grace.

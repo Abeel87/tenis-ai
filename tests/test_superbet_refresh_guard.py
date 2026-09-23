@@ -47,8 +47,16 @@ def test_unsuccessful_full_does_not_block_stale_fallback(conclusion):
 
 def test_normal_stale_fallback_and_missing_history():
     assert guard.watchdog_block([], [], NOW) is None
-    assert guard.watchdog_block([run(minutes=55)], [], NOW) is None
-    assert not guard.completed_refresh(run(minutes=55), jobs(56), NOW)
+    assert guard.watchdog_block([run(minutes=40)], [], NOW) is None
+    assert not guard.completed_refresh(run(minutes=40), jobs(41), NOW)
+
+
+def test_long_refresh_completion_does_not_extend_operator_evidence_lifetime():
+    # Work began 94 minutes ago; publication finished 53 minutes ago.
+    # The old completion-based gate would skip the next hourly refresh,
+    # although the UI's 90-minute operator evidence window has already ended.
+    assert not guard.completed_refresh(run(minutes=53), jobs(start_minutes=94), NOW)
+    assert guard.completed_refresh(run(minutes=1), jobs(start_minutes=39), NOW)
 
 
 def test_fresh_successful_refresh_after_full_suppresses_duplicate():
