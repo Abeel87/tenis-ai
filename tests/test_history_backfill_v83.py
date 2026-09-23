@@ -49,3 +49,46 @@ def test_backfill_interval_is_respected():
 def test_stop_date_never_before_pbp_era():
     assert DEFAULT_STOP_DATE == date(2023, 1, 1)
     assert _parse_date("bad", DEFAULT_STOP_DATE) == DEFAULT_STOP_DATE
+
+
+def test_completed_full_sweep_transitions_to_incremental_day_only():
+    now = datetime(2026, 9, 23, 5, tzinfo=timezone.utc)
+    state = {"cursor_date": "2023-08-12"}
+    cursor, floor, ceiling, complete_through, idle = backfill._prepare_sweep(
+        state, now, DEFAULT_STOP_DATE
+    )
+    assert cursor == date(2023, 8, 12)
+    assert floor == DEFAULT_STOP_DATE
+    assert ceiling == date(2026, 9, 22)
+    assert complete_through is None
+    assert idle is False
+
+    completed = backfill._mark_sweep_complete(state, ceiling, now)
+    assert completed == date(2026, 9, 22)
+    cursor, floor, ceiling, complete_through, idle = backfill._prepare_sweep(
+        state, now, DEFAULT_STOP_DATE
+    )
+    assert idle is True
+    assert complete_through == date(2026, 9, 22)
+
+    next_day = datetime(2026, 9, 24, 5, tzinfo=timezone.utc)
+    cursor, floor, ceiling, complete_through, idle = backfill._prepare_sweep(
+        state, next_day, DEFAULT_STOP_DATE
+    )
+    assert idle is False
+    assert cursor == date(2026, 9, 23)
+    assert floor == date(2026, 9, 23)
+    assert ceiling == date(2026, 9, 23)
+
+
+def test_force_full_sweep_restarts_from_newest_without_losing_high_water():
+    now = datetime(2026, 9, 24, 5, tzinfo=timezone.utc)
+    state = {"complete_through_date": "2026-09-22", "cursor_date": "2026-09-22"}
+    cursor, floor, ceiling, complete_through, idle = backfill._prepare_sweep(
+        state, now, DEFAULT_STOP_DATE, force_full=True
+    )
+    assert idle is False
+    assert cursor == date(2026, 9, 23)
+    assert floor == DEFAULT_STOP_DATE
+    assert ceiling == date(2026, 9, 23)
+    assert complete_through == date(2026, 9, 22)
