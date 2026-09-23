@@ -53,7 +53,7 @@ jobs:
       - name: Test model
         run: python -m pytest -q
       - name: Restore tennis history + PBP cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/cache
           key: tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-${{ github.run_id }}
@@ -302,7 +302,7 @@ jobs:
         # Raw/API cache and canonical quota state must survive later guard failures.
         # Published frontend/data is still committed only after every guard passes.
         if: ${{ always() && hashFiles('data/cache/*.csv.gz') != '' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: data/cache
           key: tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-${{ github.run_id }}
