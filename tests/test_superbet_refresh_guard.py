@@ -104,6 +104,7 @@ def test_workflow_gates_all_expensive_steps_and_retains_triggers():
     assert "if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'" in dynamic_step
     assert "python backend/superbet_builder_dynamic_quotes.py refresh" in dynamic_step
     assert "python -m py_compile backend/superbet_builder_dynamic_quotes.py" in refresh
+    assert "'frontend/data/player_dna_current_dynamic_shadow.json'" in watchdog
     assert 'superbet_refresh_guard.py watchdog' in watchdog
     assert 'gh workflow run "$TARGET_WORKFLOW"' in watchdog
     assert "if: steps.inspect.outputs.dispatch == 'true'" in watchdog
@@ -115,6 +116,10 @@ def test_cli_noop_and_stale_fallback(monkeypatch, tmp_path):
     monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
     monkeypatch.setattr(guard, 'runs', lambda workflow: [])
     monkeypatch.setattr('sys.argv', ['guard', 'watchdog'])
+    guard.main()
+    assert 'dispatch=true' in (tmp_path / 'output').read_text()
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'push')
+    (tmp_path / 'output').write_text('')
     guard.main()
     assert 'dispatch=true' in (tmp_path / 'output').read_text()
     monkeypatch.setenv('GITHUB_EVENT_NAME', 'pull_request')
