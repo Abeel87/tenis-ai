@@ -10,6 +10,8 @@ on:
       - '.github/workflows/superbet-market-watchdog.yml'
       - '.github/scripts/superbet_refresh_guard.py'
       - 'tests/test_superbet_refresh_guard.py'
+      # Independent data publication can wake the watchdog when GitHub cron is delayed.
+      - 'frontend/data/player_dna_current_dynamic_shadow.json'
   pull_request:
     branches: [main]
     paths:
