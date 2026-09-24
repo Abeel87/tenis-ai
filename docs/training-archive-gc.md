@@ -13,6 +13,12 @@ This phase is the destructive executor for the already-existing seven-day traini
 
 The scheduled GC workflow runs four times per day and is also manually dispatchable. Every run executes preview before apply.
 
+## Failed publication lifecycle
+
+A publisher failure explicitly changes its own authenticated `staged` manifest to `abandoned` in one database transaction and removes only that incomplete manifest's entry rows. A bounded GC reaper applies the same transition to `staged` manifests older than 24 hours, covering interrupted runners that could not call the publisher cleanup action.
+
+Abandonment never removes archive objects or Storage rows. It only releases incomplete references, after which the normal observer starts a new 168-hour continuous-eligibility window. Latest-two retention, active pins, exact Storage-size verification and the audited GC apply remain mandatory.
+
 ## Manifest expiry
 
 GC never hard-deletes a retained manifest. A `complete` manifest may become `expired` only when every object that would otherwise become unreferenced has completed grace and still exists in Storage at the exact recorded size. The manifest row remains as durable provenance; its entry rows are removed only after that gate passes.

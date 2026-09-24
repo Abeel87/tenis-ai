@@ -155,6 +155,25 @@ async function ownedManifest(supabase: any, auth: AuthContext, manifestId: strin
   return data;
 }
 
+async function abandon(supabase: any, auth: AuthContext, body: any) {
+  const manifestId = String(body.manifest_id || "");
+  const manifest = await ownedManifest(supabase, auth, manifestId);
+  if (manifest.status === "complete") return response({ error: "A complete manifest cannot be abandoned" }, 409);
+  if (manifest.status === "abandoned") {
+    return response({ ok: true, action: "abandon", manifest_id: manifestId, reused: true });
+  }
+  if (manifest.status !== "staged") return response({ error: "Manifest is not staged" }, 409);
+
+  const { data, error } = await supabase.rpc("training_archive_abandon_manifest", {
+    p_manifest_id: manifestId,
+    p_archive_run_id: auth.runId,
+    p_archive_run_attempt: auth.runAttempt,
+    p_source_sha: auth.sha,
+  });
+  if (error) throw error;
+  return response({ ok: true, action: "abandon", manifest_id: manifestId, reused: data !== true });
+}
+
 async function start(supabase: any, auth: AuthContext, body: any) {
   const schemaVersion = positiveInteger(body.inventory_schema_version, "inventory_schema_version");
   const expectedFiles = positiveInteger(body.expected_files, "expected_files");
@@ -368,6 +387,7 @@ Deno.serve(async (req: Request) => {
     if (body.action === "prepare_batch") return await prepareBatch(supabase, auth, body);
     if (body.action === "confirm_batch") return await confirmBatch(supabase, auth, body);
     if (body.action === "complete") return await complete(supabase, auth, body);
+    if (body.action === "abandon") return await abandon(supabase, auth, body);
     return response({ error: "Unknown action" }, 400);
   } catch (err) {
     const detail = safeError(err);

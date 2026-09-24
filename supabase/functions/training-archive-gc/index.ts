@@ -3,7 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from "npm:jose@6.2.12";
 
 const BUCKET = "tenis-ai-training-archive-private";
 const AUDIENCE = "tenis-ai-training-archive-gc";
-const CONTRACT_REVISION = "sha256:35602d6b005e10d2fc56d566efc06c56b5fffed128a478ab9e4ffa80ca0ab331";
+const CONTRACT_REVISION = "sha256:92b6049dc3586120bbb2d4e215ef94ebcb0362539e16b7aba24c7bb18e4f1ac8";
 const REPOSITORY = "Abeel87/tenis-ai";
 const REPOSITORY_ID = "1339352577";
 const REPOSITORY_OWNER_ID = "198365428";
@@ -16,6 +16,7 @@ const ALLOWED_EVENTS = new Set(["schedule", "workflow_dispatch"]);
 const KEEP_LATEST = 2;
 const GRACE_HOURS = 168;
 const BATCH_LIMIT = 100;
+const STAGED_STALE_HOURS = 24;
 const MAX_ERROR_MESSAGE = 400;
 
 type SafeError = { code: string | null; message: string };
@@ -83,6 +84,9 @@ async function rpcOne(supabase: any, name: string, args: Record<string, unknown>
 }
 
 async function preview(supabase: any) {
+  const abandoned = await rpcOne(supabase, "training_archive_abandon_stale_manifests", {
+    p_stale_hours: STAGED_STALE_HOURS,
+  });
   const row = await rpcOne(supabase, "training_archive_retention_observe", {
     p_keep_latest: KEEP_LATEST,
     p_grace_hours: GRACE_HOURS,
@@ -91,12 +95,16 @@ async function preview(supabase: any) {
     ok: true,
     contract_revision: CONTRACT_REVISION,
     action: "preview",
-    policy: { keep_latest: KEEP_LATEST, grace_hours: GRACE_HOURS },
+    policy: { keep_latest: KEEP_LATEST, grace_hours: GRACE_HOURS, staged_stale_hours: STAGED_STALE_HOURS },
+    abandoned_staged_manifests: Number(abandoned || 0),
     observation: row,
   };
 }
 
 async function apply(supabase: any, claims: Claims) {
+  const abandoned = await rpcOne(supabase, "training_archive_abandon_stale_manifests", {
+    p_stale_hours: STAGED_STALE_HOURS,
+  });
   const prepared = await rpcOne(supabase, "training_archive_gc_prepare", {
     p_archive_run_id: claims.runId,
     p_archive_run_attempt: claims.runAttempt,
@@ -173,7 +181,8 @@ async function apply(supabase: any, claims: Claims) {
     ok: finalStatus === "complete" || finalStatus === "noop",
     contract_revision: CONTRACT_REVISION,
     action: "apply",
-    policy: { keep_latest: KEEP_LATEST, grace_hours: GRACE_HOURS, batch_limit: BATCH_LIMIT },
+    policy: { keep_latest: KEEP_LATEST, grace_hours: GRACE_HOURS, batch_limit: BATCH_LIMIT, staged_stale_hours: STAGED_STALE_HOURS },
+    abandoned_staged_manifests: Number(abandoned || 0),
     audit,
   };
 }
