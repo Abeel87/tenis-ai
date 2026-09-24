@@ -403,6 +403,8 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 **Status:** SHADOW / experimental risk layer. Exact builder quote, whole-composition economics/ticket production, shared exposure, atomic reservation writer and guarded OIDC persistence caller are implemented. The bounded Phase-3 dynamic quote artifact producer for exact final compositions is delivered by eligible non-PR hourly Superbet refresh runs, but it is still not consumed by iNeed$/runtime. Production reservation remains disabled.
 
+**V1 new-evaluation market scope (2026-09-24):** `backend/ineed_scope.py` admits only exact final PLAYABLE `match_winner` signals with a nonempty selection. The database's new-row SHADOW placement trigger mirrors that scope and checks snapshot market/selection identity. Existing first-set/game bets and their settlement remain untouched. This changes neither model probability nor `ineed_money.py` EV/tax/risk/stake mathematics. The separate Bet Builder composition SHADOW path retains its former first-set/over/after-six candidate scope under an explicit independent economic-unit selector; builder reservation and settlement remain disabled. Exact fresh Direct odds are still mandatory; lack of a matching operator offer is `MARKET_NOT_AVAILABLE`, not fabricated value.
+
 **Responsibility:** bankroll/risk/EV/stake after PLAYABLE. For Bet Builder, the economic unit is the whole final composition, never an individual leg.
 
 **Current SHADOW contract:** final Symphony composition -> upstream joint probability -> exact verified Superbet combined odd -> whole-builder EV/risk/stake -> immutable `builder-ticket:<composition_id>` -> guarded OIDC reservation boundary.

@@ -56,7 +56,7 @@ def build_builder_shadow_runtime(state: dict, *, now: datetime | None = None) ->
     cfg = experiment.get("config") or read(CONFIG, {})
 
     result_rows = results if isinstance(results, list) else []
-    scoped_results, scope = filter_results(result_rows)
+    scoped_results, scope = filter_results(result_rows, economic_unit="BET_BUILDER_COMPOSITION")
     direct_feed = direct if isinstance(direct, dict) else {}
     artifact = quote_artifact if isinstance(quote_artifact, dict) else {}
 
