@@ -267,25 +267,34 @@ def publish(inventory_path: Path, cache_root: Path) -> dict[str, Any]:
         return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": 0, "reused": True}
 
     uploaded = 0
-    for batch in batches(rows):
-        prepared = publisher_call({"action": "prepare_batch", "manifest_id": manifest_id, "files": batch})
-        uploads = prepared.get("uploads") or []
-        for item in uploads:
-            sha = str(item.get("sha256") or "")
-            source = by_sha.get(sha)
-            signed_url = item.get("signed_url")
-            if source is None or not isinstance(signed_url, str) or not signed_url:
-                raise ArchivePublishError("publisher returned an invalid upload manifest")
-            upload_signed(signed_url, source)
-            uploaded += 1
+    try:
+        for batch in batches(rows):
+            prepared = publisher_call({"action": "prepare_batch", "manifest_id": manifest_id, "files": batch})
+            uploads = prepared.get("uploads") or []
+            for item in uploads:
+                sha = str(item.get("sha256") or "")
+                source = by_sha.get(sha)
+                signed_url = item.get("signed_url")
+                if source is None or not isinstance(signed_url, str) or not signed_url:
+                    raise ArchivePublishError("publisher returned an invalid upload manifest")
+                upload_signed(signed_url, source)
+                uploaded += 1
 
-        unique_shas = list(dict.fromkeys(str(row["sha256"]) for row in batch))
-        publisher_call({"action": "confirm_batch", "manifest_id": manifest_id, "sha256": unique_shas})
+            unique_shas = list(dict.fromkeys(str(row["sha256"]) for row in batch))
+            publisher_call({"action": "confirm_batch", "manifest_id": manifest_id, "sha256": unique_shas})
 
-    completed = publisher_call({"action": "complete", "manifest_id": manifest_id})
-    if completed.get("ok") is not True:
-        raise ArchivePublishError("archive manifest did not complete")
-    return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": uploaded, "reused": False}
+        completed = publisher_call({"action": "complete", "manifest_id": manifest_id})
+        if completed.get("ok") is not True:
+            raise ArchivePublishError("archive manifest did not complete")
+        return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": uploaded, "reused": False}
+    except (ArchivePublishError, OSError, ValueError):
+        try:
+            publisher_call({"action": "abandon", "manifest_id": manifest_id})
+        except (ArchivePublishError, OSError, ValueError):
+            # A later GC run reaps staged manifests only after the bounded
+            # stale window. Never hide the original publication failure.
+            pass
+        raise
 
 
 def main() -> int:

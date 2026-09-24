@@ -13,7 +13,7 @@ import urllib.request
 
 AUDIENCE = "tenis-ai-training-archive-gc"
 GC_URL = "https://kplcfqmcsukiqfbgvxcm.supabase.co/functions/v1/training-archive-gc"
-EXPECTED_CONTRACT_REVISION = "sha256:35602d6b005e10d2fc56d566efc06c56b5fffed128a478ab9e4ffa80ca0ab331"
+EXPECTED_CONTRACT_REVISION = "sha256:92b6049dc3586120bbb2d4e215ef94ebcb0362539e16b7aba24c7bb18e4f1ac8"
 
 
 class GCError(RuntimeError):
