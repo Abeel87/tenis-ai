@@ -21,7 +21,7 @@ function nav(){
 async function load(){
   const c=A().client;
   const {data:exp,error}=await c.from('ineed_experiments').select('*').eq('status','ACTIVE').maybeSingle();if(error)throw error;
-  if(!exp)return{exp:null,signals:[],bets:[],ledger:[],health:null,risk:null};
+  if(!exp)return{exp:null,signals:[],bets:[],ledger:[],health:null,risk:null,decisions:null,decisionsComplete:false};
   const [s,b,l,h,r]=await Promise.all([
     c.from('ineed_signals').select('*').eq('experiment_id',exp.id).order('updated_at',{ascending:false}).limit(80),
     c.from('ineed_shadow_bets').select('*').eq('experiment_id',exp.id).order('placed_at',{ascending:false}).limit(80),
@@ -36,7 +36,18 @@ async function load(){
     if(!['PGRST202','42883'].includes(String(r.error.code||'')))throw r.error;
     risk={source:'V1_FALLBACK_SCHEMA_NOT_DEPLOYED',total_exposure:v1Open.reduce((a,x)=>a+n(x.stake),0),open_units:v1Open.length,v1_open_units:v1Open.length,builder_open_units:0};
   }else risk={source:String(r.data?.source||'SHARED_DB'),total_exposure:n(r.data?.total_exposure),open_units:n(r.data?.open_units),v1_open_units:n(r.data?.v1_open_units),builder_open_units:n(r.data?.builder_open_units)};
-  return{exp,signals:s.data||[],bets,ledger:l.data||[],health:h.data||null,risk};
+  const last=Date.parse(h.data?.last_sync_at||'');
+  let decisions=null,decisionsComplete=false;
+  if(Number.isFinite(last)){
+    const result=await c.from('ineed_decision_snapshots')
+      .select('id,signal_id,evaluated_at,status,reason_code,odds,snapshot',{count:'exact'})
+      .eq('experiment_id',exp.id)
+      .gte('evaluated_at',new Date(last-60000).toISOString())
+      .lte('evaluated_at',new Date(last).toISOString())
+      .order('evaluated_at',{ascending:false}).limit(500);
+    if(!result.error){decisions=result.data||[];decisionsComplete=result.count===decisions.length;}
+  }
+  return{exp,signals:s.data||[],bets,ledger:l.data||[],health:h.data||null,risk,decisions,decisionsComplete};
 }
 function chart(ledger,start){
   const pts=[{v:n(start)},...ledger.map(x=>({v:n(x.bankroll_after)}))];
@@ -55,14 +66,14 @@ function historyGroup(title,rows,card){
 }
 function compactBet(b){const s=b.placement_snapshot||{},status=String(b.status||''),profit=b.net_profit==null?'P/L: N/D':'P/L: '+money(b.net_profit);return `<details class="ineed-entry"><summary><span class="ineed-pill ${esc(status.toLowerCase())}">${esc(status)}</span><span class="ineed-entry-match">${esc(s.p1||b.match_id)} — ${esc(s.p2||'')}</span><span class="ineed-entry-meta">${esc(profit)} · ${dt(b.placed_at)}</span></summary>${betCard(b)}</details>`}
 function compactSignal(s){const snap=s.current_snapshot||{},status=String(s.status||'');return `<details class="ineed-entry"><summary><span class="ineed-pill ${esc(status.toLowerCase())}">${esc(status)}</span><span class="ineed-entry-match">${esc(snap.p1||s.match_id)} — ${esc(snap.p2||'')}</span><span class="ineed-entry-meta">${esc(s.reason_code||'Powód: N/D')} · ${dt(s.updated_at)}</span></summary>${signalCard(s)}</details>`}
-const rejectionReason={LOW_EV:'EV po podatku poniżej progu',LOW_EDGE:'Przewaga poniżej progu',ODDS_OUT_OF_RANGE:'Kurs poza zakresem',MARKET_NOT_AVAILABLE:'Brak dokładnej oferty Superbet',STALE_ODDS:'Kurs nieaktualny',INSUFFICIENT_DATA:'Za mało danych',STAKE_BELOW_MINIMUM:'Stawka poniżej minimum',TOTAL_EXPOSURE_LIMIT:'Limit łącznej ekspozycji'};
-function currentEvaluation(rows,health){
-  const last=Date.parse(health?.last_sync_at||'');
-  if(!Number.isFinite(last))return{rows:[],reasons:[],evaluated:null};
-  const recent=rows.filter(x=>{const t=Date.parse(x.updated_at||'');return Number.isFinite(t)&&t>=last-60000});
-  const reasons=Object.entries(recent.reduce((acc,s)=>{if(s.reason_code)acc[s.reason_code]=(acc[s.reason_code]||0)+1;return acc},{})).sort((a,b)=>b[1]-a[1]);
+const rejectionReason={LOW_EV:'EV po podatku poniżej progu',LOW_EDGE:'Przewaga poniżej progu',ODDS_OUT_OF_RANGE:'Kurs poza zakresem',MARKET_NOT_AVAILABLE:'Brak dokładnej oferty Superbet',STALE_ODDS:'Kurs nieaktualny',INSUFFICIENT_DATA:'Za mało danych',STAKE_BELOW_MINIMUM:'Stawka poniżej minimum',TOTAL_EXPOSURE_LIMIT:'Limit łącznej ekspozycji',CORRELATION_LIMIT:'Limit powiązanych sygnałów'};
+function compactDecision(d){const snap=d.snapshot||{},reason=rejectionReason[d.reason_code]||d.reason_code||'Powód: N/D';return `<details class="ineed-entry"><summary><span class="ineed-pill rejected">${esc(d.status)}</span><span class="ineed-entry-match">${esc(snap.p1||snap.match_id||'Mecz N/D')} — ${esc(snap.p2||'')}</span><span class="ineed-entry-meta">${esc(reason)} · ${dt(d.evaluated_at)}</span></summary><div class="ineed-card ineed-muted">${esc(snap.market||'Rynek N/D')} · ${esc(snap.selection||snap.pick||'—')} · kurs ${esc(d.odds??'—')} · NET EV ${pct(snap.expected_value_net)}</div></details>`}
+function currentEvaluation(rows,health,complete){
   const reported=Number(health?.detail?.evaluations);
-  return{rows:recent,reasons,evaluated:Number.isFinite(reported)?reported:recent.length};
+  const valid=Array.isArray(rows)&&complete&&Number.isInteger(reported)&&reported===rows.length;
+  if(!valid)return{rows:[],reasons:[],evaluated:Number.isInteger(reported)?reported:null,complete:false};
+  const reasons=Object.entries(rows.reduce((acc,s)=>{if(s.reason_code)acc[s.reason_code]=(acc[s.reason_code]||0)+1;return acc},{})).sort((a,b)=>b[1]-a[1]);
+  return{rows,reasons,evaluated:reported,complete:true};
 }
 function milestones(equity){const marks=[250,300,500,1000,2500,5000,10000,25000,100000,500000,1000000],next=marks.find(x=>x>equity)||1000000,p=Math.min(100,equity/next*100);return`<div class="ineed-card"><span class="ineed-label">ROAD TO 1,000,000</span><strong>${money(equity)}</strong><div class="ineed-muted">Następny kamień: ${money(next)}</div><div class="ineed-bar"><i style="width:${p}%"></i></div></div>`}
 async function newExperiment(){if(!admin())return;if(!confirm('Zamknąć obecny eksperyment i rozpocząć nowy? Otwarte zakłady blokują reset.'))return;const{error}=await A().client.rpc('ineed_admin_start_experiment',{next_name:null,config_override:null});if(error){alert(error.message);return}alert('Nowy eksperyment uruchomiony.');render()}
@@ -78,13 +89,13 @@ async function render(){
     const available=d.ledger.length?n(d.ledger[d.ledger.length-1].bankroll_after):n(d.exp.starting_bankroll),exposure=n(d.risk?.total_exposure),openUnits=Math.max(0,Math.trunc(n(d.risk?.open_units))),equity=available+exposure;
     const peak=Math.max(n(d.exp.starting_bankroll),equity,...settled.map(x=>n(x.bankroll_after))),dd=peak?Math.max(0,(peak-equity)/peak):0,pl=equity-n(d.exp.starting_bankroll),roi=n(d.exp.starting_bankroll)?pl/n(d.exp.starting_bankroll):0;
     const today=dayKey(Date.now()),todaySignals=d.signals.filter(x=>dayKey(x.first_seen_at)===today).length;
-    const evaluation=currentEvaluation(d.signals,d.health),recent=evaluation.rows,reasons=evaluation.reasons;
+    const evaluation=currentEvaluation(d.decisions,d.health,d.decisionsComplete),recent=evaluation.rows,reasons=evaluation.reasons;
     const syncSummary=d.health?.last_sync_at
-      ? `Ostatnia synchronizacja: ${dt(d.health.last_sync_at)} · oceniono ${evaluation.evaluated} · aktywne ${recent.filter(x=>['QUALIFIED','PENDING'].includes(x.status)).length}. ${reasons.length?'Powody: '+reasons.map(([code,count])=>esc(rejectionReason[code]||code)+' '+count).join(', ')+'.':'Brak odrzuceń w ostatnim odczycie.'} Mail: ${n(d.health.detail?.email?.sent)} wysłanych w ostatnim odczycie, ${n(d.health.detail?.email?.pending)} oczekujących.`
+      ? `Ostatnia synchronizacja: ${dt(d.health.last_sync_at)} · oceniono ${evaluation.evaluated??'N/D'}. ${evaluation.complete?`Zakwalifikowane ${recent.filter(x=>x.status==='QUALIFIED').length}. ${reasons.length?'Powody: '+reasons.map(([code,count])=>esc(rejectionReason[code]||code)+' '+count).join(', ')+'.':'Brak odrzuceń w ostatnim odczycie.'}`:'Szczegóły decyzji: N/D (niepełny odczyt).'} Mail: ${n(d.health.detail?.email?.sent)} wysłanych w ostatnim odczycie, ${n(d.health.detail?.email?.pending)} oczekujących.`
       : 'Brak informacji o synchronizacji iNeed$.';
     const latestRejected=recent.filter(x=>['REJECTED','EXPIRED'].includes(x.status));
-    const latestReview=latestRejected.slice(0,5).map(compactSignal).join('');
-    const evaluationMessage=evaluation.evaluated>recent.length?'Widok pokazuje ostatnie 80 zapisanych sygnałów; suma ocen pochodzi z synchronizacji.':null;
+    const latestReview=latestRejected.slice(0,5).map(compactDecision).join('');
+    const evaluationMessage=null;
     const activeSignals=d.signals.filter(x=>['QUALIFIED','PENDING'].includes(x.status));
     const wins=d.bets.filter(x=>x.status==='WIN'),losses=d.bets.filter(x=>x.status==='LOSS'),otherBets=d.bets.filter(x=>!['WIN','LOSS'].includes(x.status));
     const rejected=d.signals.filter(x=>['REJECTED','EXPIRED'].includes(x.status));
