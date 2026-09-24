@@ -120,7 +120,7 @@ def _direct_input_status(direct_feed: object, *, now_utc: datetime) -> tuple[str
 def _composition_map(results: object) -> tuple[dict[str, dict] | None, dict]:
     if not isinstance(results, list):
         return None, {}
-    scoped, scope = filter_results(results)
+    scoped, scope = filter_results(results, economic_unit="BET_BUILDER_COMPOSITION")
     out: dict[str, dict] = {}
     for match in scoped:
         composition = build_shadow_composition(match)

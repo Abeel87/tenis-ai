@@ -40,29 +40,24 @@ def test_scope_accepts_only_contract_markets_without_rewriting_playable_metadata
     filtered, diag = scope.filter_results([original])
 
     kept = filtered[0]["symphony2_playable"]["signals"]
-    assert [(row.get("market"), row.get("pick"), row.get("checkpoint")) for row in kept] == [
-        ("set1_winner", "A", None),
-        ("set1_total", "over", None),
-        ("game_state", "4:2", 6),
-    ]
+    assert [(row.get("market"), row.get("pick")) for row in kept] == [("match_winner", "A")]
     assert filtered[0]["symphony2_playable"]["playable_count"] == 9
     assert diag["signals_seen"] == 9
-    assert diag["signals_kept"] == 3
-    assert diag["signals_filtered"] == 6
+    assert diag["signals_kept"] == 1
+    assert diag["signals_filtered"] == 8
     assert len(original["symphony2_playable"]["signals"]) == 9
 
 
 def test_scope_is_case_insensitive_but_fail_closed():
-    assert scope.signal_allowed({"market": "SET1_WINNER", "pick": "A"}) is True
-    assert scope.signal_allowed({"market": "SET1_TOTAL", "pick": "OVER", "line": 9.5}) is True
-    assert scope.signal_allowed({"market": "GAME_STATE", "pick": "4:2", "checkpoint": "6"}) is True
-    assert scope.signal_allowed({"market": "game_state", "pick": "2:4", "checkpoint": 6}) is True
-    assert scope.signal_allowed({"market": "game_state", "pick": "6:0", "checkpoint": 6}) is True
+    assert scope.signal_allowed({"market": "MATCH_WINNER", "pick": "A"}) is True
+    assert scope.signal_allowed({"market": "match_winner", "pick": "  "}) is False
+    assert scope.signal_allowed({"market": "SET1_WINNER", "pick": "A"}) is False
+    assert scope.signal_allowed({"market": "SET1_TOTAL", "pick": "OVER", "line": 9.5}) is False
+    assert scope.signal_allowed({"market": "GAME_STATE", "pick": "4:2", "checkpoint": "6"}) is False
     assert scope.signal_allowed({"market": "game_state", "pick": "3:3", "checkpoint": 6}) is False
     assert scope.signal_allowed({"market": "game_state", "pick": "4:1", "checkpoint": 6}) is False
     assert scope.signal_allowed({"market": "set1_total", "pick": "under", "line": 9.5}) is False
     assert scope.signal_allowed({"market": "game_state", "checkpoint": None}) is False
-    assert scope.signal_allowed({"market": "match_winner", "pick": "A"}) is False
     assert scope.signal_allowed({"market": "unknown"}) is False
     assert scope.signal_allowed({}) is False
 
@@ -70,7 +65,6 @@ def test_scope_is_case_insensitive_but_fail_closed():
 def test_match_with_no_allowed_signal_is_removed():
     filtered, diag = scope.filter_results([
         playable([
-            {"market": "match_winner", "pick": "A"},
             {"market": "match_total", "pick": "over", "line": 20.5},
             {"market": "game_state", "pick": "3:3", "checkpoint": 6},
         ])
@@ -78,7 +72,22 @@ def test_match_with_no_allowed_signal_is_removed():
     assert filtered == []
     assert diag["matches_seen"] == 1
     assert diag["matches_kept"] == 0
-    assert diag["signals_filtered"] == 3
+    assert diag["signals_filtered"] == 2
+
+
+def test_builder_scope_remains_separate_from_v1_match_winner():
+    rows, diag = scope.filter_results([playable([
+        {"market": "match_winner", "pick": "A"},
+        {"market": "set1_winner", "pick": "A"},
+        {"market": "set1_total", "pick": "over", "line": 8.5},
+        {"market": "game_state", "pick": "4:2", "checkpoint": 6},
+    ])], economic_unit="BET_BUILDER_COMPOSITION")
+    assert [s["market"] for s in rows[0]["symphony2_playable"]["signals"]] == [
+        "set1_winner", "set1_total", "game_state"
+    ]
+    assert diag["signals_filtered"] == 1
+    assert diag["contract"].startswith("INEED_BUILDER_SCOPE_")
+    assert scope.filter_results([playable([{"market": "match_winner", "pick": "A"}])])[1]["signals_kept"] == 1
 
 
 def test_scoped_runner_filters_new_evaluations_but_keeps_open_bets_for_settlement(monkeypatch):
@@ -108,7 +117,7 @@ def test_scoped_runner_filters_new_evaluations_but_keeps_open_bets_for_settlemen
 
     def fake_evaluate(scoped_results, direct_feed, cfg, state_arg):
         captured["evaluate_results"] = scoped_results
-        return [{"status": "REJECTED", "market": "set1_winner"}]
+        return [{"status": "REJECTED", "market": "match_winner"}]
 
     def fake_settlements(bets, history, cfg):
         captured["settlement_bets"] = bets
@@ -121,7 +130,7 @@ def test_scoped_runner_filters_new_evaluations_but_keeps_open_bets_for_settlemen
 
     payload = runner.build_payload(state)
     scoped_signals = captured["evaluate_results"][0]["symphony2_playable"]["signals"]
-    assert [row["market"] for row in scoped_signals] == ["set1_winner"]
+    assert [row["market"] for row in scoped_signals] == ["match_winner"]
     assert captured["settlement_bets"] == open_bets
     assert payload["settlements"][0]["bet_id"] == "old-bet"
     assert payload["health"]["market_scope"]["signals_filtered"] == 1

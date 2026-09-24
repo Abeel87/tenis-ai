@@ -5,14 +5,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_ineed_shadow_insert_guard_matches_approved_scope():
-    sql = (ROOT / "supabase/migrations/20260916182500_ineed_shadow_market_scope_insert_guard.sql").read_text(encoding="utf-8")
+    original = (ROOT / "supabase/migrations/20260916182500_ineed_shadow_market_scope_insert_guard.sql").read_text(encoding="utf-8")
+    sql = (ROOT / "supabase/migrations/20260924092540_ineed_match_winner_scope.sql").read_text(encoding="utf-8")
 
-    assert "before insert on public.ineed_shadow_bets" in sql.lower()
-    assert "market_name = 'set1_winner'" in sql
-    assert "market_name = 'set1_total' and selection_name = 'over'" in sql
-    assert "market_name = 'game_state'" in sql
-    assert "checkpoint_text <> '6'" in sql
-    assert "left_games + right_games = 6 and left_games <> right_games" in sql
+    assert "before insert on public.ineed_shadow_bets" in original.lower()
+    assert "create or replace function public.ineed_enforce_shadow_bet_market_scope()" in sql
+    assert "new.market, ''))) = 'match_winner'" in sql
+    assert "new.placement_snapshot->>'market', ''))) = 'match_winner'" in sql
+    assert "new.placement_snapshot->>'pick', '')) = trim(new.selection)" in sql
+    assert "set1_winner" not in sql
+    assert "set1_total" not in sql
+    assert "game_state" not in sql
     assert "errcode = '23514'" in sql
 
 
