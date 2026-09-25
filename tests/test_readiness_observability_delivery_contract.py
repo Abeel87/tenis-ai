@@ -91,7 +91,7 @@ def test_player_dna_post_update_host_delivers_exact_snapshot_readiness_sidecar()
     assert "name: player-dna-point-foundation" in point
     assert "workflow_run:" not in point
 
-    assert 'workflows: ["Update tennis data and deploy Pages"]' in player
+    assert 'workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]' in player
     ordered_commands = [
         "python backend/player_dna_profile_readiness.py",
         "python backend/player_dna_service_split_source_readiness.py",
@@ -168,7 +168,7 @@ def test_snapshot_stamp_adds_results_provenance_without_changing_history_owner(t
 def test_player_dna_refresh_is_existing_post_update_candidate_host():
     player = (ROOT / ".github/workflows/player-dna-shadow-refresh.yml").read_text(encoding="utf-8")
     assert "workflow_run:" in player
-    assert 'workflows: ["Update tennis data and deploy Pages"]' in player
+    assert 'workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]' in player
     assert "github.event.workflow_run.conclusion == 'success'" in player
     assert "github.event.workflow_run.head_branch == 'main'" in player
     assert "Restore tennis history + PBP cache" in player
