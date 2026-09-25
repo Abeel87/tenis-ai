@@ -298,6 +298,56 @@ jobs:
           )
           PY
 
+      - name: Publish exact LOGIC-08 readiness before long backtests
+        if: github.event_name != 'pull_request'
+        id: readiness_commit
+        run: |
+          set -euo pipefail
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/data/readiness_engine_shadow.json frontend/data/meta.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "data: publish exact LOGIC-08 readiness"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from backend.snapshot_digest import canonical_json_sha256
+
+          current = json.loads(Path('frontend/data/results.json').read_text(encoding='utf-8'))
+          latest = json.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
+          ))
+          if canonical_json_sha256(current) != canonical_json_sha256(latest):
+              raise SystemExit('LOGIC-08 results changed on main; skipping stale readiness publish')
+          PY
+            then
+              echo "stale=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git rebase --abort || true
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to publish exact LOGIC-08 readiness after 3 attempts"
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Deploy exact LOGIC-08 readiness
+        if: github.event_name != 'pull_request' && steps.readiness_commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages-fast.yml --ref main
+
       - name: Train + evaluate Player DNA scorer
         run: python backend/player_dna_point_scorer.py
 
@@ -1265,7 +1315,7 @@ jobs:
             frontend/data/player_dna_player_state_shadow.json
 
       - name: Publish Player DNA SHADOW reports
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.readiness_commit.outputs.stale != 'true'
         id: commit
         run: |
           git config user.name "tenis-ai-bot"
@@ -1279,7 +1329,7 @@ jobs:
           for attempt in 1 2 3; do
             git fetch origin
             # A newer core results snapshot invalidates this run-local SHADOW projection.
-            python - <<'PY'
+            if ! python - <<'PY'
           import json
           import subprocess
           from pathlib import Path
@@ -1290,8 +1340,13 @@ jobs:
               ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
           ))
           if canonical_json_sha256(current) != canonical_json_sha256(latest):
-              raise SystemExit('LOGIC-08 results changed on main; refusing stale readiness publish')
+              raise SystemExit('LOGIC-08 results changed on main; skipping stale full-report publish')
           PY
+            then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "stale=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             if git rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0
