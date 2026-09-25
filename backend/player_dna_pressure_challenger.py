@@ -19,7 +19,7 @@ touches PROD, Symfonia 2.0, or Superbet PLAYABLE, or auto-promotes a model.
 
 import json
 import math
-from collections import defaultdict
+from collections import ChainMap, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -282,7 +282,11 @@ def enrich_feature_rows(
         pair_key = (match_id, server_id, receiver_id)
         if pair_key not in pair_features:
             pair_features[pair_key] = _pair_features(server, receiver)
-        rows.append({**row, **pair_features[pair_key]})
+        # Keep the per-point base row separate from immutable per-direction rates.
+        # A flattened dict repeats ~100 scalar slots for every point and exhausts
+        # hosted runner memory on the full historical cache. ChainMap remains
+        # a mapping for pandas, while writes stay local to the first (base) map.
+        rows.append(ChainMap(row, pair_features[pair_key]))
         counts["enriched_rows"] += 1
         counts["rows_with_any_primary_pressure_rate"] += int(
             any(rows[-1].get(name) is not None for name in PRESSURE_PRIMARY_NUMERIC)

@@ -279,6 +279,25 @@ jobs:
           print(f'LOGIC_08_SHADOW_DELIVERY_OK digest={digest} matches={len(results)}')
           PY
 
+      - name: Project exact LOGIC-08 readiness into published meta
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from backend.readiness_engine_shadow import project_observability_meta
+
+          data = Path('frontend/data')
+          def load(name):
+              return json.loads((data / name).read_text(encoding='utf-8'))
+
+          projected = project_observability_meta(
+              load('results.json'), load('readiness_engine_shadow.json'), load('meta.json')
+          )
+          (data / 'meta.json').write_text(
+              json.dumps(projected, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+
       - name: Train + evaluate Player DNA scorer
         run: python backend/player_dna_point_scorer.py
 
@@ -1251,7 +1270,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json             frontend/data/readiness_engine_shadow.json
+          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json             frontend/data/readiness_engine_shadow.json             frontend/data/meta.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -1259,6 +1278,20 @@ jobs:
           git commit -m "data: refresh Player DNA SHADOW"
           for attempt in 1 2 3; do
             git fetch origin
+            # A newer core results snapshot invalidates this run-local SHADOW projection.
+            python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from backend.snapshot_digest import canonical_json_sha256
+
+          current = json.loads(Path('frontend/data/results.json').read_text(encoding='utf-8'))
+          latest = json.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
+          ))
+          if canonical_json_sha256(current) != canonical_json_sha256(latest):
+              raise SystemExit('LOGIC-08 results changed on main; refusing stale readiness publish')
+          PY
             if git rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0
