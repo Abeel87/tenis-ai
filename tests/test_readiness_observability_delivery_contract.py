@@ -286,3 +286,59 @@ def test_meta_payload_rejects_non_isolated_readiness_report():
         "status": "N/D",
         "reason": "READINESS_ISOLATION_CONTRACT_FAILED",
     }
+
+
+def _projectable_report(results):
+    report = _report(results)
+    report["generated_at"] = "2026-09-25T08:18:24Z"
+    report["summary"] = {
+        "matches": len(results),
+        "dimension_status_counts": {"identity": {"READY": 1, "NOT_READY": 0, "UNKNOWN": 0}},
+        "pbp_market_status_counts": {},
+    }
+    return report
+
+
+def test_post_dna_projection_replaces_only_exact_snapshot_shadow_metadata():
+    results = _results()
+    meta = {"updated_at": "2026-09-25T07:48:14Z", "model_ready": 1,
+            "semantic_readiness_shadow": {"available": False, "status": "N/D"}}
+    projected = readiness.project_observability_meta(results, _projectable_report(results), meta)
+    assert projected["updated_at"] == meta["updated_at"]
+    assert projected["model_ready"] == 1
+    assert projected["semantic_readiness_shadow"]["available"] is True
+    assert projected["semantic_readiness_shadow"]["results_snapshot_sha256"] == readiness.results_snapshot_sha256(results)
+    assert meta["semantic_readiness_shadow"]["available"] is False
+
+
+def test_post_dna_projection_rejects_stale_or_nonisolated_evidence():
+    results = _results()
+    report = _projectable_report(results)
+    newer = deepcopy(results)
+    newer[0]["model_ready"] = False
+    try:
+        readiness.project_observability_meta(newer, report, {"updated_at": "old"})
+    except ValueError as exc:
+        assert "RESULTS_SNAPSHOT_MISMATCH" in str(exc)
+    else:
+        raise AssertionError("stale projection was accepted")
+
+    report["production_influence"] = True
+    try:
+        readiness.project_observability_meta(results, report, {"updated_at": "old"})
+    except ValueError as exc:
+        assert "READINESS_ISOLATION_CONTRACT_FAILED" in str(exc)
+    else:
+        raise AssertionError("nonisolated projection was accepted")
+
+
+def test_player_dna_publishes_meta_only_after_exact_snapshot_guard_and_checks_main():
+    workflow = (ROOT / ".github/workflows/player-dna-shadow-refresh.yml").read_text(encoding="utf-8")
+    guard = workflow.index("- name: Guard LOGIC-08 exact-snapshot readiness delivery")
+    project = workflow.index("- name: Project exact LOGIC-08 readiness into published meta")
+    publish = workflow.index("- name: Publish Player DNA SHADOW reports")
+    assert guard < project < publish
+    assert "project_observability_meta(" in workflow[project:publish]
+    assert "frontend/data/meta.json" in workflow[publish:]
+    assert "origin/main:frontend/data/results.json" in workflow[publish:]
+    assert "refusing stale readiness publish" in workflow[publish:]

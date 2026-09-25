@@ -203,6 +203,20 @@ def observability_meta_payload(
     }
 
 
+def project_observability_meta(
+    results: list[dict[str, Any]],
+    report: dict[str, Any] | None,
+    meta: dict[str, Any],
+) -> dict[str, Any]:
+    """Replace only the SHADOW projection for the exact validated results snapshot."""
+    if not isinstance(meta, dict):
+        raise ValueError("meta must be an object")
+    projected = observability_meta_payload(results, report)
+    if projected.get("available") is not True:
+        raise ValueError(f"readiness projection unavailable: {projected.get('reason')}")
+    return {**meta, "semantic_readiness_shadow": projected}
+
+
 def _reason_code(value: Any) -> str:
     text = str(value or "UNKNOWN").strip().upper()
     chars = [ch if ch.isalnum() else "_" for ch in text]
