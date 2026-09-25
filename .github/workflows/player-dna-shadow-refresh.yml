@@ -330,7 +330,7 @@ jobs:
               echo "stale=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            if git rebase origin/main && git push origin HEAD:main; then
+            if git -c rebase.autoStash=true rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0
             fi
