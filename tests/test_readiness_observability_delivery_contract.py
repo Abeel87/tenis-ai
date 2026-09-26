@@ -91,7 +91,7 @@ def test_player_dna_post_update_host_delivers_exact_snapshot_readiness_sidecar()
     assert "name: player-dna-point-foundation" in point
     assert "workflow_run:" not in point
 
-    assert 'workflows: ["Update tennis data and deploy Pages"]' in player
+    assert 'workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]' in player
     ordered_commands = [
         "python backend/player_dna_profile_readiness.py",
         "python backend/player_dna_service_split_source_readiness.py",
@@ -168,7 +168,7 @@ def test_snapshot_stamp_adds_results_provenance_without_changing_history_owner(t
 def test_player_dna_refresh_is_existing_post_update_candidate_host():
     player = (ROOT / ".github/workflows/player-dna-shadow-refresh.yml").read_text(encoding="utf-8")
     assert "workflow_run:" in player
-    assert 'workflows: ["Update tennis data and deploy Pages"]' in player
+    assert 'workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]' in player
     assert "github.event.workflow_run.conclusion == 'success'" in player
     assert "github.event.workflow_run.head_branch == 'main'" in player
     assert "Restore tennis history + PBP cache" in player
@@ -341,4 +341,19 @@ def test_player_dna_publishes_meta_only_after_exact_snapshot_guard_and_checks_ma
     assert "project_observability_meta(" in workflow[project:publish]
     assert "frontend/data/meta.json" in workflow[publish:]
     assert "origin/main:frontend/data/results.json" in workflow[publish:]
-    assert "refusing stale readiness publish" in workflow[publish:]
+    assert "skipping stale full-report publish" in workflow[publish:]
+
+
+def test_exact_readiness_publishes_before_long_backtests_and_hourly_market_refresh():
+    workflow = (ROOT / ".github/workflows/player-dna-shadow-refresh.yml").read_text(encoding="utf-8")
+    guard = workflow.index("- name: Guard LOGIC-08 exact-snapshot readiness delivery")
+    project = workflow.index("- name: Project exact LOGIC-08 readiness into published meta")
+    early = workflow.index("- name: Publish exact LOGIC-08 readiness before long backtests")
+    backtest = workflow.index("- name: Backtest simulated markets on historical holdout")
+    assert guard < project < early < backtest
+    assert "git add frontend/data/readiness_engine_shadow.json frontend/data/meta.json" in workflow[early:backtest]
+    assert "origin/main:frontend/data/results.json" in workflow[early:backtest]
+    assert "skipping stale readiness publish" in workflow[early:backtest]
+    assert "rebase.autoStash=true" in workflow[early:backtest]
+    assert 'workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]' in workflow
+    assert "FAST_READINESS_ONLY != 'true'" in workflow[backtest:]

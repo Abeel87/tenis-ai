@@ -34,7 +34,7 @@ on:
       - 'backend/player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
-    workflows: ["Update tennis data and deploy Pages"]
+    workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]
     types: [completed]
   pull_request:
     branches: [main]
@@ -101,11 +101,12 @@ permissions:
 concurrency:
   # Keep main refreshes mutually exclusive, but never let a main/data refresh
   # cancel the validation run of an open PR.
-  group: player-dna-shadow-refresh-${{ github.event.pull_request.number || 'main' }}
+  group: player-dna-shadow-refresh-${{ github.event.pull_request.number || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' && 'market' || 'main') }}
   cancel-in-progress: true
 
 env:
   PYTHONUNBUFFERED: '1'
+  FAST_READINESS_ONLY: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' }}
 
 jobs:
   refresh:
@@ -298,34 +299,94 @@ jobs:
           )
           PY
 
+      - name: Publish exact LOGIC-08 readiness before long backtests
+        if: github.event_name != 'pull_request'
+        id: readiness_commit
+        run: |
+          set -euo pipefail
+          git config user.name "tenis-ai-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontend/data/readiness_engine_shadow.json frontend/data/meta.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "data: publish exact LOGIC-08 readiness"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from backend.snapshot_digest import canonical_json_sha256
+
+          current = json.loads(Path('frontend/data/results.json').read_text(encoding='utf-8'))
+          latest = json.loads(subprocess.check_output(
+              ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
+          ))
+          if canonical_json_sha256(current) != canonical_json_sha256(latest):
+              raise SystemExit('LOGIC-08 results changed on main; skipping stale readiness publish')
+          PY
+            then
+              echo "stale=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if git -c rebase.autoStash=true rebase origin/main && git push origin HEAD:main; then
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git rebase --abort || true
+            if [ "$attempt" -eq 3 ]; then
+              echo "Failed to publish exact LOGIC-08 readiness after 3 attempts"
+              exit 1
+            fi
+            sleep $((attempt * 2))
+          done
+
+      - name: Deploy exact LOGIC-08 readiness
+        if: github.event_name != 'pull_request' && steps.readiness_commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-pages-fast.yml --ref main
+
       - name: Train + evaluate Player DNA scorer
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_point_scorer.py
 
       - name: Score current card in SHADOW
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_current_shadow.py
 
       - name: Backtest simulated markets on historical holdout
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_market_backtest.py
 
       - name: Build dynamic lean market walk-forward evidence
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_market_walk_forward.py
 
       - name: Score current card with dynamic lean in SHADOW
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_current_dynamic_shadow.py
 
       - name: Audit hold calibration on untouched third partition
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_hold_calibration.py
 
       - name: Audit hold calibration walk-forward robustness
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_hold_walk_forward.py
 
       - name: Simulate raw + hold-calibrated tennis markets in SHADOW
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_tennis_simulator.py
 
       - name: Collect prospective calibrated-candidate evidence
+        if: env.FAST_READINESS_ONLY != 'true'
         run: python backend/player_dna_prospective_validation.py
 
       - name: Hard isolation + learning guard
+        if: env.FAST_READINESS_ONLY != 'true'
         run: |
           python - <<'PY'
           import json
@@ -1220,6 +1281,7 @@ jobs:
           PY
 
       - name: Upload Player DNA SHADOW artifacts
+        if: env.FAST_READINESS_ONLY != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: player-dna-shadow-refresh
@@ -1253,7 +1315,7 @@ jobs:
           retention-days: 14
 
       - name: Clean run-local LOGIC-08 evidence before publish
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && env.FAST_READINESS_ONLY != 'true'
         run: |
           git restore -- frontend/data/history_coverage_audit_v949.json
           rm -f \
@@ -1265,7 +1327,7 @@ jobs:
             frontend/data/player_dna_player_state_shadow.json
 
       - name: Publish Player DNA SHADOW reports
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && env.FAST_READINESS_ONLY != 'true' && steps.readiness_commit.outputs.stale != 'true'
         id: commit
         run: |
           git config user.name "tenis-ai-bot"
@@ -1279,7 +1341,7 @@ jobs:
           for attempt in 1 2 3; do
             git fetch origin
             # A newer core results snapshot invalidates this run-local SHADOW projection.
-            python - <<'PY'
+            if ! python - <<'PY'
           import json
           import subprocess
           from pathlib import Path
@@ -1290,8 +1352,13 @@ jobs:
               ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
           ))
           if canonical_json_sha256(current) != canonical_json_sha256(latest):
-              raise SystemExit('LOGIC-08 results changed on main; refusing stale readiness publish')
+              raise SystemExit('LOGIC-08 results changed on main; skipping stale full-report publish')
           PY
+            then
+              echo "changed=false" >> "$GITHUB_OUTPUT"
+              echo "stale=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             if git rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0
@@ -1305,7 +1372,7 @@ jobs:
           done
 
       - name: Dispatch FAST Pages deploy
-        if: github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true'
+        if: github.event_name != 'pull_request' && env.FAST_READINESS_ONLY != 'true' && steps.commit.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages-fast.yml --ref main
