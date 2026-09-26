@@ -94,7 +94,7 @@ jobs:
         run: |
           python -m pip install pytest -c requirements.lock
           python -m pytest -q tests/test_superbet_refresh_guard.py
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         if: steps.freshness.outputs.refresh == 'true'
         with:
           python-version: '3.12'
