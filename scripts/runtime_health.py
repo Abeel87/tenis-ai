@@ -23,11 +23,26 @@ def _git_blob_size(root: Path, ref: str, name: str):
         ['git','cat-file','-s',f'{ref}:frontend/data/{name}'],
         cwd=root,capture_output=True,text=True,check=False,
     )
-    if p.returncode!=0:
+    if p.returncode == 0:
+        try:
+            return int(p.stdout.strip())
+        except ValueError:
+            return None
+    if name != 'history.json':
+        return None
+    # History is tracked as exact verified chunks. Compare with the manifest's
+    # original byte count when the old single Git blob no longer exists.
+    manifest=subprocess.run(
+        ['git','show',f'{ref}:frontend/data/history_chunks/manifest.json'],
+        cwd=root,capture_output=True,text=True,check=False,
+    )
+    if manifest.returncode != 0:
         return None
     try:
-        return int(p.stdout.strip())
-    except ValueError:
+        doc=json.loads(manifest.stdout)
+        size=doc.get('bytes')
+        return size if doc.get('format') == 'exact-history-bytes-v1' and isinstance(size,int) and size>0 else None
+    except (ValueError,TypeError):
         return None
 
 def ci_baseline_bytes(root: Path, name: str):
