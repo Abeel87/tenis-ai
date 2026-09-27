@@ -220,4 +220,4 @@ def test_winner_pick_resolves_reordered_exact_full_name():
 
 def test_winner_pick_does_not_guess_partial_or_ambiguous_names():
     assert _winner_pick('Chak Wong', '', 'Daniil Medvedev', 'Coleman Chak Lam Wong') == 'Chak Wong'
-    assert _winner_pick('Lam Chak Wong', '', 'Chak Lam Wong', 'Lam Chak Wong') == 'Lam Chak Wong'
+    assert _winner_pick('Wong Lam Chak', '', 'Chak Lam Wong', 'Lam Chak Wong') == 'Wong Lam Chak'
