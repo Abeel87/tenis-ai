@@ -3,6 +3,9 @@ description: Preserve a runtime source snapshot and build the lightweight match 
 runs:
   using: composite
   steps:
+    - name: Restore exact history for Pages
+      shell: bash
+      run: python scripts/history_publication_chunks.py restore
     - name: Archive canonical publication sources
       shell: bash
       run: |
@@ -19,3 +22,6 @@ runs:
     - name: Build match delivery
       shell: bash
       run: node scripts/build_delivery.mjs
+    - name: Remove repository-only history chunks from Pages payload
+      shell: bash
+      run: rm -rf frontend/data/history_chunks
