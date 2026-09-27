@@ -2,7 +2,7 @@
   "version": "logic-08-readiness-engine-shadow-v1",
   "mode": "SHADOW_READINESS_SEMANTICS_AUDIT_ONLY",
   "status": "READINESS_SEMANTICS_SHADOW_EVIDENCE_READY",
-  "generated_at": "2026-09-27T22:36:11.873491+00:00",
+  "generated_at": "2026-09-27T23:01:16.017633+00:00",
   "network_calls": 0,
   "production_influence": false,
   "runtime_scoring_enabled": false,
@@ -36,7 +36,7 @@
   "source_snapshot": {
     "results_matches": 131,
     "results_snapshot_contract": "canonical-json-sha256-v1",
-    "results_snapshot_sha256": "dcb5eb64ab53c28691f2c25b2df5096fbc87aa6911555761d1cfaa90de95e429",
+    "results_snapshot_sha256": "c84d7b11bda2879bbc30ce18f7a0de3b04607359484a3ba469f8711e339117ed",
     "result_match_ids_unique": true,
     "history_coverage_available": true,
     "history_coverage_snapshot_aligned": true,
@@ -18606,265 +18606,6 @@
       }
     },
     {
-      "match_id": "196491",
-      "scheduled_time": "2026-09-28T09:30:00Z",
-      "p1": "Andrey Rublev",
-      "p2": "Kyrian Jacquet",
-      "legacy_model_ready": true,
-      "legacy_model_ready_source": "frontend/data/results.json",
-      "legacy_model_ready_unchanged": true,
-      "current_engine_reference_consistent": true,
-      "dimensions": {
-        "identity": {
-          "status": "READY",
-          "reason_codes": [
-            "IDENTITY_RESOLVED_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/history_coverage_audit_v949.json",
-          "support": {
-            "history_audit_exception_row": false
-          }
-        },
-        "freshness": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
-          ],
-          "provenance": "LOGIC-01 history freshness counterfactual",
-          "support": {
-            "tested_scenarios_days": [
-              30,
-              60,
-              90,
-              120,
-              180,
-              365
-            ],
-            "selected_max_history_age_days": null
-          }
-        },
-        "current_season": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "matches": [
-              10,
-              14
-            ]
-          }
-        },
-        "surface": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "target_surfaces": [
-              "hard",
-              "hard"
-            ],
-            "current_season_surface_matches": [
-              7,
-              11
-            ]
-          }
-        },
-        "rank_context": {
-          "status": "READY",
-          "reason_codes": [
-            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "effective_ranks": [
-              25,
-              107
-            ]
-          }
-        },
-        "serve_return": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "Player State + Player DNA readiness audits",
-          "support": {
-            "source_audits_present": {
-              "profile": true,
-              "service_source": true,
-              "pbp_split": true
-            }
-          }
-        },
-        "pbp": {
-          "status": "READY",
-          "reason_codes": [
-            "PBP_HAS_READY_MARKET"
-          ],
-          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-          "support": {
-            "ready_markets": [
-              "game_state@2",
-              "game_state@4",
-              "game_state@6",
-              "game_state_sequence_1:1-2:2-3:3",
-              "service_hold_1",
-              "service_hold_2",
-              "service_hold_3",
-              "set1_total_over_8.5",
-              "set1_total_over_9.5",
-              "set1_winner"
-            ],
-            "min_matches_per_metric": 5
-          }
-        },
-        "opponent_context": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "prior_matches": [
-              9,
-              10
-            ]
-          }
-        }
-      },
-      "market_readiness": {
-        "pbp_early_hold": {
-          "contract_owner": "backend/pbp_market_evidence.py",
-          "markets": {
-            "game_state@2": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state@4": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state@6": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state_sequence_1:1-2:2-3:3": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_total_over_8.5": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_total_over_9.5": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_winner": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_1": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_2": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_3": {
-              "status": "READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_PASSED"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            }
-          }
-        },
-        "current_engine_generic": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
-          ],
-          "provenance": "frontend/data/results.json",
-          "support": {
-            "legacy_model_ready": true
-          }
-        }
-      }
-    },
-    {
       "match_id": "196591",
       "scheduled_time": "2026-09-28T09:30:00Z",
       "p1": "Matthew Donald",
@@ -19341,6 +19082,493 @@
       }
     },
     {
+      "match_id": "196491",
+      "scheduled_time": "2026-09-28T09:30:00Z",
+      "p1": "Andrey Rublev",
+      "p2": "Kyrian Jacquet",
+      "legacy_model_ready": true,
+      "legacy_model_ready_source": "frontend/data/results.json",
+      "legacy_model_ready_unchanged": true,
+      "current_engine_reference_consistent": true,
+      "dimensions": {
+        "identity": {
+          "status": "READY",
+          "reason_codes": [
+            "IDENTITY_RESOLVED_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/history_coverage_audit_v949.json",
+          "support": {
+            "history_audit_exception_row": false
+          }
+        },
+        "freshness": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
+          ],
+          "provenance": "LOGIC-01 history freshness counterfactual",
+          "support": {
+            "tested_scenarios_days": [
+              30,
+              60,
+              90,
+              120,
+              180,
+              365
+            ],
+            "selected_max_history_age_days": null
+          }
+        },
+        "current_season": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "matches": [
+              10,
+              14
+            ]
+          }
+        },
+        "surface": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "target_surfaces": [
+              "hard",
+              "hard"
+            ],
+            "current_season_surface_matches": [
+              7,
+              11
+            ]
+          }
+        },
+        "rank_context": {
+          "status": "READY",
+          "reason_codes": [
+            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "effective_ranks": [
+              25,
+              107
+            ]
+          }
+        },
+        "serve_return": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "Player State + Player DNA readiness audits",
+          "support": {
+            "source_audits_present": {
+              "profile": true,
+              "service_source": true,
+              "pbp_split": true
+            }
+          }
+        },
+        "pbp": {
+          "status": "READY",
+          "reason_codes": [
+            "PBP_HAS_READY_MARKET"
+          ],
+          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+          "support": {
+            "ready_markets": [
+              "game_state@2",
+              "game_state@4",
+              "game_state@6",
+              "game_state_sequence_1:1-2:2-3:3",
+              "service_hold_1",
+              "service_hold_2",
+              "service_hold_3",
+              "set1_total_over_8.5",
+              "set1_total_over_9.5",
+              "set1_winner"
+            ],
+            "min_matches_per_metric": 5
+          }
+        },
+        "opponent_context": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "prior_matches": [
+              9,
+              10
+            ]
+          }
+        }
+      },
+      "market_readiness": {
+        "pbp_early_hold": {
+          "contract_owner": "backend/pbp_market_evidence.py",
+          "markets": {
+            "game_state@2": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state@4": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state@6": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state_sequence_1:1-2:2-3:3": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_total_over_8.5": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_total_over_9.5": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_winner": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_1": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_2": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_3": {
+              "status": "READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_PASSED"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 5,
+                "min_matches_per_metric": 5
+              }
+            }
+          }
+        },
+        "current_engine_generic": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
+          ],
+          "provenance": "frontend/data/results.json",
+          "support": {
+            "legacy_model_ready": true
+          }
+        }
+      }
+    },
+    {
+      "match_id": "196630",
+      "scheduled_time": "2026-09-28T10:00:00Z",
+      "p1": "Noma Noha Akugue",
+      "p2": "Fiona Crawley",
+      "legacy_model_ready": false,
+      "legacy_model_ready_source": "frontend/data/results.json",
+      "legacy_model_ready_unchanged": true,
+      "current_engine_reference_consistent": true,
+      "dimensions": {
+        "identity": {
+          "status": "NOT_READY",
+          "reason_codes": [
+            "IDENTITY_NO_SAFE_IDENTITY_CANDIDATE"
+          ],
+          "provenance": "frontend/data/history_coverage_audit_v949.json",
+          "support": {
+            "players": [
+              {
+                "player": "Noma Noha Akugue",
+                "identity_mode": "exact",
+                "reason": "insufficient_pre_match_sample",
+                "history_matches": 4
+              },
+              {
+                "player": "Fiona Crawley",
+                "identity_mode": "none",
+                "reason": "no_safe_identity_candidate",
+                "history_matches": 0
+              }
+            ]
+          }
+        },
+        "freshness": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
+          ],
+          "provenance": "LOGIC-01 history freshness counterfactual",
+          "support": {
+            "tested_scenarios_days": [
+              30,
+              60,
+              90,
+              120,
+              180,
+              365
+            ],
+            "selected_max_history_age_days": null
+          }
+        },
+        "current_season": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "matches": [
+              10,
+              16
+            ]
+          }
+        },
+        "surface": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "target_surfaces": [
+              "hard",
+              "hard"
+            ],
+            "current_season_surface_matches": [
+              3,
+              15
+            ]
+          }
+        },
+        "rank_context": {
+          "status": "READY",
+          "reason_codes": [
+            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "effective_ranks": [
+              128,
+              227
+            ]
+          }
+        },
+        "serve_return": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "Player State + Player DNA readiness audits",
+          "support": {
+            "source_audits_present": {
+              "profile": true,
+              "service_source": true,
+              "pbp_split": true
+            }
+          }
+        },
+        "pbp": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+          ],
+          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+          "support": {}
+        },
+        "opponent_context": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "prior_matches": [
+              8,
+              14
+            ]
+          }
+        }
+      },
+      "market_readiness": {
+        "pbp_early_hold": {
+          "contract_owner": "backend/pbp_market_evidence.py",
+          "markets": {
+            "game_state@2": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state@4": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state@6": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state_sequence_1:1-2:2-3:3": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_total_over_8.5": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_total_over_9.5": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_winner": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_1": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_2": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_3": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            }
+          }
+        },
+        "current_engine_generic": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
+          ],
+          "provenance": "frontend/data/results.json",
+          "support": {
+            "legacy_model_ready": false
+          }
+        }
+      }
+    },
+    {
       "match_id": "196629",
       "scheduled_time": "2026-09-28T10:00:00Z",
       "p1": "Elena Ruxandra Bertea",
@@ -19694,234 +19922,6 @@
             "prior_matches": [
               1,
               1
-            ]
-          }
-        }
-      },
-      "market_readiness": {
-        "pbp_early_hold": {
-          "contract_owner": "backend/pbp_market_evidence.py",
-          "markets": {
-            "game_state@2": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state@4": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state@6": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state_sequence_1:1-2:2-3:3": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_total_over_8.5": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_total_over_9.5": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_winner": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_1": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_2": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_3": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            }
-          }
-        },
-        "current_engine_generic": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
-          ],
-          "provenance": "frontend/data/results.json",
-          "support": {
-            "legacy_model_ready": false
-          }
-        }
-      }
-    },
-    {
-      "match_id": "196539",
-      "scheduled_time": "2026-09-28T10:00:00Z",
-      "p1": "Alejo Sanchez Quilez",
-      "p2": "Fausto Tabacco",
-      "legacy_model_ready": false,
-      "legacy_model_ready_source": "frontend/data/results.json",
-      "legacy_model_ready_unchanged": true,
-      "current_engine_reference_consistent": true,
-      "dimensions": {
-        "identity": {
-          "status": "READY",
-          "reason_codes": [
-            "IDENTITY_RESOLVED_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/history_coverage_audit_v949.json",
-          "support": {
-            "players": [
-              {
-                "player": "Alejo Sanchez Quilez",
-                "identity_mode": "exact",
-                "reason": "sufficient_history",
-                "history_matches": 20
-              },
-              {
-                "player": "Fausto Tabacco",
-                "identity_mode": "exact",
-                "reason": "insufficient_pre_match_sample",
-                "history_matches": 3
-              }
-            ]
-          }
-        },
-        "freshness": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
-          ],
-          "provenance": "LOGIC-01 history freshness counterfactual",
-          "support": {
-            "tested_scenarios_days": [
-              30,
-              60,
-              90,
-              120,
-              180,
-              365
-            ],
-            "selected_max_history_age_days": null
-          }
-        },
-        "current_season": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "matches": [
-              15,
-              14
-            ]
-          }
-        },
-        "surface": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "target_surfaces": [
-              "hard",
-              "hard"
-            ],
-            "current_season_surface_matches": [
-              9,
-              11
-            ]
-          }
-        },
-        "rank_context": {
-          "status": "READY",
-          "reason_codes": [
-            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "effective_ranks": [
-              364,
-              528
-            ]
-          }
-        },
-        "serve_return": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "Player State + Player DNA readiness audits",
-          "support": {
-            "source_audits_present": {
-              "profile": true,
-              "service_source": true,
-              "pbp_split": true
-            }
-          }
-        },
-        "pbp": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-          ],
-          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-          "support": {}
-        },
-        "opponent_context": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "prior_matches": [
-              12,
-              13
             ]
           }
         }
@@ -20512,34 +20512,34 @@
       }
     },
     {
-      "match_id": "196630",
+      "match_id": "196539",
       "scheduled_time": "2026-09-28T10:00:00Z",
-      "p1": "Noma Noha Akugue",
-      "p2": "Fiona Crawley",
+      "p1": "Alejo Sanchez Quilez",
+      "p2": "Fausto Tabacco",
       "legacy_model_ready": false,
       "legacy_model_ready_source": "frontend/data/results.json",
       "legacy_model_ready_unchanged": true,
       "current_engine_reference_consistent": true,
       "dimensions": {
         "identity": {
-          "status": "NOT_READY",
+          "status": "READY",
           "reason_codes": [
-            "IDENTITY_NO_SAFE_IDENTITY_CANDIDATE"
+            "IDENTITY_RESOLVED_BOTH_PLAYERS"
           ],
           "provenance": "frontend/data/history_coverage_audit_v949.json",
           "support": {
             "players": [
               {
-                "player": "Noma Noha Akugue",
+                "player": "Alejo Sanchez Quilez",
                 "identity_mode": "exact",
-                "reason": "insufficient_pre_match_sample",
-                "history_matches": 4
+                "reason": "sufficient_history",
+                "history_matches": 20
               },
               {
-                "player": "Fiona Crawley",
-                "identity_mode": "none",
-                "reason": "no_safe_identity_candidate",
-                "history_matches": 0
+                "player": "Fausto Tabacco",
+                "identity_mode": "exact",
+                "reason": "insufficient_pre_match_sample",
+                "history_matches": 3
               }
             ]
           }
@@ -20570,8 +20570,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "matches": [
-              10,
-              16
+              15,
+              14
             ]
           }
         },
@@ -20587,8 +20587,8 @@
               "hard"
             ],
             "current_season_surface_matches": [
-              3,
-              15
+              9,
+              11
             ]
           }
         },
@@ -20600,8 +20600,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "effective_ranks": [
-              128,
-              227
+              364,
+              528
             ]
           }
         },
@@ -20635,8 +20635,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "prior_matches": [
-              8,
-              14
+              12,
+              13
             ]
           }
         }
@@ -23903,6 +23903,234 @@
       }
     },
     {
+      "match_id": "196631",
+      "scheduled_time": "2026-09-28T11:30:00Z",
+      "p1": "Anastasia Gasanova",
+      "p2": "Viktoria Hruncakova",
+      "legacy_model_ready": false,
+      "legacy_model_ready_source": "frontend/data/results.json",
+      "legacy_model_ready_unchanged": true,
+      "current_engine_reference_consistent": true,
+      "dimensions": {
+        "identity": {
+          "status": "READY",
+          "reason_codes": [
+            "IDENTITY_RESOLVED_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/history_coverage_audit_v949.json",
+          "support": {
+            "players": [
+              {
+                "player": "Anastasia Gasanova",
+                "identity_mode": "exact",
+                "reason": "insufficient_pre_match_sample",
+                "history_matches": 3
+              },
+              {
+                "player": "Viktoria Hruncakova",
+                "identity_mode": "exact",
+                "reason": "insufficient_pre_match_sample",
+                "history_matches": 3
+              }
+            ]
+          }
+        },
+        "freshness": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
+          ],
+          "provenance": "LOGIC-01 history freshness counterfactual",
+          "support": {
+            "tested_scenarios_days": [
+              30,
+              60,
+              90,
+              120,
+              180,
+              365
+            ],
+            "selected_max_history_age_days": null
+          }
+        },
+        "current_season": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "matches": [
+              13,
+              8
+            ]
+          }
+        },
+        "surface": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "target_surfaces": [
+              "hard",
+              "hard"
+            ],
+            "current_season_surface_matches": [
+              13,
+              8
+            ]
+          }
+        },
+        "rank_context": {
+          "status": "READY",
+          "reason_codes": [
+            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "effective_ranks": [
+              195,
+              228
+            ]
+          }
+        },
+        "serve_return": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "Player State + Player DNA readiness audits",
+          "support": {
+            "source_audits_present": {
+              "profile": true,
+              "service_source": true,
+              "pbp_split": true
+            }
+          }
+        },
+        "pbp": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+          ],
+          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+          "support": {}
+        },
+        "opponent_context": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "prior_matches": [
+              12,
+              6
+            ]
+          }
+        }
+      },
+      "market_readiness": {
+        "pbp_early_hold": {
+          "contract_owner": "backend/pbp_market_evidence.py",
+          "markets": {
+            "game_state@2": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state@4": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state@6": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "game_state_sequence_1:1-2:2-3:3": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_total_over_8.5": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_total_over_9.5": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "set1_winner": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_1": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_2": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            },
+            "service_hold_3": {
+              "status": "UNKNOWN",
+              "reason_codes": [
+                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {}
+            }
+          }
+        },
+        "current_engine_generic": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
+          ],
+          "provenance": "frontend/data/results.json",
+          "support": {
+            "legacy_model_ready": false
+          }
+        }
+      }
+    },
+    {
       "match_id": "196644",
       "scheduled_time": "2026-09-28T11:30:00Z",
       "p1": "Luca Potenza",
@@ -24157,234 +24385,6 @@
           "provenance": "frontend/data/results.json",
           "support": {
             "legacy_model_ready": true
-          }
-        }
-      }
-    },
-    {
-      "match_id": "196631",
-      "scheduled_time": "2026-09-28T11:30:00Z",
-      "p1": "Anastasia Gasanova",
-      "p2": "Viktoria Hruncakova",
-      "legacy_model_ready": false,
-      "legacy_model_ready_source": "frontend/data/results.json",
-      "legacy_model_ready_unchanged": true,
-      "current_engine_reference_consistent": true,
-      "dimensions": {
-        "identity": {
-          "status": "READY",
-          "reason_codes": [
-            "IDENTITY_RESOLVED_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/history_coverage_audit_v949.json",
-          "support": {
-            "players": [
-              {
-                "player": "Anastasia Gasanova",
-                "identity_mode": "exact",
-                "reason": "insufficient_pre_match_sample",
-                "history_matches": 3
-              },
-              {
-                "player": "Viktoria Hruncakova",
-                "identity_mode": "exact",
-                "reason": "insufficient_pre_match_sample",
-                "history_matches": 3
-              }
-            ]
-          }
-        },
-        "freshness": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
-          ],
-          "provenance": "LOGIC-01 history freshness counterfactual",
-          "support": {
-            "tested_scenarios_days": [
-              30,
-              60,
-              90,
-              120,
-              180,
-              365
-            ],
-            "selected_max_history_age_days": null
-          }
-        },
-        "current_season": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "matches": [
-              13,
-              8
-            ]
-          }
-        },
-        "surface": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "target_surfaces": [
-              "hard",
-              "hard"
-            ],
-            "current_season_surface_matches": [
-              13,
-              8
-            ]
-          }
-        },
-        "rank_context": {
-          "status": "READY",
-          "reason_codes": [
-            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "effective_ranks": [
-              195,
-              228
-            ]
-          }
-        },
-        "serve_return": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "Player State + Player DNA readiness audits",
-          "support": {
-            "source_audits_present": {
-              "profile": true,
-              "service_source": true,
-              "pbp_split": true
-            }
-          }
-        },
-        "pbp": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-          ],
-          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-          "support": {}
-        },
-        "opponent_context": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "prior_matches": [
-              12,
-              6
-            ]
-          }
-        }
-      },
-      "market_readiness": {
-        "pbp_early_hold": {
-          "contract_owner": "backend/pbp_market_evidence.py",
-          "markets": {
-            "game_state@2": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state@4": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state@6": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "game_state_sequence_1:1-2:2-3:3": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_total_over_8.5": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_total_over_9.5": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "set1_winner": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_1": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_2": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            },
-            "service_hold_3": {
-              "status": "UNKNOWN",
-              "reason_codes": [
-                "PBP_MARKET_EVIDENCE_UNAVAILABLE"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {}
-            }
-          }
-        },
-        "current_engine_generic": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
-          ],
-          "provenance": "frontend/data/results.json",
-          "support": {
-            "legacy_model_ready": false
           }
         }
       }
@@ -29610,6 +29610,254 @@
       }
     },
     {
+      "match_id": "195976",
+      "scheduled_time": "2026-09-28T17:00:00Z",
+      "p1": "Sascha Gueymard Wayenburg",
+      "p2": "Pierre-Hugues Herbert",
+      "legacy_model_ready": true,
+      "legacy_model_ready_source": "frontend/data/results.json",
+      "legacy_model_ready_unchanged": true,
+      "current_engine_reference_consistent": true,
+      "dimensions": {
+        "identity": {
+          "status": "READY",
+          "reason_codes": [
+            "IDENTITY_RESOLVED_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/history_coverage_audit_v949.json",
+          "support": {
+            "history_audit_exception_row": false
+          }
+        },
+        "freshness": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
+          ],
+          "provenance": "LOGIC-01 history freshness counterfactual",
+          "support": {
+            "tested_scenarios_days": [
+              30,
+              60,
+              90,
+              120,
+              180,
+              365
+            ],
+            "selected_max_history_age_days": null
+          }
+        },
+        "current_season": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "matches": [
+              13,
+              2
+            ]
+          }
+        },
+        "surface": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "target_surfaces": [
+              "hard",
+              "hard"
+            ],
+            "current_season_surface_matches": [
+              7,
+              2
+            ]
+          }
+        },
+        "rank_context": {
+          "status": "READY",
+          "reason_codes": [
+            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "effective_ranks": [
+              217,
+              278
+            ]
+          }
+        },
+        "serve_return": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "Player State + Player DNA readiness audits",
+          "support": {
+            "source_audits_present": {
+              "profile": true,
+              "service_source": true,
+              "pbp_split": true
+            }
+          }
+        },
+        "pbp": {
+          "status": "NOT_READY",
+          "reason_codes": [
+            "PBP_NO_READY_MARKET"
+          ],
+          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+          "support": {
+            "ready_markets": [],
+            "min_matches_per_metric": 5
+          }
+        },
+        "opponent_context": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
+          ],
+          "provenance": "frontend/data/player_dna_player_state_shadow.json",
+          "support": {
+            "prior_matches": [
+              11,
+              1
+            ]
+          }
+        }
+      },
+      "market_readiness": {
+        "pbp_early_hold": {
+          "contract_owner": "backend/pbp_market_evidence.py",
+          "markets": {
+            "game_state@2": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state@4": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state@6": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "game_state_sequence_1:1-2:2-3:3": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_total_over_8.5": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_total_over_9.5": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "set1_winner": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_1": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_2": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            },
+            "service_hold_3": {
+              "status": "NOT_READY",
+              "reason_codes": [
+                "EXISTING_PBP_MARKET_GATE_NOT_MET"
+              ],
+              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
+              "support": {
+                "sample_floor": 2,
+                "min_matches_per_metric": 5
+              }
+            }
+          }
+        },
+        "current_engine_generic": {
+          "status": "UNKNOWN",
+          "reason_codes": [
+            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
+          ],
+          "provenance": "frontend/data/results.json",
+          "support": {
+            "legacy_model_ready": true
+          }
+        }
+      }
+    },
+    {
       "match_id": "196027",
       "scheduled_time": "2026-09-28T17:00:00Z",
       "p1": "Felipe Meligeni Alves",
@@ -29851,254 +30099,6 @@
               "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
               "support": {
                 "sample_floor": 5,
-                "min_matches_per_metric": 5
-              }
-            }
-          }
-        },
-        "current_engine_generic": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "LEGACY_MODEL_READY_NOT_MARKET_SPECIFIC_READINESS"
-          ],
-          "provenance": "frontend/data/results.json",
-          "support": {
-            "legacy_model_ready": true
-          }
-        }
-      }
-    },
-    {
-      "match_id": "195976",
-      "scheduled_time": "2026-09-28T17:00:00Z",
-      "p1": "Sascha Gueymard Wayenburg",
-      "p2": "Pierre-Hugues Herbert",
-      "legacy_model_ready": true,
-      "legacy_model_ready_source": "frontend/data/results.json",
-      "legacy_model_ready_unchanged": true,
-      "current_engine_reference_consistent": true,
-      "dimensions": {
-        "identity": {
-          "status": "READY",
-          "reason_codes": [
-            "IDENTITY_RESOLVED_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/history_coverage_audit_v949.json",
-          "support": {
-            "history_audit_exception_row": false
-          }
-        },
-        "freshness": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "FRESHNESS_POLICY_NOT_SELECTED_LOGIC_01"
-          ],
-          "provenance": "LOGIC-01 history freshness counterfactual",
-          "support": {
-            "tested_scenarios_days": [
-              30,
-              60,
-              90,
-              120,
-              180,
-              365
-            ],
-            "selected_max_history_age_days": null
-          }
-        },
-        "current_season": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "CURRENT_SEASON_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "matches": [
-              13,
-              2
-            ]
-          }
-        },
-        "surface": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SURFACE_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "target_surfaces": [
-              "hard",
-              "hard"
-            ],
-            "current_season_surface_matches": [
-              7,
-              2
-            ]
-          }
-        },
-        "rank_context": {
-          "status": "READY",
-          "reason_codes": [
-            "RANK_CONTEXT_PRESENT_BOTH_PLAYERS"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "effective_ranks": [
-              217,
-              278
-            ]
-          }
-        },
-        "serve_return": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "SERVE_RETURN_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "Player State + Player DNA readiness audits",
-          "support": {
-            "source_audits_present": {
-              "profile": true,
-              "service_source": true,
-              "pbp_split": true
-            }
-          }
-        },
-        "pbp": {
-          "status": "NOT_READY",
-          "reason_codes": [
-            "PBP_NO_READY_MARKET"
-          ],
-          "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-          "support": {
-            "ready_markets": [],
-            "min_matches_per_metric": 5
-          }
-        },
-        "opponent_context": {
-          "status": "UNKNOWN",
-          "reason_codes": [
-            "OPPONENT_CONTEXT_EVIDENCE_PRESENT_SUFFICIENCY_POLICY_NOT_SELECTED"
-          ],
-          "provenance": "frontend/data/player_dna_player_state_shadow.json",
-          "support": {
-            "prior_matches": [
-              11,
-              1
-            ]
-          }
-        }
-      },
-      "market_readiness": {
-        "pbp_early_hold": {
-          "contract_owner": "backend/pbp_market_evidence.py",
-          "markets": {
-            "game_state@2": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state@4": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state@6": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "game_state_sequence_1:1-2:2-3:3": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_total_over_8.5": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_total_over_9.5": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "set1_winner": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_1": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_2": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
-                "min_matches_per_metric": 5
-              }
-            },
-            "service_hold_3": {
-              "status": "NOT_READY",
-              "reason_codes": [
-                "EXISTING_PBP_MARKET_GATE_NOT_MET"
-              ],
-              "provenance": "backend/pbp_market_evidence.py::market_evidence_v940",
-              "support": {
-                "sample_floor": 2,
                 "min_matches_per_metric": 5
               }
             }
@@ -31109,10 +31109,10 @@
       }
     },
     {
-      "match_id": "196168",
+      "match_id": "196167",
       "scheduled_time": "2026-09-28T20:00:00Z",
-      "p1": "Braden Shick",
-      "p2": "Ozan Baris",
+      "p1": "Edward Winter",
+      "p2": "Mees Rottgering",
       "legacy_model_ready": true,
       "legacy_model_ready_source": "frontend/data/results.json",
       "legacy_model_ready_unchanged": true,
@@ -31154,8 +31154,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "matches": [
-              7,
-              16
+              10,
+              9
             ]
           }
         },
@@ -31171,8 +31171,8 @@
               "hard"
             ],
             "current_season_surface_matches": [
-              7,
-              16
+              10,
+              8
             ]
           }
         },
@@ -31184,8 +31184,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "effective_ranks": [
-              202,
-              416
+              338,
+              335
             ]
           }
         },
@@ -31233,8 +31233,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "prior_matches": [
-              4,
-              15
+              7,
+              6
             ]
           }
         }
@@ -31368,10 +31368,10 @@
       }
     },
     {
-      "match_id": "196167",
+      "match_id": "196168",
       "scheduled_time": "2026-09-28T20:00:00Z",
-      "p1": "Edward Winter",
-      "p2": "Mees Rottgering",
+      "p1": "Braden Shick",
+      "p2": "Ozan Baris",
       "legacy_model_ready": true,
       "legacy_model_ready_source": "frontend/data/results.json",
       "legacy_model_ready_unchanged": true,
@@ -31413,8 +31413,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "matches": [
-              10,
-              9
+              7,
+              16
             ]
           }
         },
@@ -31430,8 +31430,8 @@
               "hard"
             ],
             "current_season_surface_matches": [
-              10,
-              8
+              7,
+              16
             ]
           }
         },
@@ -31443,8 +31443,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "effective_ranks": [
-              338,
-              335
+              202,
+              416
             ]
           }
         },
@@ -31492,8 +31492,8 @@
           "provenance": "frontend/data/player_dna_player_state_shadow.json",
           "support": {
             "prior_matches": [
-              7,
-              6
+              4,
+              15
             ]
           }
         }
