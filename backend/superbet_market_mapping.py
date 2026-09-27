@@ -95,6 +95,8 @@ def _winner_pick(outcome_name, bookmaker_outcome_id, p1, p2):
         candidates = [person for person in (p1, p2) if key and key == base._name_key(person)]
         if len(candidates) == 1:
             return candidates[0]
+        if len(candidates) > 1:
+            return str(outcome_name or bookmaker_outcome_id or '').strip() or None
     n1, n2 = base._norm(p1), base._norm(p2)
     if n1 and (n1 in outcome or n1 in bookmaker): return p1
     if n2 and (n2 in outcome or n2 in bookmaker): return p2
