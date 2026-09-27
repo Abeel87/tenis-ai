@@ -88,6 +88,15 @@ def _winner_pick(outcome_name, bookmaker_outcome_id, p1, p2):
     if bookmaker in {"1", "p1", "participant 1", "player 1", "home"}: return p1
     if bookmaker in {"2", "p2", "participant 2", "player 2", "away"}: return p2
     if bookmaker in {"x", "draw", "tie"}: return "draw"
+    # The operator can reorder given/middle/family names. Match only the exact
+    # normalized token multiset, and only when it identifies one participant.
+    for observed in (outcome_name, bookmaker_outcome_id):
+        key = base._name_key(observed)
+        candidates = [person for person in (p1, p2) if key and key == base._name_key(person)]
+        if len(candidates) == 1:
+            return candidates[0]
+        if len(candidates) > 1:
+            return str(outcome_name or bookmaker_outcome_id or '').strip() or None
     n1, n2 = base._norm(p1), base._norm(p2)
     if n1 and (n1 in outcome or n1 in bookmaker): return p1
     if n2 and (n2 in outcome or n2 in bookmaker): return p2

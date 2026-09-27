@@ -5,6 +5,7 @@ from backend.superbet_market_mapping import (
     MONTHLY_REQUEST_CAP,
     REFRESH_HOURS,
     _sanitize_fixture,
+    _winner_pick,
     _tournament_ids,
     batched_request,
 )
@@ -210,3 +211,13 @@ def test_handicap_catalogue_line_is_p1_perspective_and_p2_gets_opposite_sign():
     assert got[("set1_game_handicap", "Beta")] == -1.5
     assert got[("set2_game_handicap", "Alpha")] == -2.5
     assert got[("set2_game_handicap", "Beta")] == 2.5
+
+
+def test_winner_pick_resolves_reordered_exact_full_name():
+    assert _winner_pick('Chak Lam Coleman Wong', '', 'Daniil Medvedev', 'Coleman Chak Lam Wong') == 'Coleman Chak Lam Wong'
+    assert _winner_pick('Daniil Medvedev', '', 'Daniil Medvedev', 'Coleman Chak Lam Wong') == 'Daniil Medvedev'
+
+
+def test_winner_pick_does_not_guess_partial_or_ambiguous_names():
+    assert _winner_pick('Chak Wong', '', 'Daniil Medvedev', 'Coleman Chak Lam Wong') == 'Chak Wong'
+    assert _winner_pick('Wong Lam Chak', '', 'Chak Lam Wong', 'Lam Chak Wong') == 'Wong Lam Chak'

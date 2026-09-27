@@ -72,6 +72,10 @@ jobs:
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python scripts/prune_results_payload.py
 
+      - name: Restore exact history for repository tests
+        if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
+        run: python scripts/history_publication_chunks.py restore
+
       - name: Full test suite
         if: steps.scope.outputs.heavy == 'true' || github.event_name == 'workflow_dispatch'
         run: python -m pytest -q
