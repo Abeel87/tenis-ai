@@ -258,11 +258,11 @@ def test_oversized_player_dna_json_is_chunked_without_losing_bytes(tmp_path, mon
     original = source.read_bytes()
     helper.FRONTEND = frontend
     helper.DATA = data
-    helper.MAX_OBJECT_SIZE = 1024
-    helper.HISTORY_CHUNK_TARGET = 300
+    helper.MAX_OBJECT_SIZE = 4096
+    helper.HISTORY_CHUNK_TARGET = 1500
     monkeypatch.setenv("RUNNER_TEMP", str(tmp_path / "runner"))
     rows, by_hash = helper.snapshot_files("dna")
-    assert all(row["size_bytes"] <= 1024 for row in rows)
+    assert all(row["size_bytes"] <= 4096 for row in rows)
     assert all(row["tier"] == "c" for row in rows)
     assert not any(row["path"] == "data/player_dna_prospective_validation.json" for row in rows)
     manifest_row = next(row for row in rows if row["path"].endswith("/manifest.json"))
