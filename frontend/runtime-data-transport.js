@@ -105,6 +105,29 @@ async function privateJson(path){
       record('private_ok',path,{ms:now()-started,layer:metadata.layer,history_chunks:manifest.chunks.length});
       return value;
     }
+    if(path==='data/player_dna_prospective_validation.json'){
+      const prefix='data/private/large/player_dna_prospective_validation/';
+      const {value:manifest}=await signedObject(prefix+'manifest.json',token);
+      if(manifest?.format!=='exact-json-base64-chunks-v1'||manifest.source_path!==path||!Array.isArray(manifest.chunks)||!manifest.chunks.length)throw Object.assign(Error('Nieprawidłowy manifest danych dużego pliku.'),{code:'large_manifest_invalid'});
+      const parts=[];let total=0;
+      const sha=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+      for(const [index,chunk] of manifest.chunks.entries()){
+        if(chunk?.path!==prefix+'chunks/'+String(index).padStart(4,'0')+'.json')throw Object.assign(Error('Nieprawidłowa ścieżka części dużego pliku.'),{code:'large_chunk_invalid'});
+        const {value}=await signedObject(chunk.path,token);
+        if(value?.encoding!=='base64'||typeof value.data!=='string')throw Object.assign(Error('Nieprawidłowa część dużego pliku.'),{code:'large_chunk_invalid'});
+        const raw=atob(value.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+        if(bytes.length!==chunk.bytes||await sha(bytes)!==chunk.sha256)throw Object.assign(Error('Uszkodzona część dużego pliku.'),{code:'large_chunk_mismatch'});
+        parts.push(bytes);total+=bytes.length;
+      }
+      if(total!==manifest.source_size_bytes)throw Object.assign(Error('Niekompletne dane dużego pliku.'),{code:'large_count_mismatch'});
+      const combined=new Uint8Array(total);let offset=0;
+      for(const bytes of parts){combined.set(bytes,offset);offset+=bytes.length}
+      if(await sha(combined)!==manifest.source_sha256)throw Object.assign(Error('Niezgodna suma danych dużego pliku.'),{code:'large_digest_mismatch'});
+      const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(combined));
+      telemetry.private_success+=1;
+      record('private_ok',path,{ms:now()-started,large_chunks:parts.length});
+      return value;
+    }
     const {value,metadata}=await signedObject(path,token);
     telemetry.private_success+=1;
     record('private_ok',path,{ms:now()-started,layer:metadata.layer,size_bytes:metadata.size_bytes});

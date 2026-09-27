@@ -71,3 +71,19 @@ def test_semantic_guard_rejects_split_over_under_threshold():
             {"market": "match_total", "market_id": "1237", "pick": "over", "line": 22.5},
             {"market": "match_total", "market_id": "1237", "pick": "under", "line": 23.5},
         ]))
+
+
+def test_semantic_guard_accepts_exact_reordered_operator_full_name():
+    summary = validate_availability(_report([
+        {'market': 'match_winner', 'market_id': '121', 'pick': 'Yujia Huang'},
+        {'market': 'match_winner', 'market_id': '121', 'pick': 'Sijia Wei'},
+    ], p1='Huang Yujia', p2='Sijia Wei'))
+    assert summary['winner_fixtures_checked'] == 1
+
+
+def test_semantic_guard_rejects_ambiguous_reordered_name():
+    with pytest.raises(AssertionError, match='match winner mapping incomplete'):
+        validate_availability(_report([
+            {'market': 'match_winner', 'market_id': '121', 'pick': 'Yujia Huang'},
+            {'market': 'match_winner', 'market_id': '121', 'pick': 'Other Player'},
+        ], p1='Huang Yujia', p2='Yujia Huang'))

@@ -62,9 +62,11 @@ def _winner_identity(pick, p1, p2):
     """Resolve only an unambiguous operator full-name expansion to a participant."""
     pick_key = _norm(pick)
     participant_keys = [_norm(p1), _norm(p2)]
-    for key in participant_keys:
-        if pick_key and pick_key == key:
-            return key
+    exact = [key for key in participant_keys if pick_key and sorted(pick_key.split()) == sorted(key.split())]
+    if len(exact) == 1:
+        return exact[0]
+    if len(exact) > 1:
+        return None
 
     observed = set(pick_key.split())
     candidates = []

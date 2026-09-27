@@ -318,7 +318,30 @@ jobs:
           git diff --cached --quiet || git commit -m "data: refresh tennis analysis"
           for attempt in 1 2 3; do
             git fetch origin
-            if git rebase origin/main && git push origin HEAD:main; then
+            if ! git rebase origin/main; then
+              # Only the full producer may replace meta after a readiness-only
+              # commit, and only when its fixture snapshot is strictly newer.
+              conflicts="$(git diff --name-only --diff-filter=U)"
+              if [ "$conflicts" != "frontend/data/meta.json" ] || ! python - <<'PY'
+          import json
+          import subprocess
+          from datetime import datetime
+          def stamp(ref):
+              doc=json.loads(subprocess.check_output(
+                  ['git','show',f'{ref}:frontend/data/meta.json'], text=True
+              ))
+              return datetime.fromisoformat(doc['updated_at'].replace('Z','+00:00'))
+          assert stamp('REBASE_HEAD') > stamp('origin/main'), 'Remote core snapshot is not older'
+          PY
+              then
+                git rebase --abort || true
+              else
+                git show REBASE_HEAD:frontend/data/meta.json > frontend/data/meta.json
+                git add frontend/data/meta.json
+                GIT_EDITOR=true git rebase --continue
+              fi
+            fi
+            if [ -z "$(git ls-files -u)" ] && git push origin HEAD:main; then
               break
             fi
             git rebase --abort || true
