@@ -65,6 +65,9 @@ jobs:
           assert f['auto_promote'] is False
           assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
           PY
+      - name: Restore exact history before Neuron training
+        if: github.event_name == 'pull_request' || (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
+        run: python scripts/history_publication_chunks.py restore
       - name: Train from Tenis AI raw history
         if: github.event_name == 'pull_request' || (github.event_name != 'schedule' || github.event.schedule == '35 3 * * 1,4')
         run: python backend/neuron.py train
