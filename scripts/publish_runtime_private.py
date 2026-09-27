@@ -203,6 +203,41 @@ def _chunk_history(source: Path, projection: Path) -> list[tuple[str, Path]]:
     return materialized
 
 
+
+def _chunk_large_json(source: Path, logical: str, projection: Path) -> list[tuple[str, Path]]:
+    """Store exact JSON bytes as bounded base64 JSON objects plus a verified manifest."""
+    import base64
+
+    prefix = f"data/private/large/{Path(logical).stem}"
+    chunks: list[dict[str, Any]] = []
+    materialized: list[tuple[str, Path]] = []
+    digest = hashlib.sha256()
+    total = 0
+    with source.open("rb") as stream:
+        while block := stream.read(HISTORY_CHUNK_TARGET):
+            index = len(chunks)
+            name = f"{index:04d}.json"
+            path = f"{prefix}/chunks/{name}"
+            local = projection / f"large-{Path(logical).stem}-{name}"
+            payload = json.dumps({"encoding": "base64", "data": base64.b64encode(block).decode("ascii")}, separators=(",", ":")).encode()
+            if len(payload) > MAX_OBJECT_SIZE:
+                raise PublishError(f"{path} exceeds private object limit after chunking")
+            _write_bytes(local, payload)
+            chunks.append({"path": path, "bytes": len(block), "sha256": hashlib.sha256(block).hexdigest()})
+            materialized.append((path, local))
+            digest.update(block)
+            total += len(block)
+    if not chunks:
+        raise PublishError(f"Cannot chunk empty file: {logical}")
+    manifest_path = f"{prefix}/manifest.json"
+    manifest_local = projection / f"large-{Path(logical).stem}-manifest.json"
+    _write_bytes(manifest_local, json.dumps({
+        "format": "exact-json-base64-chunks-v1", "source_path": logical,
+        "source_sha256": digest.hexdigest(), "source_size_bytes": total, "chunks": chunks,
+    }, separators=(",", ":")).encode())
+    materialized.insert(0, (manifest_path, manifest_local))
+    return materialized
+
 def snapshot_files(layer: str) -> tuple[list[dict[str, Any]], dict[str, Path]]:
     if layer not in {"core", "market", "dna", "neuron"}:
         raise PublishError(f"Unknown layer: {layer}")
@@ -221,6 +256,9 @@ def snapshot_files(layer: str) -> tuple[list[dict[str, Any]], dict[str, Path]]:
             continue
         if logical == "data/history.json":
             selected.extend(_chunk_history(source, projection))
+            continue
+        if source.stat().st_size > MAX_OBJECT_SIZE:
+            selected.extend(_chunk_large_json(source, logical, projection))
             continue
         selected.append((logical, source))
 
