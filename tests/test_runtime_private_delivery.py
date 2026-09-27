@@ -246,3 +246,33 @@ def test_private_delivery_does_not_touch_model_or_betting_logic():
     joined = "\n".join((MIGRATION, PUBLISHER, READER, WORKFLOW, HELPER))
     for item in forbidden:
         assert item not in joined
+
+
+def test_oversized_player_dna_json_is_chunked_without_losing_bytes(tmp_path, monkeypatch):
+    import base64
+    helper = _load_helper()
+    frontend = tmp_path / "frontend"
+    data = frontend / "data"
+    source = data / "player_dna_prospective_validation.json"
+    _write_json(source, {"snapshots": [{"id": n, "text": "x" * 300} for n in range(30)]})
+    original = source.read_bytes()
+    helper.FRONTEND = frontend
+    helper.DATA = data
+    helper.MAX_OBJECT_SIZE = 1024
+    helper.HISTORY_CHUNK_TARGET = 300
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path / "runner"))
+    rows, by_hash = helper.snapshot_files("dna")
+    assert all(row["size_bytes"] <= 1024 for row in rows)
+    assert all(row["tier"] == "c" for row in rows)
+    assert not any(row["path"] == "data/player_dna_prospective_validation.json" for row in rows)
+    manifest_row = next(row for row in rows if row["path"].endswith("/manifest.json"))
+    manifest = json.loads(by_hash[manifest_row["sha256"]].read_text())
+    assert manifest["source_sha256"] == hashlib.sha256(original).hexdigest()
+    restored = b""
+    for part in manifest["chunks"]:
+        row = next(row for row in rows if row["path"] == part["path"])
+        payload = json.loads(by_hash[row["sha256"]].read_text())
+        block = base64.b64decode(payload["data"], validate=True)
+        assert hashlib.sha256(block).hexdigest() == part["sha256"]
+        restored += block
+    assert restored == original
