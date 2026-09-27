@@ -22,3 +22,6 @@ runs:
     - name: Build match delivery
       shell: bash
       run: node scripts/build_delivery.mjs
+    - name: Remove repository-only history chunks from Pages payload
+      shell: bash
+      run: rm -rf frontend/data/history_chunks
