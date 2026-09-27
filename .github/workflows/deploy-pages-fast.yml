@@ -44,6 +44,10 @@ jobs:
 
           BEFORE="${{ github.event.before }}" HEAD_SHA="$GITHUB_SHA" python .github/scripts/change_scope.py
 
+      - name: Restore exact history from repository chunks
+        if: steps.scope.outputs.deploy == 'true'
+        run: python scripts/history_publication_chunks.py restore
+
       - name: Setup Node
         if: steps.scope.outputs.deploy == 'true'
         uses: actions/setup-node@v7
