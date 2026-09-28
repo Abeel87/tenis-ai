@@ -937,3 +937,8 @@ Projekt jest uporządkowany, gdy dla dowolnej widocznej prognozy można odpowied
 16. Jak prediction został zamrożony i później rozliczony?
 
 Jeżeli na którekolwiek pytanie odpowiedź brzmi „chyba”, „fallback”, „stary guard” albo „tak wyszło ze średniej”, ten fragment systemu nie jest jeszcze uporządkowany.
+
+
+## Hourly history delivery repair — 2026-09-28
+
+The hourly Superbet workflow must restore the exact history chunks before any model consumer and repack before staging frontend data. The tracked history.json placeholder is not a training dataset. Run 36386926310 consumed it without restoration and reported zero training rows / Symphony insufficient_history despite a populated chunk manifest. This is workflow input delivery, not a model/training algorithm change. Regression test: tests/test_market_refresh_history.py. Models, probabilities, thresholds and settlement remain unchanged.
