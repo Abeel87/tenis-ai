@@ -102,6 +102,9 @@ jobs:
       - name: Install bounded runtime dependencies
         if: steps.freshness.outputs.refresh == 'true'
         run: pip install -r requirements.txt -c requirements.lock
+      - name: Restore exact history before model consumers
+        if: steps.freshness.outputs.refresh == 'true'
+        run: python scripts/history_publication_chunks.py restore
       - name: Refresh Superbet Direct selected-match sidecar
         id: direct_refresh
         if: steps.freshness.outputs.refresh == 'true'
@@ -283,6 +286,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
+          python scripts/history_publication_chunks.py pack
           git add frontend/data
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
