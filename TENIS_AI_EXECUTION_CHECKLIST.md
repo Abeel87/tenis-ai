@@ -491,3 +491,10 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - Coverage audit: same run sees 437 app fixtures, 427 provider fixtures, 53 operator matched candidates, 40 verified contexts, 18 current prematch Symphony fixtures. Direct resolves 8/8 candidates, below its existing 64 limit; do not claim raising that cap fixes coverage.
 - DO NOT REDO: PR #519 publication repair; no model math, threshold, weight, training-algorithm, settlement or SHADOW promotion changes.
 - NEXT EXACT ACTION: finish this PR CI, fresh main, merge green, verify real hourly output; then investigate remaining exact provider overlap with evidence.
+
+
+### Production verification — 2026-09-28 07:24 UTC
+
+PR #520 merged as eab9e01947373b290c853508f725f6f410ad608e after all 11 checks passed; fresh main had not moved before merge. Real hourly run 36390795490 passed with the restore step successful. Published Symphony 07:22:26Z: model ready, training_rows=33305, scored_selections=2017, verified current prematch fixtures=18, final_playable_matches=11 (previous hourly run had insufficient_history and zero scores). FAST Pages run 36391355461 follows this publication. No algorithm/probability/threshold/settlement changes. The remaining coverage gap is not caused by the 64 Direct candidate cap: earlier report had 8 candidates, 321 NO_SAFE_NAME_MATCH and 63 TIME_GUARD across 437 app rows. Do not relax identity/time gates without source evidence.
+
+NEXT EXACT ACTION: verify FAST Pages 36391355461 conclusion; any further coverage work must audit unmatched provider identities and schedule evidence, not change model thresholds. This branch-only closeout records post-merge runtime evidence; executable repair is already on main.
