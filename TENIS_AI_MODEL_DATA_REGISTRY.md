@@ -942,3 +942,7 @@ Jeżeli na którekolwiek pytanie odpowiedź brzmi „chyba”, „fallback”, �
 ## Hourly history delivery repair — 2026-09-28
 
 The hourly Superbet workflow must restore the exact history chunks before any model consumer and repack before staging frontend data. The tracked history.json placeholder is not a training dataset. Run 36386926310 consumed it without restoration and reported zero training rows / Symphony insufficient_history despite a populated chunk manifest. This is workflow input delivery, not a model/training algorithm change. Regression test: tests/test_market_refresh_history.py. Models, probabilities, thresholds and settlement remain unchanged.
+
+
+## Superbet rejection evidence — 2026-09-28
+Canonical fixture matcher telemetry now keeps up to 12 examples per reason in samples_by_reason in addition to its legacy bounded list. TIME_GUARD examples retain up to three already-considered candidate fixture IDs, original participant names, source start time, absolute hour delta and exact-pair flag. This prevents early unmatched rows from hiding all schedule mismatch evidence. No matching scores, time tolerances, requests, probabilities or gates change.

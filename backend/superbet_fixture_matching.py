@@ -27,7 +27,7 @@ SCORE_ORIENTED_MARKETS = {
 
 
 def _empty_scope() -> dict:
-    return {"checked":0,"exact":0,"relaxed":0,"unmatched":0,"time_rejected":0,"ambiguous_rejected":0,"unmatched_samples":[]}
+    return {"checked":0,"exact":0,"relaxed":0,"unmatched":0,"time_rejected":0,"ambiguous_rejected":0,"unmatched_samples":[],"samples_by_reason":{}}
 
 
 _TELEMETRY = {"live": _empty_scope(), "cached": _empty_scope()}
@@ -93,15 +93,27 @@ def _fixture_fields(row: dict, cached: bool):
     return row.get("participant1Name"),row.get("participant2Name"),row.get("startTime"),row.get("fixtureId")
 
 
-def _sample(scope: dict, match: dict, reason: str) -> None:
-    samples=scope.get("unmatched_samples")
-    if not isinstance(samples,list) or len(samples)>=MAX_SAMPLE_ROWS:return
-    samples.append({"p1":str(match.get("p1") or ""),"p2":str(match.get("p2") or ""),"scheduled_time":match.get("scheduled_time"),"reason":reason})
+def _sample(scope: dict, match: dict, reason: str, candidates=None) -> None:
+    sample = {
+        "match_id": match.get("match_id") if match.get("match_id") is not None else match.get("id"),
+        "p1": str(match.get("p1") or ""),
+        "p2": str(match.get("p2") or ""),
+        "scheduled_time": match.get("scheduled_time"),
+        "reason": reason,
+    }
+    if candidates:
+        sample["candidates"] = candidates[:3]
+    samples = scope.get("unmatched_samples")
+    if isinstance(samples, list) and len(samples) < MAX_SAMPLE_ROWS:
+        samples.append(sample)
+    by_reason = scope.setdefault("samples_by_reason", {}).setdefault(reason, [])
+    if len(by_reason) < MAX_SAMPLE_ROWS:
+        by_reason.append(sample)
 
 
 def _select(match: dict, fixtures: list[dict], *, cached: bool, record_telemetry: bool = True):
     scope_name="cached" if cached else "live"; scope=_TELEMETRY[scope_name] if record_telemetry else _empty_scope(); scope["checked"]+=1
-    app_p1,app_p2=match.get("p1"),match.get("p2"); scheduled=base._parse_dt(match.get("scheduled_time")); ranked=[]; had_name_candidate=False; had_time_rejection=False
+    app_p1,app_p2=match.get("p1"),match.get("p2"); scheduled=base._parse_dt(match.get("scheduled_time")); ranked=[]; had_name_candidate=False; had_time_rejection=False; time_evidence=[]
     for row in fixtures:
         if not isinstance(row,dict):continue
         fixture_p1,fixture_p2,start_value,fixture_id=_fixture_fields(row,cached); score=_pair_score(app_p1,app_p2,fixture_p1,fixture_p2)
@@ -111,12 +123,19 @@ def _select(match: dict, fixtures: list[dict], *, cached: bool, record_telemetry
             if exact:ranked.append((0,-score,0.0,str(fixture_id or ""),row,exact))
             continue
         start=base._parse_dt(start_value)
-        if start is None:had_time_rejection=True;continue
-        delta=abs((start-scheduled).total_seconds())/3600.0
-        if delta>base.MAX_MATCH_TIME_DELTA_HOURS:had_time_rejection=True;continue
+        delta = abs((start-scheduled).total_seconds())/3600.0 if start is not None else None
+        if delta is None or delta > base.MAX_MATCH_TIME_DELTA_HOURS:
+            had_time_rejection = True
+            if len(time_evidence) < 3:
+                time_evidence.append({
+                    "fixture_id": fixture_id, "p1": fixture_p1, "p2": fixture_p2,
+                    "start_time": start_value, "delta_hours": delta,
+                    "exact_pair": exact,
+                })
+            continue
         ranked.append((0 if exact else 1,-score,delta,str(fixture_id or ""),row,exact))
     if not ranked:
-        if had_time_rejection or (had_name_candidate and scheduled is None):scope["time_rejected"]+=1;_sample(scope,match,"TIME_GUARD")
+        if had_time_rejection or (had_name_candidate and scheduled is None):scope["time_rejected"]+=1;_sample(scope,match,"TIME_GUARD",time_evidence)
         else:scope["unmatched"]+=1;_sample(scope,match,"NO_SAFE_NAME_MATCH")
         return None
     ranked.sort(key=lambda item:item[:4]); best=ranked[0]
