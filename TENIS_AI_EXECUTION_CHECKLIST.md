@@ -478,3 +478,16 @@ Jeżeli podczas zadania pojawi się nowy problem:
 - nie uznawaj problemu za rozwiązany tylko dlatego, że UI przestało go pokazywać.
 
 Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci pojedynczego czatu**.
+
+
+## Active incident: Symphony hourly history — 2026-09-28
+
+- [x] Fresh main checked: db764d9278a2b9e71a78300f0cc8a885f971c8db; open PRs are dependency updates only.
+- [x] Root cause reproduced: hourly market refresh lacks history restore, while Symphony reads history.json; run 36386926310 reported zero training rows.
+- [x] Regression fails on original workflow and passes with restore before consumers plus pack before git add.
+- [~] Branch fix/symphony-hourly-history-20260928: workflow/test/registry repair; CI and production verification pending.
+- [ ] Merge only after green CI and fresh-main comparison.
+- [ ] Verify next real hourly refresh has restored history, model support and published recommendations (counts are data-dependent).
+- Coverage audit: same run sees 437 app fixtures, 427 provider fixtures, 53 operator matched candidates, 40 verified contexts, 18 current prematch Symphony fixtures. Direct resolves 8/8 candidates, below its existing 64 limit; do not claim raising that cap fixes coverage.
+- DO NOT REDO: PR #519 publication repair; no model math, threshold, weight, training-algorithm, settlement or SHADOW promotion changes.
+- NEXT EXACT ACTION: finish this PR CI, fresh main, merge green, verify real hourly output; then investigate remaining exact provider overlap with evidence.
