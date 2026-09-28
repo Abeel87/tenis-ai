@@ -491,3 +491,13 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - Coverage audit: same run sees 437 app fixtures, 427 provider fixtures, 53 operator matched candidates, 40 verified contexts, 18 current prematch Symphony fixtures. Direct resolves 8/8 candidates, below its existing 64 limit; do not claim raising that cap fixes coverage.
 - DO NOT REDO: PR #519 publication repair; no model math, threshold, weight, training-algorithm, settlement or SHADOW promotion changes.
 - NEXT EXACT ACTION: finish this PR CI, fresh main, merge green, verify real hourly output; then investigate remaining exact provider overlap with evidence.
+
+
+## LIVE coverage continuation — 2026-09-28
+- [x] PR #520 history repair deployed; hourly run 36419314590 still has ready model, 33305 training rows; FAST Pages 36391355461 and 36419946806 success.
+- [x] Snapshot 2de5456e6a133533c0d22f5c81626511089161af: 381 app rows; at 12:08Z 180 future rows; 19 verified operator contexts, 5 future Symphony rows, 4 PLAYABLE. Counts decrease with start times; no zero-history regression.
+- [x] Root diagnostic gap reproduced: 12 early NO_SAFE_NAME_MATCH examples suppress later TIME_GUARD evidence despite 65 time rejections. Local tests fail before repair and pass 2/2 afterwards.
+- [~] Branch audit/superbet-time-rejection-evidence: bounded reason-specific evidence, unchanged matching decisions; CI/merge pending.
+- [ ] Inspect next real report's live.samples_by_reason.TIME_GUARD and compare app/provider timestamps before proposing any schedule repair.
+- DO NOT REDO: history restoration; do not relax identity/time gates or manufacture recommendations. Remaining operator coverage is not yet repaired.
+- NEXT EXACT ACTION: green CI -> fresh main -> merge -> inspect next normal operator refresh evidence.
