@@ -38,7 +38,6 @@ REFRESH_HOURS = 1
 MARKET_META_TTL_DAYS = 7
 MONTHLY_REQUEST_CAP = 4000
 DIRECT_FIXTURE_MONTHLY_CAP = 1700
-DIRECT_FIXTURE_MAX_PER_REFRESH = 24
 DIRECT_FIXTURE_DELAY_SECONDS = 0.55
 DIRECT_FIXTURE_WINDOW_HOURS = 12
 DIRECT_FIXTURE_CLOSE_HOURS = 4
@@ -800,8 +799,10 @@ def refresh_availability(results: list[dict], now=None):
                 direct_due += 1
                 total_budget_left = int(quota.get("requests_used_by_v91") or 0) < cap
                 direct_budget_left = int(quota.get("direct_fixture_requests_used") or 0) < direct_cap
-                refresh_budget_left = direct_requests_this_refresh < DIRECT_FIXTURE_MAX_PER_REFRESH
-                if total_budget_left and direct_budget_left and refresh_budget_left:
+                # Drain every due exact fixture within the monthly budgets.
+                # A per-refresh slice left valid offers unchecked until a later
+                # hourly run, potentially after their scheduled start.
+                if total_budget_left and direct_budget_left:
                     time.sleep(DIRECT_FIXTURE_DELAY_SECONDS)
                     direct_requests_this_refresh += 1
                     direct_checked_this_refresh.add(fixture_id)

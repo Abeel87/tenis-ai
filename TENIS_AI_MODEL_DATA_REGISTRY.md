@@ -946,3 +946,12 @@ The hourly Superbet workflow must restore the exact history chunks before any mo
 
 ## Superbet rejection evidence — 2026-09-28
 Canonical fixture matcher telemetry now keeps up to 12 examples per reason in samples_by_reason in addition to its legacy bounded list. TIME_GUARD examples retain up to three already-considered candidate fixture IDs, original participant names, source start time, absolute hour delta and exact-pair flag. This prevents early unmatched rows from hiding all schedule mismatch evidence. No matching scores, time tolerances, requests, probabilities or gates change.
+
+
+## Current-offer queue coverage repair — 2026-09-29
+
+Owner: `backend/superbet_market_core.py::refresh_availability`. Production snapshot at 01:59Z reports 48 due exact-fixture lookups, 24 attempted, 24 skipped, with monthly usage 2391/4000 and direct usage 462/1700. The fixed per-refresh slice, not exhausted account budget, prevented checking the rest of this queue. Remove that slice; retain exact identity/time/bookmaker/line checks, 0.55s request pacing, milestone cache and both monthly budgets. The bounded queue consists only of discovered, matched fixtures within the existing 12-hour recovery window. This changes input retrieval coverage only, not model/training math or PLAYABLE rules.
+
+Regression: 48 current fixtures with empty tournament bulk all receive their exact offer lookup; a repeated same-stage refresh makes no duplicate lookups; account and direct monthly limits still stop at their exact boundaries. Old code fails the 48-fixture case, repaired code passes all four tests.
+
+PR #521 production full run 36438771639 succeeded. Latest reason-specific report: 153 matched / 430 app rows, 275 name misses, only 2 time rejections (both next-day fixtures differ by 6 hours). No evidence justifies widening the time gate. At 02:25Z Symphony model is ready with 34399 training rows, 68 verified fixtures and 8900 scored selections. These are snapshot counts, not a guarantee of 68 PLAYABLE matches or complete bookmaker coverage.
