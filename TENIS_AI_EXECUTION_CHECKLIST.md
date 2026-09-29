@@ -516,3 +516,11 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - BLOCKERS: remaining unmatched source identities and offers absent from provider are not solved by removing the queue slice. No claim all 430 fixtures are playable.
 - DO NOT REDO: history restoration and PR #521 diagnostic evidence; keep exact identity/bookmaker/time/line guards, monthly budgets, model math, thresholds and settlement unchanged.
 - NEXT EXACT ACTION: inspect this PR CI, merge only green against fresh main, then verify real refresh `direct_fixture_requests_due/this_refresh/skipped_budget` and downstream Symphony data.
+
+
+### Queue repair merge checkpoint — 2026-09-29 03:09 UTC
+- [x] PR #522 head 07ec44d77748d4da499b67d9388e34d274271667 passed all 11 checks; fresh main remained e4264856fac49587f79d77021b29161dce088c31.
+- [x] Merged as c65dc6a769272433f9e5de7d3bb2f33e380a997d. Code repair is on main.
+- [~] Production full update 36515890736 started from this merge; last observation: scope job 109237944472 running checkout. Production coverage effect is not yet verified.
+- Latest pre-repair snapshot: 430 app rows, 418 scheduled after snapshot generation, 69 verified contexts, 68 Symphony fixtures, 29 final PLAYABLE matches. Do not confuse these populations.
+- NEXT EXACT ACTION: inspect completion/jobs of run 36515890736 and following hourly/Pages delivery; read new availability counters and Symphony/results. No need to repeat or reimplement the merged fix. This post-merge checkpoint is stored on the task branch.
