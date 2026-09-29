@@ -501,3 +501,18 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - [ ] Inspect next real report's live.samples_by_reason.TIME_GUARD and compare app/provider timestamps before proposing any schedule repair.
 - DO NOT REDO: history restoration; do not relax identity/time gates or manufacture recommendations. Remaining operator coverage is not yet repaired.
 - NEXT EXACT ACTION: green CI -> fresh main -> merge -> inspect next normal operator refresh evidence.
+
+
+## LIVE CHECKPOINT — current-offer queue, 2026-09-29
+- ACTIVE TASK: repair missing current operator coverage; canonical owner `superbet_market_core.py`.
+- LAST VERIFIED MAIN: `e4264856fac49587f79d77021b29161dce088c31`.
+- [x] PR #521 merged as 16233bd82c83aa682cb033f8aa22bec8869df3bc; full production run 36438771639 succeeded.
+- [x] Current production hourly 36512101984 and FAST deploy 36513516139 succeeded; Symphony at 02:25Z ready, 34399 training rows, 68 verified fixtures / 8900 scored selections.
+- [x] Examined TIME_GUARD evidence: only two next-day 6-hour discrepancies; keep time checks unchanged.
+- [x] Reproduced 48-due/24-attempted queue truncation; removed per-refresh slice in canonical retrieval owner. All four local regressions pass, old implementation fails full-queue test.
+- BRANCH: `fix/drain-current-offer-queue`; PR creation/full CI pending.
+- CHANGED FILES: core, `tests/test_superbet_offer_queue.py`, registry, this checkpoint.
+- [ ] Green full CI, fresh main, merge, verify next production request queue and delivery.
+- BLOCKERS: remaining unmatched source identities and offers absent from provider are not solved by removing the queue slice. No claim all 430 fixtures are playable.
+- DO NOT REDO: history restoration and PR #521 diagnostic evidence; keep exact identity/bookmaker/time/line guards, monthly budgets, model math, thresholds and settlement unchanged.
+- NEXT EXACT ACTION: inspect this PR CI, merge only green against fresh main, then verify real refresh `direct_fixture_requests_due/this_refresh/skipped_budget` and downstream Symphony data.
