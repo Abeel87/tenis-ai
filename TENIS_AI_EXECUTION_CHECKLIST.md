@@ -516,3 +516,16 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - BLOCKERS: remaining unmatched source identities and offers absent from provider are not solved by removing the queue slice. No claim all 430 fixtures are playable.
 - DO NOT REDO: history restoration and PR #521 diagnostic evidence; keep exact identity/bookmaker/time/line guards, monthly budgets, model math, thresholds and settlement unchanged.
 - NEXT EXACT ACTION: inspect this PR CI, merge only green against fresh main, then verify real refresh `direct_fixture_requests_due/this_refresh/skipped_budget` and downstream Symphony data.
+
+
+## LIVE CHECKPOINT — provider collapse / archive ceiling, 2026-09-29
+- ACTIVE TASK: identify 0/304 provider overlap and repair archive publication.
+- BRANCH: fix/provider-evidence-and-archive-ceiling; base a4efd3d6dd9fab9c7004bcf7b82f1f681190d186.
+- [x] PR #522 green merge c65dc6a769272433f9e5de7d3bb2f33e380a997d, full update and hourly delivered. No business recovery: 14 Symphony, 0 PLAYABLE; subsequent hourly repeated 0/304 provider overlap.
+- [x] Source response currently not retained; add price-free bounded catalogue schema/identity/date evidence using the existing request. Two local evidence tests pass.
+- [x] Archive live SQL verified 287542749 archive bytes, no missing reservations; project occupancy drops after runtime cleanup but failed at 805165953 > 750000000.
+- [x] Rollback-only SQL temporary trigger tests pass: 805165953 allowed by proposed 900MB ceiling; project overflow and 300MB archive overflow still rejected.
+- [ ] Full CI, fresh main, merge; deploy exact migration via Supabase; verify functions and rerun failed archive publisher.
+- [ ] Inspect first real fixture_catalogue_evidence; correct only a proven source/parser issue and verify downstream.
+- DO NOT REDO: history restore, queue removal; no identity/time relaxation, model changes or invented odds.
+- NEXT EXACT ACTION: finish CI and deployment, retrieve actual catalogue evidence. Zero-overlap root cause remains unconfirmed; do not claim repaired coverage.
