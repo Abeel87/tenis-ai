@@ -168,3 +168,22 @@ def test_strict_contract_forbids_non_fixture_fallbacks():
     assert '"catalogue_fallback_allowed":False' in source.replace(" ", "")
     assert '"model_line_fallback_allowed":False' in source.replace(" ", "")
     assert '"nearest_line_fallback_allowed":False' in source.replace(" ", "")
+
+def test_inactive_or_empty_bulk_offer_does_not_suppress_exact_fixture_recovery():
+    live = {
+        "bookmaker": ctx.base.BOOKMAKER,
+        "bookmaker_active": True,
+        "suspended": False,
+        "canonical_selections": [{"market": "match_winner", "operator_available": True}],
+    }
+    assert ctx.base._sanitized_fixture_has_current_operator_offer(live) is True
+
+    inactive = dict(live, bookmaker_active=False)
+    assert ctx.base._sanitized_fixture_has_current_operator_offer(inactive) is False
+
+    suspended = dict(live, suspended=True)
+    assert ctx.base._sanitized_fixture_has_current_operator_offer(suspended) is False
+
+    empty = dict(live, canonical_selections=[])
+    assert ctx.base._sanitized_fixture_has_current_operator_offer(empty) is False
+
