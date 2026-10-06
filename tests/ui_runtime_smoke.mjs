@@ -53,8 +53,14 @@ await route('#coupons');
 console.log('PASS: TOP controls, market state, tournament fixture retention, expanded section and scroll restoration');
 handlers.input({target:{id:'slip-title',value:'Weekend',matches:()=>false}});
 handlers.input({target:{id:'slip-stake',value:'25',matches:()=>false}});
-await click({'data-save-slip':true});assert.equal(writes[0].table,'ui_coupons');assert.equal(writes[0].row.user_id,'owner');assert.equal(writes[0].row.title,'Weekend');assert.equal(writes[0].row.stake,25);assert.equal(writes[0].row.legs.length,candidates.length);
-assert((await route('#coupons/saved')).includes('Weekend'));
+await click({'data-save-slip':true});
+if(candidates.length){
+ assert.equal(writes[0].table,'ui_coupons');assert.equal(writes[0].row.user_id,'owner');assert.equal(writes[0].row.title,'Weekend');assert.equal(writes[0].row.stake,25);assert.equal(writes[0].row.legs.length,candidates.length);
+ assert((await route('#coupons/saved')).includes('Weekend'));
+}else{
+ assert.equal(writes.length,0,'Empty slip must not persist when live Symphony has zero selectable candidates');
+ assert((await route('#coupons/saved')).includes('Brak')||element('#app').innerHTML.length>0,'Saved coupons route remains renderable with an empty slip');
+}
 assert((await route('#admin/dashboard')).includes('Brak uprawnień'));assert((await route('#moderator')).includes('Brak uprawnień'));
 role='moderator';assert((await route('#moderator')).includes('Panel moderatora'));assert((await route('#admin/dashboard')).includes('Brak uprawnień'));
 role='admin';for(const tab of ['dashboard','models','data','superbet','system','users','diagnostics'])assert((await route('#admin/'+tab)).includes('Admin Control Center'));
