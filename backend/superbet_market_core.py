@@ -592,6 +592,22 @@ def _direct_cache_entry(stage: str, now: datetime, offer, *, error=None):
     }
 
 
+def _sanitized_fixture_has_current_operator_offer(item: dict) -> bool:
+    """Only a live, usable Superbet offer may suppress exact-fixture recovery."""
+    if (
+        not isinstance(item, dict)
+        or item.get("bookmaker") != BOOKMAKER
+        or item.get("bookmaker_active") is False
+        or item.get("suspended") is True
+    ):
+        return False
+    return any(
+        isinstance(selection, dict)
+        and selection.get("operator_available") is True
+        for selection in (item.get("canonical_selections") or [])
+    )
+
+
 def refresh_availability(results: list[dict], now=None):
     now = now or datetime.now(timezone.utc)
     previous = _read(AVAILABILITY, {})
@@ -747,10 +763,14 @@ def refresh_availability(results: list[dict], now=None):
                     item["discovered_fixture_id"] = discovered_id
                 sanitized.append(item)
 
+        # A tournament row is only authoritative enough to suppress an exact
+        # fixture lookup when Superbet is live and exposes at least one usable
+        # current selection. Historical/inactive rows from the same tournament
+        # must not create false "coverage" and strand the runtime at 0 VERIFIED.
         bulk_covered_discovered_ids = {
             str(item.get("discovered_fixture_id") or item.get("fixture_id") or "")
             for item in sanitized
-            if isinstance(item, dict)
+            if _sanitized_fixture_has_current_operator_offer(item)
             and (item.get("discovered_fixture_id") or item.get("fixture_id")) is not None
         }
         bulk_covered_discovered_ids.discard("")
