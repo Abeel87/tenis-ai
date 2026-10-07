@@ -384,6 +384,32 @@ def _identity_debug_snapshot(row: dict) -> dict:
     return out
 
 
+
+def _fixture_catalogue_evidence(rows, date_from, date_to):
+    """Bounded, price-free evidence from the response already requested."""
+    valid = [row for row in rows if isinstance(row, dict)]
+    required = ("fixtureId", "participant1Name", "participant2Name", "startTime")
+    days = {}
+    sports = {}
+    for row in valid:
+        day = str(row.get("startTime") or "")[:10] or "MISSING"
+        days[day] = days.get(day, 0) + 1
+        sport = str(row.get("sportId") if row.get("sportId") is not None else "MISSING")
+        sports[sport] = sports.get(sport, 0) + 1
+    fields = required + ("sportId", "statusId", "tournamentId", "tournamentName")
+    return {
+        "requested_from": date_from, "requested_to": date_to,
+        "rows": len(rows), "dictionary_rows": len(valid),
+        "missing_fields": {key: sum(not row.get(key) for row in valid) for key in required},
+        "start_days": days, "sport_ids": sports,
+        "sample_keys": sorted(str(key) for row in valid[:12] for key in row),
+        "identity_samples": [
+            {key: row[key] for key in fields if key in row and
+             isinstance(row[key], (str, int, float, bool, type(None)))}
+            for row in valid[:64]
+        ],
+    }
+
 def _requested_bookmaker_payload(row: dict):
     """Return only the exact configured Superbet PL payload.
 
@@ -651,6 +677,7 @@ def refresh_availability(results: list[dict], now=None):
             language="en",
         )
         fixture_rows = fixture_rows if isinstance(fixture_rows, list) else _flatten_payload(fixture_rows)
+        discovery_evidence = _fixture_catalogue_evidence(fixture_rows, date_from, date_to)
         wanted_fixture_ids = set()
         discovered_matches = []
         tournament_ids = set()
@@ -673,6 +700,7 @@ def refresh_availability(results: list[dict], now=None):
                 "refresh_hours": REFRESH_HOURS,
                 "fixtures_seen": len(fixture_rows), "app_matches": len(results),
                 "matched_fixture_candidates": 0, "fixtures": [], "direct_fixture_cache": {},
+                "fixture_catalogue_evidence": discovery_evidence,
                 "market_meta_generated_at": market_meta_generated_at, "market_meta_cache": market_meta, "quota_guard": quota,
             }
             _write(AVAILABILITY, report)
@@ -917,6 +945,7 @@ def refresh_availability(results: list[dict], now=None):
             "sport_id": SPORT_ID_TENNIS, "contains_prices": False, "prices_used": False, "refresh_hours": REFRESH_HOURS,
             "fixtures_seen": len(fixture_rows), "app_matches": len(results), "matched_fixture_candidates": len(wanted_fixture_ids),
             "tournaments_queried": len(tournament_ids),
+            "fixture_catalogue_evidence": discovery_evidence,
             "bulk_operator_odds_rows_seen": len(odds_rows),
             "operator_odds_rows_seen": len(odds_rows) + direct_rows_seen,
             "direct_fixture_window_hours": DIRECT_FIXTURE_WINDOW_HOURS,
