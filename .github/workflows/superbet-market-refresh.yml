@@ -138,12 +138,14 @@ jobs:
         run: python backend/superbet_builder_terminal_evidence.py refresh
       - name: Freeze verified pre-match Superbet quote evidence for AI research
         if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
         run: |
           python backend/superbet_quote_evidence.py \
             --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --output "$RUNNER_TEMP/superbet-quote-evidence.json"
       - name: Persist run-isolated prospective Superbet quote evidence
         if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: superbet-quote-evidence-${{ github.run_id }}-${{ github.run_attempt }}
