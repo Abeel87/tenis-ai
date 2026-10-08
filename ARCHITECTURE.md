@@ -148,3 +148,8 @@ W sprawach pracy agentów i zmiany kodu:
 6. historyczne audyty/plany — materiał dowodowy, nie automatycznie obowiązujący runtime.
 
 Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; nie wolno wybierać wygodniejszej wersji po cichu.
+
+
+### Exact-byte repository publication transport
+
+`scripts/history_publication_chunks.py` owns Git-safe storage for `history.json` and `prediction_ledger_shadow.json`. Its existing workflow restore/pack boundaries preserve each complete source byte-for-byte using separate SHA-256 manifests and 16 MiB parts. Core/market generation restores before consumers and packs before Git staging. Pages restores canonical JSON before runtime snapshot creation and excludes the redundant chunk directories from its artifact. Existing prediction/settlement owners and JSON paths remain unchanged.

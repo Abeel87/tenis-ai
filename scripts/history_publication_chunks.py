@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Store the exact history bytes in small Git objects; restore for builds/Pages."""
+"""Store exact history and prediction-ledger bytes in small Git objects; restore for builds/Pages."""
 
 from __future__ import annotations
 
@@ -12,12 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 CHUNK_BYTES = 16 * 1024 * 1024
 
 
-def paths(data: Path):
-    return data / 'history.json', data / 'history_chunks', data / 'history_chunks' / 'manifest.json'
+def paths(data: Path, filename: str = 'history.json'):
+    folder = data / f'{Path(filename).stem}_chunks'
+    return data / filename, folder, folder / 'manifest.json'
 
 
-def pack(data: Path) -> None:
-    history, folder, manifest = paths(data)
+def pack(data: Path, filename: str = 'history.json') -> None:
+    history, folder, manifest = paths(data, filename)
     if not history.is_file():
         raise FileNotFoundError(history)
     folder.mkdir(parents=True, exist_ok=True)
@@ -38,12 +39,12 @@ def pack(data: Path) -> None:
         if stale.name not in {entry['name'] for entry in entries}:
             stale.unlink()
     # Verify the complete round trip before deleting the only working copy.
-    verify(data, history)
+    verify(data, history, filename)
     history.unlink()
 
 
-def verify(data: Path, history: Path | None = None) -> None:
-    target, folder, manifest = paths(data)
+def verify(data: Path, history: Path | None = None, filename: str = 'history.json') -> None:
+    target, folder, manifest = paths(data, filename)
     doc = json.loads(manifest.read_text(encoding='utf-8'))
     if doc.get('format') != 'exact-history-bytes-v1' or not isinstance(doc.get('chunks'), list):
         raise ValueError('Invalid history manifest')
@@ -64,13 +65,13 @@ def verify(data: Path, history: Path | None = None) -> None:
         raise ValueError('History round trip mismatch')
 
 
-def restore(data: Path) -> None:
-    history, folder, manifest = paths(data)
+def restore(data: Path, filename: str = 'history.json') -> None:
+    history, folder, manifest = paths(data, filename)
     if not manifest.exists():
         if not history.exists():
             raise FileNotFoundError('Neither history nor chunk manifest exists')
         return
-    verify(data)
+    verify(data, filename=filename)
     doc = json.loads(manifest.read_text(encoding='utf-8'))
     if history.exists() and history.stat().st_size == doc['bytes']:
         if hashlib.sha256(history.read_bytes()).hexdigest() == doc['sha256']:
@@ -94,7 +95,15 @@ def main() -> None:
     parser.add_argument('action', choices=('pack', 'restore', 'verify'))
     parser.add_argument('--data', type=Path, default=ROOT / 'frontend' / 'data')
     args = parser.parse_args()
-    {'pack': pack, 'restore': restore, 'verify': verify}[args.action](args.data)
+    action = {'pack': pack, 'restore': restore, 'verify': verify}[args.action]
+    action(args.data)
+    # Legacy checkouts still contain the ledger JSON. Once packed, every existing
+    # restore boundary reconstructs the identical bytes before any consumer runs.
+    filename = 'prediction_ledger_shadow.json'
+    target, _, manifest = paths(args.data, filename)
+    if target.exists() or manifest.exists():
+        if args.action != 'verify' or manifest.exists():
+            action(args.data, filename=filename)
 
 
 if __name__ == '__main__':
