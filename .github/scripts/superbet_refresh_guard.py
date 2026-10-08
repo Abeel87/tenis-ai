@@ -87,10 +87,16 @@ def main():
     now = datetime.now(timezone.utc)
     event_name = os.environ['GITHUB_EVENT_NAME']
     reason, after = None, None
+    if mode == 'watchdog' and event_name == 'workflow_run':
+        source = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())['workflow_run']
+        if (source.get('head_branch') != 'main' or source.get('conclusion') != 'success'
+                or source.get('event') == 'pull_request'
+                or source.get('name') not in {'Neuron SHADOW research', 'Player DNA SHADOW refresh'}):
+            reason = 'ineligible_watchdog_source'
     if mode == 'refresh' and event_name == 'pull_request':
         # PRs validate orchestration/tests only. Never run live operator/API refresh work.
         reason = 'pull_request_validation_only'
-    else:
+    elif not reason:
         refreshes = runs(REFRESH)
         if mode == 'watchdog':
             reason = watchdog_block(refreshes, runs(FULL), now)

@@ -26,6 +26,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
 
+**PUBLICATION RECOVERY + WATCHDOG FOLLOW-UP (2026-10-08):**
+- [x] PR #525 merged as `ad5924f655c3eb5261274d4cd3c91aa9fd8b3124` after 7/7 successful workflows; remote full regression 1612/1612. Exact ledger chunk migration is production-proven: Update `37734745919` and later `37742821901` both passed build, commit and Pages deploy. Do not redo the size-limit repair.
+- [x] Public metadata advanced from October 6 to `2026-10-08T07:24:35.345783+00:00` with 216 fixtures / 209 visible / 42 model-ready; successful hourly refresh `37745497239` followed. These counts describe that snapshot, not current guaranteed PLAYABLE availability.
+- [!] By 11:00 UTC the core/market schedules had not produced a later refresh, although Neuron completed at 10:55. Existing watchdog listens only to cron and selected pushes; it has no completion trigger for independent Neuron/Player DNA jobs. New branch `fix/superbet-completion-watchdog` adds those completion wakeups, gated to successful main/non-PR sources before API reads. Existing 40-minute evidence freshness, active-run exclusion, quota and concurrency remain unchanged.
+- [x] Pre-fix regression: completion trigger absent and three invalid completion sources incorrectly reach Actions lookup (4 failed / 26 passed).
+- [~] Authorized core build rerun of `37742821901` is in progress to recover current data. The watchdog change still requires CI, fresh-main comparison and merge only green.
+- **NEXT EXACT ACTION:** validate and merge the watchdog follow-up; confirm current core/Pages result and operator timestamps, then observe the next eligible completion wakeup. Never claim GitHub cron timing is guaranteed. No model math, probability, training, PLAYABLE, settlement, SHADOW/PROD or real-money changes.
+
+
 **PUBLICATION INCIDENT (2026-10-07 23:00 UTC / 2026-10-08 Poland):**
 - [x] Fresh main `0809d89fde799d94311713f034bda73679d9193a`; open PR #523 is unrelated.
 - [x] Confirmed Update run `37683103451`, build `113005557830`: all generation and full-regression steps pass; commit push fails because `prediction_ledger_shadow.json` is 101.67 MiB, above GitHub's 100 MiB blob limit.

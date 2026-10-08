@@ -2,6 +2,9 @@ name: Superbet market refresh watchdog
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['Neuron SHADOW research', 'Player DNA SHADOW refresh']
+    types: [completed]
   schedule:
     - cron: '20,50 * * * *'
   push:
@@ -60,7 +63,7 @@ jobs:
           python -m pytest -q tests/test_superbet_refresh_guard.py
 
   watchdog:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
