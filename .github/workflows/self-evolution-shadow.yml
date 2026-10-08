@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: self-evolution-shadow-${{ github.ref }}
@@ -39,9 +40,31 @@ jobs:
       - name: Build current exact-match settlement evidence locally
         if: github.event_name != 'pull_request'
         run: python backend/prediction_ledger_settlement_shadow.py
-      - name: Autonomous SHADOW research
+      - name: Restore last successful main SHADOW memory artifact
         if: github.event_name != 'pull_request'
-        run: python backend/self_evolution_shadow.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          previous="$RUNNER_TEMP/self-evolution-previous"
+          mkdir -p "$previous"
+          run_ids="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow self-evolution-shadow.yml --branch main --status success --limit 40 --json databaseId --jq '.[].databaseId')"
+          for run_id in $run_ids; do
+            if gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name self-evolution-memory --dir "$previous" >/dev/null 2>&1; then
+              test -s "$previous/self-evolution-memory.json"
+              echo "Restored main-branch SHADOW memory from run $run_id"
+              break
+            fi
+          done
+          if ! test -s "$previous/self-evolution-memory.json"; then
+            echo "No accessible previous main SHADOW memory; explicit first-run bootstrap"
+          fi
+      - name: Autonomous SHADOW research and prospective memory
+        if: github.event_name != 'pull_request'
+        run: |
+          python backend/self_evolution_shadow.py \
+            --previous-memory "$RUNNER_TEMP/self-evolution-previous/self-evolution-memory.json" \
+            --memory-output "$RUNNER_TEMP/self-evolution-memory.json"
       - name: Verify absolutely no production authority
         if: github.event_name != 'pull_request'
         run: |
@@ -56,6 +79,29 @@ jobs:
               'network_fetch_enabled','economic_roi_evaluated'))
           print(r['status'])
           PY
+      - name: Verify memory cannot influence production
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          doc = json.loads((Path(os.environ["RUNNER_TEMP"]) / "self-evolution-memory.json").read_text())
+          assert doc["mode"] == "SHADOW_ONLY"
+          assert all(doc[k] is False for k in (
+              "production_influence", "symphony_influence", "playable_influence",
+              "ineed_influence", "auto_promote_to_prod",
+              "real_betting_enabled", "economic_roi_evaluated"))
+          print("run_number", doc["run_number"], "tracks", len(doc["tracks"]))
+          PY
+      - name: Persist isolated SHADOW research memory
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-evolution-memory
+          path: ${{ runner.temp }}/self-evolution-memory.json
+          retention-days: 60
+          if-no-files-found: error
       - name: Keep research report only as isolated run artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
