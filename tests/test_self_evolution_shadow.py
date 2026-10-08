@@ -134,11 +134,13 @@ def test_market_specialist_never_selects_on_holdout():
         row["market"] = "match_winner"
     evidence["source_ledger_sha256"] = agent._digest(ledger)
     first = agent.build_report(ledger, evidence, now=NOW)
-    for row in evidence["rows"]:
+    # Change ONLY frozen holdout model forecasts. This must change its Brier,
+    # but cannot influence a strategy selected on older TRAIN and VALIDATION.
+    for row in ledger["rows"]:
         if row["scheduled_time"] >= "2026-08-25":
-            row["settlement"]["result"] = (
-                "hit" if row["settlement"]["result"] == "miss" else "miss"
-            )
+            for model, value in (("current", 0.1), ("catboost", 0.9), ("tabpfn", 0.7)):
+                row["model_scores"][model]["value"] = value
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
     second = agent.build_report(ledger, evidence, now=NOW)
     one = first["market_research"]["studies"][0]["candidate"]
     two = second["market_research"]["studies"][0]["candidate"]
