@@ -14,6 +14,8 @@ on:
       - 'backend/superbet_direct.py'
       - 'backend/superbet_builder_quotes.py'
       - 'backend/superbet_builder_dynamic_quotes.py'
+      - 'backend/superbet_quote_evidence.py'
+      - 'tests/test_superbet_quote_evidence.py'
       - 'backend/superbet_builder_terminal_evidence.py'
       - 'audits/logic12_builder_terminal_evidence_manifest.json'
       - 'backend/superbet_market_core.py'
@@ -94,6 +96,10 @@ jobs:
         run: |
           python -m pip install pytest -c requirements.lock
           python -m pytest -q tests/test_superbet_refresh_guard.py
+      - name: Test quote evidence archival isolation on PR
+        if: github.event_name == 'pull_request'
+        run: python -m pytest -q tests/test_superbet_quote_evidence.py
+
       - uses: actions/setup-python@v6
         if: steps.freshness.outputs.refresh == 'true'
         with:
@@ -130,6 +136,23 @@ jobs:
       - name: Refresh read-only Bet Builder terminal evidence
         if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
         run: python backend/superbet_builder_terminal_evidence.py refresh
+      - name: Freeze verified pre-match Superbet quote evidence for AI research
+        if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          python backend/superbet_quote_evidence.py \
+            --run-id "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output "$RUNNER_TEMP/superbet-quote-evidence.json"
+      - name: Persist run-isolated prospective Superbet quote evidence
+        if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: superbet-quote-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/superbet-quote-evidence.json
+          retention-days: 60
+          if-no-files-found: error
+
       - name: Syntax guard
         if: steps.freshness.outputs.refresh == 'true'
         run: |

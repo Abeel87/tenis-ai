@@ -25,6 +25,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SELF EVOLUTION PHASE 2c — EXACT OPERATOR QUOTE EVIDENCE (2026-10-08, PR PENDING)**
+- VERIFIED MAIN at branch creation: 6507d3db6e8955e2366819ef523685192270aa3a (#531 merged; later market refresh may advance main).
+- ACTIVE: passively archive verified pre-start real Superbet quote evidence from current direct/exact/dynamic sources via existing market refresh; no extra HTTP requests.
+- BRANCH: feature/self-evolution-quote-evidence-20261008, PR/CI pending.
+- FILES: backend/superbet_quote_evidence.py, tests/test_superbet_quote_evidence.py, .github/workflows/superbet-market-refresh.yml, docs, registry, architecture, checkpoint.
+- OBSERVED: 2026-10-08 11:30Z exact BB had SOURCE_UNAVAILABLE, dynamic BB DIRECT_INPUT_STALE; zero verified BB prices in those sampled files, not evidence that bookmaker universally has no markets.
+- CURRENT blocker: no successful main Self Evolution schedule/manual run observed as of 12:29Z; no exact historical quote-to-decision ledger; no ROI/EV.
+- NEXT EXACT ACTION: commit, PR, verify targeted/full exact-head GREEN; compare fresh main; merge only green; inspect genuine main market refresh quote artifact and its audited counts, separately verify first main Self Evolution runtime.
+- HARD BAN: no PROD model probability/weight/training, no settlement/PLAYABLE/Symphony/iNeed changes; no synthetic quotes or real-money execution.
+
+
 **SELF EVOLUTION PHASE 2b — 2026-10-08, PR PENDING**
 - ACTIVE TASK: persistent research-only SHADOW Champion/Challenger evaluation with frozen 14-day prospective trials; modify only canonical backend/self_evolution_shadow.py.
 - LAST VERIFIED MAIN: fc08dc05c14fc80ac1ce6df0e543389ad4a48564 (phase 2a #530 merged; data commits may advance main).

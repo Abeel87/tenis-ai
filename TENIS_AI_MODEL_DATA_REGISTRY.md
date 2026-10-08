@@ -997,3 +997,17 @@ and positive conservative paired Brier bound; no PROD auto-promotion, no
 change to Current, TabPFN, CatBoost, Surface Elo, DNA, Neuron, Symphony,
 PLAYABLE, iNeed, settlement or betting. True EV/ROI still blocked by missing
 exact operator as-of price history. See docs/SELF_EVOLUTION_SHADOW.md.
+
+
+## Self Evolution phase 2c — passive operator quote observation archival
+
+The read-only backend/superbet_quote_evidence.py is a separate
+ARCHIVAL-EVIDENCE owner, not a parallel Superbet quote price source. The
+existing Superbet market refresh captures only verified pre-start event and
+selection odds into a run-unique 60-day GitHub Actions artifact. It records
+source hashes, exact match/event IDs and observation time, with fail-closed
+reason codes for missing/ambiguous/stale quotes. ZERO added external calls.
+No current or stale price can be retroactively treated as an actual
+historical decision. No EV/ROI learning yet, no effects on PROD, Symphony,
+PLAYABLE, iNeed, canonical settlement, model math or real betting.
+Tests: tests/test_superbet_quote_evidence.py.

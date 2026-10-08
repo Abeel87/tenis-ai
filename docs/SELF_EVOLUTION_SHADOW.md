@@ -129,3 +129,27 @@ still require independent confirmation in future research.
 Historical operator prices are not frozen per prospective action, so
 bookmaker ROI / EV are NOT assessed. Version registry memory is time-limited
 by GitHub Actions artifact retention; this is not permanent archival storage.
+
+
+## Phase 2c — prospective exact Superbet price-evidence capture
+
+Canonical archival evidence owner: backend/superbet_quote_evidence.py.
+The existing hourly market-refresh workflow freezes a separate GitHub
+Actions artifact after the existing Direct, prepriced Bet Builder and dynamic
+SGA quote producers run. New operator HTTP requests: ZERO; no model training,
+PROD/PLAYABLE/iNeed changes, real bets or repo artifact publication.
+
+Each run records hashes of source documents, source timestamps/statuses,
+exact Superbet fixture/event IDs, operator selection IDs, actual positive
+odds and observation times, but only when identity and pre-start timestamp
+proof are valid. Ambiguous duplicates, stale, unsupported, post-start and
+unverified prices are excluded with explicit reason codes. Absence yields
+NO_VERIFIED_PREMATCH_QUOTES (not zero odds / historical negative examples).
+Price snapshots must never be backfilled by current postmatch odds.
+
+The snapshot is an immutable Actions run artifact keyed by GitHub run/attempt
+and retained 60 days. It is a per-run prospective sample, NOT a complete
+permanent archive. It is not yet matched to immutable Prediction Ledger
+decision identities; therefore EV, ROI, bankroll returns and profit claims
+remain disabled. Separate forward-only decision/action/reward join requires
+audit of exact market, line, selection and as-of quote proof.
