@@ -1,0 +1,66 @@
+name: Self Evolution SHADOW research
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '40 4 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/self_evolution_shadow.py'
+      - 'tests/test_self_evolution_shadow.py'
+      - '.github/workflows/self-evolution-shadow.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-evolution-shadow-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install test runner
+        run: python -m pip install pytest==9.1.1
+      - name: Unit and isolation tests
+        run: |
+          python -m py_compile backend/self_evolution_shadow.py
+          python -m pytest -q tests/test_self_evolution_shadow.py
+      - name: Restore exact prospectively frozen ledger
+        if: github.event_name != 'pull_request'
+        run: python scripts/history_publication_chunks.py restore
+      - name: Build current exact-match settlement evidence locally
+        if: github.event_name != 'pull_request'
+        run: python backend/prediction_ledger_settlement_shadow.py
+      - name: Autonomous SHADOW research
+        if: github.event_name != 'pull_request'
+        run: python backend/self_evolution_shadow.py
+      - name: Verify absolutely no production authority
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('frontend/data/self_evolution_shadow.json').read_text())
+          assert r['mode']=='SHADOW_ONLY'
+          assert all(r[k] is False for k in (
+              'production_influence','playable_influence','symphony_influence',
+              'ineed_influence','auto_promote','real_betting_enabled',
+              'network_fetch_enabled','economic_roi_evaluated'))
+          print(r['status'])
+          PY
+      - name: Keep research report only as isolated run artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-evolution-shadow-${{ github.run_id }}
+          path: frontend/data/self_evolution_shadow.json
+          retention-days: 7
+          if-no-files-found: error

@@ -156,3 +156,8 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 
 The existing Superbet watchdog also accepts successful main Neuron/Player DNA workflow completion as a wakeup when cron is delayed. It checks out main and validates source eligibility before querying Actions; the unchanged orchestration guard decides whether a refresh is actually stale and suppresses concurrent/redundant work. It never consumes source artifacts or changes model/PLAYABLE semantics.
+
+
+## Self Evolution SHADOW research (proposed, 2026-10-08)
+
+A separate **research-only** read path consumes exact `prediction_ledger_shadow.json` plus `prediction_ledger_settlement_shadow.json`, joins on frozen exact prediction ID and canonical match/schedule, and refuses mismatched SHA/provenance. It trains bounded convex ensembles from Current/CatBoost/TabPFN probabilities on chronologically disjoint whole UTC fixture days with strict settlement-as-of cutoffs. Validation picks a research candidate; holdout only reports descriptive quality against the frozen Current baseline. This module cannot change probability owners, Dynamic Weights, production models, Symfonia, PLAYABLE, iNeed$ or frontend. Daily dedicated GitHub Actions runs produce a short-lived report artifact, not a public PROD data feed. See `docs/SELF_EVOLUTION_SHADOW.md`.

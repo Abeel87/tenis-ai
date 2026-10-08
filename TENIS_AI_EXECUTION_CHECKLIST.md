@@ -537,3 +537,10 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - BLOCKERS: remaining unmatched source identities and offers absent from provider are not solved by removing the queue slice. No claim all 430 fixtures are playable.
 - DO NOT REDO: history restoration and PR #521 diagnostic evidence; keep exact identity/bookmaker/time/line guards, monthly budgets, model math, thresholds and settlement unchanged.
 - NEXT EXACT ACTION: inspect this PR CI, merge only green against fresh main, then verify real refresh `direct_fixture_requests_due/this_refresh/skipped_budget` and downstream Symphony data.
+
+
+**SELF EVOLUTION SHADOW PHASE 1 (2026-10-08; separate authorized new feature):**
+- [~] Branch `feature/self-evolution-shadow-research` from fresh main. Read-only autonomous ensemble research implemented in `backend/self_evolution_shadow.py`, tests in `tests/test_self_evolution_shadow.py`, daily isolated artifact workflow and canonical docs. All existing probability/math/weights/settlement and SHADOW/PROD gates remain unchanged.
+- [x] Synthetic local six-test suite initially GREEN (chronology, source SHA, duplicate identity, minimum independent matches, no PROD influence). This is local targeted evidence, not full CI or live data proof.
+- [ ] Open draft PR; run required CI and check fresh-main; merge only after all mandatory gates are green. Observe first post-merge scheduled/manual SHADOW research artifact and label shortage of prospective settlement as `COLLECTING_VERIFIED_HISTORY` rather than a learned winner.
+- **NEXT EXACT ACTION for Self Evolution:** verify PR checks and new trainer on production ledger in isolated SHADOW run; no auto-promotion, no betting, no live UI claims. Future phases require strict pre-match operator odds evidence before EV optimization. This feature does not supersede publication-watchdog recovery checkpoint above.
