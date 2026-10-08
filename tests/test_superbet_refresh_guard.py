@@ -182,3 +182,40 @@ def test_pull_request_refresh_guard_is_network_free(monkeypatch, tmp_path):
     output = (tmp_path / 'output').read_text()
     assert 'refresh=false' in output
     assert 'reason=pull_request_validation_only' in output
+
+
+def test_watchdog_wakes_after_independent_main_workflows():
+    workflow = (ROOT / '.github/workflows/superbet-market-watchdog.yml').read_text()
+    assert 'workflow_run:' in workflow
+    assert "workflows: ['Neuron SHADOW research', 'Player DNA SHADOW refresh']" in workflow
+    assert 'types: [completed]' in workflow
+    assert "github.event.workflow_run.head_branch == 'main'" in workflow
+    assert "github.event.workflow_run.conclusion == 'success'" in workflow
+
+
+@pytest.mark.parametrize('branch,conclusion,event,expected,name', [
+    ('main', 'success', 'schedule', True, 'Neuron SHADOW research'),
+    ('main', 'success', 'workflow_run', True, 'Player DNA SHADOW refresh'),
+    ('main', 'success', 'schedule', False, 'Unrelated workflow'),
+    ('feature', 'success', 'push', False, 'Neuron SHADOW research'),
+    ('main', 'failure', 'schedule', False, 'Neuron SHADOW research'),
+    ('main', 'success', 'pull_request', False, 'Neuron SHADOW research'),
+])
+def test_watchdog_completion_source_gate(monkeypatch, tmp_path, branch, conclusion, event, expected, name):
+    import json
+    source = tmp_path / 'event.json'
+    source.write_text(json.dumps({'workflow_run': {
+        'name': name, 'head_branch': branch,
+        'conclusion': conclusion, 'event': event,
+    }}))
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'workflow_run')
+    monkeypatch.setenv('GITHUB_EVENT_PATH', str(source))
+    monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
+    monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
+    monkeypatch.setattr('sys.argv', ['guard', 'watchdog'])
+    def history(workflow):
+        assert expected, 'Ineligible source must not query Actions or dispatch'
+        return []
+    monkeypatch.setattr(guard, 'runs', history)
+    guard.main()
+    assert f'dispatch={str(expected).lower()}' in (tmp_path / 'output').read_text()

@@ -153,3 +153,6 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 ### Exact-byte repository publication transport
 
 `scripts/history_publication_chunks.py` owns Git-safe storage for `history.json` and `prediction_ledger_shadow.json`. Its existing workflow restore/pack boundaries preserve each complete source byte-for-byte using separate SHA-256 manifests and 16 MiB parts. Core/market generation restores before consumers and packs before Git staging. Pages restores canonical JSON before runtime snapshot creation and excludes the redundant chunk directories from its artifact. Existing prediction/settlement owners and JSON paths remain unchanged.
+
+
+The existing Superbet watchdog also accepts successful main Neuron/Player DNA workflow completion as a wakeup when cron is delayed. It checks out main and validates source eligibility before querying Actions; the unchanged orchestration guard decides whether a refresh is actually stale and suppresses concurrent/redundant work. It never consumes source artifacts or changes model/PLAYABLE semantics.
