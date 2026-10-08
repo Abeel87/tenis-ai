@@ -175,3 +175,120 @@ def test_specialists_minimum_is_independent_matches_not_candidate_rows():
     )["studies"][0]
     assert sparse["candidate"] is None
     assert sparse["status"] == "INSUFFICIENT_EVIDENCE"
+
+
+
+def _extend_with_new_prospective_fixtures(ledger, evidence, *, start_day=9, days=13, per_day=12):
+    """Synthetic fixture records for tests ONLY; no production fixture generation."""
+    for day in range(start_day, start_day + days):
+        when = datetime(2026, 10, day, 15, tzinfo=timezone.utc)
+        for i in range(per_day):
+            pid = f"future_{day}_{i}"
+            match = f"id:{50000 + day * 100 + i}"
+            ledger["rows"].append({
+                "prediction_id": pid, "match_key": match, "candidate_key": "match_winner|p1",
+                "market": "match_winner", "scheduled_time": when.isoformat(),
+                "captured_at": (when - timedelta(hours=1)).isoformat(),
+                "score_semantics": "probability_0_1",
+                "model_scores": {
+                    "current": {"available": True, "value": .8},
+                    "catboost": {"available": True, "value": .5},
+                    "tabpfn": {"available": True, "value": .5},
+                },
+            })
+            evidence["rows"].append({
+                "prediction_id": pid, "match_key": match, "candidate_key": "match_winner|p1",
+                "scheduled_time": when.isoformat(),
+                "settlement": {
+                    "status": "SETTLED", "result": "hit" if i % 2 else "miss",
+                    "settled_at": (when + timedelta(hours=3)).isoformat(),
+                },
+            })
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+
+
+def _memory_run(ledger, evidence, previous=None, *, now=NOW):
+    report = agent.build_report(ledger, evidence, now=now)
+    return agent.build_memory(report, ledger, evidence, previous, now=now)
+
+
+def test_memory_bootstraps_versioned_champion_and_frozen_future_challenger():
+    ledger, evidence = fixture()
+    original = copy.deepcopy((ledger, evidence))
+    memory = _memory_run(ledger, evidence)
+    assert memory["run_number"] == 1
+    assert memory["previous_memory_sha256"] is None
+    assert memory["mode"] == "SHADOW_ONLY"
+    assert memory["champion_scope"] == "RESEARCH_PROBABILITY_ONLY"
+    assert memory["auto_promote_to_prod"] is False
+    track = memory["tracks"]["ALL"]
+    assert track["champion"]["weights"] == {"current": 1.0, "catboost": 0.0, "tabpfn": 0.0}
+    assert track["challenger"]["registered_at"] == NOW.isoformat()
+    assert track["last_evaluation"]["status"] == "REGISTERED_FOR_FUTURE_ONLY"
+    assert (ledger, evidence) == original
+
+
+def test_memory_cannot_reuse_pre_registration_labels():
+    ledger, evidence = fixture()
+    first = _memory_run(ledger, evidence)
+    later = _memory_run(ledger, evidence, first, now=NOW + timedelta(days=2))
+    track = later["tracks"]["ALL"]
+    assert later["run_number"] == 2
+    assert track["last_evaluation"]["status"] == "COLLECTING_FUTURE_FIXTURES"
+    assert track["last_evaluation"]["independent_matches"] == 0
+    assert track["last_evaluation"]["champion_brier"] is None
+    assert track["champion"] == first["tracks"]["ALL"]["champion"]
+    assert track["challenger"] == first["tracks"]["ALL"]["challenger"]
+
+
+def test_memory_internal_shadow_champion_only_after_fixed_prospective_horizon():
+    ledger, evidence = fixture()
+    first = _memory_run(ledger, evidence)
+    old_challenger = first["tracks"]["ALL"]["challenger"]
+    _extend_with_new_prospective_fixtures(ledger, evidence)
+    halfway = _memory_run(ledger, evidence, first, now=NOW + timedelta(days=8))
+    assert halfway["tracks"]["ALL"]["champion"] == first["tracks"]["ALL"]["champion"]
+    assert halfway["tracks"]["ALL"]["challenger"] == old_challenger
+    assert halfway["tracks"]["ALL"]["last_evaluation"]["evaluation_completed"] is False
+    final = _memory_run(ledger, evidence, halfway, now=NOW + timedelta(days=16))
+    track = final["tracks"]["ALL"]
+    assert track["champion"]["id"] == old_challenger["id"]
+    assert track["history"][-1]["decision"] == "ELIGIBLE_SHADOW_CHAMPION"
+    assert track["history"][-1]["evidence"]["independent_matches"] >= 100
+    assert track["history"][-1]["evidence"]["independent_utc_days"] >= 7
+    assert final["production_influence"] is False
+    assert final["real_betting_enabled"] is False
+    assert final["auto_promote_to_prod"] is False
+
+
+def test_memory_rejects_tampered_strategy_and_replayed_timestamp():
+    ledger, evidence = fixture()
+    prior = _memory_run(ledger, evidence)
+    tampered = copy.deepcopy(prior)
+    tampered["tracks"]["ALL"]["champion"]["weights"]["current"] = .9
+    with pytest.raises(ValueError, match="one|identity"):
+        _memory_run(ledger, evidence, tampered, now=NOW + timedelta(days=1))
+    with pytest.raises(ValueError, match="replay"):
+        _memory_run(ledger, evidence, prior, now=NOW)
+
+
+def test_memory_without_evidence_keeps_baseline():
+    ledger, evidence = fixture(days=4)
+    report = agent.build_report(ledger, evidence, now=NOW)
+    memory = agent.build_memory(report, ledger, evidence, None, now=NOW)
+    assert memory["tracks"]["ALL"]["challenger"] is None
+    assert memory["tracks"]["ALL"]["champion"]["weights"]["current"] == 1.0
+
+
+def test_memory_workflow_restores_previous_artifact_with_readonly_permissions():
+    from pathlib import Path
+    workflow = (Path(__file__).resolve().parents[1] /
+                ".github/workflows/self-evolution-shadow.yml").read_text(encoding="utf-8")
+    assert "actions: read" in workflow
+    assert "gh run download" in workflow
+    assert "self-evolution-memory.json" in workflow
+    assert "--previous-memory" in workflow
+    assert "--memory-output" in workflow
+    assert "name: self-evolution-memory" in workflow
+    assert "contents: read" in workflow
+    assert "contents: write" not in workflow

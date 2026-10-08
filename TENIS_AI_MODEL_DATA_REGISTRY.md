@@ -980,3 +980,20 @@ Canonical storage transport owner: `scripts/history_publication_chunks.py`. The 
 ## B18 continuation — Phase 2a market specialists, 2026-10-08
 
 The single canonical SHADOW research owner `backend/self_evolution_shadow.py` now examines market-specific frozen-labeled candidate populations on the same chronological train/validation/holdout boundaries as global research. Research requires 60/20/20 distinct fixtures, bounded 12 market IDs, no inferred tour/surface, no under-supported market champions, no auto promotion. It additionally reports that an immutable exact pre-match operator quote history is absent (N/D, not zero); ROI/EV remains unavailable. Existing model probability/training/settlement owners, PLAYABLE, Symphony, iNeed, frontend and current operator quote consumers remain untouched. `tests/test_self_evolution_shadow.py` guards no-lookahead and missing-data contracts.
+
+
+## Self Evolution phase 2b — prospective research memory (2026-10-08)
+
+One canonical owner, backend/self_evolution_shadow.py, maintains a versioned
+cross-run Actions research memory (no parallel trainer). Main-branch nightly
+workflow restores prior successful memory with actions:read and emits a new
+60-day isolated artifact. It freezes Global and per-market Shadow Champion /
+Challenger weights with timestamp, report digest and trial history. Only
+prospective prediction snapshots captured after version registration and
+settled in the fixed 14-day evaluation window count. Evidence is fixture-
+balanced and excludes repeated predictions of one candidate. Internal
+SHADOW champion may change with >=100 independent fixtures spanning >=7 days
+and positive conservative paired Brier bound; no PROD auto-promotion, no
+change to Current, TabPFN, CatBoost, Surface Elo, DNA, Neuron, Symphony,
+PLAYABLE, iNeed, settlement or betting. True EV/ROI still blocked by missing
+exact operator as-of price history. See docs/SELF_EVOLUTION_SHADOW.md.

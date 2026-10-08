@@ -166,3 +166,16 @@ A separate **research-only** read path consumes exact `prediction_ledger_shadow.
 ## Self Evolution Phase 2a — market-scoped read-only SHADOW experiment
 
 The canonical `backend/self_evolution_shadow.py` extends its already-frozen global folds into bounded per-market studies, preserving independent fixture-balanced Brier evaluation and strict train/validation/holdout temporal cuts. Separate market IDs are sourced only from frozen ledger fields; missing or unsupported market labels remain absent. The report explicitly declares operator historical quotes N/D and forbids financial P&L, real-money execution, automatic production promotion and changes to probability owners. It remains an isolated Actions artifact, not a new prod pipeline.
+
+
+## Self Evolution phase 2b — auditable SHADOW memory transport
+
+The same research-only backend/self_evolution_shadow.py extends the nightly
+read-only workflow. A prior main-branch success artifact is downloaded
+using GitHub CLI with actions:read (no repository write permission), then
+the exact frozen ledger and canonical settlement compute two reports.
+A bounded versioned research registry and 14-day prospective trial comparison
+are persisted as a new 60-day Actions artifact; a candidate may become an
+internal SHADOW-only champion after strict independent-fixture validation.
+No output affects production model, weights, Symphony, PLAYABLE, iNeed,
+Superbet price authority or live betting. No bookmaker EV/ROI is inferred.

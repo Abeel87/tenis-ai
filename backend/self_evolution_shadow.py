@@ -5,12 +5,13 @@ Validation selects a candidate; a later untouched holdout measures that selectio
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import math
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,12 @@ SETTLEMENT = DATA / "prediction_ledger_settlement_shadow.json"
 REPORT = DATA / "self_evolution_shadow.json"
 MODELS = ("current", "catboost", "tabpfn")
 VERSION = "self-evolution-shadow-v1"
+MEMORY_VERSION = "self-evolution-shadow-memory-v1"
+MEMORY_EVAL_DAYS = 14
+MEMORY_MIN_FIXTURES = 100
+MEMORY_MIN_UTC_DAYS = 7
+MEMORY_LOWER_BOUND_MARGIN = 0.003
+MEMORY_HISTORY_LIMIT = 40
 MIN_MATCHES = (120, 40, 40)  # independent fixture identities, not row counts
 MIN_SPECIALIST_MATCHES = (60, 20, 20)
 MAX_SPECIALIST_MARKETS = 12
@@ -118,7 +125,9 @@ def _samples(ledger, settlement, now):
         market = market.strip().casefold() if isinstance(market, str) else None
         if market is not None and not MARKET_ID_PATTERN.fullmatch(market):
             market = None  # Unknown market is not silently guessed from the candidate key.
-        samples.append({"match_key": key, "market": market, "day": scheduled.date().isoformat(),
+        samples.append({"prediction_id": pid, "candidate_key": row.get("candidate_key"),
+                        "match_key": key, "market": market, "day": scheduled.date().isoformat(),
+                        "captured_at": captured, "scheduled_at": scheduled,
                         "settled_at": settled, "p": scores,
                         "y": int(outcome["result"] == "hit")})
     return samples, dict(excluded)
@@ -284,13 +293,269 @@ def build_report(ledger, settlement, *, now):
     return result
 
 
+
+def _memory_weights(weights):
+    if not isinstance(weights, dict) or set(weights) != set(MODELS):
+        raise ValueError("Memory weights must contain exactly the known probability models")
+    values = tuple(weights[model] for model in MODELS)
+    if any(isinstance(v, bool) or not isinstance(v, (float, int)) or
+           not math.isfinite(float(v)) or float(v) < 0 or float(v) > 1 for v in values):
+        raise ValueError("Invalid SHADOW model weights")
+    if abs(sum(values) - 1) > 0.00001:
+        raise ValueError("SHADOW weights must total one")
+    return tuple(float(v) for v in values)
+
+
+def _memory_version(track, weights, created_at, evidence_digest):
+    weights = dict(zip(MODELS, _memory_weights(weights)))
+    source = {
+        "track": track, "weights": weights,
+        "registered_at": created_at, "source_report_sha256": evidence_digest,
+    }
+    return {"id": _digest(source), **source}
+
+
+def _assert_version(v, track, as_of):
+    if not isinstance(v, dict):
+        raise ValueError("Missing memory strategy version")
+    when = _parse_dt(v.get("registered_at"))
+    if not when or when > as_of or not isinstance(v.get("source_report_sha256"), str):
+        raise ValueError("Invalid memory version chronology/provenance")
+    expected = _memory_version(track, v.get("weights"), v.get("registered_at"),
+                               v.get("source_report_sha256"))
+    if v != expected:
+        raise ValueError("Memory strategy identity mismatch")
+    return when
+
+
+def _candidate_tracks(research):
+    # Do NOT use historical holdout flags to choose a version.
+    result = {}
+    baseline = {"current": 1.0, "catboost": 0.0, "tabpfn": 0.0}
+    main = research.get("candidate")
+    if isinstance(main, dict) and main.get("validation_delta_vs_current", 0) < 0:
+        result["ALL"] = main.get("weights")
+    market = research.get("market_research") or {}
+    for study in market.get("studies") or []:
+        if study.get("status") != "EVALUATED_SHADOW_ONLY":
+            continue
+        selected = study.get("candidate") or {}
+        if selected.get("validation_better_than_current") is True:
+            result["market:" + study["market"]] = selected.get("weights")
+    return {name: weights for name, weights in result.items()
+            if _memory_weights(weights) != _memory_weights(baseline)}
+
+
+def _prospective_evaluation(samples, track, champion, challenger, *, as_of):
+    """Count *only* genuinely future snapshots frozen after challenger registration.
+
+    Evaluation is a single 14-day calendar horizon, not daily optional stopping.
+    Pending or missing outcomes cannot be interpreted as losses.
+    """
+    issued = _assert_version(challenger, track, as_of)
+    deadline = issued + timedelta(days=MEMORY_EVAL_DAYS)
+    champion_weights = _memory_weights(champion["weights"])
+    challenger_weights = _memory_weights(challenger["weights"])
+
+    unique = {}
+    for s in samples:
+        if track != "ALL" and ("market:" + str(s.get("market"))) != track:
+            continue
+        captured, scheduled = s["captured_at"], s["scheduled_at"]
+        if not issued <= captured < scheduled < deadline:
+            continue
+        # One frozen snapshot for each exact candidate on the same match;
+        # repetitive updates may not act as independent observations.
+        signature = (s["match_key"], s["market"], s["candidate_key"])
+        previous = unique.get(signature)
+        if previous is None or (captured, s["prediction_id"]) < (
+            previous["captured_at"], previous["prediction_id"]):
+            unique[signature] = s
+
+    by_fixture = {}
+    for s in unique.values():
+        champ_p = sum(w * p for w, p in zip(champion_weights, s["p"]))
+        challenge_p = sum(w * p for w, p in zip(challenger_weights, s["p"]))
+        champion_loss = (champ_p - s["y"]) ** 2
+        challenger_loss = (challenge_p - s["y"]) ** 2
+        by_fixture.setdefault(s["match_key"], []).append(
+            (s["day"], champion_loss, challenger_loss))
+
+    paired = []
+    days = set()
+    for values in by_fixture.values():
+        days.add(values[0][0])
+        avg_champ = sum(v[1] for v in values) / len(values)
+        avg_challenge = sum(v[2] for v in values) / len(values)
+        paired.append((avg_champ, avg_challenge))
+
+    n = len(paired)
+    mean_diff = (sum(a - b for a, b in paired) / n) if n else None
+    mean_champion = (sum(a for a, _ in paired) / n) if n else None
+    mean_challenge = (sum(b for _, b in paired) / n) if n else None
+    # Bonferroni-conservative approximate one-sided bound for up to 13 tracks.
+    # Still exploratory SHADOW evidence: not a profitability/prod gate.
+    diffs = [a - b for a, b in paired]
+    variance = (sum((x - mean_diff) ** 2 for x in diffs) / (n - 1)) if n > 1 else None
+    lower = (mean_diff - 3.0 * math.sqrt(variance / n)) if variance is not None else None
+    matured = as_of >= deadline
+    sufficient = n >= MEMORY_MIN_FIXTURES and len(days) >= MEMORY_MIN_UTC_DAYS
+    positive = matured and sufficient and lower is not None and lower > MEMORY_LOWER_BOUND_MARGIN
+    result = {
+        "status": ("COLLECTING_FUTURE_FIXTURES" if not matured else
+                   "ELIGIBLE_SHADOW_CHAMPION" if positive else
+                   "INSUFFICIENT_PROSPECTIVE_EVIDENCE" if not sufficient else
+                   "SHADOW_CHALLENGER_NOT_PROVEN"),
+        "registered_at": issued.isoformat(),
+        "evaluation_deadline": deadline.isoformat(),
+        "evaluation_completed": matured,
+        "independent_matches": n,
+        "independent_utc_days": len(days),
+        "champion_brier": round(mean_champion, 9) if mean_champion is not None else None,
+        "challenger_brier": round(mean_challenge, 9) if mean_challenge is not None else None,
+        "paired_brier_improvement": round(mean_diff, 9) if mean_diff is not None else None,
+        "lower_confidence_bound_approx": round(lower, 9) if lower is not None else None,
+        "production_promotion_authorized": False,
+        "roi": None,
+    }
+    return result
+
+
+def build_memory(research, ledger, settlement, previous=None, *, now):
+    """Versioned read-only Champion/Challenger registry, strictly SHADOW.
+
+    Prior memory is a GitHub Actions artifact. Every run computes prospective
+    results from immutable ledger/settlement, not from old retrospective scores.
+    """
+    at = _parse_dt(now)
+    if not at or research.get("mode") != "SHADOW_ONLY" or research.get("schema_version") != VERSION:
+        raise ValueError("Untrusted research report or timestamp")
+    if research.get("source_ledger_sha256") != settlement.get("source_ledger_sha256"):
+        raise ValueError("Research/settlement source mismatch")
+    if research.get("source_settlement_sha256") != _digest(settlement):
+        raise ValueError("Research/settlement digest mismatch")
+    if any(research.get(k) is not False for k in (
+            "production_influence", "playable_influence", "auto_promote", "real_betting_enabled")):
+        raise ValueError("Research report has production authority")
+    candidates = _candidate_tracks(research)
+    old_digest = _digest(previous) if previous is not None else None
+    old_tracks = {}
+    run_number = 1
+    if previous is not None:
+        if not isinstance(previous, dict) or previous.get("schema_version") != MEMORY_VERSION or (
+                previous.get("mode") != "SHADOW_ONLY") or previous.get("production_influence") is not False:
+            raise ValueError("Previous memory not an isolated SHADOW registry")
+        previous_time = _parse_dt(previous.get("generated_at"))
+        if not previous_time or previous_time >= at:
+            raise ValueError("Memory replay or non-monotonic run time")
+        if not isinstance(previous.get("tracks"), dict) or not isinstance(previous.get("run_number"), int):
+            raise ValueError("Previous memory tracking schema mismatch")
+        run_number = previous["run_number"] + 1
+        old_tracks = previous["tracks"]
+    samples, _ = _samples(ledger, settlement, at)
+    report_digest = _digest(research)
+    tracks = {}
+    labels = set(old_tracks) | set(candidates) | {"ALL"}
+    for label in sorted(labels):
+        if label != "ALL" and not (
+                label.startswith("market:") and MARKET_ID_PATTERN.fullmatch(label[7:])):
+            raise ValueError("Invalid memory market identity")
+        prior = old_tracks.get(label)
+        if prior is not None:
+            if not isinstance(prior, dict):
+                raise ValueError("Invalid prior memory track")
+            champion = prior.get("champion")
+            _assert_version(champion, label, at)
+            challenger = prior.get("challenger")
+            if challenger is not None:
+                _assert_version(challenger, label, at)
+            history = list(prior.get("history") or [])
+            if len(history) > MEMORY_HISTORY_LIMIT or not isinstance(prior.get("history"), list):
+                raise ValueError("Invalid memory history")
+        else:
+            champion = _memory_version(
+                label, {"current": 1.0, "catboost": 0.0, "tabpfn": 0.0},
+                at.isoformat(), report_digest)
+            challenger = None
+            history = []
+
+        evaluation = None
+        if challenger:
+            evaluation = _prospective_evaluation(samples, label, champion, challenger, as_of=at)
+            if evaluation["evaluation_completed"]:
+                history.append({"challenger_id": challenger["id"],
+                                "champion_id": champion["id"],
+                                "decision": evaluation["status"],
+                                "decision_at": at.isoformat(),
+                                "evidence": evaluation})
+                if evaluation["status"] == "ELIGIBLE_SHADOW_CHAMPION":
+                    champion = challenger  # SHADOW-ONLY champion, no downstream consumers.
+                challenger = None
+
+        if challenger is None and label in candidates:
+            proposed = _memory_version(label, candidates[label], at.isoformat(), report_digest)
+            if proposed["weights"] != champion["weights"] and not any(
+                    item.get("challenger_id") == proposed["id"] for item in history):
+                challenger = proposed
+                evaluation = {"status": "REGISTERED_FOR_FUTURE_ONLY",
+                              "registered_at": at.isoformat(),
+                              "production_promotion_authorized": False}
+        tracks[label] = {
+            "champion": champion, "challenger": challenger,
+            "last_evaluation": evaluation,
+            "history": history[-MEMORY_HISTORY_LIMIT:],
+        }
+
+    return {
+        "schema_version": MEMORY_VERSION,
+        "mode": "SHADOW_ONLY",
+        "generated_at": at.isoformat(),
+        "run_number": run_number,
+        "previous_memory_sha256": old_digest,
+        "source_research_sha256": report_digest,
+        "source_ledger_sha256": settlement["source_ledger_sha256"],
+        "tracks": tracks,
+        "champion_scope": "RESEARCH_PROBABILITY_ONLY",
+        "evaluation_contract": "FROZEN_AFTER_REGISTRATION_14_DAY_PROSPECTIVE_FIXTURE_BALANCED_BRIER",
+        "historical_holdout_used_for_promotion": False,
+        "production_influence": False,
+        "symphony_influence": False,
+        "playable_influence": False,
+        "ineed_influence": False,
+        "auto_promote_to_prod": False,
+        "real_betting_enabled": False,
+        "economic_roi_evaluated": False,
+        "external_bookmaker_requests": 0,
+    }
+
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--previous-memory", type=Path, default=None)
+    parser.add_argument("--memory-output", type=Path, default=None)
+    args = parser.parse_args()
+    if args.previous_memory is not None and args.memory_output is None:
+        parser.error("--previous-memory requires --memory-output")
     ledger = json.loads(LEDGER.read_text(encoding="utf-8"))
     settlement = json.loads(SETTLEMENT.read_text(encoding="utf-8"))
-    report = build_report(ledger, settlement, now=datetime.now(timezone.utc))
+    now = datetime.now(timezone.utc)
+    report = build_report(ledger, settlement, now=now)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"status": report["status"], "windows": report["windows"], "candidate": report["candidate"]}, ensure_ascii=False))
+    if args.memory_output is not None:
+        previous = None
+        if args.previous_memory is not None and args.previous_memory.exists():
+            previous = json.loads(args.previous_memory.read_text(encoding="utf-8"))
+        memory = build_memory(report, ledger, settlement, previous, now=now)
+        args.memory_output.parent.mkdir(parents=True, exist_ok=True)
+        temp = args.memory_output.with_suffix(args.memory_output.suffix + ".tmp")
+        temp.write_text(json.dumps(memory, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        temp.replace(args.memory_output)
+        print(json.dumps({"memory_run_number": memory["run_number"], "tracks": len(memory["tracks"]),
+                          "prospective_only": True}, ensure_ascii=False))
+    print(json.dumps({"status": report["status"], "windows": report["windows"],
+                      "candidate": report["candidate"]}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

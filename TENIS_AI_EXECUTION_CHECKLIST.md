@@ -25,6 +25,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SELF EVOLUTION PHASE 2b — 2026-10-08, PR PENDING**
+- ACTIVE TASK: persistent research-only SHADOW Champion/Challenger evaluation with frozen 14-day prospective trials; modify only canonical backend/self_evolution_shadow.py.
+- LAST VERIFIED MAIN: fc08dc05c14fc80ac1ce6df0e543389ad4a48564 (phase 2a #530 merged; data commits may advance main).
+- BRANCH: feature/self-evolution-prospective-memory-20261008, PR/CI pending.
+- FILES: backend/self_evolution_shadow.py, tests/test_self_evolution_shadow.py, .github/workflows/self-evolution-shadow.yml, docs, registry, architecture, checkpoint.
+- STATUS: source and negative tests authored; no remote test, merge or first main research run proven yet.
+- NEXT EXACT ACTION: commit source, open PR, run exact-head required green CI; compare current main; merge only after all GREEN; inspect authentic successful main workflow report and memory artifact.
+- BLOCKERS: no observed successful main research run; exact historical bookmaker quotes not available; memory artifacts have limited retention.
+- HARD BANS: zero model/training math, probability owners, settlement, PROD/PLAYABLE/Symphony/iNeed modifications; no real wagers or historic-ROI claims.
+
+
 **SELF EVOLUTION PHASE 2a — 2026-10-08 (branch, pending PR CI)**
 - LAST VERIFIED MAIN: `9811ff2b7bf467d664c6a43285c2084ede55527e` (PR #527 phase-1 merged, 11/11 GREEN).
 - BRANCH: `feature/self-evolution-market-specialists-20261008`; PR/CI pending.

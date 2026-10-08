@@ -90,3 +90,42 @@ quote_provenance.status = NO_FROZEN_EXACT_HISTORICAL_OPERATOR_QUOTES_JOINED,
 with priced observation counts set to N/D (not 0), until exact historical
 bookmaker quotes can be frozen and joined under audited chronology and
 unique identity. Neither current odds nor post-match offers may fill this gap.
+
+
+## Phase 2b — AI Memory + prospective Champion vs Challenger
+
+The canonical backend/self_evolution_shadow.py research owner now writes two
+independent artifacts per successful **main** GitHub Actions run:
+
+* Original retrospective SHADOW report (unchanged).
+* self-evolution-memory.json: a 60-day research-only, versioned register of
+  Champion/Challenger model-mixture versions, per-version SHA-256 identities,
+  historical fixed-horizon evaluations, run numbers and previous-state lineage.
+
+Actions workflow uses read-only permissions (contents:read, actions:read).
+It downloads the most recent available successful **main-branch** memory
+artifact with GitHub CLI before training. Missing prior memory is an explicit
+bootstrap. Corrupt artifact, invalid weights and non-monotonic timestamps
+fail closed; there are no bot pushes and no production runtime consumers.
+
+A challenger is frozen with a registration timestamp. Its retrospective
+train/validation/holdout metrics NEVER qualify it for automatic promotion.
+The only allowed evaluation observes real binary outcomes from canonical
+settlement linked to model predictions **first captured after challenger
+registration**, inside a fixed 14-day prospective window. Repeated frozen
+snapshots for one exact candidate are deduplicated; correlated candidate
+markets aggregate to one balanced contribution per fixture. Results from
+matches before Challenger registration are *not* admissible.
+
+After the full 14-day window, an independent SHADOW benchmark may change
+only if >=100 distinct fixtures on >=7 UTC days and a conservative
+approximate paired Brier improvement lower confidence bound exceeds 0.003.
+Missing evidence remains INSUFFICIENT_PROSPECTIVE_EVIDENCE / N-D, not a win. A positive result
+updates only this internal research registry and its auditable trial history:
+no betting actions, model weights, Symphony, PLAYABLE, iNeed, real money,
+automated PROD promotion, or guaranteed return. Repeated market comparisons
+still require independent confirmation in future research.
+
+Historical operator prices are not frozen per prospective action, so
+bookmaker ROI / EV are NOT assessed. Version registry memory is time-limited
+by GitHub Actions artifact retention; this is not permanent archival storage.
