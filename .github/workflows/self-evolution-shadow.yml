@@ -36,6 +36,9 @@ jobs:
       - name: Restore exact prospectively frozen ledger
         if: github.event_name != 'pull_request'
         run: python scripts/history_publication_chunks.py restore
+      - name: Build current exact-match settlement evidence locally
+        if: github.event_name != 'pull_request'
+        run: python backend/prediction_ledger_settlement_shadow.py
       - name: Autonomous SHADOW research
         if: github.event_name != 'pull_request'
         run: python backend/self_evolution_shadow.py

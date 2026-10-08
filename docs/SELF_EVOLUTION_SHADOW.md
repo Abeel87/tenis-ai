@@ -53,3 +53,11 @@ Next phase requires independently verified immutable historical operator quotes 
 their pre-match timestamps, market-specific settled labels, prospective out-of-sample
 evaluation, and a separately approved promotion contract. Until then the trainer
 remains entirely isolated from PLAYABLE/Symphony/iNeed$.
+
+### Nightly source materialization
+The production settlement sidecar is not committed to Git. After restoring
+the frozen ledger and history chunks, the nightly job must generate the
+canonical exact-settlement sidecar locally before the research step. It never
+commits that large derived file or treats missing exact outcomes as losses.
+Brier comparisons weight each distinct fixture equally, not each correlated
+candidate market. Regression tests enforce both contracts.

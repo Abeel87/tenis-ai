@@ -86,3 +86,21 @@ def test_all_rows_one_fixture_cannot_fake_independent_match_sample():
     result = agent.build_report(ledger, evidence, now=NOW)
     assert result["candidate"] is None
     assert result["reason"] == "INSUFFICIENT_INDEPENDENT_MATCHES"
+
+
+def test_brier_is_fixture_balanced_not_candidate_count_weighted():
+    samples = (
+        [{"match_key": "id:1", "p": (1.0, 0.0, 0.0), "y": 0} for _ in range(100)]
+        + [{"match_key": "id:2", "p": (0.0, 0.0, 0.0), "y": 0}]
+    )
+    assert agent._metric(samples, (1.0, 0.0, 0.0)) == 0.5
+
+
+def test_nightly_workflow_generates_settlement_after_restore():
+    from pathlib import Path
+    workflow = (Path(__file__).resolve().parents[1] /
+                ".github/workflows/self-evolution-shadow.yml").read_text(encoding="utf-8")
+    restore = workflow.index("python scripts/history_publication_chunks.py restore")
+    settle = workflow.index("python backend/prediction_ledger_settlement_shadow.py")
+    research = workflow.index("python backend/self_evolution_shadow.py")
+    assert restore < settle < research

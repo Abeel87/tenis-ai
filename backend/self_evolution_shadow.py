@@ -121,13 +121,15 @@ def _weights():
 
 
 def _metric(samples, weights):
+    """Brier score balanced across independent fixtures, not correlated market rows."""
     if not samples:
         return None
-    total = 0.0
+    by_match = {}
     for sample in samples:
         p = sum(weight * score for weight, score in zip(weights, sample["p"]))
-        total += (p - sample["y"]) ** 2
-    return round(total / len(samples), 9)
+        total, n = by_match.get(sample["match_key"], (0.0, 0))
+        by_match[sample["match_key"]] = (total + (p - sample["y"]) ** 2, n + 1)
+    return round(sum(total / n for total, n in by_match.values()) / len(by_match), 9)
 
 
 def _split(samples):
