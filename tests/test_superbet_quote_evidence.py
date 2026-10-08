@@ -126,3 +126,12 @@ def test_runtime_workflow_persists_archival_artifact_outside_main():
     assert "actions/upload-artifact@v4" in wf
     assert "if-no-files-found: error" in wf
     assert "github.event_name != 'pull_request'" in wf
+
+
+def test_ambiguous_direct_fixture_removes_first_seen_single_price():
+    direct, prepriced, dynamic = _sources()
+    direct["matches"].append(copy.deepcopy(direct["matches"][0]))
+    report = arch.build_snapshot(direct, prepriced, dynamic, now=NOW, run_id="783")
+    assert report["rows"] == []
+    assert report["rejected_reasons"]["DUPLICATE_DIRECT_FIXTURE"] == 1
+    assert report["status"] == "NO_VERIFIED_PREMATCH_QUOTES"
