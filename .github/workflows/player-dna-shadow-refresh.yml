@@ -129,7 +129,7 @@ jobs:
         run: pip install -r requirements.txt -c requirements.lock
 
       - name: Restore tennis history + PBP cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/cache
           key: tennis-history-${{ runner.os }}-player-dna-shadow-${{ github.run_id }}
