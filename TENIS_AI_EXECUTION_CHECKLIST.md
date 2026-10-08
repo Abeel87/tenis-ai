@@ -25,6 +25,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**AI SELF EVOLUTION PHASE 1 (2026-10-08):**
+- ACTIVE TASK: autonomous SHADOW strategy search, no model/prod changes.
+- BASE MAIN: 3a8a7ed51d2f71562c347a1fffa5a50cc32c56be.
+- BRANCH: feature/ai-evolution-shadow-20261008; PR and full CI pending.
+- CHANGED: backend/ai_evolution.py, tests/test_ai_evolution.py, .github/workflows/ai-evolution-shadow.yml, docs/ai-evolution-shadow.md, registry, architecture, checklist.
+- STATUS: code staged for review; no proof of passing CI or daily run yet.
+- DO NOT REDO: immutable ledger size repair, canonical settlement path, watchdog completion path.
+- HARD BAN: no changes to Player DNA/Surface Elo/Neuron/Current/Symphony/PLAYABLE/iNeed production; no real betting; no automatic SHADOW promotion.
+- NEXT EXACT ACTION: commit branch, open PR, inspect all checks, correct failures, only merge with full GREEN + fresh main; then observe a genuine scheduled/dispatch run and exact eligible data counts.
+
+
+
 
 **PUBLICATION RECOVERY + WATCHDOG FOLLOW-UP (2026-10-08):**
 - [x] PR #525 merged as `ad5924f655c3eb5261274d4cd3c91aa9fd8b3124` after 7/7 successful workflows; remote full regression 1612/1612. Exact ledger chunk migration is production-proven: Update `37734745919` and later `37742821901` both passed build, commit and Pages deploy. Do not redo the size-limit repair.

@@ -1,0 +1,43 @@
+name: Tenis AI Self Evolution SHADOW
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/ai_evolution.py'
+      - 'tests/test_ai_evolution.py'
+      - '.github/workflows/ai-evolution-shadow.yml'
+permissions:
+  contents: read
+concurrency:
+  group: ai-evolution-shadow-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  evolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install pytest
+        run: python -m pip install "pytest==9.1.1" -c requirements.lock
+      - name: Unit and isolation regression
+        run: python -m pytest -q tests/test_ai_evolution.py
+      - name: Restore exact history and frozen ledger
+        if: github.event_name != 'pull_request'
+        run: python scripts/history_publication_chunks.py restore
+      - name: Run independent nightly SHADOW evolution
+        if: github.event_name != 'pull_request'
+        run: python backend/ai_evolution.py --output "$RUNNER_TEMP/ai-evolution-shadow.json"
+      - name: Upload evidence (no main commit)
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-evolution-shadow-report
+          path: ${{ runner.temp }}/ai-evolution-shadow.json
+          if-no-files-found: error
+          retention-days: 30

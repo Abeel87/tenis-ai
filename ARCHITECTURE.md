@@ -156,3 +156,8 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 
 The existing Superbet watchdog also accepts successful main Neuron/Player DNA workflow completion as a wakeup when cron is delayed. It checks out main and validates source eligibility before querying Actions; the unchanged orchestration guard decides whether a refresh is actually stale and suppresses concurrent/redundant work. It never consumes source artifacts or changes model/PLAYABLE semantics.
+
+
+## Self Evolution research path (2026-10-08)
+
+backend/ai_evolution.py reads the pre-selection prediction ledger and canonical exact-match settlement evidence to train independent probability-mixture challengers in a daily GitHub Actions experiment. Train/validation/holdout chronological split and settlement embargo prevent easy look-ahead. Report is a standalone Actions artifact; no PROD, PLAYABLE, iNeed or frontend consumer and no real bets. See docs/ai-evolution-shadow.md.

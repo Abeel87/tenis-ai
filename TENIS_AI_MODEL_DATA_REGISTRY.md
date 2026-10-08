@@ -965,3 +965,8 @@ Canonical storage transport owner: `scripts/history_publication_chunks.py`. The 
 ## Superbet watchdog completion wakeups — 2026-10-08
 
 `.github/workflows/superbet-market-watchdog.yml` now also wakes after successful main Neuron SHADOW research and Player DNA SHADOW refresh completion. This addresses a demonstrated scheduling gap where independent Neuron completed at 10:55 UTC but no market refresh followed the 07:51 publication. `.github/scripts/superbet_refresh_guard.py` rejects failed, non-main, PR and unrecognized completion sources before Actions lookup. Existing active-core/market exclusion, five-minute post-core grace, 40-minute work-start freshness and exact operator semantics remain unchanged. This is another trigger for the existing guard, not another refresh producer or a guarantee of GitHub scheduler availability.
+
+
+## Self Evolution SHADOW (2026-10-08; new research owner)
+
+Canonical research owner: backend/ai_evolution.py. This independent nightly experiment consumes the immutable prospective prediction ledger and canonical exact-match settlement owner; train/validation/holdout follow chronological as-of constraints. Its output is a GitHub Actions artifact only, never PROD/PLAYABLE/Symphony/iNeed/UI. No ROI without exact frozen operator prices. Do not change existing model probabilities, weights, settlement or production policies. See docs/ai-evolution-shadow.md and tests/test_ai_evolution.py.
