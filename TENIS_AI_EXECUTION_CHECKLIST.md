@@ -25,6 +25,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SELF EVOLUTION PHASE 2a — 2026-10-08 (branch, pending PR CI)**
+- LAST VERIFIED MAIN: `9811ff2b7bf467d664c6a43285c2084ede55527e` (PR #527 phase-1 merged, 11/11 GREEN).
+- BRANCH: `feature/self-evolution-market-specialists-20261008`; PR/CI pending.
+- ACTIVE TASK: add read-only market-specific challenger research to canonical SHADOW owner; do not create parallel trainer.
+- MODIFIED: backend/self_evolution_shadow.py, tests/test_self_evolution_shadow.py, docs/SELF_EVOLUTION_SHADOW.md, registry, architecture, checkpoint.
+- BLOCKERS: no confirmed manual/scheduled `main` research report yet; historical exact operator quote ledger not available, so EV/ROI learning is N/D.
+- HARD BANS: no PROD probability/weights, Player DNA, Symfonia, PLAYABLE, iNeed, settlement, quote authority, real bets or automatic promotion. No speculative future results or hindsight quotes.
+- NEXT EXACT ACTION: run full CI and verify exact-head GREEN; compare latest `main`; merge only green; inspect genuine `main` Self Evolution research artifact and factual sample counts; phase 2b collect prospective exact quote evidence only after contract audit.
+
+
+
 
 **PUBLICATION RECOVERY + WATCHDOG FOLLOW-UP (2026-10-08):**
 - [x] PR #525 merged as `ad5924f655c3eb5261274d4cd3c91aa9fd8b3124` after 7/7 successful workflows; remote full regression 1612/1612. Exact ledger chunk migration is production-proven: Update `37734745919` and later `37742821901` both passed build, commit and Pages deploy. Do not redo the size-limit repair.
