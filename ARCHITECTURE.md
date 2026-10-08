@@ -179,3 +179,16 @@ are persisted as a new 60-day Actions artifact; a candidate may become an
 internal SHADOW-only champion after strict independent-fixture validation.
 No output affects production model, weights, Symphony, PLAYABLE, iNeed,
 Superbet price authority or live betting. No bookmaker EV/ROI is inferred.
+
+
+## Self Evolution phase 2c — quote evidence transport (research only)
+
+Canonical price owners remain superbet_direct.py,
+superbet_builder_quotes.py and superbet_builder_dynamic_quotes.py.
+Passive archivist superbet_quote_evidence.py consumes their post-refresh
+read-only JSON, requires exact event/selection identity and observed
+pre-match operator odds, then emits run-scoped GitHub Actions evidence
+artifact (60-day retention). It does not query bookmaker endpoints, change
+model, operator authority, Symphony, PLAYABLE, iNeed, settlement or real
+bets. Join to a prospectively frozen prediction-decision ledger and
+economic outcomes is NOT yet authorized.
