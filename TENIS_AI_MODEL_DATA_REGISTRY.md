@@ -955,3 +955,8 @@ Owner: `backend/superbet_market_core.py::refresh_availability`. Production snaps
 Regression: 48 current fixtures with empty tournament bulk all receive their exact offer lookup; a repeated same-stage refresh makes no duplicate lookups; account and direct monthly limits still stop at their exact boundaries. Old code fails the 48-fixture case, repaired code passes all four tests.
 
 PR #521 production full run 36438771639 succeeded. Latest reason-specific report: 153 matched / 430 app rows, 275 name misses, only 2 time rejections (both next-day fixtures differ by 6 hours). No evidence justifies widening the time gate. At 02:25Z Symphony model is ready with 34399 training rows, 68 verified fixtures and 8900 scored selections. These are snapshot counts, not a guarantee of 68 PLAYABLE matches or complete bookmaker coverage.
+
+
+## Prediction ledger publication size repair — 2026-10-08
+
+Canonical storage transport owner: `scripts/history_publication_chunks.py`. The immutable `prediction_ledger_shadow.json` exceeded GitHub's 100 MiB object limit and blocked the entire core publication in run 37683103451. The existing exact-byte chunk transport now also packs/restores this ledger using its own `prediction_ledger_shadow_chunks` manifest and 16 MiB parts. All existing workflow restore boundaries retain the original JSON path for consumers; legacy unchunked checkouts remain supported. SHA-256 verification occurs before removal/restoration, and Pages removes redundant repository chunk copies only after source restoration and runtime archiving. No rows, probabilities, identity, timestamps, settlement or model calculations change. Production rollout remains pending CI and authorization; see LIVE CHECKPOINT.
