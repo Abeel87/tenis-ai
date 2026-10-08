@@ -119,6 +119,11 @@ def build_snapshot(direct, prepriced, dynamic, *, now, run_id):
                 })
     else:
         reasons["DIRECT_FEED_NOT_CURRENT_VERIFIED"] += 1
+    # A later colliding direct fixture invalidates ALL rows from that app ID.
+    # Never retain the first seen price from an ambiguous direct identity.
+    invalid_direct = {mid for mid, fixture in valid_matches.items() if fixture is None}
+    if invalid_direct:
+        rows = [row for row in rows if row["match_id"] not in invalid_direct]
     for name, kind in (("prepriced", "BET_BUILDER_PREPRICED"), ("dynamic", "BET_BUILDER_DYNAMIC")):
         feed = feeds[name]
         if not isinstance(feed, dict) or feed.get("status") != "OK" or feed.get("prices_used") is not False or feed.get("synthetic_prices") is not False or feed.get("operator") != "superbet.pl":
