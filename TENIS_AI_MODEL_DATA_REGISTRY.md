@@ -975,3 +975,8 @@ Canonical storage transport owner: `scripts/history_publication_chunks.py`. The 
 **Canonical owner:** `backend/self_evolution_shadow.py`, read-only research consumer of frozen pre-selection Prediction Ledger and exact settlement SHADOW sidecar.
 **Role:** autonomously evaluate 66 deterministic three-model convex ensembles on chronological TRAIN/VAL/HOLDOUT and compare against Current using Brier on the same samples. Missing/void evidence must fail closed. Requires independent fixture sample sizes; reports uncertainty/insufficient history rather than fake wins.
 **Exclusions:** no trained production probability, thresholds, Adaptive weights, Neuron, Player DNA, Symfonia, iNeed$, PLAYABLE, real bets or model promotion. No odds or profitability claims. No external requests. See `docs/SELF_EVOLUTION_SHADOW.md`.
+
+
+## B18 continuation — Phase 2a market specialists, 2026-10-08
+
+The single canonical SHADOW research owner `backend/self_evolution_shadow.py` now examines market-specific frozen-labeled candidate populations on the same chronological train/validation/holdout boundaries as global research. Research requires 60/20/20 distinct fixtures, bounded 12 market IDs, no inferred tour/surface, no under-supported market champions, no auto promotion. It additionally reports that an immutable exact pre-match operator quote history is absent (N/D, not zero); ROI/EV remains unavailable. Existing model probability/training/settlement owners, PLAYABLE, Symphony, iNeed, frontend and current operator quote consumers remain untouched. `tests/test_self_evolution_shadow.py` guards no-lookahead and missing-data contracts.

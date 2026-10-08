@@ -61,3 +61,32 @@ canonical exact-settlement sidecar locally before the research step. It never
 commits that large derived file or treats missing exact outcomes as losses.
 Brier comparisons weight each distinct fixture equally, not each correlated
 candidate market. Regression tests enforce both contracts.
+
+
+## Phase 2a — Market specialists (research-only, no bookmaker prices)
+
+The same canonical research module now additionally groups exact market identifiers
+already frozen in the preselection ledger. It never guesses tour, surface, match
+identity or market from free text or a digest. Unknown market is N/D.
+
+Specialists share the **global frozen** train, validation and untouched holdout
+time cuts and independent match counting. Each market must have >=60/20/20
+independent fixtures in these windows or yields INSUFFICIENT_EVIDENCE. A bounded
+list of at most 12 lexicographically ordered market IDs is studied; excess IDs
+are explicitly reported as unexamined. For each eligible market, the train
+window ranks the same 66 mixtures, validation picks among 12 finalists,
+and the holdout is **observed only**. No weights are delivered to live models.
+
+As nightly runs repeatedly examine the same historical holdout, the report
+labels these observations **descriptive exploratory research only**. True
+prospective quality validation and permanent champion registration require a
+separate later implementation; no automatic production promotion.
+
+### Quote provenance audit blocker
+Current Superbet and Bet Builder quote sidecars describe *current* operator
+conditions, not an immutable one-quote-per-prediction historical as-of ledger.
+No ROI/EV or economic reward is computed. The report exposes
+quote_provenance.status = NO_FROZEN_EXACT_HISTORICAL_OPERATOR_QUOTES_JOINED,
+with priced observation counts set to N/D (not 0), until exact historical
+bookmaker quotes can be frozen and joined under audited chronology and
+unique identity. Neither current odds nor post-match offers may fill this gap.

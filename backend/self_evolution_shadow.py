@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,10 @@ REPORT = DATA / "self_evolution_shadow.json"
 MODELS = ("current", "catboost", "tabpfn")
 VERSION = "self-evolution-shadow-v1"
 MIN_MATCHES = (120, 40, 40)  # independent fixture identities, not row counts
+MIN_SPECIALIST_MATCHES = (60, 20, 20)
+MAX_SPECIALIST_MARKETS = 12
+# No tour or surface inference from match names or a context digest.
+MARKET_ID_PATTERN = re.compile(r"[a-z0-9_]{1,64}\Z")
 
 
 def _parse_dt(value):
@@ -109,8 +114,13 @@ def _samples(ledger, settlement, now):
         if scheduled.date() >= now.date():
             excluded["INCOMPLETE_DAY"] += 1
             continue
-        samples.append({"match_key": key, "day": scheduled.date().isoformat(), "settled_at": settled,
-                        "p": scores, "y": int(outcome["result"] == "hit")})
+        market = row.get("market")
+        market = market.strip().casefold() if isinstance(market, str) else None
+        if market is not None and not MARKET_ID_PATTERN.fullmatch(market):
+            market = None  # Unknown market is not silently guessed from the candidate key.
+        samples.append({"match_key": key, "market": market, "day": scheduled.date().isoformat(),
+                        "settled_at": settled, "p": scores,
+                        "y": int(outcome["result"] == "hit")})
     return samples, dict(excluded)
 
 
@@ -148,6 +158,72 @@ def _split(samples):
     return (train, validation, holdout, split_days)
 
 
+
+def _market_research(train, validation, holdout):
+    """Train independent market challengers on the SAME global temporal windows.
+
+    This is descriptive SHADOW research. Holdout never selects a candidate and
+    the returned weight vector cannot influence live recommendations.
+    """
+    grouped = {}
+    for fold_name, rows in (("train", train), ("validation", validation), ("holdout", holdout)):
+        for row in rows:
+            market = row.get("market")
+            if market is not None:
+                grouped.setdefault(market, {"train": [], "validation": [], "holdout": []})[fold_name].append(row)
+
+    all_market_ids = sorted(grouped)
+    studies = []
+    weights = _weights()
+    baseline = (1.0, 0.0, 0.0)
+    for market_id in all_market_ids[:MAX_SPECIALIST_MARKETS]:
+        windows = grouped[market_id]
+        sample_sizes = {
+            name: {"rows": len(rows), "independent_matches": len({r["match_key"] for r in rows})}
+            for name, rows in windows.items()
+        }
+        result = {"market": market_id, "status": "INSUFFICIENT_EVIDENCE",
+                  "windows": sample_sizes, "candidate": None}
+        if all(sample_sizes[name]["independent_matches"] >= MIN_SPECIALIST_MATCHES[index]
+               for index, name in enumerate(("train", "validation", "holdout"))):
+            # Strictly train-only ranking; validation decides among finalists.
+            ranked = sorted(weights, key=lambda w: (_metric(windows["train"], w), w))
+            finalist = min(ranked[:12],
+                           key=lambda w: (_metric(windows["validation"], w),
+                                          _metric(windows["train"], w), w))
+            scores = {
+                name: {"challenger_brier": _metric(rows, finalist),
+                       "current_brier": _metric(rows, baseline)}
+                for name, rows in windows.items()
+            }
+            result["status"] = "EVALUATED_SHADOW_ONLY"
+            result["candidate"] = {
+                "weights": dict(zip(MODELS, finalist)),
+                "scores": scores,
+                "validation_better_than_current": (
+                    scores["validation"]["challenger_brier"] < scores["validation"]["current_brier"]
+                ),
+                "holdout_better_than_current": (
+                    scores["holdout"]["challenger_brier"] < scores["holdout"]["current_brier"]
+                ),
+            }
+        studies.append(result)
+
+    return {
+        "status": "EXPLORATORY_SHADOW_ONLY" if all_market_ids else "NO_VERIFIED_MARKET_LABELS",
+        "market_ids_with_data": len(all_market_ids),
+        "market_limit": MAX_SPECIALIST_MARKETS,
+        "unexamined_market_ids": all_market_ids[MAX_SPECIALIST_MARKETS:],
+        "studies": studies,
+        "optimizer": "FROZEN_66_CONVEX_MIXTURES_BY_EXACT_MARKET",
+        "shared_utc_cutoffs": True,
+        "holdout_used_for_selection": False,
+        "holdout_reuse_warning": "REPEATED_DAILY_HISTORICAL_HOLDOUT_IS_DESCRIPTIVE_NOT_PROSPECTIVE",
+        "auto_promote": False,
+        "bookmaker_profit_claim": False,
+    }
+
+
 def build_report(ledger, settlement, *, now):
     parsed_now = _parse_dt(now)
     if parsed_now is None:
@@ -162,6 +238,14 @@ def build_report(ledger, settlement, *, now):
         "network_fetch_enabled": False, "optimizer": "DETERMINISTIC_CONVEX_GRID_BRIER",
         "selection_metric": "Brier (smaller is better)", "economic_roi_evaluated": False,
         "samples": len(samples), "excluded": excluded,
+        "quote_provenance": {
+            "status": "NO_FROZEN_EXACT_HISTORICAL_OPERATOR_QUOTES_JOINED",
+            "verified_priced_actions": None,
+            "eligible_roi_observations": None,
+            "economic_learning_authorized": False,
+            "reason": "CURRENT_OFFER_AND_BB_QUOTES_ARE_NOT_IMMUTABLE_PER_DECISION_HISTORY",
+        },
+        "market_research": None,
         "status": "COLLECTING_VERIFIED_HISTORY", "candidate": None,
         "windows": None,
     }
@@ -195,6 +279,7 @@ def build_report(ledger, settlement, *, now):
                            "validation_delta_vs_current": round(val_brier - baseline_val, 9),
                            "holdout_delta_vs_current": round(test_brier - baseline_test, 9)}
     result["status"] = "SHADOW_EVIDENCE_POSITIVE" if val_brier < baseline_val and test_brier < baseline_test else "SHADOW_NOT_BETTER"
+    result["market_research"] = _market_research(train, val, test)
     result["reason"] = "DESCRIPTIVE_RESEARCH_ONLY_NO_AUTOMATIC_PRODUCTION_PROMOTION"
     return result
 

@@ -104,3 +104,74 @@ def test_nightly_workflow_generates_settlement_after_restore():
     settle = workflow.index("python backend/prediction_ledger_settlement_shadow.py")
     research = workflow.index("python backend/self_evolution_shadow.py")
     assert restore < settle < research
+
+
+
+def test_market_specialist_has_independent_training_and_no_profit_claim():
+    ledger, evidence = fixture()
+    for row in ledger["rows"]:
+        row["market"] = "set1_total"
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+    report = agent.build_report(ledger, evidence, now=NOW)
+    assert report["status"] == "SHADOW_EVIDENCE_POSITIVE"
+    research = report["market_research"]
+    assert research["status"] == "EXPLORATORY_SHADOW_ONLY"
+    assert research["holdout_used_for_selection"] is False
+    assert research["auto_promote"] is False
+    assert len(research["studies"]) == 1
+    specialist = research["studies"][0]
+    assert specialist["market"] == "set1_total"
+    assert specialist["status"] == "EVALUATED_SHADOW_ONLY"
+    assert specialist["windows"]["train"]["independent_matches"] == 18 * 12
+    assert specialist["candidate"]["validation_better_than_current"] is True
+    assert report["quote_provenance"]["economic_learning_authorized"] is False
+    assert report["quote_provenance"]["eligible_roi_observations"] is None
+
+
+def test_market_specialist_never_selects_on_holdout():
+    ledger, evidence = fixture()
+    for row in ledger["rows"]:
+        row["market"] = "match_winner"
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+    first = agent.build_report(ledger, evidence, now=NOW)
+    # Change ONLY frozen holdout model forecasts. This must change its Brier,
+    # but cannot influence a strategy selected on older TRAIN and VALIDATION.
+    for row in ledger["rows"]:
+        if row["scheduled_time"] >= "2026-08-25":
+            for model, value in (("current", 0.1), ("catboost", 0.9), ("tabpfn", 0.7)):
+                row["model_scores"][model]["value"] = value
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+    second = agent.build_report(ledger, evidence, now=NOW)
+    one = first["market_research"]["studies"][0]["candidate"]
+    two = second["market_research"]["studies"][0]["candidate"]
+    assert one["weights"] == two["weights"]
+    assert one["scores"]["holdout"] != two["scores"]["holdout"]
+
+
+def test_specialists_fail_closed_on_missing_or_unsupported_market_labels():
+    ledger, evidence = fixture()
+    for row in ledger["rows"]:
+        row["market"] = "../fictional-market"
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+    report = agent.build_report(ledger, evidence, now=NOW)
+    assert report["market_research"]["status"] == "NO_VERIFIED_MARKET_LABELS"
+    assert report["market_research"]["studies"] == []
+    assert report["candidate"] is not None  # Global research is still independent.
+
+
+def test_specialists_minimum_is_independent_matches_not_candidate_rows():
+    ledger, evidence = fixture()
+    for row in ledger["rows"]:
+        row["market"] = "set1_total" if row["match_key"] in {"id:1", "id:2"} else "match_winner"
+    evidence["source_ledger_sha256"] = agent._digest(ledger)
+    result = agent.build_report(ledger, evidence, now=NOW)
+    by_market = {s["market"]: s for s in result["market_research"]["studies"]}
+    assert by_market["match_winner"]["status"] == "EVALUATED_SHADOW_ONLY"
+    # A rare market with too little eligible evidence never gets a fabricated champion.
+    sparse = agent._market_research(
+        [{"match_key": "id:1", "market": "set1_total", "p": (.5, .5, .5), "y": 1}],
+        [{"match_key": "id:2", "market": "set1_total", "p": (.5, .5, .5), "y": 1}],
+        [{"match_key": "id:3", "market": "set1_total", "p": (.5, .5, .5), "y": 1}],
+    )["studies"][0]
+    assert sparse["candidate"] is None
+    assert sparse["status"] == "INSUFFICIENT_EVIDENCE"
