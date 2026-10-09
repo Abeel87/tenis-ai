@@ -153,3 +153,36 @@ permanent archive. It is not yet matched to immutable Prediction Ledger
 decision identities; therefore EV, ROI, bankroll returns and profit claims
 remain disabled. Separate forward-only decision/action/reward join requires
 audit of exact market, line, selection and as-of quote proof.
+
+## Admin UI — Self Evolution status (2026-10-09)
+
+The app's canonical admin route now exposes **Admin → Self Evolution**
+and a direct shortcut in the authenticated administrator's "Więcej" menu.
+The presentation owner is `frontend/self-evolution-ui.js`, loaded from
+the existing `frontend/index.html` and cached by the existing service
+worker. It does not add another app shell, stylesheet or backend writer.
+
+When the administrator opens the route, the panel reads **public
+GitHub Actions workflow metadata** for the main branch and accepts only
+`schedule` or `workflow_dispatch` events for runtime confirmation.
+A pull_request CI success does NOT count as evidence that the autonomous
+trainer ran. The panel then checks run-scoped Actions artifact metadata;
+it does not download artifact contents and never claims better prediction
+quality or actual earnings solely from successful workflow status.
+
+A missing run, failed/delayed GitHub request or inaccessible artifact
+remains clearly labelled unavailable / N/D. Genuine Challenger weights,
+Brier and prospective sample counts will be displayed only after an
+explicit authenticated, auditable report delivery contract is designed.
+No GH secret/token in frontend, no probability/learning calculations,
+no operator requests, no changes to PROD/PLAYABLE/Symphony/iNeed.
+
+Observed morning evidence before UI change on 2026-10-09:
+- No successful scheduled/manual main Self Evolution research run in the
+  accessible recent GitHub Actions history as of the inspection.
+- Main Superbet refresh run 37874967907 succeeded and emitted evidence
+  artifact 11591534514 at 02:35 UTC, but the archived report logged
+  `NO_VERIFIED_PREMATCH_QUOTES`, zero admissible quotes and exact
+  rejection reasons. This does NOT mean the operator had no offers.
+- This UI presents live run/artifact metadata; it cannot infer a learning
+  improvement from either fact.

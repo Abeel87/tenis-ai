@@ -1011,3 +1011,14 @@ No current or stale price can be retroactively treated as an actual
 historical decision. No EV/ROI learning yet, no effects on PROD, Symphony,
 PLAYABLE, iNeed, canonical settlement, model math or real betting.
 Tests: tests/test_superbet_quote_evidence.py.
+
+## Self Evolution SHADOW Admin view (2026-10-09)
+
+Canonical presentation owner `frontend/app.js`, plus a narrowly scoped
+`frontend/self-evolution-ui.js` read-only status component. Only a
+server-verified authenticated admin UI route may fetch and render public
+GitHub Actions main-branch runtime metadata for Self Evolution and Superbet
+quote evidence. Pull-request checks are not training runs. Browser code
+does not access the underlying reports, fabricate Brier/Champion values,
+use keys or promote SHADOW to PROD. Missing evidence remains N/D.
+`tests/test_self_evolution_ui.py` covers gate, routing and isolation.
