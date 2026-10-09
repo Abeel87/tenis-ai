@@ -86,7 +86,7 @@ function paint(){
   root.querySelector('[data-evolution-refresh]').onclick=()=>load(true);
 }
 function load(force){
-  if(!admin()||!document.querySelector('#self-evolution-admin'))return;
+  if(!admin()||location.hash!=='#admin/evolution'||!document.querySelector('#self-evolution-admin'))return;
   if(inflight)return;
   if(!force&&cached&&Date.now()-updated<CACHE_MS){paint();return;}
   inflight=read().then(data=>{cached=data;error=null;updated=Date.now();})
