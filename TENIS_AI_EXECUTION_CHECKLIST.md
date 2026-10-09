@@ -25,6 +25,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SELF EVOLUTION ADMIN STATUS UI — 2026-10-09, BRANCH & PR PENDING**
+- VERIFIED MAIN BASE: c66ec0ccbd738040ac2417af8c0d306742e172d0; later data bot commits may move main.
+- ACTIVE TASK: display truthful research status in administrator UI; NO changing canonical evolution trainer, price archivist or model owners.
+- BRANCH: feature/self-evolution-admin-ui-20261009; PR/CI pending.
+- FILES: frontend/self-evolution-ui.js, frontend/app.js, frontend/index.html, frontend/style.css, frontend/sw.js, tests/test_self_evolution_ui.py, docs, registry, architecture and this checkpoint.
+- OBSERVED 2026-10-09 05:31Z-ish: no confirmed schedule/workflow_dispatch main Self Evolution run among recent Github workflow executions. PR-success is not real training.
+- REAL QUOTE RUN: Superbet refresh 37874967907 (2026-10-09 02:31Z) succeeded; archival evidence artifact created but logged NO_VERIFIED_PREMATCH_QUOTES (0 accepted, eight DIRECT_UNVERIFIED_IDENTITY_OR_ASOF, plus inaccessible dynamic/prepriced). No economic learning evidence.
+- UI POLICY: show last main actual run and run-artifact metadata, N/D for unseen Brier, champion, ROI; link official Actions report, no secret tokens, admin route only.
+- NEXT EXACT ACTION: commit branch and open PR; verify UI/static/full CI exact head GREEN; check fresh main/overlap; merge only green; verify fast Pages deployment and administrator route. Do not claim learning gains or UI available until deployment proof.
+- HARD BANS: no PROD model calculations, probability/threshold/weights, training, settlement, Superbet fetch, Symphony/PLAYABLE/iNeed, SHADOW-PROD promotion, real bets.
+
+
 **SELF EVOLUTION PHASE 2c — EXACT OPERATOR QUOTE EVIDENCE (2026-10-08, PR PENDING)**
 - VERIFIED MAIN at branch creation: 6507d3db6e8955e2366819ef523685192270aa3a (#531 merged; later market refresh may advance main).
 - ACTIVE: passively archive verified pre-start real Superbet quote evidence from current direct/exact/dynamic sources via existing market refresh; no extra HTTP requests.

@@ -192,3 +192,15 @@ artifact (60-day retention). It does not query bookmaker endpoints, change
 model, operator authority, Symphony, PLAYABLE, iNeed, settlement or real
 bets. Join to a prospectively frozen prediction-decision ledger and
 economic outcomes is NOT yet authorized.
+
+## Self Evolution UI — administrator research status
+
+An admin-only route `#admin/evolution` lives inside the existing
+authenticated `frontend/app.js` shell; a small standalone *presenter*
+`frontend/self-evolution-ui.js` renders read-only public GitHub Actions
+metadata on demand with a short client-side TTL. Links lead to official
+runtime runs. Report artifact contents are not fetched or published in
+the public browser, so quantitative learning/ROI/champion improvement
+remains N/D absent separate trusted report delivery. This does not
+introduce a new trainer, operational workflow, probability or settlement
+path, and does not affect PROD, PLAYABLE, Symphony, iNeed or real betting.
