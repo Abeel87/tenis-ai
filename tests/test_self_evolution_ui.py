@@ -24,8 +24,8 @@ def test_workflow_status_requires_actual_main_execution():
     assert "window.TenisAccount?.authenticated===true&&window.TenisAccount.role==='admin'" in ui
     assert "r.head_branch==='main'" in ui
     assert "['schedule','workflow_dispatch'].includes(r.event)" in ui
-    assert "r.status!=='completed'" in ui
-    assert "r.conclusion!=='success'" in ui
+    assert "run.status!=='completed'" in ui
+    assert "run.conclusion!=='success'" in ui
     assert "self-evolution-shadow-" in ui and "self-evolution-memory" in ui
     assert "superbet-quote-evidence-" in ui
     assert "Brak potwierdzonego artefaktu" in ui
