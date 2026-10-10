@@ -17,7 +17,7 @@ let role='user';
 const account={authenticated:true,user:{id:'owner'},profile:{username:'Tester'},get role(){return role},client:{from(table){const q={select(){return q},eq(){return q},order(){return q},upsert(row){writes.push({table,row});q.row=row;return q},single(){return Promise.resolve({data:q.row})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return q},rpc(){return Promise.resolve({data:[]})}},signOut(){account.authenticated=false;handlers['tenis-auth']()}};
 const ctx={console,URL,Date,Map,Set,JSON,Math,Promise,Number,Object,Array,String,structuredClone,crypto:{randomUUID:()=> 'coupon-1'},navigator:{},location:{hash:'#start',href:'https://example.test/',origin:'https://example.test',pathname:'/'},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},document:{hidden:false,querySelector:element,querySelectorAll:()=>[],addEventListener:(k,f)=>handlers[k]=f},addEventListener:(k,f)=>handlers[k]=f,scrollY:0,scrollTo(x,y){ctx.scrollY=y},setTimeout:()=>0,clearTimeout(){},setInterval:f=>{timers.push(f);return timers.length},requestAnimationFrame:f=>f(),queueMicrotask,fetch:async path=>({ok:true,json:async()=>path.includes('data/delivery/')?feed(path.replace('data/','')):path.includes('neuron_')?(feed(path.replace('data/',''))||{}):path.includes('meta.json')?(feed('meta.json')||{}):path.includes('symphony2_current')?symphony:path.includes('results')?matches:path.includes('superbet_direct_current')?(directReads++,feed('superbet_direct_current.json')||{}):path.includes('match_detail_history')?{matches:[]}:path.includes('history')?(feed('history.json')||[]):path.includes('simulation')?(feed('player_dna_current_simulation.json')||{matches:[]}):{}})};
 ctx.window=ctx;ctx.globalThis=ctx;vm.createContext(ctx);
-const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js');ctx.TenisAccount=account;
+const scripts=[...read('index.html').matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:')&&x!=='account.js'&&x!=='self-evolution-ui.js');ctx.TenisAccount=account;
 for(const name of scripts)vm.runInContext(read(name),ctx,{filename:name});
 const flush=async()=>{for(let i=0;i<100;i++)await Promise.resolve()};await flush();
 const route=async hash=>{ctx.location.hash=hash;handlers.hashchange();await flush();return element('#app').innerHTML};
@@ -78,6 +78,10 @@ if(existingH2H){
  else assert(html.includes('bez potwierdzonego zwycięzcy.'),'H2H without a confirmed winner stays explicit instead of fabricating a bar');
 }
 assert(read('app.js').includes('class="h2h-bar"'),'H2H comparison bar renderer remains present');
+const evolution=await route('#admin/evolution');
+assert(evolution.includes('id="self-evolution-admin"'),'Old HTML without the separate script must still render Self Evolution');
+assert(!evolution.includes('Brak modułu'),'Missing dependency must not strand the admin panel');
+assert(element('#self-evolution-admin').innerHTML.includes('NIEPOTWIERDZONE'),'No invented learning improvement');
 const overview=await route('#admin/dashboard');
 assert(overview.includes('PRZEGLĄD')&&overview.includes('TECHNICZNE'));
 assert(!overview.includes('<pre>'),'Overview must not expose raw reports');

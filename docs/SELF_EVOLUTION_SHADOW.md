@@ -158,9 +158,9 @@ audit of exact market, line, selection and as-of quote proof.
 
 The app's canonical admin route now exposes **Admin → Self Evolution**
 and a direct shortcut in the authenticated administrator's "Więcej" menu.
-The presentation owner is `frontend/self-evolution-ui.js`, loaded from
-the existing `frontend/index.html` and cached by the existing service
-worker. It does not add another app shell, stylesheet or backend writer.
+The presentation owner is `frontend/app.js`, which bundles the presenter
+since 2026-10-10. A cached HTML shell no longer needs a separate script to
+initialize the panel. The existing service worker caches this single asset. It does not add another app shell, stylesheet or backend writer.
 
 When the administrator opens the route, the panel reads **public
 GitHub Actions workflow metadata** for the main branch and accepts only
