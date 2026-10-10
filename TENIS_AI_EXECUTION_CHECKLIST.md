@@ -27,11 +27,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **SELF EVOLUTION PANEL DELIVERY REPAIR — 2026-10-10, IN PROGRESS**
 - VERIFIED BASE: `2832a1bc645f8d8036a4c6c872b50719cf8f43b6`; open PR #523 and dependency PRs do not overlap this repair.
-- BRANCH: `fix/self-evolution-panel-delivery`; PR #534, exact-head CI required before merge.
+- BRANCH: `fix/self-evolution-panel-delivery`; PR #534. Initial head c1375cdb passed 10/10 workflows; data-only main drift to 83fa1816 requires fresh CI before merge.
 - ROOT FAILURE: app.js renders a permanent missing-module placeholder if an older HTML shell omits the separate presenter or that request fails. Current public HTML and JS both exist; the exact phone cache/network cause is not proven.
 - REPRODUCTION: runtime smoke omitting the optional script fails at the Self Evolution route assertion, matching the screenshot. Canonical repair bundles the unchanged presenter into app.js and removes the separate script/import/cache entry. No second loader or presenter.
 - LIVE RESEARCH VERIFIED: scheduled main runs 37924098106 (Oct 9) and 38046146528 (Oct 10) succeeded. Oct 10 restored Oct 9 memory, reports memory_run_number=2, tracks=3; SHADOW_EVIDENCE_POSITIVE with 50 holdout fixtures, Brier candidate 0.180190223 vs Current 0.182710775. Descriptive holdout evidence, NOT prospective promotion or financial ROI.
-- TESTS: pre-fix regression reproduced; post-fix runtime smoke PASS for real feed and both readiness fixtures; static/decision smoke PASS. Full final pytest: 1649/1649 PASS (30.65s) after updating the exact source-line registry; focused readiness/UI pack 9/9 PASS. Remote CI and production deployment pending.
+- TESTS: pre-fix regression reproduced; post-fix runtime smoke PASS for real feed and both readiness fixtures; static/decision smoke PASS. Full final pytest: 1649/1649 PASS (30.65s); focused readiness/UI pack 9/9 PASS. Initial remote head 10/10 GREEN. Fresh-main CI and production deployment pending.
 - NEXT EXACT ACTION: verify local tests, publish PR, require all exact-head checks green, compare fresh main, merge and verify public app.js plus legacy-shell route.
 - HARD BANS: no training/model/probability/settlement/PROD changes or real betting. Do not redo the already successful research runtime.
 
