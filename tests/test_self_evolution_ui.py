@@ -14,13 +14,14 @@ def test_admin_only_route_and_single_canonical_shell():
     assert "window.TenisSelfEvolutionUI?.mount()" in app
     assert "!['dashboard','users','evolution'].includes(parts[1])" in app
     assert "if(!admin())return empty('Brak uprawnień administratora.')" in app
-    assert 'src="self-evolution-ui.js"' in index
-    assert index.index('src="self-evolution-ui.js"') < index.index('src="app.js"')
+    assert 'self-evolution-ui.js' not in index
+    assert not (FRONT / 'self-evolution-ui.js').exists()
+    assert app.index('window.TenisSelfEvolutionUI={') < app.index('function render()')
     assert index.count('rel="stylesheet"') == 1
 
 
 def test_workflow_status_requires_actual_main_execution():
-    ui = (FRONT / "self-evolution-ui.js").read_text(encoding="utf-8")
+    ui = (FRONT / "app.js").read_text(encoding="utf-8").split("/* Tenis AI: canonical mobile presentation.")[0]
     assert "window.TenisAccount?.authenticated===true&&window.TenisAccount.role==='admin'" in ui
     assert "r.head_branch==='main'" in ui
     assert "['schedule','workflow_dispatch'].includes(r.event)" in ui
@@ -36,7 +37,7 @@ def test_workflow_status_requires_actual_main_execution():
 
 
 def test_no_production_data_or_secrets_were_connected():
-    ui = (FRONT / "self-evolution-ui.js").read_text(encoding="utf-8")
+    ui = (FRONT / "app.js").read_text(encoding="utf-8").split("/* Tenis AI: canonical mobile presentation.")[0]
     assert "https://api.github.com/repos/" in ui
     assert "Authorization" not in ui
     assert "localStorage" not in ui
@@ -50,7 +51,8 @@ def test_no_production_data_or_secrets_were_connected():
 
 def test_pwa_precaches_admin_research_panel_and_retains_fresh_data_policy():
     sw = (FRONT / "sw.js").read_text(encoding="utf-8")
-    assert "'self-evolution-ui.js'" in sw
-    assert "tenis-ai-mobile-presentation-20261009-evolution" in sw
+    assert "'app.js'" in sw
+    assert "self-evolution-ui.js" not in sw
+    assert "tenis-ai-mobile-presentation-20261010-evolution-bundled" in sw
     assert "u.pathname.includes('/data/')" in sw
     assert "fetch(r,{cache:'no-store'})" in sw

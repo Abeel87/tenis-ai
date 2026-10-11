@@ -1014,8 +1014,8 @@ Tests: tests/test_superbet_quote_evidence.py.
 
 ## Self Evolution SHADOW Admin view (2026-10-09)
 
-Canonical presentation owner `frontend/app.js`, plus a narrowly scoped
-`frontend/self-evolution-ui.js` read-only status component. Only a
+Canonical presentation owner `frontend/app.js` bundles the read-only Self
+Evolution component so a cached HTML shell cannot omit its dependency. Only a
 server-verified authenticated admin UI route may fetch and render public
 GitHub Actions main-branch runtime metadata for Self Evolution and Superbet
 quote evidence. Pull-request checks are not training runs. Browser code

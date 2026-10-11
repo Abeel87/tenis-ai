@@ -196,8 +196,8 @@ economic outcomes is NOT yet authorized.
 ## Self Evolution UI — administrator research status
 
 An admin-only route `#admin/evolution` lives inside the existing
-authenticated `frontend/app.js` shell; a small standalone *presenter*
-`frontend/self-evolution-ui.js` renders read-only public GitHub Actions
+authenticated `frontend/app.js` shell, which also bundles the Self Evolution
+presenter in the same asset to support older cached HTML shells. It renders public GitHub Actions
 metadata on demand with a short client-side TTL. Links lead to official
 runtime runs. Report artifact contents are not fetched or published in
 the public browser, so quantitative learning/ROI/champion improvement
