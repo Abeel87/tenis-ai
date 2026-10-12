@@ -2,6 +2,7 @@
 from __future__ import annotations
 import re
 import unicodedata
+from datetime import datetime, timezone
 
 SIGNAL_LAYERS = (
     "signals", "shadow_signals", "learning_signals_v79b",
@@ -27,6 +28,28 @@ def market_name(value):
 def _key(value):
     value = unicodedata.normalize('NFKD', str(value or '')).encode('ascii', 'ignore').decode().casefold()
     return ' '.join(re.sub(r'[^a-z0-9]+', ' ', value).split())
+
+
+def resolve_player_side(value, final: dict):
+    """Resolve a full name against this fixture only; never fuzzy-match names.
+
+    Operator names may reverse given/family name order. All normalized tokens
+    must match exactly and identify one of two distinct participants.
+    """
+    wanted = tuple(sorted(_key(value).split()))
+    participants = [tuple(sorted(_key(final.get(p)).split())) for p in ('p1', 'p2')]
+    if not wanted or not all(participants) or participants[0] == participants[1]:
+        return None
+    hits = [i + 1 for i, tokens in enumerate(participants) if tokens == wanted]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _settle_named_winner(pick, actual, final):
+    selected = resolve_player_side(pick, final)
+    winner = resolve_player_side(actual, final)
+    if selected is None or winner is None:
+        return 'unverifiable'
+    return 'hit' if selected == winner else 'miss'
 
 
 def _yes_no(value):
@@ -96,8 +119,8 @@ def _settle_game_handicap(signal: dict, final: dict, sets, market: str) -> str:
         relevant = sets
 
     p1, p2 = final.get('p1'), final.get('p2')
-    side = _key(signal.get('pick'))
-    if not p1 or not p2 or side not in {_key(p1), _key(p2)}:
+    side = resolve_player_side(signal.get('pick'), final)
+    if side is None:
         return 'unverifiable'
     try:
         line = float(signal.get('line'))
@@ -106,7 +129,7 @@ def _settle_game_handicap(signal: dict, final: dict, sets, market: str) -> str:
 
     p1_games = sum(int(a) for a, _ in relevant)
     p2_games = sum(int(b) for _, b in relevant)
-    margin = (p1_games - p2_games) if side == _key(p1) else (p2_games - p1_games)
+    margin = (p1_games - p2_games) if side == 1 else (p2_games - p1_games)
     adjusted = margin + line
     if abs(adjusted) <= 1e-9:
         return 'void'
@@ -117,10 +140,10 @@ def _settle_player_total_games(signal: dict, final: dict, sets) -> str:
     if not sets:
         return 'void'
     p1, p2 = final.get('p1'), final.get('p2')
-    player = _key(signal.get('player'))
-    if not p1 or not p2 or player not in {_key(p1), _key(p2)}:
+    player = resolve_player_side(signal.get('player'), final)
+    if player is None:
         return 'unverifiable'
-    total = sum(int(a) for a, _ in sets) if player == _key(p1) else sum(int(b) for _, b in sets)
+    total = sum(int(a) for a, _ in sets) if player == 1 else sum(int(b) for _, b in sets)
     return _settle_over_under(total, signal)
 
 
@@ -142,7 +165,7 @@ def settle_signal(signal: dict, final: dict) -> str:
     if market in ('game_state', 'set2_game_state'):
         return 'unverifiable'
     if market == 'match_winner':
-        return 'hit' if _key(pick) == _key(final.get('winner')) else 'miss'
+        return _settle_named_winner(pick, final.get('winner'), final)
     if market in ('set1_winner', 'set2_winner', 'set3_winner'):
         idx = {'set1_winner': 0, 'set2_winner': 1, 'set3_winner': 2}[market]
         if len(sets) <= idx:
@@ -153,7 +176,7 @@ def settle_signal(signal: dict, final: dict) -> str:
         if not p1 or not p2:
             return 'void'
         actual = p1 if a > b else p2
-        return 'hit' if _key(pick) == _key(actual) else 'miss'
+        return _settle_named_winner(pick, actual, final)
     if market == 'total_sets':
         direction = pick.strip().casefold()
         if direction in ('over', 'under'):
@@ -232,15 +255,15 @@ def settle_signal(signal: dict, final: dict) -> str:
         if not sets:
             return 'void'
         p1, p2 = final.get('p1'), final.get('p2')
-        side = _key(pick)
-        if not p1 or not p2 or side not in {_key(p1), _key(p2)}:
+        side = resolve_player_side(pick, final)
+        if side is None:
             return 'unverifiable'
         try:
             line = float(signal.get('line'))
         except (TypeError, ValueError):
             return 'unverifiable'
         w1, w2 = _set_wins(sets)
-        margin = (w1 - w2) if side == _key(p1) else (w2 - w1)
+        margin = (w1 - w2) if side == 1 else (w2 - w1)
         adjusted = margin + line
         if abs(adjusted) <= 1e-9:
             return 'void'
@@ -282,7 +305,7 @@ def settle_signal_live(signal: dict, final: dict) -> str:
         if a == b:
             return "void"
         actual = p1 if a > b else p2
-        return "hit" if _key(pick) == _key(actual) else "miss"
+        return _settle_named_winner(pick, actual, final)
 
     if market in ("set1_total", "set2_total", "set3_total"):
         idx = {"set1_total": 0, "set2_total": 1, "set3_total": 2}[market]
@@ -335,13 +358,63 @@ def settle_layers(entry, final, source, pending_only=False):
     return out
 
 
-def reconcile_settled(entries):
-    """Repair pending layers using only the final result already in the archive.
+NAME_SETTLEMENT_CORRECTION = 'exact-participant-name-order-20261012'
+NAMED_PICK_MARKETS = {
+    'match_winner', 'set1_winner', 'set2_winner', 'set3_winner',
+    'match_game_handicap', 'set1_game_handicap', 'set2_game_handicap', 'set_handicap',
+}
 
-    Frozen scores, capture times and existing resolved evidence stay unchanged.
+
+def _repair_archived_name_results(entry, corrected_at):
+    """Narrow, auditable migration of labels affected by display-name order.
+
+    Original forecasts and terminal evidence are immutable. No unknown identity,
+    void/retirement policy, PBP result or other market is retroactively inferred.
+    """
+    final = {**entry['result'], 'p1': entry.get('p1'), 'p2': entry.get('p2')}
+    out = dict(entry)
+    for layer in SIGNAL_LAYERS:
+        if layer not in entry:
+            continue
+        rows = []
+        for signal in entry.get(layer) or []:
+            market = market_name(signal.get('market'))
+            field = 'pick' if market in NAMED_PICK_MARKETS else 'player' if market == 'player_total_games' else None
+            side = resolve_player_side(signal.get(field), final) if field else None
+            if (side is None or signal.get('result') not in ('hit', 'miss', 'unverifiable')
+                    or _key(signal.get(field)) == _key(final.get(f'p{side}'))):
+                rows.append(signal)
+                continue
+            result = settle_signal_live(signal, final)
+            if result not in ('hit', 'miss') or result == signal.get('result'):
+                rows.append(signal)
+                continue
+            correction = {
+                'version': NAME_SETTLEMENT_CORRECTION,
+                'corrected_at': corrected_at,
+                'previous_result': signal.get('result'),
+                'previous_source': signal.get('settlement_source'),
+                'corrected_result': result,
+                'participant_side': side,
+                'canonical_player': final.get(f'p{side}'),
+                'evidence': 'unchanged archived terminal result',
+            }
+            rows.append({**signal, 'result': result,
+                         'settlement_corrections': [*(signal.get('settlement_corrections') or []), correction]})
+        out[layer] = rows
+    return out
+
+
+def reconcile_settled(entries):
+    """Repair pending layers and the authorized exact-name-order label defect.
+
+    Corrections retain prior labels/source beside unchanged frozen forecasts and
+    terminal evidence. Correct results and all unrelated settled rows are kept.
     This is idempotent and deliberately performs no network access.
     """
-    return [settle_layers(e, e["result"], "archived final result", pending_only=True)
+    corrected_at = datetime.now(timezone.utc).isoformat()
+    return [_repair_archived_name_results(
+                settle_layers(e, e["result"], "archived final result", pending_only=True), corrected_at)
             if e.get("status") in ("settled", "void") and
                (e.get("result") or {}).get("status") in ("completed", "retired", "void")
             else e for e in entries]
