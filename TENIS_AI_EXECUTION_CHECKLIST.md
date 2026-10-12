@@ -611,3 +611,12 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - BLOCKER: repair affects protected Symphony probability, requiring separate authorization per AGENTS section 6. Deeper cause of incoherent pair outputs remains to be proven.
 - DO NOT REDO: data collection above; preserve all historical experiment rows; no resetting losses, automatic betting or model promotion.
 - NEXT EXACT ACTION: authorized canonical paired-probability replay/repair and chronological final-output validation; green CI before merge.
+
+
+## LIVE CHECKPOINT — upstream label defect found after Symphony approval, 2026-10-12
+- User approved Symphony probability repair. Source main remains d796756e15528ba523a629bdf9b7314b61204cba.
+- Canonical settlement reproducer: Sharipov, Marat vs final winner Marat Sharipov incorrectly returns miss.
+- 460 exact participant-resolved frozen PLAYABLE observations store miss despite final winner identity; 1161 comma-name training rows contain zero hits. See expanded audit for counts and limitations.
+- Experiment 3: all 22 settled bet outcomes independently verified, zero mismatches. Preserve its ledger and -40.0559 PLN.
+- No runtime code or history changed. No PR/CI/deployment claim.
+- NEXT EXACT ACTION: obtain explicit extension for protected history settlement/archived-label repair, then canonical unique exact identity adapter, auditable correction manifest, corrected-data training and final paired-output validation. Do not paper over mislabeled data by tuning normalization or iNeed settings.
