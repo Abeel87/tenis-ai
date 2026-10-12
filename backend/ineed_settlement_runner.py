@@ -19,8 +19,10 @@ from urllib.request import Request, urlopen
 
 try:
     from .ineed_money import build_settlements
+    from .signal_settlement import resolve_player_side
 except ImportError:
     from ineed_money import build_settlements
+    from signal_settlement import resolve_player_side
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config" / "ineed_superbet_pl.json"
@@ -87,27 +89,17 @@ def _name_key(value) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", text).split())
 
 
-def _player_tokens(value) -> tuple[str, ...]:
-    """Compare player names independent of 'Surname, Given' display order."""
-    return tuple(sorted(_name_key(value).split()))
-
-
 def _canonical_player(value, p1, p2):
-    wanted = _player_tokens(value)
-    if wanted and wanted == _player_tokens(p1):
-        return p1
-    if wanted and wanted == _player_tokens(p2):
-        return p2
-    return value
+    side = resolve_player_side(value, {'p1': p1, 'p2': p2})
+    return (p1 if side == 1 else p2) if side else value
 
 
 def normalize_open_bets_for_settlement(open_bets: list[dict]) -> list[dict]:
     """Map operator display names to the exact canonical p1/p2 names.
 
     Superbet commonly returns selections as ``Surname, Given`` while the match
-    result uses ``Given Surname``. The shared settlement engine intentionally
-    compares exact normalized names, so iNeed$ resolves that presentation-only
-    difference before calling it.
+    result uses ``Given Surname``. Use the shared settlement resolver so this
+    compatibility projection cannot disagree with the canonical scorer.
     """
     out: list[dict] = []
     pick_markets = {

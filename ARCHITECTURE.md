@@ -204,3 +204,10 @@ the public browser, so quantitative learning/ROI/champion improvement
 remains N/D absent separate trusted report delivery. This does not
 introduce a new trainer, operational workflow, probability or settlement
 path, and does not affect PROD, PLAYABLE, Symphony, iNeed or real betting.
+
+
+## Exact participant-name settlement boundary (2026-10-12)
+
+The shared `signal_settlement.resolve_player_side` matches all normalized full-name tokens against exactly one of two distinct fixture participants. Named winner, handicap and player-total scorers use this single resolver; `ineed_settlement_runner` delegates its compatibility input projection to the same owner. Partial, unknown and ambiguous names cannot become a loss by default.
+
+The existing history reconciliation stage applies the authorized display-order-only correction to affected archived labels before downstream training. Original label/source and correction provenance are retained on each changed signal; prediction inputs and archived terminal result are unchanged. It never calls Supabase or changes iNeed bankroll records. Symphony training rejects unresolved named identities and publishes correction counts. No additional prediction/settlement path exists.

@@ -599,3 +599,17 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - [x] Synthetic local six-test suite initially GREEN (chronology, source SHA, duplicate identity, minimum independent matches, no PROD influence). This is local targeted evidence, not full CI or live data proof.
 - [ ] Open draft PR; run required CI and check fresh-main; merge only after all mandatory gates are green. Observe first post-merge scheduled/manual SHADOW research artifact and label shortage of prospective settlement as `COLLECTING_VERIFIED_HISTORY` rather than a learned winner.
 - **NEXT EXACT ACTION for Self Evolution:** verify PR checks and new trainer on production ledger in isolated SHADOW run; no auto-promotion, no betting, no live UI claims. Future phases require strict pre-match operator odds evidence before EV optimization. This feature does not supersede publication-watchdog recovery checkpoint above.
+
+
+## LIVE CHECKPOINT — authorized upstream settlement repair, 2026-10-12
+- ACTIVE TASK: fix source winner-label corruption behind iNeed probability inflation.
+- AUTHORIZATION: user approved Symphony repair, then explicitly approved all required history settlement/label corrections and retraining; preserve original history and iNeed ledger.
+- BRANCH: `fix/symphony-probability-calibration-20261012`; initial base d796756e15528ba523a629bdf9b7314b61204cba.
+- [x] Canonical failing reproducer: reversed full-name winner returns miss; nine regression failures before repair.
+- [x] Unique exact-name settlement owner; auditable idempotent archive correction; iNeed resolver consolidation; unresolved training identity exclusion.
+- [x] Existing iNeed experiment 3: all 22 settled outcomes independently checked, zero mismatches; no bankroll/DB writes.
+- [x] Initial full suite 1660 passed; follow-up focused suite 43 passed. Final full CI/replay tracked below.
+- [ ] Exact-head CI, fresh-main comparison, green merge, normal core reconciliation/training, publication and iNeed verification.
+- DO NOT REDO: audits on `audit/ineed-learning-readiness-20261012`; no reset of experiments or speculative probability formula.
+- NEXT EXACT ACTION: finish independent temporal replay and full regression; create reviewable PR and merge only green, then inspect corrected-history provenance and generated training version/counts.
+- RISKS: retrospective quality improvement is not financial/prospective superiority; Neuron/Self Evolution and real betting remain unpromoted.

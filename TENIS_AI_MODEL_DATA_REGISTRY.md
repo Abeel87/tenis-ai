@@ -1022,3 +1022,14 @@ quote evidence. Pull-request checks are not training runs. Browser code
 does not access the underlying reports, fabricate Brier/Champion values,
 use keys or promote SHADOW to PROD. Missing evidence remains N/D.
 `tests/test_self_evolution_ui.py` covers gate, routing and isolation.
+
+
+## 2026-10-12 — authorized exact-participant settlement repair
+
+User explicitly authorized the expanded source repair, archived-label corrections and Symphony retraining. `backend/signal_settlement.py::resolve_player_side` is the canonical unique full-token participant resolver for named settlement markets. Reordered full names are equivalent; unknown/ambiguous identities are unverifiable. The existing iNeed adapter delegates to this owner. No fuzzy matching, provider-ID merging, retirement/payout/tax rules or real betting is introduced.
+
+`reconcile_settled` now performs the narrow named-display-order archive migration in the existing settlement path. Each changed row retains its frozen selection, scores, capture/settlement times and terminal evidence; `settlement_corrections` stores old result/source, new result, participant evidence and correction time. Already-correct labels and unrelated markets remain unchanged. Existing iNeed bets/ledger are not rewritten.
+
+Symphony learning version 6 rejects unresolved participant identities and reports corrected-label row counts. Training algorithm, hyperparameters, thresholds and final pair-normalization formula are unchanged. The corruption was upstream: operator-style names were incorrectly labeled losses. Exact-name repairs also recover previously unverifiable handicap/player-total rows; evidence remains scoped to its original layer.
+
+Validation is a retrospective corrected-truth replay, not a profitability claim. See `audits/name_settlement_repair_20261012.md` and its evaluation JSON. Readiness for Neuron/Self Evolution production promotion is unchanged.

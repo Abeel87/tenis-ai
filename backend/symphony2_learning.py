@@ -21,11 +21,16 @@ import unicodedata
 from typing import Any, Iterable
 
 try:
+    from .signal_settlement import resolve_player_side, NAMED_PICK_MARKETS
+except ImportError:
+    from signal_settlement import resolve_player_side, NAMED_PICK_MARKETS
+
+try:
     from catboost import CatBoostClassifier
 except Exception:  # pragma: no cover
     CatBoostClassifier = None
 
-VERSION = "symphony2-learning-5"
+VERSION = "symphony2-learning-6"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
 MIN_CALIBRATION_FIT_ROWS = 40
@@ -77,6 +82,11 @@ def _name_key(value: Any) -> str:
 
 
 def _history_orientation_valid(match: dict, signal: dict) -> bool:
+    market = _norm(signal.get("market"))
+    if market in NAMED_PICK_MARKETS:
+        return resolve_player_side(signal.get("pick"), match) is not None
+    if market == "player_total_games":
+        return resolve_player_side(signal.get("player"), match) is not None
     side = SIDE_MARKETS.get(_norm(signal.get("market")))
     if side is None:
         return True
@@ -286,6 +296,7 @@ def build_training_rows(
             enriched["state_probability"] = state_p * 100.0 if state_p is not None else -1.0
             row = feature_row(entry, enriched)
             row["target"] = 1 if result == "hit" else 0
+            row["label_corrected"] = bool(signal.get("settlement_corrections"))
             row["captured_ts"] = _date_key(captured)
             row["settled_ts"] = _date_key(entry.get("settled_at"))
             row["signature"] = signature
@@ -556,6 +567,9 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
         "feature_names": FEATURES,
         "cat_features": CAT_FEATURES,
         "market_support": dict(sorted(support.items())),
+        "name_identity_policy": "UNIQUE_FULL_PARTICIPANT_TOKENS; UNKNOWN_OR_AMBIGUOUS_EXCLUDED",
+        "corrected_label_training_rows": sum(bool(r.get("label_corrected")) for r in train),
+        "corrected_label_validation_rows": sum(bool(r.get("label_corrected")) for r in valid),
         "training_source_counts": dict(sorted(source_counts.items())),
         "candidate_review_ready_markets": sorted(candidate_markets),
         "candidate_gate_cutoff_ts": cutoff_ts,
