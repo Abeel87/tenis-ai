@@ -608,8 +608,9 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - [x] Canonical failing reproducer: reversed full-name winner returns miss; nine regression failures before repair.
 - [x] Unique exact-name settlement owner; auditable idempotent archive correction; iNeed resolver consolidation; unresolved training identity exclusion.
 - [x] Existing iNeed experiment 3: all 22 settled outcomes independently checked, zero mismatches; no bankroll/DB writes.
-- [x] Initial full suite 1660 passed; follow-up focused suite 43 passed. Final full CI/replay tracked below.
-- [ ] Exact-head CI, fresh-main comparison, green merge, normal core reconciliation/training, publication and iNeed verification.
+- [x] Final local full suite: 1661 passed. Temporal replay: 110 later independent matches, paired Brier 0.295804 -> 0.261147 (still worse than 0.25 baseline; no financial superiority claim).
+- [x] PR #535 exact head 8525f8ab4acd7641899c0b7b6a826e2ed5a1c146: 13 successful checks, shadow-sync intentionally skipped on PR. Fresh main remained d796756; merged green as 269ea958c2062706a817857e8532065f2f39556e.
+- [~] Normal core reconciliation/training and Pages run 38225966332 started on the merge; production output and iNeed verification pending.
 - DO NOT REDO: audits on `audit/ineed-learning-readiness-20261012`; no reset of experiments or speculative probability formula.
-- NEXT EXACT ACTION: finish independent temporal replay and full regression; create reviewable PR and merge only green, then inspect corrected-history provenance and generated training version/counts.
+- NEXT EXACT ACTION: follow production run 38225966332; verify published correction provenance, Symphony learning version 6 and corrected-label counts, Pages delivery and unchanged historical iNeed ledger. No repeated source repair/replay needed.
 - RISKS: retrospective quality improvement is not financial/prospective superiority; Neuron/Self Evolution and real betting remain unpromoted.
