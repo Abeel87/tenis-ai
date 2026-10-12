@@ -599,3 +599,15 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - [x] Synthetic local six-test suite initially GREEN (chronology, source SHA, duplicate identity, minimum independent matches, no PROD influence). This is local targeted evidence, not full CI or live data proof.
 - [ ] Open draft PR; run required CI and check fresh-main; merge only after all mandatory gates are green. Observe first post-merge scheduled/manual SHADOW research artifact and label shortage of prospective settlement as `COLLECTING_VERIFIED_HISTORY` rather than a learned winner.
 - **NEXT EXACT ACTION for Self Evolution:** verify PR checks and new trainer on production ledger in isolated SHADOW run; no auto-promotion, no betting, no live UI claims. Future phases require strict pre-match operator odds evidence before EV optimization. This feature does not supersede publication-watchdog recovery checkpoint above.
+
+
+## LIVE CHECKPOINT — iNeed probability and learning readiness, 2026-10-12
+- ACTIVE TASK: user's iNeed loss diagnosis; Self Evolution and Neuron readiness check.
+- LAST VERIFIED MAIN: `d796756e15528ba523a629bdf9b7314b61204cba`.
+- BRANCH: `audit/ineed-learning-readiness-20261012`; no PR/runtime changes.
+- COMPLETED: live experiment-3 read, frozen raw/final probability audit, canonical normalization reproduction, Oct-11 Self Evolution artifact inspection, Neuron metrics/workflow verification.
+- EVIDENCE: `audits/ineed_learning_readiness_20261012.md`.
+- TEST: deterministic canonical [40,10] -> [80,20] reproduction; no repair or full-CI claim.
+- BLOCKER: repair affects protected Symphony probability, requiring separate authorization per AGENTS section 6. Deeper cause of incoherent pair outputs remains to be proven.
+- DO NOT REDO: data collection above; preserve all historical experiment rows; no resetting losses, automatic betting or model promotion.
+- NEXT EXACT ACTION: authorized canonical paired-probability replay/repair and chronological final-output validation; green CI before merge.
