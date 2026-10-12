@@ -59,3 +59,33 @@ Ready as a SHADOW research model; NOT proven production-ready or economically pr
 No model, thresholds, weights, training, settlement, bankroll, config or SHADOW/PROD gate changed.
 No PR opened and no production verification claimed for a repair.
 NEXT EXACT ACTION: obtain the separate Symphony probability authorization required by AGENTS.md section 6, then investigate/replay the paired inference boundary and implement only an evidence-backed canonical repair with the normal green-CI process.
+
+
+## Follow-up after user's Symphony authorization — 2026-10-12
+
+User explicitly authorized the Symphony probability repair. Further read-only reproduction found an UPSTREAM label defect, so normalization alone is not established as the root cause.
+
+Canonical backend/signal_settlement.py::_key preserves token order. A completed match with p1="Jake Delaney", p2="Marat Sharipov", winner="Marat Sharipov" and pick="Sharipov, Marat" returns miss from settle_signal_live(). This is reproduced on unchanged main.
+The iNeed settlement runner already has a separate input normalization adapter; the history path does not share that adaptation.
+
+Fresh restored history: 2,500 entries; build_training_rows generated 3,041 match_winner rows:
+- pick includes comma: 1,161 rows, ZERO target=1.
+- pick has no comma: 1,880 rows, 1,072 target=1.
+Read-only inspection of both frozen PLAYABLE history layers found 3,033 exact participant-resolvable match_winner observations and 8 unresolved names. Of the resolved observations, 460 stored miss labels match the recorded final winner after full name token permutation. Examples: Kachmazov, Alibek / Alibek Kachmazov; Zeitune, Maximo / Maximo Zeitune; De la Fuente, Santiago / Santiago De La Fuente. No fuzzy or surname-only matching was used.
+These counts describe rows, not necessarily independent matches.
+The malformed-name effect contaminates targets upstream of training; simply preserving raw output or tuning normalization would not repair the labels.
+
+Live experiment-3 settled snapshots were independently checked against final winners: 22 checked, ZERO outcome mismatches. Its 9 wins / 13 losses and -40.0559 PLN are unchanged. The history defect must NOT be used as justification to rewrite its ledger or claim those 13 losses were wins.
+
+Current model was reproduced locally with pinned dependencies: status ready, 61,022 train rows / 14,153 validation rows. This trains on unchanged historical labels and is diagnostic, not a deployable repair.
+
+### Concrete expanded repair proposed
+- Resolve exact full participant names at the canonical history settlement boundary, with unique p1/p2 matching and ambiguous/unknown identity fail-closed. No fuzzy matching and no changes to tennis winner/retirement/void rules.
+- Add regressions for reordered names, multi-token names, same-token ambiguous participants and unrelated names.
+- Prepare a deterministic versioned historical correction manifest showing prior label, corrected label and exact final evidence. Preserve original records/provenance and all iNeed placements/ledger. Do not silently recalculate experiment bankroll.
+- Rebuild the Symphony training input from corrected labels, then evaluate actual final paired probabilities chronologically. Determine whether normalization itself still needs repair only using corrected data.
+- Full regression and mandatory green CI before merge/deployment.
+
+### Current authorization boundary and resume point
+AGENTS.md section 6 separately protects settlement and history semantics. User's most recent approval answered the specific Symphony-probability request; it did not explicitly authorize changing archived settled labels. No such change has been performed.
+Request the necessary extension for canonical history settlement repair and auditable historical label corrections. No Neuron or Self Evolution promotion, real betting, DB bankroll mutation, or model deployment occurred.
