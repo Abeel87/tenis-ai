@@ -642,3 +642,11 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - Current main advanced to ca9d76e256c44e3e44970b66e0d880f66ef808ae via market and Neuron data updates; refresh the branch against it before next CI.
 - [x] Refreshed onto main ca9d76e; full local regression: 1667 passed in 47.83 seconds. YAML/shell syntax and monitored child exit codes 0/7 verified.
 - NEXT EXACT ACTION: publish new PR head, inspect full DNA and Point Tape logs including resource telemetry. Merge only green, then verify runtime compression/GC and retry archive below its existing ceiling. Do not repeat blind reruns.
+
+### Confirmed full-data CI recovery — 2026-10-13, 20:14 Warsaw
+- [x] PR #537 head f446ccb8bbd741df7b860ab10e50b4f22122ebb0 passed every check (13 successes, stale-full cancellation intentionally skipped on PR).
+- [x] Full Player DNA run 38379446046 succeeded at 12:04Z, including historical market backtest, dynamic walk-forward, hold calibration, prospective evidence and isolation guard. This was not FAST_READINESS_ONLY.
+- [x] Full Point Tape Schema Audit run 38379446047 succeeded at 12:56Z. No validation gate or dataset size was reduced.
+- Resource evidence from the successful DNA backtest: peak process RSS 15591100 KiB; runner reported 15989 MiB RAM, and live swap usage reached at least 4889 MiB. Backtest finished in 12:28 with exit status 0; memory pressure is directly observed.
+- [ ] Not merged/deployed yet. Fresh main is dd59721f218d8834634e2898fb260e6a20750e31, eight data-only commits ahead of prior base ca9d76e. Reviewed changed paths: frontend/data only; no intersection with the 17 repair paths.
+- NEXT EXACT ACTION: synchronize PR with dd59721f and rerun required exact-head CI per AGENTS.md. Then fresh-main check, green merge, runtime compression/GC verification and archive retry below existing 750 MB guard. The earlier runner shutdown has been overcome in full CI; production acceptance remains pending.
