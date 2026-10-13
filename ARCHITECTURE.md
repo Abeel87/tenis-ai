@@ -214,3 +214,5 @@ The existing history reconciliation stage applies the authorized display-order-o
 
 
 Private oversized JSON transport uses `exact-json-gzip-base64-chunks-v1`, preserving original byte lengths and SHA-256 at chunk and file level. The reader accepts the prior uncompressed format during rolling publication. Only transport representation changes; access tiers, OIDC authorization, active-head atomicity and GC retention are unchanged. The existing stale-run guard owns recovery of core `meta.updated_at` older than 120 minutes as well as the existing iNeed heartbeat; independent successful main producers wake it when cron is delayed.
+
+Full-data DNA and Point Tape validation jobs use 8 GiB runner-local swap and live memory diagnostics around heavy evaluation steps. This is ephemeral CI capacity, not persistent model storage. Opponent enrichment avoids retaining a duplicate point-feature dataset; source inputs, feature semantics and evaluation gates are unchanged.

@@ -14,6 +14,27 @@ from backend.player_dna_opponent_adjustment_audit import (
 )
 
 
+def test_enrichment_reuses_owned_features_and_preserves_source(monkeypatch):
+    from backend import player_dna_opponent_adjustment_audit as audit
+    source = [{"match_id": "m", "event_index": 0,
+               "server_player_id": 1, "receiver_player_id": 2}]
+    original = [dict(row) for row in source]
+    owned = [{"match_id": "m", "event_index": 0, "server_won": 1},
+             {"match_id": "missing", "event_index": 1}]
+    monkeypatch.setattr(audit, "build_feature_rows", lambda *_: (owned, {"joined": 2}))
+    monkeypatch.setattr(audit, "build_opponent_context_index", lambda *_: ({}, {}))
+    monkeypatch.setattr(audit, "build_target_adjustment_index", lambda *_: ({}, {}))
+    rows, counts = audit.enrich_feature_rows(source, [])
+    assert source == original
+    assert len(rows) == 1
+    assert rows[0] is owned[0], "Do not duplicate millions of privately owned feature dictionaries"
+    assert rows[0]["server_won"] == 1
+    assert rows[0]["server_history_opponent_return_mean"] is None
+    assert rows[0]["server_history_opponent_overall_support"] == 0
+    assert counts["enrichment_counts"]["missing_point_identity"] == 1
+    assert counts["enrichment_counts"]["enriched_rows"] == 1
+
+
 def _prior(matches, serve, ret, hold=0.80, brk=0.20):
     if matches <= 0:
         return {

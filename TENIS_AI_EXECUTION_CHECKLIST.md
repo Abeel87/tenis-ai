@@ -632,3 +632,13 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - [ ] New exact-head CI, fresh-main merge, compressed publication/GC, archive retry and complete DNA runtime verification.
 - DO NOT REDO: settlement repair #535/#536. No probability/model/threshold changes, no cap increase, no archive/history deletion, no SHADOW promotion.
 - NEXT EXACT ACTION: finish regression and PR CI; deploy green; observe normal generation activation and existing GC, then retry failed inventory only after project accounted bytes fall below 750 MB. Verify full DNA separately from FAST_READINESS_ONLY.
+
+### Infrastructure follow-up — 2026-10-13, after 11:42 Warsaw
+- PR #537 head 950351eb27c3d69b8a835d4a3c78ce7536a0d873 failed full DNA run 38368373555 (shutdown during market backtest at 09:20Z); Point Tape audit 38368373502 failed again on retry during opponent adjustment. No green merge or deployment has occurred.
+- Confirmed: no explicit timeout on these two jobs; stale-run guard cancellation only targets update-and-pages.yml. GitHub shutdown annotations do not establish OOM as the cause.
+- Measured locally: retaining 51 BO5 simulation results reached 541 MiB peak RSS; this is a synthetic resource measurement, not a model-quality evaluation.
+- Opponent enrichment duplicates its entire owned feature dataset. New failing regression reproduces dictionary duplication and protects unchanged source rows/labels/missing-identity handling. Enrich those privately owned rows in place and release loaded points/profiles before fitting.
+- Full-data DNA and Point Tape jobs gain 8 GiB ephemeral swap, bounded BLAS workers and live RAM/process RSS output every 30 seconds around the failed steps. Preserve Python exit codes and every original validation stage. No dataset reduction, model/threshold/weight change or promotion.
+- Current main advanced to ca9d76e256c44e3e44970b66e0d880f66ef808ae via market and Neuron data updates; refresh the branch against it before next CI.
+- [x] Refreshed onto main ca9d76e; full local regression: 1667 passed in 47.83 seconds. YAML/shell syntax and monitored child exit codes 0/7 verified.
+- NEXT EXACT ACTION: publish new PR head, inspect full DNA and Point Tape logs including resource telemetry. Merge only green, then verify runtime compression/GC and retry archive below its existing ceiling. Do not repeat blind reruns.

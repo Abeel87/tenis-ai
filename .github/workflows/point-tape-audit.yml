@@ -99,6 +99,10 @@ permissions:
 
 env:
   PYTHONUNBUFFERED: '1'
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
 
 jobs:
   audit:
@@ -106,6 +110,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Prepare memory headroom for full-data jobs
+        run: |
+          free -m
+          df -h /mnt
+          sudo fallocate -l 8G /mnt/tenis-ai-validation.swap
+          sudo chmod 600 /mnt/tenis-ai-validation.swap
+          sudo mkswap /mnt/tenis-ai-validation.swap
+          sudo swapon /mnt/tenis-ai-validation.swap
+          free -m
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -867,7 +881,20 @@ jobs:
           PY
 
       - name: Evaluate opponent-strength challenger (SHADOW, zero network)
-        run: python backend/player_dna_opponent_adjustment_audit.py
+        run: |
+          /usr/bin/time -v python backend/player_dna_opponent_adjustment_audit.py &
+          worker=$!
+          (
+            while kill -0 "$worker" 2>/dev/null; do
+              date -u +%FT%TZ
+              free -m
+              ps -eo pid,ppid,rss,comm --sort=-rss | head -n 8
+              sleep 30
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true' EXIT
+          wait "$worker"
 
       - name: Guard opponent-strength challenger isolation
         run: |

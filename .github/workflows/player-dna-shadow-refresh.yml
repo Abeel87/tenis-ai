@@ -124,6 +124,16 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           fetch-depth: 0
 
+      - name: Prepare memory headroom for full-data jobs
+        run: |
+          free -m
+          df -h /mnt
+          sudo fallocate -l 8G /mnt/tenis-ai-validation.swap
+          sudo chmod 600 /mnt/tenis-ai-validation.swap
+          sudo mkswap /mnt/tenis-ai-validation.swap
+          sudo swapon /mnt/tenis-ai-validation.swap
+          free -m
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -364,7 +374,20 @@ jobs:
 
       - name: Backtest simulated markets on historical holdout
         if: env.FAST_READINESS_ONLY != 'true'
-        run: /usr/bin/time -v python backend/player_dna_market_backtest.py
+        run: |
+          /usr/bin/time -v python backend/player_dna_market_backtest.py &
+          worker=$!
+          (
+            while kill -0 "$worker" 2>/dev/null; do
+              date -u +%FT%TZ
+              free -m
+              ps -eo pid,ppid,rss,comm --sort=-rss | head -n 8
+              sleep 30
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true' EXIT
+          wait "$worker"
 
       - name: Build dynamic lean market walk-forward evidence
         if: env.FAST_READINESS_ONLY != 'true'

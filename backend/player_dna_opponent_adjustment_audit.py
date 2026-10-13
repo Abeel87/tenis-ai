@@ -541,9 +541,10 @@ def enrich_feature_rows(
         receiver_adjustment = adjustments.get((key[0], receiver_id), {})
         logic06 = _logic06_features(server_adjustment, receiver_adjustment)
 
-        enriched.append(
+        # build_feature_rows owns these dictionaries; source points/profiles
+        # are separate. Enrich in place instead of keeping two full datasets.
+        row.update(
             {
-                **row,
                 "server_history_opponent_return_mean": server.get("opponent_return_mean"),
                 "server_history_opponent_return_l5": server.get("opponent_return_l5"),
                 "server_history_opponent_return_surface_mean": server.get("opponent_return_surface_mean"),
@@ -559,6 +560,7 @@ def enrich_feature_rows(
                 **logic06,
             }
         )
+        enriched.append(row)
         counts["enriched_rows"] += 1
         counts["rows_with_both_overall_context"] += int(
             int(server.get("overall_support") or 0) > 0
@@ -1025,6 +1027,7 @@ def build() -> dict[str, Any]:
     point_rows = list(_iter_jsonl_gz(POINTS) or ())
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
+    del point_rows, profile_rows
     report = evaluate(rows)
     report["build_counts"] = build_counts
 
