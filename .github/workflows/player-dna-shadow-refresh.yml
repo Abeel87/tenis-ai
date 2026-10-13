@@ -364,7 +364,7 @@ jobs:
 
       - name: Backtest simulated markets on historical holdout
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_market_backtest.py
+        run: /usr/bin/time -v python backend/player_dna_market_backtest.py
 
       - name: Build dynamic lean market walk-forward evidence
         if: env.FAST_READINESS_ONLY != 'true'

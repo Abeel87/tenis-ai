@@ -1691,6 +1691,8 @@ def evaluate_backtest(
     train_all, holdout_all, split = split_chronological_by_match(feature_rows)
     train = _cohort(train_all, MIN_PRIOR_MATCHES)
     holdout = _cohort(holdout_all, MIN_PRIOR_MATCHES)
+    # Excluded point features can dominate memory; no later stage consumes them.
+    del feature_rows, train_all, holdout_all
 
     train_ids = {str(row["match_id"]) for row in train}
     holdout_ids = {str(row["match_id"]) for row in holdout}
@@ -1707,8 +1709,13 @@ def evaluate_backtest(
         }
 
     train_frame = pd.DataFrame(train)
+    train_point_rows, holdout_point_rows = len(train), len(holdout)
+    del train, holdout
     model = _fit_logistic_newton(train_frame, list(PROFILE_NUMERIC))
     lean_model = fit_point_probability_model(train_frame)
+    # Models retain fitted parameters, not the point-level training frame.
+    # Release it before retaining match-level trajectory simulations.
+    del train_frame
     pairs = _snapshot_pairs(profile_rows)
     predictions, prediction_counts = _predict_match_simulations(holdout_ids, pairs, model)
     rank_context, rank_counts = _rank_context_by_match(point_rows)
@@ -1826,8 +1833,8 @@ def evaluate_backtest(
         },
         "counts": {
             "point_join": join_counts,
-            "train_point_rows": len(train),
-            "holdout_point_rows": len(holdout),
+            "train_point_rows": train_point_rows,
+            "holdout_point_rows": holdout_point_rows,
             "train_match_ids": len(train_ids),
             "holdout_match_ids": len(holdout_ids),
             "simulated_holdout_matches": len(predictions),
