@@ -2,6 +2,9 @@ name: Tennis data stale-run guard
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Superbet hourly market refresh", "Neuron SHADOW research", "Player DNA SHADOW refresh"]
+    types: [completed]
   schedule:
     - cron: '*/15 * * * *'
   push:
@@ -12,6 +15,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/tennis-data-stale-run-guard.yml'
+
+concurrency:
+  group: tennis-data-stale-run-guard
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -44,7 +51,7 @@ jobs:
           PY
 
   cancel-stale-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
@@ -54,6 +61,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       STALE_AFTER_MINUTES: '120'
       INEED_MAX_AGE_MINUTES: '75'
+      CORE_MAX_AGE_MINUTES: '120'
     steps:
       - name: Cancel stale FULL builds
         shell: bash
@@ -73,6 +81,29 @@ jobs:
           done < <(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-pages.yml/runs?status=in_progress&per_page=100" --jq '.workflow_runs[] | [.id,.created_at] | @tsv')
           if [ "$found" -eq 0 ]; then
             echo "No stale FULL run found."
+          fi
+
+      - name: Recover stale core snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-pages.yml/runs?branch=main&per_page=100")"
+          active="$(jq '[.workflow_runs[] | select(.status != "completed")] | length' <<<"$runs_json")"
+          if [ "$active" -gt 0 ]; then
+            echo "Core update already queued or running; no duplicate dispatch."
+            exit 0
+          fi
+          meta="$(gh api "repos/${GITHUB_REPOSITORY}/contents/frontend/data/meta.json?ref=main" --jq '.content' | base64 --decode)"
+          stamp="$(jq -er '.updated_at | select(type == "string" and length > 0)' <<<"$meta")"
+          generated_epoch=$(date -u -d "$stamp" +%s)
+          age_minutes=$((($(date -u +%s) - generated_epoch) / 60))
+          if [ "$age_minutes" -ge "$CORE_MAX_AGE_MINUTES" ]; then
+            echo "Core snapshot is ${age_minutes}m old; dispatching the canonical producer."
+            gh workflow run update-and-pages.yml --repo "$GITHUB_REPOSITORY" --ref main
+          else
+            echo "Core snapshot age ${age_minutes}m; no refresh needed."
           fi
 
       - name: Ensure iNeed$ SHADOW heartbeat

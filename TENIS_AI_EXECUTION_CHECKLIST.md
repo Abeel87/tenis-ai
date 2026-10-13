@@ -616,3 +616,16 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - DO NOT REDO: audits on `audit/ineed-learning-readiness-20261012`; no reset of experiments or speculative probability formula.
 - NEXT EXACT ACTION: source repair is deployed; collect prospective post-repair evidence before any profitability or promotion claim. Self Evolution and Neuron readiness remain separate SHADOW evaluations. No repeated source repair/replay needed.
 - RISKS: retrospective quality improvement is not financial/prospective superiority; Neuron/Self Evolution and real betting remain unpromoted.
+
+
+## LIVE CHECKPOINT — authorized infrastructure repair, 2026-10-13
+- USER AUTHORIZATION: repair archive blockage, interrupted Player DNA and stale updates after technical audit.
+- BASE: 633141a3459f05f39cf0ed114764e8a9669a6f41; branch fix/runtime-archive-and-refresh-20261013. Existing PR #523 proposes 900 MB ceiling, already insufficient for observed occupancy; it is not merged or modified here.
+- [x] Physical storage: runtime 851821269 B, training archive 123052808 B, avatar 1253751 B; only active runtime generations remain. GC cannot reclaim them safely.
+- [x] Reproducer: large-file private publication expands exact bytes as base64; new compression regression fails before fix. Deterministic gzip preserves source and chunk SHA-256; old base64 reader remains supported, decompression is bounded.
+- [x] Local measured runtime projection after compression: market 53563859 B, DNA 11039619 B, core 240064766 B (core delivery rebuild may add files). No source JSON changed.
+- [x] Core stale guard had no recovery for old meta.updated_at and only cron/push wakeups. Add successful main producer wakeups, active-run suppression and canonical core dispatch after 120 minutes; preserve 75-minute iNeed heartbeat.
+- [~] Player DNA runner lost communication during backtest (run 38345065697); prior run 38272973010 received shutdown. Bound BLAS workers and avoid cancelling full evaluations on new full refreshes. This is resource/concurrency hardening, not yet proof that the interrupted backtest completes.
+- [ ] Full local suite, exact-head CI, fresh-main merge, compressed publication/GC, archive retry and complete DNA runtime verification.
+- DO NOT REDO: settlement repair #535/#536. No probability/model/threshold changes, no cap increase, no archive/history deletion, no SHADOW promotion.
+- NEXT EXACT ACTION: finish regression and PR CI; deploy green; observe normal generation activation and existing GC, then retry failed inventory only after project accounted bytes fall below 750 MB. Verify full DNA separately from FAST_READINESS_ONLY.
