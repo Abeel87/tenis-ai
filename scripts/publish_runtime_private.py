@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import gzip
 import hashlib
 import json
 import os
@@ -205,7 +206,7 @@ def _chunk_history(source: Path, projection: Path) -> list[tuple[str, Path]]:
 
 
 def _chunk_large_json(source: Path, logical: str, projection: Path) -> list[tuple[str, Path]]:
-    """Store exact JSON bytes as bounded base64 JSON objects plus a verified manifest."""
+    """Store exact JSON bytes as bounded gzip-base64 objects with original digests."""
     import base64
 
     prefix = f"data/private/large/{Path(logical).stem}"
@@ -219,7 +220,7 @@ def _chunk_large_json(source: Path, logical: str, projection: Path) -> list[tupl
             name = f"{index:04d}.json"
             path = f"{prefix}/chunks/{name}"
             local = projection / f"large-{Path(logical).stem}-{name}"
-            payload = json.dumps({"encoding": "base64", "data": base64.b64encode(block).decode("ascii")}, separators=(",", ":")).encode()
+            payload = json.dumps({"encoding": "gzip-base64", "data": base64.b64encode(gzip.compress(block, compresslevel=6, mtime=0)).decode("ascii")}, separators=(",", ":")).encode()
             if len(payload) > MAX_OBJECT_SIZE:
                 raise PublishError(f"{path} exceeds private object limit after chunking")
             _write_bytes(local, payload)
@@ -232,7 +233,7 @@ def _chunk_large_json(source: Path, logical: str, projection: Path) -> list[tupl
     manifest_path = f"{prefix}/manifest.json"
     manifest_local = projection / f"large-{Path(logical).stem}-manifest.json"
     _write_bytes(manifest_local, json.dumps({
-        "format": "exact-json-base64-chunks-v1", "source_path": logical,
+        "format": "exact-json-gzip-base64-chunks-v1", "source_path": logical,
         "source_sha256": digest.hexdigest(), "source_size_bytes": total, "chunks": chunks,
     }, separators=(",", ":")).encode())
     materialized.insert(0, (manifest_path, manifest_local))

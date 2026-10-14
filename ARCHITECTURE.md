@@ -215,3 +215,5 @@ The existing history reconciliation stage applies the authorized display-order-o
 
 ### Private-runtime compression deployment
 Large-file transport accepts legacy base64 and gzip-base64 manifests while preserving exact source bytes and original SHA-256 verification. The canonical reader bounds gzip expansion to the declared chunk size, at most 20 MiB. Roll out the compatible frontend and its PWA cache revision first, confirm Pages deployment, then enable compressed writes in the existing OIDC publisher. Existing atomic generation activation and GC stay authoritative. Rollback republishes the same canonical source through the prior writer while retaining the backward-compatible reader.
+
+The writer emits `exact-json-gzip-base64-chunks-v1` using gzip level 6 with mtime 0. Deployment republishes core and DNA serially through the unchanged workflow_dispatch path, waiting for existing GC after each layer. Producer events, OIDC authorization and provenance boundaries remain unchanged. GC retains all active objects and leaves training archive retention unchanged.

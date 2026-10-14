@@ -25,6 +25,20 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**RUNTIME COMPRESSION ROLLOUT — 2026-10-14, WRITER PREPARED**
+- USER AUTHORIZATION: lossless compression only, preserving data and model logic.
+- TASK / BRANCH: compressed publication and storage verification; `fix/runtime-compression-writer-20261014`. Reader PR #540 must be merged and deployed before this writer is merged.
+- [x] Four real oversized JSON files compressed and reconstructed with matching original chunk/file SHA-256 and byte lengths: prediction ledger, selection ledger, settlement ledger, and DNA prospective validation.
+- [x] Projected active runtime: core 272,609,539 B; market 50,347,562 B; DNA 11,039,619 B; Neuron 248,445 B; total 334,245,165 B. These are projections, not deployed measurements.
+- [x] Existing-object dedupe preflight: physical 885,085,931 B + 56,614,448 B new uploads = 941,700,379 B maximum before GC for this snapshot.
+- [x] Full local suite 1662 passed; 15 JS reader cases; deterministic repeat publication has identical hashes. Existing PWA cache assertion updated to the deliberately changed revision.
+- [x] Rollout uses the existing OIDC-authorized workflow_dispatch event without changing the workflow or authorization. Manually publish core, wait for existing GC, then publish DNA and wait for GC. Market and Neuron have no oversized chunks to migrate.
+- [ ] Reader Pages deployment confirmed, writer exact-head CI/merge, actual active compressed generations, GC/storage measurement, archive retry below unchanged 750 MB guard.
+- NEXT EXACT ACTION: finish #540 CI and deploy its reader, then create/merge this writer PR only green. Verify active manifest object hashes against local projection and retry the previously blocked archive inventory.
+- ROLLBACK: keep the compatible reader, restore the previous writer and republish unchanged canonical JSON through normal activation.
+- DO NOT REDO: broader infrastructure changes from #537, model math/thresholds/training, settlement, iNeed$ economics or promotion. No storage-cap increase, archive/history deletion or paid upgrade.
+
+
 **RUNTIME COMPRESSION ROLLOUT — 2026-10-14, READER FIRST**
 - USER AUTHORIZATION: apply lossless compression safely; preserve model logic, data, storage caps and archive retention.
 - TASK / BRANCH: reader compatibility and PWA refresh; `fix/runtime-compression-reader-20261014`, fresh main `8a83871cb2b5ef3bf0a0f9f525ff1024fd85a6b5`.

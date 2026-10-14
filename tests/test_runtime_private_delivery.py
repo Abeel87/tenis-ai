@@ -250,6 +250,7 @@ def test_private_delivery_does_not_touch_model_or_betting_logic():
 
 def test_oversized_player_dna_json_is_chunked_without_losing_bytes(tmp_path, monkeypatch):
     import base64
+    import gzip
     helper = _load_helper()
     frontend = tmp_path / "frontend"
     data = frontend / "data"
@@ -272,7 +273,14 @@ def test_oversized_player_dna_json_is_chunked_without_losing_bytes(tmp_path, mon
     for part in manifest["chunks"]:
         row = next(row for row in rows if row["path"] == part["path"])
         payload = json.loads(by_hash[row["sha256"]].read_text())
-        block = base64.b64decode(payload["data"], validate=True)
+        assert payload["encoding"] == "gzip-base64"
+        block = gzip.decompress(base64.b64decode(payload["data"], validate=True))
         assert hashlib.sha256(block).hexdigest() == part["sha256"]
         restored += block
     assert restored == original
+    assert sum(row["size_bytes"] for row in rows) < len(original)
+    assert manifest["format"] == "exact-json-gzip-base64-chunks-v1"
+    assert manifest["source_size_bytes"] == len(original)
+    assert manifest["source_sha256"] == hashlib.sha256(original).hexdigest()
+    repeated_rows, _ = helper.snapshot_files("dna")
+    assert repeated_rows == rows, "Identical source must retain content-addressed object hashes"
