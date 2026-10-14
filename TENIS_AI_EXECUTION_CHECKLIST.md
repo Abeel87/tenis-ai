@@ -27,7 +27,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 **RUNTIME COMPRESSION — DEPLOYED AND VERIFIED, 2026-10-14**
 - USER AUTHORIZATION / SCOPE: apply lossless compression safely. Transport representation only; source data and all model/PLAYABLE/iNeed$ logic remain unchanged.
-- LAST VERIFIED MAIN: 11a93279558b7de3b3031b6a2f8d2b231217db3d. Reader PR #540 merged as 000cf233caf59ae36dc992729f55dfb532bd7e6a; writer PR #541 merged as 11a93279558b7de3b3031b6a2f8d2b231217db3d.
+- ROLLOUT SOURCE: 11a93279558b7de3b3031b6a2f8d2b231217db3d. Documentation rebased onto verified main 07a4cd8f8ec4a875f070026970d24e09b60cfa7b (normal LOGIC-08 data update only). Reader PR #540 merged as 000cf233caf59ae36dc992729f55dfb532bd7e6a; writer PR #541 merged as 11a93279558b7de3b3031b6a2f8d2b231217db3d.
 - [x] Reader-first deployment: all 8 reader PR workflows green, Fast frontend deploy 38651028754 success. Public runtime-data-transport.js and sw.js exactly matched the tested files, including both gzip formats and the compressed-runtime PWA revision, before writer merge.
 - [x] Writer: all 7 required PR workflows and 10 checks passed. Combined local suite 1663 passed; focused 26 passed; JS legacy/gzip/corruption 29 passed.
 - [x] DNA publication and normal GC: run 38651976599 success; active generation 146c2a93-01b0-4720-80e7-e1c758b7db56. Active bytes 81,078,067 -> 11,039,619.
