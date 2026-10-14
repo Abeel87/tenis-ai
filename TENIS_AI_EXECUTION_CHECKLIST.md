@@ -25,6 +25,32 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**RUNTIME COMPRESSION — HISTORY HEADROOM FOLLOW-UP, 2026-10-14**
+- TASK: reader-first rollout in PR #540; current checked base b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
+- [x] Fresh main changed history during CI. Oversized-only compression would need 1,158,770,321 B before GC; do not deploy that partial representation.
+- [x] Include lossless compression of existing history chunks. Shared decoder verifies original chunk hashes/lengths and entry counts, accepts both legacy formats, and reads history chunks sequentially to bound temporary memory.
+- [x] Failing reader/writer history regressions reproduced before repair. Focused pack: 26 Python tests and 29 JS reconstruction/corruption checks passed.
+- [x] All 2,500 real history records and every original compact chunk byte verified after decompression; source SHA-256 remains f1f2af0631b6d3547a59c2859954f4e67903b5c4b8bb53a4ff33f3232db82499. 213,335,321 B source becomes 20,346,368 B stored history chunks.
+- PROJECTED runtime after both compression changes: core 83,576,790 B; market 54,223,318 B; DNA 11,039,619 B; Neuron 248,445 B. These are local projections, not production measurements.
+- [ ] Full current-head CI, reader deployment, compressed writer deployment, live integrity/GC/storage proof and archive retry.
+- NEXT EXACT ACTION: merge #540 only green and confirm deployed reader; enable compressed writer afterwards. Publish DNA first, let normal GC reclaim its prior representation, then publish core and run normal GC. Recheck live headroom before publication.
+- DO NOT REDO: any model/threshold/settlement/iNeed changes or unrelated fixes in #537. No cap increase, archive deletion, authorization change or paid upgrade.
+
+
+**RUNTIME COMPRESSION ROLLOUT — 2026-10-14, READER FIRST**
+- USER AUTHORIZATION: apply lossless compression safely; preserve model logic, data, storage caps and archive retention.
+- TASK / BRANCH: reader compatibility and PWA refresh; `fix/runtime-compression-reader-20261014`, fresh main `8a83871cb2b5ef3bf0a0f9f525ff1024fd85a6b5`.
+- [x] Reviewed PR #537; reuse only compression transport changes. Its separate DNA memory/concurrency and stale-core recovery changes remain unmerged and outside this rollout.
+- [x] Confirmed original reader rejects compressed manifests. New reader accepts legacy and deterministic gzip envelopes, verifies original chunk/file SHA-256 and lengths, and bounds inflation to declared chunk size (maximum 20 MiB).
+- [x] Local verification: 21 focused Python tests, 15 JS reconstruction/corruption cases, UI static/runtime smoke. Rebuilt the local test environment after a stale CatBoost import failure; full suite reached 1661 passes with one existing cache-revision assertion requiring the intended new revision. Updated that assertion; full GitHub CI remains a required merge gate.
+- [x] PWA cache revision changes so the existing update/activate path reloads open clients with the compatible reader.
+- [ ] Exact-head full CI, reader merge and successful Pages deployment before enabling writer compression.
+- BASELINE: runtime objects 760,770,957 B, archive 123,052,808 B, avatars 1,253,751 B. Project physical bytes 885,077,516; archive write guard stays 750,000,000 B.
+- NEXT EXACT ACTION: deploy reader after green CI; then publish compressed core/DNA snapshots through the existing OIDC publisher, verify exact restoration and existing GC, retry archive only below its unchanged guard.
+- ROLLBACK: retain the compatible reader; restore the previous publisher and republish the same canonical JSON through normal activation. No model recomputation or source JSON rewrite is needed.
+- DO NOT REDO: settlement or model repairs; no cap increase, archive/history deletion, model math/threshold changes, SHADOW promotion or paid upgrade.
+
+
 **SELF EVOLUTION PANEL DELIVERY REPAIR — 2026-10-10, IN PROGRESS**
 - VERIFIED BASE: `2832a1bc645f8d8036a4c6c872b50719cf8f43b6`; open PR #523 and dependency PRs do not overlap this repair.
 - BRANCH: `fix/self-evolution-panel-delivery`; PR #534. Heads c1375cdb and 0466e838 passed 10/10 workflows. Resumed 2026-10-11 on data-only main f43e5520; fresh CI is required before merge.

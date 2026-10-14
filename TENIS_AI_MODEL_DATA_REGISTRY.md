@@ -1033,3 +1033,9 @@ User explicitly authorized the expanded source repair, archived-label correction
 Symphony learning version 6 rejects unresolved participant identities and reports corrected-label row counts. Training algorithm, hyperparameters, thresholds and final pair-normalization formula are unchanged. The corruption was upstream: operator-style names were incorrectly labeled losses. Exact-name repairs also recover previously unverifiable handicap/player-total rows; evidence remains scoped to its original layer.
 
 Validation is a retrospective corrected-truth replay, not a profitability claim. See `audits/name_settlement_repair_20261012.md` and its evaluation JSON. Readiness for Neuron/Self Evolution production promotion is unchanged.
+
+
+### Lossless private-runtime compression rollout — 2026-10-14
+The canonical `frontend/runtime-data-transport.js` reader supports both `exact-json-base64-chunks-v1` and `exact-json-gzip-base64-chunks-v1` for existing large-file delivery. Original chunk/file byte lengths and SHA-256 remain authoritative; gzip inflation is bounded. Deploy the compatible reader and refresh PWA assets before switching `scripts/publish_runtime_private.py` to compressed publication. Transport only: no changed model inputs, probabilities, PLAYABLE, iNeed$, access tiers, archive retention or storage caps. Separate infrastructure changes in PR #537 remain pending.
+
+History transport is also included: after the main data refresh, migrating only oversized files would temporarily require 1,158,770,321 B. Compressing the existing history chunk bytes avoids that peak. The new history reader verifies original chunk SHA-256, lengths and entry counts while preserving legacy reads; it does not alter history or settlement. Real-source reconstruction preserved all 2,500 records and every original chunk byte.

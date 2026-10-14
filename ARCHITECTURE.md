@@ -211,3 +211,9 @@ path, and does not affect PROD, PLAYABLE, Symphony, iNeed or real betting.
 The shared `signal_settlement.resolve_player_side` matches all normalized full-name tokens against exactly one of two distinct fixture participants. Named winner, handicap and player-total scorers use this single resolver; `ineed_settlement_runner` delegates its compatibility input projection to the same owner. Partial, unknown and ambiguous names cannot become a loss by default.
 
 The existing history reconciliation stage applies the authorized display-order-only correction to affected archived labels before downstream training. Original label/source and correction provenance are retained on each changed signal; prediction inputs and archived terminal result are unchanged. It never calls Supabase or changes iNeed bankroll records. Symphony training rejects unresolved named identities and publishes correction counts. No additional prediction/settlement path exists.
+
+
+### Private-runtime compression deployment
+Large-file transport accepts legacy base64 and gzip-base64 manifests while preserving exact source bytes and original SHA-256 verification. The canonical reader bounds gzip expansion to the declared chunk size, at most 20 MiB. Roll out the compatible frontend and its PWA cache revision first, confirm Pages deployment, then enable compressed writes in the existing OIDC publisher. Existing atomic generation activation and GC stay authoritative. Rollback republishes the same canonical source through the prior writer while retaining the backward-compatible reader.
+
+Compressed history chunks use `json-array-gzip-base64-chunks-v1`; the compatible reader retains the legacy array format, verifies each original chunk hash/length and entry count, and decodes sequentially to bound transient memory. Both history and oversized exact-JSON chunks use one bounded decoder. Original source files and their record order are unchanged.

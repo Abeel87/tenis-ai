@@ -83,6 +83,26 @@ async function signedObject(path,token){
   }
   return {value:await objectResponse.json(),metadata};
 }
+async function sha256Bytes(bytes){
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function exactChunkBytes(value,encoding,expectedBytes,expectedHash,kind){
+  const invalid=()=>Object.assign(Error('Nieprawidłowa część danych.'),{code:kind+'_chunk_invalid'});
+  const mismatch=()=>Object.assign(Error('Uszkodzona część danych.'),{code:kind+'_chunk_mismatch'});
+  if(value?.encoding!==encoding||typeof value.data!=='string')throw invalid();
+  const raw=atob(value.data);let bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+  if(encoding==='gzip-base64'){
+    if(!Number.isSafeInteger(expectedBytes)||expectedBytes<1||expectedBytes>20*1024*1024)throw invalid();
+    const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+    const decoded=[];let size=0;
+    try{
+      while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>expectedBytes)throw mismatch();decoded.push(item.value)}
+    }finally{await reader.cancel()}
+    bytes=new Uint8Array(size);let at=0;for(const part of decoded){bytes.set(part,at);at+=part.length}
+  }
+  if(bytes.length!==expectedBytes||await sha256Bytes(bytes)!==expectedHash)throw mismatch();
+  return bytes;
+}
 async function privateJson(path){
   const started=now();
   telemetry.private_reads+=1;
@@ -90,14 +110,22 @@ async function privateJson(path){
     const token=await sessionToken();
     if(path===HISTORY_PATH){
       const {value:manifest,metadata}=await signedObject(HISTORY_MANIFEST,token);
-      if(manifest?.format!=='json-array-chunks-v1'||!Array.isArray(manifest.chunks))throw Object.assign(Error('Nieprawidłowy manifest historii.'),{code:'history_manifest_invalid'});
-      const chunks=await Promise.all(manifest.chunks.map(async chunk=>{
+      if(!['json-array-chunks-v1','json-array-gzip-base64-chunks-v1'].includes(manifest?.format)||!Array.isArray(manifest.chunks))throw Object.assign(Error('Nieprawidłowy manifest historii.'),{code:'history_manifest_invalid'});
+      const compressed=manifest.format==='json-array-gzip-base64-chunks-v1';
+      const chunks=[];
+      // Read sequentially so decompression retains at most one raw chunk.
+      for(const [index,chunk] of manifest.chunks.entries()){
         const chunkPath=String(chunk?.path||'');
-        if(!chunkPath.startsWith('data/private/history/chunks/'))throw Object.assign(Error('Nieprawidłowa ścieżka chunka historii.'),{code:'history_chunk_invalid'});
-        const {value}=await signedObject(chunkPath,token);
+        if(chunkPath!=='data/private/history/chunks/'+String(index).padStart(4,'0')+'.json')throw Object.assign(Error('Nieprawidłowa ścieżka chunka historii.'),{code:'history_chunk_invalid'});
+        let {value}=await signedObject(chunkPath,token);
+        if(compressed){
+          const bytes=await exactChunkBytes(value,'gzip-base64',chunk.size_bytes,chunk.sha256,'history');
+          value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+        }
         if(!Array.isArray(value))throw Object.assign(Error('Nieprawidłowy chunk historii.'),{code:'history_chunk_invalid'});
-        return value;
-      }));
+        if(compressed&&(!Number.isSafeInteger(chunk.entries)||value.length!==chunk.entries))throw Object.assign(Error('Niekompletna część historii.'),{code:'history_count_mismatch'});
+        chunks.push(value);
+      }
       const value=chunks.flat();
       if(Number.isInteger(manifest.entry_count)&&value.length!==manifest.entry_count)throw Object.assign(Error('Niekompletna rekonstrukcja historii.'),{code:'history_count_mismatch'});
       telemetry.history_reconstructions+=1;
@@ -108,21 +136,19 @@ async function privateJson(path){
     if(path==='data/player_dna_prospective_validation.json'){
       const prefix='data/private/large/player_dna_prospective_validation/';
       const {value:manifest}=await signedObject(prefix+'manifest.json',token);
-      if(manifest?.format!=='exact-json-base64-chunks-v1'||manifest.source_path!==path||!Array.isArray(manifest.chunks)||!manifest.chunks.length)throw Object.assign(Error('Nieprawidłowy manifest danych dużego pliku.'),{code:'large_manifest_invalid'});
+      if(!['exact-json-base64-chunks-v1','exact-json-gzip-base64-chunks-v1'].includes(manifest?.format)||manifest.source_path!==path||!Array.isArray(manifest.chunks)||!manifest.chunks.length)throw Object.assign(Error('Nieprawidłowy manifest danych dużego pliku.'),{code:'large_manifest_invalid'});
       const parts=[];let total=0;
-      const sha=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
       for(const [index,chunk] of manifest.chunks.entries()){
         if(chunk?.path!==prefix+'chunks/'+String(index).padStart(4,'0')+'.json')throw Object.assign(Error('Nieprawidłowa ścieżka części dużego pliku.'),{code:'large_chunk_invalid'});
         const {value}=await signedObject(chunk.path,token);
-        if(value?.encoding!=='base64'||typeof value.data!=='string')throw Object.assign(Error('Nieprawidłowa część dużego pliku.'),{code:'large_chunk_invalid'});
-        const raw=atob(value.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
-        if(bytes.length!==chunk.bytes||await sha(bytes)!==chunk.sha256)throw Object.assign(Error('Uszkodzona część dużego pliku.'),{code:'large_chunk_mismatch'});
+        const encoding=manifest.format==='exact-json-gzip-base64-chunks-v1'?'gzip-base64':'base64';
+        const bytes=await exactChunkBytes(value,encoding,chunk.bytes,chunk.sha256,'large');
         parts.push(bytes);total+=bytes.length;
       }
       if(total!==manifest.source_size_bytes)throw Object.assign(Error('Niekompletne dane dużego pliku.'),{code:'large_count_mismatch'});
       const combined=new Uint8Array(total);let offset=0;
       for(const bytes of parts){combined.set(bytes,offset);offset+=bytes.length}
-      if(await sha(combined)!==manifest.source_sha256)throw Object.assign(Error('Niezgodna suma danych dużego pliku.'),{code:'large_digest_mismatch'});
+      if(await sha256Bytes(combined)!==manifest.source_sha256)throw Object.assign(Error('Niezgodna suma danych dużego pliku.'),{code:'large_digest_mismatch'});
       const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(combined));
       telemetry.private_success+=1;
       record('private_ok',path,{ms:now()-started,large_chunks:parts.length});
