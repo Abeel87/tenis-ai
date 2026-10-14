@@ -25,6 +25,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**RUNTIME COMPRESSION — COMPLETE WRITER PREPARED, 2026-10-14**
+- TASK / BRANCH: lossless oversized JSON AND history chunk compression; fix/runtime-compression-writer-20261014. Depends on reader PR #540.
+- VERIFIED SOURCE: main b7ccf8e406c9dd15889c29dd10d88a0a6e35556b. Reader/writer combined local full suite: 1663 passed; focused 26 passed; JS 29 passed. No model source or workflow changes.
+- [x] History transport preserves all 2500 records and exact pre-compression chunk bytes. Four oversized JSON files preserve full source SHA-256/lengths. Deterministic repeat publication has identical object hashes.
+- [x] Fresh capacity preflight: physical 885,085,931 B. DNA uploads 4,223,646 B; replacement reduces its active bytes from 81,078,067 to 11,039,619. Core uploads 76,471,793 B. DNA -> GC -> core keeps projected peak at 891,519,276 B, below 1 GB.
+- [x] Projected active sizes for current source: core 83,576,790 B, market 54,223,318 B, DNA 11,039,619 B, Neuron 248,445 B. Only core/DNA need manual migration.
+- [x] Reader PR #540 merged as 000cf233caf59ae36dc992729f55dfb532bd7e6a after all 8 head workflows passed; fresh main was b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
+- [ ] Confirm #540 deployed, writer exact-head CI/merge, DNA publication/GC, core publication/GC, active object integrity, live storage and archive publication.
+- NEXT EXACT ACTION: confirm reader Pages deployment, complete this branch's required CI on merged main 000cf233caf59ae36dc992729f55dfb532bd7e6a and merge only green. Dispatch unchanged runtime-private-delivery.yml on main for DNA, wait for success/GC, then core. Retry archive after accounted project bytes are below the unchanged 750 MB guard.
+- ROLLBACK: retain compatible reader, restore original writer and republish unchanged canonical JSON through normal activation.
+- DO NOT REDO: unrelated #537 infrastructure/model work, settlement, iNeed$ calculations, promotion or storage-cap changes. No archive/history deletion or paid upgrade.
+
+
 **RUNTIME COMPRESSION — HISTORY HEADROOM FOLLOW-UP, 2026-10-14**
 - TASK: reader-first rollout in PR #540; current checked base b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
 - [x] Fresh main changed history during CI. Oversized-only compression would need 1,158,770,321 B before GC; do not deploy that partial representation.
