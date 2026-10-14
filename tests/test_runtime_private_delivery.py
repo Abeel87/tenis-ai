@@ -284,3 +284,38 @@ def test_oversized_player_dna_json_is_chunked_without_losing_bytes(tmp_path, mon
     assert manifest["source_sha256"] == hashlib.sha256(original).hexdigest()
     repeated_rows, _ = helper.snapshot_files("dna")
     assert repeated_rows == rows, "Identical source must retain content-addressed object hashes"
+
+
+def test_history_compression_preserves_original_chunk_bytes_and_order(tmp_path, monkeypatch):
+    import base64
+    import gzip
+    helper = _load_helper()
+    frontend = tmp_path / "frontend"
+    data = frontend / "data"
+    history = [{"id": i, "name": "Żółć 🎾", "zero": 0, "missing": None,
+                "flag": False, "payload": "x" * 220} for i in range(30)]
+    _write_json(data / "history.json", history)
+    original = (data / "history.json").read_bytes()
+    helper.FRONTEND, helper.DATA = frontend, data
+    helper.HISTORY_CHUNK_TARGET, helper.MAX_OBJECT_SIZE = 1024, 8192
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path / "runner"))
+    rows, by_hash = helper.snapshot_files("core")
+    by_path = {row["path"]: by_hash[row["sha256"]] for row in rows}
+    manifest = json.loads(by_path["data/private/history/manifest.json"].read_text())
+    assert manifest["format"] == "json-array-gzip-base64-chunks-v1"
+    restored = []
+    for chunk in manifest["chunks"]:
+        envelope = json.loads(by_path[chunk["path"]].read_text())
+        assert envelope["encoding"] == "gzip-base64"
+        raw = gzip.decompress(base64.b64decode(envelope["data"], validate=True))
+        assert len(raw) == chunk["size_bytes"] <= helper.HISTORY_CHUNK_TARGET
+        assert hashlib.sha256(raw).hexdigest() == chunk["sha256"]
+        expected = history[len(restored):len(restored) + chunk["entries"]]
+        assert raw == json.dumps(expected, ensure_ascii=False, separators=(",", ":")).encode()
+        restored.extend(json.loads(raw))
+    assert restored == history
+    assert (data / "history.json").read_bytes() == original
+    assert manifest["source_sha256"] == hashlib.sha256(original).hexdigest()
+    assert sum(row["size_bytes"] for row in rows) < len(original)
+    repeated, _ = helper.snapshot_files("core")
+    assert repeated == rows

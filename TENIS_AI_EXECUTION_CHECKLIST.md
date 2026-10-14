@@ -25,18 +25,28 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**RUNTIME COMPRESSION ROLLOUT — 2026-10-14, WRITER PREPARED**
-- USER AUTHORIZATION: lossless compression only, preserving data and model logic.
-- TASK / BRANCH: compressed publication and storage verification; `fix/runtime-compression-writer-20261014`. Reader PR #540 must be merged and deployed before this writer is merged.
-- [x] Four real oversized JSON files compressed and reconstructed with matching original chunk/file SHA-256 and byte lengths: prediction ledger, selection ledger, settlement ledger, and DNA prospective validation.
-- [x] Projected active runtime: core 272,609,539 B; market 50,347,562 B; DNA 11,039,619 B; Neuron 248,445 B; total 334,245,165 B. These are projections, not deployed measurements.
-- [x] Existing-object dedupe preflight: physical 885,085,931 B + 56,614,448 B new uploads = 941,700,379 B maximum before GC for this snapshot.
-- [x] Full local suite 1662 passed; 15 JS reader cases; deterministic repeat publication has identical hashes. Existing PWA cache assertion updated to the deliberately changed revision.
-- [x] Rollout uses the existing OIDC-authorized workflow_dispatch event without changing the workflow or authorization. Manually publish core, wait for existing GC, then publish DNA and wait for GC. Market and Neuron have no oversized chunks to migrate.
-- [ ] Reader Pages deployment confirmed, writer exact-head CI/merge, actual active compressed generations, GC/storage measurement, archive retry below unchanged 750 MB guard.
-- NEXT EXACT ACTION: finish #540 CI and deploy its reader, then create/merge this writer PR only green. Verify active manifest object hashes against local projection and retry the previously blocked archive inventory.
-- ROLLBACK: keep the compatible reader, restore the previous writer and republish unchanged canonical JSON through normal activation.
-- DO NOT REDO: broader infrastructure changes from #537, model math/thresholds/training, settlement, iNeed$ economics or promotion. No storage-cap increase, archive/history deletion or paid upgrade.
+**RUNTIME COMPRESSION — COMPLETE WRITER PREPARED, 2026-10-14**
+- TASK / BRANCH: lossless oversized JSON AND history chunk compression; fix/runtime-compression-writer-20261014. Depends on reader PR #540.
+- VERIFIED SOURCE: main b7ccf8e406c9dd15889c29dd10d88a0a6e35556b. Reader/writer combined local full suite: 1663 passed; focused 26 passed; JS 29 passed. No model source or workflow changes.
+- [x] History transport preserves all 2500 records and exact pre-compression chunk bytes. Four oversized JSON files preserve full source SHA-256/lengths. Deterministic repeat publication has identical object hashes.
+- [x] Fresh capacity preflight: physical 885,085,931 B. DNA uploads 4,223,646 B; replacement reduces its active bytes from 81,078,067 to 11,039,619. Core uploads 76,471,793 B. DNA -> GC -> core keeps projected peak at 891,519,276 B, below 1 GB.
+- [x] Projected active sizes for current source: core 83,576,790 B, market 54,223,318 B, DNA 11,039,619 B, Neuron 248,445 B. Only core/DNA need manual migration.
+- [ ] Confirm #540 deployed, writer exact-head CI/merge, DNA publication/GC, core publication/GC, active object integrity, live storage and archive publication.
+- NEXT EXACT ACTION: finish reader deployment first, refresh this branch against merged main, run required CI and merge green. Dispatch unchanged runtime-private-delivery.yml on main for DNA, wait for success/GC, then core. Retry archive after accounted project bytes are below the unchanged 750 MB guard.
+- ROLLBACK: retain compatible reader, restore original writer and republish unchanged canonical JSON through normal activation.
+- DO NOT REDO: unrelated #537 infrastructure/model work, settlement, iNeed$ calculations, promotion or storage-cap changes. No archive/history deletion or paid upgrade.
+
+
+**RUNTIME COMPRESSION — HISTORY HEADROOM FOLLOW-UP, 2026-10-14**
+- TASK: reader-first rollout in PR #540; current checked base b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
+- [x] Fresh main changed history during CI. Oversized-only compression would need 1,158,770,321 B before GC; do not deploy that partial representation.
+- [x] Include lossless compression of existing history chunks. Shared decoder verifies original chunk hashes/lengths and entry counts, accepts both legacy formats, and reads history chunks sequentially to bound temporary memory.
+- [x] Failing reader/writer history regressions reproduced before repair. Focused pack: 26 Python tests and 29 JS reconstruction/corruption checks passed.
+- [x] All 2,500 real history records and every original compact chunk byte verified after decompression; source SHA-256 remains f1f2af0631b6d3547a59c2859954f4e67903b5c4b8bb53a4ff33f3232db82499. 213,335,321 B source becomes 20,346,368 B stored history chunks.
+- PROJECTED runtime after both compression changes: core 83,576,790 B; market 54,223,318 B; DNA 11,039,619 B; Neuron 248,445 B. These are local projections, not production measurements.
+- [ ] Full current-head CI, reader deployment, compressed writer deployment, live integrity/GC/storage proof and archive retry.
+- NEXT EXACT ACTION: merge #540 only green and confirm deployed reader; enable compressed writer afterwards. Publish DNA first, let normal GC reclaim its prior representation, then publish core and run normal GC. Recheck live headroom before publication.
+- DO NOT REDO: any model/threshold/settlement/iNeed changes or unrelated fixes in #537. No cap increase, archive deletion, authorization change or paid upgrade.
 
 
 **RUNTIME COMPRESSION ROLLOUT — 2026-10-14, READER FIRST**
