@@ -31,8 +31,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] History transport preserves all 2500 records and exact pre-compression chunk bytes. Four oversized JSON files preserve full source SHA-256/lengths. Deterministic repeat publication has identical object hashes.
 - [x] Fresh capacity preflight: physical 885,085,931 B. DNA uploads 4,223,646 B; replacement reduces its active bytes from 81,078,067 to 11,039,619. Core uploads 76,471,793 B. DNA -> GC -> core keeps projected peak at 891,519,276 B, below 1 GB.
 - [x] Projected active sizes for current source: core 83,576,790 B, market 54,223,318 B, DNA 11,039,619 B, Neuron 248,445 B. Only core/DNA need manual migration.
+- [x] Reader PR #540 merged as 000cf233caf59ae36dc992729f55dfb532bd7e6a after all 8 head workflows passed; fresh main was b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
 - [ ] Confirm #540 deployed, writer exact-head CI/merge, DNA publication/GC, core publication/GC, active object integrity, live storage and archive publication.
-- NEXT EXACT ACTION: finish reader deployment first, refresh this branch against merged main, run required CI and merge green. Dispatch unchanged runtime-private-delivery.yml on main for DNA, wait for success/GC, then core. Retry archive after accounted project bytes are below the unchanged 750 MB guard.
+- NEXT EXACT ACTION: confirm reader Pages deployment, complete this branch's required CI on merged main 000cf233caf59ae36dc992729f55dfb532bd7e6a and merge only green. Dispatch unchanged runtime-private-delivery.yml on main for DNA, wait for success/GC, then core. Retry archive after accounted project bytes are below the unchanged 750 MB guard.
 - ROLLBACK: retain compatible reader, restore original writer and republish unchanged canonical JSON through normal activation.
 - DO NOT REDO: unrelated #537 infrastructure/model work, settlement, iNeed$ calculations, promotion or storage-cap changes. No archive/history deletion or paid upgrade.
 
