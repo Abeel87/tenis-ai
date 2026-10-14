@@ -25,6 +25,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**RUNTIME COMPRESSION — HISTORY HEADROOM FOLLOW-UP, 2026-10-14**
+- TASK: reader-first rollout in PR #540; current checked base b7ccf8e406c9dd15889c29dd10d88a0a6e35556b.
+- [x] Fresh main changed history during CI. Oversized-only compression would need 1,158,770,321 B before GC; do not deploy that partial representation.
+- [x] Include lossless compression of existing history chunks. Shared decoder verifies original chunk hashes/lengths and entry counts, accepts both legacy formats, and reads history chunks sequentially to bound temporary memory.
+- [x] Failing reader/writer history regressions reproduced before repair. Focused pack: 26 Python tests and 29 JS reconstruction/corruption checks passed.
+- [x] All 2,500 real history records and every original compact chunk byte verified after decompression; source SHA-256 remains f1f2af0631b6d3547a59c2859954f4e67903b5c4b8bb53a4ff33f3232db82499. 213,335,321 B source becomes 20,346,368 B stored history chunks.
+- PROJECTED runtime after both compression changes: core 83,576,790 B; market 54,223,318 B; DNA 11,039,619 B; Neuron 248,445 B. These are local projections, not production measurements.
+- [ ] Full current-head CI, reader deployment, compressed writer deployment, live integrity/GC/storage proof and archive retry.
+- NEXT EXACT ACTION: merge #540 only green and confirm deployed reader; enable compressed writer afterwards. Publish DNA first, let normal GC reclaim its prior representation, then publish core and run normal GC. Recheck live headroom before publication.
+- DO NOT REDO: any model/threshold/settlement/iNeed changes or unrelated fixes in #537. No cap increase, archive deletion, authorization change or paid upgrade.
+
+
 **RUNTIME COMPRESSION ROLLOUT — 2026-10-14, READER FIRST**
 - USER AUTHORIZATION: apply lossless compression safely; preserve model logic, data, storage caps and archive retention.
 - TASK / BRANCH: reader compatibility and PWA refresh; `fix/runtime-compression-reader-20261014`, fresh main `8a83871cb2b5ef3bf0a0f9f525ff1024fd85a6b5`.
