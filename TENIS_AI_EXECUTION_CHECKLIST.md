@@ -30,7 +30,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - TASK / BRANCH: reader compatibility and PWA refresh; `fix/runtime-compression-reader-20261014`, fresh main `8a83871cb2b5ef3bf0a0f9f525ff1024fd85a6b5`.
 - [x] Reviewed PR #537; reuse only compression transport changes. Its separate DNA memory/concurrency and stale-core recovery changes remain unmerged and outside this rollout.
 - [x] Confirmed original reader rejects compressed manifests. New reader accepts legacy and deterministic gzip envelopes, verifies original chunk/file SHA-256 and lengths, and bounds inflation to declared chunk size (maximum 20 MiB).
-- [x] Local verification: 21 focused Python tests, 15 JS reconstruction/corruption cases, UI static/runtime smoke. Full local suite could not start because an older reused scientific Python environment raised SIGBUS during import; full GitHub CI remains a required merge gate.
+- [x] Local verification: 21 focused Python tests, 15 JS reconstruction/corruption cases, UI static/runtime smoke. Rebuilt the local test environment after a stale CatBoost import failure; full suite reached 1661 passes with one existing cache-revision assertion requiring the intended new revision. Updated that assertion; full GitHub CI remains a required merge gate.
 - [x] PWA cache revision changes so the existing update/activate path reloads open clients with the compatible reader.
 - [ ] Exact-head full CI, reader merge and successful Pages deployment before enabling writer compression.
 - BASELINE: runtime objects 760,770,957 B, archive 123,052,808 B, avatars 1,253,751 B. Project physical bytes 885,077,516; archive write guard stays 750,000,000 B.
