@@ -1,5 +1,5 @@
 /* UI assets only. Data and authenticated requests always go to the network. */
-const CACHE='tenis-ai-mobile-presentation-20261010-evolution-bundled';
+const CACHE='tenis-ai-mobile-presentation-20261014-compressed-runtime';
 const CORE=[
   './','index.html','style.css','manifest.webmanifest','favicon.png','apple-touch-icon.png','icon-192.png','icon-512.png','brand-symbol.png','brand-wordmark.png',
   'supabase-config.js','multi-model.js','signal-mapping-v84d4.js','autolearn-v84.js','adaptive-prod-bridge.js','market-quality.js','model-guide.js','match-time.js','playable-ui.js','player-avatars.js','presentation-data.js','account.js','runtime-data-transport.js','auth-enhancements.js','match-detail-data.js','neuron-data-bridge.js','app.js','history-ui.js','admin-users.js','ineed-loader.js','ineed.js'

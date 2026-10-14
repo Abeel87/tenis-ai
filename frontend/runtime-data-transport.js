@@ -108,14 +108,24 @@ async function privateJson(path){
     if(path==='data/player_dna_prospective_validation.json'){
       const prefix='data/private/large/player_dna_prospective_validation/';
       const {value:manifest}=await signedObject(prefix+'manifest.json',token);
-      if(manifest?.format!=='exact-json-base64-chunks-v1'||manifest.source_path!==path||!Array.isArray(manifest.chunks)||!manifest.chunks.length)throw Object.assign(Error('Nieprawidłowy manifest danych dużego pliku.'),{code:'large_manifest_invalid'});
+      if(!['exact-json-base64-chunks-v1','exact-json-gzip-base64-chunks-v1'].includes(manifest?.format)||manifest.source_path!==path||!Array.isArray(manifest.chunks)||!manifest.chunks.length)throw Object.assign(Error('Nieprawidłowy manifest danych dużego pliku.'),{code:'large_manifest_invalid'});
       const parts=[];let total=0;
       const sha=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
       for(const [index,chunk] of manifest.chunks.entries()){
         if(chunk?.path!==prefix+'chunks/'+String(index).padStart(4,'0')+'.json')throw Object.assign(Error('Nieprawidłowa ścieżka części dużego pliku.'),{code:'large_chunk_invalid'});
         const {value}=await signedObject(chunk.path,token);
-        if(value?.encoding!=='base64'||typeof value.data!=='string')throw Object.assign(Error('Nieprawidłowa część dużego pliku.'),{code:'large_chunk_invalid'});
-        const raw=atob(value.data),bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+        const encoding=manifest.format==='exact-json-gzip-base64-chunks-v1'?'gzip-base64':'base64';
+        if(value?.encoding!==encoding||typeof value.data!=='string')throw Object.assign(Error('Nieprawidłowa część dużego pliku.'),{code:'large_chunk_invalid'});
+        const raw=atob(value.data);let bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+        if(encoding==='gzip-base64'){
+          if(!Number.isSafeInteger(chunk.bytes)||chunk.bytes<1||chunk.bytes>20*1024*1024)throw Object.assign(Error('Nieprawidłowy rozmiar części.'),{code:'large_chunk_invalid'});
+          const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+          const decoded=[];let size=0;
+          try{
+            while(true){const item=await reader.read();if(item.done)break;size+=item.value.length;if(size>chunk.bytes)throw Object.assign(Error('Przekroczony rozmiar części.'),{code:'large_chunk_mismatch'});decoded.push(item.value)}
+          }finally{await reader.cancel()}
+          bytes=new Uint8Array(size);let at=0;for(const part of decoded){bytes.set(part,at);at+=part.length}
+        }
         if(bytes.length!==chunk.bytes||await sha(bytes)!==chunk.sha256)throw Object.assign(Error('Uszkodzona część dużego pliku.'),{code:'large_chunk_mismatch'});
         parts.push(bytes);total+=bytes.length;
       }
