@@ -1033,3 +1033,12 @@ User explicitly authorized the expanded source repair, archived-label correction
 Symphony learning version 6 rejects unresolved participant identities and reports corrected-label row counts. Training algorithm, hyperparameters, thresholds and final pair-normalization formula are unchanged. The corruption was upstream: operator-style names were incorrectly labeled losses. Exact-name repairs also recover previously unverifiable handicap/player-total rows; evidence remains scoped to its original layer.
 
 Validation is a retrospective corrected-truth replay, not a profitability claim. See `audits/name_settlement_repair_20261012.md` and its evaluation JSON. Readiness for Neuron/Self Evolution production promotion is unchanged.
+
+
+### Infrastructure storage and refresh repair — 2026-10-13
+The authorized repair stays in delivery/orchestration owners. `publish_runtime_private.py` compresses oversized exact JSON chunks using deterministic gzip inside the authenticated JSON envelope. Chunk/source digests remain digests of original bytes; the frontend supports both old and new manifests and rejects bad hashes or excessive decompression. Normal activation and existing runtime GC retire superseded staging copies; training archive retention and both storage caps remain unchanged.
+The existing stale-run guard also checks the actual core snapshot timestamp and wakes on successful main producer events. It suppresses dispatch while a core run is active. Player DNA full runs are not preempted by another full refresh; BLAS thread limits reduce runner resource contention without changing algorithms or promotion gates. Production completion remains an acceptance gate.
+
+The canonical historical market backtest releases excluded feature rows before fitting and point-level training frames before match simulation. Fitted parameters, chronological membership and reported counts are unchanged; regression verifies object lifetimes and fit inputs. Runner communication loss is observed, but memory exhaustion remains an unconfirmed cause until full runtime verification.
+
+Follow-up: opponent-adjustment audit enriches its privately created feature dictionaries in place, preserving source data and all feature values; raw loaded sources are released before evaluation. DNA/Point Tape orchestration owns ephemeral swap and resource telemetry. Shutdown cause remains unconfirmed; full real-data CI is required before deployment.

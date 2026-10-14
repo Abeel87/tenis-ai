@@ -16,6 +16,53 @@ from backend.player_dna_tennis_simulator import (
 )
 
 
+def test_backtest_releases_point_features_before_match_simulations(monkeypatch):
+    import weakref
+    import pytest
+    from backend import player_dna_market_backtest as backtest
+
+    class Row(dict):
+        pass
+
+    refs = {}
+
+    def features(*_):
+        rows = [Row(match_id=name, keep=keep, value=index)
+                for index, (name, keep) in enumerate(
+                    (("train", True), ("holdout", True), ("excluded", False)))]
+        refs.update({row["match_id"]: weakref.ref(row) for row in rows})
+        return rows, {}
+
+    monkeypatch.setattr(backtest, "build_feature_rows", features)
+    monkeypatch.setattr(backtest, "split_chronological_by_match",
+                        lambda rows: ([rows[0], rows[2]], [rows[1]], {}))
+    monkeypatch.setattr(backtest, "_cohort",
+                        lambda rows, _: [row for row in rows if row["keep"]])
+
+    def fit(frame, *_):
+        assert refs["excluded"]() is None
+        assert frame["match_id"].tolist() == ["train"]
+        assert frame["value"].tolist() == [0]
+        refs["frame"] = weakref.ref(frame)
+        return {}
+
+    monkeypatch.setattr(backtest, "_fit_logistic_newton", fit)
+    monkeypatch.setattr(backtest, "fit_point_probability_model", fit)
+    monkeypatch.setattr(backtest, "_snapshot_pairs", lambda _: {})
+
+    class SimulationReached(Exception):
+        pass
+
+    def simulate(ids, *_):
+        assert ids == {"holdout"}
+        assert all(ref() is None for ref in refs.values())
+        raise SimulationReached
+
+    monkeypatch.setattr(backtest, "_predict_match_simulations", simulate)
+    with pytest.raises(SimulationReached):
+        backtest.evaluate_backtest([], [])
+
+
 def _row(idx, sets, games, server=None):
     return {
         "event_index": idx,

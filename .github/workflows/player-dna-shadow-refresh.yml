@@ -102,10 +102,15 @@ concurrency:
   # Keep main refreshes mutually exclusive, but never let a main/data refresh
   # cancel the validation run of an open PR.
   group: player-dna-shadow-refresh-${{ github.event.pull_request.number || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' && 'market' || 'main') }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh') }}
 
 env:
   PYTHONUNBUFFERED: '1'
+  # Bound BLAS workers so long SHADOW evaluations cannot starve the runner.
+  OPENBLAS_NUM_THREADS: '1'
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  NUMEXPR_NUM_THREADS: '1'
   FAST_READINESS_ONLY: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' }}
 
 jobs:
@@ -118,6 +123,16 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           fetch-depth: 0
+
+      - name: Prepare memory headroom for full-data jobs
+        run: |
+          free -m
+          df -h /mnt
+          sudo fallocate -l 8G /mnt/tenis-ai-validation.swap
+          sudo chmod 600 /mnt/tenis-ai-validation.swap
+          sudo mkswap /mnt/tenis-ai-validation.swap
+          sudo swapon /mnt/tenis-ai-validation.swap
+          free -m
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -359,7 +374,20 @@ jobs:
 
       - name: Backtest simulated markets on historical holdout
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_market_backtest.py
+        run: |
+          /usr/bin/time -v python backend/player_dna_market_backtest.py &
+          worker=$!
+          (
+            while kill -0 "$worker" 2>/dev/null; do
+              date -u +%FT%TZ
+              free -m
+              ps -eo pid,ppid,rss,comm --sort=-rss | head -n 8
+              sleep 30
+            done
+          ) &
+          monitor=$!
+          trap 'kill "$monitor" 2>/dev/null || true' EXIT
+          wait "$worker"
 
       - name: Build dynamic lean market walk-forward evidence
         if: env.FAST_READINESS_ONLY != 'true'

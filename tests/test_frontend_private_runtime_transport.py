@@ -96,3 +96,8 @@ def test_private_read_layer_cannot_change_model_or_betting_logic():
     lowered = TRANSPORT.lower()
     for item in forbidden:
         assert item not in lowered
+
+
+def test_compressed_and_legacy_chunks_roundtrip_in_javascript():
+    import subprocess
+    subprocess.run(["node", "tests/runtime_compressed_chunks.mjs"], cwd=ROOT, check=True, capture_output=True, text=True)

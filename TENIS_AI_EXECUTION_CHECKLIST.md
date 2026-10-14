@@ -616,3 +616,37 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - DO NOT REDO: audits on `audit/ineed-learning-readiness-20261012`; no reset of experiments or speculative probability formula.
 - NEXT EXACT ACTION: source repair is deployed; collect prospective post-repair evidence before any profitability or promotion claim. Self Evolution and Neuron readiness remain separate SHADOW evaluations. No repeated source repair/replay needed.
 - RISKS: retrospective quality improvement is not financial/prospective superiority; Neuron/Self Evolution and real betting remain unpromoted.
+
+
+## LIVE CHECKPOINT — authorized infrastructure repair, 2026-10-13
+- USER AUTHORIZATION: repair archive blockage, interrupted Player DNA and stale updates after technical audit.
+- BASE: 633141a3459f05f39cf0ed114764e8a9669a6f41; branch fix/runtime-archive-and-refresh-20261013. Existing PR #523 proposes 900 MB ceiling, already insufficient for observed occupancy; it is not merged or modified here.
+- [x] Physical storage: runtime 851821269 B, training archive 123052808 B, avatar 1253751 B; only active runtime generations remain. GC cannot reclaim them safely.
+- [x] Reproducer: large-file private publication expands exact bytes as base64; new compression regression fails before fix. Deterministic gzip preserves source and chunk SHA-256; old base64 reader remains supported, decompression is bounded.
+- [x] Local measured runtime projection after compression: market 53563859 B, DNA 11039619 B, core 240064766 B (core delivery rebuild may add files). No source JSON changed.
+- [x] Core stale guard had no recovery for old meta.updated_at and only cron/push wakeups. Add successful main producer wakeups, active-run suppression and canonical core dispatch after 120 minutes; preserve 75-minute iNeed heartbeat.
+- [~] Player DNA runner lost communication during backtest (run 38345065697); prior run 38272973010 received shutdown. Bound BLAS workers and avoid cancelling full evaluations on new full refreshes. This is resource/concurrency hardening, not yet proof that the interrupted backtest completes.
+- [x] Initial local suite: 1664 passed. PR #537 head 66e1818527e9ad649c14ddf4f847a4b8db8b6e8f: other checks green, full DNA run 38356243677 FAILED during historical market backtest; GitHub annotation confirms runner lost communication (not a confirmed OOM diagnosis). No merge or production deployment.
+- [x] Follow-up canonical memory-retention reproducer failed before repair: excluded point features remained alive at fit time. Release full partitions after cohort selection and cohort/frame data before match simulations; preserve fit inputs, match IDs and row counts. Add peak-resource reporting to the existing backtest command.
+- [x] Follow-up local full suite: 1665 passed (47.42 seconds); memory-lifetime regression failed before the fix and passes after it.
+- [ ] New exact-head CI, fresh-main merge, compressed publication/GC, archive retry and complete DNA runtime verification.
+- DO NOT REDO: settlement repair #535/#536. No probability/model/threshold changes, no cap increase, no archive/history deletion, no SHADOW promotion.
+- NEXT EXACT ACTION: finish regression and PR CI; deploy green; observe normal generation activation and existing GC, then retry failed inventory only after project accounted bytes fall below 750 MB. Verify full DNA separately from FAST_READINESS_ONLY.
+
+### Infrastructure follow-up — 2026-10-13, after 11:42 Warsaw
+- PR #537 head 950351eb27c3d69b8a835d4a3c78ce7536a0d873 failed full DNA run 38368373555 (shutdown during market backtest at 09:20Z); Point Tape audit 38368373502 failed again on retry during opponent adjustment. No green merge or deployment has occurred.
+- Confirmed: no explicit timeout on these two jobs; stale-run guard cancellation only targets update-and-pages.yml. GitHub shutdown annotations do not establish OOM as the cause.
+- Measured locally: retaining 51 BO5 simulation results reached 541 MiB peak RSS; this is a synthetic resource measurement, not a model-quality evaluation.
+- Opponent enrichment duplicates its entire owned feature dataset. New failing regression reproduces dictionary duplication and protects unchanged source rows/labels/missing-identity handling. Enrich those privately owned rows in place and release loaded points/profiles before fitting.
+- Full-data DNA and Point Tape jobs gain 8 GiB ephemeral swap, bounded BLAS workers and live RAM/process RSS output every 30 seconds around the failed steps. Preserve Python exit codes and every original validation stage. No dataset reduction, model/threshold/weight change or promotion.
+- Current main advanced to ca9d76e256c44e3e44970b66e0d880f66ef808ae via market and Neuron data updates; refresh the branch against it before next CI.
+- [x] Refreshed onto main ca9d76e; full local regression: 1667 passed in 47.83 seconds. YAML/shell syntax and monitored child exit codes 0/7 verified.
+- NEXT EXACT ACTION: publish new PR head, inspect full DNA and Point Tape logs including resource telemetry. Merge only green, then verify runtime compression/GC and retry archive below its existing ceiling. Do not repeat blind reruns.
+
+### Confirmed full-data CI recovery — 2026-10-13, 20:14 Warsaw
+- [x] PR #537 head f446ccb8bbd741df7b860ab10e50b4f22122ebb0 passed every check (13 successes, stale-full cancellation intentionally skipped on PR).
+- [x] Full Player DNA run 38379446046 succeeded at 12:04Z, including historical market backtest, dynamic walk-forward, hold calibration, prospective evidence and isolation guard. This was not FAST_READINESS_ONLY.
+- [x] Full Point Tape Schema Audit run 38379446047 succeeded at 12:56Z. No validation gate or dataset size was reduced.
+- Resource evidence from the successful DNA backtest: peak process RSS 15591100 KiB; runner reported 15989 MiB RAM, and live swap usage reached at least 4889 MiB. Backtest finished in 12:28 with exit status 0; memory pressure is directly observed.
+- [ ] Not merged/deployed yet. Fresh main is dd59721f218d8834634e2898fb260e6a20750e31, eight data-only commits ahead of prior base ca9d76e. Reviewed changed paths: frontend/data only; no intersection with the 17 repair paths.
+- NEXT EXACT ACTION: synchronize PR with dd59721f and rerun required exact-head CI per AGENTS.md. Then fresh-main check, green merge, runtime compression/GC verification and archive retry below existing 750 MB guard. The earlier runner shutdown has been overcome in full CI; production acceptance remains pending.
