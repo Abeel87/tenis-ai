@@ -65,16 +65,18 @@ Rebuildable cache material is not archived unless a later reproducibility requir
 
 ## Storage budget gate
 
-Archive publication is fail-closed behind a server-side manifest budget trigger.
+Archive publication is fail-closed behind the canonical server-side manifest and object-reservation budget triggers.
 
 The current safety ceilings are:
 
-- `250000000` bytes maximum archive-reserved footprint,
-- `750000000` bytes maximum project-accounted Storage before accepting worst-case bytes for a new archive manifest.
+- `30000000000` bytes (30 GB) maximum archive-reserved footprint,
+- `75000000000` bytes (75 GB) maximum project-accounted Storage for archive writes.
 
-The project-accounted value includes physical objects from all buckets plus archive object reservations whose physical Storage upload is missing. At manifest start, the guard conservatively treats the manifest's complete `expected_unique_bytes` as potentially new even though SHA-256 deduplication normally reuses most objects.
+These bounded limits target the confirmed Supabase Pro organization with 100 GB of included file Storage. Database disk (8 GB included per project) is a separate quota. GitHub Pro does not change either Supabase quota. The project ceiling leaves at least 25 GB of nominal allowance outside archive admission, and must be reviewed before any plan downgrade or additional project shares the organization allowance.
 
-This intentionally rejects early rather than risking capacity exhaustion. A rejected manifest is blocked before archive entries, new object reservations or signed upload URLs are created. Runtime storage has its own lifecycle and is not borrowed as archive capacity.
+The project-accounted value includes physical objects from all buckets plus archive object reservations whose physical upload is missing. Manifest admission rejects an already-exceeded budget. The object trigger serializes reservations with the existing advisory lock and checks the resulting actual, globally deduplicated footprint after each insert statement. An oversized reservation rolls back before signed upload URLs are issued; an already-stored SHA is not charged again as a whole new manifest.
+
+The ceiling controls archive writes, not every Storage producer. Runtime storage retains its own lifecycle. Neither the limits nor this migration delete data, change retention/pins/grace, alter access permissions, or change model/training behaviour.
 
 ## Authentication
 
