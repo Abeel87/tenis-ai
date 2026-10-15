@@ -25,18 +25,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**APPLICATION TECHNICAL REPAIR — 2026-10-15, VALIDATION IN PROGRESS**
-- AUTHORIZATION: user explicitly requested fixes for technical failures and a broader code/application review. Preserve model/scoring/economic semantics, existing market scope and SHADOW isolation.
-- BASE / BRANCH: fresh main `a154d1e4e21457879ba14a3b18a435fa7d1a77c6`; `fix/app-technical-audit-20261015`. PR not opened yet.
-- [x] Read canonical contracts; checked live main, open PRs and CI. Previous compression/capacity fixes remain deployed. Do not redo them or merge unrelated #523/#537.
-- [x] Audit/reproduction: Direct blocked by unrelated sample market; timeout attempts escaped quota; missing iNeed history restore; null evaluation counts became zero; oldest-500 ledger query could show stale balance. Detailed evidence: `audits/technical_health_20261015.md`.
-- [x] Minimal canonical fixes prepared with regressions. Baseline full suite 1663 passed; final full suite 1671 passed. All frontend JavaScript syntax and affected regressions pass. UI static/runtime smoke passes.
-- [x] Final full regression: 1671 passing tests.
-- [~] Project health, PR creation and full CI.
-- [ ] Fresh-main check, green-only merge and actual post-merge pipeline verification.
-- REMAINING EVIDENCE: identify the original two history fetch errors from retained cache/new reason logs. Verify Direct publication timestamp, unchanged per-event verification, iNeed restored input and final UI assets. Local Chromium download failed; use actual browser CI evidence.
-- NEXT EXACT ACTION: finish validation, open PR, wait for all required checks, recheck main, merge only green, verify actual live runs. Do not infer full application correctness from HTTP 200 or a green workflow hiding a failed optional step.
-- BANS: no new model math, probability/threshold/weight/training changes, PLAYABLE changes, result reinterpretation, V1 market expansion, builder enablement, real bets, history deletion or quota/billing changes.
+**APPLICATION TECHNICAL REPAIR — 2026-10-15, DEPLOYED AND VERIFIED**
+- AUTHORIZATION: user requested technical repairs and a broader code/application review. Model/scoring/economic semantics, existing market scope and SHADOW isolation are preserved.
+- SOURCE: PR #545, head `04f947691e5116545bf5e1766003905a207268ac`, merged as `698de5f4807c7da900a64e8bf95195deccab4f33` against freshly rechecked main `a154d1e4e21457879ba14a3b18a435fa7d1a77c6`. Closeout branch: `docs/app-repair-verification-20261015`.
+- [x] Canonical audit/reproductions and minimal fixes: unrelated Direct sample gate, uncounted timeout attempts, missing iNeed history restore, missing evaluation counts shown as zero and stale oldest-500 ledger balance. Evidence: `audits/technical_health_20261015.md`.
+- [x] Full regression: baseline 1663 and final 1671 passed; all 28 frontend JavaScript syntax checks and UI static/runtime smoke pass. Project health: zero failures / one pre-existing warning.
+- [x] PR CI: all 11 triggered workflows green; 14 successful checks and two intentional PR-only production skips. Actual mobile Chromium E2E job `116387034668` passed user/moderator/admin scenarios. Real production sign-in and the physical phone were not tested.
+- [x] Fresh-main check and green-only merge. Post-merge UI/Project Health, CodeQL and Delivery/security workflows are green.
+- [x] Live Direct recovery in core run `38725160239`, job `116390007426`: `OK`, five of five candidates resolved, zero rejected, fresh file generated `2026-10-15T11:13:21.896639Z`.
+- [x] History diagnostics: at `11:16:17.761439Z`, 23 calls yielded 12 normal settlements, one retirement, eight not ready and two HTTP 410 errors. Preserved cache proves the same original two errors at `07:33:33.817667Z`: matches `196595` and `201913`. The provider still does not return their results; no fabricated settlement or repeated transient retry was applied.
+- [x] Core/Pages run `38725160239` completed SUCCESS, producing data commit `7edf464019a93600039536b3cc763209098b4858`. Its final full regression on generated data passed 1671 tests. Public `ineed.js`, `sw.js`, `data/meta.json` and `data/superbet_direct_current.json` are HTTP 200 and exactly equal the deployed source bytes.
+- [x] Supabase private core publication `38728379426`: active generation `5a4b9ae3-4ea2-4e05-89f2-59732e730cce` at `11:38:06.319514Z`, 195/195 objects and 75,647,514 bytes verified; zero missing objects or size mismatches.
+- [x] Normal market refresh `38728379362` SUCCESS; data commit `d04151496663ead3c873b9d7c25fb0ea4156839c`. Direct refreshed again at 11:38 UTC with five exact matches; builder artifact `OK` with 500 offers. No eligible dynamic composition remains a true empty result, not a source failure.
+- [x] iNeed run `38729088692` SUCCESS including exact history restore. SQL at `11:42:50.157535Z`: runtime status OK, 144 matches, 26 final signals, zero V1 match-winner candidates, zero evaluations, automatic real betting false. Builder quote input is fresh/OK; reservation remains explicitly disabled.
+- REAL LIMITATIONS: two unavailable external provider results (HTTP 410); V1 accepts only existing final PLAYABLE match-winner signals; builder lifecycle remains disabled by its operator-evidence gate. No guarantee of model profitability or physical-phone behavior.
+- DO NOT REDO: compression/capacity rollout, the merged technical repair, baseline audit or passing PR tests. Automatic FAST run `38725160253` deliberately skipped deployment for backend scope; its green status is not Pages deployment proof.
+- NEXT EXACT ACTION: no further technical rollout is pending for PR #545. Observe normal schedules and the weekly report; obtain provider corrections for HTTP 410 matches `196595` and `201913` before any settlement change. Reopen the installed PWA to receive the new cache revision; physical-device behavior is not claimed verified. Continue the existing model-reorganization program only under its own authorization. Do not merge unrelated #523/#537.
+- BANS: no model math, probability/threshold/weight/training/PLAYABLE changes, result reinterpretation, V1 market expansion, builder enablement, real bets, history deletion or quota/billing changes.
 
 **TRAINING ARCHIVE PRO CAPACITY — 2026-10-15, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user requested safe capacity increase, then confirmed buying Supabase Pro. Live organization API confirms `pro` / `tier_pro`; one project in the organization. Pro includes 100 GB file Storage; its 8 GB database disk is separate.
