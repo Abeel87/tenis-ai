@@ -25,6 +25,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**TRAINING ARCHIVE PRO CAPACITY — 2026-10-15, VALIDATED / DEPLOYMENT PENDING**
+- AUTHORIZATION: user requested safe capacity increase, then confirmed buying Supabase Pro. Live organization API confirms `pro` / `tier_pro`; one project in the organization. Pro includes 100 GB file Storage; its 8 GB database disk is separate.
+- BRANCH: `fix/archive-capacity-20261015`; base `fcc3241e1ea85461eaf81824a65fcc931a344204`; PR pending. Open PR #523 contains an older unrelated 900 MB project-ceiling proposal and must not be merged as part of this change.
+- [x] Live baseline: archive 292,100,801 B / 17,506 objects; runtime 152,901,969 B; avatar 1,253,751 B; total 446,256,521 B. Both active guards still have 300 MB / 750 MB limits before rollout.
+- [x] Previous compression follow-up resolved: archive run 38652823135 completed successfully, all 14,358 files verified. Later run 38668491226 also completed with 14,599 entries. Do not redo compression or dispatch a duplicate recovery for those runs.
+- [x] Canonical change prepared: migration `20261015100822_training_archive_pro_capacity.sql` changes only two archive-cap constants to 30,000,000,000 B and two project-ceiling constants to 75,000,000,000 B. Existing function bodies, triggers, ACLs, dedupe, lock and retention are preserved.
+- [x] SQL reproduction / validation: rollback-only temporary tables show old 300 MB cap rejects 447,419,670 B; proposed guards accept that snapshot and exact 30 GB / 75 GB boundaries, reject +1 B through both guards, and account for missing physical uploads. No production rows changed by these checks.
+- [ ] Full CI, fresh-main comparison and green merge.
+- [ ] Apply exact reviewed migration, verify both live definitions/ACLs and unchanged data counts, then verify one genuine main archive publication.
+- FILES: capacity migration, `docs/training-archive.md`, registry and this checkpoint. Corrected stale documentation that still described the pre-dedupe 250 MB admission calculation.
+- NEXT EXACT ACTION: finish CI, merge only green against fresh main, apply reviewed migration, verify live guard constants and completed archive manifest. Retain the 25 GB nominal safety margin; re-evaluate quotas before downgrading the plan or adding organization projects.
+- DO NOT REDO / BANS: no model, probability, threshold, training, PLAYABLE, settlement, iNeed$, SHADOW/PROD, compression, retention, history deletion, credentials, billing or workflow changes. No real bets.
+
 **RUNTIME COMPRESSION — DEPLOYED AND VERIFIED, 2026-10-14**
 - USER AUTHORIZATION / SCOPE: apply lossless compression safely. Transport representation only; source data and all model/PLAYABLE/iNeed$ logic remain unchanged.
 - ROLLOUT SOURCE: 11a93279558b7de3b3031b6a2f8d2b231217db3d. Documentation refreshed onto verified main d17aa8553584c786a06e42a85df4b8be30a5e78f after normal LOGIC-08 and tennis-data publications; all intervening changes are frontend/data files. Reader PR #540 merged as 000cf233caf59ae36dc992729f55dfb532bd7e6a; writer PR #541 merged as 11a93279558b7de3b3031b6a2f8d2b231217db3d.
