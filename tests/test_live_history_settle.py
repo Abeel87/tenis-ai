@@ -5,6 +5,72 @@ sys.path.insert(0,str(ROOT/'backend'))
 from live_history_settle import final_from_match, settle_entry
 from datetime import datetime, timezone
 
+
+def _run_transport(monkeypatch, tmp_path, outcomes, *, budget=2, matches=1):
+    import json
+    import live_history_settle as live
+    rows = [{"match_id": i + 1, "p1": "A", "p2": "B", "status": "pending",
+             "scheduled_time": "2026-01-01T12:00:00Z",
+             "signals": [{"market": "match_win", "pick": "A", "result": "pending"}]}
+            for i in range(matches)]
+    for name in ("HISTORY_PATH", "STATE_PATH", "META_PATH", "STATS_PATH", "SHADOW_STATS_PATH"):
+        monkeypatch.setattr(live, name, tmp_path / (name + ".json"))
+    live.HISTORY_PATH.write_text(json.dumps(rows))
+    monkeypatch.setenv("LIVE_TENNIS_API_KEY", "not-a-real-key")
+    monkeypatch.setattr(live, "quota_budget", lambda *args: (budget, {}))
+    monkeypatch.setattr(live, "request_interval_seconds", lambda *args, **kwargs: 0)
+    monkeypatch.setattr(live.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(live, "history_stats", lambda rows: {})
+    monkeypatch.setattr(live, "build_shadow_stats", lambda rows: {})
+    counted, requested = [], []
+    monkeypatch.setattr(live, "record_calls", lambda module, count: counted.append(count))
+    pending = iter(outcomes)
+    def get(url, **kwargs):
+        requested.append(url)
+        result = next(pending)
+        if isinstance(result, Exception):
+            raise result
+        return result
+    monkeypatch.setattr(live.requests, "get", get)
+    live.main()
+    return (json.loads(live.META_PATH.read_text()), json.loads(live.HISTORY_PATH.read_text()),
+            counted, requested)
+
+
+def _response(status, payload=None):
+    from types import SimpleNamespace
+    return SimpleNamespace(status_code=status, headers={}, json=lambda: payload)
+
+
+def test_result_fetch_timeout_attempts_cannot_exceed_quota(monkeypatch, tmp_path):
+    import requests
+    meta, history, counted, requested = _run_transport(
+        monkeypatch, tmp_path, [requests.Timeout("secret must not be logged")] * 3,
+        budget=2, matches=3)
+    assert len(requested) == sum(counted) == meta["history_live_settle_calls"] == 2
+    assert all(row["status"] == "pending" for row in history)
+    assert meta["history_live_settle_error_details"][0]["reason"] == "Timeout"
+    assert "secret" not in str(meta)
+
+
+def test_transient_result_fetch_recovers_within_same_budget(monkeypatch, tmp_path):
+    terminal = {"winner": 1, "score": {"games": [[6, 6], [4, 3]]}}
+    meta, history, counted, requested = _run_transport(
+        monkeypatch, tmp_path, [_response(503), _response(200, terminal)])
+    assert len(requested) == sum(counted) == meta["history_live_settle_calls"] == 2
+    assert meta["history_live_settle_errors"] == 0
+    assert meta["history_live_settle_retries"] == 1
+    assert history[0]["status"] == "settled"
+    assert history[0]["result"]["winner"] == "A"
+
+
+def test_missing_result_is_reported_without_retry_or_invented_outcome(monkeypatch, tmp_path):
+    meta, history, counted, requested = _run_transport(monkeypatch, tmp_path, [_response(404)])
+    assert len(requested) == sum(counted) == 1
+    assert history[0]["status"] == "pending"
+    assert meta["history_live_settle_errors"] == 1
+    assert meta["history_live_settle_error_details"] == [{"match_id": 1, "reason": "HTTP_404"}]
+
 def entry(): return {'p1':'A','p2':'B','status':'pending','signals':[]}
 def test_completed_score():
     m={'winner':1,'event_status':None,'score':{'sets':[2,0],'games':[[6,6],[4,3]]}}

@@ -68,6 +68,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Restore exact history before settlement consumers
+        run: python scripts/history_publication_chunks.py restore
       - name: Install live Direct enrichment dependency
         run: python -m pip install -q "selenium==4.49.0" -c requirements.lock -c requirements-optional.lock
       - name: Get GitHub OIDC token

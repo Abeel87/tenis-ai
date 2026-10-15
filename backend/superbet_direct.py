@@ -1623,7 +1623,10 @@ def write_selected_direct_sidecar(feed: dict, path: Path | str | None = None) ->
 
 def browser_selected_direct_feed(timeout: int = 25) -> dict:
     """Build the current selected-match feed from one verified browser listing probe."""
-    probe_result = browser_probe(timeout=timeout)
+    # Listing URLs are discovery only. An unrelated first event's optional
+    # markets must not veto other events; each candidate is verified below by
+    # resolve_selected_match_offer against exact public event JSON.
+    probe_result = browser_probe(timeout=timeout, inspect_sample=False)
     if probe_result.get("status") != "OK":
         return {
             "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
@@ -1840,7 +1843,7 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
     finally:
         driver.quit()
 
-def browser_probe(timeout: int = 25) -> dict:
+def browser_probe(timeout: int = 25, *, inspect_sample: bool = True) -> dict:
     """Probe the public JS-rendered site with an isolated headless browser."""
     try:
         from selenium import webdriver
@@ -1964,6 +1967,10 @@ def browser_probe(timeout: int = 25) -> dict:
                 "anchor_href_count": len(parsed.get("links") or []),
             }
             result["status"] = "NO_MATCH_URLS"
+            return result
+
+        if not inspect_sample:
+            result["status"] = "OK"
             return result
 
         sample_url = match_urls[0]

@@ -204,6 +204,17 @@ def main():
     if not isinstance(meta, dict):
         meta = {}
 
+    previous_errors = [
+        {"match_id": mid, "status_code": rec.get("last_status_code"),
+         "error_type": rec.get("last_error")}
+        for mid, rec in state["matches"].items()
+        if isinstance(rec, dict) and rec.get("last_checked_at") == state.get("updated_at")
+        and (rec.get("last_error") or rec.get("last_status_code") not in (None, 200))
+    ]
+    if previous_errors:
+        print(json.dumps({"previous_result_fetch_failures": previous_errors[:MAX_CALLS_PER_RUN],
+                          "checked_at": state.get("updated_at")}))
+
     hist = reconcile_settled(hist)
     candidates = []
     for i, e in enumerate(hist):
@@ -229,6 +240,8 @@ def main():
     min_interval = request_interval_seconds(per_minute, utilization=0.90)
     last_call_monotonic = 0.0
     calls = settled = voided = retired = not_ready = errors = migrated = 0
+    retries = 0
+    error_details = []
 
     for _, idx, e, migration in candidates:
         if calls >= budget:
@@ -237,40 +250,44 @@ def main():
         rec = state["matches"].setdefault(str(mid), {})
         rec["last_checked_at"] = now.isoformat()
         rec["checks"] = int(rec.get("checks") or 0) + 1
+        rec.pop("last_error", None)
+        rec.pop("last_status_code", None)
         try:
-            if last_call_monotonic > 0 and min_interval > 0:
-                wait = min_interval - (time.monotonic() - last_call_monotonic)
-                if wait > 0:
-                    time.sleep(wait)
-            r = requests.get(
-                BASE_URL + f"/matches/{mid}",
-                headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
-                timeout=(7, 22),
-            )
-            calls += 1
-            record_calls("history_settle",1)
-            last_call_monotonic = time.monotonic()
-            if r.status_code == 429 and calls < budget:
-                try:
-                    retry = min(30, max(1, int(float(r.headers.get("Retry-After", "2") or 2))))
-                except (TypeError, ValueError):
-                    retry = 2
-                time.sleep(retry)
+            # Count every attempted request, including network failures, inside
+            # the existing quota. Retry one transient read, never a settlement.
+            for attempt in range(2):
                 if last_call_monotonic > 0 and min_interval > 0:
                     wait = min_interval - (time.monotonic() - last_call_monotonic)
                     if wait > 0:
                         time.sleep(wait)
-                r = requests.get(
-                    BASE_URL + f"/matches/{mid}",
-                    headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
-                    timeout=(7, 22),
-                )
                 calls += 1
-                record_calls("history_settle",1)
-                last_call_monotonic = time.monotonic()
-            rec["last_status_code"] = r.status_code
+                record_calls("history_settle", 1)
+                try:
+                    r = requests.get(
+                        BASE_URL + f"/matches/{mid}",
+                        headers={"Authorization": f"Bearer {key}", "User-Agent": UA},
+                        timeout=(7, 22),
+                    )
+                except (requests.Timeout, requests.ConnectionError):
+                    if attempt == 1 or calls >= budget:
+                        raise
+                    retries += 1
+                    time.sleep(2)
+                    continue
+                finally:
+                    last_call_monotonic = time.monotonic()
+                rec["last_status_code"] = r.status_code
+                if r.status_code not in (429, 500, 502, 503, 504) or attempt == 1 or calls >= budget:
+                    break
+                try:
+                    retry = min(30, max(1, int(float(r.headers.get("Retry-After", "2") or 2))))
+                except (TypeError, ValueError, OverflowError):
+                    retry = 2
+                retries += 1
+                time.sleep(retry)
             if r.status_code != 200:
                 errors += 1
+                error_details.append({"match_id": mid, "reason": f"HTTP_{r.status_code}"})
                 continue
             match = _obj(r.json())
             final = final_from_match(match, e)
@@ -300,6 +317,7 @@ def main():
         except Exception as ex:
             errors += 1
             rec["last_error"] = type(ex).__name__
+            error_details.append({"match_id": mid, "reason": type(ex).__name__})
 
     if len(state["matches"]) > 3000:
         keys = list(state["matches"].keys())[-3000:]
@@ -320,6 +338,8 @@ def main():
         "history_live_settle_retirement_migrated": migrated,
         "history_live_settle_not_ready": not_ready,
         "history_live_settle_errors": errors,
+        "history_live_settle_retries": retries,
+        "history_live_settle_error_details": error_details,
         "history_live_settle_remaining_before": remaining,
         "history_settlement_version": SETTLEMENT_VERSION,
     })

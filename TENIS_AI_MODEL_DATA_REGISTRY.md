@@ -17,6 +17,8 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-10-15 technical repair (validation pending):** `superbet_direct.browser_probe` separates listing discovery from its optional first-event diagnostic; `browser_selected_direct_feed` retains exact per-event resolver authority. `live_history_settle.main` counts failed transport attempts inside the existing quota, retries one transient read and publishes safe reason codes without changing scoring. The iNeed workflow restores exact history before existing consumers. Its UI preserves missing counts, explains backend-reported zero in-scope candidates and reads the latest bounded bankroll ledger window. See `audits/technical_health_20261015.md` and the current execution checkpoint. V1 match-winner scope and disabled builder lifecycle remain unchanged.
+
 ## A1. Live Tennis API — fixtures / provider context
 
 **Rola:** bieżące mecze i dane fixture/provider.

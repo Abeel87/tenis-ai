@@ -46,5 +46,61 @@ for(const partial of [evaluate(rows.slice(0,2),health,true),evaluate(rows,health
   assert.equal(partial.rows.length,0);
   assert.equal(partial.evaluated,3);
 }
+for(const missing of [null,undefined,'',false,-1]){
+  const result=evaluate([],{detail:{evaluations:missing}},true);
+  assert.equal(result.complete,false,'Missing counter must not be presented as zero evaluated');
+  assert.equal(result.evaluated,null);
+}
+assert.equal(evaluate([],{detail:{evaluations:0}},true).complete,true);
+"""
+    subprocess.run([node, "-e", script], cwd=ROOT, check=True)
+
+
+def test_zero_candidate_message_uses_published_intake_evidence():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js unavailable")
+    script = r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync('frontend/ineed.js','utf8');
+const start=source.indexOf('function evaluationIntakeMessage(');
+const end=source.indexOf('function milestones(',start);
+assert(start>=0 && end>start);
+const message=vm.runInNewContext(source.slice(start,end)+';evaluationIntakeMessage');
+assert.equal(message(null),null);
+assert.equal(message({detail:{evaluations:0}}),null,'No invented reason');
+const detail={evaluations:0,results_rows:221,market_scope:{contract:'INEED_SCOPE_MATCH_WINNER_ONLY',signals_kept:0}};
+assert(message({detail}).includes('zwycięzcę meczu'));
+assert.equal(message({detail:{...detail,evaluations:2}}),null);
+assert.equal(message({detail:{...detail,market_scope:{...detail.market_scope,signals_kept:null}}}),null);
+assert(message({detail:{evaluations:0,results_rows:0}}).includes('Brak danych meczowych'));
+assert(source.includes('const evaluationMessage=evaluationIntakeMessage(d.health)'));
+"""
+    subprocess.run([node, "-e", script], cwd=ROOT, check=True)
+
+
+def test_bankroll_view_uses_latest_ledger_entries_after_pagination_limit():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js unavailable")
+    script = r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync('frontend/ineed.js','utf8');
+const start=source.indexOf('async function load('),end=source.indexOf('function chart(',start);
+const ledger=Array.from({length:600},(_,i)=>({id:i,created_at:i,bankroll_after:200+i}));
+const client={rpc:async()=>({data:{}}),from(table){
+  let ascending=true,limit=1000;
+  const query={select(){return this},eq(){return this},order(k,o){ascending=o.ascending;return this},limit(n){limit=n;return this},
+    maybeSingle(){return Promise.resolve({data:table==='ineed_experiments'?{id:'test'}:null})},
+    then(resolve){let rows=table==='ineed_bankroll_ledger'?[...ledger]:[];
+      if(!ascending)rows.reverse();return Promise.resolve({data:rows.slice(0,limit)}).then(resolve)}};
+  return query;
+}};
+const load=vm.runInNewContext(source.slice(start,end)+';load',{A:()=>({client}),n:v=>Number(v)||0});
+load().then(data=>{
+  assert.equal(data.ledger.length,500);
+  assert.equal(data.ledger.at(-1).bankroll_after,799,'Current balance must not freeze at entry 500');
+  assert.equal(data.ledger[0].id,100,'Chart keeps latest bounded window in chronological order');
+}).catch(e=>{console.error(e);process.exitCode=1});
 """
     subprocess.run([node, "-e", script], cwd=ROOT, check=True)
