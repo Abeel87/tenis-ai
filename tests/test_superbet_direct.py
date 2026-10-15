@@ -1,6 +1,53 @@
 from backend import superbet_direct as direct
 
 
+def test_selected_refresh_does_not_depend_on_unrelated_sample_market(monkeypatch, tmp_path):
+    """A sparse first listing event must not block another exact verified event."""
+    import json
+    data = tmp_path / "frontend" / "data"
+    data.mkdir(parents=True)
+    (data / "results.json").write_text(json.dumps([{
+        "id": "app-paul-bublik", "p1": "Tommy Paul", "p2": "Alexander Bublik",
+        "scheduled_time": "2026-09-04T16:30:00Z",
+    }]))
+    monkeypatch.setattr(direct, "__file__", str(tmp_path / "backend" / "superbet_direct.py"))
+    urls = ["https://superbet.pl/kursy/tenis/unrelated-live-match-14809300",
+            "https://superbet.pl/kursy/tenis/alexander-bublik-vs-tommy-paul-14809301"]
+    def probe(timeout=25, *, inspect_sample=True):
+        return {"status": "INSUFFICIENT_MARKET_EVIDENCE" if inspect_sample else "OK",
+                "match_urls": urls, "match_urls_found": len(urls)}
+    monkeypatch.setattr(direct, "browser_probe", probe)
+    fetched = []
+    def fetch(event_id):
+        fetched.append(event_id)
+        return _direct_event_payload("14809301", "Alexander Bublik", "Tommy Paul",
+                                     "2026-09-04T16:30:00Z")
+    monkeypatch.setattr(direct, "fetch_event_payload_public", fetch)
+    feed = direct.browser_selected_direct_feed()
+    assert feed["status"] == "OK"
+    assert feed["resolved_app_matches"] == 1
+    assert fetched == ["14809301"]
+    assert feed["matches"][0]["direct_match_verified"] is True
+    assert feed["prices_used"] is False
+    assert feed["playable_influence"] is False
+
+    # Listing discovery still cannot certify identity or create market evidence.
+    monkeypatch.setattr(direct, "fetch_event_payload_public", lambda event_id:
+                        _direct_event_payload("14809301", "Different Player", "Other Player",
+                                              "2026-09-04T16:30:00Z"))
+    rejected = direct.browser_selected_direct_feed()
+    assert rejected["status"] == "NO_SAFE_OVERLAP"
+    assert rejected["matches"] == []
+
+
+def test_selected_refresh_keeps_missing_listing_fail_closed(monkeypatch):
+    monkeypatch.setattr(direct, "browser_probe", lambda **kwargs:
+                        {"status": "NO_MATCH_URLS", "match_urls": []})
+    monkeypatch.setattr(direct, "build_selected_direct_feed", lambda *args, **kwargs:
+                        (_ for _ in ()).throw(AssertionError("no event fetch permitted")))
+    assert direct.browser_selected_direct_feed()["status"] == "DIRECT_LISTING_UNAVAILABLE"
+
+
 def test_discover_match_urls_is_tennis_only_and_deduplicated():
     html = """
     <html><body>

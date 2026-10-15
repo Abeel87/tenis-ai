@@ -10,3 +10,11 @@ def test_market_refresh_restores_history_before_consumers_and_packs_before_commi
     pack = workflow.index("python scripts/history_publication_chunks.py pack")
     publish = workflow.index("git add frontend/data")
     assert restore < consume < symphony < pack < publish
+
+
+def test_ineed_restores_exact_history_before_settlement_consumers():
+    workflow = (ROOT / ".github/workflows/ineed-shadow.yml").read_text()
+    restore = workflow.index("python scripts/history_publication_chunks.py restore")
+    settle = workflow.index("run: python backend/ineed_settlement_runner.py")
+    sync = workflow.index("run: python backend/ineed_scoped_runner.py")
+    assert restore < settle < sync

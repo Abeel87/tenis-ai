@@ -25,6 +25,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**APPLICATION TECHNICAL REPAIR — 2026-10-15, VALIDATION IN PROGRESS**
+- AUTHORIZATION: user explicitly requested fixes for technical failures and a broader code/application review. Preserve model/scoring/economic semantics, existing market scope and SHADOW isolation.
+- BASE / BRANCH: fresh main `a154d1e4e21457879ba14a3b18a435fa7d1a77c6`; `fix/app-technical-audit-20261015`. PR not opened yet.
+- [x] Read canonical contracts; checked live main, open PRs and CI. Previous compression/capacity fixes remain deployed. Do not redo them or merge unrelated #523/#537.
+- [x] Audit/reproduction: Direct blocked by unrelated sample market; timeout attempts escaped quota; missing iNeed history restore; null evaluation counts became zero; oldest-500 ledger query could show stale balance. Detailed evidence: `audits/technical_health_20261015.md`.
+- [x] Minimal canonical fixes prepared with regressions. Baseline full suite 1663 passed; final full suite 1671 passed. All frontend JavaScript syntax and affected regressions pass. UI static/runtime smoke passes.
+- [x] Final full regression: 1671 passing tests.
+- [~] Project health, PR creation and full CI.
+- [ ] Fresh-main check, green-only merge and actual post-merge pipeline verification.
+- REMAINING EVIDENCE: identify the original two history fetch errors from retained cache/new reason logs. Verify Direct publication timestamp, unchanged per-event verification, iNeed restored input and final UI assets. Local Chromium download failed; use actual browser CI evidence.
+- NEXT EXACT ACTION: finish validation, open PR, wait for all required checks, recheck main, merge only green, verify actual live runs. Do not infer full application correctness from HTTP 200 or a green workflow hiding a failed optional step.
+- BANS: no new model math, probability/threshold/weight/training changes, PLAYABLE changes, result reinterpretation, V1 market expansion, builder enablement, real bets, history deletion or quota/billing changes.
+
 **TRAINING ARCHIVE PRO CAPACITY — 2026-10-15, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user requested safe capacity increase, then confirmed buying Supabase Pro. Live organization API confirms `pro` / `tier_pro`; one project in the organization. Pro includes 100 GB file Storage; its 8 GB database disk is separate.
 - SOURCE: PR #543, head `49998c69b497562ae99ee292ba614f6730d5f96b`, merged as `0f02cd392f5a9d697b267cbde6057f8fe59cc9be` against fresh main `c2694952c5832aa4def19d177d1656ad385b6b28`. Documentation closeout branch `docs/archive-pro-deployment-20261015`. Open PR #523 contains an older unrelated 900 MB project-ceiling proposal and must not be merged as part of this change.

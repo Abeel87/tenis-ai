@@ -87,6 +87,7 @@ def build_builder_shadow_runtime(state: dict, *, now: datetime | None = None) ->
         "mode": "SHADOW",
         "economic_unit": "BET_BUILDER_COMPOSITION",
         "quote_artifact_status": artifact.get("status"),
+        "quote_artifact_source_status": artifact.get("source_status"),
         "quote_artifact_generated_at": artifact.get("generated_at"),
         "direct_generated_at": direct_feed.get("generated_at"),
         "market_scope": scope,
@@ -133,6 +134,9 @@ def _builder_shadow_summary(payload: dict) -> dict:
         "status": payload.get("status", "OK"),
         "reason_code": payload.get("reason_code"),
         "quote_artifact_status": payload.get("quote_artifact_status"),
+        "quote_artifact_source_status": payload.get("quote_artifact_source_status"),
+        "quote_artifact_generated_at": payload.get("quote_artifact_generated_at"),
+        "direct_generated_at": payload.get("direct_generated_at"),
         "compositions_count": payload.get("compositions_count"),
         "evaluations_count": payload.get("evaluations_count"),
         "qualified_count": payload.get("qualified_count"),
@@ -269,6 +273,7 @@ def main() -> int:
     )
     print(json.dumps({
         "sync": result,
+        "health": payload.get("health"),
         "builder_shadow": _builder_shadow_summary(builder_shadow),
         "builder_persistence": builder_persistence,
     }, ensure_ascii=False, indent=2))
