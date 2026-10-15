@@ -25,17 +25,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**TRAINING ARCHIVE PRO CAPACITY — 2026-10-15, VALIDATED / DEPLOYMENT PENDING**
+**TRAINING ARCHIVE PRO CAPACITY — 2026-10-15, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user requested safe capacity increase, then confirmed buying Supabase Pro. Live organization API confirms `pro` / `tier_pro`; one project in the organization. Pro includes 100 GB file Storage; its 8 GB database disk is separate.
-- BRANCH: `fix/archive-capacity-20261015`; base `fcc3241e1ea85461eaf81824a65fcc931a344204`; PR pending. Open PR #523 contains an older unrelated 900 MB project-ceiling proposal and must not be merged as part of this change.
+- SOURCE: PR #543, head `49998c69b497562ae99ee292ba614f6730d5f96b`, merged as `0f02cd392f5a9d697b267cbde6057f8fe59cc9be` against fresh main `c2694952c5832aa4def19d177d1656ad385b6b28`. Documentation closeout branch `docs/archive-pro-deployment-20261015`. Open PR #523 contains an older unrelated 900 MB project-ceiling proposal and must not be merged as part of this change.
 - [x] Live baseline: archive 292,100,801 B / 17,506 objects; runtime 152,901,969 B; avatar 1,253,751 B; total 446,256,521 B. Both active guards still have 300 MB / 750 MB limits before rollout.
 - [x] Previous compression follow-up resolved: archive run 38652823135 completed successfully, all 14,358 files verified. Later run 38668491226 also completed with 14,599 entries. Do not redo compression or dispatch a duplicate recovery for those runs.
 - [x] Canonical change prepared: migration `20261015100822_training_archive_pro_capacity.sql` changes only two archive-cap constants to 30,000,000,000 B and two project-ceiling constants to 75,000,000,000 B. Existing function bodies, triggers, ACLs, dedupe, lock and retention are preserved.
 - [x] SQL reproduction / validation: rollback-only temporary tables show old 300 MB cap rejects 447,419,670 B; proposed guards accept that snapshot and exact 30 GB / 75 GB boundaries, reject +1 B through both guards, and account for missing physical uploads. No production rows changed by these checks.
-- [ ] Full CI, fresh-main comparison and green merge.
-- [ ] Apply exact reviewed migration, verify both live definitions/ACLs and unchanged data counts, then verify one genuine main archive publication.
+- [x] Local regression: 1661 passed initially; the two missing-fixture tests passed after restoring the canonical Git chunks, for 1663 passing tests in total. Remote exact-head 7/7 workflows and 10/10 checks succeeded; fresh main equalled PR base immediately before merge.
+- [x] Exact reviewed migration applied as Supabase migration `20261015102024_training_archive_pro_capacity`. Both live function definitions equal the previous definitions with only the four reviewed bigint constants replaced. ACLs remain identical: no anon/authenticated execution, service_role allowed. Archive object count/bytes and runtime/avatar Storage were unchanged by the migration. Security advisors have no new findings relative to baseline.
+- [x] Actual failure reproduced in run 38702056330 attempt 1: `reserved bytes 329873534 > 300000000`. After rollout, attempt 2 completed SUCCESS; manifest `6e8808b5-ac20-4371-8b54-bcf2ff61a780` is complete at `2026-10-15T10:24:59.774426Z`, with all 14,602 entries verified, 155,409,092 logical bytes and zero missing/wrong-size physical objects.
+- [x] Post-publication physical Storage: archive 330,004,249 B / 17,538 objects, runtime 140,415,539 B / 310 objects, avatar 1,253,751 B; total 471,673,539 B. The archive has passed the former 300 MB limit successfully and has 29,669,995,751 B of its new 30 GB budget available at this observation.
 - FILES: capacity migration, `docs/training-archive.md`, registry and this checkpoint. Corrected stale documentation that still described the pre-dedupe 250 MB admission calculation.
-- NEXT EXACT ACTION: finish CI, merge only green against fresh main, apply reviewed migration, verify live guard constants and completed archive manifest. Retain the 25 GB nominal safety margin; re-evaluate quotas before downgrading the plan or adding organization projects.
+- NEXT EXACT ACTION: no further capacity rollout or manual archive recovery is needed. Observe normal scheduled publication and existing retention/GC through the weekly report. Retain the 25 GB nominal safety margin; re-evaluate quotas before downgrading the plan or adding organization projects. Do not reapply the migration or rerun the completed archive attempt.
 - DO NOT REDO / BANS: no model, probability, threshold, training, PLAYABLE, settlement, iNeed$, SHADOW/PROD, compression, retention, history deletion, credentials, billing or workflow changes. No real bets.
 
 **RUNTIME COMPRESSION — DEPLOYED AND VERIFIED, 2026-10-14**
