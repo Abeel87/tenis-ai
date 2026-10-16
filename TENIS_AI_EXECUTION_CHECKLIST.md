@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, MERGED / PRODUCTION VERIFICATION**
+**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user approved the proposed collection repair, shared discovery,
   verified identity reuse, missing-price diagnostics and refresh reliability work.
 - SOURCE: PR #547, head `252bdb252fb458e137f8dd2abee5c880a255ea00`, merged as
@@ -48,12 +48,28 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] All 12 PR workflows passed: 15 successful checks and two intentional
   production-only skips. Mobile browser job `116926938893` passed. Fresh main
   remained unchanged before the green-only merge.
-- [~] Production Update/Pages run `38887707148` is running; actual publication
-  and private delivery proof are pending. Do not describe the predeployment probe
-  as a production coverage result.
-- NEXT EXACT ACTION: verify production Update/Pages `38887707148`, Direct counts,
-  public app/PWA + diagnostic projection and downstream private/market delivery;
-  replace this pending checkpoint with the observed production evidence.
+- [x] Production Update/Pages `38887707148` SUCCESS; deploy job `116937787096`.
+  Final full regression after generated layers: 1682 passed in 33.96s.
+  Data commit / last verified main: `91aa93cde9009d149efa22159731f9380b95c877`.
+- [x] Published Direct at `2026-10-16T10:37:56.264334+00:00`: 84 app fixtures,
+  189 discovered event URLs, 65 candidates, 62 exact verified matches, 66 unique
+  event reads and zero fetch failures. Remaining reasons: 19
+  `NOT_IN_DISCOVERED_CATALOGUE`, three `TIME_MISMATCH`. Counts describe this
+  source snapshot, not PLAYABLE, all operator coverage or a fixed success rate.
+- [x] Read-only public verification at 10:55 UTC: app.js and sw.js match tested
+  source bytes; Direct matches the data commit and manifest SHA-256; delivery
+  diagnostics exactly project source counts/reasons. All 84 fixtures are accounted
+  for, all included prices have fresh observation times and all 62 identity hints
+  are price-free. PWA cache revision: `20261016-superbet-discovery`.
+- [x] Private core publication `38890316033` and its normal GC both SUCCESS.
+  Publisher confirmed 135 files / 125 uploaded objects, active generation
+  `802caca8-85e2-4e24-9034-4ae549d188f6` at 10:57:40 UTC for the same source SHA.
+  Normal market refresh `38890316143` continues independently; a second refresh
+  is not required to establish the verified core/public rollout.
+- NEXT EXACT ACTION: observe normal schedules and actual source timestamps; no
+  further source repair or manual refresh is required for PR #547. Reopen the PWA
+  for the new admin diagnostics. Catalogue gaps and schedule mismatches remain
+  explicit; do not weaken exact identity/time/market verification to fill them.
 - DO NOT REDO: October 15 capacity/compression/settlement fixes; unrelated #523/#537 remain untouched.
 - BANS: model math, thresholds, probabilities, training, PLAYABLE rules, iNeed economic
   calculations/scope, builder lifecycle, settlement, paid quota changes and real bets.

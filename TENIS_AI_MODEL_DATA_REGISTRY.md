@@ -89,7 +89,12 @@ are carried forward. Default match slicing is replaced by an explicit unique-eve
 read budget. The admin Superbet panel consumes the existing delivery diagnostic
 projection. PR #547 merged as `ec908de4764b344db87297a35ca5131e5882db2b` after
 1682 passing tests and all 12 CI workflows. See
-`audits/superbet_discovery_20261016.md`; production verification is pending.
+`audits/superbet_discovery_20261016.md`. Production Update/Pages run `38887707148`
+succeeded; published snapshot `91aa93cde9009d149efa22159731f9380b95c877` contains
+62 exact verified matches from 84 app fixtures, 19 catalogue gaps and three time
+mismatches, with zero event-fetch failures. Public app/PWA, Direct source bytes,
+manifest and exact diagnostic projection were verified at 10:55 UTC. These are
+snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 
 **Rola:** exact current operator offer.
