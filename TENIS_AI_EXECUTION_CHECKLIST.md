@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**APP RELIABILITY AND OBSERVABILITY — 2026-10-16, IN PROGRESS**
+**APP RELIABILITY AND OBSERVABILITY — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: owner approved the six proposed improvements after Solar:
   resilient refresh, PLAYABLE explanations, actual Self Evolution reports,
   lazy admin reports, synchronized preferences and common data status.
@@ -33,6 +33,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   `feat/app-reliability-20261016`, isolated worktree `tenis-ai-reliability`.
 - PR: #549; rebased onto bot-only main
   `924f53e3eee92ebf79dd864636713971292a289b` before publication.
+- MERGED: `97352f92542fe394560f530cbd19ef64d75558ca`, PR head
+  `ad7df99e1c0472b9af2a6d4a4f071303dc3905bd`; fresh main unchanged at merge.
 - [x] Fresh main/PR/CI and canonical-owner inspection; no unrelated PR changes.
 - [x] Browser reproduction of refresh clearing the visible list (0 instead of 1).
 - [x] Implement/verify transactional refresh and read-only availability reasons.
@@ -50,10 +52,27 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Transactional RLS proof: own read/update allowed, cross-user read/update/insert
   denied, anon grants absent, test rows rolled back. Advisors: no new findings.
   Both reader and publisher reject unauthenticated requests with HTTP 401.
-- [~] Full tests, green PR, additive schema/compatible Edge rollout, merge,
+- [x] Final local full suite: 1699 passed. GitHub full suite: 1699 passed in
+  52.07s, health job `116987723321`, run `38905256988`. All 12 PR checks green;
+  deployment-only Neuron step correctly skipped on PR. No review comments.
+- [x] Research publisher job `116991562290`, run `38906585849` SUCCESS.
+  Active research generation `c0b78b56-a83b-4bfc-ab86-618810e12729`, one tier-C
+  object, 3349 bytes; SHA-256 `6cab12a35fbc78e0fa642e7ef91d8501c0ee316fb949e5a8a8e2eee4a161f533`
+  exactly matches the locally validated projection of actual run `38879366541`.
+- [x] Full tests, green PR, additive schema/compatible Edge rollout, merge,
   Pages/private report verification and final checkpoint.
-- NEXT EXACT ACTION: wait for all checks on PR #549, fresh-main check, green
-  merge, verify Pages assets and automatic private research publication.
+- [x] Full publication `38906585956` SUCCESS, build `116993412931` and
+  Pages deploy `117004513403`. Generated-data regression: 1699 passed in 51.84s.
+  Data-only commit: `dd29571485d6dba4bde318ce6b1a0d61135bc8ea`.
+- [x] At 13:47:27 UTC all five public frontend assets exactly matched tested
+  source bytes. Live index: 98 matches, 148585 bytes, original Direct/AutoLearn
+  dates present. Public research-report path returns 404; private tier C remains
+  active. Proof: `audits/app_reliability_publication_20261016.json`.
+- CLOSEOUT: `docs/app-reliability-closeout-20261016`; documentation only.
+- NEXT EXACT ACTION: no further app repair or manual deployment required.
+  Reopen the installed PWA to load the new assets. Normal data schedules and
+  private core publication continue independently. Tests use isolated browser
+  authentication; physical-device/production-account sign-in is not claimed.
 - DO NOT REDO: reproduction, actual artifact projection from run 38879366541,
   Solar design, existing Superbet repair or model training.
 - BANS: model math/weights/training, probability, PLAYABLE decision rules,

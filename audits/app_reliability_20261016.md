@@ -82,3 +82,22 @@ two-account RLS probe verified owner access and rejected cross-account reads,
 updates and inserts; no probe rows remain. Anonymous SELECT/INSERT grants are
 absent. Security/performance advisors have no new findings. Unauthenticated
 publisher and reader calls both returned HTTP 401.
+
+PR #549 merged as `97352f92542fe394560f530cbd19ef64d75558ca` after 12 green checks
+and a fresh unchanged main check. Final full suites: 1699 local and 1699 remote
+(health job `116987723321`, 52.07s). The research publisher `38906585849` succeeded;
+the live tier-C object is 3349 bytes and its digest
+`6cab12a35fbc78e0fa642e7ef91d8501c0ee316fb949e5a8a8e2eee4a161f533` exactly matches
+the previously validated projection from actual research run `38879366541`.
+
+Full publication run `38906585956` succeeded (build `116993412931`, Pages deploy
+`117004513403`). Its final regression after generating data passed all 1699 tests
+in 51.84s. Data-only commit `dd29571485d6dba4bde318ce6b1a0d61135bc8ea` preserves
+the tested application source. At 13:47:27 UTC all five deployed frontend assets
+matched source SHA-256 digests. The live 148585-byte index contains 98 matches and
+original Direct/AutoLearn timestamps. The private report's public URL returns
+404; its tier-C object remains active. See `app_reliability_publication_20261016.json`.
+
+Browser role flows use isolated authentication with the real account controller
+and DOM. Live checks cover deployed bytes, report privacy, the REST table boundary
+and transactional RLS. Physical-device and real-user sign-in are not claimed.
