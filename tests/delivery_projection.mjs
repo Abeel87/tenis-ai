@@ -30,6 +30,19 @@ for(let i=0;i<before.length;i++){
  }
 }
 const app=fs.readFileSync(root+'/app.js','utf8');
-assert(app.includes("metric('Player DNA',state.matches.filter(m=>m.ui_summary?.has_dna===true).length,total,'meczów z profilem')"),'Admin Player DNA KPI must use delivery ui_summary.has_dna instead of an omitted full-result field');
+// Exercise the rendered coverage value, independent of its card/row layout.
+const overviewRows=[];
+const overviewContext={state:{meta:{},matches:[
+ {ui_summary:{has_dna:true}},
+ {ui_summary:{has_dna:false},player_intelligence_v85:{}},
+ {player_intelligence_v85:{}}
+],errors:[],moderation:new Map(),symphony:{}},
+ overviewRows(rows){overviewRows.push(...rows);return ''},
+ overviewMetric(){return ''},systemDate(){return ''},badge(){return ''},
+ neuronOverview(){return ''},readinessShadowOverview(){return ''},diagnosticPanel(){return ''},
+ link(){return ''},empty(){return ''},playable(){return false},E:String,reportLabel:String};
+vm.createContext(overviewContext);
+vm.runInContext(app.slice(app.indexOf('function adminOverview(){'),app.indexOf('function adminPage('))+'\nadminOverview();',overviewContext);
+assert.equal(overviewRows.find(([label])=>label==='Player DNA')?.[1],'1 / 3','Admin Player DNA coverage must use delivery ui_summary.has_dna, ignoring missing/false summaries and omitted full-result fields');
 const first=fs.readFileSync(root+'/data/delivery/index.json');buildDelivery();assert(first.equals(fs.readFileSync(root+'/data/delivery/index.json')),'Same sources produce identical index');
 console.log('PASS lossless details, source hashes, Player DNA summary/KPI source, index budget, reproducible index, '+checks+' PLAYABLE equivalence checks');

@@ -25,12 +25,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**SOLAR UI AND READABLE REPORTS — 2026-10-16, READY FOR PUBLICATION**
+**SOLAR UI AND READABLE REPORTS — 2026-10-16, LIVE; FINAL CI FOLLOW-UP**
 - AUTHORIZATION: owner selected Solar and requested implementation/deployment plus
   readable replacements for raw code/JSON everywhere. Existing UI-only direct-commit
   exception applies; no model/learning promotion is authorized.
-- BASE: fresh main `8650a562a1608a5295f80387577c9ee5c8aa8d98`.
-- BRANCH: `ui/solar-20261016`; isolated checkout `tenis-ai-solar`.
+- SOURCE: `4326094a6a5d36f5f5e2fe296bc466d70c306bac`, synchronized with
+  fresh main `0159adc4a6bf1dd98675656378b33b5e012bcf21` before publication.
+- BRANCH: `docs/solar-ui-verification-20261016`; isolated checkout `tenis-ai-solar`.
 - [x] Raw report reproduction and canonical-owner audit.
 - [x] Solar in canonical stylesheet, shared readable report rendering, compact
   overview/Neuron, source-safe odds emphasis, manifest/PWA cache refresh.
@@ -43,14 +44,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   22-test suite (including both failing checks) passes. No readiness policy changed.
 - [x] Both readiness fixture runtime smokes, decision-center, match-time and
   all 28 JavaScript syntax checks passed.
-- [ ] Final fresh-main synchronization, publication and live-byte verification.
+- [x] Fast Pages workflow `38898084567`, deploy job `116963302733` SUCCESS,
+  including Deploy Pages. At 12:10:40 UTC, all five public frontend assets match
+  tested source bytes; evidence: `audits/solar_ui_publication_20261016.json`.
+- [x] PWA revision: `tenis-ai-mobile-presentation-20261016-solar`.
+- [x] Delivery projection follow-up: remote browser job `116963303268` stopped
+  at an obsolete exact-source assertion for the old Player DNA card. Replaced
+  it with a rendered-coverage check using true/false/missing delivery summaries
+  and conflicting full-record fields. Local delivery projection passes all
+  273 PLAYABLE equivalence cases; production code and data are unchanged.
+- [ ] Final remote health/browser checks after the test-only correction.
 - FILES: frontend app/style/index/manifest/sw; report/static/browser tests;
   readiness source inventory and contract test; audit, registry, architecture
   and this checkpoint.
 - DO NOT REDO: completed Superbet/model/storage repairs and design selection.
-- NEXT EXACT ACTION: collect final tests, synchronize generated-data drift,
-  commit the UI-only scope, deploy through existing Fast Pages workflow and
-  verify public source bytes/PWA revision. Unrelated PRs stay untouched.
+- NEXT EXACT ACTION: publish the test-only correction with a fresh-main lease,
+  confirm final remote health/browser/security checks and record their evidence.
+  Public Solar assets are already verified; unrelated PRs stay untouched.
 - BANS: backend/model math, probabilities, thresholds, weights, training,
   PLAYABLE, settlement, iNeed economics/scope, auth rules and real betting.
 
