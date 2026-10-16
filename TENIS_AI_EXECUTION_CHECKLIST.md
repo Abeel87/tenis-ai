@@ -25,13 +25,14 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**SOLAR UI AND READABLE REPORTS — 2026-10-16, LIVE; FINAL CI FOLLOW-UP**
+**SOLAR UI AND READABLE REPORTS — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: owner selected Solar and requested implementation/deployment plus
   readable replacements for raw code/JSON everywhere. Existing UI-only direct-commit
   exception applies; no model/learning promotion is authorized.
 - SOURCE: `4326094a6a5d36f5f5e2fe296bc466d70c306bac`, synchronized with
   fresh main `0159adc4a6bf1dd98675656378b33b5e012bcf21` before publication.
-- BRANCH: `docs/solar-ui-verification-20261016`; isolated checkout `tenis-ai-solar`.
+- TEST FOLLOW-UP: `2f82042bff6279f977e4980a6059e8a09b8c1ef6`; closeout branch
+  `docs/solar-ui-closeout-20261016`, isolated checkout `tenis-ai-solar`.
 - [x] Raw report reproduction and canonical-owner audit.
 - [x] Solar in canonical stylesheet, shared readable report rendering, compact
   overview/Neuron, source-safe odds emphasis, manifest/PWA cache refresh.
@@ -44,6 +45,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   22-test suite (including both failing checks) passes. No readiness policy changed.
 - [x] Both readiness fixture runtime smokes, decision-center, match-time and
   all 28 JavaScript syntax checks passed.
+- [x] Remote full Python suite: 1682 passed in 51.69s (job `116963303305`).
+  That run was superseded after the full suite by the test-only follow-up.
 - [x] Fast Pages workflow `38898084567`, deploy job `116963302733` SUCCESS,
   including Deploy Pages. At 12:10:40 UTC, all five public frontend assets match
   tested source bytes; evidence: `audits/solar_ui_publication_20261016.json`.
@@ -53,14 +56,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   it with a rendered-coverage check using true/false/missing delivery summaries
   and conflicting full-record fields. Local delivery projection passes all
   273 PLAYABLE equivalence cases; production code and data are unchanged.
-- [ ] Final remote health/browser checks after the test-only correction.
+- [x] Final Delivery/security workflow `38898885890` SUCCESS: dependencies
+  `116965940770` and Chromium browser `116965941032`, user/moderator/admin,
+  report expansion, mobile/desktop layout and all 273 projection cases.
+- [x] CodeQL `38898084834` SUCCESS for the deployed UI source.
+- [x] Final UI health workflow `38898885692`, job `116966187071` SUCCESS.
+  Its lightweight scope includes the report/static/runtime/readiness checks;
+  the full Python suite passed separately above on the same production code.
 - FILES: frontend app/style/index/manifest/sw; report/static/browser tests;
   readiness source inventory and contract test; audit, registry, architecture
   and this checkpoint.
 - DO NOT REDO: completed Superbet/model/storage repairs and design selection.
-- NEXT EXACT ACTION: publish the test-only correction with a fresh-main lease,
-  confirm final remote health/browser/security checks and record their evidence.
-  Public Solar assets are already verified; unrelated PRs stay untouched.
+- NEXT EXACT ACTION: no further Solar source repair or manual deploy required.
+  Reopen the installed PWA to load the updated assets. Normal data/model
+  schedules continue independently; unrelated PRs stay untouched. Physical
+  phone behavior and production sign-in are not claimed tested by the harness.
 - BANS: backend/model math, probabilities, thresholds, weights, training,
   PLAYABLE, settlement, iNeed economics/scope, auth rules and real betting.
 
