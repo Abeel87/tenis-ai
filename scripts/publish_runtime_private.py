@@ -95,6 +95,8 @@ def tier_for(logical_path: str) -> str:
 
 
 def owner_layer(logical_path: str) -> str:
+    if logical_path == "data/self_evolution_ui.json":
+        return "research"
     if logical_path.startswith("data/delivery/"):
         return "core"
     if logical_path in NEURON_EXACT:
@@ -247,7 +249,7 @@ def _chunk_large_json(source: Path, logical: str, projection: Path) -> list[tupl
     return materialized
 
 def snapshot_files(layer: str) -> tuple[list[dict[str, Any]], dict[str, Path]]:
-    if layer not in {"core", "market", "dna", "neuron"}:
+    if layer not in {"core", "market", "dna", "neuron", "research"}:
         raise PublishError(f"Unknown layer: {layer}")
     if not DATA.is_dir():
         raise PublishError("frontend/data is missing")
@@ -462,7 +464,7 @@ def main() -> int:
     parser.add_argument(
         "--layer",
         required=True,
-        choices=("core", "market", "dna", "neuron"),
+        choices=("core", "market", "dna", "neuron", "research"),
     )
     args = parser.parse_args()
 

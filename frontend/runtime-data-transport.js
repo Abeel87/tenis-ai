@@ -62,6 +62,7 @@ async function signedObject(path,token){
   const response=await fetch(`${cfg.url}/functions/v1/runtime-data-read`,{
     method:'POST',
     cache:'no-store',
+    ...(typeof AbortSignal!=='undefined'&&AbortSignal.timeout?{signal:AbortSignal.timeout(20000)}:{}),
     headers:{
       'Authorization':`Bearer ${token}`,
       'apikey':cfg.publishableKey,
@@ -75,7 +76,7 @@ async function signedObject(path,token){
     error.status=response.status;
     throw error;
   }
-  const objectResponse=await fetch(metadata.url,{cache:'no-store'});
+  const objectResponse=await fetch(metadata.url,{cache:'no-store',...(typeof AbortSignal!=='undefined'&&AbortSignal.timeout?{signal:AbortSignal.timeout(20000)}:{})});
   if(!objectResponse.ok){
     const error=Error(`Signed runtime object HTTP ${objectResponse.status}`);
     error.status=objectResponse.status;
@@ -189,6 +190,8 @@ function shadow(path,force=false){
 }
 async function read(path,publicReader,{force=false}={}){
   if(typeof publicReader!=='function')throw Error('Public reader is required.');
+  // Research summaries are admin-only even while ordinary runtime migration is public.
+  if(path==='data/self_evolution_ui.json')return privateCached(path,force);
   const mode=currentMode();
   if(mode==='public'||!runtimeEligible(path)){
     telemetry.public_reads+=1;

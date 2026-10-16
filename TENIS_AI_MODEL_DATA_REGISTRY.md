@@ -460,6 +460,17 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B20. Frontend
 
+**Reliability / evidence delivery (2026-10-16, owner-authorized):** canonical
+`app.js` retains failed-refresh views with explicit freshness warnings, bounded
+retry and account-safe reconciliation. `presentation-data.js` labels the reasons
+behind its unchanged PLAYABLE expression. Admin details reuse per-match delivery
+bundles. Per-key `ui_preferences` are isolated by owner RLS. Self Evolution's
+existing report and memory remain owned by `backend/self_evolution_shadow.py`;
+the read-only `scripts/project_self_evolution_ui.py` projects verified scalar
+evidence through the existing private runtime publisher's research layer/tier C.
+No probability, training, promotion, settlement or economic owner changes.
+See `audits/app_reliability_20261016.md` and the LIVE CHECKPOINT for rollout.
+
 **Solar presentation (2026-10-16, owner-authorized):** `frontend/app.js` replaces
 its canonical raw-report renderer with escaped labeled fields, lazy nested
 groups and complete 20-entry pagination. The admin overview and Neuron card

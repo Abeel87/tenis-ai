@@ -25,6 +25,33 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**APP RELIABILITY AND OBSERVABILITY — 2026-10-16, IN PROGRESS**
+- AUTHORIZATION: owner approved the six proposed improvements after Solar:
+  resilient refresh, PLAYABLE explanations, actual Self Evolution reports,
+  lazy admin reports, synchronized preferences and common data status.
+- BASE: `553d5c294cf94f5aa6d3a4c6ac94f285f495106c`; branch
+  `feat/app-reliability-20261016`, isolated worktree `tenis-ai-reliability`.
+- [x] Fresh main/PR/CI and canonical-owner inspection; no unrelated PR changes.
+- [x] Browser reproduction of refresh clearing the visible list (0 instead of 1).
+- [x] Implement/verify transactional refresh and read-only availability reasons.
+- [x] Prepare whitelisted Self Evolution report through the existing private
+  runtime publisher, tier C; preserve artifact privacy and SHADOW authority.
+- [x] Lazy admin views, owner-scoped preferences and data status.
+- [x] Chromium user/moderator/admin flows, failed/empty refresh, direct account
+  change during failure, report metrics, lazy reports and 320/412/1280 px layout.
+- [x] Static/runtime smoke, 48 focused Python tests, lossless delivery projection
+  with all 273 PLAYABLE comparisons. Full regression: 1697 passed, two obsolete
+  exact-source assertions updated for request timeout and restricted research
+  push publication; both now pass in the focused suite.
+- [~] Full tests, green PR, additive schema/compatible Edge rollout, merge,
+  Pages/private report verification and final checkpoint.
+- NEXT EXACT ACTION: rebase on current bot-only main, publish PR and verify all
+  checks; apply additive migration and compatible Edge before green merge.
+- DO NOT REDO: reproduction, actual artifact projection from run 38879366541,
+  Solar design, existing Superbet repair or model training.
+- BANS: model math/weights/training, probability, PLAYABLE decision rules,
+  settlement, iNeed economics/scope, real bets and automatic PROD promotion.
+
 **SOLAR UI AND READABLE REPORTS — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: owner selected Solar and requested implementation/deployment plus
   readable replacements for raw code/JSON everywhere. Existing UI-only direct-commit

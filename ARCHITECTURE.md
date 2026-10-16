@@ -213,15 +213,39 @@ economic outcomes is NOT yet authorized.
 
 ## Self Evolution UI — administrator research status
 
-An admin-only route `#admin/evolution` lives inside the existing
-authenticated `frontend/app.js` shell, which also bundles the Self Evolution
-presenter in the same asset to support older cached HTML shells. It renders public GitHub Actions
-metadata on demand with a short client-side TTL. Links lead to official
-runtime runs. Report artifact contents are not fetched or published in
-the public browser, so quantitative learning/ROI/champion improvement
-remains N/D absent separate trusted report delivery. This does not
-introduce a new trainer, operational workflow, probability or settlement
-path, and does not affect PROD, PLAYABLE, Symphony, iNeed or real betting.
+An admin-only route `#admin/evolution` lives inside the existing authenticated
+`frontend/app.js` shell. Public Actions metadata and actual research evidence are
+separate sources. The existing private-runtime publisher now has a `research`
+provenance layer triggered by a successful main Self Evolution run, or manually
+backfilled from its last success. `scripts/project_self_evolution_ui.py` verifies
+run identity, report/memory digest, timestamps and isolation flags, then copies
+only bounded scalar metrics and retained trial decisions. The single resulting
+`data/self_evolution_ui.json` is tier C and always uses the private reader, even
+when ordinary app data transport is public; it has no public fallback. The
+existing authenticated reader enforces admin access. Raw research artifacts,
+weights and training samples are not copied into the UI report.
+
+The UI distinguishes historical Brier from prospective trials and shows the
+original report date, sample sizes, deadline and decision. Missing evidence stays
+N/D and ROI stays unevaluated. Research/training, model authority and promotion
+rules are unchanged. No new trainer, real bets or probability owner is introduced.
+
+## App reliability and presentation preferences — 2026-10-16
+
+The canonical app commits a new match publication only after its bounded index
+read validates. Failed reads retain the previous view with an explicit unconfirmed
+status; they never change source timestamps. Retries are bounded, and online/
+foreground events recheck old snapshots. Logout/account-generation checks discard
+late responses. Availability explanations annotate the unchanged existing
+PLAYABLE expression; they do not introduce a second decision gate.
+
+Admin report routes use existing content-addressed per-match bundles on selection
+instead of loading `results.json`. The small index includes original Direct and
+AutoLearn timestamps for the shared status panel. `ui_preferences` stores one
+owner-scoped key per filter/favourite with RLS and no anonymous access. Pending
+device changes merge by key and survive network errors; account epochs prevent
+late cross-account writes into the UI. Optional problem notices are off by
+default and work while the app is running; background push delivery is not claimed.
 
 
 ## Exact participant-name settlement boundary (2026-10-12)

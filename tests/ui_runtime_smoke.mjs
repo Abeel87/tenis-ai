@@ -81,7 +81,7 @@ assert(read('app.js').includes('class="h2h-bar"'),'H2H comparison bar renderer r
 const evolution=await route('#admin/evolution');
 assert(evolution.includes('id="self-evolution-admin"'),'Old HTML without the separate script must still render Self Evolution');
 assert(!evolution.includes('Brak modułu'),'Missing dependency must not strand the admin panel');
-assert(element('#self-evolution-admin').innerHTML.includes('NIEPOTWIERDZONE'),'No invented learning improvement');
+assert(element('#self-evolution-admin').innerHTML.includes('N/D — brak zweryfikowanego raportu'),'Missing private evidence must not invent learning improvement');
 const overview=await route('#admin/dashboard');
 assert(overview.includes('PRZEGLĄD')&&overview.includes('TECHNICZNE'));
 assert(!overview.includes('<pre>'),'Overview must not expose raw reports');

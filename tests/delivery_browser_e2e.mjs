@@ -20,8 +20,11 @@ try{
   const page=await context.newPage(),requests=[],errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/data/'))requests.push(r.url().slice(origin.length+1))});
   await page.route('https://cdn.jsdelivr.net/**',route=>route.fulfill({contentType:'text/javascript',body:`
-window.supabase={createClient(){let logged=false;const q={select(){return this},eq(){return this},is(){return this},in(){return this},order(){return this},limit(){return this},maybeSingle(){return Promise.resolve({data:null})},single(){return Promise.resolve({data:{id:'test-user',username:'Browser test',role:'${role}',banned_at:null}})},then(resolve){return Promise.resolve({data:[]}).then(resolve)}};return {auth:{async getUser(){return {data:{user:logged?{id:'test-user'}:null}}},async signInWithPassword(){logged=true;return {data:{}}},async signUp(){return {data:{}}},async resetPasswordForEmail(){return {}},onAuthStateChange(){},async signOut(){logged=false;return {}}},from(){return Object.create(q)},async rpc(){return {data:[]}}}}};` }));
+window.supabase={createClient(){let logged=false;const q={select(){return this},eq(){return this},is(){return this},in(){return this},order(){return this},limit(){return this},maybeSingle(){return Promise.resolve({data:null})},single(){return Promise.resolve({data:{id:'test-user',username:'Browser test',role:'${role}',banned_at:null}})},upsert(rows){window.testPreferences=Object.assign(window.testPreferences||{},Object.fromEntries(rows.map(r=>[r.setting_key,r.value])));return Promise.resolve({})},then(resolve){return Promise.resolve({data:this.table==='ui_preferences'?Object.entries(window.testPreferences||{}).map(([setting_key,value])=>({setting_key,value})):[]}).then(resolve)}};return {auth:{async getSession(){return {data:{session:{access_token:'isolated-test-token'}}}},async getUser(){return {data:{user:logged?{id:'test-user'}:null}}},async signInWithPassword(){logged=true;return {data:{}}},async signUp(){return {data:{}}},async resetPasswordForEmail(){return {}},onAuthStateChange(){},async signOut(){logged=false;return {}}},from(table){return Object.assign(Object.create(q),{table})},async rpc(){return {data:[]}}}}};` }));
   await page.route('https://challenges.cloudflare.com/**',r=>r.fulfill({contentType:'text/javascript',body:"window.turnstile={render(el,options){setTimeout(()=>options.callback('isolated-test-captcha'),0);return 1},reset(){},remove(){}};"}));
+  await page.route('https://api.github.com/**',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({workflow_runs:[],artifacts:[]})}));
+  await page.route('**/functions/v1/runtime-data-read',r=>r.fulfill({contentType:'application/json',status:role==='admin'?200:403,body:JSON.stringify(role==='admin'?{url:origin+'/isolated-research-report.json'}:{error:'admin required'})}));
+  await page.route(origin+'/isolated-research-report.json',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({schema:1,mode:'SHADOW_ONLY',production_influence:false,auto_promote_to_prod:false,generated_at:'2026-10-16T09:17:00Z',run_number:8,completed_in_retained_history:0,historical:{status:'SHADOW_EVIDENCE_POSITIVE',windows:{holdout_matches:114},candidate:{holdout_brier:0.1946,current_holdout_brier:0.1992}},tracks:[{key:'ALL',champion:{id:'test-baseline'},challenger:{id:'test-challenger'},last_evaluation:{status:'COLLECTING_FUTURE_FIXTURES',independent_matches:112,evaluation_deadline:'2026-10-23T11:30:00Z'},history:[]}]})}));
   await page.goto(origin+'/#matches');
   await page.locator('#login-form').waitFor({state:'visible'});
   assert.equal(requests.length,0,'No runtime data before verified login');
@@ -32,6 +35,16 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
   await page.locator('[data-focus="all"]').click();
   await page.locator('[data-filter="query"]').fill(first.p1);
   assert(await page.locator('.match-card').count()>0);
+  if(role==='user'){
+   const previous=await page.locator('.match-card').count();
+   await page.route('**/data/delivery/index.json',r=>r.abort('failed'));
+   await page.locator('#refresh').click();
+   await page.waitForTimeout(350);
+   assert.equal(await page.locator('.match-card').count(),previous,'A failed refresh must retain the last visible matches');
+   await page.unroute('**/data/delivery/index.json');
+   await page.locator('#refresh').click();
+   await page.locator('.match-card').first().waitFor();
+  }
   await page.locator('.tournament-group').first().evaluate(el=>el.open=true);
   const analysis=page.locator(`a[href="${hash}"]`).first();await analysis.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY);
   await analysis.click();await page.locator('#detail-body').waitFor();
@@ -67,7 +80,19 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
      await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,route+'.png')});
     }
    }
+   assert(!requests.includes('data/results.json'),'Admin routes never eagerly load the full result set');
+   await page.evaluate(()=>location.hash='#admin/data');await page.locator('[data-admin-match]').waitFor();
+   await page.locator('[data-admin-match]').selectOption(String(first.id));await page.locator('.report-row').first().waitFor();
+   await page.evaluate(()=>location.hash='#admin/evolution');await page.getByRole('heading',{name:'Rzeczywiste wyniki badań'}).waitFor();
+   assert((await page.locator('.research-evidence').innerText()).includes('114'),'Research metrics come from the private report');
+   for(const width of [320,412]){await page.setViewportSize({width,height:915});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Research report fits phone');}
    await page.setViewportSize({width:412,height:915});
+   if(process.env.TENIS_UI_SCREENSHOTS){
+    await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'evolution.png')});
+    await page.locator('.research-evidence details summary').first().click();
+    await page.locator('.research-evidence').scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'evolution-metrics.png')});
+   }
    await page.evaluate(()=>location.hash='#start');await page.locator('.hero').waitFor();
    if(process.env.TENIS_UI_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'start.png')});
   }
@@ -84,12 +109,20 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    await page.unroute('**/'+other.detail_path);await page.locator('[data-retry-route]').click();await page.locator('#detail-body').waitFor();
    await page.evaluate(()=>location.hash='#matches');await page.locator('[data-filter="query"]').waitFor();
    await page.route('**/data/delivery/index.json',r=>r.fulfill({status:503,body:'isolated outage'}));
-   await page.locator('#refresh').click();await page.getByText('Nie wszystkie dane udało się pobrać.',{exact:false}).waitFor();
-   assert.equal(await page.locator('.match-card').count(),0,'Failed refresh cannot retain stale offer cards');
+   await page.locator('#refresh').click();await page.getByText('Nie udało się odświeżyć',{exact:true}).waitFor();
+   assert(await page.locator('.match-card').count()>0,'Last match view survives with an explicit unconfirmed-data status');
+   assert(await page.locator('#data-status').evaluate(el=>el.classList.contains('is-warning')),'Retained data must never be presented as refreshed');
    assert(!requests.includes('data/results.json'),'No heavy fallback on index failure');
    await page.unroute('**/data/delivery/index.json');
    await page.route('**/data/delivery/index.json',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({...index,matches:[],symphony_count:0})}));
    await page.locator('#refresh').click();await page.getByText('Brak meczów dla tych filtrów.',{exact:false}).waitFor();
+   await page.unroute('**/data/delivery/index.json');
+   await page.locator('#refresh').click();await page.locator('.match-card').first().waitFor();
+   await page.route('**/data/delivery/index.json',r=>r.fulfill({status:503,body:'new account outage'}));
+   await page.evaluate(()=>{window.TenisAccount.user.id='second-test-user';window.dispatchEvent(new Event('tenis-auth'))});
+   assert.equal(await page.locator('.match-card').count(),0,'Switching account clears the previous account view immediately');
+   await page.getByText('Nie udało się odświeżyć',{exact:true}).waitFor();
+   assert.equal(await page.locator('.match-card').count(),0,'A failed new-account load never restores previous-account data');
   }
   assert.deepEqual(errors,[],role+' browser errors');
   results.push({role,passed:true,first_render_json_bytes:fs.statSync(root+'/data/delivery/index.json').size});await context.close();

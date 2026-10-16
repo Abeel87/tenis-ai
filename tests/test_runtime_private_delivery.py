@@ -63,7 +63,8 @@ def test_publisher_is_bound_to_this_repo_main_and_one_workflow():
     assert 'const REPOSITORY_OWNER_ID = "198365428"' in PUBLISHER
     assert 'const REF = "refs/heads/main"' in PUBLISHER
     assert 'const WORKFLOW = ".github/workflows/runtime-private-delivery.yml"' in PUBLISHER
-    assert 'new Set(["workflow_run", "workflow_dispatch"])' in PUBLISHER
+    assert 'new Set(["workflow_run", "workflow_dispatch", "push"])' in PUBLISHER
+    assert PUBLISHER.count('auth.payload.event_name === "push" && layer !== "research"') == 2
     assert "repository_id" in PUBLISHER
     assert "repository_owner_id" in PUBLISHER
     assert "workflow_ref" in PUBLISHER

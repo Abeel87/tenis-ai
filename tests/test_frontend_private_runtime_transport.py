@@ -33,7 +33,8 @@ def test_private_transport_uses_real_supabase_session_and_reader():
     assert "'Authorization':`Bearer ${token}`" in TRANSPORT
     assert "'apikey':cfg.publishableKey" in TRANSPORT
     assert "metadata?.url" in TRANSPORT
-    assert "fetch(metadata.url,{cache:'no-store'})" in TRANSPORT
+    assert "fetch(metadata.url,{cache:'no-store'," in TRANSPORT
+    assert "signal:AbortSignal.timeout(20000)" in TRANSPORT
     assert "user_metadata" not in TRANSPORT
 
 
