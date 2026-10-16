@@ -87,7 +87,9 @@ re-fetches all reused identities, records per-event observation time and publish
 per-fixture diagnostic reasons even after empty/failed refreshes. No stale prices
 are carried forward. Default match slicing is replaced by an explicit unique-event
 read budget. The admin Superbet panel consumes the existing delivery diagnostic
-projection. See `audits/superbet_discovery_20261016.md`; not yet production proof.
+projection. PR #547 merged as `ec908de4764b344db87297a35ca5131e5882db2b` after
+1682 passing tests and all 12 CI workflows. See
+`audits/superbet_discovery_20261016.md`; production verification is pending.
 
 
 **Rola:** exact current operator offer.

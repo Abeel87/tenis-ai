@@ -25,10 +25,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, LOCAL VALIDATION**
+**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, MERGED / PRODUCTION VERIFICATION**
 - AUTHORIZATION: user approved the proposed collection repair, shared discovery,
   verified identity reuse, missing-price diagnostics and refresh reliability work.
-- BRANCH: `fix/superbet-discovery-20261016`; baseline main `18a78e75eebf583ec5fbaaf99eb322eef9df76de`.
+- SOURCE: PR #547, head `252bdb252fb458e137f8dd2abee5c880a255ea00`, merged as
+  `ec908de4764b344db87297a35ca5131e5882db2b` against freshly rechecked main
+  `fcca685f8e236544c15f9354c08ae8a6ab0d92c5`. Closeout branch:
+  `docs/superbet-discovery-verification-20261016`.
 - [x] Reproduce: public v3 nested fixture schema was ignored; main Direct lacked XHR
   discovery. Six new regression cases failed before repair.
 - [x] Canonical discovery ownership, price-free identity continuity, fail-closed
@@ -39,12 +42,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   discovery/fixture/iNeed suite: 75 passed. Static UI check passed.
 - [x] Runtime UI smoke passed for real data and both readiness fixtures; match-time
   and decision-center smoke passed.
-- [~] Full regression/CI pending on final head. Initial full run
-  found a diagnostic row-index error and a stale PWA cache assertion; both are
-  repaired and covered by the passing focused run. No deployment claim yet.
-- [ ] Exact-head full CI, fresh-main inspection, green-only merge and real refresh/delivery proof.
-- NEXT EXACT ACTION: finish local regression/UI verification, publish branch/PR, validate
-  all CI, recheck main, merge and verify normal production Direct counts + private/UI delivery.
+- [x] Full final-source local regression: 1682 passed in 136.90s. Remote full suite:
+  1682 passed in 42.57s (health job `116926938869`). Initial validation issues were
+  corrected before the final green runs.
+- [x] All 12 PR workflows passed: 15 successful checks and two intentional
+  production-only skips. Mobile browser job `116926938893` passed. Fresh main
+  remained unchanged before the green-only merge.
+- [~] Production Update/Pages run `38887707148` is running; actual publication
+  and private delivery proof are pending. Do not describe the predeployment probe
+  as a production coverage result.
+- NEXT EXACT ACTION: verify production Update/Pages `38887707148`, Direct counts,
+  public app/PWA + diagnostic projection and downstream private/market delivery;
+  replace this pending checkpoint with the observed production evidence.
 - DO NOT REDO: October 15 capacity/compression/settlement fixes; unrelated #523/#537 remain untouched.
 - BANS: model math, thresholds, probabilities, training, PLAYABLE rules, iNeed economic
   calculations/scope, builder lifecycle, settlement, paid quota changes and real bets.

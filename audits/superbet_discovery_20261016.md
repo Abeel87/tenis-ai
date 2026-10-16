@@ -52,13 +52,19 @@ not a guaranteed production coverage ratio or a claim of 73 PLAYABLE matches.
 
 ## Validation and deployment
 
-Targeted parser/discovery/identity/iNeed regression: 75 passed before the final
-bounded-retry and duplicate-input tests. Final focused Direct/discovery/PWA
-regression: 47 passed. Static UI, runtime UI (real data and both readiness
-fixtures), match-time and decision-center smoke passed. Full suite, exact-head
-CI, merge and publication checks are required and recorded in the execution
-checkpoint. Initial full-run issues (diagnostic row indexing and cache revision
-assertion) were repaired before the final focused pass.
+Focused final Direct/discovery/PWA suite: 47 passed. Earlier broader fixture/iNeed
+suite: 75 passed. Static UI, runtime UI (real data and both readiness fixtures),
+match-time and decision-center smoke passed. Full final-source local regression:
+1682 passed in 136.90s. Remote full regression: 1682 passed in 42.57s.
+
+PR #547 head `252bdb252fb458e137f8dd2abee5c880a255ea00` passed all 12 workflows
+(15 successful checks, two intentional production-only skips), including mobile
+browser job `116926938893`. It merged as
+`ec908de4764b344db87297a35ca5131e5882db2b` against fresh unchanged main
+`fcca685f8e236544c15f9354c08ae8a6ab0d92c5`.
+
+Production Update/Pages run `38887707148` is running. Publication and downstream
+private/market delivery evidence remain pending.
 
 No model math, probability, training, thresholds, settlement, iNeed economics,
 market scope, builder lifecycle, paid-provider quotas or real betting changes.
