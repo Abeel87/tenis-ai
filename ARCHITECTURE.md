@@ -31,6 +31,18 @@ Semantyczne granice modeli, sezonów, Player DNA/Player State, opponent context,
 
 ## 3. Superbet i PLAYABLE
 
+The canonical Direct collector (`backend/superbet_direct.py`) shares one incremental
+DOM/public-v3 prematch catalogue discovery path with iNeed. Listing JSON is candidate
+identity evidence only; exact event payloads still pass the existing participant/time/
+ambiguity resolver. `superbet_direct_current.json` retains price-free identity bindings
+for current fixtures and diagnostic reason counts. Every quote in `matches` is freshly
+read; failure can publish an empty feed with retained identity hints, never renew old
+prices. The conservative feed timestamp is refresh start; each included event also has
+`observed_at`. A bounded one-time transient transport retry excludes rate limits and
+permanent errors. Admin presentation reads the diagnostic projection in existing
+`delivery/diagnostics.json`; it does not infer operator availability or PLAYABLE.
+
+
 Kanoniczne backendowe wejścia operatora to:
 
 - `backend/superbet_market_context.py`

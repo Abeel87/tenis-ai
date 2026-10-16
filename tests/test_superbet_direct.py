@@ -40,12 +40,20 @@ def test_selected_refresh_does_not_depend_on_unrelated_sample_market(monkeypatch
     assert rejected["matches"] == []
 
 
-def test_selected_refresh_keeps_missing_listing_fail_closed(monkeypatch):
+def test_selected_refresh_keeps_missing_listing_fail_closed(monkeypatch, tmp_path):
+    import json
+    data = tmp_path / "frontend" / "data"
+    data.mkdir(parents=True)
+    (data / "results.json").write_text(json.dumps([{"id": "missing", "p1": "One Player", "p2": "Two Player", "scheduled_time": "2026-09-04T16:30:00Z"}]))
+    monkeypatch.setattr(direct, "__file__", str(tmp_path / "backend" / "superbet_direct.py"))
     monkeypatch.setattr(direct, "browser_probe", lambda **kwargs:
                         {"status": "NO_MATCH_URLS", "match_urls": []})
-    monkeypatch.setattr(direct, "build_selected_direct_feed", lambda *args, **kwargs:
+    monkeypatch.setattr(direct, "fetch_event_payload_public", lambda *args, **kwargs:
                         (_ for _ in ()).throw(AssertionError("no event fetch permitted")))
-    assert direct.browser_selected_direct_feed()["status"] == "DIRECT_LISTING_UNAVAILABLE"
+    feed = direct.browser_selected_direct_feed()
+    assert feed["status"] == "DIRECT_LISTING_UNAVAILABLE"
+    assert feed["matches"] == []
+    assert feed["match_diagnostics"][0]["reason"] == "DISCOVERY_UNAVAILABLE"
 
 
 def test_discover_match_urls_is_tennis_only_and_deduplicated():
@@ -683,7 +691,7 @@ def test_resolve_selected_match_offer_rejects_partial_candidate_fetch():
     assert result["candidate_urls_count"] == 2
     assert result["event_payloads_ok"] == 1
     assert result["event_fetch_errors"] == [
-        {"event_id": "14809309", "error": "RuntimeError"}
+        {"event_id": "14809309", "error": "RuntimeError", "reason": "EVENT_FETCH_FAILED"}
     ]
 
 
@@ -969,7 +977,7 @@ def test_write_selected_direct_sidecar_is_atomic_and_keeps_prices_metadata_only(
 
 def test_write_selected_direct_sidecar_refuses_unsafe_or_playable_feed(tmp_path):
     unsafe = {
-        "status": "NO_SAFE_OVERLAP",
+        "status": "INVALID_UNKNOWN_STATUS",
         "prices_used": False,
         "production_influence": False,
         "playable_influence": False,

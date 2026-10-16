@@ -111,8 +111,8 @@ def _sample(scope: dict, match: dict, reason: str, candidates=None) -> None:
         by_reason.append(sample)
 
 
-def _select(match: dict, fixtures: list[dict], *, cached: bool, record_telemetry: bool = True):
-    scope_name="cached" if cached else "live"; scope=_TELEMETRY[scope_name] if record_telemetry else _empty_scope(); scope["checked"]+=1
+def _select(match: dict, fixtures: list[dict], *, cached: bool, record_telemetry: bool = True, diagnostic_scope: dict | None = None):
+    scope_name="cached" if cached else "live"; scope=diagnostic_scope if diagnostic_scope is not None else (_TELEMETRY[scope_name] if record_telemetry else _empty_scope()); scope["checked"]+=1
     app_p1,app_p2=match.get("p1"),match.get("p2"); scheduled=base._parse_dt(match.get("scheduled_time")); ranked=[]; had_name_candidate=False; had_time_rejection=False; time_evidence=[]
     for row in fixtures:
         if not isinstance(row,dict):continue
@@ -199,18 +199,24 @@ def _orient_cached_fixture(match: dict, row: dict | None):
     return out
 
 
-def select_cached_fixture(match: dict, fixtures: list[dict]):
+def select_cached_fixture(match: dict, fixtures: list[dict], *, diagnostic: dict | None = None):
     """Pure cached-fixture selection using the canonical name/time contract.
 
     Used by isolated callers that need identical matching semantics without
     mutating production fixture-matching telemetry.
     """
+    scope = _empty_scope()
     selected = _select(
         match,
         fixtures if isinstance(fixtures, list) else [],
         cached=True,
         record_telemetry=False,
+        diagnostic_scope=scope,
     )
+    if diagnostic is not None:
+        diagnostic["reason"] = ("OK" if selected is not None else
+                                "AMBIGUOUS_MATCH" if scope["ambiguous_rejected"] else
+                                "TIME_MISMATCH" if scope["time_rejected"] else "IDENTITY_MISMATCH")
     return _orient_cached_fixture(match, selected)
 
 

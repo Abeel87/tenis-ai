@@ -78,6 +78,18 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 ## A4. Superbet
 
+**2026-10-16 collection repair, validation in progress:** canonical
+`backend/superbet_direct.py` now owns the shared DOM/public-v3 catalogue reader
+used by the main refresh and iNeed. `event_id` + nested `fixture` metadata only
+identify candidates; unchanged event-level matching remains authoritative.
+The existing Direct sidecar retains price-free current-fixture identity bindings,
+re-fetches all reused identities, records per-event observation time and publishes
+per-fixture diagnostic reasons even after empty/failed refreshes. No stale prices
+are carried forward. Default match slicing is replaced by an explicit unique-event
+read budget. The admin Superbet panel consumes the existing delivery diagnostic
+projection. See `audits/superbet_discovery_20261016.md`; not yet production proof.
+
+
 **Rola:** exact current operator offer.
 
 **Jest autorytetem dla:**
