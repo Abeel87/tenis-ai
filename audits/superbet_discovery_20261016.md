@@ -93,10 +93,14 @@ SUCCESS. Publish job `116937936098` confirmed `RUNTIME_PRIVATE_PUBLISH_OK` at
 10:57:40 UTC: 135 files, 125 uploaded objects, generation
 `802caca8-85e2-4e24-9034-4ae549d188f6`, same source SHA. This is publisher evidence;
 no separate database mutation or authenticated physical-device test was performed.
-Normal market refresh `38890316143` continues independently; a second refresh is
-not required to establish this verified core/public rollout. Existing hourly
-cadence and the 40-minute watchdog remain unchanged; feed observation time remains
-the authority for freshness.
+Subsequent normal market refresh `38890316143` also completed SUCCESS, publishing
+generated-data-only commit `90b52346ff84b5e0ed85e76758efc4212423c986`. Its snapshot
+at 10:59:32 UTC freshly revalidated 62 remembered identities and resolved 74/84
+fixtures: 200 discovered URLs, 77 candidates, 78 unique reads, zero fetch failures,
+seven catalogue gaps and three time mismatches. These are producer-run counts;
+the independent public-byte proof above covers the earlier core snapshot.
+Existing hourly cadence and the 40-minute watchdog remain unchanged; feed
+observation time remains the authority for freshness.
 
 No model math, probability, training, thresholds, settlement, iNeed economics,
 market scope, builder lifecycle, paid-provider quotas or real betting changes.

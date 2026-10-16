@@ -64,8 +64,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Private core publication `38890316033` and its normal GC both SUCCESS.
   Publisher confirmed 135 files / 125 uploaded objects, active generation
   `802caca8-85e2-4e24-9034-4ae549d188f6` at 10:57:40 UTC for the same source SHA.
-  Normal market refresh `38890316143` continues independently; a second refresh
-  is not required to establish the verified core/public rollout.
+- [x] Subsequent normal market refresh `38890316143` also SUCCESS. At 10:59:32 UTC,
+  it freshly revalidated 62 remembered identities and resolved 74/84 fixtures,
+  with 200 discovered URLs, 78 unique reads and zero fetch failures. Seven
+  catalogue gaps and three time mismatches remain. Last verified main:
+  `90b52346ff84b5e0ed85e76758efc4212423c986`; its drift is generated data only.
+  These are producer-run counts; the independent public-byte proof above covers
+  the earlier core snapshot.
 - NEXT EXACT ACTION: observe normal schedules and actual source timestamps; no
   further source repair or manual refresh is required for PR #547. Reopen the PWA
   for the new admin diagnostics. Catalogue gaps and schedule mismatches remain
