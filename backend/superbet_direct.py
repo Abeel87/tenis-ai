@@ -1,24 +1,25 @@
 from __future__ import annotations
 
-"""Read-only Superbet PL public tennis source probe.
+"""Canonical read-only Superbet PL discovery and exact event-price collection.
 
-This module is intentionally isolated from MODEL/RAW, Player DNA, Symphony and
-PLAYABLE. It only verifies that public Superbet tennis pages are reachable and
-that concrete match pages expose enough server-rendered information to support
-later operator-offer normalization.
-
-No login, no cookies, no bet placement, no model probability changes and no
-writes to frontend/data.
+Public catalogue records discover candidates. Existing participant/time/ambiguity
+validation controls acceptance; captured prices remain operator metadata, never
+model inputs. The dedicated sidecar includes fresh quotes, price-free remembered
+identities and diagnostic reasons. No login, cookies or wager placement.
 """
 
+import base64
 import json
+import time
+import unicodedata
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from html import unescape
 from html.parser import HTMLParser
-from urllib.parse import unquote, urljoin, urlparse, urlencode
+from urllib.parse import unquote, urljoin, urlparse, urlencode, parse_qs
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 try:
@@ -787,7 +788,7 @@ def candidate_event_urls(match: dict, urls: list[str], limit: int = 4) -> list[d
     return [item[2] for item in ranked[:safe_limit]]
 
 
-def fetch_event_payload_public(event_id: str, timeout: int = 20) -> dict:
+def _fetch_event_payload_once(event_id: str, timeout: int = 20) -> dict:
     """Fetch one exact public Superbet event JSON without login or cookies."""
     event_id = str(event_id or "").strip()
     if not re.fullmatch(r"\d{5,20}", event_id):
@@ -818,6 +819,25 @@ def fetch_event_payload_public(event_id: str, timeout: int = 20) -> dict:
     if not isinstance(payload, dict) or _event_record(payload, event_id) is None:
         raise RuntimeError("public event JSON did not contain requested event")
     return payload
+
+
+def fetch_event_payload_public(event_id: str, timeout: int = 20) -> dict:
+    """Retry one transient public read; never retry 403/404/410/429 or invalid JSON."""
+    for attempt in range(2):
+        try:
+            return _fetch_event_payload_once(event_id, timeout=timeout)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            retry = not isinstance(exc, HTTPError) or exc.code in {502, 503, 504}
+            delay = 1.0
+            if isinstance(exc, HTTPError) and exc.headers and exc.headers.get("Retry-After"):
+                try:
+                    delay = max(delay, float(exc.headers["Retry-After"]))
+                except ValueError:
+                    retry = False
+            if attempt or not retry or delay > 3:
+                raise
+            time.sleep(delay)
+    raise RuntimeError("unreachable event transport state")
 
 
 def resolve_selected_match_offer(
@@ -855,6 +875,7 @@ def resolve_selected_match_offer(
     event_fetch = fetcher or fetch_event_payload_public
     offers: list[dict] = []
     fetch_errors: list[dict] = []
+    inactive_events: list[dict] = []
 
     for candidate in candidates:
         event_id = str(candidate.get("event_id") or "")
@@ -866,9 +887,11 @@ def resolve_selected_match_offer(
             fetch_errors.append({
                 "event_id": event_id,
                 "error": type(exc).__name__,
+                "reason": "EVENT_REQUEST_BUDGET_EXHAUSTED" if str(exc) == "EVENT_REQUEST_BUDGET_EXHAUSTED" else "EVENT_FETCH_FAILED",
             })
             continue
         if offer.get("status") != "OK":
+            inactive_events.append({"event_id": event_id, "reason": offer.get("status")})
             continue
         row = dict(offer)
         row["fixture_id"] = offer.get("event_id")
@@ -878,6 +901,7 @@ def resolve_selected_match_offer(
         return {
             "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
             "status": "NO_SAFE_DIRECT_MATCH",
+            "reason": "EVENT_REQUEST_BUDGET_EXHAUSTED" if any(x.get("reason") == "EVENT_REQUEST_BUDGET_EXHAUSTED" for x in fetch_errors) else "EVENT_FETCH_FAILED",
             "selected_match_id": match.get("match_id"),
             "p1": match.get("p1"),
             "p2": match.get("p2"),
@@ -894,11 +918,17 @@ def resolve_selected_match_offer(
             "symphony_influence": False,
         }
 
-    selected = fixture_matching.select_cached_fixture(match, offers)
+    selection_diagnostic = {}
+    selected = fixture_matching.select_cached_fixture(match, offers, diagnostic=selection_diagnostic)
     if not isinstance(selected, dict):
         return {
             "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_SELECTED_MATCH",
             "status": "NO_SAFE_DIRECT_MATCH",
+            "reason": ("NOT_IN_DISCOVERED_CATALOGUE" if not candidates else
+                       "EVENT_REQUEST_BUDGET_EXHAUSTED" if any(x.get("reason") == "EVENT_REQUEST_BUDGET_EXHAUSTED" for x in fetch_errors) else
+                       "EVENT_FETCH_FAILED" if fetch_errors else
+                       "NO_SUPPORTED_ACTIVE_SELECTIONS" if not offers and inactive_events else
+                       selection_diagnostic.get("reason", "NO_SAFE_DIRECT_MATCH")),
             "selected_match_id": match.get("match_id"),
             "p1": match.get("p1"),
             "p2": match.get("p2"),
@@ -1467,12 +1497,52 @@ def build_direct_parity_report(
     }
 
 
+def _match_id(match: dict) -> str:
+    value = match.get("match_id") if match.get("match_id") is not None else match.get("id")
+    return str(value) if value is not None else ""
+
+
+def _remembered_bindings(matches: list[dict], previous_feed: object) -> dict[str, dict]:
+    """Keep price-free, previously verified identities only for current app fixtures.
+
+    A binding is only a discovery hint. Exact event JSON is fetched and checked
+    again on every use; old odds are never copied into a new publication.
+    """
+    if not isinstance(previous_feed, dict) or previous_feed.get("operator") != "superbet.pl":
+        return {}
+    current = {}
+    for row in matches:
+        key = _match_id(row)
+        if key:
+            current.setdefault(key, []).append(row)
+    candidates = {}
+    for row in [*(previous_feed.get("identity_bindings") or []), *(previous_feed.get("matches") or [])]:
+        if not isinstance(row, dict) or not (row.get("direct_match_verified") is True or row.get("identity_verified") is True):
+            continue
+        key = _match_id(row)
+        app = current.get(key, [])
+        if len(app) != 1 or not row.get("p1") or not row.get("p2"):
+            continue
+        # Do not transfer identity hints when an app ID is reassigned to other people.
+        if fixture_matching.pair_score(app[0].get("p1"), app[0].get("p2"), row["p1"], row["p2"]) < 0.999:
+            continue
+        url, event_id = str(row.get("event_url") or ""), str(row.get("event_id") or "")
+        if not _allowed_url(url) or not re.fullmatch(r"\d{5,20}", event_id) or _event_id_from_url(url) != event_id:
+            continue
+        binding = {k: row.get(k) for k in ("match_id", "p1", "p2", "scheduled_time", "event_id", "event_url")}
+        binding.update(match_id=key, identity_verified=True,
+                       last_verified_at=row.get("observed_at") or row.get("last_verified_at") or previous_feed.get("generated_at"))
+        candidates.setdefault(key, {})[event_id] = binding
+    return {key: next(iter(rows.values())) for key, rows in candidates.items() if len(rows) == 1}
+
+
 def build_selected_direct_feed(
     results: object,
     match_urls: list[str],
     *,
     fetcher=None,
-    max_matches: int = 64,
+    max_matches: int | None = None,
+    previous_feed: object = None,
 ) -> dict:
     """Build a full Direct sidecar only for current Tenis AI match overlaps."""
     if isinstance(results, list):
@@ -1482,34 +1552,66 @@ def build_selected_direct_feed(
     else:
         matches = []
 
-    limit = max(1, min(int(max_matches or 1), 64))
-    candidates: list[dict] = []
+    started_at = datetime.now(timezone.utc).isoformat()
+    remembered = _remembered_bindings(matches, previous_feed)
+    limit = len(matches) if max_matches is None else max(1, int(max_matches))
+    candidates: list[tuple[int, dict]] = []
+    diagnostics: list[dict] = []
+    urls_by_row: dict[int, list[str]] = {}
     for match in matches:
+        key = _match_id(match)
+        diag = {"match_id": key or None, "p1": match.get("p1"), "p2": match.get("p2"),
+                "scheduled_time": match.get("scheduled_time"), "checked_at": started_at}
+        urls = list(match_urls)
+        binding = remembered.get(key)
+        if binding and binding["event_url"] not in urls:
+            urls.append(binding["event_url"])
         if not match.get("p1") or not match.get("p2") or not match.get("scheduled_time"):
-            continue
-        if candidate_event_urls(match, match_urls, limit=8):
-            candidates.append(match)
-        if len(candidates) >= limit:
-            break
+            diag["reason"] = "INVALID_SELECTED_MATCH"
+        elif not candidate_event_urls(match, urls, limit=8):
+            diag["reason"] = "NOT_IN_DISCOVERED_CATALOGUE"
+        elif len(candidates) >= limit:
+            diag["reason"] = "DEFERRED_BATCH_LIMIT"
+        else:
+            candidates.append((len(diagnostics), match))
+            urls_by_row[id(match)] = urls
+            diag["reason"] = "PENDING"
+        diagnostics.append(diag)
 
     payload_cache: dict[str, dict] = {}
+    error_cache: dict[str, Exception] = {}
+    observed_at: dict[str, str] = {}
+    event_request_budget = 512
     raw_fetcher = fetcher or fetch_event_payload_public
 
     def cached_fetch(event_id: str) -> dict:
         key = str(event_id)
+        if key in error_cache:
+            raise error_cache[key]
         if key not in payload_cache:
-            payload_cache[key] = raw_fetcher(key)
+            if len(payload_cache) + len(error_cache) >= event_request_budget:
+                raise RuntimeError("EVENT_REQUEST_BUDGET_EXHAUSTED")
+            try:
+                payload_cache[key] = raw_fetcher(key)
+                observed_at[key] = datetime.now(timezone.utc).isoformat()
+            except Exception as exc:
+                error_cache[key] = exc
+                raise
         return payload_cache[key]
 
     feed_matches: list[dict] = []
     rejected: list[dict] = []
-    for match in candidates:
+    for row_index, match in candidates:
         offer = resolve_selected_match_offer(
             match,
-            match_urls,
+            urls_by_row[id(match)],
             fetcher=cached_fetch,
             candidate_limit=8,
         )
+        diag = diagnostics[row_index]
+        diag.update(reason=offer.get("reason") or offer.get("status"),
+                    candidate_events=offer.get("candidate_urls_count", 0),
+                    fetch_errors=offer.get("event_fetch_errors") or [])
         if offer.get("status") != "OK":
             rejected.append({
                 "match_id": match.get("match_id") or match.get("id"),
@@ -1517,11 +1619,21 @@ def build_selected_direct_feed(
                 "p2": match.get("p2"),
                 "scheduled_time": match.get("scheduled_time"),
                 "status": offer.get("status"),
+                "reason": diag["reason"],
+                "event_fetch_errors": diag["fetch_errors"],
                 "candidate_urls_count": offer.get("candidate_urls_count"),
                 "event_payloads_ok": offer.get("event_payloads_ok"),
             })
             continue
 
+        key = _match_id(match)
+        verified_at = observed_at.get(str(offer.get("event_id"))) or started_at
+        if key:
+            remembered[key] = {"match_id": key, "p1": match.get("p1"), "p2": match.get("p2"),
+                "scheduled_time": match.get("scheduled_time"), "event_id": str(offer.get("event_id")),
+                "event_url": offer.get("url"), "identity_verified": True, "last_verified_at": verified_at}
+        diag.update(reason="OK", event_id=offer.get("event_id"), observed_at=verified_at,
+                    market_counts=dict(offer.get("market_counts") or {}))
         selections = [
             dict(row)
             for row in (offer.get("canonical_selections") or [])
@@ -1535,6 +1647,7 @@ def build_selected_direct_feed(
             "event_id": offer.get("event_id"),
             "event_url": offer.get("url"),
             "operator_start_time": offer.get("start_time"),
+            "observed_at": verified_at,
             "direct_match_verified": offer.get("direct_match_verified") is True,
             "participant_order_reoriented": offer.get("participant_order_reoriented") is True,
             "canonical_selections": selections,
@@ -1563,10 +1676,20 @@ def build_selected_direct_feed(
     contains_prices = any(
         row.get("operator_prices_captured") is True for row in feed_matches
     )
+    reason_counts = {}
+    for row in diagnostics:
+        reason_counts[row["reason"]] = reason_counts.get(row["reason"], 0) + 1
     return {
+        "identity_bindings": list(remembered.values()),
+        "match_diagnostics": diagnostics,
+        "coverage": {"reason_counts": reason_counts,
+                     "remembered_event_matches": len(_remembered_bindings(matches, previous_feed)),
+                     "unique_event_fetches": len(payload_cache) + len(error_cache),
+                     "event_fetch_failures": len(error_cache), "batch_limit": max_matches,
+                     "event_request_budget": event_request_budget, "max_http_attempts_per_event": 2},
         "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
         "status": status,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": started_at,
         "operator": "superbet.pl",
         "source": EVENT_JSON_SOURCE,
         "scope": "CURRENT_TENIS_AI_MATCHES_INTERSECT_PUBLIC_SUPERBET_LISTING",
@@ -1596,8 +1719,11 @@ def write_selected_direct_sidecar(feed: dict, path: Path | str | None = None) ->
         raise ValueError("Direct sidecar must keep prices_used=false")
     if feed.get("production_influence") is not False or feed.get("playable_influence") is not False:
         raise ValueError("Direct sidecar must remain isolated from PROD and PLAYABLE")
-    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP"}:
+    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP", "NO_SAFE_OVERLAP", "DIRECT_LISTING_UNAVAILABLE"}:
         raise ValueError("unsafe Direct feed status must not overwrite the sidecar")
+
+    if feed.get("status") != "OK" and feed.get("matches"):
+        raise ValueError("failed Direct refresh cannot contain prices")
 
     for match in feed.get("matches") or []:
         if not isinstance(match, dict) or match.get("direct_match_verified") is not True:
@@ -1626,21 +1752,15 @@ def browser_selected_direct_feed(timeout: int = 25) -> dict:
     # Listing URLs are discovery only. An unrelated first event's optional
     # markets must not veto other events; each candidate is verified below by
     # resolve_selected_match_offer against exact public event JSON.
-    probe_result = browser_probe(timeout=timeout, inspect_sample=False)
-    if probe_result.get("status") != "OK":
-        return {
-            "mode": "SHADOW_SUPERBET_DIRECT_SELECTED_MATCH_FEED",
-            "status": "DIRECT_LISTING_UNAVAILABLE",
-            "listing_probe_status": probe_result.get("status"),
-            "contains_prices": False,
-            "operator_prices_metadata_only": True,
-            "prices_used": False,
-            "writes_canonical_context": False,
-            "production_influence": False,
-            "playable_influence": False,
-            "player_dna_influence": False,
-            "symphony_influence": False,
-        }
+    data_dir = Path(__file__).resolve().parents[1] / "frontend" / "data"
+    try:
+        previous = json.loads((data_dir / "superbet_direct_current.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        previous = {}
+    try:
+        probe_result = browser_probe(timeout=timeout, inspect_sample=False)
+    except Exception as exc:
+        probe_result = {"status": "LISTING_FETCH_FAILED", "error": type(exc).__name__, "match_urls": []}
 
     match_urls = [
         str(url)
@@ -1680,7 +1800,18 @@ def browser_selected_direct_feed(timeout: int = 25) -> dict:
             "symphony_influence": False,
         }
 
-    feed = build_selected_direct_feed(results, match_urls)
+    feed = build_selected_direct_feed(results, match_urls, previous_feed=previous)
+    feed["coverage"]["discovery_degraded"] = probe_result.get("status") != "OK"
+    feed["coverage"]["discovery"] = probe_result.get("discovery_diagnostics") or {}
+    if probe_result.get("status") != "OK":
+        for diagnostic in feed["match_diagnostics"]:
+            if diagnostic["reason"] == "NOT_IN_DISCOVERED_CATALOGUE":
+                diagnostic["reason"] = "DISCOVERY_UNAVAILABLE"
+        counts = feed["coverage"]["reason_counts"]
+        if "NOT_IN_DISCOVERED_CATALOGUE" in counts:
+            counts["DISCOVERY_UNAVAILABLE"] = counts.pop("NOT_IN_DISCOVERED_CATALOGUE")
+        if not feed["matches"]:
+            feed["status"] = "DIRECT_LISTING_UNAVAILABLE"
     feed["listing_probe_status"] = probe_result.get("status")
     feed["listing_match_urls_found"] = probe_result.get("match_urls_found")
     return feed
@@ -1689,7 +1820,7 @@ def browser_selected_direct_feed(timeout: int = 25) -> dict:
 def refresh_selected_direct_sidecar(timeout: int = 25) -> dict:
     """Refresh the isolated selected-match sidecar; never touch canonical context."""
     feed = browser_selected_direct_feed(timeout=timeout)
-    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP"}:
+    if feed.get("status") not in {"OK", "NO_CURRENT_OVERLAP", "NO_SAFE_OVERLAP", "DIRECT_LISTING_UNAVAILABLE"}:
         return {
             "mode": feed.get("mode"),
             "status": feed.get("status"),
@@ -1712,6 +1843,7 @@ def refresh_selected_direct_sidecar(timeout: int = 25) -> dict:
         "resolved_app_matches": feed.get("resolved_app_matches"),
         "rejected_candidate_matches": feed.get("rejected_candidate_matches"),
         "contains_prices": feed.get("contains_prices"),
+        "coverage": feed.get("coverage"),
         "operator_prices_metadata_only": True,
         "prices_used": False,
         "production_influence": False,
@@ -1843,6 +1975,263 @@ def browser_offer(url: str, timeout: int = 25) -> dict:
     finally:
         driver.quit()
 
+def _slug(value: object) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(ch for ch in text if not unicodedata.combining(ch))
+    text = re.sub(r"[^a-z0-9]+", "-", text.casefold()).strip("-")
+    return text
+
+
+def _pair_from_match_name(value: object) -> tuple[str | None, str | None]:
+    text = " ".join(str(value or "").split())
+    if not text:
+        return None, None
+    for separator in ("·", " vs ", " v "):
+        parts = text.split(separator, 1)
+        if len(parts) == 2:
+            p1, p2 = parts[0].strip(), parts[1].strip()
+            if p1 and p2:
+                return p1, p2
+    return None, None
+
+
+def _iter_event_records(value):
+    if isinstance(value, dict):
+        event_id = str(value.get("eventId") or value.get("event_id") or "").strip()
+        fixture = value.get("fixture") if isinstance(value.get("fixture"), dict) else value
+        match_name = fixture.get("event_name") or fixture.get("matchName") or fixture.get("match_name") or fixture.get("eventName")
+        p1, p2 = _pair_from_match_name(match_name)
+        if re.fullmatch(r"\d{5,20}", event_id) and p1 and p2:
+            yield {**value, "matchName": match_name, "sportId": fixture.get("sport_id", fixture.get("sportId"))}
+        for child in value.values():
+            yield from _iter_event_records(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _iter_event_records(child)
+
+
+def event_urls_from_payload(payload: object) -> list[str]:
+    """Extract concrete tennis event candidates from public Superbet listing JSON.
+
+    The resulting URL is only a discovery carrier. Final fixture acceptance is
+    still performed by ``superbet_direct`` against the exact public event JSON,
+    including player names and scheduled time.
+    """
+    out: list[str] = []
+    seen: set[str] = set()
+    for row in _iter_event_records(payload):
+        event_id = str(row.get("eventId") or row.get("event_id") or "").strip()
+        match_name = row.get("matchName") or row.get("match_name") or row.get("eventName")
+        p1, p2 = _pair_from_match_name(match_name)
+        if row.get("sportId") is not None and str(row["sportId"]) != "2":
+            continue
+        if not event_id or not p1 or not p2:
+            continue
+
+        concrete = None
+        for key in ("url", "eventUrl", "event_url", "seoUrl", "seo_url", "link"):
+            raw = str(row.get(key) or "").strip()
+            if not raw:
+                continue
+            candidate = urljoin(BASE, raw)
+            if (
+                _allowed_url(candidate)
+                and re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(candidate).path)
+                and _event_id_from_url(candidate) == event_id
+            ):
+                concrete = f"{BASE}{urlparse(candidate).path}"
+                break
+
+        if concrete is None:
+            left, right = _slug(p1), _slug(p2)
+            if not left or not right:
+                continue
+            concrete = f"{BASE}/kursy/tenis/{left}-vs-{right}-{event_id}"
+
+        if concrete not in seen:
+            seen.add(concrete)
+            out.append(concrete)
+    return out
+
+
+def _collect_dom_urls(driver) -> list[str]:
+    """Snapshot tennis links without retaining WebElement references.
+
+    Superbet virtualizes the listing while scrolling, so Selenium WebElements
+    can become stale between ``find_elements`` and ``get_attribute``. Reading
+    hrefs atomically inside the page avoids that race. A WebElement fallback is
+    kept only for drivers that cannot execute the snapshot script.
+    """
+    raw_hrefs: list[str] = []
+    try:
+        snapshot = driver.execute_script(
+            """
+            return Array.from(document.querySelectorAll('a[href*="/kursy/tenis/"]'))
+              .map(a => a.href || a.getAttribute('href') || '')
+              .filter(Boolean);
+            """
+        )
+        if isinstance(snapshot, list):
+            raw_hrefs.extend(str(value) for value in snapshot if value)
+    except Exception:
+        try:
+            from selenium.webdriver.common.by import By
+            from selenium.common.exceptions import StaleElementReferenceException
+
+            for element in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]'):
+                try:
+                    candidate = element.get_attribute("href")
+                except StaleElementReferenceException:
+                    continue
+                except Exception:
+                    continue
+                if candidate:
+                    raw_hrefs.append(str(candidate))
+        except (ImportError, Exception):
+            pass
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for candidate in raw_hrefs:
+        absolute = urljoin(BASE, candidate)
+        if (
+            _allowed_url(absolute)
+            and re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(absolute).path)
+        ):
+            canonical = f"{BASE}{urlparse(absolute).path}"
+            if canonical not in seen:
+                seen.add(canonical)
+                out.append(canonical)
+
+    try:
+        for candidate in discover_match_urls(driver.page_source):
+            if candidate not in seen:
+                seen.add(candidate)
+                out.append(candidate)
+    except Exception:
+        pass
+    return out
+
+
+def _drain_public_listing_json(driver) -> list[str]:
+    """Read only public listing XHR responses already loaded by the browser."""
+    try:
+        entries = driver.get_log("performance")
+    except Exception:
+        return []
+
+    out: list[str] = []
+    for entry in entries:
+        try:
+            envelope = json.loads(entry.get("message") or "{}")
+            message = envelope.get("message") or {}
+            if message.get("method") != "Network.responseReceived":
+                continue
+            params = message.get("params") or {}
+            response = params.get("response") or {}
+            parsed = urlparse(str(response.get("url") or ""))
+            if parsed.scheme != "https" or parsed.netloc != EVENT_API_HOST:
+                continue
+            query = parse_qs(parsed.query)
+            if parsed.path != "/v3/pl-PL/events" or query.get("sports") != ["2"] or query.get("index") != ["active-prematch"]:
+                continue
+            if int(response.get("status") or 0) != 200:
+                continue
+            mime = str(response.get("mimeType") or response.get("headers", {}).get("content-type") or "")
+            if "json" not in mime.casefold():
+                continue
+            request_id = params.get("requestId")
+            if not request_id:
+                continue
+            body = driver.execute_cdp_cmd("Network.getResponseBody", {"requestId": request_id})
+            raw = str((body or {}).get("body") or "")
+            if not raw or len(raw) > 25_000_000:
+                continue
+            if body.get("base64Encoded"):
+                raw = base64.b64decode(raw, validate=True).decode("utf-8")
+            payload = json.loads(raw)
+            out.extend(event_urls_from_payload(payload))
+        except Exception:
+            continue
+    return out
+
+
+def _collect_listing_urls(driver) -> tuple[list[str], dict]:
+    """Accumulate virtualized DOM and already-loaded v3 prematch catalogue JSON."""
+    seen: set[str] = set()
+    urls: list[str] = []
+    dom_found: set[str] = set()
+    network_found: set[str] = set()
+    transient_scroll_errors = 0
+
+    def add(items, bucket: set[str]):
+        for candidate in items:
+            absolute = urljoin(BASE, str(candidate or ""))
+            if not (
+                _allowed_url(absolute)
+                and re.fullmatch(r"/kursy/tenis/.+-\d+", urlparse(absolute).path)
+            ):
+                continue
+            canonical = f"{BASE}{urlparse(absolute).path}"
+            bucket.add(canonical)
+            if canonical not in seen:
+                seen.add(canonical)
+                urls.append(canonical)
+
+    stable_rounds = 0
+    previous_count = -1
+    previous_height = -1
+    for _ in range(80):
+        add(_collect_dom_urls(driver), dom_found)
+        add(_drain_public_listing_json(driver), network_found)
+
+        try:
+            metrics = driver.execute_script(
+                """
+                const el = document.scrollingElement || document.documentElement;
+                const h = el ? (el.scrollHeight || 0) : 0;
+                const y = window.scrollY || (el ? el.scrollTop : 0) || 0;
+                const vh = window.innerHeight || 1000;
+                window.scrollBy(0, Math.max(800, Math.floor(vh * 0.85)));
+                return [h, y, vh];
+                """
+            ) or [0, 0, 1000]
+        except Exception:
+            transient_scroll_errors += 1
+            if transient_scroll_errors >= 5:
+                break
+            time.sleep(0.25)
+            continue
+
+        height = int(metrics[0] or 0)
+        y = int(metrics[1] or 0)
+        vh = int(metrics[2] or 1000)
+        time.sleep(0.35)
+
+        count = len(urls)
+        near_bottom = y + vh >= max(0, height - 250)
+        if count == previous_count and height == previous_height and near_bottom:
+            stable_rounds += 1
+        else:
+            stable_rounds = 0
+        previous_count = count
+        previous_height = height
+        if stable_rounds >= 8:
+            break
+
+    add(_collect_dom_urls(driver), dom_found)
+    add(_drain_public_listing_json(driver), network_found)
+
+    return urls, {
+        "status": "OK" if urls else "NO_MATCH_URLS",
+        "urls_found": len(urls),
+        "dom_urls_found": len(dom_found),
+        "network_event_urls_found": len(network_found),
+        "transient_scroll_errors": transient_scroll_errors,
+        "discovery": "INCREMENTAL_SCROLL_PLUS_PUBLIC_LISTING_XHR",
+    }
+
+
 def browser_probe(timeout: int = 25, *, inspect_sample: bool = True) -> dict:
     """Probe the public JS-rendered site with an isolated headless browser."""
     try:
@@ -1869,82 +2258,15 @@ def browser_probe(timeout: int = 25, *, inspect_sample: bool = True) -> dict:
         driver.get(TENNIS_LISTING_URL)
 
         def listing_ready(drv):
-            hrefs = [
-                str(el.get_attribute("href") or "")
-                for el in drv.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
-            ]
-            return any(_allowed_url(href) for href in hrefs) or bool(discover_match_urls(drv.page_source))
+            return bool(_collect_dom_urls(drv))
 
         try:
             WebDriverWait(driver, timeout).until(listing_ready)
         except Exception:
             pass
 
-        # Superbet lazy-loads the tennis listing. A single DOM snapshot only
-        # exposes the first rendered batch. Accumulate canonical event URLs while
-        # scrolling; Direct stays isolated and cannot affect MODEL/RAW or PLAYABLE.
-        import time as _time
-
-        match_urls = []
-        seen = set()
+        match_urls, discovery = _collect_listing_urls(driver)
         listing_html = driver.page_source
-        stable_rounds = 0
-        previous_count = -1
-
-        for _ in range(40):
-            listing_html = driver.page_source
-            direct_hrefs = [
-                str(el.get_attribute("href") or "")
-                for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
-            ]
-            for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
-                absolute = urljoin(BASE, candidate)
-                if not _allowed_url(absolute):
-                    continue
-                path = urlparse(absolute).path
-                if not re.fullmatch(r"/kursy/tenis/.+-\d+", path):
-                    continue
-                canonical = f"{BASE}{path}"
-                if canonical not in seen:
-                    seen.add(canonical)
-                    match_urls.append(canonical)
-
-            before_height = int(driver.execute_script(
-                "return (document.scrollingElement || document.documentElement).scrollHeight || 0"
-            ) or 0)
-            driver.execute_script(
-                "window.scrollTo(0, (document.scrollingElement || document.documentElement).scrollHeight)"
-            )
-            _time.sleep(0.5)
-            after_height = int(driver.execute_script(
-                "return (document.scrollingElement || document.documentElement).scrollHeight || 0"
-            ) or 0)
-
-            current_count = len(match_urls)
-            if current_count == previous_count and after_height <= before_height:
-                stable_rounds += 1
-            else:
-                stable_rounds = 0
-            previous_count = current_count
-            if stable_rounds >= 4:
-                break
-
-        listing_html = driver.page_source
-        direct_hrefs = [
-            str(el.get_attribute("href") or "")
-            for el in driver.find_elements(By.CSS_SELECTOR, 'a[href*="/kursy/tenis/"]')
-        ]
-        for candidate in [*direct_hrefs, *discover_match_urls(listing_html)]:
-            absolute = urljoin(BASE, candidate)
-            if not _allowed_url(absolute):
-                continue
-            path = urlparse(absolute).path
-            if not re.fullmatch(r"/kursy/tenis/.+-\d+", path):
-                continue
-            canonical = f"{BASE}{path}"
-            if canonical not in seen:
-                seen.add(canonical)
-                match_urls.append(canonical)
 
         result = {
             "mode": "READ_ONLY_PUBLIC_SUPERBET_DIRECT_BROWSER_PROBE",
@@ -1958,6 +2280,7 @@ def browser_probe(timeout: int = 25, *, inspect_sample: bool = True) -> dict:
             "match_urls_found": len(match_urls),
             "match_urls": match_urls,
             "sample_match_url": match_urls[0] if match_urls else None,
+            "discovery_diagnostics": discovery,
         }
         if not match_urls:
             parsed = parse_html(listing_html)
@@ -2062,6 +2385,11 @@ def browser_probe(timeout: int = 25, *, inspect_sample: bool = True) -> dict:
         return result
     finally:
         driver.quit()
+
+def discover_live_superbet_urls(timeout: int = 30) -> tuple[list[str], dict]:
+    result = browser_probe(timeout=timeout, inspect_sample=False)
+    return result.get("match_urls") or [], result.get("discovery_diagnostics") or {"status": result.get("status")}
+
 
 def main() -> None:
     mode = str(sys.argv[1] if len(sys.argv) > 1 else "probe").strip().casefold()

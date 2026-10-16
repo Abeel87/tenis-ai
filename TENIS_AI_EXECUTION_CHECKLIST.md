@@ -25,6 +25,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, LOCAL VALIDATION**
+- AUTHORIZATION: user approved the proposed collection repair, shared discovery,
+  verified identity reuse, missing-price diagnostics and refresh reliability work.
+- BRANCH: `fix/superbet-discovery-20261016`; baseline main `18a78e75eebf583ec5fbaaf99eb322eef9df76de`.
+- [x] Reproduce: public v3 nested fixture schema was ignored; main Direct lacked XHR
+  discovery. Six new regression cases failed before repair.
+- [x] Canonical discovery ownership, price-free identity continuity, fail-closed
+  empty refreshes, bounded transient retry and admin diagnostic presentation implemented.
+- [x] Read-only live probe: 167 discovered events; 75 app candidates; 76 unique reads;
+  73 exact verified matches; two TIME_MISMATCH rejections; no transport failures.
+- [x] Focused final Direct/discovery/PWA regression: 47 passed. Earlier broader
+  discovery/fixture/iNeed suite: 75 passed. Static UI check passed.
+- [x] Runtime UI smoke passed for real data and both readiness fixtures; match-time
+  and decision-center smoke passed.
+- [~] Full regression/CI pending on final head. Initial full run
+  found a diagnostic row-index error and a stale PWA cache assertion; both are
+  repaired and covered by the passing focused run. No deployment claim yet.
+- [ ] Exact-head full CI, fresh-main inspection, green-only merge and real refresh/delivery proof.
+- NEXT EXACT ACTION: finish local regression/UI verification, publish branch/PR, validate
+  all CI, recheck main, merge and verify normal production Direct counts + private/UI delivery.
+- DO NOT REDO: October 15 capacity/compression/settlement fixes; unrelated #523/#537 remain untouched.
+- BANS: model math, thresholds, probabilities, training, PLAYABLE rules, iNeed economic
+  calculations/scope, builder lifecycle, settlement, paid quota changes and real bets.
+
+
 **APPLICATION TECHNICAL REPAIR — 2026-10-15, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user requested technical repairs and a broader code/application review. Model/scoring/economic semantics, existing market scope and SHADOW isolation are preserved.
 - SOURCE: PR #545, head `04f947691e5116545bf5e1766003905a207268ac`, merged as `698de5f4807c7da900a64e8bf95195deccab4f33` against freshly rechecked main `a154d1e4e21457879ba14a3b18a435fa7d1a77c6`. Closeout branch: `docs/app-repair-verification-20261015`.
