@@ -25,6 +25,36 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**SOLAR UI AND READABLE REPORTS — 2026-10-16, READY FOR PUBLICATION**
+- AUTHORIZATION: owner selected Solar and requested implementation/deployment plus
+  readable replacements for raw code/JSON everywhere. Existing UI-only direct-commit
+  exception applies; no model/learning promotion is authorized.
+- BASE: fresh main `8650a562a1608a5295f80387577c9ee5c8aa8d98`.
+- BRANCH: `ui/solar-20261016`; isolated checkout `tenis-ai-solar`.
+- [x] Raw report reproduction and canonical-owner audit.
+- [x] Solar in canonical stylesheet, shared readable report rendering, compact
+  overview/Neuron, source-safe odds emphasis, manifest/PWA cache refresh.
+- [x] Structured report regression; UI static/runtime smoke; 17 focused Python
+  tests; real Chromium user/moderator/admin test with isolated authentication.
+- [x] Mobile layout 320/412 px and desktop 1280 px checked; screenshots reviewed.
+- [x] Full regression: 1680 passed; two exact-line inventory checks initially
+  failed after the presentation code moved. The existing readiness inventory
+  now records the same consumers plus one display-label token; the focused
+  22-test suite (including both failing checks) passes. No readiness policy changed.
+- [x] Both readiness fixture runtime smokes, decision-center, match-time and
+  all 28 JavaScript syntax checks passed.
+- [ ] Final fresh-main synchronization, publication and live-byte verification.
+- FILES: frontend app/style/index/manifest/sw; report/static/browser tests;
+  readiness source inventory and contract test; audit, registry, architecture
+  and this checkpoint.
+- DO NOT REDO: completed Superbet/model/storage repairs and design selection.
+- NEXT EXACT ACTION: collect final tests, synchronize generated-data drift,
+  commit the UI-only scope, deploy through existing Fast Pages workflow and
+  verify public source bytes/PWA revision. Unrelated PRs stay untouched.
+- BANS: backend/model math, probabilities, thresholds, weights, training,
+  PLAYABLE, settlement, iNeed economics/scope, auth rules and real betting.
+
+
 **SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user approved the proposed collection repair, shared discovery,
   verified identity reuse, missing-price diagnostics and refresh reliability work.

@@ -460,6 +460,14 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B20. Frontend
 
+**Solar presentation (2026-10-16, owner-authorized):** `frontend/app.js` replaces
+its canonical raw-report renderer with escaped labeled fields, lazy nested
+groups and complete 20-entry pagination. The admin overview and Neuron card
+use only existing report fields; SHADOW and missingness remain explicit.
+`frontend/style.css` owns the single Solar theme for all routes. No model,
+price authority, data transport or authentication contract changes. See
+`audits/solar_ui_20261016.md` and LIVE CHECKPOINT for rollout evidence.
+
 **Status:** PROD presentation layer.
 
 **Odpowiedzialność:** prezentować kanoniczne backend outputs.

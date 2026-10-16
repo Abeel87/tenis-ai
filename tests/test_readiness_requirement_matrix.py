@@ -16,7 +16,7 @@ EXPECTED_LINE_SITES = {
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {382, 393},
     "backend/prediction_integrity_v78a.py": {156},
-    "frontend/app.js": {129, 162, 189, 197, 213},
+    "frontend/app.js": {129, 168, 201, 228, 244, 256},
 }
 
 
@@ -31,7 +31,7 @@ def _token_lines(relative: str) -> set[int]:
 
 def test_requirement_matrix_covers_every_phase3_consumer_source_line():
     matrix = MATRIX.read_text(encoding="utf-8")
-    assert sum(len(lines) for lines in EXPECTED_LINE_SITES.values()) == 19
+    assert sum(len(lines) for lines in EXPECTED_LINE_SITES.values()) == 20
     for relative, expected_lines in EXPECTED_LINE_SITES.items():
         assert _token_lines(relative) == expected_lines
         for line in sorted(expected_lines):
@@ -44,8 +44,8 @@ def test_requirement_matrix_freezes_exact_token_count_and_unknown_semantics():
         for relative in EXPECTED_LINE_SITES
     )
     matrix = MATRIX.read_text(encoding="utf-8")
-    assert total_tokens == 22
-    assert "22 exact `model_ready` tokens on 19 source lines" in matrix
+    assert total_tokens == 23
+    assert "23 exact `model_ready` tokens on 20 source lines" in matrix
     assert "UNKNOWN / NO MIGRATION" in matrix
     assert "never inferred `READY` or `NOT_READY`" in matrix
 

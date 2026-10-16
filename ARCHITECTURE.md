@@ -111,6 +111,12 @@ The active evidence-capture step uses `backend/superbet_builder_terminal_evidenc
 
 ## 4. Frontend
 
+The shell also owns the shared readable-report presenter: source values become
+escaped labeled fields, expandable groups and bounded pages without changing
+source data. Report references are cleared on rerender/logout. Solar is implemented
+in the existing canonical stylesheet and shares the existing PWA asset delivery.
+No second report source, theme loader or model owner is introduced.
+
 The canonical runtime map is based on the actual `frontend/index.html` imports and delivery producers, not historical filenames.
 
 - `scripts/build_delivery.mjs` - canonical producer of the lightweight UI projection: `data/delivery/index.json`, content-addressed `data/delivery/matches/<sha>.json`, `data/delivery/symphony.json`, and delivery diagnostics.

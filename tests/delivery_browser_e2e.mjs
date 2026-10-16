@@ -44,6 +44,33 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
   await page.evaluate(()=>location.hash='#admin/dashboard');
   if(role==='admin'){await page.getByRole('heading',{name:'Admin Control Center'}).waitFor();await page.getByRole('link',{name:'TECHNICZNE',exact:true}).click();await page.getByRole('heading',{name:'Admin Control Center'}).waitFor();assert(await page.locator('#mode-toggle').isVisible())}
   else{await page.getByText('Brak uprawnień administratora.',{exact:true}).waitFor();assert(await page.locator('#mode-toggle').isHidden())}
+  if(role==='admin'){
+   await page.evaluate(()=>location.hash='#admin/models');
+   await page.locator('.neuron-overview').waitFor();
+   await page.locator('[data-report="data/neuron_metrics.json"]').click();
+   await page.locator('#report-data .report-row').first().waitFor();
+   assert.equal(await page.locator('#app pre, #app code').count(),0,'Reports must render human-readable fields');
+   const nested=page.locator('#report-data details[data-report-node]').filter({has:page.locator('summary',{hasText:'Test historyczny'})}).last();
+   await nested.locator(':scope > summary').click();
+   await nested.locator('.report-row').first().waitFor();
+   assert((await nested.innerText()).includes('Trafność'),'Nested model metrics expand');
+   for(const route of ['dashboard','data','superbet','models']){
+    await page.evaluate(route=>location.hash='#admin/'+route,route);
+    await page.locator('.admin-modes').waitFor();
+    for(const width of [320,412,1280]){
+     await page.setViewportSize({width,height:915});
+     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),route+' fits '+width+'px');
+    }
+    if(process.env.TENIS_UI_SCREENSHOTS){
+     await page.setViewportSize({width:412,height:915});
+     fs.mkdirSync(process.env.TENIS_UI_SCREENSHOTS,{recursive:true});
+     await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,route+'.png')});
+    }
+   }
+   await page.setViewportSize({width:412,height:915});
+   await page.evaluate(()=>location.hash='#start');await page.locator('.hero').waitFor();
+   if(process.env.TENIS_UI_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'start.png')});
+  }
   await page.evaluate(()=>location.hash='#more');await page.getByRole('heading',{name:'Więcej',exact:true}).waitFor();
   const ineed=page.locator('a[href="#ineed"]');if(role==='user')assert.equal(await ineed.count(),0);else assert(await ineed.count()>0,'Staff entry for iNeed$');
   if(role==='user'){

@@ -61,6 +61,6 @@ Audited exact-token source count: **21 files**.
 
 Consumer-specific migration requirements are defined in `TENIS_AI_READINESS_REQUIREMENT_MATRIX.md`, audited on main `eec6483ed942ebab9193ef4bd4681ac352f3490c`.
 
-The matrix covers **22 exact legacy tokens on 19 source lines** across runtime/collection, learning/SHADOW, telemetry/guard and frontend consumers. No runtime/learning gate is approved for replacement. Missing sufficiency policy remains `UNKNOWN / NO MIGRATION`.
+The matrix covers **23 exact legacy tokens on 20 source lines (including one display-only label added by Solar)** across runtime/collection, learning/SHADOW, telemetry/guard and frontend consumers. No runtime/learning gate is approved for replacement. Missing sufficiency policy remains `UNKNOWN / NO MIGRATION`.
 
 The first selected observability-only path is additive aggregate/meta telemetry in `backend/update.py` (R12/R13), followed by diagnostic/admin UI counters only after exact snapshot alignment is proven. Legacy `meta.model_ready` and all current runtime behavior remain unchanged in this audit phase.

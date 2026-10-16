@@ -1,0 +1,25 @@
+// Report presentation preserves source meaning while avoiding unbounded JSON dumps.
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const source=fs.readFileSync(process.env.TENIS_REPORT_APP||'frontend/app.js','utf8');
+const start=source.indexOf('/* Readable reports:');
+assert(start>=0,'Reports need a structured presenter instead of raw JSON');
+const code=source.slice(start,source.indexOf('function moderatorPage()',start));
+const ctx={E:v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),systemDate:v=>new Date(v).toLocaleString('pl-PL',{timeZone:'Europe/Warsaw'})};
+vm.createContext(ctx);vm.runInContext(code,ctx);
+const html=ctx.technical('Raport <test>',{missing:null,zero:0,enabled:false,passed:true,generated_at:'2026-10-16T10:00:00Z',message:'<img src=x onerror=alert(1)>'},true);
+assert(!/<(?:pre|code)\b/.test(html),'No source dump');
+assert(html.includes('Brak danych')&&html.includes('>0<')&&html.includes('>Nie<')&&html.includes('>Tak<'),'Missing, zero and booleans stay distinct');
+assert(html.includes('12:00:00'),'Source timestamp is Warsaw time');
+assert(html.includes('&lt;img')&&!html.includes('<img'),'Source text is escaped');
+const values=Array.from({length:47},(_,id)=>({id,p1:'Alpha '+id,p2:'Beta',nested:{score:id}}));
+const before=JSON.stringify(values),list=ctx.technical('Mecze',values,true);
+const id=list.match(/data-report-more="(\d+)"/)[1];
+assert(list.includes('Alpha 19')&&!list.includes('Alpha 20'),'First page is bounded');
+const middle=ctx.reportPage(id),last=ctx.reportPage(id);
+assert(middle.includes('Alpha 39')&&last.includes('Alpha 46')&&!last.includes('data-report-more'),'All rows remain reachable');
+assert.equal(JSON.stringify(values),before,'Source records remain unchanged');
+assert(!list.includes('Wynik'),'Nested records load only when expanded');
+assert.equal(ctx.reportPage('missing'),'','Stale report control cannot expose old data');
+console.log('PASS: structured reports, missing/zero/false, timezone, escaping, bounded expansion, complete paging, read-only sources');

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+await import('./readable_reports.mjs');
 const root='frontend',read=n=>fs.readFileSync(path.join(root,n),'utf8');
 const index=read('index.html'),style=read('style.css'),app=read('app.js'),ineed=read('ineed.js'),auth=read('account.js'),sw=read('sw.js'),manifest=JSON.parse(read('manifest.webmanifest'));
 const scripts=[...index.matchAll(/<script src="([^"]+)"/g)].map(x=>x[1]).filter(x=>!x.startsWith('https:'));
