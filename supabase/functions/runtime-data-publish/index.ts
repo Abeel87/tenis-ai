@@ -11,10 +11,10 @@ const WORKFLOW = ".github/workflows/runtime-private-delivery.yml";
 const EXPECTED_WORKFLOW_REF = `${REPOSITORY}/${WORKFLOW}@${REF}`;
 const ISSUER = "https://token.actions.githubusercontent.com";
 const JWKS = createRemoteJWKSet(new URL(`${ISSUER}/.well-known/jwks`));
-const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch"]);
+const ALLOWED_EVENTS = new Set(["workflow_run", "workflow_dispatch", "push"]);
 const SIGNED_UPLOAD_BATCH_SIZE = 8;
 
-type Layer = "core" | "market" | "dna" | "neuron";
+type Layer = "core" | "market" | "dna" | "neuron" | "research";
 type AccessTier = "b" | "c";
 type RuntimeFile = {
   path: string;
@@ -49,7 +49,7 @@ function serviceKey(): string {
 }
 
 function layerOf(value: unknown): Layer {
-  if (value === "core" || value === "market" || value === "dna" || value === "neuron") return value;
+  if (value === "core" || value === "market" || value === "dna" || value === "neuron" || value === "research") return value;
   throw new Error("Invalid layer");
 }
 
@@ -119,12 +119,16 @@ async function activeHashes(supabase: any): Promise<Set<string>> {
 
 async function prepare(supabase: any, auth: Awaited<ReturnType<typeof authorize>>, body: any) {
   const layer = layerOf(body.layer);
+  if (auth.payload.event_name === "push" && layer !== "research") return response({ error: "push may only publish the admin research report" }, 403);
   const rawFiles = Array.isArray(body.files) ? body.files : [];
   if (!rawFiles.length || rawFiles.length > 2000) {
     return response({ error: "files must contain 1..2000 items" }, 400);
   }
 
   const files = rawFiles.map(cleanFile);
+  if (layer === "research" && (files.length !== 1 || files[0].path !== "data/self_evolution_ui.json" || files[0].tier !== "c" || files[0].size_bytes > 400000)) {
+    return response({ error: "research requires one bounded admin report" }, 400);
+  }
   if (new Set(files.map((file) => file.path)).size !== files.length) {
     return response({ error: "duplicate logical path" }, 400);
   }
@@ -203,6 +207,7 @@ async function prepare(supabase: any, auth: Awaited<ReturnType<typeof authorize>
 
 async function activate(supabase: any, auth: Awaited<ReturnType<typeof authorize>>, body: any) {
   const layer = layerOf(body.layer);
+  if (auth.payload.event_name === "push" && layer !== "research") return response({ error: "push may only publish the admin research report" }, 403);
   const generation = String(body.generation || "");
   if (!/^[0-9a-f-]{36}$/.test(generation)) return response({ error: "Invalid generation" }, 400);
   const expected = body.expected_generation == null ? null : String(body.expected_generation);

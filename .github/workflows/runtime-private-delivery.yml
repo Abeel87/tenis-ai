@@ -12,23 +12,27 @@ on:
           - market
           - dna
           - neuron
+          - research
   workflow_run:
     workflows:
       - Update tennis data and deploy Pages
       - Superbet hourly market refresh
       - Player DNA SHADOW refresh
       - Neuron SHADOW research
+      - Self Evolution SHADOW research
     types: [completed]
   push:
     branches: [main]
     paths:
       - scripts/gc_runtime_private.py
+      - scripts/project_self_evolution_ui.py
       - supabase/functions/runtime-data-gc/**
       - supabase/migrations/20260916064000_runtime_private_object_limit.sql
       - .github/workflows/runtime-private-delivery.yml
 
 permissions:
   contents: read
+  actions: read
   id-token: write
 
 concurrency:
@@ -41,6 +45,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'push' ||
         (
           github.event_name == 'workflow_run' &&
           github.event.workflow_run.conclusion == 'success' &&
@@ -66,12 +71,17 @@ jobs:
           set -euo pipefail
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
             layer="$MANUAL_LAYER"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            # Re-project the last trusted artifact after publisher/UI-delivery updates.
+            # Push attestation is restricted to this one admin-only layer by Edge.
+            layer="research"
           else
             case "$PRODUCER" in
               "Update tennis data and deploy Pages") layer="core" ;;
               "Superbet hourly market refresh") layer="market" ;;
               "Player DNA SHADOW refresh") layer="dna" ;;
               "Neuron SHADOW research") layer="neuron" ;;
+              "Self Evolution SHADOW research") layer="research" ;;
               *) echo "::error::Unknown producer: $PRODUCER"; exit 1 ;;
             esac
           fi
@@ -80,6 +90,29 @@ jobs:
       - name: Rebuild lazy Pages bundles for core snapshot
         if: steps.layer.outputs.layer == 'core'
         uses: ./.github/actions/prepare-pages
+
+      - name: Restore and project trusted SHADOW research evidence
+        if: steps.layer.outputs.layer == 'research'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRODUCER_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          run_id="$PRODUCER_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow self-evolution-shadow.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+          [[ "$run_id" =~ ^[0-9]+$ ]]
+          evidence="$RUNNER_TEMP/self-evolution-ui-evidence"
+          mkdir -p "$evidence"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$evidence/run.json"
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name "self-evolution-shadow-$run_id" --dir "$evidence/report"
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name self-evolution-memory --dir "$evidence/memory"
+          python scripts/project_self_evolution_ui.py \
+            --run "$evidence/run.json" \
+            --report "$evidence/report/self_evolution_shadow.json" \
+            --memory "$evidence/memory/self-evolution-memory.json" \
+            --output frontend/data/self_evolution_ui.json
 
       - name: Publish private content-addressed snapshot
         env:
