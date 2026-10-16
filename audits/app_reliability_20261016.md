@@ -75,3 +75,10 @@ run. Publisher-code pushes may publish only the single bounded tier-C research
 report; prepare and activate both reject every production layer for push events.
 Scheduled research completions keep using the existing workflow-run OIDC contract.
 No raw report, draft coupon, user credential or training dataset is made public.
+
+Live database preparation succeeded as migration `20261016130209`; the repository
+filename uses that assigned version. Publisher Edge v4 is active. A rolled-back
+two-account RLS probe verified owner access and rejected cross-account reads,
+updates and inserts; no probe rows remain. Anonymous SELECT/INSERT grants are
+absent. Security/performance advisors have no new findings. Unauthenticated
+publisher and reader calls both returned HTTP 401.

@@ -31,6 +31,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   lazy admin reports, synchronized preferences and common data status.
 - BASE: `553d5c294cf94f5aa6d3a4c6ac94f285f495106c`; branch
   `feat/app-reliability-20261016`, isolated worktree `tenis-ai-reliability`.
+- PR: #549; rebased onto bot-only main
+  `924f53e3eee92ebf79dd864636713971292a289b` before publication.
 - [x] Fresh main/PR/CI and canonical-owner inspection; no unrelated PR changes.
 - [x] Browser reproduction of refresh clearing the visible list (0 instead of 1).
 - [x] Implement/verify transactional refresh and read-only availability reasons.
@@ -43,10 +45,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   with all 273 PLAYABLE comparisons. Full regression: 1697 passed, two obsolete
   exact-source assertions updated for request timeout and restricted research
   push publication; both now pass in the focused suite.
+- [x] Live additive migration `20261016130209` and publisher Edge version 4.
+  Migration filename matches the version assigned by the deployment service.
+  Transactional RLS proof: own read/update allowed, cross-user read/update/insert
+  denied, anon grants absent, test rows rolled back. Advisors: no new findings.
+  Both reader and publisher reject unauthenticated requests with HTTP 401.
 - [~] Full tests, green PR, additive schema/compatible Edge rollout, merge,
   Pages/private report verification and final checkpoint.
-- NEXT EXACT ACTION: rebase on current bot-only main, publish PR and verify all
-  checks; apply additive migration and compatible Edge before green merge.
+- NEXT EXACT ACTION: wait for all checks on PR #549, fresh-main check, green
+  merge, verify Pages assets and automatic private research publication.
 - DO NOT REDO: reproduction, actual artifact projection from run 38879366541,
   Solar design, existing Superbet repair or model training.
 - BANS: model math/weights/training, probability, PLAYABLE decision rules,
