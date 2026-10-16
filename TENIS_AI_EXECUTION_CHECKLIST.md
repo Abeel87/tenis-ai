@@ -25,10 +25,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, LOCAL VALIDATION**
+**SUPERBET DIRECT COVERAGE REPAIR — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: user approved the proposed collection repair, shared discovery,
   verified identity reuse, missing-price diagnostics and refresh reliability work.
-- BRANCH: `fix/superbet-discovery-20261016`; baseline main `18a78e75eebf583ec5fbaaf99eb322eef9df76de`.
+- SOURCE: PR #547, head `252bdb252fb458e137f8dd2abee5c880a255ea00`, merged as
+  `ec908de4764b344db87297a35ca5131e5882db2b` against freshly rechecked main
+  `fcca685f8e236544c15f9354c08ae8a6ab0d92c5`. Closeout branch:
+  `docs/superbet-discovery-verification-20261016`.
 - [x] Reproduce: public v3 nested fixture schema was ignored; main Direct lacked XHR
   discovery. Six new regression cases failed before repair.
 - [x] Canonical discovery ownership, price-free identity continuity, fail-closed
@@ -39,12 +42,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   discovery/fixture/iNeed suite: 75 passed. Static UI check passed.
 - [x] Runtime UI smoke passed for real data and both readiness fixtures; match-time
   and decision-center smoke passed.
-- [~] Full regression/CI pending on final head. Initial full run
-  found a diagnostic row-index error and a stale PWA cache assertion; both are
-  repaired and covered by the passing focused run. No deployment claim yet.
-- [ ] Exact-head full CI, fresh-main inspection, green-only merge and real refresh/delivery proof.
-- NEXT EXACT ACTION: finish local regression/UI verification, publish branch/PR, validate
-  all CI, recheck main, merge and verify normal production Direct counts + private/UI delivery.
+- [x] Full final-source local regression: 1682 passed in 136.90s. Remote full suite:
+  1682 passed in 42.57s (health job `116926938869`). Initial validation issues were
+  corrected before the final green runs.
+- [x] All 12 PR workflows passed: 15 successful checks and two intentional
+  production-only skips. Mobile browser job `116926938893` passed. Fresh main
+  remained unchanged before the green-only merge.
+- [x] Production Update/Pages `38887707148` SUCCESS; deploy job `116937787096`.
+  Final full regression after generated layers: 1682 passed in 33.96s.
+  Data commit / last verified main: `91aa93cde9009d149efa22159731f9380b95c877`.
+- [x] Published Direct at `2026-10-16T10:37:56.264334+00:00`: 84 app fixtures,
+  189 discovered event URLs, 65 candidates, 62 exact verified matches, 66 unique
+  event reads and zero fetch failures. Remaining reasons: 19
+  `NOT_IN_DISCOVERED_CATALOGUE`, three `TIME_MISMATCH`. Counts describe this
+  source snapshot, not PLAYABLE, all operator coverage or a fixed success rate.
+- [x] Read-only public verification at 10:55 UTC: app.js and sw.js match tested
+  source bytes; Direct matches the data commit and manifest SHA-256; delivery
+  diagnostics exactly project source counts/reasons. All 84 fixtures are accounted
+  for, all included prices have fresh observation times and all 62 identity hints
+  are price-free. PWA cache revision: `20261016-superbet-discovery`.
+- [x] Private core publication `38890316033` and its normal GC both SUCCESS.
+  Publisher confirmed 135 files / 125 uploaded objects, active generation
+  `802caca8-85e2-4e24-9034-4ae549d188f6` at 10:57:40 UTC for the same source SHA.
+- [x] Subsequent normal market refresh `38890316143` also SUCCESS. At 10:59:32 UTC,
+  it freshly revalidated 62 remembered identities and resolved 74/84 fixtures,
+  with 200 discovered URLs, 78 unique reads and zero fetch failures. Seven
+  catalogue gaps and three time mismatches remain. Last verified main:
+  `90b52346ff84b5e0ed85e76758efc4212423c986`; its drift is generated data only.
+  These are producer-run counts; the independent public-byte proof above covers
+  the earlier core snapshot.
+- NEXT EXACT ACTION: observe normal schedules and actual source timestamps; no
+  further source repair or manual refresh is required for PR #547. Reopen the PWA
+  for the new admin diagnostics. Catalogue gaps and schedule mismatches remain
+  explicit; do not weaken exact identity/time/market verification to fill them.
 - DO NOT REDO: October 15 capacity/compression/settlement fixes; unrelated #523/#537 remain untouched.
 - BANS: model math, thresholds, probabilities, training, PLAYABLE rules, iNeed economic
   calculations/scope, builder lifecycle, settlement, paid quota changes and real bets.

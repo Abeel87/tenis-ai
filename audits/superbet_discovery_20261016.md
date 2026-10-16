@@ -52,13 +52,55 @@ not a guaranteed production coverage ratio or a claim of 73 PLAYABLE matches.
 
 ## Validation and deployment
 
-Targeted parser/discovery/identity/iNeed regression: 75 passed before the final
-bounded-retry and duplicate-input tests. Final focused Direct/discovery/PWA
-regression: 47 passed. Static UI, runtime UI (real data and both readiness
-fixtures), match-time and decision-center smoke passed. Full suite, exact-head
-CI, merge and publication checks are required and recorded in the execution
-checkpoint. Initial full-run issues (diagnostic row indexing and cache revision
-assertion) were repaired before the final focused pass.
+Focused final Direct/discovery/PWA suite: 47 passed. Earlier broader fixture/iNeed
+suite: 75 passed. Static UI, runtime UI (real data and both readiness fixtures),
+match-time and decision-center smoke passed. Full final-source local regression:
+1682 passed in 136.90s. Remote full regression: 1682 passed in 42.57s.
+
+PR #547 head `252bdb252fb458e137f8dd2abee5c880a255ea00` passed all 12 workflows
+(15 successful checks, two intentional production-only skips), including mobile
+browser job `116926938893`. It merged as
+`ec908de4764b344db87297a35ca5131e5882db2b` against fresh unchanged main
+`fcca685f8e236544c15f9354c08ae8a6ab0d92c5`.
+
+Production Update/Pages run `38887707148` completed SUCCESS, including final
+generated-data regression (1682 passed in 33.96s) and Pages deployment job
+`116937787096`. It published data commit
+`91aa93cde9009d149efa22159731f9380b95c877`.
+
+The actual production snapshot, generated at `2026-10-16T10:37:56.264334+00:00`,
+contains 84 app fixtures, 189 discovered event URLs (143 DOM and 144 XHR, with
+overlap), 65 candidates, 62 exact verified matches and 66 unique event reads.
+There were no fetch failures and no degraded discovery. One remembered identity
+was revalidated. All fixtures have a reason: 62 OK, 19
+`NOT_IN_DISCOVERED_CATALOGUE`, three `TIME_MISMATCH`. This is a different fixture
+population from the predeployment probe; do not derive a before/after ratio or
+claim that 62 fixtures are PLAYABLE.
+
+Read-only public verification at 10:55 UTC confirms app.js and sw.js equal the
+tested source bytes, the Direct feed equals its committed source and delivery
+manifest digest, and diagnostics exactly project the source fields. All included
+prices have fresh observation times; the 62 retained identity hints contain no
+prices. The public source SHA descends from the reviewed merge. SHA-256 evidence:
+
+- app.js: `a3ad731451169f6d99c4d3bd4a3504a761bcf4265f81b815689b2ae7d9cdfff9`
+- sw.js: `99f514130c7f5ecccab172a04dbd718342aa595815e64f96dc77bbc658705247`
+- Direct: `15fc00457d737ade732cfdac97afa06575ebc99022697b56ae8db782fb69a493`
+- diagnostics: `d90d175e37b2382d97749be829f349dac5b8da566dfbe77642330dbaf288bc06`
+
+Automatic private core publication `38890316033` and its normal GC completed
+SUCCESS. Publish job `116937936098` confirmed `RUNTIME_PRIVATE_PUBLISH_OK` at
+10:57:40 UTC: 135 files, 125 uploaded objects, generation
+`802caca8-85e2-4e24-9034-4ae549d188f6`, same source SHA. This is publisher evidence;
+no separate database mutation or authenticated physical-device test was performed.
+Subsequent normal market refresh `38890316143` also completed SUCCESS, publishing
+generated-data-only commit `90b52346ff84b5e0ed85e76758efc4212423c986`. Its snapshot
+at 10:59:32 UTC freshly revalidated 62 remembered identities and resolved 74/84
+fixtures: 200 discovered URLs, 77 candidates, 78 unique reads, zero fetch failures,
+seven catalogue gaps and three time mismatches. These are producer-run counts;
+the independent public-byte proof above covers the earlier core snapshot.
+Existing hourly cadence and the 40-minute watchdog remain unchanged; feed
+observation time remains the authority for freshness.
 
 No model math, probability, training, thresholds, settlement, iNeed economics,
 market scope, builder lifecycle, paid-provider quotas or real betting changes.
