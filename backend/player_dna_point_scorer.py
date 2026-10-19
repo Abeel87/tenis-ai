@@ -12,7 +12,7 @@ import gzip
 import hashlib
 import json
 import math
-from collections import Counter
+from collections import ChainMap, Counter
 from itertools import groupby
 from datetime import datetime, timezone
 from pathlib import Path
@@ -653,6 +653,19 @@ def _cohort(rows: list[dict[str, Any]], min_prior_matches: int) -> list[dict[str
 
 
 def _frame(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    if rows and all(isinstance(row, ChainMap) for row in rows):
+        # pandas first flattens every non-dict mapping into a dict. That undoes
+        # the per-direction sharing and retains a second full feature population.
+        # Infer the same column order on one small mapping, then build each
+        # column independently with the same missing-value and dtype inference.
+        keys = dict.fromkeys(key for row in rows for key in row)
+        columns = pd.DataFrame([ChainMap(keys)]).columns
+        return pd.DataFrame(
+            {name: pd.Series([row.get(name, np.nan) for row in rows]) for name in columns},
+            index=pd.RangeIndex(len(rows)),
+            columns=columns,
+            copy=False,
+        )
     return pd.DataFrame(rows)
 
 

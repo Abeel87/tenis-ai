@@ -145,3 +145,27 @@ Validation of the follow-up:
 
 - Final follow-up full Python suite: **1729 passed in 53.89 seconds**.
   `git diff --check` passed. New GitHub CI and production verification are pending.
+
+
+## Shared-feature DataFrame allocation follow-up
+
+Head `f23bf50ac8d2cb8d060b32225173476d84916976` passed eight workflows including
+UI health [39221003925](https://github.com/Abeel87/tenis-ai/actions/runs/39221003925).
+Its full suite, browser/runtime checks and model isolation checks passed. The two
+full-history workflows were still running when this additional issue was reproduced.
+
+The locked pandas 3.0.5 constructor flattens every `ChainMap` to a new dictionary
+before building a frame. This discards the memory benefit of shared opponent /
+pressure feature maps at the evaluation boundary. A 10,000-row / 100-shared-feature
+fixture measured 41,462,798 bytes peak with the old constructor, versus 8,827,971
+bytes with column-wise construction. The regression failed at 41,449,608 bytes
+before the fix. These figures describe only this controlled fixture.
+
+The canonical `_frame` helper now constructs shared-mapping input column by
+column, retaining pandas' inferred column order, missing-value semantics, types
+and row index. Existing plain-dictionary/mixed inputs retain their previous path.
+This only changes temporary allocation, with no change to fitting/evaluation.
+Regressions compare exact DataFrames, fitted coefficients, schemas and predicted
+probabilities for both pressure and opponent features. Empty mappings and explicit
+missing-value overrides are covered. Latest full local suite: **1733 passed in 63.16 seconds**; `git diff --check` passed.
+Fresh CI for this frame-allocation fix and production verification are pending.

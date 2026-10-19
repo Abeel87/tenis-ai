@@ -53,6 +53,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   old/new 3000-point parity for five feature paths; active current-card integration
   compares fitted artifacts and second-pass profiles. Full local suite: **1729 passed
   in 53.89s**; diff whitespace check passed.
+- [x] Head `f23bf50` passed eight workflows including UI health `39221003925`;
+  Point Tape `39221003825` and DNA `39221003942` were still running during follow-up.
+- [x] Reproduce pandas flattening of shared feature maps: 41.46 MB peak versus
+  8.83 MB with canonical column-wise frame construction on the same fixture.
+  Exact DataFrames, fitted coefficients and predictions checked; latest full suite
+  **1733 passed in 63.16s**. Fresh CI for this allocation fix is pending.
 - [ ] Verify updated CI against fresh main; merge only green.
 - [ ] Verify normal post-merge Superbet/Builder and Player DNA refresh evidence.
 - FILES: canonical Superbet audit/quote collector, Player DNA scorer/recent-form/

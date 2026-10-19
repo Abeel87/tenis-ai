@@ -37,7 +37,10 @@ current scoring and the existing downstream evaluators; match-local challenger
 joins and label grouping no longer retain the full raw population. Every later
 consumer gets an independent read, with unchanged feature/label semantics.
 Initial CI RSS: recent-form 4,089,540 KB; scorer 4,755,876 KB, both exit zero.
-Full workflow resolution and rollout still await all-green CI.
+Full workflow resolution and rollout still await all-green CI. A further allocation
+regression covers pandas flattening shared feature maps before evaluation. The
+canonical frame adapter now preserves exact values/types/order column by column;
+fitted coefficients and predictions remain exactly equal in parity regressions.
 
 **2026-10-15 technical repair (PR #545 deployed and verified):** `superbet_direct.browser_probe` separates listing discovery from its optional first-event diagnostic; `browser_selected_direct_feed` retains exact per-event resolver authority. `live_history_settle.main` counts failed transport attempts inside the existing quota, retries one transient read and publishes safe reason codes without changing scoring. The iNeed workflow restores exact history before existing consumers. Its UI preserves missing counts, explains backend-reported zero in-scope candidates and reads the latest bounded bankroll ledger window. See `audits/technical_health_20261015.md` and the current execution checkpoint. V1 match-winner scope and disabled builder lifecycle remain unchanged. All 1671 tests and all 11 PR workflows passed; merge `698de5f4807c7da900a64e8bf95195deccab4f33`. The live core run `38725160239` recovered Direct publication (five exact candidates, fresh at 11:13 UTC). Its safe history diagnostics identified provider HTTP 410 for matches `196595` and `201913`; those unavailable results remain unresolved rather than being fabricated. Core/Pages and private delivery succeeded with exact public frontend bytes and all 195 private core objects verified. Normal market run `38728379362` refreshed Direct again and recovered 500 builder offers. iNeed run `38729088692` and independent SQL confirm status OK at 11:42 UTC: 144 matches, 26 final signals, zero authorized match-winner candidates, zero evaluations; builder reservation remains disabled.
 

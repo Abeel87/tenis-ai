@@ -43,7 +43,9 @@ current scoring and downstream evaluators. Feature joins, match-local enrichment
 and label input grouping release each raw match after processing it. Profiles,
 rank context and labels can reread the source independently; no shared exhausted
 generator or raw-population cache is retained. Reconstruction and model functions
-continue to use their existing semantics.
+continue to use their existing semantics. The canonical `_frame` helper builds
+shared feature mappings column by column, preserving pandas column order, types,
+index and missing values without re-expanding every point into another full dict.
 
 ## 3. Superbet i PLAYABLE
 

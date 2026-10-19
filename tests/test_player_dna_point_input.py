@@ -4,6 +4,7 @@ import gzip
 import importlib
 import json
 import tracemalloc
+from collections import ChainMap
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -157,3 +158,54 @@ def test_current_card_fit_artifact_and_asof_profiles_match_the_eager_input(tmp_p
     assert expected[1] is not None
     assert expected[0]["scored_matches"] == 1
     assert actual == expected  # includes fitted parameters, fingerprint and second-pass profiles
+
+
+def test_shared_feature_frame_does_not_flatten_every_point_into_a_large_dict():
+    from backend.player_dna_point_scorer import _frame
+
+    shared = {f"feature_{i}": i / 100 for i in range(100)}
+    rows = [ChainMap({"event_index": i}, shared) for i in range(10_000)]
+    expected = pd.DataFrame(rows)
+    tracemalloc.start()
+    try:
+        actual = _frame(rows)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    pd.testing.assert_frame_equal(actual, expected)
+    assert peak < 20_000_000  # ~8 MB of values; a flattened dict population exceeds 40 MB.
+
+
+def test_shared_feature_frame_preserves_missing_values_dtypes_and_column_order():
+    from backend.player_dna_point_scorer import _frame
+
+    shared = {"overridden": 0.5, "all_none": None, "both_int": 2}
+    rows = [
+        ChainMap({"scheduled": datetime(2026, 9, 1, tzinfo=timezone.utc), "only_first": 1, "flag": True, "overridden": None}, shared),
+        ChainMap({"scheduled": datetime(2026, 9, 2, tzinfo=timezone.utc), "name": "ATP", "flag": False}, shared),
+    ]
+    pd.testing.assert_frame_equal(_frame(rows), pd.DataFrame(rows))
+    # Existing dictionary and mixed-mapping callers retain pandas' column semantics.
+    for variants in ([], [dict(row) for row in rows], [dict(rows[0]), rows[1]], [ChainMap({}), ChainMap({})]):
+        pd.testing.assert_frame_equal(_frame(variants), pd.DataFrame(variants))
+
+
+@pytest.mark.parametrize("module_name,extra_features", [
+    ("pressure_challenger", "PRESSURE_PRIMARY_NUMERIC"),
+    ("opponent_adjustment_audit", "OPPONENT_STRENGTH_NUMERIC"),
+])
+def test_column_frame_keeps_fitted_parameters_and_predictions_exact(module_name, extra_features):
+    import numpy as np
+    from backend.player_dna_point_scorer import PROFILE_NUMERIC, _fit_logistic_newton, _frame, _predict_logistic
+
+    module = importlib.import_module(f"backend.player_dna_{module_name}")
+    points, profiles = _inputs()
+    rows, _ = module.enrich_feature_rows(points, profiles)
+    before, after = pd.DataFrame(rows), _frame(rows)
+    pd.testing.assert_frame_equal(after, before)
+    features = list(PROFILE_NUMERIC) + list(getattr(module, extra_features))
+    expected = _fit_logistic_newton(before, features)
+    actual = _fit_logistic_newton(after, features)
+    np.testing.assert_array_equal(actual["beta"], expected["beta"])
+    assert {k: v for k, v in actual.items() if k != "beta"} == {k: v for k, v in expected.items() if k != "beta"}
+    np.testing.assert_array_equal(_predict_logistic(actual, after), _predict_logistic(expected, before))
