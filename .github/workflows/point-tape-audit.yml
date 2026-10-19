@@ -867,7 +867,7 @@ jobs:
           PY
 
       - name: Evaluate opponent-strength challenger (SHADOW, zero network)
-        run: python backend/player_dna_opponent_adjustment_audit.py
+        run: /usr/bin/time -v python backend/player_dna_opponent_adjustment_audit.py
 
       - name: Guard opponent-strength challenger isolation
         run: |
@@ -1069,7 +1069,7 @@ jobs:
           PY
 
       - name: Evaluate tiebreak-profile challenger (SHADOW, zero network)
-        run: python backend/player_dna_tiebreak_challenger.py
+        run: /usr/bin/time -v python backend/player_dna_tiebreak_challenger.py
 
       - name: Guard tiebreak-profile challenger isolation
         run: |
@@ -1160,7 +1160,7 @@ jobs:
           PY
 
       - name: Evaluate recent-form L5 challenger (SHADOW, zero network)
-        run: python backend/player_dna_recent_form_challenger.py
+        run: /usr/bin/time -v python backend/player_dna_recent_form_challenger.py
 
       - name: Guard recent-form L5 challenger isolation
         run: |
@@ -1337,7 +1337,7 @@ jobs:
           PY
 
       - name: Evaluate small-sample shrinkage challenger (SHADOW, zero network)
-        run: python backend/player_dna_small_sample_challenger.py
+        run: /usr/bin/time -v python backend/player_dna_small_sample_challenger.py
 
       - name: Guard small-sample shrinkage challenger isolation
         run: |
@@ -1472,7 +1472,7 @@ jobs:
           PY
 
       - name: Evaluate Phase-3 serve-return matchup challenger (SHADOW, zero network)
-        run: python backend/player_dna_matchup_challenger.py
+        run: /usr/bin/time -v python backend/player_dna_matchup_challenger.py
 
       - name: Guard Phase-3 matchup challenger isolation
         run: |
@@ -1566,7 +1566,7 @@ jobs:
           PY
 
       - name: Train + evaluate Player DNA point scorer (SHADOW, zero network)
-        run: python backend/player_dna_point_scorer.py
+        run: /usr/bin/time -v python backend/player_dna_point_scorer.py
 
       - name: Close Phase-3 canonical matchup gate (SHADOW, zero network)
         run: python backend/player_dna_matchup_engine.py
@@ -1833,22 +1833,22 @@ jobs:
           PY
 
       - name: Score current card with Player DNA (SHADOW, zero network)
-        run: python backend/player_dna_current_shadow.py
+        run: /usr/bin/time -v python backend/player_dna_current_shadow.py
 
       - name: Backtest Player DNA simulated markets (SHADOW, zero network)
-        run: python backend/player_dna_market_backtest.py
+        run: /usr/bin/time -v python backend/player_dna_market_backtest.py
 
       - name: Build dynamic lean market walk-forward evidence (SHADOW, zero network)
-        run: python backend/player_dna_market_walk_forward.py
+        run: /usr/bin/time -v python backend/player_dna_market_walk_forward.py
 
       - name: Score current card with dynamic lean (SHADOW, zero network)
-        run: python backend/player_dna_current_dynamic_shadow.py
+        run: /usr/bin/time -v python backend/player_dna_current_dynamic_shadow.py
 
       - name: Audit Player DNA hold calibration (SHADOW, zero network)
-        run: python backend/player_dna_hold_calibration.py
+        run: /usr/bin/time -v python backend/player_dna_hold_calibration.py
 
       - name: Audit Player DNA hold walk-forward robustness (SHADOW, zero network)
-        run: python backend/player_dna_hold_walk_forward.py
+        run: /usr/bin/time -v python backend/player_dna_hold_walk_forward.py
 
       - name: Close Phase-5 legal tennis state engine gate (SHADOW, zero network)
         run: python backend/player_dna_tennis_state_engine.py
@@ -2715,7 +2715,7 @@ jobs:
           PY
 
       - name: Collect prospective Player DNA candidate evidence (SHADOW, zero network)
-        run: python backend/player_dna_prospective_validation.py
+        run: /usr/bin/time -v python backend/player_dna_prospective_validation.py
 
       - name: Close Phase-14 promotion lifecycle policy (SHADOW, zero network)
         run: python backend/player_dna_phase14_lifecycle.py

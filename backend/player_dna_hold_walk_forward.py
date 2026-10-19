@@ -17,7 +17,7 @@ from typing import Any
 import pandas as pd
 
 try:
-    from backend.player_dna_point_scorer import PROFILE_NUMERIC, _cohort, _fit_logistic_newton, build_feature_rows
+    from backend.player_dna_point_scorer import PointDataset, PROFILE_NUMERIC, _cohort, _fit_logistic_newton, build_feature_rows
     from backend.player_dna_market_backtest import _labels_by_match, _predict_match_simulations, _snapshot_pairs
     from backend.player_dna_hold_calibration import (
         MIN_PRIOR_MATCHES,
@@ -31,7 +31,7 @@ try:
         fit_hold_platt,
     )
 except ModuleNotFoundError:  # direct execution
-    from player_dna_point_scorer import PROFILE_NUMERIC, _cohort, _fit_logistic_newton, build_feature_rows
+    from player_dna_point_scorer import PointDataset, PROFILE_NUMERIC, _cohort, _fit_logistic_newton, build_feature_rows
     from player_dna_market_backtest import _labels_by_match, _predict_match_simulations, _snapshot_pairs
     from player_dna_hold_calibration import (
         MIN_PRIOR_MATCHES,
@@ -181,7 +181,7 @@ def _segment_summary(
 def evaluate_fold(
     name: str,
     feature_rows: list[dict[str, Any]],
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     pairs: dict[str, dict[str, dict[str, Any]]],
     labels: dict[str, dict[str, Any]],
     fit_end: float,
@@ -375,7 +375,7 @@ def aggregate_folds(folds: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def evaluate(point_rows: list[dict[str, Any]], profile_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def evaluate(point_rows: list[dict[str, Any]] | PointDataset, profile_rows: list[dict[str, Any]]) -> dict[str, Any]:
     feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
     pairs = _snapshot_pairs(profile_rows)
     labels, label_counts = _labels_by_match(point_rows)
@@ -433,7 +433,7 @@ def evaluate(point_rows: list[dict[str, Any]], profile_rows: list[dict[str, Any]
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     report = evaluate(point_rows, profile_rows)
     OUT.parent.mkdir(parents=True, exist_ok=True)

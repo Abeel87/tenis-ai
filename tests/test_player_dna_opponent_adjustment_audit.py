@@ -129,6 +129,74 @@ def test_same_timestamp_matches_never_enter_each_others_opponent_history():
     assert counts["paired_matches"] == 3
 
 
+def test_file_enrichment_preserves_global_prior_context_and_point_order(tmp_path):
+    import gzip
+    import json
+    from backend import player_dna_opponent_adjustment_audit as audit
+
+    profiles = (
+        _match_rows("past", "2026-01-01T10:00:00Z", 1, 8, p2_prior=(3, 0.64, 0.36))
+        + _match_rows("target", "2026-01-02T10:00:00Z", 1, 7, p1_prior=(4, 0.62, 0.38))
+        + _match_rows("future", "2026-01-03T10:00:00Z", 1, 9, p2_prior=(5, 0.90, 0.10))
+    )
+    points = []
+    # File order is match-contiguous, not necessarily chronological. Opponent
+    # priors must still use the complete strict-as-of profile population.
+    for match, when, receiver in [
+        ("target", "2026-01-02T10:00:00Z", 7),
+        ("future", "2026-01-03T10:00:00Z", 9),
+        ("past", "2026-01-01T10:00:00Z", 8),
+    ]:
+        for event in (1, 0):
+            points.append({
+                "match_id": match, "match_scheduled_time": when,
+                "event_index": event, "context_ready_player_point": True,
+                "server_player_id": 1, "receiver_player_id": receiver,
+                "server_won": bool(event), "surface": "hard",
+            })
+    paths = [tmp_path / "points.gz", tmp_path / "profiles.gz"]
+    for path, rows in zip(paths, (points, profiles)):
+        with gzip.open(path, "wt") as handle:
+            for row in rows:
+                handle.write(json.dumps(row) + "\n")
+    expected = audit.enrich_feature_rows(points, profiles)
+    actual = audit.enrich_feature_rows_from_files(*paths)
+    assert actual == expected
+    rows, counts = actual
+    assert counts["context_counts"]["paired_matches"] == 3
+    assert rows[0]["server_history_opponent_return_mean"] == 0.36
+    assert rows[0]["server_history_opponent_overall_support"] == 1
+    assert rows[4]["server_history_opponent_overall_support"] == 0
+    # The original audit overlays adjustment inputs on base profile fields.
+    # Missing adjustment evidence must remain missing, not fall back to 0.62.
+    assert rows[0]["server_overall_serve_rate"] is None
+    assert rows[0]["server_surface_serve_rate"] is None
+    # Reused immutable direction features must not introduce row-write coupling.
+    rows[0]["server_history_opponent_return_mean"] = 0.99
+    assert rows[1]["server_history_opponent_return_mean"] == 0.36
+
+
+def test_file_enrichment_does_not_retain_all_raw_points(tmp_path):
+    import gzip
+    import json
+    import tracemalloc
+    from backend import player_dna_opponent_adjustment_audit as audit
+
+    path = tmp_path / "points.gz"
+    with gzip.open(path, "wt") as handle:
+        for index in range(200):
+            handle.write(json.dumps({"match_id": str(index), "unused_raw_payload": "x" * 100_000}) + "\n")
+    tracemalloc.start()
+    try:
+        rows, counts = audit.enrich_feature_rows_from_files(path, tmp_path / "missing.gz")
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert rows == []
+    assert counts["base_join_counts"]["point_rows_seen"] == 200
+    assert peak < 5_000_000
+
+
 def test_future_match_never_enters_earlier_opponent_history():
     rows = []
     rows += _match_rows(

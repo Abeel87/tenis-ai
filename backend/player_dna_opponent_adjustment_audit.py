@@ -12,7 +12,7 @@ affects runtime, training, Symfonia 2.0, or Superbet PLAYABLE.
 
 import json
 import math
-from collections import defaultdict
+from collections import ChainMap, Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -30,9 +30,11 @@ try:
         _fit_candidate,
         _frame,
         _iter_jsonl_gz,
+        _profile_index,
         _proper_score_gains,
         _walk_forward_slices,
         build_feature_rows,
+        iter_match_inputs,
         split_chronological_by_match,
     )
 except ModuleNotFoundError:  # direct execution
@@ -48,9 +50,11 @@ except ModuleNotFoundError:  # direct execution
         _fit_candidate,
         _frame,
         _iter_jsonl_gz,
+        _profile_index,
         _proper_score_gains,
         _walk_forward_slices,
         build_feature_rows,
+        iter_match_inputs,
         split_chronological_by_match,
     )
 
@@ -525,9 +529,19 @@ def enrich_feature_rows(
     contexts, context_counts = build_opponent_context_index(profile_rows)
     adjustments, adjustment_counts = build_target_adjustment_index(profile_rows)
     identities = _point_identity_index(point_rows)
+    rows, counts = _enrich_rows(base_rows, identities, contexts, adjustments)
+    return rows, {
+        "base_join_counts": join_counts,
+        "context_counts": context_counts,
+        "adjustment_counts": adjustment_counts,
+        "enrichment_counts": counts,
+    }
 
+
+def _enrich_rows(base_rows, identities, contexts, adjustments):
     enriched = []
     counts = defaultdict(int)
+    pair_features = {}
     for row in base_rows:
         key = (str(row.get("match_id") or ""), row.get("event_index"))
         identity = identities.get(key)
@@ -539,11 +553,9 @@ def enrich_feature_rows(
         receiver = contexts.get((key[0], receiver_id), {})
         server_adjustment = adjustments.get((key[0], server_id), {})
         receiver_adjustment = adjustments.get((key[0], receiver_id), {})
-        logic06 = _logic06_features(server_adjustment, receiver_adjustment)
-
-        enriched.append(
-            {
-                **row,
+        pair_key = (key[0], server_id, receiver_id)
+        if pair_key not in pair_features:
+            pair_features[pair_key] = {
                 "server_history_opponent_return_mean": server.get("opponent_return_mean"),
                 "server_history_opponent_return_l5": server.get("opponent_return_l5"),
                 "server_history_opponent_return_surface_mean": server.get("opponent_return_surface_mean"),
@@ -556,9 +568,14 @@ def enrich_feature_rows(
                 "server_history_opponent_surface_support": int(server.get("surface_support") or 0),
                 "receiver_history_opponent_overall_support": int(receiver.get("overall_support") or 0),
                 "receiver_history_opponent_surface_support": int(receiver.get("surface_support") or 0),
-                **logic06,
+                **_logic06_features(server_adjustment, receiver_adjustment),
             }
-        )
+        # These rates are fixed per exact match and serving direction. Retain
+        # one immutable map instead of allocating names and slots per point.
+        # Adjustment fields retain the original {**row, **logic06} precedence;
+        # writes stay in a private first map and never mutate shared features.
+        logic06 = pair_features[pair_key]
+        enriched.append(ChainMap({}, logic06, row))
         counts["enriched_rows"] += 1
         counts["rows_with_both_overall_context"] += int(
             int(server.get("overall_support") or 0) > 0
@@ -577,11 +594,33 @@ def enrich_feature_rows(
             and logic06.get("receiver_overall_expected_break_rate") is not None
         )
 
-    return enriched, {
-        "base_join_counts": join_counts,
+    return enriched, dict(counts)
+
+
+def enrich_feature_rows_from_files(
+    points_path: Path = POINTS, profiles_path: Path = PROFILES,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    profiles = list(_iter_jsonl_gz(profiles_path) or ())
+    # Opponent priors span matches. Build these once from the complete profile
+    # population; only raw point/state/identity ingestion is match-local.
+    contexts, context_counts = build_opponent_context_index(profiles)
+    adjustments, adjustment_counts = build_target_adjustment_index(profiles)
+    rows = []
+    join_counts, enrichment_counts = Counter(), Counter()
+    for points, match_profiles in iter_match_inputs(_iter_jsonl_gz(points_path), profiles):
+        base, counts = build_feature_rows(points, match_profiles)
+        batch, batch_counts = _enrich_rows(
+            base, _point_identity_index(points), contexts, adjustments,
+        )
+        rows.extend(batch)
+        join_counts.update({key: value for key, value in counts.items() if key != "profile_snapshots"})
+        enrichment_counts.update(batch_counts)
+    join_counts["profile_snapshots"] = len(_profile_index(profiles))
+    return rows, {
+        "base_join_counts": dict(join_counts),
         "context_counts": context_counts,
         "adjustment_counts": adjustment_counts,
-        "enrichment_counts": dict(counts),
+        "enrichment_counts": dict(enrichment_counts),
     }
 
 
@@ -1022,9 +1061,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
-    profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
-    rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
+    rows, build_counts = enrich_feature_rows_from_files(POINTS, PROFILES)
     report = evaluate(rows)
     report["build_counts"] = build_counts
 

@@ -34,6 +34,16 @@ match groups from the canonical point dataset, reusing the existing feature
 builders without changing row order or model calculations. Noncontiguous repeats
 fail explicitly. Player State rereads the iterator for each independent consumer.
 This bounds raw-input memory; it is not a training/sample-policy change.
+The opponent-strength audit uses the same match-local point ingestion while
+building opponent and adjustment indexes once from all profile snapshots.
+Immutable per-match/direction feature maps preserve original adjustment-field
+precedence; each enriched point has its own writable overlay.
+`player_dna_point_scorer.PointDataset` is the repeatable canonical file input for
+current scoring and downstream evaluators. Feature joins, match-local enrichment
+and label input grouping release each raw match after processing it. Profiles,
+rank context and labels can reread the source independently; no shared exhausted
+generator or raw-population cache is retained. Reconstruction and model functions
+continue to use their existing semantics.
 
 ## 3. Superbet i PLAYABLE
 

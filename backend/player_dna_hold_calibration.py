@@ -28,6 +28,7 @@ import pandas as pd
 
 try:
     from backend.player_dna_point_scorer import (
+        PointDataset,
         PROFILE_NUMERIC,
         _cohort,
         _fit_logistic_newton,
@@ -49,6 +50,7 @@ try:
     )
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
+        PointDataset,
         PROFILE_NUMERIC,
         _cohort,
         _fit_logistic_newton,
@@ -318,7 +320,7 @@ def _market_comparison(
 
 
 def evaluate(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     profile_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
@@ -473,7 +475,7 @@ def evaluate(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     report = evaluate(point_rows, profile_rows)
     OUT.parent.mkdir(parents=True, exist_ok=True)

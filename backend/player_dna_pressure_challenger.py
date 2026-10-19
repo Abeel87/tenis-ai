@@ -25,6 +25,8 @@ from typing import Any, Iterable
 
 try:
     from backend.player_dna_point_scorer import (
+        PointDataset,
+        enrich_match_inputs,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -43,6 +45,8 @@ try:
     )
 except ModuleNotFoundError:  # direct execution compatibility
     from player_dna_point_scorer import (
+        PointDataset,
+        enrich_match_inputs,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -250,6 +254,9 @@ def enrich_feature_rows(
     point_rows: Iterable[dict[str, Any]],
     profile_rows: Iterable[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if isinstance(point_rows, PointDataset):
+        return enrich_match_inputs(point_rows, profile_rows, enrich_feature_rows, include_profile_count=True)
+
     point_rows = [row for row in point_rows if isinstance(row, dict)]
     profile_rows = [row for row in profile_rows if isinstance(row, dict)]
     base_rows, base_counts = build_feature_rows(point_rows, profile_rows)
@@ -604,7 +611,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
     # Evaluation consumes only the enriched rows, not the original payloads.

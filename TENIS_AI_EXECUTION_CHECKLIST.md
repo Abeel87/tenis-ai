@@ -25,10 +25,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**REFRESH CONTRACT REPAIR — 2026-10-19, LOCAL VALIDATION COMPLETE**
+**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / CI FOLLOW-UP**
 - AUTHORIZATION: owner requested repairs after the GitHub-only health report.
 - BASE / LAST VERIFIED MAIN: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
-- BRANCH: `fix/refresh-contracts-20261019`; checkout `tenis-ai-repair`; PR pending.
+- BRANCH: `fix/refresh-contracts-20261019`; checkout `tenis-ai-repair`; PR #550.
+  Initial head: `b5947f6508ab1bad2f9f8d45495410dd6a736902`.
 - [x] Fresh main, open PRs, failed logs and canonical owners inspected.
 - [x] Reproduce and repair false O/U pairing and whole-catalogue builder rejection.
 - [x] Stream existing Player DNA feature ingestion without changing outputs;
@@ -36,15 +37,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] 92 focused tests; full suite 1712 passed in 53.56s; UI static/runtime smoke
   passed on real data. Snapshot audit and synthetic memory proof are recorded in
   `audits/refresh_contracts_20261019.md`.
-- [ ] Publish PR and verify all CI against fresh main; merge only green.
+- [x] Publish PR. Initial UI health run `39217141650`: 1712 passed in 55.73s;
+  eight of ten workflows green. Player DNA `39217141663` passed recent-form /
+  Player State and scorer evaluation (RSS 4,089,540 / 4,755,876 KB, exit zero).
+- [!] The same DNA run later stopped at current-card scoring, runner shutdown at
+  08:02:25 UTC. No full workflow or production recovery is claimed.
+- [!] Point Tape `39217141673`, job `117943537486`, stopped at opponent-strength
+  evaluation with runner shutdown at 07:58:22 UTC. Cause is not proven OOM.
+- [x] Extend bounded input ingestion to the canonical opponent audit; preserve
+  complete-population prior indexes and original field precedence. Independent
+  3000-point/30-match parity proof: identical rows/order/counters/pandas dtypes.
+- [x] Reproduce eager current-card allocation (20,306,690 bytes on a 20 MB fixture).
+  Reuse canonical repeatable file input across current/downstream consumers;
+  preserve repeated passes, labels, feature values and model artifacts. Exact
+  old/new 3000-point parity for five feature paths; active current-card integration
+  compares fitted artifacts and second-pass profiles. Full local suite: **1729 passed
+  in 53.89s**; diff whitespace check passed.
+- [ ] Verify updated CI against fresh main; merge only green.
 - [ ] Verify normal post-merge Superbet/Builder and Player DNA refresh evidence.
 - FILES: canonical Superbet audit/quote collector, Player DNA scorer/recent-form/
-  Player State ingestion, two workflow memory probes, four regression test files,
+  Player State/opponent/current/downstream ingestion, workflow memory probes, regression tests,
   audit, registry, architecture and this checkpoint.
 - LIMITS: no new recovery evidence for provider HTTP 410 (196595/201913).
   Full production memory use and resolution of runner shutdown remain unproven.
 - DO NOT REDO: prior app/Solar/storage fixes or unrelated PRs #523/#537/dependencies.
-- NEXT EXACT ACTION: publish this tested branch, complete CI/fresh-main verification,
+- NEXT EXACT ACTION: complete CI for the memory-ingestion follow-up and fresh-main verification,
   merge only green and inspect normal post-merge producer logs and source times.
 - BANS: model mathematics/features/weights/training policy, probability/thresholds,
   PLAYABLE decisions, settlement, iNeed economics/scope, builder lifecycle enablement,

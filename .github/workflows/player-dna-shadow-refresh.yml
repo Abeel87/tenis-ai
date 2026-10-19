@@ -355,27 +355,27 @@ jobs:
 
       - name: Score current card in SHADOW
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_current_shadow.py
+        run: /usr/bin/time -v python backend/player_dna_current_shadow.py
 
       - name: Backtest simulated markets on historical holdout
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_market_backtest.py
+        run: /usr/bin/time -v python backend/player_dna_market_backtest.py
 
       - name: Build dynamic lean market walk-forward evidence
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_market_walk_forward.py
+        run: /usr/bin/time -v python backend/player_dna_market_walk_forward.py
 
       - name: Score current card with dynamic lean in SHADOW
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_current_dynamic_shadow.py
+        run: /usr/bin/time -v python backend/player_dna_current_dynamic_shadow.py
 
       - name: Audit hold calibration on untouched third partition
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_hold_calibration.py
+        run: /usr/bin/time -v python backend/player_dna_hold_calibration.py
 
       - name: Audit hold calibration walk-forward robustness
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_hold_walk_forward.py
+        run: /usr/bin/time -v python backend/player_dna_hold_walk_forward.py
 
       - name: Simulate raw + hold-calibrated tennis markets in SHADOW
         if: env.FAST_READINESS_ONLY != 'true'
@@ -383,7 +383,7 @@ jobs:
 
       - name: Collect prospective calibrated-candidate evidence
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_prospective_validation.py
+        run: /usr/bin/time -v python backend/player_dna_prospective_validation.py
 
       - name: Hard isolation + learning guard
         if: env.FAST_READINESS_ONLY != 'true'

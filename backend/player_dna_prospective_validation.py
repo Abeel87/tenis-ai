@@ -19,12 +19,14 @@ from pathlib import Path
 from typing import Any, Iterable
 
 try:
+    from backend.player_dna_point_scorer import PointDataset
     from backend.player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
     from backend.player_dna_tennis_simulator import (
         trajectory_simulator_contract,
         trajectory_simulator_contract_fingerprint,
     )
 except ModuleNotFoundError:  # direct execution
+    from player_dna_point_scorer import PointDataset
     from player_dna_market_backtest import BINARY_MARKETS, _binary_probability, _labels_by_match
     from player_dna_tennis_simulator import (
         trajectory_simulator_contract,
@@ -2580,7 +2582,7 @@ def _ledger_integrity(
 def build_report(
     current_simulation: dict[str, Any],
     walk_forward: dict[str, Any],
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     previous: dict[str, Any] | None = None,
     *,
     current_dynamic: dict[str, Any] | None = None,
@@ -2804,7 +2806,7 @@ def build() -> dict[str, Any]:
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         previous = {}
 
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     report = build_report(
         current,
         walk_forward,

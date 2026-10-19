@@ -19,6 +19,7 @@ import pandas as pd
 
 try:
     from backend.player_dna_point_scorer import (
+        PointDataset,
         CATEGORICAL,
         EVAL_MIN_PRIOR_MATCHES,
         PROFILE_NUMERIC,
@@ -34,11 +35,11 @@ try:
     )
     from backend.player_dna_shadow_profiles import (
         build_current_target_profiles,
-        iter_point_rows,
     )
     from backend.player_dna_matchup_engine import scorer_feature_row
 except ModuleNotFoundError:  # direct execution
     from player_dna_point_scorer import (
+        PointDataset,
         CATEGORICAL,
         EVAL_MIN_PRIOR_MATCHES,
         PROFILE_NUMERIC,
@@ -54,7 +55,6 @@ except ModuleNotFoundError:  # direct execution
     )
     from player_dna_shadow_profiles import (
         build_current_target_profiles,
-        iter_point_rows,
     )
     from player_dna_matchup_engine import scorer_feature_row
 
@@ -158,7 +158,7 @@ def _serve_feature_row(
 
 
 def build_current_scores(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     historical_profile_rows: list[dict[str, Any]],
     current_results: list[dict[str, Any]],
     *,
@@ -397,7 +397,7 @@ def build_current_scores(
 
 def build() -> dict[str, Any]:
     current_results = _read_json(RESULTS, [])
-    point_rows = list(iter_point_rows() or ())
+    point_rows = PointDataset(POINTS)
     historical_profiles = list(_iter_jsonl_gz(PROFILES) or ())
 
     report, artifact = build_current_scores(

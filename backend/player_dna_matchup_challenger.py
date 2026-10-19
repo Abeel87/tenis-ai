@@ -18,6 +18,8 @@ from typing import Any
 
 try:
     from backend.player_dna_point_scorer import (
+        PointDataset,
+        enrich_match_inputs,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -35,6 +37,8 @@ try:
     )
 except ModuleNotFoundError:  # direct execution compatibility
     from player_dna_point_scorer import (
+        PointDataset,
+        enrich_match_inputs,
         EVAL_MIN_PRIOR_MATCHES,
         LEAN_STATE_NUMERIC,
         POINTS,
@@ -82,9 +86,12 @@ def _matchup_feature(row: dict[str, Any]) -> float | None:
 
 
 def enrich_feature_rows(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     profile_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if isinstance(point_rows, PointDataset):
+        return enrich_match_inputs(point_rows, profile_rows, enrich_feature_rows)
+
     rows, base_counts = build_feature_rows(point_rows, profile_rows)
     counts = Counter()
     enriched = []
@@ -308,7 +315,7 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
     report = evaluate(rows)

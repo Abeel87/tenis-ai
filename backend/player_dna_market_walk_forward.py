@@ -34,6 +34,7 @@ try:
         _snapshot_pairs,
     )
     from backend.player_dna_point_scorer import (
+        PointDataset,
         LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
         RANK_NUMERIC,
@@ -58,6 +59,7 @@ except ModuleNotFoundError:  # direct execution
         _snapshot_pairs,
     )
     from player_dna_point_scorer import (
+        PointDataset,
         LEAN_STATE_NUMERIC,
         PROFILE_NUMERIC,
         RANK_NUMERIC,
@@ -863,7 +865,7 @@ def summarize_walk_forward(
 
 
 def evaluate_walk_forward(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     profile_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
@@ -1293,7 +1295,7 @@ def build_phase7_gate() -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     report = evaluate_walk_forward(point_rows, profile_rows)
     OUT.parent.mkdir(parents=True, exist_ok=True)

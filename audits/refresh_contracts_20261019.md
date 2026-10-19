@@ -66,3 +66,82 @@ evidence. Zero in-scope iNeed match-winner candidates is not repaired by changin
 its market scope. Unrelated open PRs, model gates and builder reservation remain
 untouched. Normal live refreshes must establish source timestamps, exact quote
 coverage and Player DNA completion after this change.
+
+## First GitHub validation and opponent-audit follow-up
+
+PR [#550](https://github.com/Abeel87/tenis-ai/pull/550), initial head
+`b5947f6508ab1bad2f9f8d45495410dd6a736902`, passed eight of ten workflows.
+UI health [39217141650](https://github.com/Abeel87/tenis-ai/actions/runs/39217141650)
+ran all 1712 tests successfully in 55.73 seconds, plus browser/runtime and
+publication checks. The unchanged snapshot retains existing payload-size
+warnings; project health reports zero failures.
+
+Player DNA [39217141663](https://github.com/Abeel87/tenis-ai/actions/runs/39217141663)
+passed recent-form/Player State generation and scorer training/evaluation.
+This confirms progress beyond the earlier failing step, not full workflow or
+production completion.
+
+Point Tape [39217141673](https://github.com/Abeel87/tenis-ai/actions/runs/39217141673/job/117943537486)
+failed at the opponent-strength challenger: runner shutdown at 07:58:22 UTC,
+after entering that step at 07:50:04. It retained all raw points, a complete
+base-feature population and a flattened enriched population with repeated
+per-match/direction feature names. The follow-up streams complete point groups
+and shares immutable direction features with private per-row overrides.
+Global opponent-context and adjustment indexes still use the complete profile
+population; they are never built from a single match. Original adjustment-field
+precedence, including missing values overriding raw profile values, is preserved.
+The workflow now records `/usr/bin/time -v` for this step too.
+
+Independent comparison with the committed previous implementation on 3000 points
+from 30 matches proves exact row values/order, counters and pandas values/dtypes.
+Measured enrichment allocation: 14,357,093 versus 4,410,680 bytes. This is a local
+fixture measurement, not production RSS or proof of the shutdown cause. Added
+regressions cover global prior history despite nonchronological file groups,
+missing-value precedence, row-write isolation and bounded raw-input allocation.
+Updated CI and normal refresh verification remain required; PR #550 is unmerged.
+
+
+## Current-card and shared-input follow-up
+
+Player DNA run `39217141663`, job `117943537647`, subsequently stopped during
+`Score current card in SHADOW`, with runner shutdown at 08:02:25 UTC and cancellation
+at 08:02:27. Again, the log does not prove OOM. Before that, the repaired recent-form /
+Player State step completed in 4:58.78 with peak RSS 4,089,540 KB, and the scorer
+completed in 2:36.89 with peak RSS 4,755,876 KB; both exited zero. These are CI
+measurements for the initial PR head, not current production success.
+
+The current-card CLI still retained every raw point while building all features.
+A regression reproduced a 20,306,690-byte allocation for 200 rows with 100 KB
+unused payload each. The canonical scorer now exposes `PointDataset`, a repeatable
+file iterable: current profiles, rank context and historical outcome reconstruction
+receive independent passes after feature joins. A one-shot generator would silently
+exhaust those later consumers, so it is not used as their shared input.
+
+The same eager CLI pattern existed in current dynamic scoring, market backtest /
+walk-forward, hold calibration / walk-forward, prospective evidence, and pressure,
+tiebreak, small-sample and matchup challengers. These existing consumers now use
+that canonical file source. Feature/state joins and label input grouping process
+one complete match at a time; arbitrary in-memory list inputs retain their old
+semantics. The label reconstruction and settlement functions are unchanged.
+Match-local enrichers reuse their original builders with the same global profile
+count. The opponent audit retains its separately prepared global prior indexes.
+No sampling, evaluation-fold, feature-value, model, threshold or policy change is
+included. Additional RSS probes cover these existing workflow steps.
+
+Validation of the follow-up:
+- Exact equality against the committed previous implementations on 3000 points /
+  30 matches for scorer, pressure, tiebreak, small-sample and matchup features,
+  counters, row order and pandas values/dtypes.
+- Current-card integration regression compares the actual fitted artifact,
+  fingerprint, second-pass as-of profiles and scored output on 40 history matches.
+  The historical-validation gate is stubbed positive only in this test to exercise
+  the active scoring path; its production behavior is untouched.
+- Empty/missing input, nonchronological match groups, split-match rejection,
+  duplicate profile precedence, repeated reads and exact label outcomes covered.
+  All six raw-input allocation tests stay below 5 MB for the 20 MB fixture.
+- AST comparison: 219 existing function bodies in touched Player DNA modules are
+  unchanged. Modified existing functions are ingestion/build entry points and
+  input grouping; fitting, evaluation, simulation and settlement bodies are intact.
+
+- Final follow-up full Python suite: **1729 passed in 53.89 seconds**.
+  `git diff --check` passed. New GitHub CI and production verification are pending.

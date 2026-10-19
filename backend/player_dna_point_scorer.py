@@ -16,7 +16,7 @@ from collections import Counter
 from itertools import groupby
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -414,6 +414,20 @@ def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
                 yield row
 
 
+class PointDataset:
+    """Repeatable canonical file input; each consumer gets an independent pass.
+
+    Unlike a generator, this remains available for current profiles, rank
+    context and labels after the feature join. Raw rows are never cached here.
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __iter__(self):
+        return iter(_iter_jsonl_gz(self.path))
+
+
 def _profile_index(rows: Iterable[dict[str, Any]]) -> dict[tuple[str, int], dict[str, Any]]:
     out = {}
     for row in rows:
@@ -457,21 +471,50 @@ def iter_match_inputs(
 def build_feature_rows_from_files(
     points_path: Path = POINTS, profiles_path: Path = PROFILES,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
-    profiles = list(_iter_jsonl_gz(profiles_path) or ())
-    rows: list[dict[str, Any]] = []
-    counts = Counter()
-    for points, match_profiles in iter_match_inputs(_iter_jsonl_gz(points_path), profiles):
-        batch, batch_counts = build_feature_rows(points, match_profiles)
+    return build_feature_rows(PointDataset(points_path), _iter_jsonl_gz(profiles_path))
+
+
+def enrich_match_inputs(
+    point_rows: PointDataset,
+    profile_rows: Iterable[dict[str, Any]],
+    builder: Callable,
+    *,
+    include_profile_count: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Run match-local enrichers with their unchanged feature/counter contracts.
+
+    Global-history enrichers (opponent/recent-form) own their separate global
+    context preparation. This helper is only for joins to fixed as-of profiles.
+    """
+    profiles = list(profile_rows)
+    rows = []
+    base_counts, enrichment_counts = Counter(), Counter()
+    for points, match_profiles in iter_match_inputs(point_rows, profiles):
+        batch, counts = builder(points, match_profiles)
         rows.extend(batch)
-        counts.update({key: value for key, value in batch_counts.items() if key != "profile_snapshots"})
-    counts["profile_snapshots"] = len(_profile_index(profiles))
-    return rows, dict(counts)
+        base_counts.update({key: value for key, value in counts["base_join_counts"].items() if key != "profile_snapshots"})
+        enrichment_counts.update(counts["enrichment_counts"])
+    base_counts["profile_snapshots"] = len(_profile_index(profiles))
+    counts = {"base_join_counts": dict(base_counts), "enrichment_counts": dict(enrichment_counts)}
+    if include_profile_count:
+        counts["profile_snapshots"] = base_counts["profile_snapshots"]
+    return rows, counts
 
 
 def build_feature_rows(
     point_rows: Iterable[dict[str, Any]],
     profile_rows: Iterable[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    if isinstance(point_rows, PointDataset):
+        profiles = list(profile_rows)
+        rows, counts = [], Counter()
+        for points, match_profiles in iter_match_inputs(point_rows, profiles):
+            batch, batch_counts = build_feature_rows(points, match_profiles)
+            rows.extend(batch)
+            counts.update({key: value for key, value in batch_counts.items() if key != "profile_snapshots"})
+        counts["profile_snapshots"] = len(_profile_index(profiles))
+        return rows, dict(counts)
+
     profiles = _profile_index(profile_rows)
     point_rows = [point for point in point_rows if isinstance(point, dict)]
     state_lookup, state_counts = _state_feature_lookup(point_rows)

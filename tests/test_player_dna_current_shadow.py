@@ -104,3 +104,36 @@ def test_provider_ranking_accepts_only_positive_provider_ints():
     assert _provider_ranking(-1) is None
     assert _provider_ranking(True) is None
     assert _provider_ranking("12") is None
+
+
+def test_current_build_reads_repeatable_points_without_retaining_raw_payloads(tmp_path, monkeypatch):
+    import gzip
+    import json
+    import tracemalloc
+    from backend import player_dna_current_shadow as current
+
+    points = tmp_path / "points.gz"
+    with gzip.open(points, "wt") as handle:
+        for index in range(200):
+            handle.write(json.dumps({"match_id": str(index), "unused_raw_payload": "x" * 100_000}) + "\n")
+    monkeypatch.setattr(current, "POINTS", points)
+    # The old CLI calls this import with its own default path.
+    if hasattr(current, "iter_point_rows"):
+        monkeypatch.setattr(current, "iter_point_rows", lambda: current._iter_jsonl_gz(points))
+    monkeypatch.setattr(current, "PROFILES", tmp_path / "missing-profiles.gz")
+    monkeypatch.setattr(current, "RESULTS", tmp_path / "missing-results.json")
+    monkeypatch.setattr(current, "OUT", tmp_path / "report.json")
+
+    def consume_twice(source, profiles, results):
+        assert sum(1 for _ in source) == 200
+        assert sum(1 for _ in source) == 200  # profiles need another pass after features
+        return {"status": "TEST_ONLY"}, None
+
+    monkeypatch.setattr(current, "build_current_scores", consume_twice)
+    tracemalloc.start()
+    try:
+        current.build()
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 5_000_000  # 20 MB raw payload must not stay resident in the CLI.
