@@ -25,7 +25,57 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / FRESH-MAIN VALIDATION**
+**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / GREEN PR, BASE-ADVANCE DECISION**
+- OBSERVATION: 2026-10-19 11:21 UTC. PR #550 remains open and unmerged.
+- PR HEAD: `af81bb25ba719030556058545bb7b8fca3a5038d`, branch
+  `fix/refresh-contracts-20261019`; its integrated base is `8573c4f`.
+- LATEST VERIFIED MAIN: `cded3bd34ca00652a23b796cb7b3c7a5b38af75f`.
+  The 11:00:20 UTC Neuron bot commit changes only
+  `frontend/data/neuron_current.json`; no source code or workflow changed.
+- REVIEW/CHECKPOINT BRANCH: `verify/refresh-contracts-main-20261019`.
+  It combines the PR head with the latest main, retaining the exact bot output,
+  plus this status record and the audit. It is not the PR head or a deployment.
+- [x] Canonical O/U pairing and builder request-budget repairs; bounded DNA input
+  ingestion and shared-frame allocation; parity and negative regression tests.
+- [x] All **10/10 GitHub workflows succeeded on PR head af81bb2**.
+  UI health `39231113543`: **1733 passed in 69.91s**, runtime/UI/isolation PASS.
+  DNA `39231113492`, job `117989525731`: complete SUCCESS at 11:01 UTC.
+  Point Tape `39231113404`, job `117989020628`: 79 successful steps,
+  complete SUCCESS at 11:21 UTC; no failed steps.
+- [x] Latest-main combined runtime tree `1dc76f1f8063a4f82bbed2a7b5c699065752fcf7`:
+  **1733 passed in 58.25s**; static UI, delivery build, runtime UI on real data,
+  readiness-available and readiness-N/D fixtures all PASS; whitespace checks PASS.
+  This is local integration verification, not fresh GitHub CI for the new base.
+- [!] AGENTS.md section 7 requires rerunning required CI after main advances.
+  Neuron has an hourly publication schedule while full-history CI can exceed
+  an hour. Repeated data-only advances can therefore restart the validation cycle.
+  No exception to that requirement has been assumed, and no workflow was stopped.
+- [ ] Resolve the one-time data-only base-advance decision, then merge only the
+  authorized, verified candidate. Do not merge merely because older-head CI is green.
+- [ ] Verify normal post-merge Superbet/Builder, data publication and DNA refresh.
+- PRODUCTION LIMIT: main Superbet run `39241953523`, job `118024659533`, still
+  failed at 11:10 UTC on cross-line O/U pairing; builder source remained
+  `DIRECT_INPUT_UNSAFE`. The repair is not yet deployed; no production recovery
+  or current PLAYABLE availability is claimed.
+- CI DATA: DNA evaluated 1,751,834 strict points from 15,296 historical matches.
+  On its input snapshot, 196/370 current matches were scored, 174 collected
+  history and 179 had dynamic SHADOW scores. These are SHADOW CI results,
+  not live application counts or PLAYABLE counts. Promotion remains disabled.
+- FILES: the 30-file repair remains in PR #550. The review branch adds only the
+  unchanged Neuron bot output and audit/checkpoint updates relative to that head.
+- DO NOT REDO: reproduced defects, feature/model parity proofs, completed af81bb2
+  CI, unrelated app/storage work, PRs #523/#537 or dependencies.
+- NEXT EXACT ACTION: obtain the owner's explicit one-time decision on retaining
+  the green PR CI after this isolated Neuron-data advance with the documented
+  full local integration checks; otherwise integrate/re-publish and repeat the
+  required GitHub CI. Recheck live main and PR SHA before any merge, then verify
+  normal producer logs, generated-data timestamps and publication evidence.
+- BANS: no changes to mathematics/features/weights/training policy, probabilities,
+  thresholds, PLAYABLE rules, settlement, iNeed economics/scope, lifecycle
+  enablement, SHADOW/PROD authority or real betting. Provider HTTP 410 recovery
+  remains unproven. Do not call a green PR a production recovery.
+
+**Historical repair checkpoint — 2026-10-19 09:31 UTC (superseded above)**
 - AUTHORIZATION: owner requested repairs after the GitHub-only health report.
 - ORIGINAL BASE: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
 - LAST VERIFIED MAIN: `8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`, observed
