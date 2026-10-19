@@ -25,9 +25,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / CI FOLLOW-UP**
+**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / FRESH-MAIN VALIDATION**
 - AUTHORIZATION: owner requested repairs after the GitHub-only health report.
-- BASE / LAST VERIFIED MAIN: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
+- ORIGINAL BASE: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
+- LAST VERIFIED MAIN: `8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`, observed
+  2026-10-19 09:31 UTC. Only three generated Neuron SHADOW files changed;
+  the bot commit is incorporated unchanged into this branch.
 - BRANCH: `fix/refresh-contracts-20261019`; checkout `tenis-ai-repair`; PR #550.
   Initial head: `b5947f6508ab1bad2f9f8d45495410dd6a736902`.
 - [x] Fresh main, open PRs, failed logs and canonical owners inspected.
@@ -58,7 +61,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Reproduce pandas flattening of shared feature maps: 41.46 MB peak versus
   8.83 MB with canonical column-wise frame construction on the same fixture.
   Exact DataFrames, fitted coefficients and predictions checked; latest full suite
-  **1733 passed in 63.16s**. Fresh CI for this allocation fix is pending.
+  **1733 passed in 63.16s**.
+- [x] Head `11f20db` passed eight workflows. UI health `39222655833` passed
+  **1733 tests in 47.60s**, browser/runtime and isolation checks. At 09:31 UTC,
+  DNA `39222656168` had passed current-card scoring, market backtest, dynamic
+  walk-forward and dynamic current-card scoring; hold calibration was running.
+  Point Tape `39222656167` had passed opponent/pressure/tiebreak/recent-form/
+  small-sample/matchup evaluation and the point scorer. Neither full workflow
+  was yet complete; these are CI observations, not production confirmation.
+- [x] Main advanced via Neuron bot commit `8573c4f` at 09:16:37 UTC.
+  Integrated its generated files unchanged. Combined-tree full local suite:
+  **1733 passed in 59.70s**. Fresh GitHub CI is required for this integration;
+  do not count earlier-head results as final-head CI.
 - [ ] Verify updated CI against fresh main; merge only green.
 - [ ] Verify normal post-merge Superbet/Builder and Player DNA refresh evidence.
 - FILES: canonical Superbet audit/quote collector, Player DNA scorer/recent-form/
@@ -67,8 +81,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - LIMITS: no new recovery evidence for provider HTTP 410 (196595/201913).
   Full production memory use and resolution of runner shutdown remain unproven.
 - DO NOT REDO: prior app/Solar/storage fixes or unrelated PRs #523/#537/dependencies.
-- NEXT EXACT ACTION: complete CI for the memory-ingestion follow-up and fresh-main verification,
-  merge only green and inspect normal post-merge producer logs and source times.
+- NEXT EXACT ACTION: verify complete CI for the published fresh-main integration
+  and recheck live main; merge only green and inspect normal
+  post-merge producer logs and source times.
 - BANS: model mathematics/features/weights/training policy, probability/thresholds,
   PLAYABLE decisions, settlement, iNeed economics/scope, builder lifecycle enablement,
   automatic SHADOW-to-PROD promotion and real betting.

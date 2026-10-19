@@ -169,3 +169,38 @@ Regressions compare exact DataFrames, fitted coefficients, schemas and predicted
 probabilities for both pressure and opponent features. Empty mappings and explicit
 missing-value overrides are covered. Latest full local suite: **1733 passed in 63.16 seconds**; `git diff --check` passed.
 Fresh CI for this frame-allocation fix and production verification are pending.
+
+## Fresh-main integration — 2026-10-19 09:31 UTC
+
+Head `11f20db81069c0ba2be6729a8fb4b2059ed74cf1` passed eight workflows.
+UI health [39222655833](https://github.com/Abeel87/tenis-ai/actions/runs/39222655833)
+passed all **1733 tests in 47.60 seconds**, browser/runtime and isolation checks.
+At this observation, [DNA 39222656168](https://github.com/Abeel87/tenis-ai/actions/runs/39222656168)
+had also passed current-card scoring, market backtest, dynamic walk-forward and
+dynamic current-card scoring; hold calibration was running.
+[Point Tape 39222656167](https://github.com/Abeel87/tenis-ai/actions/runs/39222656167)
+had passed opponent, pressure, tiebreak, recent-form, small-sample and matchup
+evaluations, plus the point scorer. Full completion was still pending.
+
+Main advanced from the original base to
+[`8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`](https://github.com/Abeel87/tenis-ai/commit/8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b)
+at 09:16:37 UTC. The Neuron bot changed only `neuron_current.json`,
+`neuron_metrics.json` and `neuron_model.json` in `frontend/data`; no repair source
+or workflow changed. The branch incorporates those generated files unchanged
+and will run fresh CI on the combined tree. This is an existing automated
+SHADOW refresh, not a manual modification of Neuron training or authority.
+Earlier-head results remain useful diagnostics but do not replace final-head CI.
+Normal PR concurrency may cancel the superseded DNA run when the integration
+is published; that cancellation is not a regression or an explicit cancellation
+of a production refresh. No production recovery is claimed at this checkpoint.
+
+The main refresh [39229175434](https://github.com/Abeel87/tenis-ai/actions/runs/39229175434/job/117982707244)
+still failed at 09:28:37 UTC with `O/U threshold mismatch for player_total_games
+200503: over=10.5, under=12.5`; its builder source was still `DIRECT_INPUT_UNSAFE`.
+Those are the same two canonical input-contract defects repaired by this PR,
+not evidence that its unpublished code failed in production.
+
+The combined local tree passed **1733 tests in 59.70 seconds**. Only the three
+unchanged Neuron bot outputs and this audit/checkpoint differ from head `11f20db`;
+the repair source code and its tests are identical. Full fresh GitHub CI remains
+the merge gate.
