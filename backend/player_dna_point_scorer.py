@@ -13,6 +13,7 @@ import hashlib
 import json
 import math
 from collections import Counter
+from itertools import groupby
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -428,6 +429,43 @@ def _profile_index(rows: Iterable[dict[str, Any]]) -> dict[tuple[str, int], dict
             continue
         out[(match_id, player_id)] = row
     return out
+
+
+def iter_match_inputs(
+    point_rows: Iterable[dict[str, Any]],
+    profile_rows: Iterable[dict[str, Any]],
+) -> Iterable[tuple[list[dict[str, Any]], list[dict[str, Any]]]]:
+    """Read canonical dataset groups without retaining every raw point.
+
+    player_dna_point_dataset writes one complete cache match at a time. State
+    features and as-of joins are match-local, so the existing feature builder
+    can consume each complete group with exactly the same point order. Reject
+    broken grouping instead of silently resetting history for a split match.
+    """
+    profiles_by_match: dict[str, list[dict[str, Any]]] = {}
+    for (match_id, _), profile in _profile_index(profile_rows).items():
+        profiles_by_match.setdefault(match_id, []).append(profile)
+    seen: set[str] = set()
+    points = (row for row in point_rows if isinstance(row, dict))
+    for match_id, group in groupby(points, key=lambda row: str(row.get("match_id") or "").strip()):
+        if match_id in seen:
+            raise ValueError(f"non-contiguous point dataset match: {match_id!r}")
+        seen.add(match_id)
+        yield list(group), profiles_by_match.get(match_id, [])
+
+
+def build_feature_rows_from_files(
+    points_path: Path = POINTS, profiles_path: Path = PROFILES,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    profiles = list(_iter_jsonl_gz(profiles_path) or ())
+    rows: list[dict[str, Any]] = []
+    counts = Counter()
+    for points, match_profiles in iter_match_inputs(_iter_jsonl_gz(points_path), profiles):
+        batch, batch_counts = build_feature_rows(points, match_profiles)
+        rows.extend(batch)
+        counts.update({key: value for key, value in batch_counts.items() if key != "profile_snapshots"})
+    counts["profile_snapshots"] = len(_profile_index(profiles))
+    return rows, dict(counts)
 
 
 def build_feature_rows(
@@ -1320,9 +1358,7 @@ def evaluate(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
-    profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
-    feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
+    feature_rows, join_counts = build_feature_rows_from_files(POINTS, PROFILES)
 
     try:
         readiness = json.loads(READINESS.read_text(encoding="utf-8")) if READINESS.exists() else {}

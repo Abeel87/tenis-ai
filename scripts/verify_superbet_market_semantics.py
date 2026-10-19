@@ -91,6 +91,7 @@ def validate_availability(report: dict) -> dict:
 
     handicap_pairs = 0
     total_pairs = 0
+    unpaired_total_lines = 0
     winner_pairs = 0
     selections_seen = 0
 
@@ -135,21 +136,25 @@ def validate_availability(report: dict) -> dict:
                 handicap_pairs += 1
 
             elif market in TOTAL_MARKETS:
-                by_side = {_norm(row.get("pick")): row for row in rows if row.get("pick")}
-                over = by_side.get("over")
-                under = by_side.get("under")
-                if not over or not under:
-                    continue
-                over_line = _line(over.get("line"))
-                under_line = _line(under.get("line"))
-                assert over_line is not None and under_line is not None, (
-                    f"missing total line for {market} {market_id}"
-                )
-                assert _close(over_line, under_line), (
-                    f"O/U threshold mismatch for {market} {market_id}: "
-                    f"over={over_line:g}, under={under_line:g}"
-                )
-                total_pairs += 1
+                # A market ID names a family, not a single alternative line.
+                # Never pair the last over with the last under in feed order,
+                # or borrow the opposite side from another player total.
+                by_player = defaultdict(lambda: defaultdict(set))
+                for row in rows:
+                    side = _norm(row.get("pick"))
+                    if side not in {"over", "under"}:
+                        continue
+                    line = _line(row.get("line"))
+                    assert line is not None, f"missing total line for {market} {market_id}"
+                    by_player[_norm(row.get("player"))][side].add(line)
+                for sides in by_player.values():
+                    over_lines, under_lines = sides.get("over", set()), sides.get("under", set())
+                    # Active operator offers can contain a one-sided line. It
+                    # is not a pair and must not be matched to a nearby line.
+                    # Symphony line-coherence works on complete exact-line
+                    # pairs; this adapter audit never grants PLAYABLE.
+                    total_pairs += len(over_lines & under_lines)
+                    unpaired_total_lines += len(over_lines ^ under_lines)
 
         winner_rows = [
             row
@@ -176,6 +181,7 @@ def validate_availability(report: dict) -> dict:
         "selections": selections_seen,
         "handicap_pairs_checked": handicap_pairs,
         "total_pairs_checked": total_pairs,
+        "unpaired_total_lines": unpaired_total_lines,
         "winner_fixtures_checked": winner_pairs,
         "prices_used": False,
     }

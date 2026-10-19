@@ -88,6 +88,28 @@ def test_recent_form_enrichment_uses_canonical_all_surface_l5_rates():
     assert counts["enrichment_counts"]["rows_with_both_players_l5_full"] == 1
 
 
+def test_file_recent_form_input_is_exactly_equivalent_to_full_input(tmp_path):
+    import gzip
+    import json
+    from backend import player_dna_recent_form_challenger as recent
+
+    when = "2026-09-06T10:00:00Z"
+    profiles, points = [], []
+    for match_id in ("a", "b"):
+        profiles.extend([
+            _profile(match_id, when, 1, 2, serve=0.69, ret=0.38),
+            _profile(match_id, when, 2, 1, serve=0.63, ret=0.43),
+        ])
+        points.append(_point(match_id, when))
+    profiles.append(_profile("unused", when, 1, 2, serve=0.69, ret=0.38))
+    paths = [tmp_path / "points.gz", tmp_path / "profiles.gz"]
+    for path, data in zip(paths, (points, profiles)):
+        with gzip.open(path, "wt") as handle:
+            for row in data:
+                handle.write(json.dumps(row) + "\n")
+    assert recent.enrich_feature_rows_from_files(*paths) == enrich_feature_rows(points, profiles)
+
+
 def test_recent_form_family_is_narrow_and_support_counts_are_not_features():
     assert RECENT_FORM_WINDOW == "L5"
     assert RECENT_FORM_MIN_PRIOR_MATCHES == 5

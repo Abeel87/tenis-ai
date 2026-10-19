@@ -25,6 +25,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**REFRESH CONTRACT REPAIR — 2026-10-19, LOCAL VALIDATION COMPLETE**
+- AUTHORIZATION: owner requested repairs after the GitHub-only health report.
+- BASE / LAST VERIFIED MAIN: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
+- BRANCH: `fix/refresh-contracts-20261019`; checkout `tenis-ai-repair`; PR pending.
+- [x] Fresh main, open PRs, failed logs and canonical owners inspected.
+- [x] Reproduce and repair false O/U pairing and whole-catalogue builder rejection.
+- [x] Stream existing Player DNA feature ingestion without changing outputs;
+  instrument workflow memory. Runner shutdown is observed, OOM is not proven.
+- [x] 92 focused tests; full suite 1712 passed in 53.56s; UI static/runtime smoke
+  passed on real data. Snapshot audit and synthetic memory proof are recorded in
+  `audits/refresh_contracts_20261019.md`.
+- [ ] Publish PR and verify all CI against fresh main; merge only green.
+- [ ] Verify normal post-merge Superbet/Builder and Player DNA refresh evidence.
+- FILES: canonical Superbet audit/quote collector, Player DNA scorer/recent-form/
+  Player State ingestion, two workflow memory probes, four regression test files,
+  audit, registry, architecture and this checkpoint.
+- LIMITS: no new recovery evidence for provider HTTP 410 (196595/201913).
+  Full production memory use and resolution of runner shutdown remain unproven.
+- DO NOT REDO: prior app/Solar/storage fixes or unrelated PRs #523/#537/dependencies.
+- NEXT EXACT ACTION: publish this tested branch, complete CI/fresh-main verification,
+  merge only green and inspect normal post-merge producer logs and source times.
+- BANS: model mathematics/features/weights/training policy, probability/thresholds,
+  PLAYABLE decisions, settlement, iNeed economics/scope, builder lifecycle enablement,
+  automatic SHADOW-to-PROD promotion and real betting.
+
 **APP RELIABILITY AND OBSERVABILITY — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: owner approved the six proposed improvements after Solar:
   resilient refresh, PLAYABLE explanations, actual Self Evolution reports,

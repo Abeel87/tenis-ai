@@ -188,7 +188,7 @@ jobs:
         run: python backend/player_dna_matchup_readiness_audit.py
 
       - name: Build recent-form + Player State evidence (SHADOW, zero network)
-        run: python backend/player_dna_recent_form_challenger.py
+        run: /usr/bin/time -v python backend/player_dna_recent_form_challenger.py
 
       - name: Refresh + stamp LOGIC-08 history coverage snapshot (zero network)
         run: |
@@ -351,7 +351,7 @@ jobs:
 
       - name: Train + evaluate Player DNA scorer
         if: env.FAST_READINESS_ONLY != 'true'
-        run: python backend/player_dna_point_scorer.py
+        run: /usr/bin/time -v python backend/player_dna_point_scorer.py
 
       - name: Score current card in SHADOW
         if: env.FAST_READINESS_ONLY != 'true'
