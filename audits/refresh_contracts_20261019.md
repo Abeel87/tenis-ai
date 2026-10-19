@@ -300,3 +300,35 @@ The normal [data/Pages producer 39247666214](https://github.com/Abeel87/tenis-ai
 and [UI health 39247666110](https://github.com/Abeel87/tenis-ai/actions/runs/39247666110)
 started automatically on the merge SHA. At 11:52 UTC these were still running;
 merge is confirmed, but production refresh/publication is not yet confirmed.
+
+## Post-merge observations — 2026-10-19 12:29 UTC
+
+- [UI health 39247666110](https://github.com/Abeel87/tenis-ai/actions/runs/39247666110),
+  job 118043456044, completed SUCCESS at 12:02:02 UTC on merge SHA. Its log
+  reports **1733 passed in 67.52s** at 12:00:37, Project health PASS at 12:01:40
+  and Runtime health PASS at 12:01:51. CodeQL 39247666204 and delivery/security
+  39247666105 also succeeded on the merge.
+- DNA's early readiness publisher committed
+  [`58f997440dd06802872a399072b6b141587621a0`](https://github.com/Abeel87/tenis-ai/commit/58f997440dd06802872a399072b6b141587621a0)
+  at 12:11:31 UTC. The complete diff changes only `meta.json` and
+  `readiness_engine_shadow.json`; no source code changed.
+  [FAST Pages 39250148408](https://github.com/Abeel87/tenis-ai/actions/runs/39250148408),
+  job 118051674770, completed SUCCESS at 12:17:49 UTC. Its manifest and deployment
+  identify `58f9974`. This is readiness publication, not completion of a new
+  core/market refresh or full DNA research publication.
+- [Data/Pages 39247666214](https://github.com/Abeel87/tenis-ai/actions/runs/39247666214),
+  build job 118045587147, passed generation, Symphony 2, FINAL PLAYABLE guard
+  and the final full regression on generated data. At 12:29 UTC it remained in
+  `Commit refreshed JSON`. No failed step was reported. Main was still `58f9974`,
+  so neither a new core data commit nor its deployment is asserted. The running
+  job log archive returned BlobNotFound; absence of a completed log is not a
+  failure diagnosis. Check the subsequent actual outcome before further action.
+- [DNA 39247666101](https://github.com/Abeel87/tenis-ai/actions/runs/39247666101),
+  job 118043455838, passed recent-form/Player State, scorer evaluation,
+  current-card scoring and historical market backtest. It was running dynamic
+  walk-forward at 12:29 UTC. Thus the former stopped current-card stage passed
+  on main, but the full production research run and its publication are pending.
+- Normal Superbet/Builder recovery remains pending the refresh triggered by
+  successful full data/Pages completion. No fresh production quote count,
+  FINAL PLAYABLE count or provider HTTP 410 recovery is claimed from these
+  in-progress jobs. All model and authority constraints remain unchanged.
