@@ -33,6 +33,8 @@ try:
         prematch_feature_with_rank,
     )
     from backend.player_dna_point_scorer import (
+        PointDataset,
+        iter_match_inputs,
         PROFILE_NUMERIC,
         _cohort,
         _fit_logistic_newton,
@@ -59,6 +61,8 @@ except ModuleNotFoundError:  # direct execution
         prematch_feature_with_rank,
     )
     from player_dna_point_scorer import (
+        PointDataset,
+        iter_match_inputs,
         PROFILE_NUMERIC,
         _cohort,
         _fit_logistic_newton,
@@ -299,15 +303,23 @@ def reconstruct_match_label(rows: list[dict[str, Any]]) -> dict[str, Any] | None
 
 
 def _labels_by_match(point_rows: Iterable[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
-    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in point_rows:
-        match_id = str(row.get("match_id") or "").strip()
-        if match_id:
-            grouped[match_id].append(row)
+    if isinstance(point_rows, PointDataset):
+        groups = (
+            (str(rows[0].get("match_id") or "").strip(), rows)
+            for rows, _ in iter_match_inputs(point_rows, [])
+            if str(rows[0].get("match_id") or "").strip()
+        )
+    else:
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in point_rows:
+            match_id = str(row.get("match_id") or "").strip()
+            if match_id:
+                grouped[match_id].append(row)
+        groups = grouped.items()
 
     labels: dict[str, dict[str, Any]] = {}
     counts = Counter()
-    for match_id, rows in grouped.items():
+    for match_id, rows in groups:
         counts["matches_seen"] += 1
         label = reconstruct_match_label(rows)
         if label is None:
@@ -1684,7 +1696,7 @@ def _binary_probability(sim: dict[str, Any], market: str) -> float | None:
 
 
 def evaluate_backtest(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     profile_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
@@ -1859,7 +1871,7 @@ def evaluate_backtest(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     report = evaluate_backtest(point_rows, profile_rows)
     OUT.parent.mkdir(parents=True, exist_ok=True)

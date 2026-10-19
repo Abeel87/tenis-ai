@@ -14,7 +14,7 @@ frozen fresh-confirmation gate before any activation.
 
 import json
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -33,6 +33,7 @@ try:
         _proper_score_gains,
         _walk_forward_slices,
         build_feature_rows,
+        iter_match_inputs,
         split_chronological_by_match,
     )
 except ModuleNotFoundError:  # direct execution compatibility
@@ -50,6 +51,7 @@ except ModuleNotFoundError:  # direct execution compatibility
         _proper_score_gains,
         _walk_forward_slices,
         build_feature_rows,
+        iter_match_inputs,
         split_chronological_by_match,
     )
 
@@ -383,10 +385,28 @@ def evaluate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return report
 
 
+def enrich_feature_rows_from_files(
+    points_path: Path = POINTS, profiles_path: Path = PROFILES,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    profiles = list(_iter_jsonl_gz(profiles_path) or ())
+    rows: list[dict[str, Any]] = []
+    base_counts, enrichment_counts = Counter(), Counter()
+    for points, match_profiles in iter_match_inputs(_iter_jsonl_gz(points_path), profiles):
+        batch, counts = enrich_feature_rows(points, match_profiles)
+        rows.extend(batch)
+        base_counts.update({key: value for key, value in counts["base_join_counts"].items() if key != "profile_snapshots"})
+        enrichment_counts.update(counts["enrichment_counts"])
+    profile_count = len(_profile_index(profiles))
+    base_counts["profile_snapshots"] = profile_count
+    return rows, {
+        "base_join_counts": dict(base_counts),
+        "enrichment_counts": dict(enrichment_counts),
+        "profile_snapshots": profile_count,
+    }
+
+
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
-    profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
-    rows, build_counts = enrich_feature_rows(point_rows, profile_rows)
+    rows, build_counts = enrich_feature_rows_from_files(POINTS, PROFILES)
     report = evaluate(rows)
     report["build_counts"] = build_counts
 

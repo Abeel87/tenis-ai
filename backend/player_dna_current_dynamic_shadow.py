@@ -34,6 +34,7 @@ try:
         _snapshot_pairs,
     )
     from backend.player_dna_point_scorer import (
+        PointDataset,
         _cohort,
         _model_meta,
         build_feature_rows,
@@ -52,6 +53,7 @@ except ModuleNotFoundError:  # direct execution
         _snapshot_pairs,
     )
     from player_dna_point_scorer import (
+        PointDataset,
         _cohort,
         _model_meta,
         build_feature_rows,
@@ -193,7 +195,7 @@ def _training_before_current_cutoff(
 
 
 def build_current_dynamic_shadow(
-    point_rows: list[dict[str, Any]],
+    point_rows: list[dict[str, Any]] | PointDataset,
     historical_profile_rows: list[dict[str, Any]],
     current: dict[str, Any],
     walk_forward: dict[str, Any],
@@ -443,7 +445,7 @@ def build_current_dynamic_shadow(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
+    point_rows = PointDataset(POINTS)
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
     current = _read_json(CURRENT, {})
     walk_forward = _read_json(WALK_FORWARD, {})

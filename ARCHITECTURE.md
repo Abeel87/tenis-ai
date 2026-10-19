@@ -29,7 +29,32 @@ Brak oferty lub linii Superbet nie może usuwać ani zastępować analizy MODEL 
 
 Semantyczne granice modeli, sezonów, Player DNA/Player State, opponent context, probability ownership i readiness definiuje `TENIS_AI_LOGIC_CONSTITUTION.md`. Bieżące znane problemy i plan ich napraw definiuje `TENIS_AI_MODEL_DATA_REGISTRY.md`. Aktywny etap, checklisty i punkt wznowienia definiuje `TENIS_AI_EXECUTION_CHECKLIST.md`.
 
+Player DNA scorer and recent-form file ingestion process complete contiguous
+match groups from the canonical point dataset, reusing the existing feature
+builders without changing row order or model calculations. Noncontiguous repeats
+fail explicitly. Player State rereads the iterator for each independent consumer.
+This bounds raw-input memory; it is not a training/sample-policy change.
+The opponent-strength audit uses the same match-local point ingestion while
+building opponent and adjustment indexes once from all profile snapshots.
+Immutable per-match/direction feature maps preserve original adjustment-field
+precedence; each enriched point has its own writable overlay.
+`player_dna_point_scorer.PointDataset` is the repeatable canonical file input for
+current scoring and downstream evaluators. Feature joins, match-local enrichment
+and label input grouping release each raw match after processing it. Profiles,
+rank context and labels can reread the source independently; no shared exhausted
+generator or raw-population cache is retained. Reconstruction and model functions
+continue to use their existing semantics. The canonical `_frame` helper builds
+shared feature mappings column by column, preserving pandas column order, types,
+index and missing values without re-expanding every point into another full dict.
+
 ## 3. Superbet i PLAYABLE
+
+The market-semantics audit counts exact O/U pairs per market/player/line and
+reports one-sided lines separately. It has no PLAYABLE authority. The pre-priced
+builder artifact collector keeps its 64-event request budget by selecting verified
+future events in deterministic schedule/identity order and recording budget skips;
+catalogue growth alone no longer invalidates all exact quotes. Freshness, event
+identity and the separate dynamic-quote/reservation gates retain their owners.
 
 The canonical Direct collector (`backend/superbet_direct.py`) shares one incremental
 DOM/public-v3 prematch catalogue discovery path with iNeed. Listing JSON is candidate

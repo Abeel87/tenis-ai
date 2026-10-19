@@ -17,6 +17,31 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-10-19 refresh contract repair (validation complete locally; rollout pending):**
+The canonical Superbet semantics audit groups totals by exact market/player/line;
+one-sided lines are counted separately and never confer PLAYABLE. The existing
+`superbet_builder_quotes` collector applies its 64-event budget to eligible future
+events, not upstream catalogue size, and publishes explicit overflow coverage.
+Player DNA scorer/recent-form input is streamed by complete canonical match group;
+feature values/order, evaluation and training remain unchanged. Player State uses
+independent iterator passes. Workflow RSS instrumentation supports diagnosis of
+runner shutdown, whose cause remains unproven. See
+`audits/refresh_contracts_20261019.md` and the current execution checkpoint.
+PR #550's first CI passed recent-form/Player State and scorer evaluation, but
+Point Tape stopped at the separate opponent-strength audit. That canonical
+owner now uses the same complete-match ingestion boundary and shared immutable
+direction features. Its cross-match opponent/adjustment indexes and exact
+missing-value precedence remain unchanged. Player DNA then stopped at current-card
+scoring (08:02:25 UTC). The scorer now owns repeatable `PointDataset` input for
+current scoring and the existing downstream evaluators; match-local challenger
+joins and label grouping no longer retain the full raw population. Every later
+consumer gets an independent read, with unchanged feature/label semantics.
+Initial CI RSS: recent-form 4,089,540 KB; scorer 4,755,876 KB, both exit zero.
+Full workflow resolution and rollout still await all-green CI. A further allocation
+regression covers pandas flattening shared feature maps before evaluation. The
+canonical frame adapter now preserves exact values/types/order column by column;
+fitted coefficients and predictions remain exactly equal in parity regressions.
+
 **2026-10-15 technical repair (PR #545 deployed and verified):** `superbet_direct.browser_probe` separates listing discovery from its optional first-event diagnostic; `browser_selected_direct_feed` retains exact per-event resolver authority. `live_history_settle.main` counts failed transport attempts inside the existing quota, retries one transient read and publishes safe reason codes without changing scoring. The iNeed workflow restores exact history before existing consumers. Its UI preserves missing counts, explains backend-reported zero in-scope candidates and reads the latest bounded bankroll ledger window. See `audits/technical_health_20261015.md` and the current execution checkpoint. V1 match-winner scope and disabled builder lifecycle remain unchanged. All 1671 tests and all 11 PR workflows passed; merge `698de5f4807c7da900a64e8bf95195deccab4f33`. The live core run `38725160239` recovered Direct publication (five exact candidates, fresh at 11:13 UTC). Its safe history diagnostics identified provider HTTP 410 for matches `196595` and `201913`; those unavailable results remain unresolved rather than being fabricated. Core/Pages and private delivery succeeded with exact public frontend bytes and all 195 private core objects verified. Normal market run `38728379362` refreshed Direct again and recovered 500 builder offers. iNeed run `38729088692` and independent SQL confirm status OK at 11:42 UTC: 144 matches, 26 final signals, zero authorized match-winner candidates, zero evaluations; builder reservation remains disabled.
 
 ## A1. Live Tennis API — fixtures / provider context

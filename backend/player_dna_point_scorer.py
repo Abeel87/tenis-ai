@@ -12,10 +12,11 @@ import gzip
 import hashlib
 import json
 import math
-from collections import Counter
+from collections import ChainMap, Counter
+from itertools import groupby
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -413,6 +414,20 @@ def _iter_jsonl_gz(path: Path) -> Iterable[dict[str, Any]]:
                 yield row
 
 
+class PointDataset:
+    """Repeatable canonical file input; each consumer gets an independent pass.
+
+    Unlike a generator, this remains available for current profiles, rank
+    context and labels after the feature join. Raw rows are never cached here.
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __iter__(self):
+        return iter(_iter_jsonl_gz(self.path))
+
+
 def _profile_index(rows: Iterable[dict[str, Any]]) -> dict[tuple[str, int], dict[str, Any]]:
     out = {}
     for row in rows:
@@ -430,10 +445,76 @@ def _profile_index(rows: Iterable[dict[str, Any]]) -> dict[tuple[str, int], dict
     return out
 
 
+def iter_match_inputs(
+    point_rows: Iterable[dict[str, Any]],
+    profile_rows: Iterable[dict[str, Any]],
+) -> Iterable[tuple[list[dict[str, Any]], list[dict[str, Any]]]]:
+    """Read canonical dataset groups without retaining every raw point.
+
+    player_dna_point_dataset writes one complete cache match at a time. State
+    features and as-of joins are match-local, so the existing feature builder
+    can consume each complete group with exactly the same point order. Reject
+    broken grouping instead of silently resetting history for a split match.
+    """
+    profiles_by_match: dict[str, list[dict[str, Any]]] = {}
+    for (match_id, _), profile in _profile_index(profile_rows).items():
+        profiles_by_match.setdefault(match_id, []).append(profile)
+    seen: set[str] = set()
+    points = (row for row in point_rows if isinstance(row, dict))
+    for match_id, group in groupby(points, key=lambda row: str(row.get("match_id") or "").strip()):
+        if match_id in seen:
+            raise ValueError(f"non-contiguous point dataset match: {match_id!r}")
+        seen.add(match_id)
+        yield list(group), profiles_by_match.get(match_id, [])
+
+
+def build_feature_rows_from_files(
+    points_path: Path = POINTS, profiles_path: Path = PROFILES,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    return build_feature_rows(PointDataset(points_path), _iter_jsonl_gz(profiles_path))
+
+
+def enrich_match_inputs(
+    point_rows: PointDataset,
+    profile_rows: Iterable[dict[str, Any]],
+    builder: Callable,
+    *,
+    include_profile_count: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Run match-local enrichers with their unchanged feature/counter contracts.
+
+    Global-history enrichers (opponent/recent-form) own their separate global
+    context preparation. This helper is only for joins to fixed as-of profiles.
+    """
+    profiles = list(profile_rows)
+    rows = []
+    base_counts, enrichment_counts = Counter(), Counter()
+    for points, match_profiles in iter_match_inputs(point_rows, profiles):
+        batch, counts = builder(points, match_profiles)
+        rows.extend(batch)
+        base_counts.update({key: value for key, value in counts["base_join_counts"].items() if key != "profile_snapshots"})
+        enrichment_counts.update(counts["enrichment_counts"])
+    base_counts["profile_snapshots"] = len(_profile_index(profiles))
+    counts = {"base_join_counts": dict(base_counts), "enrichment_counts": dict(enrichment_counts)}
+    if include_profile_count:
+        counts["profile_snapshots"] = base_counts["profile_snapshots"]
+    return rows, counts
+
+
 def build_feature_rows(
     point_rows: Iterable[dict[str, Any]],
     profile_rows: Iterable[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    if isinstance(point_rows, PointDataset):
+        profiles = list(profile_rows)
+        rows, counts = [], Counter()
+        for points, match_profiles in iter_match_inputs(point_rows, profiles):
+            batch, batch_counts = build_feature_rows(points, match_profiles)
+            rows.extend(batch)
+            counts.update({key: value for key, value in batch_counts.items() if key != "profile_snapshots"})
+        counts["profile_snapshots"] = len(_profile_index(profiles))
+        return rows, dict(counts)
+
     profiles = _profile_index(profile_rows)
     point_rows = [point for point in point_rows if isinstance(point, dict)]
     state_lookup, state_counts = _state_feature_lookup(point_rows)
@@ -572,6 +653,19 @@ def _cohort(rows: list[dict[str, Any]], min_prior_matches: int) -> list[dict[str
 
 
 def _frame(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    if rows and all(isinstance(row, ChainMap) for row in rows):
+        # pandas first flattens every non-dict mapping into a dict. That undoes
+        # the per-direction sharing and retains a second full feature population.
+        # Infer the same column order on one small mapping, then build each
+        # column independently with the same missing-value and dtype inference.
+        keys = dict.fromkeys(key for row in rows for key in row)
+        columns = pd.DataFrame([ChainMap(keys)]).columns
+        return pd.DataFrame(
+            {name: pd.Series([row.get(name, np.nan) for row in rows]) for name in columns},
+            index=pd.RangeIndex(len(rows)),
+            columns=columns,
+            copy=False,
+        )
     return pd.DataFrame(rows)
 
 
@@ -1320,9 +1414,7 @@ def evaluate(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(_iter_jsonl_gz(POINTS) or ())
-    profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
-    feature_rows, join_counts = build_feature_rows(point_rows, profile_rows)
+    feature_rows, join_counts = build_feature_rows_from_files(POINTS, PROFILES)
 
     try:
         readiness = json.loads(READINESS.read_text(encoding="utf-8")) if READINESS.exists() else {}

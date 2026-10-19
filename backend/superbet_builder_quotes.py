@@ -120,18 +120,12 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
         )
 
     raw_matches = [x for x in (direct_feed.get("matches") or []) if isinstance(x, dict)]
-    if len(raw_matches) > MAX_MATCHES:
-        return _empty(
-            "DIRECT_INPUT_UNSAFE",
-            generated_at=stamp,
-            direct_generated_at=direct_generated_at,
-        )
-
     event_fetch = fetcher or direct.fetch_event_payload_public
     out = _empty("NO_EXACT_BUILDER_QUOTES", generated_at=stamp, direct_generated_at=direct_generated_at)
     quote_matches: list[dict] = []
     rejected: list[dict] = []
     requests = 0
+    candidates: list[dict] = []
 
     for match in raw_matches:
         match_id = match.get("match_id")
@@ -143,6 +137,35 @@ def build_artifact(direct_feed: object, *, fetcher=None, now: datetime | None = 
         ):
             rejected.append({"match_id": match_id, "event_id": event_id or None, "status": "UNVERIFIED_DIRECT_MATCH"})
             continue
+        scheduled = _parse_utc(match.get("scheduled_time"))
+        if scheduled is None or scheduled <= now_utc:
+            rejected.append({"match_id": match_id, "event_id": event_id, "status": "NOT_PREMATCH"})
+            continue
+        candidates.append(match)
+
+    # The read budget bounds requests, not the size of the upstream catalogue.
+    # Keep the nearest prematch events, and report every unobserved event rather
+    # than invalidating all exact evidence as soon as Direct coverage improves.
+    candidates.sort(key=lambda match: (
+        _parse_utc(match.get("scheduled_time")),
+        _text(match.get("match_id")),
+        _text(match.get("event_id")),
+    ))
+    for match in candidates[MAX_MATCHES:]:
+        rejected.append({
+            "match_id": match.get("match_id"), "event_id": _text(match.get("event_id")),
+            "status": "EVENT_REQUEST_BUDGET_EXHAUSTED",
+        })
+    out["coverage"] = {
+        "direct_matches_seen": len(raw_matches),
+        "verified_candidates": len(candidates),
+        "request_budget": MAX_MATCHES,
+        "budget_skipped": max(0, len(candidates) - MAX_MATCHES),
+    }
+
+    for match in candidates[:MAX_MATCHES]:
+        match_id = match.get("match_id")
+        event_id = _text(match.get("event_id"))
         try:
             requests += 1
             payload = event_fetch(event_id)
@@ -313,6 +336,7 @@ def refresh_current(*, direct_path: Path | str = DIRECT_PATH, output_path: Path 
         "matches": len(artifact.get("matches") or []),
         "quotes_count": artifact.get("quotes_count"),
         "external_requests": artifact.get("external_requests"),
+        "coverage": artifact.get("coverage"),
         "prices_used": False,
         "ineed_runtime_influence": False,
         "automatic_real_betting": False,

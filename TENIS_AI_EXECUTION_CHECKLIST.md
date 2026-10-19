@@ -25,6 +25,69 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / FRESH-MAIN VALIDATION**
+- AUTHORIZATION: owner requested repairs after the GitHub-only health report.
+- ORIGINAL BASE: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
+- LAST VERIFIED MAIN: `8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`, observed
+  2026-10-19 09:31 UTC. Only three generated Neuron SHADOW files changed;
+  the bot commit is incorporated unchanged into this branch.
+- BRANCH: `fix/refresh-contracts-20261019`; checkout `tenis-ai-repair`; PR #550.
+  Initial head: `b5947f6508ab1bad2f9f8d45495410dd6a736902`.
+- [x] Fresh main, open PRs, failed logs and canonical owners inspected.
+- [x] Reproduce and repair false O/U pairing and whole-catalogue builder rejection.
+- [x] Stream existing Player DNA feature ingestion without changing outputs;
+  instrument workflow memory. Runner shutdown is observed, OOM is not proven.
+- [x] 92 focused tests; full suite 1712 passed in 53.56s; UI static/runtime smoke
+  passed on real data. Snapshot audit and synthetic memory proof are recorded in
+  `audits/refresh_contracts_20261019.md`.
+- [x] Publish PR. Initial UI health run `39217141650`: 1712 passed in 55.73s;
+  eight of ten workflows green. Player DNA `39217141663` passed recent-form /
+  Player State and scorer evaluation (RSS 4,089,540 / 4,755,876 KB, exit zero).
+- [!] The same DNA run later stopped at current-card scoring, runner shutdown at
+  08:02:25 UTC. No full workflow or production recovery is claimed.
+- [!] Point Tape `39217141673`, job `117943537486`, stopped at opponent-strength
+  evaluation with runner shutdown at 07:58:22 UTC. Cause is not proven OOM.
+- [x] Extend bounded input ingestion to the canonical opponent audit; preserve
+  complete-population prior indexes and original field precedence. Independent
+  3000-point/30-match parity proof: identical rows/order/counters/pandas dtypes.
+- [x] Reproduce eager current-card allocation (20,306,690 bytes on a 20 MB fixture).
+  Reuse canonical repeatable file input across current/downstream consumers;
+  preserve repeated passes, labels, feature values and model artifacts. Exact
+  old/new 3000-point parity for five feature paths; active current-card integration
+  compares fitted artifacts and second-pass profiles. Full local suite: **1729 passed
+  in 53.89s**; diff whitespace check passed.
+- [x] Head `f23bf50` passed eight workflows including UI health `39221003925`;
+  Point Tape `39221003825` and DNA `39221003942` were still running during follow-up.
+- [x] Reproduce pandas flattening of shared feature maps: 41.46 MB peak versus
+  8.83 MB with canonical column-wise frame construction on the same fixture.
+  Exact DataFrames, fitted coefficients and predictions checked; latest full suite
+  **1733 passed in 63.16s**.
+- [x] Head `11f20db` passed eight workflows. UI health `39222655833` passed
+  **1733 tests in 47.60s**, browser/runtime and isolation checks. At 09:31 UTC,
+  DNA `39222656168` had passed current-card scoring, market backtest, dynamic
+  walk-forward and dynamic current-card scoring; hold calibration was running.
+  Point Tape `39222656167` had passed opponent/pressure/tiebreak/recent-form/
+  small-sample/matchup evaluation and the point scorer. Neither full workflow
+  was yet complete; these are CI observations, not production confirmation.
+- [x] Main advanced via Neuron bot commit `8573c4f` at 09:16:37 UTC.
+  Integrated its generated files unchanged. Combined-tree full local suite:
+  **1733 passed in 59.70s**. Fresh GitHub CI is required for this integration;
+  do not count earlier-head results as final-head CI.
+- [ ] Verify updated CI against fresh main; merge only green.
+- [ ] Verify normal post-merge Superbet/Builder and Player DNA refresh evidence.
+- FILES: canonical Superbet audit/quote collector, Player DNA scorer/recent-form/
+  Player State/opponent/current/downstream ingestion, workflow memory probes, regression tests,
+  audit, registry, architecture and this checkpoint.
+- LIMITS: no new recovery evidence for provider HTTP 410 (196595/201913).
+  Full production memory use and resolution of runner shutdown remain unproven.
+- DO NOT REDO: prior app/Solar/storage fixes or unrelated PRs #523/#537/dependencies.
+- NEXT EXACT ACTION: verify complete CI for the published fresh-main integration
+  and recheck live main; merge only green and inspect normal
+  post-merge producer logs and source times.
+- BANS: model mathematics/features/weights/training policy, probability/thresholds,
+  PLAYABLE decisions, settlement, iNeed economics/scope, builder lifecycle enablement,
+  automatic SHADOW-to-PROD promotion and real betting.
+
 **APP RELIABILITY AND OBSERVABILITY — 2026-10-16, DEPLOYED AND VERIFIED**
 - AUTHORIZATION: owner approved the six proposed improvements after Solar:
   resilient refresh, PLAYABLE explanations, actual Self Evolution reports,

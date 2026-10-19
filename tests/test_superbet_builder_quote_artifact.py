@@ -257,3 +257,42 @@ def test_invalidate_writes_safe_empty_artifact(tmp_path):
     assert loaded["source_status"] == "UPSTREAM_REFRESH_FAILED"
     assert loaded["quotes_count"] == 0
     assert loaded["contains_prices"] is False
+
+
+def test_large_verified_feed_keeps_bounded_quotes_instead_of_rejecting_every_match():
+    from copy import deepcopy
+    feed = direct_feed()
+    template = feed["matches"][0]
+    feed["matches"] = []
+    for index in range(70):
+        match = deepcopy(template)
+        match.update(match_id=f"m-{index}", event_id=str(15000001 + index))
+        feed["matches"].append(match)
+    calls = []
+
+    def fetcher(event_id):
+        calls.append(event_id)
+        event = payload([combo()])
+        event["data"][0]["eventId"] = int(event_id)
+        return event
+
+    out = bq.build_artifact(feed, fetcher=fetcher, now=NOW)
+    assert out["status"] == "OK"
+    assert out["quotes_count"] == 64
+    assert len(calls) == len(set(calls)) == 64
+    assert out["external_requests"] == 64
+    assert out["coverage"]["verified_candidates"] == 70
+    assert out["coverage"]["request_budget"] == 64
+    assert out["coverage"]["budget_skipped"] == 6
+    assert sum(row["status"] == "EVENT_REQUEST_BUDGET_EXHAUSTED" for row in out["rejected"]) == 6
+    bq.validate_artifact(out)
+
+
+def test_started_matches_do_not_consume_quote_request_budget():
+    feed = direct_feed()
+    feed["matches"][0]["scheduled_time"] = NOW.isoformat()
+    calls = []
+    out = bq.build_artifact(feed, fetcher=lambda event_id: calls.append(event_id), now=NOW)
+    assert calls == []
+    assert out["quotes_count"] == 0
+    assert out["rejected"][0]["status"] == "NOT_PREMATCH"

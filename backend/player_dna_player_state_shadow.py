@@ -959,10 +959,9 @@ def build_state_report(
 
 
 def build() -> dict[str, Any]:
-    point_rows = list(iter_point_rows() or ())
     service_split_matches = list(iter_service_split_matches() or ())
     matches, source_counts = _prepare_matches(
-        point_rows,
+        iter_point_rows(),
         service_split_matches=service_split_matches,
     )
     profile_rows = list(_iter_jsonl_gz(PROFILES) or ())
@@ -970,7 +969,7 @@ def build() -> dict[str, Any]:
     if not isinstance(current_results, list):
         current_results = []
     current_profiles, current_profile_summary = build_current_target_profiles(
-        point_rows,
+        iter_point_rows(),
         current_results,
         service_split_matches=service_split_matches,
     )
@@ -985,7 +984,7 @@ def build() -> dict[str, Any]:
     )
     report["source_counts"] = source_counts
     report["current_profile_summary"] = current_profile_summary
-    report["point_rows_seen"] = len(point_rows)
+    report["point_rows_seen"] = int(source_counts.get("point_rows_seen") or 0)
     report["profile_rows_seen"] = len(profile_rows)
     report["service_split_matches_seen"] = len(service_split_matches)
 

@@ -79,6 +79,59 @@ def test_feature_join_uses_as_of_server_and_receiver_profiles():
     assert counts["joined_rows"] == 1
 
 
+def test_file_feature_input_preserves_every_row_and_join_counter(tmp_path):
+    import gzip
+    import json
+    from backend import player_dna_point_scorer as scorer
+
+    when = "2026-09-04T10:00:00Z"
+    profiles, points = [], []
+    for match in ("a", "b"):
+        profiles.extend([_profile(match, when, 1, 2), _profile(match, when, 2, 1)])
+        for index in (2, 0, 1):
+            point = _point(match, when, 1, 2, 1)
+            point["event_index"] = index
+            points.append(point)
+    points.append({"match_id": "c", "context_ready_player_point": False})
+    # A profile without point rows must still count in the global diagnostics.
+    profiles.append(_profile("unused", when, 1, 2))
+    paths = [tmp_path / "points.gz", tmp_path / "profiles.gz"]
+    for path, rows in zip(paths, (points, profiles)):
+        with gzip.open(path, "wt") as handle:
+            for row in rows:
+                handle.write(json.dumps(row) + "\n")
+    assert scorer.build_feature_rows_from_files(*paths) == build_feature_rows(points, profiles)
+
+
+def test_streamed_point_input_rejects_a_split_match_instead_of_resetting_state():
+    import pytest
+    from backend import player_dna_point_scorer as scorer
+    points = ({"match_id": match} for match in ("a", "b", "a"))
+    with pytest.raises(ValueError, match="non-contiguous"):
+        list(scorer.iter_match_inputs(points, []))
+
+
+def test_file_input_does_not_retain_all_raw_point_payloads(tmp_path):
+    import gzip
+    import json
+    import tracemalloc
+    from backend import player_dna_point_scorer as scorer
+
+    path = tmp_path / "points.gz"
+    with gzip.open(path, "wt") as handle:
+        for index in range(200):
+            handle.write(json.dumps({"match_id": str(index), "unused_raw_payload": "x" * 100_000}) + "\n")
+    tracemalloc.start()
+    try:
+        rows, counts = scorer.build_feature_rows_from_files(path, tmp_path / "missing-profiles.gz")
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert rows == []
+    assert counts["point_rows_seen"] == 200
+    assert peak < 5_000_000  # 20 MB raw input, bounded to one match at a time.
+
+
 def test_profile_timestamp_must_equal_target_match_timestamp():
     profiles = [
         _profile("m1", "2026-09-04T09:00:00Z", 1, 2),
