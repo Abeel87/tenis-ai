@@ -1,6 +1,6 @@
 {
   "version": "v8.6-shadow",
-  "generated_at": "2026-10-20T10:27:57.780808+00:00",
+  "generated_at": "2026-10-20T15:22:49.559954+00:00",
   "status": "ACTIVE",
   "production_mode": "shadow_only",
   "production_changed": false,
@@ -202,8 +202,8 @@
     "validation": {
       "n": 2709,
       "coverage": 1.0,
-      "brier": 0.20724,
-      "log_loss": 0.60254,
+      "brier": 0.20719,
+      "log_loss": 0.60241,
       "selected_n": 1581,
       "selected_coverage": 0.5836,
       "accuracy": 75.3,
@@ -211,77 +211,9 @@
     }
   },
   "tabpfn_native_ab": {
-    "status": "ok",
-    "variants": {
-      "native_300_e1": {
-        "status": "ok",
-        "train_rows": 300,
-        "n_estimators": 1,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 2703,
-          "coverage": 1.0,
-          "brier": 0.21335,
-          "log_loss": 0.61846,
-          "selected_n": 1657,
-          "selected_coverage": 0.613,
-          "accuracy": 73.8,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 2709,
-          "coverage": 1.0,
-          "brier": 0.21026,
-          "log_loss": 0.61138,
-          "selected_n": 1661,
-          "selected_coverage": 0.6131,
-          "accuracy": 75.0,
-          "threshold": 65.0
-        }
-      },
-      "native_600_e4": {
-        "status": "ok",
-        "train_rows": 600,
-        "n_estimators": 4,
-        "external_one_hot": false,
-        "categorical_features_indices": [
-          17,
-          18,
-          19,
-          20,
-          21,
-          22
-        ],
-        "calibration": {
-          "n": 2703,
-          "coverage": 1.0,
-          "brier": 0.21015,
-          "log_loss": 0.61201,
-          "selected_n": 1630,
-          "selected_coverage": 0.603,
-          "accuracy": 74.5,
-          "threshold": 65.0
-        },
-        "validation": {
-          "n": 2709,
-          "coverage": 1.0,
-          "brier": 0.2099,
-          "log_loss": 0.6119,
-          "selected_n": 1669,
-          "selected_coverage": 0.6161,
-          "accuracy": 74.5,
-          "threshold": 65.0
-        }
-      }
-    }
+    "status": "unavailable",
+    "reason": "tabpfn_not_installed_this_run",
+    "variants": {}
   },
   "router_shadow": {
     "global_cal_champion": "current",
@@ -300,16 +232,16 @@
             "log_loss": 0.63077
           },
           "set1_total|WTA|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 195,
-            "brier": 0.1993,
-            "log_loss": 0.58776
+            "brier": 0.20069,
+            "log_loss": 0.58974
           },
           "game_state|WTA|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 144,
-            "brier": 0.21098,
-            "log_loss": 0.6112
+            "brier": 0.21549,
+            "log_loss": 0.6218
           },
           "set1_total|ITF|CLAY": {
             "model": "direct_catboost",
@@ -318,16 +250,16 @@
             "log_loss": 0.46686
           },
           "match_total|ATP|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 170,
-            "brier": 0.17129,
-            "log_loss": 0.52436
+            "brier": 0.172,
+            "log_loss": 0.52604
           },
           "set1_total|ATP|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 170,
-            "brier": 0.16969,
-            "log_loss": 0.5218
+            "brier": 0.17196,
+            "log_loss": 0.52727
           },
           "game_state|ATP|HARD": {
             "model": "current",
@@ -336,16 +268,16 @@
             "log_loss": 0.67132
           },
           "match_total|ITF|HARD": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 27,
-            "brier": 0.13902,
-            "log_loss": 0.45614
+            "brier": 0.14372,
+            "log_loss": 0.46644
           },
           "set1_total|ITF|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 50,
-            "brier": 0.15167,
-            "log_loss": 0.47495
+            "brier": 0.16022,
+            "log_loss": 0.49937
           },
           "game_state|ITF|HARD": {
             "model": "direct_catboost",
@@ -360,10 +292,10 @@
             "log_loss": 0.60881
           },
           "set1_total|CHALLENGER|CLAY": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 332,
-            "brier": 0.17968,
-            "log_loss": 0.5446
+            "brier": 0.18069,
+            "log_loss": 0.54632
           },
           "game_state|CHALLENGER|CLAY": {
             "model": "current",
@@ -402,10 +334,10 @@
             "log_loss": 0.57601
           },
           "match_winner|CHALLENGER|HARD": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 25,
-            "brier": 0.18976,
-            "log_loss": 0.5657
+            "brier": 0.19614,
+            "log_loss": 0.57929
           },
           "set1_winner|CHALLENGER|HARD": {
             "model": "direct_catboost",
@@ -428,28 +360,28 @@
             "log_loss": 0.63077
           },
           "set1_total|WTA": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 195,
-            "brier": 0.1993,
-            "log_loss": 0.58776
+            "brier": 0.20069,
+            "log_loss": 0.58974
           },
           "game_state|WTA": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 144,
-            "brier": 0.21098,
-            "log_loss": 0.6112
+            "brier": 0.21549,
+            "log_loss": 0.6218
           },
           "match_total|ITF": {
-            "model": "native_600_e4",
+            "model": "direct_catboost",
             "cal_n": 43,
-            "brier": 0.17658,
-            "log_loss": 0.53306
+            "brier": 0.17699,
+            "log_loss": 0.53855
           },
           "set1_total|ITF": {
-            "model": "native_600_e4",
+            "model": "direct_catboost",
             "cal_n": 80,
-            "brier": 0.1497,
-            "log_loss": 0.47196
+            "brier": 0.15522,
+            "log_loss": 0.48964
           },
           "game_state|ITF": {
             "model": "direct_catboost",
@@ -458,16 +390,16 @@
             "log_loss": 0.68818
           },
           "match_total|ATP": {
-            "model": "native_300_e1",
+            "model": "current",
             "cal_n": 170,
-            "brier": 0.17129,
-            "log_loss": 0.52436
+            "brier": 0.172,
+            "log_loss": 0.52604
           },
           "set1_total|ATP": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 170,
-            "brier": 0.16969,
-            "log_loss": 0.5218
+            "brier": 0.17196,
+            "log_loss": 0.52727
           },
           "game_state|ATP": {
             "model": "current",
@@ -519,10 +451,10 @@
             "log_loss": 0.59609
           },
           "set1_total": {
-            "model": "native_600_e4",
+            "model": "current",
             "cal_n": 999,
-            "brier": 0.18139,
-            "log_loss": 0.54737
+            "brier": 0.18269,
+            "log_loss": 0.55059
           },
           "game_state": {
             "model": "current",
@@ -548,18 +480,16 @@
     "validation": {
       "n": 2709,
       "coverage": 1.0,
-      "brier": 0.20552,
-      "log_loss": 0.59982,
-      "selected_n": 1643,
-      "selected_coverage": 0.6065,
-      "accuracy": 74.8,
+      "brier": 0.205,
+      "log_loss": 0.59842,
+      "selected_n": 1692,
+      "selected_coverage": 0.6246,
+      "accuracy": 74.6,
       "threshold": 65.0
     },
     "validation_model_usage": {
-      "current": 765,
-      "direct_catboost": 792,
-      "native_300_e1": 391,
-      "native_600_e4": 761
+      "current": 1890,
+      "direct_catboost": 819
     },
     "policy": "calibration_only_champion_selection_hierarchical_fallback_validation_untouched"
   },
@@ -579,9 +509,7 @@
   ],
   "models_available_for_router": [
     "current",
-    "direct_catboost",
-    "native_300_e1",
-    "native_600_e4"
+    "direct_catboost"
   ],
   "promotion_gate": {
     "status": "shadow_only",
