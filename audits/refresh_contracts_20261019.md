@@ -204,3 +204,131 @@ The combined local tree passed **1733 tests in 59.70 seconds**. Only the three
 unchanged Neuron bot outputs and this audit/checkpoint differ from head `11f20db`;
 the repair source code and its tests are identical. Full fresh GitHub CI remains
 the merge gate.
+
+## Completed PR CI and second data-only base advance — 2026-10-19 11:21 UTC
+
+All ten GitHub workflows succeeded for PR head
+`af81bb25ba719030556058545bb7b8fca3a5038d`. This head incorporates main
+`8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`; it does not include the later bot
+commit described below.
+
+- [UI health 39231113543](https://github.com/Abeel87/tenis-ai/actions/runs/39231113543):
+  1733 tests passed in 69.91 seconds; UI, runtime, project health and isolation passed.
+- [DNA 39231113492](https://github.com/Abeel87/tenis-ai/actions/runs/39231113492),
+  job 117989525731: full SUCCESS at 11:01 UTC. Artifact
+  `player-dna-shadow-refresh`, ID 12180973951, generated 11:01:36 UTC,
+  83,628,534 bytes, expires 2026-11-02; digest
+  `92c9863edc93ac1c01a113eb59155501a51c3b67ae434fa970e0f3d4c0c6a1b9`.
+- [Point Tape 39231113404](https://github.com/Abeel87/tenis-ai/actions/runs/39231113404),
+  job 117989020628: all 79 steps succeeded, complete at 11:21 UTC. Artifact
+  `player-dna-point-foundation`, ID 12182696734, generated 11:21:03 UTC,
+  84,455,872 bytes, expires 2026-11-02; digest
+  `17b0f2152ec285626b975ac697b52b690042748ae2e2075d1d3e62f01ae4b2a1`.
+- LOGIC-01 39231113406, LOGIC-02 39231113563, LOGIC-03 39231113419,
+  LOGIC-04 39231113471, Superbet PR validation 39231113399,
+  delivery/security 39231113413 and CodeQL 39231113551 also succeeded.
+  Superbet PR validation is not a production refresh.
+
+Point Tape peak RSS readings (the log unit is kbytes) were 5,439,380 for opponent
+evaluation, 7,810,512 for pressure, 9,301,052 for small-sample evaluation,
+4,457,276 for current-card scoring and 7,905,584 for dynamic walk-forward.
+Every instrumented process exited zero. These are real completed CI runs, not
+proof of a production memory ceiling or a causal OOM diagnosis for the original
+runner shutdowns. The earlier 11f20db Point Tape run 39222656167 also completed
+successfully at 10:36 UTC; it remains separate earlier-head evidence.
+
+The DNA log reports 15,296 historical matches, 1,888,361 point events and
+1,751,834 strict trainable/player points. Its current-card result generated at
+09:59:25 UTC scored 196 of 370 snapshot matches; 174 were collecting history.
+The dynamic result at 10:36:22 UTC scored 179, with 17 blocked for missing
+provider rank. Training cutoff was 06:15 UTC. The final 11:01:31 log reports
+`ACTIVE_SHADOW` computation, mixed/no match-level backtest signal,
+`HOLD_CALIBRATION_NOT_YET_PROVEN`, hold walk-forward not yet robust and
+prospective collection active. No production influence, runtime switch or
+promotion is enabled. These generated CI results do not prove current application
+freshness or PLAYABLE availability.
+
+Main then advanced to
+[`cded3bd34ca00652a23b796cb7b3c7a5b38af75f`](https://github.com/Abeel87/tenis-ai/commit/cded3bd34ca00652a23b796cb7b3c7a5b38af75f)
+at 11:00:20 UTC. The complete
+[base comparison](https://github.com/Abeel87/tenis-ai/compare/8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b...cded3bd34ca00652a23b796cb7b3c7a5b38af75f)
+contains only `frontend/data/neuron_current.json`, blob
+`b8f1ad330a3f233c19bca859550774aaae0862ca`. Its generated timestamp/source
+freshness and three SHADOW score pairs changed; no repair source, workflow,
+Neuron training artifact or authority flag changed. The blob is retained exactly,
+without manual edits, in the local integration.
+
+The combined runtime tree `1dc76f1f8063a4f82bbed2a7b5c699065752fcf7` passed
+1733 tests in 58.25 seconds. Static UI and runtime UI passed on real data and
+both readiness fixtures after the workflow's `build_delivery.mjs` prerequisite.
+An initial runtime invocation omitted that prerequisite and failed the first
+Symphony route assertion; the documented build-then-test sequence passed without
+changing UI or tests. Whitespace checks passed. The review/checkpoint branch
+`verify/refresh-contracts-main-20261019` preserves this integration and these
+records. Its source tree differs from the combined runtime tree only in audit
+and checkpoint documentation.
+
+AGENTS.md section 7 explicitly requires required CI again after a base advance.
+The hourly Neuron schedule and long full-history CI can cause repeated data-only
+base advances during validation. The local checks above are not represented as
+new GitHub CI. No merge, workflow stop or exemption has been performed. The
+remaining decision is whether the owner explicitly authorizes one merge using
+the green repair-head CI plus these complete local integration checks for the
+isolated generated Neuron change; otherwise re-publish the integrated branch
+and repeat required GitHub CI. This record does not amend the project rule.
+
+Production remains unverified: main Superbet
+[39241953523](https://github.com/Abeel87/tenis-ai/actions/runs/39241953523/job/118024659533)
+failed at 11:10:00 UTC with `O/U threshold mismatch for match_total 1002:
+over=26.5, under=25.5`; the builder log at 11:09:21 still reports
+`DIRECT_INPUT_UNSAFE`. These are the same two defects in the unpatched main.
+The PR remains open; no production recovery, live PLAYABLE count or provider
+HTTP 410 resolution is asserted.
+
+## Owner-authorized merge — 2026-10-19 11:51 UTC
+
+The owner explicitly approved the requested one-time exception for the isolated
+Neuron generated-data advance. A fresh read confirmed main `cded3bd`, unchanged
+PR head `af81bb2`, mergeability and all ten successful workflows. PR #550 merged
+at 11:51:23 UTC as
+[`7abe4f618474caa1897243ddba60d5f63f4ec3c0`](https://github.com/Abeel87/tenis-ai/commit/7abe4f618474caa1897243ddba60d5f63f4ec3c0).
+The resulting tree is exactly the tested `1dc76f1f8063a4f82bbed2a7b5c699065752fcf7`.
+This explicit decision does not amend AGENTS.md, CI policy or workflow schedules.
+
+The normal [data/Pages producer 39247666214](https://github.com/Abeel87/tenis-ai/actions/runs/39247666214),
+[DNA 39247666101](https://github.com/Abeel87/tenis-ai/actions/runs/39247666101)
+and [UI health 39247666110](https://github.com/Abeel87/tenis-ai/actions/runs/39247666110)
+started automatically on the merge SHA. At 11:52 UTC these were still running;
+merge is confirmed, but production refresh/publication is not yet confirmed.
+
+## Post-merge observations — 2026-10-19 12:29 UTC
+
+- [UI health 39247666110](https://github.com/Abeel87/tenis-ai/actions/runs/39247666110),
+  job 118043456044, completed SUCCESS at 12:02:02 UTC on merge SHA. Its log
+  reports **1733 passed in 67.52s** at 12:00:37, Project health PASS at 12:01:40
+  and Runtime health PASS at 12:01:51. CodeQL 39247666204 and delivery/security
+  39247666105 also succeeded on the merge.
+- DNA's early readiness publisher committed
+  [`58f997440dd06802872a399072b6b141587621a0`](https://github.com/Abeel87/tenis-ai/commit/58f997440dd06802872a399072b6b141587621a0)
+  at 12:11:31 UTC. The complete diff changes only `meta.json` and
+  `readiness_engine_shadow.json`; no source code changed.
+  [FAST Pages 39250148408](https://github.com/Abeel87/tenis-ai/actions/runs/39250148408),
+  job 118051674770, completed SUCCESS at 12:17:49 UTC. Its manifest and deployment
+  identify `58f9974`. This is readiness publication, not completion of a new
+  core/market refresh or full DNA research publication.
+- [Data/Pages 39247666214](https://github.com/Abeel87/tenis-ai/actions/runs/39247666214),
+  build job 118045587147, passed generation, Symphony 2, FINAL PLAYABLE guard
+  and the final full regression on generated data. At 12:29 UTC it remained in
+  `Commit refreshed JSON`. No failed step was reported. Main was still `58f9974`,
+  so neither a new core data commit nor its deployment is asserted. The running
+  job log archive returned BlobNotFound; absence of a completed log is not a
+  failure diagnosis. Check the subsequent actual outcome before further action.
+- [DNA 39247666101](https://github.com/Abeel87/tenis-ai/actions/runs/39247666101),
+  job 118043455838, passed recent-form/Player State, scorer evaluation,
+  current-card scoring and historical market backtest. It was running dynamic
+  walk-forward at 12:29 UTC. Thus the former stopped current-card stage passed
+  on main, but the full production research run and its publication are pending.
+- Normal Superbet/Builder recovery remains pending the refresh triggered by
+  successful full data/Pages completion. No fresh production quote count,
+  FINAL PLAYABLE count or provider HTTP 410 recovery is claimed from these
+  in-progress jobs. All model and authority constraints remain unchanged.

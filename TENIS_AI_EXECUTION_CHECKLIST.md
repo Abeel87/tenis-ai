@@ -25,7 +25,80 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / FRESH-MAIN VALIDATION**
+**REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 MERGED / PRODUCTION VERIFICATION**
+- OBSERVATION: 2026-10-19 12:29 UTC. PR #550 merged at 11:51:23 UTC.
+- PR HEAD: `af81bb25ba719030556058545bb7b8fca3a5038d`, branch
+  `fix/refresh-contracts-20261019`; its integrated base is `8573c4f`.
+- MERGE: `7abe4f618474caa1897243ddba60d5f63f4ec3c0`.
+  Parents are `cded3bd34ca00652a23b796cb7b3c7a5b38af75f` and the green PR head.
+  Its tree `1dc76f1f8063a4f82bbed2a7b5c699065752fcf7` exactly matches the
+  previously tested combined runtime tree, including unchanged Neuron bot data.
+- LATEST VERIFIED MAIN: `58f997440dd06802872a399072b6b141587621a0`.
+  The DNA producer published exact readiness at 12:11:31 UTC; its entire diff
+  from the merge changes only `frontend/data/meta.json` and
+  `frontend/data/readiness_engine_shadow.json`. No repair source changed.
+- CHECKPOINT BRANCH: `docs/refresh-contracts-closeout-20261019`, draft PR #551.
+  The earlier evidence remains on `verify/refresh-contracts-main-20261019`
+  at `50aef26740982a44ff22058cf3ce51341cd48470`.
+- [x] Canonical O/U pairing and builder request-budget repairs; bounded DNA input
+  ingestion and shared-frame allocation; parity and negative regression tests.
+- [x] All **10/10 GitHub workflows succeeded on PR head af81bb2**.
+  UI health `39231113543`: **1733 passed in 69.91s**, runtime/UI/isolation PASS.
+  DNA `39231113492`, job `117989525731`: complete SUCCESS at 11:01 UTC.
+  Point Tape `39231113404`, job `117989020628`: 79 successful steps,
+  complete SUCCESS at 11:21 UTC; no failed steps.
+- [x] Latest-main combined runtime tree `1dc76f1f8063a4f82bbed2a7b5c699065752fcf7`:
+  **1733 passed in 58.25s**; static UI, delivery build, runtime UI on real data,
+  readiness-available and readiness-N/D fixtures all PASS; whitespace checks PASS.
+  This is local integration verification, not fresh GitHub CI for the new base.
+- [x] Owner explicitly authorized the one-time merge exception for the isolated
+  Neuron generated-data base advance, using green repair-head CI plus the full
+  local integration checks. Fresh main and PR SHA were checked before merge.
+  AGENTS.md and CI policy are unchanged; no workflow was stopped or disabled.
+- [x] Merge PR #550; GitHub confirmed the exact tested tree at 11:51:23 UTC.
+- [x] Post-merge UI health `39247666110`, job `118043456044`: **1733 passed in
+  67.52s**, Project health PASS and Runtime health PASS; complete SUCCESS at
+  12:02:02 UTC. Post-merge CodeQL `39247666204` and delivery/security
+  `39247666105` also succeeded.
+- [x] Normal early DNA readiness publication: commit `58f9974`; FAST Pages
+  `39250148408`, job `118051674770`, SUCCESS at 12:17:49 UTC. Deployment attests
+  `58f9974`. This publishes readiness, not a newly completed core/market refresh.
+- [~] Verify normal post-merge Superbet/Builder, data publication and DNA refresh.
+  Data/Pages `39247666214`, build job `118045587147`, passed generation,
+  Symphony 2, FINAL PLAYABLE guard and final full regression. At 12:29 UTC
+  `Commit refreshed JSON` remained in progress; neither core publication nor
+  the subsequent normal Superbet refresh was complete. The active job's log
+  archive returned BlobNotFound; this is unavailable evidence, not a failed step.
+  DNA `39247666101`, job `118043455838`, passed recent-form/Player State,
+  scorer evaluation, current-card scoring and historical market backtest.
+  Dynamic walk-forward remained in progress. Full workflow/publication is pending.
+- PRE-MERGE BASELINE: main Superbet run `39241953523`, job `118024659533`,
+  failed at 11:10 UTC on cross-line O/U pairing; builder source remained
+  `DIRECT_INPUT_UNSAFE`. The repair is merged; production refresh/publication
+  remains in progress. No production recovery or live PLAYABLE count is claimed.
+- CI DATA: DNA evaluated 1,751,834 strict points from 15,296 historical matches.
+  On its input snapshot, 196/370 current matches were scored, 174 collected
+  history and 179 had dynamic SHADOW scores. These are SHADOW CI results,
+  not live application counts or PLAYABLE counts. Promotion remains disabled.
+- FILES: the 30-file repair is merged via PR #550. This closeout branch changes
+  only audit/checkpoint documentation relative to the merge commit.
+- DO NOT REDO: reproduced defects, feature/model parity proofs, completed af81bb2
+  CI, unrelated app/storage work, PRs #523/#537 or dependencies.
+- NEXT EXACT ACTION: refresh GitHub state and inspect data/Pages `39247666214`,
+  especially completion/logs of build job `118045587147` and its data commit.
+  Do not diagnose a hang or failure from the last in-progress observation alone.
+  Then inspect the ensuing
+  Superbet refresh and core/market publisher logs; verify actual source SHA,
+  generated timestamps, exact-offer/builder statuses and FINAL PLAYABLE separately.
+  Inspect DNA `39247666101` or its normal successor. Record completed production
+  evidence before closing verification and updating draft #551. Do not repeat
+  the completed merge or ask again for the already granted one-time approval.
+- BANS: no changes to mathematics/features/weights/training policy, probabilities,
+  thresholds, PLAYABLE rules, settlement, iNeed economics/scope, lifecycle
+  enablement, SHADOW/PROD authority or real betting. Provider HTTP 410 recovery
+  remains unproven. Do not call a green PR a production recovery.
+
+**Historical repair checkpoint — 2026-10-19 09:31 UTC (superseded above)**
 - AUTHORIZATION: owner requested repairs after the GitHub-only health report.
 - ORIGINAL BASE: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.
 - LAST VERIFIED MAIN: `8573c4fcc858b9cb9c9d5dc042cd768e9128ce4b`, observed
