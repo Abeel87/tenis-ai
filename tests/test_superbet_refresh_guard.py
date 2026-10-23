@@ -247,3 +247,70 @@ def test_watchdog_completion_source_gate(monkeypatch, tmp_path, branch, conclusi
     monkeypatch.setattr(guard, 'runs', history)
     guard.main()
     assert f'dispatch={str(expected).lower()}' in (tmp_path / 'output').read_text()
+
+
+def _watchdog_output(monkeypatch, tmp_path, core_timestamp, refreshes=(), fulls=()):
+    import json
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW
+    monkeypatch.setattr(guard, 'datetime', Clock)
+    meta = tmp_path / 'meta.json'
+    meta.write_text(json.dumps({'updated_at': core_timestamp}))
+    monkeypatch.setattr(guard, 'META', meta, raising=False)
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'schedule')
+    monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
+    monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
+    monkeypatch.setattr('sys.argv', ['guard', 'watchdog'])
+    monkeypatch.setattr(guard, 'runs', lambda workflow: list(fulls if workflow == guard.FULL else refreshes))
+    monkeypatch.setattr(guard, 'api', lambda path: {'jobs': jobs()})
+    guard.main()
+    return dict(line.split('=', 1) for line in (tmp_path / 'output').read_text().splitlines())
+
+
+def test_fresh_market_cannot_hide_stale_core_snapshot(monkeypatch, tmp_path):
+    out = _watchdog_output(monkeypatch, tmp_path, (NOW - timedelta(hours=3)).isoformat(), [run()])
+    assert out['dispatch'] == 'true'
+    assert out['target_workflow'] == guard.FULL
+    assert out['reason'] == 'stale_core_snapshot'
+
+
+@pytest.mark.parametrize('minutes,expected', [(119, False), (120, True), (240, True)])
+def test_core_backstop_has_explicit_two_hour_boundary(monkeypatch, tmp_path, minutes, expected):
+    out = _watchdog_output(monkeypatch, tmp_path, (NOW - timedelta(minutes=minutes)).isoformat(), [run()])
+    assert out['dispatch'] == str(expected).lower()
+    assert out['target_workflow'] == (guard.FULL if expected else guard.REFRESH)
+
+
+def test_fresh_core_and_stale_market_keep_lightweight_refresh(monkeypatch, tmp_path):
+    out = _watchdog_output(monkeypatch, tmp_path, (NOW - timedelta(minutes=30)).isoformat(), [run(minutes=60)])
+    assert out['dispatch'] == 'true'
+    assert out['target_workflow'] == guard.REFRESH
+    assert out['reason'] == 'stale_refresh_required'
+
+
+@pytest.mark.parametrize('stamp', [None, 'bad', '2026-09-16T22:00:00', (NOW + timedelta(minutes=1)).isoformat()])
+def test_unproven_core_timestamp_requests_canonical_rebuild(monkeypatch, tmp_path, stamp):
+    out = _watchdog_output(monkeypatch, tmp_path, stamp, [run()])
+    assert out['dispatch'] == 'true'
+    assert out['target_workflow'] == guard.FULL
+    assert out['reason'] == 'missing_or_invalid_core_snapshot'
+
+
+@pytest.mark.parametrize('active_kind', ['market', 'core', 'grace'])
+def test_core_backstop_never_duplicates_active_work_or_grace(monkeypatch, tmp_path, active_kind):
+    refreshes = [run('in_progress', None)] if active_kind == 'market' else []
+    fulls = [run('queued', None)] if active_kind == 'core' else [run(minutes=4)] if active_kind == 'grace' else []
+    out = _watchdog_output(monkeypatch, tmp_path, (NOW - timedelta(hours=3)).isoformat(), refreshes, fulls)
+    assert out['dispatch'] == 'false'
+
+
+def test_pull_request_watchdog_is_also_network_free(monkeypatch, tmp_path):
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'pull_request')
+    monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
+    monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
+    monkeypatch.setattr('sys.argv', ['guard', 'watchdog'])
+    monkeypatch.setattr(guard, 'runs', lambda *_: (_ for _ in ()).throw(AssertionError('PR must not query Actions')))
+    guard.main()
+    assert 'dispatch=false' in (tmp_path / 'output').read_text()

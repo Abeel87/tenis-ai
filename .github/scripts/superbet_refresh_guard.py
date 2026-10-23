@@ -9,6 +9,8 @@ from pathlib import Path
 ACTIVE = {'queued', 'in_progress', 'waiting', 'requested', 'pending'}
 STALE_MINUTES = 40
 FULL_GRACE_MINUTES = 5
+CORE_STALE_MINUTES = 120
+META = Path(__file__).resolve().parents[2] / 'frontend/data/meta.json'
 REFRESH = 'superbet-market-refresh.yml'
 FULL = 'update-and-pages.yml'
 WORK_STEP = 'Refresh real Superbet catalogue + map audited families'
@@ -34,6 +36,20 @@ def watchdog_block(refreshes, fulls, now):
         if (r.get('conclusion') == 'success' and finished
                 and 0 <= (now - finished).total_seconds() < FULL_GRACE_MINUTES * 60):
             return 'successful_full_propagation_grace'
+    return None
+
+
+def core_refresh_reason(now):
+    """The published source time, not a successful workflow/market run, ages core data."""
+    try:
+        meta = json.loads(META.read_text(encoding='utf-8'))
+        generated = timestamp(meta.get('updated_at'))
+        if generated is None or generated.tzinfo is None or generated > now:
+            return 'missing_or_invalid_core_snapshot'
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 'missing_or_invalid_core_snapshot'
+    if (now - generated).total_seconds() >= CORE_STALE_MINUTES * 60:
+        return 'stale_core_snapshot'
     return None
 
 
@@ -87,26 +103,31 @@ def main():
     now = datetime.now(timezone.utc)
     event_name = os.environ['GITHUB_EVENT_NAME']
     reason, after = None, None
+    target, dispatch_reason = REFRESH, 'stale_refresh_required'
     if mode == 'watchdog' and event_name == 'workflow_run':
         source = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())['workflow_run']
         if (source.get('head_branch') != 'main' or source.get('conclusion') != 'success'
                 or source.get('event') == 'pull_request'
                 or source.get('name') not in {'Neuron SHADOW research', 'Player DNA SHADOW refresh'}):
             reason = 'ineligible_watchdog_source'
-    if mode == 'refresh' and event_name == 'pull_request':
+    if event_name == 'pull_request':
         # PRs validate orchestration/tests only. Never run live operator/API refresh work.
         reason = 'pull_request_validation_only'
     elif not reason:
         refreshes = runs(REFRESH)
         if mode == 'watchdog':
             reason = watchdog_block(refreshes, runs(FULL), now)
+            if not reason:
+                core_reason = core_refresh_reason(now)
+                if core_reason:
+                    target, dispatch_reason = FULL, core_reason
         elif event_name == 'workflow_run':
             source = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())['workflow_run']
             if source.get('head_branch') != 'main' or source.get('conclusion') != 'success':
                 reason = 'ineligible_full_source'
             else:
                 after = timestamp(source['updated_at'])
-        if not reason:
+        if not reason and target == REFRESH:
             for run in main_runs(refreshes):
                 if str(run['id']) == os.environ.get('GITHUB_RUN_ID'):
                     continue
@@ -118,9 +139,10 @@ def main():
                     reason = f'fresh_completed_refresh_{run["id"]}'
                     break
     proceed = reason is None
-    reason = reason or 'stale_refresh_required'
+    reason = reason or dispatch_reason
     key = 'dispatch' if mode == 'watchdog' else 'refresh'
-    result = f'{key}={str(proceed).lower()}\nreason={reason}\n'
+    result = (f'{key}={str(proceed).lower()}\nreason={reason}\n'
+              f'target_workflow={target}\ncore_stale_minutes={CORE_STALE_MINUTES}\n')
     print(result)
     with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
         output.write(result)

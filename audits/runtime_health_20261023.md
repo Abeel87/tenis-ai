@@ -57,6 +57,25 @@ PLAYABLE rules, iNeed economics/scope, builder enablement or real betting change
    pinned environment loads the CA bundle and imports Requests/CatBoost; a
    Matplotlib PNG round-trip through Pillow also passes.
    Full regression with the fixed versions: **1755 passed in 66.72s**.
+8. **Fresh market hid stale core data.** At main
+   `e1fff88670c58d1881286a33110441124e074201`, successful market publication at
+   06:10 UTC still carried core `meta.updated_at` of
+   `2026-10-23T01:36:27.145408+00:00`. The existing watchdog only selected market
+   refresh, so it could not recover a missed hourly core build. The same canonical
+   guard now reads source time and selects the existing full workflow at 120
+   minutes, representing two missed hourly cycles. Missing, invalid, naive and
+   future source timestamps also request a real rebuild. Existing active-run
+   exclusion and five-minute post-core grace take precedence. Fresh core retains
+   the lightweight 40-minute market path. No timestamp is rewritten to claim
+   freshness, no new timer or API quota is added, and PR validation is network-free.
+   Reproduction before repair: **10 failed, 36 passed**; focused guard suite after
+   repair: **46 passed**. This follow-up uses branch `fix/core-freshness-20261023`
+   while the complete Player DNA validation of PR #553 runs unchanged.
+   Full regression on an isolated exact tracked snapshot plus the proposed diff:
+   **1768 passed in 58.34s**, including published-data immutability. Initial local
+   attempts exposed setup problems (unrestored archived JSON, transient workspace
+   files and missing Git metadata in the isolated archive); none was suppressed
+   in the final complete run.
 
 ## Immutable local replay at the original SHA
 
@@ -82,6 +101,11 @@ model improvement, prospective validation result, ROI or profitable strategy.
 Unresolved cases include absent archived fixtures, changed schedules, missing
 provenance and nonterminal matches. They are visible with reasons and remain
 unresolved; exact identity/time requirements are not relaxed to improve coverage.
+
+A separate read-only audit on refreshed main `e1fff88670c58d1881286a33110441124e074201`
+compared 1153 already-terminal legs with exact canonical result evidence and
+found zero conflicts. This is a bounded evidence comparison, not validation of
+legs whose exact archived source is unavailable.
 
 ## Verification and limits
 
@@ -111,3 +135,31 @@ unresolved; exact identity/time requirements are not relaxed to improve coverage
 
 Final CI, merge and post-merge producer/private-delivery evidence are recorded
 in the execution checkpoint when actually observed.
+
+## Primary merge verification
+
+PR #553 final head `cea7c0a97a3bf40b6075905270e0f4c64e63437c` passed all 13
+workflows. Full Player DNA run `39911763155` / job `120276627702` completed all
+historical, current-card, walk-forward, calibration and isolation stages. UI
+health ran 1755 tests (65.49s); Chromium E2E and both dependency audits passed.
+
+While CI ran, main published market `e84f77b8f53ffadee7bef77c9a0d26d13acb3f0f`
+and readiness `f4ebee9a9c56c61e874145d1740073dcda933041`. No code or training
+source changed. The 148 fixture IDs/order and all DNA scoring target inputs
+remained identical; result changes were confined to operator/PLAYABLE projection
+fields. Fresh combined-tree regression passed 1755 tests (59.39s), plus runtime
+smoke and 444 exact PLAYABLE projection comparisons. The later readiness change
+only updated source digest/report time; its combined tree passed 1755 tests
+(60.14s). Additional local Chromium launch was unavailable because the browser
+download was truncated; the independent GitHub Chromium E2E check was green.
+
+Merged as `88363e42f54553be70afb74cc3ce7a2b87abe9aa` at 07:44 UTC. GitHub's
+actual merged tree `543b70c3b62b54a95849d4ffad5747c7e2db05d8` exactly equals
+the locally validated fresh-main integration, preserving both bot publications.
+The normal core rollout is `39919786176`; post-merge delivery is still pending.
+The core-freshness follow-up is rebased onto this actual merge.
+
+A pre-deploy comparison baseline freezes 5661 Symphony entries, including 1583
+terminal compositions and 5087 terminal legs. Post-deploy verification must
+compare original forecast fields and every existing terminal result/provenance,
+not merely count newly resolved predictions.

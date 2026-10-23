@@ -25,14 +25,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**RUNTIME DELIVERY AND SYMPHONY EVIDENCE — 2026-10-23 / VALIDATION**
+**RUNTIME DELIVERY, SYMPHONY EVIDENCE AND CORE FRESHNESS — 2026-10-23 / ROLLOUT**
 - AUTHORIZATION: owner requested all demonstrated health problems repaired after
   the audit. Includes exact semantic settlement defects, not probability tuning,
   scope expansion, operator ticket settlement or promotion to real betting.
-- BRANCH: `fix/runtime-health-20261023`; PR #553.
+- PRIMARY: PR #553 merged as `88363e42f54553be70afb74cc3ce7a2b87abe9aa`
+  at 07:44 UTC, from all-green head `cea7c0a97a3bf40b6075905270e0f4c64e63437c`.
+- FOLLOW-UP BRANCH: `fix/core-freshness-20261023`, rebased onto that actual merge;
+  only the canonical freshness guard, its workflow/tests and documentation differ.
 - ORIGINAL MAIN: `202f757b6fb7659fcc56c19d755586c003f14ca7`.
-- LAST VERIFIED MAIN: `e1fff88670c58d1881286a33110441124e074201`, data-only
-  market publication, observed 2026-10-23 06:16 UTC; integrated unchanged.
+- LAST VERIFIED MAIN: `88363e42f54553be70afb74cc3ce7a2b87abe9aa`, 07:44 UTC.
+  Main advanced through market `e84f77b8f53ffadee7bef77c9a0d26d13acb3f0f` and
+  readiness `f4ebee9a9c56c61e874145d1740073dcda933041` before merge. Both were
+  generated-data-only; fresh combined trees were rebuilt and tested below.
 - [x] Fresh main, open PRs, canonical owners and live job/DB state inspected.
 - [x] Reproduced missing Symphony labels, terminal-loss backfill, late capture,
   conflicting evidence, absent historical provenance and repeated HTTP 410.
@@ -49,20 +54,40 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Initial dependency job `120274126890` reported 36 advisories in existing
   certifi/Pillow pins. Fixed releases 2026.10.19 / 13.0.0 pass local pip-audit
   (no known vulnerabilities), CA loading, imports and Matplotlib/Pillow round-trip.
-  New exact-head CI is still required; the gate is not bypassed.
+  Final-head dependency/security CI passed; the gate was not bypassed.
 - [x] Full regression with fixed security pins: 1755 passed in 66.72s.
-- [ ] Verify every required exact-head check, fresh-main check and green merge.
+- [x] PR #553 final head: all 13 workflows successful, including browser E2E,
+  dependency/security audit, UI health (1755 passed in 65.49s) and complete Player
+  DNA historical validation `39911763155` / job `120276627702`.
+- [x] Fresh-main rebuild: 1755 tests passed on the market integration (59.39s),
+  static/runtime UI smoke and 444 exact PLAYABLE projection checks passed. All 148
+  fixture identities/order and DNA target inputs were unchanged; source/training
+  files were identical. Later readiness changed only report time/source digest;
+  final combined-tree regression: 1755 passed in 60.14s. Actual merged tree
+  `543b70c3b62b54a95849d4ffad5747c7e2db05d8` exactly matches that validated tree.
+- [x] Read-only comparison of 1153 existing terminal legs against exact canonical
+  result evidence found zero conflicts; unavailable source coverage is not inferred.
+- [x] Reproduced fresh-market/stale-core blind spot (10 failed / 36 passed).
+  Canonical guard now selects the existing full workflow from actual source age
+  at 120 minutes, with active-run/grace precedence; 46 focused tests passed.
+- [x] Follow-up complete regression on isolated exact snapshot: 1768 passed in
+  58.34s, including the unchanged published-data immutability guard.
+- [ ] Validate, publish and green-merge core-freshness follow-up on merged fresh main.
+- [x] Verify every primary exact-head check, fresh-main rebuild and green merge.
+- [~] Normal production rollout started: core `39919786176`, plus the existing
+  private publisher, watchdog and independent SHADOW workflows. Completion and
+  new source/publication timestamps are not yet confirmed.
 - [ ] Verify normal core/market refresh, iNeed heartbeat, private market/DNA
   publication, source timestamps and new tracker/retry diagnostics.
-- FILES: requirements security pins; existing tracker/history transport/provenance owners; market/DNA/iNeed/
+- FILES: canonical freshness guard/workflow; requirements security pins; existing tracker/history transport/provenance owners; market/DNA/iNeed/
   private workflows; regression tests; audit, registry, architecture, checkpoint.
 - LIMITS: provider-deleted outcomes remain unavailable; missing player history
   and schedule conflicts remain N/D; GitHub cron timing is not guaranteed.
 - DO NOT REDO: PR #550 (merged `7abe4f618474caa1897243ddba60d5f63f4ec3c0`,
   2026-10-19 11:51 UTC), Solar/storage repairs, unrelated PRs #523/#537/dependencies.
-- NEXT EXACT ACTION: validate/publish dependency fix to PR #553, require green CI,
-  recheck main and merge; verify real downstream
-  dispatch/publication and record closeout evidence.
+- NEXT EXACT ACTION: publish the rebased core-freshness follow-up and verify all
+  its CI before green merge. Monitor core rollout `39919786176`; verify real producer,
+  downstream dispatch/publication and record closeout evidence.
 - BANS: no fabricated identity/stats/results, model probability/weights/training
   changes, PLAYABLE relaxation, iNeed economics/scope changes, builder lifecycle
   enablement, automatic SHADOW promotion or real betting.
