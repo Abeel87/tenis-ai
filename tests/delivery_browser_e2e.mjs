@@ -37,10 +37,12 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
   assert(await page.locator('.match-card').count()>0);
   // Filtering preserves each tournament's expansion state. Exercise a closed
   // group explicitly, then make its card visible before testing refresh retention.
-  const tournament=page.locator('.tournament-group').first();
+  const selectedLink=page.locator(`a[href="${hash}"]`);
+  const selectedCard=page.locator('.match-card').filter({has:selectedLink}).first();
+  const tournament=page.locator('.tournament-group').filter({has:selectedLink}).first();
   await tournament.evaluate(el=>el.open=false);
   await tournament.locator(':scope > summary').click();
-  await page.locator('.match-card').first().waitFor();
+  await selectedCard.waitFor();
   if(role==='user'){
    const previous=await page.locator('.match-card').count();
    await page.route('**/data/delivery/index.json',r=>r.abort('failed'));
@@ -49,7 +51,7 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    assert.equal(await page.locator('.match-card').count(),previous,'A failed refresh must retain the last visible matches');
    await page.unroute('**/data/delivery/index.json');
    await page.locator('#refresh').click();
-   await page.locator('.match-card').first().waitFor();
+   await selectedCard.waitFor();
   }
   const analysis=page.locator(`a[href="${hash}"]`).first();await analysis.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY);
   await analysis.click();await page.locator('#detail-body').waitFor();
@@ -122,7 +124,7 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    await page.route('**/data/delivery/index.json',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({...index,matches:[],symphony_count:0})}));
    await page.locator('#refresh').click();await page.getByText('Brak meczów dla tych filtrów.',{exact:false}).waitFor();
    await page.unroute('**/data/delivery/index.json');
-   await page.locator('#refresh').click();await page.locator('.match-card').first().waitFor();
+   await page.locator('#refresh').click();await selectedCard.waitFor();
    await page.route('**/data/delivery/index.json',r=>r.fulfill({status:503,body:'new account outage'}));
    await page.evaluate(()=>{window.TenisAccount.user.id='second-test-user';window.dispatchEvent(new Event('tenis-auth'))});
    assert.equal(await page.locator('.match-card').count(),0,'Switching account clears the previous account view immediately');
