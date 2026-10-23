@@ -17,6 +17,22 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-10-23 deployed verification:** PRs #553/#554/#555 are merged. Real core
+run `39919786176` passed all 1768 tests after generation and published source
+`77339f48319865a9ec4b635ac0bc6e9d274b0986` with tracker v4. Public verification
+preserved all 5661 baseline forecasts and every old terminal result/provenance;
+1151 additional compositions / 1853 legs resolved from exact existing evidence.
+Provider-deleted results remain unavailable with visible seven-day retry time.
+Private core generation is active with all 165 objects present and matching
+stored sizes. Post-merge browser/security and UI-health checks passed. Explicit
+market consumers and fast DNA/private publication also completed: market source
+`ead0945`, iNeed OK at 08:37:28 UTC and private DNA source `5f13ccd` at 08:54:36 UTC.
+All active storage generations have zero missing files/size mismatches. Fast DNA
+reuses existing model artifacts; full-model retraining is not claimed. Details are
+in the checkpoint and `audits/runtime_health_20261023.md`; no model or SHADOW/PROD
+policy changed.
+
+
 **2026-10-23 core freshness backstop (PR #554 merged):** the existing
 `.github/scripts/superbet_refresh_guard.py` owns both market and core orchestration
 freshness. A market success does not prove a fresh core snapshot. After the

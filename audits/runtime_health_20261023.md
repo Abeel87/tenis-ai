@@ -156,8 +156,9 @@ download was truncated; the independent GitHub Chromium E2E check was green.
 Merged as `88363e42f54553be70afb74cc3ce7a2b87abe9aa` at 07:44 UTC. GitHub's
 actual merged tree `543b70c3b62b54a95849d4ffad5747c7e2db05d8` exactly equals
 the locally validated fresh-main integration, preserving both bot publications.
-The normal core rollout is `39919786176`; post-merge delivery is still pending.
-The core-freshness follow-up is rebased onto this actual merge.
+At this checkpoint, normal core rollout `39919786176` was pending. The
+post-fix production evidence below supersedes that provisional state. The
+core-freshness follow-up was rebased onto this actual merge.
 
 A pre-deploy comparison baseline freezes 5661 Symphony entries, including 1583
 terminal compositions and 5087 terminal legs. Post-deploy verification must
@@ -181,7 +182,7 @@ work occupied the shared concurrency lane, so this is a verified duplicate-work
 suppression, not a claim that a stale-core rebuild was dispatched in production.
 The stale-core selection and 120-minute boundary have positive/negative tests.
 Normal core rollout `39919786176` started after the earlier pre-merge scheduled
-core completed; producer and consumer publication checks are still pending.
+core completed; its later producer and consumer evidence is recorded below.
 
 ## Post-merge browser-test ordering defect
 
@@ -198,8 +199,8 @@ group, clicks its summary, and confirms the card is visible **before** testing
 failed/successful refresh retention. The existing visibility, filtering, scroll,
 auth and outage assertions remain. No waits are suppressed or lengthened, and no
 UI/model behavior is changed. Local Chromium downloads remained truncated, so
-the completed production CI log is the reproduction evidence; the corrected
-test must pass real Chromium CI before merge.
+the completed production CI log is the reproduction evidence. The corrected
+test subsequently passed real Chromium CI before merge, as recorded below.
 
 The first corrected Chromium run (`120312859685`) exposed a second test race:
 retained cards were already visible while successful refresh was still in flight,
@@ -208,3 +209,114 @@ the real completed UI status before interacting with the refreshed card; replace
 the earlier fixed 350ms failure delay with the actual failure status as well.
 Card visibility is checked for the exact chosen fixture, including after empty
 index recovery. No timeout increase or production UI change is used.
+
+## Browser repair and real core rollout
+
+PR #555 final head `ced32b0bfdbac235ce6148c656f03af3c2155e8e` passed all seven
+workflows. Chromium job `120314484900` verified user/moderator/admin refresh
+scenarios; UI health job `120314588492` passed. Fresh main advanced only generated
+data to core publication `77339f48319865a9ec4b635ac0bc6e9d274b0986`. The exact
+combined tree passed delivery build, static UI smoke and 327 PLAYABLE equivalence
+comparisons. Merged at 08:27 UTC as `f86255263028336b1ed1715cfd6892b52535931b`;
+actual tree `af3c87a541daba6c167832ff89db9eddc4690ef2` equals that tested tree.
+
+The real post-fix core run `39919786176` succeeded, including Pages deployment.
+Build job `120308461163` passed 1768 tests before generation (60.95s) and again
+after all generated layers (54.79s). It published tracker v4 and source
+`meta.updated_at=2026-10-23T08:04:16.715257+00:00`, replacing the stale 01:36
+source. Public delivery manifest identifies commit `77339f48319865a9ec4b635ac0bc6e9d274b0986`.
+
+A stable-manifest public probe compared all 5661 baseline entries, 1583 existing
+terminal compositions and 5087 terminal legs: **zero changes** to frozen forecast
+fields or old terminal outcomes/timestamps/provenance. Of the original entries,
+1151 additional compositions and 1853 additional legs now have terminal results.
+The published history has 5665 entries and 2931 pending compositions; its version
+and `symphony2_stats.performance.history_version` both equal
+`symphony2-tracker-4`, with matching entry counts. These live counts differ from
+the earlier original-snapshot replay because the source data evolved normally.
+
+Public meta reports two HTTP-410 deferrals, no repeated calls for those deleted
+matches, and explicit retry time `2026-10-30T01:43:22.326578+00:00`. Missing exact
+fixtures, incompatible schedules, unsupported provenance and nonterminal results
+remain unresolved with reason codes. This verification demonstrates repair of
+evidence coverage and delivery, not improved forecast quality or profitability.
+
+Post-merge delivery/security run `39924797503` also succeeded, including Chromium
+job `120318435181` on the new core data and both dependency audits. Private core
+run `39924533723` completed publication and garbage collection. Publisher job
+`120317568006` activated 165 files (138 newly uploaded objects), generation
+`b644a2c5-5ce3-4090-9483-fe5d88af1bb5`. Independent read-only SQL confirmed that
+generation active at 08:28:33 UTC with the same `77339f4` source and run ID. The
+existing server-side completeness and compare-and-swap activation guards remain
+in force; no database writes or access-policy changes were made during verification.
+
+Independent storage metadata checks found zero missing objects or size mismatches
+across the active core (165), market (21), DNA (14), Neuron (3) and research (1)
+generations. A separate public delivery probe verified the 165422-byte index
+(109 matches), five evenly sampled detail-file SHA-256 hashes, exact fixture
+identity/schedule agreement and the meta hash against a stable manifest. This is
+a bounded live transport check; the full projection equivalence is covered by CI.
+Post-merge UI health run `39924797476` also succeeded, including auth isolation,
+failed-refresh retention, route/scroll preservation and the current-data view.
+
+## Explicit market consumer delivery
+
+Real market run `39921358213` / job `120317550958` waited for the shared core/market
+lane, then completed a fresh refresh and published
+`ead0945264628d52bc9e351ce82d271f830045f7`. Its bounded guards passed 252 tests.
+At 08:35 UTC the successful producer explicitly dispatched private market
+`39925703638`, iNeed `39925706703` and fast-readiness Player DNA `39925709705`;
+all three have event `workflow_dispatch`, including the explicit
+`fast_readiness_only=true` input in the producer log. FAST Pages `39925713940`
+was dispatched separately after the changed publication. Consumer completion
+and their active generation/heartbeat evidence follow below when observed.
+
+Private market `39925703638` completed publisher and GC. Job `120321420549`
+activated 21 files, generation `489f6d74-2dfb-40eb-8522-d46f273f3d60`; read-only
+SQL confirmed source `ead0945`, run ID and activation at 08:36:41 UTC. iNeed run
+`39925706703` passed guards and `shadow-sync` job `120321813493`; independent SQL
+confirmed `OK` heartbeat at 08:37:28 UTC. It inspected 109 matches with zero
+in-scope evaluations; existing V1 match-winner scope, disabled builder persistence
+and `automatic_real_betting=false` remain. Successful synchronization does not
+imply an actionable recommendation or profitability.
+
+Market FAST Pages `39925713940` / job `120321452446` deployed `ead0945` at
+08:41 UTC. A second stable-manifest public probe again found zero changes to all
+baseline frozen forecasts and existing terminal evidence. The same 1151 / 1853
+new outcomes remained; one new forecast increased the history to 5666 entries
+and pending to 2932. Tracker/stat versions and counts still agreed. This checks
+the repeated real owner path as well as the initial repair deployment.
+
+The second queued market run `39924533657` / job `120321470369` completed with
+`refresh=false` and `reason=fresh_completed_refresh_39921358213`. Its post-queue
+check correctly avoided duplicate retrieval/publication once the earlier queued
+refresh had delivered the new core's market data.
+
+Fast-readiness DNA run `39925709705` / job `120321444874` completed successfully:
+316 canonical guards passed (14.20s), recent-form/Player State exited zero, and
+the exact-snapshot guard reported `LOGIC_08_SHADOW_DELIVERY_OK` for 109 matches,
+digest `55ea42978bed92d483116dd1bbec71471d99b0c70ce64f310ff13ce14c0741dd`.
+It published readiness commit `5f13ccdd060dfb8e3d23b515103e740f64c1b87d` and
+explicitly dispatched private DNA run `39927889794` with `layer=dna`.
+
+That publisher and GC both succeeded. Job `120328679398` activated generation
+`b2671349-2d76-4761-9e5d-1f69d3e639fe`, 14 files, zero new object uploads: the
+immutable existing DNA object hashes were reused. Read-only SQL confirmed the
+active generation, exact `5f13ccd` source, run ID and activation at 08:54:36 UTC.
+Final storage checks again found zero missing objects or size mismatches in
+all five layers; iNeed retained its verified `OK` heartbeat. This verifies fast
+readiness and the explicit delivery route, not completion of a new full-model
+training run. Existing full research runs independently with its original
+generation timestamps and SHADOW policy.
+
+## Closeout
+
+The demonstrated runtime incident is repaired and production-verified across
+core, market, iNeed and fast DNA/private delivery. PRs #553, #554 and #555 merged
+only after their complete required checks were green; real post-merge browser,
+security, UI-health, core, market and downstream checks also passed. This
+documentation-only closeout incorporates the later readiness-only main
+publication without altering runtime code or generated data. Missing provider
+results/history, strict identity/schedule exclusions and best-effort GitHub
+scheduling remain explicit limitations. No model/probability/threshold change,
+SHADOW promotion, builder enablement or real betting is implied.
