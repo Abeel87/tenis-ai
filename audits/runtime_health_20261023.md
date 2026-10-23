@@ -291,3 +291,32 @@ The second queued market run `39924533657` / job `120321470369` completed with
 `refresh=false` and `reason=fresh_completed_refresh_39921358213`. Its post-queue
 check correctly avoided duplicate retrieval/publication once the earlier queued
 refresh had delivered the new core's market data.
+
+Fast-readiness DNA run `39925709705` / job `120321444874` completed successfully:
+316 canonical guards passed (14.20s), recent-form/Player State exited zero, and
+the exact-snapshot guard reported `LOGIC_08_SHADOW_DELIVERY_OK` for 109 matches,
+digest `55ea42978bed92d483116dd1bbec71471d99b0c70ce64f310ff13ce14c0741dd`.
+It published readiness commit `5f13ccdd060dfb8e3d23b515103e740f64c1b87d` and
+explicitly dispatched private DNA run `39927889794` with `layer=dna`.
+
+That publisher and GC both succeeded. Job `120328679398` activated generation
+`b2671349-2d76-4761-9e5d-1f69d3e639fe`, 14 files, zero new object uploads: the
+immutable existing DNA object hashes were reused. Read-only SQL confirmed the
+active generation, exact `5f13ccd` source, run ID and activation at 08:54:36 UTC.
+Final storage checks again found zero missing objects or size mismatches in
+all five layers; iNeed retained its verified `OK` heartbeat. This verifies fast
+readiness and the explicit delivery route, not completion of a new full-model
+training run. Existing full research runs independently with its original
+generation timestamps and SHADOW policy.
+
+## Closeout
+
+The demonstrated runtime incident is repaired and production-verified across
+core, market, iNeed and fast DNA/private delivery. PRs #553, #554 and #555 merged
+only after their complete required checks were green; real post-merge browser,
+security, UI-health, core, market and downstream checks also passed. This
+documentation-only closeout incorporates the later readiness-only main
+publication without altering runtime code or generated data. Missing provider
+results/history, strict identity/schedule exclusions and best-effort GitHub
+scheduling remain explicit limitations. No model/probability/threshold change,
+SHADOW promotion, builder enablement or real betting is implied.
