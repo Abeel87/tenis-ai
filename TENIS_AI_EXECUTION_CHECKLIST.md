@@ -31,10 +31,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   scope expansion, operator ticket settlement or promotion to real betting.
 - PRIMARY: PR #553 merged as `88363e42f54553be70afb74cc3ce7a2b87abe9aa`
   at 07:44 UTC, from all-green head `cea7c0a97a3bf40b6075905270e0f4c64e63437c`.
-- FOLLOW-UP BRANCH: `fix/core-freshness-20261023`, rebased onto that actual merge;
-  only the canonical freshness guard, its workflow/tests and documentation differ.
+- FOLLOW-UP: PR #554 merged as `d54bf3107bd39f14d2da84ec3a42cf038e488962`
+  at 08:00 UTC, from all-green head `8c405dfad23651f7b4d196c63d175f4fa24d72a9`.
+- ACTIVE BRANCH: `docs/runtime-repair-verification-20261023`; code repair is
+  merged, final production verification and documentation closeout are in progress.
 - ORIGINAL MAIN: `202f757b6fb7659fcc56c19d755586c003f14ca7`.
-- LAST VERIFIED MAIN: `88363e42f54553be70afb74cc3ce7a2b87abe9aa`, 07:44 UTC.
+- LAST VERIFIED MAIN: `d54bf3107bd39f14d2da84ec3a42cf038e488962`, 08:01 UTC.
   Main advanced through market `e84f77b8f53ffadee7bef77c9a0d26d13acb3f0f` and
   readiness `f4ebee9a9c56c61e874145d1740073dcda933041` before merge. Both were
   generated-data-only; fresh combined trees were rebuilt and tested below.
@@ -72,11 +74,18 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   at 120 minutes, with active-run/grace precedence; 46 focused tests passed.
 - [x] Follow-up complete regression on isolated exact snapshot: 1768 passed in
   58.34s, including the unchanged published-data immutability guard.
-- [ ] Validate, publish and green-merge core-freshness follow-up on merged fresh main.
+- [x] Follow-up PR #554: all nine workflows passed; CI health ran 1768 tests
+  in 77.40s. After Neuron/core publications, restored exact archives and rebuilt
+  delivery on main `01fb14df9ab08ccdce4f1e097f305e24c0841182`; all 1768 tests
+  passed again in 60.53s. Actual merged tree
+  `08e547d1392d4f5f8148173bde4e39abb50ed71e` equals the tested combined tree.
 - [x] Verify every primary exact-head check, fresh-main rebuild and green merge.
-- [~] Normal production rollout started: core `39919786176`, plus the existing
-  private publisher, watchdog and independent SHADOW workflows. Completion and
-  new source/publication timestamps are not yet confirmed.
+- [x] Deployed watchdog run `39921668377` / job `120308109183` succeeded at
+  08:02 UTC: dispatch=false, refresh_already_active, core_stale_minutes=120.
+  It correctly preserved the queued market/core work without another dispatch.
+- [~] Normal core rollout `39919786176` has started after earlier scheduled
+  run `39917759784` completed. Its completion, new source/publication timestamps,
+  410 diagnostics and explicit downstream dispatches still need verification.
 - [ ] Verify normal core/market refresh, iNeed heartbeat, private market/DNA
   publication, source timestamps and new tracker/retry diagnostics.
 - FILES: canonical freshness guard/workflow; requirements security pins; existing tracker/history transport/provenance owners; market/DNA/iNeed/
@@ -85,9 +94,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   and schedule conflicts remain N/D; GitHub cron timing is not guaranteed.
 - DO NOT REDO: PR #550 (merged `7abe4f618474caa1897243ddba60d5f63f4ec3c0`,
   2026-10-19 11:51 UTC), Solar/storage repairs, unrelated PRs #523/#537/dependencies.
-- NEXT EXACT ACTION: publish the rebased core-freshness follow-up and verify all
-  its CI before green merge. Monitor core rollout `39919786176`; verify real producer,
-  downstream dispatch/publication and record closeout evidence.
+- NEXT EXACT ACTION: monitor core rollout `39919786176`; verify public tracker v4,
+  seven-day retry diagnostics, frozen forecasts/terminal outcomes, explicit market
+  dispatches, private generations and iNeed heartbeat. Commit the evidence and
+  green-merge the documentation closeout. Do not rerun or redo merged code fixes.
 - BANS: no fabricated identity/stats/results, model probability/weights/training
   changes, PLAYABLE relaxation, iNeed economics/scope changes, builder lifecycle
   enablement, automatic SHADOW promotion or real betting.

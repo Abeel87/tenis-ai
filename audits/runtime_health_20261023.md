@@ -163,3 +163,22 @@ A pre-deploy comparison baseline freezes 5661 Symphony entries, including 1583
 terminal compositions and 5087 terminal legs. Post-deploy verification must
 compare original forecast fields and every existing terminal result/provenance,
 not merely count newly resolved predictions.
+
+## Core-freshness merge and deployed guard
+
+PR #554 final head `8c405dfad23651f7b4d196c63d175f4fa24d72a9` passed all nine
+workflows, including browser E2E, security audits and 1768 tests in CI (77.40s).
+Fresh-main verification included the intervening Neuron publication and complete
+core publication `01fb14df9ab08ccdce4f1e097f305e24c0841182`: exact history/ledger
+restore, delivery rebuild and 1768 tests passed (60.53s). Merged at 08:00 UTC as
+`d54bf3107bd39f14d2da84ec3a42cf038e488962`; actual tree
+`08e547d1392d4f5f8148173bde4e39abb50ed71e` exactly matches the validated merge.
+
+The deployed watchdog run `39921668377`, job `120308109183`, succeeded at
+08:02 UTC with `dispatch=false`, `reason=refresh_already_active`, target
+`superbet-market-refresh.yml` and `core_stale_minutes=120`. Existing core/market
+work occupied the shared concurrency lane, so this is a verified duplicate-work
+suppression, not a claim that a stale-core rebuild was dispatched in production.
+The stale-core selection and 120-minute boundary have positive/negative tests.
+Normal core rollout `39919786176` started after the earlier pre-merge scheduled
+core completed; producer and consumer publication checks are still pending.

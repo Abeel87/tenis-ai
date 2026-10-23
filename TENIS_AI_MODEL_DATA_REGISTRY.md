@@ -17,7 +17,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-10-23 core freshness backstop:** the existing
+**2026-10-23 core freshness backstop (PR #554 merged):** the existing
 `.github/scripts/superbet_refresh_guard.py` owns both market and core orchestration
 freshness. A market success does not prove a fresh core snapshot. After the
 existing active-run exclusion and five-minute propagation grace, watchdog reads
@@ -28,7 +28,7 @@ keeps the existing 40-minute market refresh path. PR validation is network-free.
 The owner emits the selected workflow and reason; schedules, quotas and model
 semantics are unchanged. See the runtime audit and live checkpoint for deployment.
 
-**2026-10-23 runtime/evidence repair:** `symphony2_tracker` owns exact frozen-leg
+**2026-10-23 runtime/evidence repair (PR #553 merged):** `symphony2_tracker` owns exact frozen-leg
 settlement orchestration, including backfill of unresolved legs on terminal losses;
 `signal_settlement.settle_signal_live` still owns outcome semantics. A unique
 fixture ID, ordered exact participants, exact schedule, genuine pre-match capture
