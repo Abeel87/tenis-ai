@@ -200,3 +200,11 @@ auth and outage assertions remain. No waits are suppressed or lengthened, and no
 UI/model behavior is changed. Local Chromium downloads remained truncated, so
 the completed production CI log is the reproduction evidence; the corrected
 test must pass real Chromium CI before merge.
+
+The first corrected Chromium run (`120312859685`) exposed a second test race:
+retained cards were already visible while successful refresh was still in flight,
+so scrolling could target a DOM node removed by the subsequent render. Wait for
+the real completed UI status before interacting with the refreshed card; replace
+the earlier fixed 350ms failure delay with the actual failure status as well.
+Card visibility is checked for the exact chosen fixture, including after empty
+index recovery. No timeout increase or production UI change is used.
