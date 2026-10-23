@@ -35,6 +35,12 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
   await page.locator('[data-focus="all"]').click();
   await page.locator('[data-filter="query"]').fill(first.p1);
   assert(await page.locator('.match-card').count()>0);
+  // Filtering preserves each tournament's expansion state. Exercise a closed
+  // group explicitly, then make its card visible before testing refresh retention.
+  const tournament=page.locator('.tournament-group').first();
+  await tournament.evaluate(el=>el.open=false);
+  await tournament.locator(':scope > summary').click();
+  await page.locator('.match-card').first().waitFor();
   if(role==='user'){
    const previous=await page.locator('.match-card').count();
    await page.route('**/data/delivery/index.json',r=>r.abort('failed'));
@@ -45,7 +51,6 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    await page.locator('#refresh').click();
    await page.locator('.match-card').first().waitFor();
   }
-  await page.locator('.tournament-group').first().evaluate(el=>el.open=true);
   const analysis=page.locator(`a[href="${hash}"]`).first();await analysis.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY);
   await analysis.click();await page.locator('#detail-body').waitFor();
   assert(requests.includes(first.detail_path),'Match detail is lazy-loaded');
