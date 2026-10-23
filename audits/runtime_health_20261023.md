@@ -46,6 +46,17 @@ PLAYABLE rules, iNeed economics/scope, builder enablement or real betting change
 6. **Historical provenance.** New `history_tracker.settle_history` results record
    their actual source/version/time, as the live owner already does. Existing
    unsupported provenance is not fabricated or retroactively inferred.
+7. **Security gate found vulnerable existing dependencies.** PR #553 dependency
+   job `120274126890` reported 36 advisories in two pre-existing pins: certifi
+   2026.7.22 (PYSEC-2026-4320) and Pillow 12.3.0. Update only those pins to the
+   auditor's fixed releases, certifi 2026.10.19 and Pillow 13.0.0. Official release
+   evidence: [certifi](https://github.com/certifi/python-certifi/releases/tag/2026.10.19)
+   and [Pillow](https://pillow.readthedocs.io/en/stable/releasenotes/13.0.0.html).
+   Keep the audit fail-closed; no suppressions or unrelated dependency PR merge.
+   The updated lockfile passes `pip_audit` with no known vulnerabilities. The
+   pinned environment loads the CA bundle and imports Requests/CatBoost; a
+   Matplotlib PNG round-trip through Pillow also passes.
+   Full regression with the fixed versions: **1755 passed in 66.72s**.
 
 ## Immutable local replay at the original SHA
 
