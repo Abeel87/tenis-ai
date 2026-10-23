@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**RUNTIME DELIVERY, SYMPHONY EVIDENCE AND CORE FRESHNESS — 2026-10-23 / ROLLOUT**
+**RUNTIME DELIVERY, SYMPHONY EVIDENCE AND CORE FRESHNESS — 2026-10-23 / FINAL VERIFICATION**
 - AUTHORIZATION: owner requested all demonstrated health problems repaired after
   the audit. Includes exact semantic settlement defects, not probability tuning,
   scope expansion, operator ticket settlement or promotion to real betting.
@@ -33,10 +33,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   at 07:44 UTC, from all-green head `cea7c0a97a3bf40b6075905270e0f4c64e63437c`.
 - FOLLOW-UP: PR #554 merged as `d54bf3107bd39f14d2da84ec3a42cf038e488962`
   at 08:00 UTC, from all-green head `8c405dfad23651f7b4d196c63d175f4fa24d72a9`.
-- ACTIVE BRANCH: `fix/browser-refresh-check-20261023`; repair the reproduced
-  post-merge browser-test ordering defect, then finish production verification.
+- BROWSER FOLLOW-UP: PR #555 merged green as `f86255263028336b1ed1715cfd6892b52535931b`
+  at 08:27 UTC, after all seven checks on `ced32b0bfdbac235ce6148c656f03af3c2155e8e`.
+- ACTIVE BRANCH: `docs/runtime-health-closeout-20261023`; record final production evidence.
 - ORIGINAL MAIN: `202f757b6fb7659fcc56c19d755586c003f14ca7`.
-- LAST VERIFIED MAIN: `d54bf3107bd39f14d2da84ec3a42cf038e488962`, 08:01 UTC.
+- LAST VERIFIED MAIN: `f86255263028336b1ed1715cfd6892b52535931b`, 08:28 UTC.
   Main advanced through market `e84f77b8f53ffadee7bef77c9a0d26d13acb3f0f` and
   readiness `f4ebee9a9c56c61e874145d1740073dcda933041` before merge. Both were
   generated-data-only; fresh combined trees were rebuilt and tested below.
@@ -83,28 +84,46 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Deployed watchdog run `39921668377` / job `120308109183` succeeded at
   08:02 UTC: dispatch=false, refresh_already_active, core_stale_minutes=120.
   It correctly preserved the queued market/core work without another dispatch.
-- [~] Normal core rollout `39919786176` has started after earlier scheduled
-  run `39917759784` completed. Its completion, new source/publication timestamps,
-  410 diagnostics and explicit downstream dispatches still need verification.
-- [!] Post-merge browser job `120308109030` failed at a visibility wait before
-  opening the selected tournament. Fresh data put the chosen fixture in an
-  initially collapsed group, whose state the UI correctly retains through filtering.
-  The test now explicitly closes and opens that group using its summary before
-  checking card visibility and refresh retention. Existing visibility assertions
-  remain; product UI is unchanged. Browser CI validation is pending.
-- [ ] Verify normal core/market refresh, iNeed heartbeat, private market/DNA
-  publication, source timestamps and new tracker/retry diagnostics.
+- [x] Normal core rollout `39919786176` and Pages completed successfully. Production
+  build `120308461163` passed 1768 tests before generation (60.95s) and after all
+  generated layers (54.79s); core source is now 08:04:16 UTC, published at commit
+  `77339f48319865a9ec4b635ac0bc6e9d274b0986`.
+- [x] Stable public generation: history and stats use tracker v4, with 5665 entries.
+  All 5661 baseline forecasts, 1583 terminal compositions and 5087 terminal legs
+  retain original fields/results/timestamps/provenance. Newly resolved original
+  entries: 1151 compositions / 1853 legs. Remaining pending: 2931 compositions.
+- [x] Published HTTP-410 backoff defers both deleted-provider fixtures until
+  2026-10-30; no result was fabricated and no repeated request was made for them.
+- [x] PR #555 fixed two canonical browser-test races: open the exact selected
+  tournament before waiting for visibility, then wait for real completed refresh
+  status before interacting with replaced DOM. All existing assertions remain;
+  Chromium verified user/moderator/admin. Fresh-main build, static UI and 327
+  exact PLAYABLE comparisons passed. Actual merge tree
+  `af3c87a541daba6c167832ff89db9eddc4690ef2` equals the tested combined tree.
+- [x] Post-merge delivery/security `39924797503` and UI health `39924797476`
+  passed, including Chromium and all role/refresh-retention scenarios.
+- [x] Private core publisher `39924533723` / job `120317568006` activated the new
+  `77339f4` source: 165 files, 138 uploaded objects, generation
+  `b644a2c5-5ce3-4090-9483-fe5d88af1bb5`.
+- [x] Real market `39921358213` succeeded and published `ead0945264628d52bc9e351ce82d271f830045f7`.
+  It explicitly dispatched private market `39925703638`, iNeed `39925706703` and
+  fast-readiness DNA `39925709705`; all are workflow_dispatch, breaking the old
+  depth-limited subscriber chain. Private market and iNeed both completed.
+- [x] SQL independently confirmed active market source `ead0945` at 08:36:41 UTC
+  and iNeed OK heartbeat at 08:37:28 UTC; V1 scope and disabled betting unchanged.
+- [x] Market FAST Pages `39925713940` completed successfully.
+- [~] Verify fast-readiness DNA `39925709705` and its explicit private publication
+  before closing the production verification.
+- [ ] Complete production consumer verification, then green-merge this documentation closeout.
 - FILES: canonical freshness guard/workflow; requirements security pins; existing tracker/history transport/provenance owners; market/DNA/iNeed/
   private workflows; regression tests; audit, registry, architecture, checkpoint.
 - LIMITS: provider-deleted outcomes remain unavailable; missing player history
   and schedule conflicts remain N/D; GitHub cron timing is not guaranteed.
 - DO NOT REDO: PR #550 (merged `7abe4f618474caa1897243ddba60d5f63f4ec3c0`,
   2026-10-19 11:51 UTC), Solar/storage repairs, unrelated PRs #523/#537/dependencies.
-- NEXT EXACT ACTION: publish the browser-test repair and require green CI before
-  merge. Monitor core rollout `39919786176`; verify public tracker v4,
-  seven-day retry diagnostics, frozen forecasts/terminal outcomes, explicit market
-  dispatches, private generations and iNeed heartbeat. Commit the evidence and
-  green-merge the documentation closeout. Do not rerun or redo merged code fixes.
+- NEXT EXACT ACTION: verify explicit market dispatches and their successful private
+  market/DNA generations plus fresh iNeed heartbeat. Record evidence and green-merge
+  the documentation closeout. Do not rerun or redo merged code fixes.
 - BANS: no fabricated identity/stats/results, model probability/weights/training
   changes, PLAYABLE relaxation, iNeed economics/scope changes, builder lifecycle
   enablement, automatic SHADOW promotion or real betting.
