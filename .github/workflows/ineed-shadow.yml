@@ -2,9 +2,6 @@ name: iNeed$ SHADOW bankroll
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ['Superbet hourly market refresh']
-    types: [completed]
   pull_request:
     paths:
       - 'backend/ineed_*.py'
@@ -46,16 +43,7 @@ jobs:
           python -m pytest -q tests/test_ineed_money.py tests/test_ineed_market_scope.py tests/test_ineed_hardening_contracts.py tests/test_ineed_runner_direct_enrichment.py tests/test_ineed_settlement_runner.py tests/test_ineed_builder_shadow.py tests/test_ineed_builder_economics_shadow.py tests/test_ineed_builder_ticket_shadow.py tests/test_ineed_builder_scoped_runtime.py tests/test_ineed_builder_caller_enablement_audit.py tests/test_ineed_builder_reservation_sync.py tests/test_ineed_builder_lifecycle_operator_evidence_audit.py
 
   shadow-sync:
-    if: >-
-      github.event_name != 'pull_request' &&
-      (
-        github.event_name != 'workflow_run' ||
-        (
-          github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main' &&
-          github.event.workflow_run.event != 'pull_request'
-        )
-      )
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: guard
     runs-on: ubuntu-latest
     permissions:

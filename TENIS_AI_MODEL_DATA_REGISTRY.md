@@ -17,7 +17,21 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-10-19 refresh contract repair (validation complete locally; rollout pending):**
+**2026-10-23 runtime/evidence repair:** `symphony2_tracker` owns exact frozen-leg
+settlement orchestration, including backfill of unresolved legs on terminal losses;
+`signal_settlement.settle_signal_live` still owns outcome semantics. A unique
+fixture ID, ordered exact participants, exact schedule, genuine pre-match capture
+and documented terminal source/time/version are required. Conflicting/missing
+evidence stays pending with a reason. Archived forecasts/terminal outcomes stay
+immutable. Joint calibration excludes unresolved/void legs and non-pre-match
+captures, with explicit coverage counts; no forecast recalibration or promotion.
+`history_tracker` now writes provenance on new historical settlements.
+`live_history_settle` defers provider HTTP 410 for seven days without fabricating
+outcomes or increasing quota. Market and DNA owners dispatch existing downstream
+consumers explicitly; their depth-limited subscriptions are removed. See
+`audits/runtime_health_20261023.md` and the current checkpoint for rollout status.
+
+**2026-10-19 refresh contract repair (PR #550 merged 2026-10-19):**
 The canonical Superbet semantics audit groups totals by exact market/player/line;
 one-sided lines are counted separately and never confer PLAYABLE. The existing
 `superbet_builder_quotes` collector applies its 64-event budget to eligible future
@@ -37,7 +51,8 @@ current scoring and the existing downstream evaluators; match-local challenger
 joins and label grouping no longer retain the full raw population. Every later
 consumer gets an independent read, with unchanged feature/label semantics.
 Initial CI RSS: recent-form 4,089,540 KB; scorer 4,755,876 KB, both exit zero.
-Full workflow resolution and rollout still await all-green CI. A further allocation
+The merged repair is active; the 2026-10-23 audit confirmed later successful normal
+market and DNA workflows. A further allocation
 regression covers pandas flattening shared feature maps before evaluation. The
 canonical frame adapter now preserves exact values/types/order column by column;
 fitted coefficients and predictions remain exactly equal in parity regressions.

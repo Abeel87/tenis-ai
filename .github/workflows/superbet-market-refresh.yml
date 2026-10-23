@@ -332,6 +332,19 @@ jobs:
             fi
             sleep $((attempt * 2))
           done
+      # workflow_run stops after three chained levels. A refresh woken by DNA
+      # through the watchdog can already be deeper, so publish through these
+      # existing explicit entry points (also used by FAST Pages). Consumers no
+      # longer subscribe to this producer via workflow_run: one active route.
+      - name: Dispatch market consumers
+        if: steps.freshness.outputs.refresh == 'true' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run runtime-private-delivery.yml --repo "$GITHUB_REPOSITORY" --ref main -f layer=market
+          gh workflow run ineed-shadow.yml --repo "$GITHUB_REPOSITORY" --ref main
+          gh workflow run player-dna-shadow-refresh.yml --repo "$GITHUB_REPOSITORY" --ref main -f fast_readiness_only=true
       - name: Dispatch serialized FAST Pages deploy
         if: steps.freshness.outputs.refresh == 'true' && (github.event_name != 'pull_request' && steps.commit.outputs.changed == 'true')
         env:

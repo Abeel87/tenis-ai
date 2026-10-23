@@ -4,6 +4,15 @@
 
 ## 1. Produkcja danych
 
+Market publication explicitly dispatches `runtime-private-delivery` (`market`),
+`ineed-shadow` and the existing fast-readiness path of `player-dna-shadow-refresh`.
+These consumers no longer subscribe to market completion via `workflow_run`,
+which GitHub stops beyond three chained levels. DNA explicitly dispatches its
+private `dna` publication after successful, non-stale work. Full core completion
+still triggers full DNA evaluation. Existing concurrency, freshness, main/PR,
+OIDC and SHADOW boundaries remain authoritative. Cron remains best-effort; actual
+source timestamps define freshness, never the configured interval.
+
 Główny workflow `update-and-pages.yml` buduje analizę i publikację w jednej kontrolowanej kolejności. Najpierw aktualizowane są dane i modele bazowe, następnie PBP/historia/settlement, AutoLearn Ensemble i Adaptive Learning, później telemetryka oraz warstwy SHADOW. Superbet jest nakładany jako osobna warstwa operatorowa, a Symfonia 2.0 pracuje wyłącznie na bieżącej, zweryfikowanej ofercie operatora.
 
 Kontrakt przepływu:
@@ -26,6 +35,15 @@ Brak oferty lub linii Superbet nie może usuwać ani zastępować analizy MODEL 
 - **Early Hold / Serve / Form / Surface / Consensus** — specjalistyczne warstwy statystyczne lub agregujące; nie należy przedstawiać ich jako osobnych retrenowanych modeli ML, jeżeli nimi nie są.
 - **Player / Ensemble learning / Surface Elo / Accuracy Lab / NEURO** — warstwy SHADOW pozostające odseparowane od PROD/PLAYABLE, dopóki ich własne bramki walidacyjne nie zostaną spełnione i świadomie zatwierdzone.
 - **Symfonia 2.0** — supervised operator-line model z własną historią, exact-line probability i joint probability liczoną tylko na wspieranym wspólnym state-space.
+
+`symphony2_tracker` captures only before an explicit start, then settles frozen
+legs using exact archived operator labels or the existing canonical final scorer.
+It continues filling unresolved legs after a composition loss without rewriting
+that terminal result. Fixture identity, ordered participants, exact schedule and
+terminal provenance are mandatory; conflicts remain pending. Calibration uses
+only complete binary pre-match evidence and publishes exclusions. This tracker
+does not settle operator tickets or iNeed bankrolls. New historical results carry
+their source/version; Live API HTTP 410 has a visible seven-day recheck backoff.
 
 Semantyczne granice modeli, sezonów, Player DNA/Player State, opponent context, probability ownership i readiness definiuje `TENIS_AI_LOGIC_CONSTITUTION.md`. Bieżące znane problemy i plan ich napraw definiuje `TENIS_AI_MODEL_DATA_REGISTRY.md`. Aktywny etap, checklisty i punkt wznowienia definiuje `TENIS_AI_EXECUTION_CHECKLIST.md`.
 

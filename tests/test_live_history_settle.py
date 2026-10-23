@@ -71,6 +71,38 @@ def test_missing_result_is_reported_without_retry_or_invented_outcome(monkeypatc
     assert meta["history_live_settle_errors"] == 1
     assert meta["history_live_settle_error_details"] == [{"match_id": 1, "reason": "HTTP_404"}]
 
+
+def test_gone_result_defers_repeated_fetches_without_inventing_settlement(monkeypatch, tmp_path):
+    import json
+    from datetime import timedelta
+    import live_history_settle as live
+    meta, history, counted, requested = _run_transport(monkeypatch, tmp_path, [_response(410)])
+    state = json.loads(live.STATE_PATH.read_text())
+    state["matches"]["1"]["last_checked_at"] = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat()
+    live.STATE_PATH.write_text(json.dumps(state))
+    live.main()
+    meta = json.loads(live.META_PATH.read_text())
+    assert len(requested) == sum(counted) == 1
+    assert meta["history_live_settle_calls"] == 0
+    assert meta["history_live_settle_gone_deferred"] == 1
+    assert meta["history_live_settle_deferred_details"][0]["reason"] == "HTTP_410_RECHECK_BACKOFF"
+    assert json.loads(live.HISTORY_PATH.read_text())[0]["status"] == "pending"
+
+
+def test_gone_result_rechecks_after_backoff_and_recovers(monkeypatch, tmp_path):
+    import json
+    from datetime import timedelta
+    import live_history_settle as live
+    terminal = {"winner": 1, "score": {"games": [[6, 6], [4, 3]]}}
+    _, _, counted, requested = _run_transport(monkeypatch, tmp_path, [_response(410), _response(200, terminal)])
+    state = json.loads(live.STATE_PATH.read_text())
+    state["matches"]["1"]["last_checked_at"] = (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
+    live.STATE_PATH.write_text(json.dumps(state))
+    live.main()
+    assert len(requested) == sum(counted) == 2
+    assert json.loads(live.HISTORY_PATH.read_text())[0]["status"] == "settled"
+    assert json.loads(live.STATE_PATH.read_text())["matches"]["1"]["last_status_code"] == 200
+
 def entry(): return {'p1':'A','p2':'B','status':'pending','signals':[]}
 def test_completed_score():
     m={'winner':1,'event_status':None,'score':{'sets':[2,0],'games':[[6,6],[4,3]]}}
@@ -127,6 +159,9 @@ def test_historical_and_live_settlement_share_all_layers():
         historic = settle_history([match], pd.DataFrame(), now=now)[0]
     live = settle_entry(match, final, now)
     assert historic['status'] == live['status'] == 'settled'
+    assert historic['settlement_source'] == 'historical match result'
+    assert historic['settlement_version'] == 'history-tracker-result-1'
+    assert historic['settled_at'] == now.isoformat()
     for layer in SIGNAL_LAYERS:
         assert historic[layer][0]['result'] == live[layer][0]['result'] == 'hit'
 

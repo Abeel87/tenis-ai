@@ -25,6 +25,52 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**RUNTIME DELIVERY AND SYMPHONY EVIDENCE — 2026-10-23 / VALIDATION**
+- AUTHORIZATION: owner requested all demonstrated health problems repaired after
+  the audit. Includes exact semantic settlement defects, not probability tuning,
+  scope expansion, operator ticket settlement or promotion to real betting.
+- BRANCH: `fix/runtime-health-20261023`; PR #553.
+- ORIGINAL MAIN: `202f757b6fb7659fcc56c19d755586c003f14ca7`.
+- LAST VERIFIED MAIN: `e1fff88670c58d1881286a33110441124e074201`, data-only
+  market publication, observed 2026-10-23 06:16 UTC; integrated unchanged.
+- [x] Fresh main, open PRs, canonical owners and live job/DB state inspected.
+- [x] Reproduced missing Symphony labels, terminal-loss backfill, late capture,
+  conflicting evidence, absent historical provenance and repeated HTTP 410.
+- [x] Canonical repair and immutable real-history replay: 1855 leg outcomes,
+  1153 newly terminal compositions; no frozen forecast or terminal rewrite.
+- [x] Controlled watchdog recovery: market run `39909268429` SUCCESS; observed
+  absent downstream subscribers and implemented one explicit dispatch route.
+- [x] Focused tests 92 passed; readiness/orchestration 51 passed; static/runtime
+  UI smoke passed. Full regression 1755 passed in 61.08s; after integration of
+  fresh main, 1755 passed in 60.46s with published-data isolation intact.
+- [x] Integrate current main and full regression.
+- [x] Publish PR #553. Browser E2E, CodeQL and focused checks passed on initial
+  head `5afbf054d89fb4450fd0c9afbbaaf592377cea46`.
+- [x] Initial dependency job `120274126890` reported 36 advisories in existing
+  certifi/Pillow pins. Fixed releases 2026.10.19 / 13.0.0 pass local pip-audit
+  (no known vulnerabilities), CA loading, imports and Matplotlib/Pillow round-trip.
+  New exact-head CI is still required; the gate is not bypassed.
+- [x] Full regression with fixed security pins: 1755 passed in 66.72s.
+- [ ] Verify every required exact-head check, fresh-main check and green merge.
+- [ ] Verify normal core/market refresh, iNeed heartbeat, private market/DNA
+  publication, source timestamps and new tracker/retry diagnostics.
+- FILES: requirements security pins; existing tracker/history transport/provenance owners; market/DNA/iNeed/
+  private workflows; regression tests; audit, registry, architecture, checkpoint.
+- LIMITS: provider-deleted outcomes remain unavailable; missing player history
+  and schedule conflicts remain N/D; GitHub cron timing is not guaranteed.
+- DO NOT REDO: PR #550 (merged `7abe4f618474caa1897243ddba60d5f63f4ec3c0`,
+  2026-10-19 11:51 UTC), Solar/storage repairs, unrelated PRs #523/#537/dependencies.
+- NEXT EXACT ACTION: validate/publish dependency fix to PR #553, require green CI,
+  recheck main and merge; verify real downstream
+  dispatch/publication and record closeout evidence.
+- BANS: no fabricated identity/stats/results, model probability/weights/training
+  changes, PLAYABLE relaxation, iNeed economics/scope changes, builder lifecycle
+  enablement, automatic SHADOW promotion or real betting.
+- AUDIT: `audits/runtime_health_20261023.md`.
+
+The previous PR #550 validation checkpoint below is historical and superseded
+by its confirmed merge and the active checkpoint above.
+
 **REFRESH CONTRACT REPAIR — 2026-10-19, PR #550 / FRESH-MAIN VALIDATION**
 - AUTHORIZATION: owner requested repairs after the GitHub-only health report.
 - ORIGINAL BASE: `3a7ee2d468839313e1b655b4b79f5ae4abe0f914`.

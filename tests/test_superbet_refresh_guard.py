@@ -193,6 +193,34 @@ def test_watchdog_wakes_after_independent_main_workflows():
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
 
 
+def test_market_publication_dispatches_consumers_without_workflow_run_depth_limit():
+    import re
+    directory = ROOT / '.github/workflows'
+    market = (directory / 'superbet-market-refresh.yml').read_text()
+    publication = market.index('      - name: Commit refreshed market context')
+    consumers = market[market.index('      - name: Dispatch market consumers'):]
+    assert market.index('      - name: Dispatch market consumers') > publication
+    assert "if: steps.freshness.outputs.refresh == 'true'" in consumers
+    for command in (
+        'gh workflow run runtime-private-delivery.yml --repo "$GITHUB_REPOSITORY" --ref main -f layer=market',
+        'gh workflow run ineed-shadow.yml --repo "$GITHUB_REPOSITORY" --ref main',
+        'gh workflow run player-dna-shadow-refresh.yml --repo "$GITHUB_REPOSITORY" --ref main -f fast_readiness_only=true',
+    ):
+        assert command in consumers
+    for name in ('ineed-shadow.yml', 'runtime-private-delivery.yml', 'player-dna-shadow-refresh.yml'):
+        workflow = (directory / name).read_text()
+        assert '  workflow_dispatch:' in workflow
+        run_triggers = re.findall(r'(?ms)^  workflow_run:\n(.*?)(?=^  \w|^\w|\Z)', workflow)
+        assert all('Superbet hourly market refresh' not in trigger for trigger in run_triggers)
+    dna = (directory / 'player-dna-shadow-refresh.yml').read_text()
+    assert "inputs.fast_readiness_only" in dna
+    assert "type: boolean" in dna
+    assert "default: false" in dna
+    assert 'gh workflow run runtime-private-delivery.yml --repo "$GITHUB_REPOSITORY" --ref main -f layer=dna' in dna
+    private = (directory / 'runtime-private-delivery.yml').read_text()
+    assert '      - Player DNA SHADOW refresh' not in private
+
+
 @pytest.mark.parametrize('branch,conclusion,event,expected,name', [
     ('main', 'success', 'schedule', True, 'Neuron SHADOW research'),
     ('main', 'success', 'workflow_run', True, 'Player DNA SHADOW refresh'),
