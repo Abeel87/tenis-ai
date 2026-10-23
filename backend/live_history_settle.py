@@ -25,6 +25,7 @@ BASE_URL = "https://api.livetennisapi.com/api/public/v1"
 UA = "TenisAI-v7.8E5-RetirementSettlement/1.0"
 MIN_AGE_MINUTES = 75
 RETRY_HOURS = 2
+GONE_RETRY_DAYS = 7
 MAX_CALLS_PER_RUN = 48
 DAILY_RESERVE = 150
 SETTLEMENT_VERSION = "v7.8E5-retirement-partial"
@@ -217,6 +218,7 @@ def main():
 
     hist = reconcile_settled(hist)
     candidates = []
+    deferred = []
     for i, e in enumerate(hist):
         migration = _needs_retirement_migration(e)
         normal_pending = e.get("status") in ("pending", "upcoming")
@@ -229,6 +231,16 @@ def main():
             continue
         rec = state["matches"].get(str(e["match_id"])) or {}
         last = _dt(rec.get("last_checked_at"))
+        # A provider-deleted resource is not a pending live result. Keep its
+        # forecasts unresolved, but recheck weekly in case the provider repairs
+        # the record. Existing persisted HTTP 410 records use the same policy.
+        if rec.get("last_status_code") == 410 and last and last <= now:
+            retry_at = last + timedelta(days=GONE_RETRY_DAYS)
+            if now < retry_at:
+                deferred.append({"match_id": e["match_id"],
+                                 "reason": "HTTP_410_RECHECK_BACKOFF",
+                                 "retry_at": retry_at.isoformat()})
+                continue
         if not migration and last and now - last < timedelta(hours=RETRY_HOURS):
             continue
         candidates.append((scheduled, i, e, migration))
@@ -340,6 +352,8 @@ def main():
         "history_live_settle_errors": errors,
         "history_live_settle_retries": retries,
         "history_live_settle_error_details": error_details,
+        "history_live_settle_gone_deferred": len(deferred),
+        "history_live_settle_deferred_details": deferred,
         "history_live_settle_remaining_before": remaining,
         "history_settlement_version": SETTLEMENT_VERSION,
     })

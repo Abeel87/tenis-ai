@@ -1,4 +1,39 @@
+from copy import deepcopy
+from datetime import datetime, timezone
+
+import pytest
+
+from backend import symphony2_tracker as tracker
 from backend.symphony2_tracker import capture, settle, performance_stats
+
+NOW = datetime(2026, 8, 31, 9, tzinfo=timezone.utc)
+
+
+@pytest.fixture(autouse=True)
+def fixed_clock(monkeypatch):
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW
+    monkeypatch.setattr(tracker, "datetime", Clock)
+
+
+def _evidence():
+    return {
+        "id": 123, "p1": "A", "p2": "B",
+        "scheduled_time": "2026-08-31T10:00:00Z",
+        "status": "settled", "settled_at": "2026-08-31T12:00:00Z",
+        "settlement_source": "Live Tennis API /matches/{id}",
+        "settlement_version": "v7.8E5-retirement-partial",
+    }
+
+
+def _terminal():
+    return {**_evidence(), "result": {
+        "status": "completed", "p1": "A", "p2": "B", "winner": "A",
+        "sets": [[6, 3], [7, 6]], "number_of_sets": 2,
+        "total_games": 22, "match_score": "2:0", "first_set_score": "6:3",
+    }}
 
 
 def _current():
@@ -69,7 +104,7 @@ def test_capture_starts_clean_and_deduplicates():
 def test_exact_operator_signature_settles_composition():
     doc, _ = capture(_current(), {})
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "hit"},
@@ -87,7 +122,7 @@ def test_exact_operator_signature_settles_composition():
 def test_different_line_never_settles_prediction():
     doc, _ = capture(_current(), {})
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 22.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "hit"},
@@ -141,7 +176,7 @@ def test_settlement_preserves_frozen_dependency_evidence():
     doc, _ = capture(_current(), {})
     frozen = doc["entries"][0]["dependency_diagnostics"]
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "miss"},
@@ -168,7 +203,7 @@ def test_performance_stats_reports_prospective_dependency_evidence_counts():
     assert evidence["ranking_influence"] is False
 
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "hit"},
@@ -200,7 +235,7 @@ def test_prospective_pair_calibration_uses_frozen_exact_joint_and_settled_result
     current["matches"][0]["compositions"]["2"]["joint_probability"] = 42.0
     doc, _ = capture(current, {})
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "hit"},
@@ -238,7 +273,7 @@ def test_prospective_pair_calibration_uses_frozen_exact_joint_and_settled_result
 def test_pair_calibration_marks_joint_miss_when_either_settled_leg_misses():
     doc, _ = capture(_current(), {})
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "miss"},
@@ -259,7 +294,7 @@ def test_pair_calibration_marks_joint_miss_when_either_settled_leg_misses():
 def test_pair_calibration_excludes_void_or_pending_leg_pairs():
     doc, _ = capture(_current(), {})
     base = [{
-        "id": 123,
+        **_evidence(),
         "playable_autolearn_signals_v912": [
             {"market": "match_total", "pick": "over", "line": 21.5, "result": "hit"},
             {"market": "set1_total", "pick": "under", "line": 10.5, "result": "void"},
@@ -272,3 +307,110 @@ def test_pair_calibration_excludes_void_or_pending_leg_pairs():
     assert settled["entries"][0]["result"] == "hit"
     assert calibration["exact_pair_joint"]["settled"] == 0
     assert calibration["by_redundancy_decile"] == {}
+    assert calibration["composition_joint"]["settled"] == 0
+
+
+def test_terminal_match_settles_frozen_legs_without_upstream_selected_signals():
+    doc, _ = capture(_current(), {})
+    original = deepcopy(doc)
+    resolved, count = settle(doc, [_terminal()])
+    assert count == 1
+    assert resolved["entries"][0]["result"] == "hit"
+    assert [x["result"] for x in resolved["entries"][0]["selection"]] == ["hit", "hit"]
+    assert resolved["entries"][0]["selection"][0]["settlement_owner"] == "signal_settlement.settle_signal_live"
+    assert doc == original
+    assert resolved["entries"][0]["dependency_diagnostics"] == original["entries"][0]["dependency_diagnostics"]
+
+
+def test_completed_loss_still_backfills_unresolved_legs_without_rewriting_loss():
+    doc, _ = capture(_current(), {})
+    entry = doc["entries"][0]
+    entry.update(result="miss", settled_at="original-terminal-time")
+    entry["selection"][0]["result"] = "miss"
+    resolved, count = settle(doc, [_terminal()])
+    assert count == 0
+    entry = resolved["entries"][0]
+    assert entry["result"] == "miss"
+    assert entry["settled_at"] == "original-terminal-time"
+    assert [x["result"] for x in entry["selection"]] == ["miss", "hit"]
+    again, count = settle(resolved, [_terminal()])
+    assert again == resolved
+    assert count == 0
+
+
+@pytest.mark.parametrize("change", [
+    {"id": 124}, {"scheduled_time": "2026-08-31T11:00:00Z"},
+    {"p1": "Other"}, {"p1": "B", "p2": "A"},
+    {"settlement_source": None}, {"settlement_version": None},
+    {"settled_at": "2026-08-31T09:59:59Z"}, {"status": "pending"},
+    {"result": {"status": "completed"}},
+])
+def test_terminal_match_requires_exact_identity_and_terminal_provenance(change):
+    doc, _ = capture(_current(), {})
+    resolved, count = settle(doc, [{**_terminal(), **change}])
+    assert count == 0
+    assert resolved["entries"][0]["result"] == "pending"
+    assert all(x["result"] == "pending" for x in resolved["entries"][0]["selection"])
+    assert resolved["entries"][0]["settlement_pending_reason"]
+
+
+def test_ambiguous_match_and_conflicting_operator_labels_fail_closed():
+    doc, _ = capture(_current(), {})
+    evidence = _terminal()
+    resolved, count = settle(doc, [evidence, deepcopy(evidence)])
+    assert count == 0
+    assert resolved["entries"][0]["result"] == "pending"
+    evidence = _evidence()
+    leg = doc["entries"][0]["selection"][0]
+    evidence["playable_signals_v912"] = [{**leg, "result": "hit"}]
+    evidence["playable_autolearn_signals_v912"] = [{**leg, "result": "miss"}]
+    resolved, count = settle(doc, [evidence])
+    assert count == 0
+    assert resolved["entries"][0]["selection"][0]["result"] == "pending"
+
+
+def test_final_scores_never_invent_checkpoint_results():
+    current = _current()
+    current["matches"][0]["compositions"]["2"]["selection"][0].update(
+        market="game_state", checkpoint=6, pick="3:3", line=None)
+    doc, _ = capture(current, {})
+    resolved, count = settle(doc, [_terminal()])
+    assert count == 0
+    assert resolved["entries"][0]["selection"][0]["result"] == "pending"
+    assert resolved["entries"][0]["selection"][1]["result"] == "hit"
+
+
+@pytest.mark.parametrize("scheduled", [None, "bad-date", "2026-08-31T08:59:59Z", "2026-08-31T09:00:00Z"])
+def test_capture_requires_proven_future_start(scheduled):
+    current = _current()
+    current["matches"][0]["scheduled_time"] = scheduled
+    doc, count = capture(current, {})
+    assert count == 0
+    assert doc["entries"] == []
+
+
+def test_calibration_excludes_incomplete_and_nonprematch_evidence():
+    current = _current()
+    current["matches"][0]["compositions"]["2"]["joint_probability"] = 42.0
+    doc, _ = capture(current, {})
+    entry = doc["entries"][0]
+    entry["result"] = "miss"
+    entry["selection"][0]["result"] = "miss"
+    stats = performance_stats(doc)
+    assert stats["compositions_settled"] == 1  # Operational loss is still real.
+    assert stats["compositions_with_unresolved_legs"] == 1
+    assert stats["dependency_evidence"]["settlement_calibration"]["composition_joint"]["settled"] == 0
+    entry["selection"][1]["result"] = "hit"
+    entry["captured_at"] = entry["scheduled_time"]
+    calibration = performance_stats(doc)["dependency_evidence"]["settlement_calibration"]
+    assert calibration["composition_joint"]["settled"] == 0
+    assert calibration["exact_pair_joint"]["settled"] == 0
+
+
+def test_nonprematch_legacy_capture_does_not_gain_new_settlement_evidence():
+    doc, _ = capture(_current(), {})
+    doc["entries"][0]["captured_at"] = doc["entries"][0]["scheduled_time"]
+    resolved, count = settle(doc, [_terminal()])
+    assert count == 0
+    assert resolved["entries"][0]["settlement_pending_reason"] == "NOT_PROVEN_PREMATCH"
+    assert all(x["result"] == "pending" for x in resolved["entries"][0]["selection"])

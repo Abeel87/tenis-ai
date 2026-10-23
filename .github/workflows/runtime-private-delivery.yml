@@ -16,8 +16,6 @@ on:
   workflow_run:
     workflows:
       - Update tennis data and deploy Pages
-      - Superbet hourly market refresh
-      - Player DNA SHADOW refresh
       - Neuron SHADOW research
       - Self Evolution SHADOW research
     types: [completed]
@@ -78,8 +76,6 @@ jobs:
           else
             case "$PRODUCER" in
               "Update tennis data and deploy Pages") layer="core" ;;
-              "Superbet hourly market refresh") layer="market" ;;
-              "Player DNA SHADOW refresh") layer="dna" ;;
               "Neuron SHADOW research") layer="neuron" ;;
               "Self Evolution SHADOW research") layer="research" ;;
               *) echo "::error::Unknown producer: $PRODUCER"; exit 1 ;;

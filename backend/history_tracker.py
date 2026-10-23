@@ -340,6 +340,8 @@ def settle_history(entries: list[dict], hist: pd.DataFrame, now: datetime | None
         entry = dict(entry)
         entry['result'] = final
         entry['settled_at'] = now.isoformat()
+        entry['settlement_source'] = 'historical match result'
+        entry['settlement_version'] = 'history-tracker-result-1'
         entry['status'] = 'void' if final.get('status') == 'void' else 'settled'
         entry = settle_layers(entry, final, 'historical match result')
         out.append(entry)

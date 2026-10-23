@@ -2,6 +2,11 @@ name: Player DNA SHADOW refresh
 
 on:
   workflow_dispatch:
+    inputs:
+      fast_readiness_only:
+        description: Refresh current readiness after a published market snapshot
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -34,7 +39,7 @@ on:
       - 'backend/player_identity.py'
       - '.github/workflows/player-dna-shadow-refresh.yml'
   workflow_run:
-    workflows: ["Update tennis data and deploy Pages", "Superbet hourly market refresh"]
+    workflows: ["Update tennis data and deploy Pages"]
     types: [completed]
   pull_request:
     branches: [main]
@@ -101,12 +106,12 @@ permissions:
 concurrency:
   # Keep main refreshes mutually exclusive, but never let a main/data refresh
   # cancel the validation run of an open PR.
-  group: player-dna-shadow-refresh-${{ github.event.pull_request.number || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' && 'market' || 'main') }}
+  group: player-dna-shadow-refresh-${{ github.event.pull_request.number || (github.event_name == 'workflow_dispatch' && inputs.fast_readiness_only && 'market' || 'main') }}
   cancel-in-progress: true
 
 env:
   PYTHONUNBUFFERED: '1'
-  FAST_READINESS_ONLY: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Superbet hourly market refresh' }}
+  FAST_READINESS_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.fast_readiness_only == true }}
 
 jobs:
   refresh:
@@ -1376,3 +1381,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-pages-fast.yml --ref main
+
+      - name: Publish private Player DNA snapshot
+        if: github.event_name != 'pull_request' && steps.readiness_commit.outputs.stale != 'true' && steps.commit.outputs.stale != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run runtime-private-delivery.yml --repo "$GITHUB_REPOSITORY" --ref main -f layer=dna
