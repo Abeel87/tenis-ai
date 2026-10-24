@@ -1,11 +1,11 @@
 {
   "schema_version": "prediction-ledger-settlement-shadow-v1",
   "mode": "SHADOW_ONLY",
-  "generated_at": "2026-10-24T17:10:45.906129+00:00",
+  "generated_at": "2026-10-24T18:28:47.142865+00:00",
   "source_ledger_schema_version": "prediction-ledger-shadow-v1",
-  "source_ledger_sha256": "sha256:b6a61128fe4419da5de634ecd87f358145a69cc1bd3eb2bc0df182d39b322dd2",
+  "source_ledger_sha256": "sha256:85ab5f04c17d49519a32bb0646995b2265be8c59e6cb6224af171b4e7f10a511",
   "source_selection_schema_version": "prediction-ledger-selection-shadow-v1",
-  "source_selection_sha256": "sha256:fbfe64c21cf4b2f9a7eb75eb88ff14df05abefa690fdda7ab842cc883a5e3b83",
+  "source_selection_sha256": "sha256:326e73b3019443939788535a46d35f09338d9bb14ef2548e7319b087e67d409e",
   "settlement_contract": "EXACT_LIVE_TENNIS_MATCH_ID_AND_EXACT_SCHEDULE_THEN_CANONICAL_SIGNAL_SCORER",
   "absence_semantics": "N/D_NOT_FALSE",
   "network_fetch_enabled": false,
@@ -2449153,7 +2449153,7 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449237,12 +2449237,12 @@
       }
     },
     {
-      "prediction_id": "pred_1273f244c20df3dafa5f5981b3a3003d1210e73c1f519c6ed394f992c6a90ef0",
-      "match_key": "id:209663",
-      "candidate_key": "state|4|2:2",
-      "market": "game_state",
+      "prediction_id": "pred_121e596696a8a18950cfe7bbf78d5cab705d9ee5cf7119e480c0657519c8aee4",
+      "match_key": "id:209745",
+      "candidate_key": "match_win|hannah_klugman",
+      "market": "match_winner",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
-      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2449263,10 +2449263,10 @@
       }
     },
     {
-      "prediction_id": "pred_16d6f024436d93f371685ab387fa195de99eac974cb0ac310f4887dc9655f9ad",
+      "prediction_id": "pred_1273f244c20df3dafa5f5981b3a3003d1210e73c1f519c6ed394f992c6a90ef0",
       "match_key": "id:209663",
-      "candidate_key": "match_total|23.5|under",
-      "market": "match_total",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
       "common_current_catboost_tabpfn": false,
@@ -2449283,7 +2449283,33 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_16d6f024436d93f371685ab387fa195de99eac974cb0ac310f4887dc9655f9ad",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|23.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449322,6 +2449348,32 @@
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
       "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_1d2340ac55790f29b36deab33da42ff735cc5c92ed15a8744743487c3a6fa19a",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|9.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
         "PLAYABLE": null,
@@ -2449445,12 +2449497,64 @@
       }
     },
     {
+      "prediction_id": "pred_2af3a8f7b1992b712492c8391825b9a9eeb4fd95dec99e468e2bb4f1f76989dd",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
       "prediction_id": "pred_2c390b6f4d9ed1f2b1cc1373a262159685e746e097c85776018dc76d02ad2e33",
       "match_key": "id:209739",
       "candidate_key": "state|6|3:3",
       "market": "game_state",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T17:03:56.395408+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_2f888fa2036258e22211499096be7df288db580781ebfb4b6d021f0fdd45465b",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2449549,12 +2449653,12 @@
       }
     },
     {
-      "prediction_id": "pred_33443bf52c250c29c7dc4fd7454debbe8443ef324227e2a054689a927bffe7ef",
-      "match_key": "id:209663",
-      "candidate_key": "set2_win|yannick_hanfmann",
-      "market": "set2_winner",
+      "prediction_id": "pred_32c5ac207d14ac532352527be0ad5b9441721c0a8ffd72236cc53550993945e8",
+      "match_key": "id:209745",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
-      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2449570,6 +2449674,32 @@
         "status": "N/D",
         "result": null,
         "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_33443bf52c250c29c7dc4fd7454debbe8443ef324227e2a054689a927bffe7ef",
+      "match_key": "id:209663",
+      "candidate_key": "set2_win|yannick_hanfmann",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449595,7 +2449725,7 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449610,18 +2449740,18 @@
       "common_current_catboost_tabpfn": true,
       "population_facts": {
         "ALL": true,
-        "PLAYABLE": null,
+        "PLAYABLE": true,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
-        "playable_status": "N/D",
+        "playable_status": "MATCHED",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449688,6 +2449818,32 @@
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_3c70ac90aa783418ab1e6cbe2b6f95efa5a336c9c36c0e1104fbb6568ecc1b62",
+      "match_key": "id:209745",
+      "candidate_key": "set1_win|hannah_klugman",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
         "PLAYABLE": null,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
@@ -2449737,6 +2449893,32 @@
       "market": "match_winner",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_3e47768ff3d2d38cafef1358ee7bcc3fe1c3c23ae6bd88f8564577f0cf3b657a",
+      "match_key": "id:209745",
+      "candidate_key": "match_win|elsa_jacquemot",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2449792,18 +2449974,18 @@
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
-        "PLAYABLE": null,
+        "PLAYABLE": true,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
-        "playable_status": "N/D",
+        "playable_status": "MATCHED",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2449933,7 +2450115,7 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450011,18 +2450193,18 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
     },
     {
-      "prediction_id": "pred_61954abc8e8e6e937362f0ff5f7cb443df5647e50127e67d5307637295502676",
-      "match_key": "id:209663",
-      "candidate_key": "match_total|21.5|over",
-      "market": "match_total",
+      "prediction_id": "pred_5e5ae6e301a93ea9f2fbc321c330eb7fccb3404d43532eabe5c4e77ead7a666c",
+      "match_key": "id:209745",
+      "candidate_key": "set2_win|hannah_klugman",
+      "market": "set2_winner",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
-      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2450043,12 +2450225,64 @@
       }
     },
     {
+      "prediction_id": "pred_61954abc8e8e6e937362f0ff5f7cb443df5647e50127e67d5307637295502676",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
       "prediction_id": "pred_63569a1f5b3776853a59519015a96700f30716f27d521e8ae35b511a90984f6d",
       "match_key": "id:209663",
       "candidate_key": "set1_total|10.5|over",
       "market": "set1_total",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6544d6ae862f01abb3edcb8ba40b3792902a72b8553824af00f111b456e0b263",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2450101,6 +2450335,58 @@
       "market": "match_total",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6bf633cdd5975556c197263cfb6a082917df11b5560d5d6426fcea7306bcdd50",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|23.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_71d2d64cd8deb5444f96f3917d40bdca323d5a2b6ea23b9f86af3a159040c716",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2450199,12 +2450485,12 @@
       }
     },
     {
-      "prediction_id": "pred_79298591c2624826a2337052438ea7613b304134c7ec3e2fc636a976da76e292",
-      "match_key": "id:209663",
-      "candidate_key": "set1_win|yannick_hanfmann",
-      "market": "set1_winner",
+      "prediction_id": "pred_75419e00b4da53e896d1fda1fe773903e577e0ad62a17335e8116000e1590e8b",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
-      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
@@ -2450220,6 +2450506,32 @@
         "status": "N/D",
         "result": null,
         "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_79298591c2624826a2337052438ea7613b304134c7ec3e2fc636a976da76e292",
+      "match_key": "id:209663",
+      "candidate_key": "set1_win|yannick_hanfmann",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450286,18 +2450598,18 @@
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
-        "PLAYABLE": null,
+        "PLAYABLE": true,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
-        "playable_status": "N/D",
+        "playable_status": "MATCHED",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450390,6 +2450702,58 @@
       "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_91179f02aefa52f79c3c0d0bac084aeef675ca959864962fa0827512d6a7ef21",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_95e1cf5c06cfab860b63d1c3faeaa75f13d4f37012c94d316505ff3ba1cd131e",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
         "PLAYABLE": null,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
@@ -2450407,13 +2450771,13 @@
       }
     },
     {
-      "prediction_id": "pred_91179f02aefa52f79c3c0d0bac084aeef675ca959864962fa0827512d6a7ef21",
-      "match_key": "id:209663",
-      "candidate_key": "match_total|19.5|over",
+      "prediction_id": "pred_978554c06f53695f060cf2b53fe3813359db62f25ea0612577c422ef748c1c5b",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|18.5|over",
       "market": "match_total",
       "scheduled_time": "2026-10-25T10:00:00+00:00",
-      "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
-      "common_current_catboost_tabpfn": true,
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
         "PLAYABLE": null,
@@ -2450442,18 +2450806,18 @@
       "common_current_catboost_tabpfn": true,
       "population_facts": {
         "ALL": true,
-        "PLAYABLE": null,
+        "PLAYABLE": true,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
-        "playable_status": "N/D",
+        "playable_status": "MATCHED",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450468,18 +2450832,18 @@
       "common_current_catboost_tabpfn": true,
       "population_facts": {
         "ALL": true,
-        "PLAYABLE": null,
+        "PLAYABLE": true,
         "SYMPHONY_SELECTED": null,
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
-        "playable_status": "N/D",
+        "playable_status": "MATCHED",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450531,7 +2450895,7 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2450641,6 +2451005,84 @@
       }
     },
     {
+      "prediction_id": "pred_b5667d4796194c8e027577b2fca962f3853c0bd84f7cb9de7721d2d790511536",
+      "match_key": "id:209745",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b61e64ee33add15cd07003bacbac59218fbe9ca26dbd5c6c94d287fb42c6090a",
+      "match_key": "id:209745",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b704972726bcad3da1d58b96cf7f01e2536e847b5a4879432c72f831ab719495",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
       "prediction_id": "pred_b8916e5a7f1f8d402798c4279ef5771a4ece70e029d656d651ebd7f02969f894",
       "match_key": "id:209692",
       "candidate_key": "set1_total|12.5|under",
@@ -2450655,6 +2451097,32 @@
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
         "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b92e3e35447886a006040e4840b62c752f73cecda9c1c8cdb59c15c839178997",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|24.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
@@ -2450771,6 +2451239,32 @@
       }
     },
     {
+      "prediction_id": "pred_c7d262d2e34cb91487fb485dacf50bdf61ea7475ead7cef4d0aab34a712f1724",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
       "prediction_id": "pred_c9b36da098b9d5cdfab964ec8ad6db9d87f233b3f97dd868368b36d6bd179258",
       "match_key": "id:209739",
       "candidate_key": "match_total|20.5|over",
@@ -2450785,6 +2451279,58 @@
         "INEED_SELECTED": null,
         "status": "EXACT_SELECTION_ROW",
         "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_cfe97642cb4ff23c4c6902c14974853f5bf73a1a654b09046f08f72947a2b836",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d708f5ff85392fc1b621f6b44e49958037a63a6dba9bb05c692056d22e140ba1",
+      "match_key": "id:209745",
+      "candidate_key": "match_total|22.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
         "symphony_status": "N/D",
         "ineed_status": "N/D"
       },
@@ -2450830,6 +2451376,58 @@
       "scheduled_time": "2026-10-25T10:00:00+00:00",
       "ledger_captured_at": "2026-10-24T14:46:14.179594+00:00",
       "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d997b63576311e3e812ba69101d9c032193427620db3a9747efb6a43dcaf1c6b",
+      "match_key": "id:209745",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_de3645b35efb3135bdce68ec320c5a4a0cb97d2906a4c32e32b0f83c89d3a342",
+      "match_key": "id:209745",
+      "candidate_key": "set3_win|hannah_klugman",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
       "population_facts": {
         "ALL": true,
         "PLAYABLE": null,
@@ -2450947,6 +2451545,32 @@
       "settlement": {
         "status": "N/D",
         "result": null,
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f2d9522350b45a7e2c1f8c4999d317615c5b8692379b469653b2d988ce7406c0",
+      "match_key": "id:209745",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T10:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
         "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
@@ -2450999,7 +2451623,7 @@
       "settlement": {
         "status": "N/D",
         "result": null,
-        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "reason": "EXACT_MATCH_ID_SCHEDULE_CONFLICT",
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
@@ -2451029,25 +2451653,3327 @@
         "settlement_owner": "signal_settlement",
         "terminal_result_owner": "live_history_settle"
       }
+    },
+    {
+      "prediction_id": "pred_079570d06a25664848157bddd8bd6231c04995d4aa576eb8aef08ffda97f56f8",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|24.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_1b384b6cce9a5d610060c9499307d4b3a9e02d38a667712325818a5ea2d03a6a",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_21abfc4dc51ede6594b38dc9638627ffc28d96b29262a5c89b386b5ee62a3c97",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_2b790a8d3d40086e36445c0eaefb55d08a0735f0b2c7b17c67bfece13c90275f",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|23.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_47ff01592ee2cdc7cfb13fb43cb6ed99283a40aa5a7f12f4fca758d74ca26c69",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|22.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_53ee0cae4e4179bc6c65e1ad335170a541fa4f2862923fcf009513b22293bc7e",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_57045dc9e94e28406549094246070e278b071113e68a2f2e3ed88fbc84ef48c0",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|10.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_617a84b8a68ad42eac9ffba69ecf22d209ee22062029019bf43c8883eae6fb49",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_639f7a2fe8d42a67106667bb499bf70ecb7326a832378b280a22f6efd6d492a7",
+      "match_key": "id:209663",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_691ebe95a8949f8867dab9579d26a68080a7fa9bf2e971917a2ad25eaa8ec8c8",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_7426a74e53854652440087b1b054a944258d32de02831c552d149189c2c4067e",
+      "match_key": "id:209663",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_7a72ce7d9c8cb73df5ca474cf2b01edfc66148127234e52969a0ed193e147e63",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|18.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_86ec3aeee5fe4353e5d5adf439b992b9a8933fb7d8a8a6bbdbce9be9ddbac3aa",
+      "match_key": "id:209663",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8aec802d1c989503d7dadfdd1b577ab1da9f974fe2af4cb59634f179257101c3",
+      "match_key": "id:209663",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_991ef22b14103224c074f9781f6de17f7d30918b05538f203af4e77b357a9287",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b62b3fecac813434bb246a6b2ac2e09e80860c53d03b5fd31e072fbc4e762671",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|22.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ba9c2a4ae281685ee38790d2e33004cd2bbfa4c60b5d7a1757a3e8f0f42ad52c",
+      "match_key": "id:209663",
+      "candidate_key": "set1_win|yannick_hanfmann",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_bb4c2c49bd3b6e75505f0efcd275d0d1a550b7e47a8537f911b5fd25fd0be47b",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_c051b7ae9fa3d811ef70c8fc0e2e37192d344d1f37f6d383053ff274f0d79fab",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_cc0a868a919854994e313adccd633a5c93534693a8f871acf89bd065735574c8",
+      "match_key": "id:209663",
+      "candidate_key": "set3_win|yannick_hanfmann",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d3824a52ecf6e1009c18521e6023e91942a35c5b71797439e804b5e6c7a5e9b8",
+      "match_key": "id:209663",
+      "candidate_key": "set2_win|yannick_hanfmann",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_df41a9795ead67bce38007976d52e1c03f3a8bfe922c55cda9403a8353a8d9c8",
+      "match_key": "id:209663",
+      "candidate_key": "match_win|yannick_hanfmann",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_e2d261c86a458b85f00d5bc73b77d7b3ab6fa78041127be424a4d886fd876230",
+      "match_key": "id:209663",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f5d6b32240aba28e339afe37954d92e513d15933a3362c4d3f6c49e433c779cc",
+      "match_key": "id:209663",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T11:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": true,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_019c32e499dfb9c3c7f1adf063295a47b71788805205227dff3a9b118f4cd298",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_17201e779f87b0e4e82bad5007c5485c87a18f08adbe1c12d63e493bb77a9f93",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|24.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_1efa57c791af879467f3d9cdb380a37130a6bd72823eec1a22e472d30fc746de",
+      "match_key": "id:209757",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_294e99535626ac9d755f7c196b13bf6769f4cd615c4ed4b926d4847ec578b1d3",
+      "match_key": "id:209757",
+      "candidate_key": "set3_win|daniel_altmaier",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_3476370a71efbd6f36abfd1305004c21a3f795ca597947fc2ed180ed2f691bee",
+      "match_key": "id:209757",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_363675159591d251f67bde6aa56b91022e43241d8de895df0c1513ffd371bfef",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_3886b66461fc09540019b065ef1232b372ab69835c5129dfd031eb8aba50cc9f",
+      "match_key": "id:209757",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_423e5dd8a05234a5c85f6baa52cd82be89f7aebdb272608aefcbcade0562d98c",
+      "match_key": "id:209757",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_553e7145fe9751c265dbf3994123930b4f582e8fcc293a786e8eb999af022db1",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|22.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6800a40c1201d666d06e727d26fc837708a9071b9fc6703e86ff3639d2211286",
+      "match_key": "id:209757",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6be6cb6c8ad90f081ad22d27533b2c833913053b9a5d19f0cb7af5486cb8cb1c",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|18.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6d28e48ccf641dfa5e80bfbcc00acc348b2b21fab714ef65ce887fda17ef9ceb",
+      "match_key": "id:209757",
+      "candidate_key": "match_win|daniel_altmaier",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_7b630cad39f17a38d29366f4cdfdc44a29ef6f7f50bea60dae86ecfd1b203c82",
+      "match_key": "id:209757",
+      "candidate_key": "match_win|juan_manuel_cerundolo",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_83ce23cd7ce5fb777dc57d6c1737ebe5c1f9e19af8cdc02abb3fc7be7d8336dc",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_9e3293b0793c2e3e4d98bf64b47970498bebe707d4e5d7ed17b01ed5f62194d0",
+      "match_key": "id:209757",
+      "candidate_key": "set1_win|juan_manuel_cerundolo",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_a18df3c8ce3ea2257db269514cd5f2aadb945c06ca0bdc1a0928ab6ab0bb338b",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|23.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_a3da6706f12fcd5a99c481f1e7304160014cde072a45d37fa4b78f13675fa4b3",
+      "match_key": "id:209757",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ac92a02d202ebadcb1ed7b64ce7cbf61ddf0d59af421774a4f5ccbb491db6f1e",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_addc15ef3a7bdd52c006af048e835bb11c31e885a6948c227a831b83d500f1c8",
+      "match_key": "id:209757",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b0707fc2a76b9577b1a930d4ff3e25c338aaa8307784ce346629adafdeee5fdd",
+      "match_key": "id:209757",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_c62d186b3ca3f3413161bb3a34f376ff91854f8e9d63b5f43c09b909be808c6c",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|22.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d53b8b3d222ba33d8a46b1366c6adf898f1bd13f1b0c7d7448317365090ba200",
+      "match_key": "id:209757",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f59192c00a723cc234fa07b805c31887cdda9475c73f22bb5c15f369063d6845",
+      "match_key": "id:209757",
+      "candidate_key": "set2_win|juan_manuel_cerundolo",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_fc8404453a5ad4990ae35c965e715a4bcf91a2a2e87ce845d9b3e33eff7d80a0",
+      "match_key": "id:209757",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_01956edebe0ffcd1d26eac6c46eab01e956c4368a961ae3926316cce37eab335",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_1639fd6385162075d4f2746c25f9dbf064a7e1d87d2bb805bef2ae73c4254320",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_18e9793498a0b036e7f14eac3da074a9150c1c66fcbb91f0f2969fdd5b64b27b",
+      "match_key": "id:209756",
+      "candidate_key": "match_win|aleksandar_kovacevic",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_2596c97f697b4a1a1bcb1d1f986007b5e235eb4445ee7c98babd0a4a60d95367",
+      "match_key": "id:209756",
+      "candidate_key": "set3_win|aleksandar_kovacevic",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_43a99110cf5825b3a9fd9c10435f43efa4f7e1ccc291a7131d3bf0306ccf5f4b",
+      "match_key": "id:209756",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_508ae62713c6522dc6be3975091d92e1ff4a571f5a87231debf39fdc215085ee",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_5118cda1e1daf3741e62edfa32a238deefed3d8629f338654531684748496da1",
+      "match_key": "id:209756",
+      "candidate_key": "set1_win|aleksandar_kovacevic",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_52c2a995b469e2dc1826a6281fd5c8462b3e93243f73f659b6f8a1390c8473d0",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_5d516f91fbdf0b5bd9ace7c45496ab3e744a0d53d875ec1802a964302ba6c7ea",
+      "match_key": "id:209756",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_612abf25398a939a4d20dc49a969b0627999718958ca9f49506035b288b8421e",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|10.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6bf4a53979cec19348f8c3d5fe7ddaa5ee1cea3e4b173d4dc376bb92e74961e6",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|26.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_6fa365c6ad70e2da84e0d2b93ea0cf5ca9bd178f97833ee25a1a3fdd32302d95",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|23.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8601c1023e020a7de8749de549ef9de52a00918a6eb37aa7727acf8f8a6013fb",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8a4632b8ff820c8fa3a29528b8ca43cc37c13af804d1e607bef5f2597018c230",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8a67e9e673fb0dfa928aaad4f585f734143333adab0d5f04f519dfa7f3384040",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_9416e59f4607c4ab56eed3a22c0ea776d67af2d590aa2ef9a6051cb66815d3ee",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|22.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_964b8b815876a237f0f33993bf75bee25e7aa955a8c8217df215fde20118a4e1",
+      "match_key": "id:209756",
+      "candidate_key": "set2_win|aleksandar_kovacevic",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_9a5046f0d8082cb3fb0a10a7cd1daf974cfda406bfbf4f947e7d28a0e45e3777",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ad4eaca2499f945d1a5a96a5e820dcd03b7c19c32fcdbbdd75194bf536937be7",
+      "match_key": "id:209756",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b2f4b3df75a1735f5f4fc8d471a3223820f491fc7c8fef5d88f16d66f30153df",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|25.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d57c8d057c0ba52765654af74d02507a41cf55cae59723f5122d90650258dd6e",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|12.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d99507f22ec647c3db7d05e82a4c364d1e4c02ea410f3b7deb01bcd7e43d0690",
+      "match_key": "id:209756",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ecc0e72f6203c62167e0aea67a13c3566520fdc9206adeca514c0025ef199120",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ece9fd5c3d7c1dda3012cca3faf6cd79a92aa3ca23f5fe4a181f38d2d4c8d57b",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|18.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ed1a92d2420101f9351636da45a815fcb6d89eb2cc251a4b87be830b05073ff2",
+      "match_key": "id:209756",
+      "candidate_key": "match_total|24.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f5338ec7f76b23444073308ae4e552148eefacecb2868dbe8b172642a61cdc31",
+      "match_key": "id:209756",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T12:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_0405d50201d85aa20b7753f56962450d738f7f7618b46ffba69f3b35317a71b9",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|25.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_0c9f6ab2405a92424d099fa8cdcf13c37e17f91bafe96940590cb17ae0faa50b",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|12.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_22faee68ad04b04b616e8556c803e056a6082f908a76c17638382c3fef7916a1",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_25442fb2eaf152b65415c6737e610b48b2bbade4b089cbfbe138ef5795cad4cb",
+      "match_key": "id:209759",
+      "candidate_key": "set1_win|taylor_fritz",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_277a3b0344671a4369a78b5ed61588000436b15be717064116bd1d27b705a45f",
+      "match_key": "id:209759",
+      "candidate_key": "set3_win|lorenzo_musetti",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_2954323a34feab21091cccd7d995effd2e01b69ed807422cc995480303892f3d",
+      "match_key": "id:209759",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_30554ce29699dc2726646242a665f274fffa57241369fe1d66fb443e26fe7220",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_3ae1aeab2c5dc2ff8d45009daf8a3900063b6d8931f65941491f9f74b5d935fd",
+      "match_key": "id:209759",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_4535d5f9b775db9256fc3069aab2268c8b6534ff06688f14d2c766c942470ad6",
+      "match_key": "id:209759",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_5032f8653f67012ccbb62bc604129331f52fc1007e7e831d1c09b19bf9ba25d6",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_579344741823517f4a2f0d979d196a2340ab7d95479e77d2e7f1b95bdac042b9",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_5a450b96b1ef2535f7464bb1ec80a17e839c8c898d00b1db20d3c9985cfaa23e",
+      "match_key": "id:209759",
+      "candidate_key": "set2_win|taylor_fritz",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_722fbd657df4cb2a2cb5af732a4ce2ea7279968201f8b65704eee4fae737fc2e",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_778851c1b9b0d03b842a08db0218eaf510d591370e4ec14ae636d2ae7d1a4d9d",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|18.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8858053f00de6b8d1ddf6fe8b2db6f43737943303d337a5c6987da333a927ed1",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_88b40229175ab24e30f42ab7b12c05bb0d899e0a6a00df6e961f9fd5ca596226",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_8e6ad24a0b287476d3756f5eed1989311b2a18c77d9b24db5c4c3d77cccd152f",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|24.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_95d929954c473de7d8da65a174754c02f25f65e8ac87036371260cf6175fa52f",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_a02228f8a0d50bb953eee7dd54e340225d0d2c77bce474ed0059a67b03f8a492",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|23.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_a60d1cd49a358fc7dba36eac373c753c41b68f68da852660b25185f7592c5d81",
+      "match_key": "id:209759",
+      "candidate_key": "match_win|taylor_fritz",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b6e7150ab8b8085114826dc44d8492eee65c052118788b313792d70db43fc1fa",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ba11e48a9cafb464fb0bdbbab5dde2c0cdcc2292b0894b737b939fec7f3e6054",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|10.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_deea2783de13ffb247473efdedfd8994329f1db9204ee42734103dd5b0058c6f",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|22.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_e75914a7c182b02a8d4f81d846ce39fca506c51a2ce5f6e84e34c56fc8799ad1",
+      "match_key": "id:209759",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f023bd9f39ab8b3bf1deb37a0e8c39a8672e180a5973b5de2a854cdb5de2e9d6",
+      "match_key": "id:209759",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f038e99f416f5e99c6443bd804a317b09ac9e32c51790ed68a0f0f9e5a482469",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|24.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_fff2351a66c1cd0b774a79133f77f1cfdc1f6aba72b0512cd0a60c366813dcbe",
+      "match_key": "id:209759",
+      "candidate_key": "match_total|23.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T13:30:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": true,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "MATCHED",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_04b78f7ede951a59f4c219848e23c3197c72a661d9011c137b783fb7bd45ed25",
+      "match_key": "id:209755",
+      "candidate_key": "state|4|2:2",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_055b2b2ee937161fb1a2c36d142390c95c7f9b828aa449aa701b0389d1c0c39f",
+      "match_key": "id:209755",
+      "candidate_key": "set2_win|mika_brunold",
+      "market": "set2_winner",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_0e1c3684dc6038dd1dba93475a0b5e065afd946cdf9a95047a66ac3e36d532d1",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|9.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_0f53b38af11a5c128404d3909fd14fe9f1994b69a78e0b0a822998c4760c4b26",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|26.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_145318df5a4c2a7a27f06e040f801dc1ea90c9f19340c1980e03224d83ed9ee3",
+      "match_key": "id:209755",
+      "candidate_key": "state|2|1:1",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_1b3e8b8234da9cabd282fbe028bc8bda42a284083b81f08482375fd48e5d5991",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|19.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_4132b522eb8d702cbe45d5c04b9a64ee5a0ec41bddedfc4559f44f37f473f453",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|25.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_42b691a11b49783f3e0144a1c7b3bfe10487075304b5a741b26c26ec297c95a6",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|9.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_613d34fb4d6cbe1425f2dc3952039710df8753a3cf19c1c07d99e4c31bb61435",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|24.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_7aa358d6f516773937a7bf9dd21482c2b2b0f239cccb5f55e3e45ea87393b9b7",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|11.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_9522c7de0e350aeb6b6d6bb2dcb1d19840091427ed092c2a65c6b1aca11b5d96",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|18.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_96874f3c2c46eb433d11c4fe42be7bf2a635c543abe988cc749690fbd7dcd68d",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|26.5|under",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_ac7d034937ea2b07155cf8abd853f30a68d56682e92f1f28578c1121e4e725cd",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|12.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b5a07236cc61e7ce9beed269dcd959143e01c217b8b97c1abd1bfae7ae898590",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|23.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b81011e20b74dfb4c6a5bb063e75190e4c84ddcb9a8749d6c01361ea3ce99e6f",
+      "match_key": "id:209755",
+      "candidate_key": "set3_win|mika_brunold",
+      "market": "set3_winner",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_b8f43c1722eb6b319f27a547f0dcdeadd34e87ccdd16d7292fd68c129be1e2ff",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|10.5|under",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_bc06a38a84320811bdc38f639362a864c47b941d300a0c334b64190b0df659b5",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|8.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_bdfbe7cf12d60c3bad6bc96086f950a7db28445800d1efcef63ff36a6320e602",
+      "match_key": "id:209755",
+      "candidate_key": "state|6|3:3",
+      "market": "game_state",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_be82b9ab9192ff924b611dbb504172644f8e096e1ec3a82d04c8e1feef872bc5",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|20.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_c4a2176751596c62e09bf8d34c2f682af4a345036a765ddf14bbf509cdf12f3e",
+      "match_key": "id:209755",
+      "candidate_key": "total_sets|2_sety",
+      "market": "total_sets",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_c66ad1390b89d542286701db8a51b3eac01a0dd258a3a0ae8b160bdbff57b0a7",
+      "match_key": "id:209755",
+      "candidate_key": "set1_win|mika_brunold",
+      "market": "set1_winner",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_d093c94991a9bb9c79cc67a5246e05c4a6f1e41fa76f205f35357e202c59bade",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|25.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_da7f0a7c64ea7a53911f23ea8d5c8d7d81c85dc432221590f583aa3da8dbb904",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|22.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_e3e7f446a39e43492b394359345611c7937c9112d5637de0cb9e84c3c563b87e",
+      "match_key": "id:209755",
+      "candidate_key": "set1_total|10.5|over",
+      "market": "set1_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_f9c7bda4da75a10aced8b3edf0840d802265e3623981e0092cd4ff7933b1ef81",
+      "match_key": "id:209755",
+      "candidate_key": "match_total|21.5|over",
+      "market": "match_total",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
+    },
+    {
+      "prediction_id": "pred_fc3b18e1102c1c3028760a67f2d6accd77e7bcedf3ab10615cac15a98a1518c3",
+      "match_key": "id:209755",
+      "candidate_key": "match_win|mika_brunold",
+      "market": "match_winner",
+      "scheduled_time": "2026-10-25T14:00:00+00:00",
+      "ledger_captured_at": "2026-10-24T18:21:25.619035+00:00",
+      "common_current_catboost_tabpfn": false,
+      "population_facts": {
+        "ALL": true,
+        "PLAYABLE": null,
+        "SYMPHONY_SELECTED": null,
+        "INEED_SELECTED": null,
+        "status": "EXACT_SELECTION_ROW",
+        "playable_status": "N/D",
+        "symphony_status": "N/D",
+        "ineed_status": "N/D"
+      },
+      "settlement": {
+        "status": "N/D",
+        "result": null,
+        "reason": "EXACT_HISTORY_MATCH_NOT_TERMINAL",
+        "settlement_owner": "signal_settlement",
+        "terminal_result_owner": "live_history_settle"
+      }
     }
   ],
   "summary": {
-    "rows": 89424,
+    "rows": 89575,
     "settlement_results": {
       "hit": 13331,
       "miss": 8493,
       "void": 3375,
-      "N/D": 64225
+      "N/D": 64376
     },
     "exact_history_match_keys": 2500,
-    "common_current_catboost_tabpfn": 7905,
+    "common_current_catboost_tabpfn": 7916,
     "common_binary_settled": 2533,
     "common_void": 271,
     "common_set_status": "HAS_SETTLED_COMMON_ROWS",
     "population_reports": {
       "ALL": {
-        "rows": 89424,
-        "common_model_rows": 7905,
+        "rows": 89575,
+        "common_model_rows": 7916,
         "common_binary_settled_rows": 2533,
         "common_void_rows": 271,
         "hit_rate": 0.73786,
@@ -2499675,8 +2503601,8 @@
         }
       },
       "PLAYABLE": {
-        "rows": 40913,
-        "common_model_rows": 4136,
+        "rows": 40989,
+        "common_model_rows": 4144,
         "common_binary_settled_rows": 1209,
         "common_void_rows": 119,
         "hit_rate": 0.745244,
