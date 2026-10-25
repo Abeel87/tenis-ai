@@ -446,6 +446,30 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 **Twarda zasada:** obecny przebudowany Neuron zostaje; stary NEURO/Neutron pozostaje usunięty.
 
+**Kanoniczni właściciele i dowód uczenia (2026-10-25):**
+- `backend/neuron.py train` wykonuje pełny trening od stałego seeda; `current`
+  tylko używa istniejących wag. Architektura, optymalizator, podział dat i wzory
+  probability/Elo pozostają bez zmian. Kanoniczna higiena historii odrzuca
+  nieukończone mecze; wejścia nie obejmują dzisiejszych ani przyszłych dat.
+- Każdy trening zapisuje hash efektywnego modelu i zbioru cech, granice
+  TRAIN/VAL/TEST, historię przyjętych treningów oraz opisowe porównanie starej
+  i nowej wersji na wspólnym niewidzianym zbiorze. Wiersze lustrzane nie są
+  niezależnymi meczami. Nowe dane w TEST nie oznaczają uczenia wag na tych danych.
+- Bramka jakości obowiązuje wszystkie wyzwalacze treningu. Odrzucony kandydat
+  nie zastępuje aktywnego modelu. Workflow archiwizuje kandydata, metryki,
+  faktyczne macierze treningowe i prognozy również przy błędzie publikacji.
+- `current` zamraża pierwszy pre-match snapshot dla wersji modelu i dokładnego
+  fixture w `data/neuron_predictions/YYYY-MM.json`; brak historii/startu/ID
+  oznacza NO_SCORE. `evaluate` konsumuje wyłącznie dokładne kanoniczne wyniki
+  przez `prediction_ledger_settlement_shadow` / `signal_settlement` i nie
+  zmienia historii ani settlementu innych modułów.
+- `scripts/publish_neuron_shadow.py` jest jedynym publisherem workflow:
+  normalny fast-forward na świeżym main, bez rebase wygenerowanego JSON;
+  chroni niezmienne prognozy, nowszy model i pliki innych właścicieli.
+- UI rozdziela trening, scoring i wyniki prospektywne Neuron/Elo. Brak
+  rozliczonych prognoz = N/D. Bez automatycznej promocji i bez deklaracji zysku.
+  Dowody i ograniczenia: `audits/neuron_learning_integrity_20261025.md`.
+
 ---
 
 ## B16. Symfonia 2.0

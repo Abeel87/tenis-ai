@@ -25,6 +25,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**NEURON LEARNING INTEGRITY — 2026-10-25 / LOCAL VALIDATION COMPLETE, CI NEXT**
+- AUTHORIZATION: after the audit the owner explicitly requested all necessary
+  repairs. Preserve model mathematics and SHADOW/PROD separation; no real betting.
+- TASK/BRANCH: `fix/neuron-learning-integrity-20261025`; base main
+  `d099d9ca41aca89a83410b181e9901b49f9e4a5d`, rechecked live during implementation.
+- [x] Read canonical contracts; inspect fresh main, open PRs and workflow logs.
+- [x] Audit: 23 October training succeeded but publication lost the candidate;
+  25 October scoring reused 22 October weights. Source evidence and limitations
+  are in `audits/neuron_learning_integrity_20261025.md`.
+- [x] Four failing reproductions before canonical repair: future history,
+  started fixtures, invented missing-player score and rejected-model overwrite.
+- [x] Canonical source repair, immutable Neuron/Elo forecast evidence, shared
+  exact outcome evaluation, race-safe publication and always-preserved artifacts.
+- [x] Pinned-dependency targeted tests initially 35 passed; further provenance
+  checks added. Real isolated preflight trained new weights, passed quality,
+  and captured 55 pre-match forecasts without mutating deployed data.
+- [x] Static and runtime UI smoke; actual bridge distinguishes scoring/training,
+  N/D from zero and frozen model identity. Model/split/metrics ASTs unchanged.
+- [x] Full regression: 1801 passed in 55.34s with pinned dependencies and
+  published-data isolation intact. Updated exact UI source-line registry and
+  PWA cache-version assertions; no guard was bypassed.
+- [ ] Publish PR, all required CI, fresh-main integration, green merge.
+- [ ] Verify main training publication, durable evidence, Pages/private delivery.
+- DO NOT REDO: prior production repairs #553/#554/#555; unrelated open PRs;
+  old-model retraining for the historical audit; no synthetic live-ledger backfill.
+- NEXT EXACT ACTION: publish source-only PR, merge only green
+  after fresh-main check, inspect actual new main training/scoring/delivery output.
+- LIMITS: preflight results are not deployment; common old/new cohort is only
+  17 matches and candidate Brier is worse. Prospective quality needs future
+  resolved matches. Train still uses chronological TRAIN/VAL/TEST; no online fit.
+
+### Prior checkpoint (completed; retained as evidence)
+
 **RUNTIME DELIVERY, SYMPHONY EVIDENCE AND CORE FRESHNESS — 2026-10-23 / PRODUCTION VERIFIED**
 - AUTHORIZATION: owner requested all demonstrated health problems repaired after
   the audit. Includes exact semantic settlement defects, not probability tuning,

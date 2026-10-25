@@ -101,6 +101,28 @@ if(readinessMeta){
 }
 const neuron=await ctx.TENIS_AI_NEURON_DATA.summary();
 if(neuron?.status){assert(overview.includes(neuron.status),'Read real published Neuron artifact');if(!neuron.generated_at&&!neuron.updated_at)assert(overview.includes('świeżość niepotwierdzona'),'Do not fabricate freshness without timestamp')}
+assert(overview.includes('Wyniki prognoz zapisanych przed meczem'));
+if(!neuron.prospective?.settled_matches)assert(overview.includes('Zbieranie wyników.'));
+// Scoring refresh must not turn into a new training date or invented live accuracy.
+{
+ let current={generated_at:'2026-10-25T12:00:00Z',model_trained_at:'2026-10-22T08:00:00Z',model_id:'frozen-model',matches:[],prospective:{settled_matches:0,pending_matches:3,neuron:null,elo:null}};
+ const training={generated_at:'2026-10-22T08:00:00Z',test:{accuracy:.64},training_history:[{generated_at:'2026-10-22T08:00:00Z'}]};
+ const isolated={window:{TenisPresentation:{json:async path=>path.includes('current')?current:training}}};
+ vm.createContext(isolated);vm.runInContext(read('neuron-data-bridge.js'),isolated);
+ const bridge=isolated.window.TENIS_AI_NEURON_DATA;
+ let summary=await bridge.summary();
+ assert.equal(summary.last_training_at,training.generated_at);
+ assert.equal(summary.prospective.neuron,null);
+ assert.equal(summary.prospective.settled_matches,0);
+ current={...current,generated_at:'2026-10-25T14:00:00Z',prospective:{settled_matches:1,pending_matches:2,neuron:{accuracy:0,brier:.64},elo:{accuracy:1,brier:.16}}};
+ summary=await bridge.summary(true);
+ assert.equal(summary.last_scoring_at,current.generated_at);
+ assert.equal(summary.last_training_at,training.generated_at);
+ assert.equal(summary.model_id,'frozen-model');
+ assert.equal(summary.prospective.neuron.accuracy,0);
+ assert.equal(summary.prospective.elo.accuracy,1);
+ assert.equal(summary.training_history.length,1);
+}
 assert(!/\d{4}-\d{2}-\d{2}T\d{2}:/.test(overview),'Overview formats timestamps');
 const technicalView=await route('#admin/models');
 assert(technicalView.includes('data/neuron_current.json'));

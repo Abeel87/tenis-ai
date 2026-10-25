@@ -55,6 +55,6 @@ def test_pwa_precaches_admin_research_panel_and_retains_fresh_data_policy():
     sw = (FRONT / "sw.js").read_text(encoding="utf-8")
     assert "'app.js'" in sw
     assert "self-evolution-ui.js" not in sw
-    assert "tenis-ai-mobile-presentation-20261016-reliability" in sw
+    assert "tenis-ai-mobile-presentation-20261025-neuron" in sw
     assert "u.pathname.includes('/data/')" in sw
     assert "fetch(r,{cache:'no-store'})" in sw
