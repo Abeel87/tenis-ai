@@ -227,9 +227,10 @@ def test_more_test_matches_do_not_masquerade_as_new_training_inputs():
 
 def test_scoring_does_not_modify_model_or_training_metrics(tmp_path, monkeypatch):
     class Clock(datetime):
+        delayed = False
         @classmethod
         def now(cls, tz=None):
-            return cls(2026, 10, 25, 10, tzinfo=timezone.utc)
+            return cls(2026, 10, 25, 10, 0, 10 if cls.delayed else 0, tzinfo=timezone.utc)
     model = json.loads(Path('frontend/data/neuron_model.json').read_text())
     data = tmp_path / 'frontend/data'; data.mkdir(parents=True)
     model_path = data / 'neuron_model.json'; report_path = data / 'neuron_metrics.json'
@@ -239,17 +240,26 @@ def test_scoring_does_not_modify_model_or_training_metrics(tmp_path, monkeypatch
     raw = pd.concat([raw, future], ignore_index=True)
     fixtures = [{'id': 1, 'p1': 'Audit Alpha', 'p2': 'Audit Beta', 'scheduled_time': '2026-10-25T12:00:00Z'},
                 {'id': 2, 'p1': 'New One', 'p2': 'New Two', 'scheduled_time': '2026-10-25T12:00:00Z'},
-                {'id': 3, 'p1': 'Audit Alpha', 'p2': 'Audit Beta', 'scheduled_time': '2026-10-25T09:00:00Z'}]
+                {'id': 3, 'p1': 'Audit Alpha', 'p2': 'Audit Beta', 'scheduled_time': '2026-10-25T09:00:00Z'},
+                {'id': 4, 'p1': 'Audit Alpha', 'p2': 'Audit Beta', 'scheduled_time': '2026-10-25T10:00:05Z'}]
     (data / 'results.json').write_text(json.dumps(fixtures))
     for name, value in {'ROOT': tmp_path, 'DATA': data, 'MODEL': model_path, 'METRICS': report_path,
                         'CURRENT': data / 'neuron_current.json', 'datetime': Clock}.items():
         monkeypatch.setattr(n, name, value)
     monkeypatch.setattr(n, 'load_history', lambda: (raw, [], {'fresh_sources': 11, 'missing_sources': 0}))
+    predict = n.Model.predict
+    def slow_predict(self, *args):
+        result = predict(self, *args)
+        Clock.delayed = True
+        return result
+    monkeypatch.setattr(n.Model, 'predict', slow_predict)
     before = model_path.read_bytes(), report_path.read_bytes()
     result = n.current()
     assert (model_path.read_bytes(), report_path.read_bytes()) == before
-    assert [row['status'] for row in result['matches']] == ['SHADOW_SCORE', 'NO_SCORE', 'NO_SCORE']
+    assert [row['status'] for row in result['matches']] == ['SHADOW_SCORE', 'NO_SCORE', 'NO_SCORE', 'NO_SCORE']
     assert result['excluded_same_day_or_future'] == 1
-    assert result['no_score_reasons'] == {'NO_PLAYER_HISTORY': 1, 'MATCH_NOT_PREMATCH': 1}
+    assert result['no_score_reasons'] == {'NO_PLAYER_HISTORY': 1, 'MATCH_NOT_PREMATCH': 2}
     assert result['prospective']['forecast_snapshots'] == 1
+    assert 'p1_win_probability' not in result['matches'][3]
+    assert next(iter(n.load_predictions().values()))['captured_at'] == '2026-10-25T10:00:10+00:00'
     assert n.current()['prospective']['forecast_snapshots'] == 1

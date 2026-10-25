@@ -479,6 +479,7 @@ def current():
     raw,warn,info=load_history(); arrays,st,meta=build(raw,False,cutoff=now.date().isoformat())
     history_sha=dataset_identity(arrays); src=read_json(DATA/'results.json'); rows=[]
     if not isinstance(src,list): raise RuntimeError('results.json is not a list')
+    now=datetime.now(timezone.utc)
     for x in src:
         if not isinstance(x,dict): continue
         row={'match_id':x.get('match_id') or x.get('id'),'p1':x.get('p1') or x.get('player1'),'p2':x.get('p2') or x.get('player2'),
@@ -495,7 +496,16 @@ def current():
         except ValueError as error:
             row.update({'status':'NO_SCORE','reason':str(error)})
         rows.append(row)
-    frozen=freeze_predictions(load_predictions(),rows,model_id,mp.get('generated_at'),now.isoformat(),history_sha)
+    existing=load_predictions()
+    # Timestamp the completed forecast, not the earlier download start. A fixture
+    # that starts during computation cannot enter the prospective sample.
+    now=datetime.now(timezone.utc)
+    for row in rows:
+        if row['status']=='SHADOW_SCORE' and utc(row['scheduled_time'])<=now:
+            row.update({'status':'NO_SCORE','reason':'MATCH_NOT_PREMATCH'})
+            for field in ('p1_win_probability','p2_win_probability','elo_p1_win_probability','feature_snapshot'):
+                row.pop(field,None)
+    frozen=freeze_predictions(existing,rows,model_id,mp.get('generated_at'),now.isoformat(),history_sha)
     save_predictions(frozen)
     out={**flags(),'operator_playable':False,'generated_at':now.isoformat(),'model_id':model_id,
          'model_trained_at':mp.get('generated_at'),'source':info,'source_warnings':warn,

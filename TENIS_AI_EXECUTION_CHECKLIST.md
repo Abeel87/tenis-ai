@@ -38,12 +38,14 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   started fixtures, invented missing-player score and rejected-model overwrite.
 - [x] Canonical source repair, immutable Neuron/Elo forecast evidence, shared
   exact outcome evaluation, race-safe publication and always-preserved artifacts.
+- [x] Additional red/green regression: a fixture starting while predictions are
+  computed must not be captured with the earlier download-start timestamp.
 - [x] Pinned-dependency targeted tests initially 35 passed; further provenance
   checks added. Real isolated preflight trained new weights, passed quality,
   and captured 55 pre-match forecasts without mutating deployed data.
 - [x] Static and runtime UI smoke; actual bridge distinguishes scoring/training,
   N/D from zero and frozen model identity. Model/split/metrics ASTs unchanged.
-- [x] Full regression: 1802 passed in 62.39s with pinned dependencies and
+- [x] Full regression: 1802 passed in 57.65s with pinned dependencies and
   published-data isolation intact. Updated exact UI source-line registry and
   PWA cache-version assertions; no guard was bypassed.
 - [x] Publish PR #557. Initial Neuron training, artifact retention, browser and

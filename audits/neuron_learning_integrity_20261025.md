@@ -53,6 +53,9 @@ monthly repository partitions. Repeated scoring cannot overwrite a frozen
 prediction. Evaluation consumes canonical exact terminal evidence through the
 existing shared settlement functions. Ambiguous identity, unproven times or
 missing provenance remain N/D. No historical forecasts are backfilled.
+The capture clock is sampled after computation and ledger loading; fixtures
+starting during processing are rejected. A delayed-clock regression first
+reproduced a falsely pre-match row, then passed after this boundary repair.
 
 Overall reporting counts the earliest forecast per fixture once, with separate
 per-model cohorts. Training history, scoring time and prospective results are
@@ -108,7 +111,7 @@ tests cover those failures, evidence immutability, exact settlement, missing
 metrics, concurrent Git writes and source/model conflicts. The live checkpoint
 records full-suite, CI, merge and runtime verification as each completes.
 
-Local full regression on pinned requirements: **1802 passed in 62.39s**, with
+Local full regression on pinned requirements: **1802 passed in 57.65s**, with
 published-data isolation intact. Static and runtime UI smoke passed. Existing
 source-line registry and PWA-cache assertions were updated for the changed UI;
 their readiness/data-freshness contracts remain intact.
