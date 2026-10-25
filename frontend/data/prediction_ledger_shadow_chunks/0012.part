@@ -427301,6 +427301,82 @@ v8.4B"
     },
     {
       "schema_version": "prediction-ledger-shadow-v1",
+      "prediction_id": "pred_be5b1951852fe541a2a304b61c7fec0b73d1178614ffad8334c9b898cb31427f",
+      "mode": "SHADOW_ONLY",
+      "capture_stage": "PRE_SELECTION",
+      "population_tags": [
+        "ALL"
+      ],
+      "match_key": "id:210087",
+      "candidate_identity": "state|4|3:1",
+      "candidate_key": "state|4|3:1",
+      "market": "game_state",
+      "pick": "3:1",
+      "line": null,
+      "scheduled_time": "2026-10-26T15:00:00+00:00",
+      "captured_at": "2026-10-25T22:06:03.185976+00:00",
+      "producer": {
+        "owner": "autolearn_v84",
+        "version": "v8.4B"
+      },
+      "score_semantics": "probability_0_1",
+      "model_scores": {
+        "current": {
+          "available": true,
+          "value": 0.355250460156,
+          "owner": "current_engine",
+          "version": "autolearn_calibrated_current"
+        },
+        "catboost": {
+          "available": true,
+          "value": 0.375334053933,
+          "owner": "catboost_autolearn",
+          "version": "catboost_v84"
+        },
+        "tabpfn": {
+          "available": false,
+          "value": null,
+          "owner": "tabpfn_challenger",
+          "version": "TabPFN-2_V2"
+        }
+      },
+      "context_snapshot_sha256": "sha256:d1d13d50ea2ac680505fbc58c147a252a97b5061d42628ddff97e86349cd901c",
+      "context_snapshot_provenance": "autolearn_v84.current_rows_pre_selection",
+      "readiness_snapshot": {
+        "mode": "SHADOW_READINESS_SEMANTICS_AUDIT_ONLY",
+        "available": true,
+        "status": "READINESS_SEMANTICS_SHADOW_EVIDENCE_READY",
+        "reason": "EXACT_RESULTS_SNAPSHOT_ALIGNED",
+        "generated_at": "2026-10-25T21:10:10.818368+00:00",
+        "results_snapshot_contract": "canonical-json-sha256-v1",
+        "results_snapshot_sha256": "8bce49fcfdc559c63ceadd7cb21c2568d46d60c1ef2f7c130d5a80119166c53f"
+      },
+      "selection_facts": {
+        "model_available": {
+          "current": true,
+          "catboost": true,
+          "tabpfn": false
+        },
+        "generator_selected": null,
+        "playable": null,
+        "symphony_selected": null,
+        "ineed_selected": null
+      },
+      "production_influence": false,
+      "runtime_gating_enabled": false,
+      "learning_consumer_enabled": false,
+      "telemetry_consumer_enabled": false,
+      "settlement_enabled": false,
+      "settlement": {
+        "key": "id:210087::state|4|3:1",
+        "result": null,
+        "source": null,
+        "settled_at": null
+      },
+      "immutable_after_match_start": true
+    },
+    {
+      "schema_version": "prediction-ledger-shadow-v1",
       "prediction_id": "pred_befce3bf9a5e7e48151bc76e5ef851923645d8d776637e6031d7d3d55136aa4f",
       "mode": "SHADOW_ONLY",
       "capture_stage": "PRE_SELECTION",
@@ -441028,16 +441104,16 @@ v8.4B"
     }
   ],
   "summary": {
-    "rows": 91763,
-    "captured_this_run": 7,
+    "rows": 91764,
+    "captured_this_run": 1,
     "population_counts": {
-      "ALL": 91763,
+      "ALL": 91764,
       "PLAYABLE": null,
       "SELECTED": null
     },
     "model_available_counts": {
-      "current": 91763,
-      "catboost": 91763,
+      "current": 91764,
+      "catboost": 91764,
       "tabpfn": 8073
     },
     "common_current_catboost_tabpfn": 8073
