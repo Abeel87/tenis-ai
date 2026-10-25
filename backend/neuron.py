@@ -530,7 +530,10 @@ def settle_predictions(rows, history, now=None):
         if row.get('settlement',{}).get('status')=='SETTLED':
             result[pid]=updated; continue
         evidence=index.get(row['match_key']) or []
-        if len(evidence)==1:
+        fact=_settlement_fact(row,index)
+        # Pending canonical fixtures have no terminal timestamp or participants
+        # yet. Apply extra terminal checks only after the owner finds a result.
+        if fact.get('status')=='SETTLED':
             if (utc(evidence[0].get('scheduled_time')) is None
                     or utc(evidence[0].get('settled_at')) is None):
                 updated['settlement']={'status':'N/D','result':None,'reason':'INVALID_SETTLEMENT_TIME'}
@@ -540,7 +543,6 @@ def settle_predictions(rows, history, now=None):
             if participants!=(key(row['p1']),key(row['p2'])):
                 updated['settlement']={'status':'N/D','result':None,'reason':'EXACT_PARTICIPANT_CONFLICT'}
                 result[pid]=updated; continue
-        fact=_settlement_fact(row,index)
         if fact.get('status')=='SETTLED':
             settled=utc(fact.get('settled_at'))
             if settled is None or settled>now:

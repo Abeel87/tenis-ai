@@ -72,6 +72,10 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    await page.locator('[data-report="data/neuron_metrics.json"]').click();
    await page.locator('#report-data .report-row').first().waitFor();
    assert.equal(await page.locator('#app pre, #app code').count(),0,'Reports must render human-readable fields');
+   // Real reports grow as provenance is added; exercise the public pagination
+   // control instead of assuming historical metrics are in the first page.
+   const more=page.locator('#report-data > .readable-report > details > .report-content > [data-report-more]');
+   while(await more.count())await more.click();
    const nested=page.locator('#report-data details[data-report-node]').filter({has:page.locator('summary',{hasText:'Test historyczny'})}).last();
    await nested.locator(':scope > summary').click();
    await nested.locator('.report-row').first().waitFor();

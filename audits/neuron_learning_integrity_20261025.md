@@ -118,3 +118,96 @@ their readiness/data-freshness contracts remain intact.
 
 No claim of profitable betting, statistical superiority or SHADOW-to-PROD
 readiness follows from these results.
+
+## Observed main rollout
+
+PR #557 merged after all nine workflows passed, at source merge
+`2536ba6d8d63fc4fa81059d22e4fa93338cdbd0e`. Final PR head was
+`c62ef88c123c7cb26e1f1e4f72342b264d963fc0`; fresh main still equalled the
+validated base at merge. Remote full regression: 1802 passed in 51.64s.
+
+Main run `40231944423`, neuron job `121285345032`, completed actual training,
+quality gating, scoring, evaluation and publication. Training finished at
+2026-10-25 20:43:10 UTC; forecast capture at 20:43:31 UTC. Publication succeeded
+on attempt one as `30510e7276e8885e463960c57fc586507be4f5c3`.
+
+The independently recomputed published model identity is
+`neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c`.
+Compared with the actually published 22 October model, all 7,095 parameters
+changed, with maximum absolute difference 0.28548117.
+It matches weights, metrics and forecasts, and the stored source hash matches
+merged backend/neuron.py. Main test metrics reproduce the preflight values in
+the table above. Binary hashes can differ across numerical environments even
+with equivalent metrics; a hash change alone is not a quality-improvement claim.
+Here preflight/main used the same dataset hash and differed by at most
+6.38e-16 in 5,811 of 7,095 parameters, with identical reported test metrics.
+
+The real monthly ledger contains 53 unique immutable pre-match predictions,
+with model-training time <= capture time < scheduled start. At publication,
+51 already-started fixtures and 14 without player history were NO_SCORE. All
+53 predictions were pending, zero settled; prospective metrics remained N/D.
+
+Artifact `12613153312` (`neuron-evidence-40231944423-1`, 4,751,212 bytes) preserves
+the actual candidate, metrics, dataset and forecasts. No preflight forecasts
+were used as main evidence.
+
+Pages job `121285882980` completed successfully at 20:47 UTC. Live public sw.js,
+app.js and neuron-data-bridge.js returned HTTP 200 with byte hashes exactly
+matching merged source. Runtime-source artifact `12613711829` and Pages artifact
+`12613467147` preserve the delivered source/payload.
+
+Private delivery run `40232399304`, publish job `121286718159`, checked out
+`30510e7276e8885e463960c57fc586507be4f5c3` and reported
+`RUNTIME_PRIVATE_PUBLISH_OK`: three files and three uploaded objects in the
+Neuron layer at 20:48:18 UTC, generation
+`54d71172-dc66-44a5-be81-445883f48f06`.
+
+
+## Post-publication fixture correction
+
+The parallel core rebuild `40231944352` stopped in its test step (job
+`121286378460`): the synthetic scoring test froze time at 10:00 on 25 October,
+then loaded the actual newly trained model timestamped 20:43. The strict guard
+correctly raised INVALID_FROZEN_MODEL_TIME. This is a moving test-fixture date
+failure; the actual published forecasts passed the independent chronology check.
+
+PR #558 pins a prior training timestamp only on the temporary fixture copy.
+Runtime chronology checks and published weights/metadata remain unchanged.
+The failure was reproduced locally on actual main weights, followed by a full
+**1802 passed in 58.93s** after the test-only correction. The additional backend
+diagnostic correction below triggers a main core rebuild when #558 merges;
+verify that recovery before considering any rerun of `40231944352`.
+
+
+The fresh report also moved its `test` group to field 21, after the presenter's
+existing 20-field page boundary. Browser job `121288120218` failed its old
+first-page assumption. The browser test now exercises the existing "Pokaż
+kolejne" control before opening historical metrics, preserving the nested
+metric assertions and bounded runtime rendering. The GitHub browser gate
+validates this against the actual expanded report.
+
+## Pending-result diagnostics
+
+Read-only replay against canonical history found 46 exact pending entries and
+seven absent exact entries for the 53 actual frozen forecasts. The extra
+terminal timestamp check previously ran before the canonical settlement owner
+had classified a result. As pending fixtures have no settlement timestamp, this
+incorrectly reported INVALID_SETTLEMENT_TIME while still leaving them unsettled.
+
+The canonical owner now classifies the evidence first. Extra strict timestamp
+and participant checks apply only to terminal evidence. A regression reproduced
+the wrong reason before the repair. Replay then reports 46
+EXACT_HISTORY_MATCH_NOT_TERMINAL and seven NO_EXACT_HISTORY_MATCH. All frozen
+forecast fields are byte-equivalent as JSON values; zero are settled and metrics
+remain N/D. No settlement formula or terminal guard was relaxed.
+
+Full regression after this correction: **1803 passed in 57.31s**. Main then
+advanced to market-only `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; the combined
+tree passed **1803 tests in 56.10s** before final CI/merge. Model/training inputs
+were not changed by that market refresh.
+
+The subsequent readiness update `13fd3b976f8e25109d644806490ee25c4aefdec7`
+changes only its generation timestamp and source digest. It was also integrated;
+stable combined-tree full regression passed **1803 tests in 57.23s**. Chromium
+job `121290717435` independently confirms the pagination correction for user,
+moderator and admin. The final combined head is checked again in PR #558.

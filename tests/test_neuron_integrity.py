@@ -162,6 +162,16 @@ def test_conflicting_participants_and_duplicate_history_fail_closed():
     assert next(iter(rows.values()))['settlement']['reason'] == 'AMBIGUOUS_EXACT_HISTORY_MATCH'
 
 
+def test_pending_canonical_fixture_is_awaiting_a_result_not_invalid_provenance():
+    evidence = terminal_history()
+    evidence[0].update({'status': 'pending', 'result': None, 'settled_at': None})
+    rows = n.settle_predictions(frozen_rows(), evidence)
+    fact = next(iter(rows.values()))['settlement']
+    assert fact['status'] == 'N/D' and fact['result'] is None
+    assert fact['reason'] == 'EXACT_HISTORY_MATCH_NOT_TERMINAL'
+    assert n.summarize_predictions(rows)['pending_matches'] == 1
+
+
 def test_ledger_refuses_corruption_instead_of_resetting_history(tmp_path, monkeypatch):
     monkeypatch.setattr(n, 'ROOT', tmp_path)
     rows = frozen_rows()
@@ -232,6 +242,9 @@ def test_scoring_does_not_modify_model_or_training_metrics(tmp_path, monkeypatch
         def now(cls, tz=None):
             return cls(2026, 10, 25, 10, 0, 10 if cls.delayed else 0, tzinfo=timezone.utc)
     model = json.loads(Path('frontend/data/neuron_model.json').read_text())
+    # This temporary fixture has a frozen clock; a later runtime training must
+    # not import its moving timestamp into the synthetic pre-match scenario.
+    model['generated_at'] = '2026-10-24T10:00:00Z'
     data = tmp_path / 'frontend/data'; data.mkdir(parents=True)
     model_path = data / 'neuron_model.json'; report_path = data / 'neuron_metrics.json'
     model_path.write_text(json.dumps(model)); report_path.write_text('{"training": "unchanged"}')
