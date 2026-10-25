@@ -174,9 +174,9 @@ failure; the actual published forecasts passed the independent chronology check.
 PR #558 pins a prior training timestamp only on the temporary fixture copy.
 Runtime chronology checks and published weights/metadata remain unchanged.
 The failure was reproduced locally on actual main weights, followed by a full
-**1802 passed in 58.93s** after the test-only correction. Core recovery uses a
-rerun of the failed jobs from `40231944352` after merge; consult its latest
-attempt and PR #558 for the observed execution result.
+**1802 passed in 58.93s** after the test-only correction. The additional backend
+diagnostic correction below triggers a main core rebuild when #558 merges;
+verify that recovery before considering any rerun of `40231944352`.
 
 
 The fresh report also moved its `test` group to field 21, after the presenter's
@@ -185,3 +185,23 @@ first-page assumption. The browser test now exercises the existing "Pokaż
 kolejne" control before opening historical metrics, preserving the nested
 metric assertions and bounded runtime rendering. The GitHub browser gate
 validates this against the actual expanded report.
+
+## Pending-result diagnostics
+
+Read-only replay against canonical history found 46 exact pending entries and
+seven absent exact entries for the 53 actual frozen forecasts. The extra
+terminal timestamp check previously ran before the canonical settlement owner
+had classified a result. As pending fixtures have no settlement timestamp, this
+incorrectly reported INVALID_SETTLEMENT_TIME while still leaving them unsettled.
+
+The canonical owner now classifies the evidence first. Extra strict timestamp
+and participant checks apply only to terminal evidence. A regression reproduced
+the wrong reason before the repair. Replay then reports 46
+EXACT_HISTORY_MATCH_NOT_TERMINAL and seven NO_EXACT_HISTORY_MATCH. All frozen
+forecast fields are byte-equivalent as JSON values; zero are settled and metrics
+remain N/D. No settlement formula or terminal guard was relaxed.
+
+Full regression after this correction: **1803 passed in 57.31s**. Main then
+advanced to market-only `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; the combined
+tree passed **1803 tests in 56.10s** before final CI/merge. Model/training inputs
+were not changed by that market refresh.

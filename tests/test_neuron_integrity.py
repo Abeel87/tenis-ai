@@ -162,6 +162,16 @@ def test_conflicting_participants_and_duplicate_history_fail_closed():
     assert next(iter(rows.values()))['settlement']['reason'] == 'AMBIGUOUS_EXACT_HISTORY_MATCH'
 
 
+def test_pending_canonical_fixture_is_awaiting_a_result_not_invalid_provenance():
+    evidence = terminal_history()
+    evidence[0].update({'status': 'pending', 'result': None, 'settled_at': None})
+    rows = n.settle_predictions(frozen_rows(), evidence)
+    fact = next(iter(rows.values()))['settlement']
+    assert fact['status'] == 'N/D' and fact['result'] is None
+    assert fact['reason'] == 'EXACT_HISTORY_MATCH_NOT_TERMINAL'
+    assert n.summarize_predictions(rows)['pending_matches'] == 1
+
+
 def test_ledger_refuses_corruption_instead_of_resetting_history(tmp_path, monkeypatch):
     monkeypatch.setattr(n, 'ROOT', tmp_path)
     rows = frozen_rows()

@@ -32,8 +32,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   from all-green head `c62ef88c123c7cb26e1f1e4f72342b264d963fc0`.
 - FRESH MAIN: immediately before merge, main still matched audited/retested base
   `d099d9ca41aca89a83410b181e9901b49f9e4a5d`; no integration was skipped.
-- CLOSEOUT BRANCH: `docs/neuron-learning-closeout-20261025`. This records observed
-  evidence only. GitHub remains authoritative for its CI/merge state.
+- CLOSEOUT BRANCH: `docs/neuron-learning-closeout-20261025`, PR #558: observed
+  evidence, robust test fixtures and pending-result diagnostics. GitHub remains
+  authoritative for its CI/merge state.
 - [x] Canonical audit and four original failing reproductions; additional
   delayed-clock regression reproduced a match starting during computation.
 - [x] Canonical completed-match hygiene and cutoff; unknown/started fixtures
@@ -78,9 +79,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   beyond the existing 20-field page. Browser job `121288120218` correctly failed
   its old first-page assumption. The test now clicks the existing root pagination
   control before expanding TEST; rendering and assertions remain unchanged.
-- CORE RECOVERY: inspect the latest attempt of run `40231944352` and PR #558.
-  If already green, do not rerun. Otherwise, after #558 is merged, rerun only
-  failed jobs (build checks out fresh main), then verify `Test model` and build.
+- FOLLOW-UP DIAGNOSTICS: ask the canonical settlement owner for a terminal result
+  before checking terminal timestamps/participants. Read-only replay of the 53
+  actual forecasts now reports 46 EXACT_HISTORY_MATCH_NOT_TERMINAL and seven
+  NO_EXACT_HISTORY_MATCH, instead of incorrectly calling pending rows invalid.
+  Frozen forecasts and all metrics are unchanged; terminal guards remain strict.
+- [x] Pending-result regression failed before repair; full local regression after
+  repair: 1803 passed in 57.31s. Fresh main subsequently advanced to market-only
+  `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; combined tree regression also passed:
+  1803 tests in 56.10s. No model/training inputs changed in that update.
+- CORE RECOVERY: inspect PR #558 and the latest main core workflow. Its backend
+  correction triggers an automatic core rebuild after merge; verify `Test model`
+  and the complete build there. Do not duplicate an active/successful recovery.
+  Only if no recovery exists, rerun failed jobs from `40231944352` (fresh checkout).
 - PROSPECTIVE: 53 pending, zero settled; accuracy/Brier correctly N/D. No quality
   improvement over the previous version is claimed. Its common unseen legacy
   cohort has only 17 matches and worse candidate Brier. Old split hashes did not
