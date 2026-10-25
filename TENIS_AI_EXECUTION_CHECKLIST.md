@@ -88,6 +88,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   repair: 1803 passed in 57.31s. Fresh main subsequently advanced to market-only
   `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; combined tree regression also passed:
   1803 tests in 56.10s. No model/training inputs changed in that update.
+- [x] Integrated subsequent readiness timestamp/digest-only main
+  `13fd3b976f8e25109d644806490ee25c4aefdec7`; stable combined-tree full regression:
+  1803 passed in 57.23s. Browser E2E pagination passed for all three account roles
+  in Chromium, job `121290717435`. Final-head CI remains authoritative in #558.
 - CORE RECOVERY: inspect PR #558 and the latest main core workflow. Its backend
   correction triggers an automatic core rebuild after merge; verify `Test model`
   and the complete build there. Do not duplicate an active/successful recovery.

@@ -205,3 +205,9 @@ Full regression after this correction: **1803 passed in 57.31s**. Main then
 advanced to market-only `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; the combined
 tree passed **1803 tests in 56.10s** before final CI/merge. Model/training inputs
 were not changed by that market refresh.
+
+The subsequent readiness update `13fd3b976f8e25109d644806490ee25c4aefdec7`
+changes only its generation timestamp and source digest. It was also integrated;
+stable combined-tree full regression passed **1803 tests in 57.23s**. Chromium
+job `121290717435` independently confirms the pagination correction for user,
+moderator and admin. The final combined head is checked again in PR #558.
