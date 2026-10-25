@@ -154,6 +154,37 @@ The active evidence-capture step uses `backend/superbet_builder_terminal_evidenc
 
 ## 4. Frontend
 
+### Neuron SHADOW training and evidence ownership
+
+`backend/neuron.py` owns full retraining, existing-weight scoring and its
+prospective evidence. `train` uses the existing Model mathematics and date split,
+with canonical completed-match hygiene and an exclusive UTC-day cutoff. It
+archives candidate weights, metrics and the exact feature arrays/split masks;
+only a passing candidate replaces the active model/metrics pair. Model hashes
+exclude refresh timestamps, so a scoring refresh cannot masquerade as learning.
+The metrics record accepted training history, actual split dates, independent
+match counts and descriptive old/new evaluation on a common unseen cohort.
+Separate TRAIN/VAL/TEST hashes distinguish changed fitting/calibration inputs
+from growth of the test cohort. Missing legacy hashes remain unknown; neither a
+new training timestamp nor changed weights alone proves improved quality.
+
+`current` refuses started fixtures, missing exact IDs and players without history.
+It freezes the first pre-match forecast per model/fixture in monthly
+`data/neuron_predictions` partitions, including Neuron and Elo probabilities,
+feature values, source hash and timestamps. `evaluate` reads canonical restored
+history and delegates results to the existing exact settlement owner; it never
+rewrites a forecast or another model's history. Aggregates count a fixture once,
+with separate per-version results. No settled sample means missing metrics.
+
+The existing Neuron workflow trains on its Monday/Thursday schedule and explicit
+push/manual/PR validation; hourly and successful-main-core completion events only
+score/evaluate. Every training trigger uses the same quality gate. Evidence is
+uploaded even on failure. `scripts/publish_neuron_shadow.py` replaces the old inline
+rebase loop with an ordinary fast-forward commit built on freshly fetched main,
+merging immutable ledger rows and preserving all other owners' files. Concurrent
+source/newer-model changes block publication. Neuron remains SHADOW_RESEARCH with
+all production influence and auto-promotion flags false.
+
 The shell also owns the shared readable-report presenter: source values become
 escaped labeled fields, expandable groups and bounded pages without changing
 source data. Report references are cleared on rerender/logout. Solar is implemented
