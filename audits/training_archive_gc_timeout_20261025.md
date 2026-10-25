@@ -82,8 +82,10 @@ SELECT timings, not a claim about complete end-to-end workflow duration.
 - PGlite Storage rows are local test fixtures. Tests cannot call the real Storage
   service or assert real concurrent multi-session behavior. The existing shared
   maintenance mutex/concurrency and claim/finalize design are unchanged.
-- Full Python regression and remote CI/production rollout are recorded in the
-  execution checkpoint; deployment must not be inferred from a migration file.
+- Full Python regression: 1806 passed in 61.03s in an isolated temporary checkout;
+  this includes three new tests proving unchanged surrounding function behavior.
+  Remote CI/production rollout are recorded in the execution checkpoint;
+  deployment must not be inferred from a migration file.
 
 ## Rollout and rollback
 
