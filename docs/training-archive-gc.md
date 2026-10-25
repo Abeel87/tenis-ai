@@ -34,3 +34,25 @@ After successful Storage removal the finalizer revalidates zero references, curr
 ## Deployment drift
 
 The GC Edge Function returns a source-derived SHA-256 `contract_revision`. The GitHub caller fails closed unless the deployed revision exactly matches the canonical function on `main`. Because this repository has no Supabase management access token, source changes to the Edge Function must be deployed explicitly before the GC workflow can pass.
+
+## Query-plan repair (2026-10-25)
+
+The observer and prepare RPC retain their 30-second function budgets. Their
+reference queries use parameterized entry-index lookups for both retained and
+non-complete manifests. `OFFSET 0` is a planner boundary, not a row limit: every
+reference is still checked, including references on unusual terminal states.
+Prepare first identifies unprotected objects lacking a valid grace-ready,
+exact-size Storage match, then finds the manifests referencing those blockers
+through the existing SHA index. The validated entry-to-object foreign key makes
+this equivalent to the former entry-first anti-join.
+
+A large `grace_ready_objects` count does not mean all those objects can already
+be removed. A complete manifest containing even one unprotected immature,
+missing or wrong-size object cannot expire. Any remaining entry reference then
+prevents physical removal. A successful zero-deletion run is valid in that case.
+
+Run `node --test tests/training_archive_gc_postgres.mjs` after `npm ci` for
+isolated PostgreSQL/PLpgSQL retention, rollback, resume and query-plan tests.
+These use a local Storage metadata fixture, not the Storage service. Live
+PostgreSQL 17 read-only query plans and rollout evidence are recorded in
+`audits/training_archive_gc_timeout_20261025.md`.
