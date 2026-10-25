@@ -25,87 +25,83 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**NEURON LEARNING INTEGRITY — 2026-10-25 / SHADOW VERIFIED; CORE TEST FOLLOW-UP**
-- AUTHORIZATION: owner explicitly requested repairs after the audit. Preserve
-  model mathematics and SHADOW/PROD separation; no real betting or promotion.
-- PRIMARY: PR #557 merged as `2536ba6d8d63fc4fa81059d22e4fa93338cdbd0e`
-  from all-green head `c62ef88c123c7cb26e1f1e4f72342b264d963fc0`.
-- FRESH MAIN: immediately before merge, main still matched audited/retested base
-  `d099d9ca41aca89a83410b181e9901b49f9e4a5d`; no integration was skipped.
-- CLOSEOUT BRANCH: `docs/neuron-learning-closeout-20261025`, PR #558: observed
-  evidence, robust test fixtures and pending-result diagnostics. GitHub remains
-  authoritative for its CI/merge state.
-- [x] Canonical audit and four original failing reproductions; additional
-  delayed-clock regression reproduced a match starting during computation.
-- [x] Canonical completed-match hygiene and cutoff; unknown/started fixtures
-  become NO_SCORE; every training trigger gates candidate acceptance.
-- [x] Effective model and separate TRAIN/VAL/TEST hashes, explicit split dates,
-  descriptive common holdout, immutable prospective Neuron/Elo forecasts and
-  canonical exact settlement. Growing TEST alone cannot masquerade as learning.
-- [x] Race-safe normal fast-forward publication and archives retained on failure.
-- [x] Model, chronological split, metrics and Elo mathematics preserved.
-- [x] Local full regression: 1802 passed in 57.65s; UI static/runtime smoke passed.
-- [x] Final-head CI: all nine workflows successful, including browser E2E,
-  dependencies/security, CodeQL, Symphony, four logic audits and Neuron training.
-  Health run `40231403881` / job `121283906004`: 1802 passed in 51.64s.
-  Neuron run `40231403871`: 40 focused tests and real training gate passed.
-- [x] Main run `40231944423` / job `121285345032`: actual training, gate,
-  scoring, exact outcome evaluation and publication all SUCCESS.
-- [x] Published model/metrics at 20:43:10 UTC, scoring at 20:43:31 UTC;
-  data commit `30510e7276e8885e463960c57fc586507be4f5c3`, first push attempt.
-  Effective model ID:
+**NEURON LEARNING INTEGRITY — 2026-10-25 / VERIFIED IN SHADOW**
+- AUTHORIZATION: owner requested repairs after the learning audit. Model
+  mathematics, thresholds and SHADOW/PROD rules remain unchanged.
+- COMPLETED: PR #557 source repair merged as
+  `2536ba6d8d63fc4fa81059d22e4fa93338cdbd0e`; PR #558 follow-up merged as
+  `f397b80979c2bbb48879f4bd61dbaa4fd7f09ac7`.
+- FINAL FOLLOW-UP HEAD: `ac14866533fc5cfc7e112bacff6f07adb2cd17ee`; all eight
+  workflows green, including Chromium, dependencies, CodeQL and actual training.
+  CI health job `121294221251`: 1803 tests in 50.56s. Fresh main immediately
+  before merge still matched integrated `13fd3b976f8e25109d644806490ee25c4aefdec7`.
+- LAST VERIFIED DATA MAIN: `8b873abf76b3b69d07ded35f8341c3c03a711e2d`.
+  Documentation closeout branch: `docs/neuron-learning-verified-20261025`;
+  GitHub remains authoritative for this documentation-only PR's CI/merge.
+- [x] Reproduced and repaired future state, missing player history, started
+  fixtures, rejected-candidate overwrite and delayed capture during computation.
+- [x] Canonical completion hygiene, exclusive UTC-day cutoff, all-trigger
+  candidate gate, candidate/dataset archives retained after failure, and normal
+  fast-forward publication that preserves other owners' files and frozen evidence.
+- [x] Effective model and separate TRAIN/VAL/TEST hashes; explicit fitting,
+  calibration and test dates; input-change flags and descriptive common holdout.
+  TEST growth alone is not new fitting input; a hash change is not quality proof.
+- [x] Immutable prospective Neuron/Elo forecasts, exact canonical settlement,
+  one earliest forecast per fixture in aggregate results, per-model cohorts,
+  N/D for absent results, and separate training/scoring/prospective UI.
+- [x] Follow-up clock fixture and report pagination corrections verified; pending
+  canonical fixtures are classified before terminal provenance checks. All
+  terminal guards and frozen forecast fields remain strict and unchanged.
+- [x] Full local regression 1803 passed (57.23s) on the integrated final tree.
+- [x] Main training run `40235360598`, neuron job `121295648927`, and Pages
+  job `121296164884`: SUCCESS. Training 21:26:21 UTC; publication
+  `563c9f81d45ae79a231977860560ba9ffda9c83a`, first push attempt.
+- [x] Initial repaired training at 20:43 changed all 7,095 parameters relative
+  to the published 22 October model. The 21:26 repeat used identical TRAIN/VAL/
+  TEST inputs and reproduced identical weights. Report correctly says UNCHANGED,
+  model_parameters_changed=false and quality_improvement_proven=false.
+- ACTIVE MODEL:
   `neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c`.
-- [x] Independently recomputed model hash from published weights; matched source
-  code SHA and validated all 53 immutable, unique, strictly pre-match forecasts.
-  Frozen monthly ledger is tracked; no isolated preflight rows were copied in.
-- [x] Test on 2657 independent matches: accuracy 0.65035755 vs Elo 0.61272111;
-  Brier 0.21669280 vs 0.22823344. All source/quality checks passed.
-- [x] Main evidence artifact `12613153312`, `neuron-evidence-40231944423-1`,
-  4,751,212 bytes; candidate, metrics, exact feature arrays and predictions kept.
-- [x] Pages job `121285882980` SUCCESS at 20:47 UTC; public sw.js, app.js
-  and neuron-data-bridge.js returned HTTP 200 and byte hashes matched merged source.
-- [x] Private delivery run `40232399304`, publish job `121286718159`, SUCCESS:
-  three Neuron files/objects published from data SHA `30510e7276e8885e463960c57fc586507be4f5c3`
-  at 20:48:18 UTC; generation `54d71172-dc66-44a5-be81-445883f48f06`.
-- FOLLOW-UP #558: the first core rebuild read the new 20:43 model while a
-  synthetic regression fixture froze its clock at 10:00. The strict model-time
-  guard correctly failed `Test model` in core run `40231944352`, job
-  `121286378460`. Only the temporary test copy now gets a deterministic prior
-  training timestamp; runtime guards and published data are unchanged.
-- [x] Reproduced that failure locally on the published main weights; after the
-  fixture-only correction, full regression 1802 passed in 58.93s with data
-  isolation intact. PR #558 carries this correction and rollout documentation.
-- FOLLOW-UP E2E: the expanded metrics report moves historical TEST to field 21,
-  beyond the existing 20-field page. Browser job `121288120218` correctly failed
-  its old first-page assumption. The test now clicks the existing root pagination
-  control before expanding TEST; rendering and assertions remain unchanged.
-- FOLLOW-UP DIAGNOSTICS: ask the canonical settlement owner for a terminal result
-  before checking terminal timestamps/participants. Read-only replay of the 53
-  actual forecasts now reports 46 EXACT_HISTORY_MATCH_NOT_TERMINAL and seven
-  NO_EXACT_HISTORY_MATCH, instead of incorrectly calling pending rows invalid.
-  Frozen forecasts and all metrics are unchanged; terminal guards remain strict.
-- [x] Pending-result regression failed before repair; full local regression after
-  repair: 1803 passed in 57.31s. Fresh main subsequently advanced to market-only
-  `98e0447d5751fc89b7c0e76c98f17b7f9d8d08df`; combined tree regression also passed:
-  1803 tests in 56.10s. No model/training inputs changed in that update.
-- [x] Integrated subsequent readiness timestamp/digest-only main
-  `13fd3b976f8e25109d644806490ee25c4aefdec7`; stable combined-tree full regression:
-  1803 passed in 57.23s. Browser E2E pagination passed for all three account roles
-  in Chromium, job `121290717435`. Final-head CI remains authoritative in #558.
-- CORE RECOVERY: inspect PR #558 and the latest main core workflow. Its backend
-  correction triggers an automatic core rebuild after merge; verify `Test model`
-  and the complete build there. Do not duplicate an active/successful recovery.
-  Only if no recovery exists, rerun failed jobs from `40231944352` (fresh checkout).
-- PROSPECTIVE: 53 pending, zero settled; accuracy/Brier correctly N/D. No quality
-  improvement over the previous version is claimed. Its common unseen legacy
-  cohort has only 17 matches and worse candidate Brier. Old split hashes did not
-  exist, so first input-change comparison correctly remains UNKNOWN.
-- DO NOT REDO: source repair, old-model retraining, prior #553/#554/#555 repairs,
-  unrelated open PRs or synthetic backfill of historical Neuron predictions.
-- NEXT EXACT ACTION: resolve CORE RECOVERY according to its live status above,
-  then let normal scoring/evaluation collect exact prospective outcomes. Further
-  performance/promotion claims require observed data. SHADOW remains unchanged.
-- DETAILED EVIDENCE: `audits/neuron_learning_integrity_20261025.md`.
+  Independent weight hash and stored source-code hash verified.
+- HISTORICAL TEST: 2657 independent matches; accuracy 0.65035755 vs Elo
+  0.61272111; Brier 0.21669280 vs 0.22823344; log loss 0.62237078 vs 0.64737168.
+  ECE is worse than Elo: 0.01370010 vs 0.00879323. All quality/source gates passed.
+  TRAIN through 2026-06-25, VAL through 2026-08-23, TEST through 2026-10-24.
+- [x] Main evidence artifact `12614209344` preserves the actual candidate,
+  metrics and exact feature arrays for 60 days. No preflight forecasts were
+  copied into the repository ledger or used as deployed evidence.
+- [x] CORE RECOVERY COMPLETE: `40235360584`, build `121296905610`, Pages
+  `121302184949`, all SUCCESS. Actual full suite passed before generation
+  (1803 in 59.44s) and after generation (1803 in 54.77s). Published core data
+  `f30fd669589c4555d14dbda3ba7010700449dd37`. Old failed run `40231944352`
+  is historical; do not rerun it.
+- [x] Automatic post-core run `40237558201`, neuron job `121302250307`,
+  Pages `121302604551`: SUCCESS. Training/candidate gate SKIPPED; scoring,
+  exact evaluation and publication SUCCESS. Scored at 21:54:17 UTC and published
+  `8b873abf76b3b69d07ded35f8341c3c03a711e2d` at first attempt.
+- [x] Independently compared the complete model artifact and training metrics
+  before/after scoring: unchanged, training time still 21:26:21 UTC. All 53
+  frozen predictions unchanged and valid; no duplicate fixture inflation.
+- [x] Private delivery `40237798723`, publish job `121303080976`, and GC
+  SUCCESS. Three Neuron files, one changed uploaded object at 21:57:23 UTC;
+  generation `95ea7b88-f8da-4c1a-a10e-4402b2ec5533`.
+- PROSPECTIVE: 53 pending, zero settled; accuracy/Brier N/D. Forty-six exact
+  canonical entries await results; seven await an exact history entry. No
+  superiority over the prior model or profitable betting is claimed. The first
+  conservative unseen legacy comparison had only 17 matches and worse candidate
+  Brier; differing cleaned cohorts are not a before/after improvement estimate.
+- REMAINING INFRASTRUCTURE OBSERVATION: the core publisher fetches all branches
+  (about eight minutes here); non-Neuron selection/settlement reports reached
+  91.23/90.46 MB. GitHub warned about large files, but publication succeeded.
+  This is a separate storage/performance concern, not an unfinished Neuron repair.
+- DO NOT REDO: #557/#558 repairs, their completed core recovery, historical
+  prediction backfill, prior #553/#554/#555 repairs, or unrelated open PRs.
+- NEXT EXACT ACTION: inspect live GitHub and continue normal prospective
+  collection/evaluation. Monday/Thursday training at 03:35 UTC remains scheduled.
+  Assess new TRAIN/VAL inputs and comparable outcomes before claiming learning
+  progress. No automatic SHADOW-to-PROD promotion.
+- DETAILED EVIDENCE: `audits/neuron_learning_integrity_20261025.md`; PR #558
+  records the final runtime evidence and exact workflow links.
 
 ### Prior checkpoint (completed; retained as evidence)
 
