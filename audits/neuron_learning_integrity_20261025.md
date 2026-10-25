@@ -177,3 +177,11 @@ The failure was reproduced locally on actual main weights, followed by a full
 **1802 passed in 58.93s** after the test-only correction. Core recovery uses a
 rerun of the failed jobs from `40231944352` after merge; consult its latest
 attempt and PR #558 for the observed execution result.
+
+
+The fresh report also moved its `test` group to field 21, after the presenter's
+existing 20-field page boundary. Browser job `121288120218` failed its old
+first-page assumption. The browser test now exercises the existing "Pokaż
+kolejne" control before opening historical metrics, preserving the nested
+metric assertions and bounded runtime rendering. The GitHub browser gate
+validates this against the actual expanded report.

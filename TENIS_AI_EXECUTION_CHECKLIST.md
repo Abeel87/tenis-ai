@@ -74,6 +74,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Reproduced that failure locally on the published main weights; after the
   fixture-only correction, full regression 1802 passed in 58.93s with data
   isolation intact. PR #558 carries this correction and rollout documentation.
+- FOLLOW-UP E2E: the expanded metrics report moves historical TEST to field 21,
+  beyond the existing 20-field page. Browser job `121288120218` correctly failed
+  its old first-page assumption. The test now clicks the existing root pagination
+  control before expanding TEST; rendering and assertions remain unchanged.
 - CORE RECOVERY: inspect the latest attempt of run `40231944352` and PR #558.
   If already green, do not rerun. Otherwise, after #558 is merged, rerun only
   failed jobs (build checks out fresh main), then verify `Test model` and build.
