@@ -5,14 +5,26 @@
   "symphony_influence": false,
   "ineed_influence": false,
   "auto_promote": false,
-  "generated_at": "2026-10-22T08:56:29.809374+00:00",
+  "generated_at": "2026-10-25T20:43:10.325387+00:00",
+  "training_started_at": "2026-10-25T20:42:46.676203+00:00",
+  "model_id": "neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c",
+  "previous_model_id": "neuron-2917a97a5df42a7ca698f6382398fd842bf8910bbb692eede706146ee557f52f",
   "dataset": {
-    "raw_rows": 26065,
-    "usable_matches": 26062,
-    "rows": 52124,
+    "raw_rows": 26195,
+    "usable_matches": 25124,
+    "rows": 50248,
     "date_min": "2024-12-29",
-    "date_max": "2026-10-22",
-    "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION"
+    "date_max": "2026-10-24",
+    "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION",
+    "date_basis": "source_tourney_date; no intraday ordering inferred",
+    "history_cutoff_exclusive": "2026-10-25",
+    "excluded_same_day_or_future": 26,
+    "hygiene": {
+      "raw_rows": 26195,
+      "kept_rows": 25152,
+      "removed_rows": 1043
+    },
+    "feature_dataset_sha256": "3d0f2aabc9c279b10fca64646105375a4799e319af21b0ec986ab3455736eafd"
   },
   "source": {
     "fresh_sources": 11,
@@ -23,53 +35,256 @@
   },
   "source_warnings": [],
   "splits": {
-    "train": 41670,
-    "validation": 5140,
+    "train": 40018,
+    "validation": 4916,
     "test": 5314
+  },
+  "split_dates": {
+    "train": {
+      "first_date": "2024-12-29",
+      "last_date": "2026-06-25",
+      "unique_matches": 20009
+    },
+    "validation": {
+      "first_date": "2026-06-26",
+      "last_date": "2026-08-23",
+      "unique_matches": 2458
+    },
+    "test": {
+      "first_date": "2026-08-24",
+      "last_date": "2026-10-24",
+      "unique_matches": 2657
+    }
   },
   "training": {
     "optimizer": "adam",
     "residual_prior": "pre_match_elo_logit",
     "dropout": 0.15,
-    "best_epoch": 3,
-    "epochs_ran": 15,
-    "validation_start_log_loss": 0.6553457166251234,
-    "validation_best_log_loss": 0.6362135028196317,
-    "validation_start_accuracy": 0.6052529182879377,
-    "validation_best_accuracy": 0.6361867704280155,
-    "temperature": 1.1
+    "best_epoch": 5,
+    "epochs_ran": 17,
+    "validation_start_log_loss": 0.652378796021641,
+    "validation_best_log_loss": 0.6294951175967507,
+    "validation_start_accuracy": 0.6076078112286412,
+    "validation_best_accuracy": 0.6509357200976403,
+    "temperature": 1.02
   },
+  "split_feature_sha256": {
+    "train": "460dd98048b9256f7c2c99b33ce5b616f9ff41d7da45a11cdd760970877e73d0",
+    "validation": "f4d9190af3520c5c0e3af725cad905a026d30dbf45bef341c69d15a88a6d9906",
+    "test": "7d058b6470dded1a0663dd283cea6427f0387bdcea8c21eb2e675fe6d60f8feb"
+  },
+  "learning_progress": {
+    "input_changes": {
+      "train": null,
+      "validation": null,
+      "test": null
+    },
+    "training_inputs_status": "UNKNOWN_PREVIOUS_INPUTS",
+    "model_parameters_changed": true,
+    "quality_improvement_proven": false
+  },
+  "training_status": "ACCEPTED",
   "validation": {
-    "accuracy": 0.6361867704280155,
-    "log_loss": 0.6362135028196317,
-    "brier": 0.22300942766747417,
-    "ece_10": 0.008646910742516483
+    "accuracy": 0.6509357200976403,
+    "log_loss": 0.6294951175967507,
+    "brier": 0.2199447728253594,
+    "ece_10": 0.021223904981064343
   },
   "test": {
-    "accuracy": 0.6439593526533685,
-    "log_loss": 0.6217311022125707,
-    "brier": 0.21659698073931383,
-    "ece_10": 0.02599476130210641
+    "accuracy": 0.6503575461046293,
+    "log_loss": 0.62237078326826,
+    "brier": 0.21669280144593012,
+    "ece_10": 0.013700102717619718
   },
   "elo_baseline_validation": {
-    "accuracy": 0.6052529182879377,
-    "log_loss": 0.6553457166251234,
-    "brier": 0.23211242336494348,
-    "ece_10": 0.005939217829907112
+    "accuracy": 0.6076078112286412,
+    "log_loss": 0.652378796021641,
+    "brier": 0.2307855126430604,
+    "ece_10": 0.008663476030100986
   },
   "elo_baseline_test": {
-    "accuracy": 0.6123447497177268,
-    "log_loss": 0.6479168934019662,
-    "brier": 0.22849038480581174,
-    "ece_10": 0.015466959506300818
+    "accuracy": 0.6127211140383891,
+    "log_loss": 0.647371677755242,
+    "brier": 0.22823344267728182,
+    "ece_10": 0.008793227709621028
   },
   "quality_gate": {
     "beats_elo_log_loss": true,
     "beats_elo_accuracy": true,
     "ece_le_0_05": true,
     "test_rows_ge_1000": true,
+    "all_history_sources_available": true,
+    "finite_metrics": true,
     "passed": true
   },
   "promotion_eligible": false,
-  "promotion_reason": "manual architecture and quality review required"
+  "promotion_reason": "manual architecture and quality review required",
+  "run_id": "40231944423",
+  "common_holdout": {
+    "status": "DESCRIPTIVE_COMMON_HOLDOUT",
+    "matches": 17,
+    "previous_model_id": "neuron-2917a97a5df42a7ca698f6382398fd842bf8910bbb692eede706146ee557f52f",
+    "after": "2026-10-22",
+    "boundary_basis": "conservative_legacy_artifact_date",
+    "candidate": {
+      "accuracy": 0.5294117647058824,
+      "log_loss": 0.7288720355877286,
+      "brier": 0.2648813637332439,
+      "ece_10": 0.14616985728135054
+    },
+    "previous": {
+      "accuracy": 0.5294117647058824,
+      "log_loss": 0.7156318251331897,
+      "brier": 0.2588334397617031,
+      "ece_10": 0.13779490128432947
+    },
+    "automatic_promotion": false,
+    "statistical_superiority_claimed": false
+  },
+  "training_history": [
+    {
+      "model_id": null,
+      "generated_at": "2026-10-22T08:56:29.809374+00:00",
+      "dataset": {
+        "raw_rows": 26065,
+        "usable_matches": 26062,
+        "rows": 52124,
+        "date_min": "2024-12-29",
+        "date_max": "2026-10-22",
+        "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION"
+      },
+      "splits": {
+        "train": 41670,
+        "validation": 5140,
+        "test": 5314
+      },
+      "split_dates": null,
+      "split_feature_sha256": null,
+      "learning_progress": null,
+      "training": {
+        "optimizer": "adam",
+        "residual_prior": "pre_match_elo_logit",
+        "dropout": 0.15,
+        "best_epoch": 3,
+        "epochs_ran": 15,
+        "validation_start_log_loss": 0.6553457166251234,
+        "validation_best_log_loss": 0.6362135028196317,
+        "validation_start_accuracy": 0.6052529182879377,
+        "validation_best_accuracy": 0.6361867704280155,
+        "temperature": 1.1
+      },
+      "test": {
+        "accuracy": 0.6439593526533685,
+        "log_loss": 0.6217311022125707,
+        "brier": 0.21659698073931383,
+        "ece_10": 0.02599476130210641
+      },
+      "elo_baseline_test": {
+        "accuracy": 0.6123447497177268,
+        "log_loss": 0.6479168934019662,
+        "brier": 0.22849038480581174,
+        "ece_10": 0.015466959506300818
+      },
+      "quality_gate": {
+        "beats_elo_log_loss": true,
+        "beats_elo_accuracy": true,
+        "ece_le_0_05": true,
+        "test_rows_ge_1000": true,
+        "passed": true
+      },
+      "training_status": null
+    },
+    {
+      "model_id": "neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c",
+      "generated_at": "2026-10-25T20:43:10.325387+00:00",
+      "dataset": {
+        "raw_rows": 26195,
+        "usable_matches": 25124,
+        "rows": 50248,
+        "date_min": "2024-12-29",
+        "date_max": "2026-10-24",
+        "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION",
+        "date_basis": "source_tourney_date; no intraday ordering inferred",
+        "history_cutoff_exclusive": "2026-10-25",
+        "excluded_same_day_or_future": 26,
+        "hygiene": {
+          "raw_rows": 26195,
+          "kept_rows": 25152,
+          "removed_rows": 1043
+        },
+        "feature_dataset_sha256": "3d0f2aabc9c279b10fca64646105375a4799e319af21b0ec986ab3455736eafd"
+      },
+      "splits": {
+        "train": 40018,
+        "validation": 4916,
+        "test": 5314
+      },
+      "split_dates": {
+        "train": {
+          "first_date": "2024-12-29",
+          "last_date": "2026-06-25",
+          "unique_matches": 20009
+        },
+        "validation": {
+          "first_date": "2026-06-26",
+          "last_date": "2026-08-23",
+          "unique_matches": 2458
+        },
+        "test": {
+          "first_date": "2026-08-24",
+          "last_date": "2026-10-24",
+          "unique_matches": 2657
+        }
+      },
+      "split_feature_sha256": {
+        "train": "460dd98048b9256f7c2c99b33ce5b616f9ff41d7da45a11cdd760970877e73d0",
+        "validation": "f4d9190af3520c5c0e3af725cad905a026d30dbf45bef341c69d15a88a6d9906",
+        "test": "7d058b6470dded1a0663dd283cea6427f0387bdcea8c21eb2e675fe6d60f8feb"
+      },
+      "learning_progress": {
+        "input_changes": {
+          "train": null,
+          "validation": null,
+          "test": null
+        },
+        "training_inputs_status": "UNKNOWN_PREVIOUS_INPUTS",
+        "model_parameters_changed": true,
+        "quality_improvement_proven": false
+      },
+      "training": {
+        "optimizer": "adam",
+        "residual_prior": "pre_match_elo_logit",
+        "dropout": 0.15,
+        "best_epoch": 5,
+        "epochs_ran": 17,
+        "validation_start_log_loss": 0.652378796021641,
+        "validation_best_log_loss": 0.6294951175967507,
+        "validation_start_accuracy": 0.6076078112286412,
+        "validation_best_accuracy": 0.6509357200976403,
+        "temperature": 1.02
+      },
+      "test": {
+        "accuracy": 0.6503575461046293,
+        "log_loss": 0.62237078326826,
+        "brier": 0.21669280144593012,
+        "ece_10": 0.013700102717619718
+      },
+      "elo_baseline_test": {
+        "accuracy": 0.6127211140383891,
+        "log_loss": 0.647371677755242,
+        "brier": 0.22823344267728182,
+        "ece_10": 0.008793227709621028
+      },
+      "quality_gate": {
+        "beats_elo_log_loss": true,
+        "beats_elo_accuracy": true,
+        "ece_le_0_05": true,
+        "test_rows_ge_1000": true,
+        "all_history_sources_available": true,
+        "finite_metrics": true,
+        "passed": true
+      },
+      "training_status": "ACCEPTED"
+    }
+  ]
 }
