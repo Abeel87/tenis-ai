@@ -25,6 +25,32 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**TRAINING ARCHIVE GC TIMEOUT — 2026-10-25 / VALIDATION IN PROGRESS**
+- AUTHORIZATION: repair repeated GC timeout while preserving 168h grace, latest
+  two complete manifests, pins and all active training references.
+- BRANCH: `fix/archive-gc-timeout-20261025`; PR not yet opened.
+- SOURCE BASELINE: `f4f224868b5e45f7723331bd97788376f5281204`.
+- [x] Inspected failed runs 39962502594, 40139133284 and 40196696824, live
+  PostgreSQL error context, function definitions/ACLs, indexes and advisors.
+- [x] Reproduced the scan cost: 1.1M entries scanned for empty terminal manifests;
+  observer candidate query 14.5s; entry-level prepare anti-join near/over budget.
+- [x] Minimal replacement of the two canonical SQL functions; fixed 30s timeout,
+  grace, ownership and deletion pipeline preserved. No index or Edge changes.
+- [x] Read-only live equivalence checks; isolated SQL safety tests 10/10 pass.
+- [~] Full Python suite: initial 1803 tests passed, but teardown detected transient
+  checkout/restore files. Clean isolated rerun is in progress; not yet full green.
+- [ ] Publish PR, verify all remote CI and recheck fresh main before merge.
+- [ ] Apply reviewed migration, verify definitions/ACLs/unchanged data, run normal
+  OIDC workflow and reconcile its audit/protected-object integrity.
+- FILES: query-plan migration, PostgreSQL tests and their CI, pinned test dependency,
+  GC documentation, `audits/training_archive_gc_timeout_20261025.md`, this checkpoint.
+- DO NOT REDO: Neuron #557/#558/#559, earlier capacity/compression changes or
+  unrelated open PRs. No model/training/settlement/SHADOW-PROD changes.
+- NEXT EXACT ACTION: finish the clean full-suite run, publish the scoped PR,
+  merge only green, then verify production through the existing GC owner.
+
+### Prior checkpoint (completed; retained as evidence)
+
 **NEURON LEARNING INTEGRITY — 2026-10-25 / VERIFIED IN SHADOW**
 - AUTHORIZATION: owner requested repairs after the learning audit. Model
   mathematics, thresholds and SHADOW/PROD rules remain unchanged.

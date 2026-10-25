@@ -1,0 +1,35 @@
+name: Training archive GC PostgreSQL safety
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'tests/training_archive_gc_postgres.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/training-archive-gc-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'tests/training_archive_gc_postgres.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/training-archive-gc-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retention-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --test tests/training_archive_gc_postgres.mjs
