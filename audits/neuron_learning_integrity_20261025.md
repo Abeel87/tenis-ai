@@ -211,3 +211,49 @@ changes only its generation timestamp and source digest. It was also integrated;
 stable combined-tree full regression passed **1803 tests in 57.23s**. Chromium
 job `121290717435` independently confirms the pagination correction for user,
 moderator and admin. The final combined head is checked again in PR #558.
+
+## Final runtime verification and closeout
+
+PR #558 merged as `f397b80979c2bbb48879f4bd61dbaa4fd7f09ac7` after all eight
+workflows succeeded on `ac14866533fc5cfc7e112bacff6f07adb2cd17ee`. Fresh main
+still equalled the integrated `13fd3b976f8e25109d644806490ee25c4aefdec7` at
+merge. Remote full regression passed 1803 tests in 50.56s.
+
+Main Neuron run `40235360598` completed training, gating, scoring, publication
+and Pages. The repeat training at 21:26:21 UTC used identical TRAIN/VAL/TEST
+inputs and produced exactly the same effective model as 20:43. The report
+correctly states UNCHANGED, model_parameters_changed=false and
+quality_improvement_proven=false. Publication succeeded at the first attempt,
+commit `563c9f81d45ae79a231977860560ba9ffda9c83a`. Artifact `12614209344`
+preserves the candidate, metrics and exact data for 60 days.
+
+The main core recovery run `40235360584` completed successfully, including build
+`121296905610` and Pages `121302184949`. Full regression passed before generation
+(1803 in 59.44s) and again after generation (1803 in 54.77s). Data publication
+`f30fd669589c4555d14dbda3ba7010700449dd37` succeeded. The historical failed run
+`40231944352` needs no rerun.
+
+Its automatic Neuron subscriber `40237558201` then skipped training and candidate
+gating, and successfully scored, evaluated, published and deployed Pages. Score
+capture was 21:54:17 UTC; first-attempt data publication was
+`8b873abf76b3b69d07ded35f8341c3c03a711e2d`. Independent comparison confirms the
+entire model artifact and training metrics were unchanged, including training
+time 21:26:21 UTC. This verifies the training/scoring distinction in the actual
+deployed pipeline, beyond the regression tests.
+
+All 53 original frozen predictions remained unchanged and valid, with no duplicate
+fixture inflation. Forty-six canonical entries await results and seven lack an
+exact entry. Zero are settled; prospective performance remains N/D. Historical
+metrics remain those in the table above, including worse ECE than Elo.
+
+Private delivery `40237798723` completed successfully: publish job `121303080976`
+reported three Neuron files and one changed uploaded object at 21:57:23 UTC,
+generation `95ea7b88-f8da-4c1a-a10e-4402b2ec5533`; its GC also succeeded.
+
+An infrastructure cost outside Neuron remains visible: the main core publisher
+fetches all branches, taking about eight minutes in this run. GitHub also warned
+that prediction_ledger_selection_shadow.json and
+prediction_ledger_settlement_shadow.json are 91.23 and 90.46 MB. Publication
+succeeded; storage/performance work on those other canonical owners is separate
+from the completed Neuron repair. Model mathematics and SHADOW/PROD rules remain
+unchanged, and no claim of new-version superiority or future profitability follows.
