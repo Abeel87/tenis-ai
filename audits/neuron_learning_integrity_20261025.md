@@ -95,6 +95,10 @@ copied into the repository ledger or represented as deployed evidence.
 New recent matches currently enter the historical TEST/state features, not
 automatically weight fitting. The preserved chronological split determines when
 data enter TRAIN; a scoring refresh changes neither weights nor training time.
+Separate TRAIN/VAL/TEST hashes make this distinction explicit on later runs:
+growing only TEST cannot become "new training inputs". The UI separately labels
+the last weight-fitting, calibration and test dates instead of calling the last
+date of the whole dataset the end of data used to fit weights.
 
 ## Validation and rollout
 
@@ -104,7 +108,7 @@ tests cover those failures, evidence immutability, exact settlement, missing
 metrics, concurrent Git writes and source/model conflicts. The live checkpoint
 records full-suite, CI, merge and runtime verification as each completes.
 
-Local full regression on pinned requirements: **1801 passed in 55.34s**, with
+Local full regression on pinned requirements: **1802 passed in 62.39s**, with
 published-data isolation intact. Static and runtime UI smoke passed. Existing
 source-line registry and PWA-cache assertions were updated for the changed UI;
 their readiness/data-freshness contracts remain intact.

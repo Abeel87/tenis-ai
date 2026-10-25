@@ -213,6 +213,18 @@ def test_same_model_identity_ignores_refresh_metadata_but_detects_weights():
     assert n.model_identity(a) != n.model_identity({**a, 'W1': [[2.]]})
 
 
+def test_more_test_matches_do_not_masquerade_as_new_training_inputs():
+    previous = {'split_feature_sha256': {'train': 'train-1', 'validation': 'val-1', 'test': 'test-1'}}
+    hashes = {**previous['split_feature_sha256'], 'test': 'test-2'}
+    progress = n.learning_progress(previous, 'same-model', 'same-model', hashes)
+    assert progress['training_inputs_status'] == 'UNCHANGED'
+    assert progress['input_changes'] == {'train': False, 'validation': False, 'test': True}
+    assert progress['model_parameters_changed'] is False
+    assert progress['quality_improvement_proven'] is False
+    assert n.learning_progress(previous, 'old', 'new', {**hashes, 'train': 'train-2'})['training_inputs_status'] == 'CHANGED'
+    assert n.learning_progress({}, 'old', 'new', hashes)['training_inputs_status'] == 'UNKNOWN_PREVIOUS_INPUTS'
+
+
 def test_scoring_does_not_modify_model_or_training_metrics(tmp_path, monkeypatch):
     class Clock(datetime):
         @classmethod

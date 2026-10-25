@@ -43,10 +43,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   and captured 55 pre-match forecasts without mutating deployed data.
 - [x] Static and runtime UI smoke; actual bridge distinguishes scoring/training,
   N/D from zero and frozen model identity. Model/split/metrics ASTs unchanged.
-- [x] Full regression: 1801 passed in 55.34s with pinned dependencies and
+- [x] Full regression: 1802 passed in 62.39s with pinned dependencies and
   published-data isolation intact. Updated exact UI source-line registry and
   PWA cache-version assertions; no guard was bypassed.
-- [ ] Publish PR, all required CI, fresh-main integration, green merge.
+- [x] Publish PR #557. Initial Neuron training, artifact retention, browser and
+  security checks passed. Added explicit TRAIN/VAL/TEST change evidence and
+  separate UI dates; final-head CI must pass before merge.
+- [ ] All required final-head CI, fresh-main integration, green merge.
 - [ ] Verify main training publication, durable evidence, Pages/private delivery.
 - DO NOT REDO: prior production repairs #553/#554/#555; unrelated open PRs;
   old-model retraining for the historical audit; no synthetic live-ledger backfill.

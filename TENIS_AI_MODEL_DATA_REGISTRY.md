@@ -455,6 +455,8 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
   TRAIN/VAL/TEST, historię przyjętych treningów oraz opisowe porównanie starej
   i nowej wersji na wspólnym niewidzianym zbiorze. Wiersze lustrzane nie są
   niezależnymi meczami. Nowe dane w TEST nie oznaczają uczenia wag na tych danych.
+  Osobne hashe TRAIN/VAL/TEST i `learning_progress` rozróżniają zmianę wejść
+  uczenia, sam przyrost testu i zmianę parametrów; stary brak hasha pozostaje N/D.
 - Bramka jakości obowiązuje wszystkie wyzwalacze treningu. Odrzucony kandydat
   nie zastępuje aktywnego modelu. Workflow archiwizuje kandydata, metryki,
   faktyczne macierze treningowe i prognozy również przy błędzie publikacji.

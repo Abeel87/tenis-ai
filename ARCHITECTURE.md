@@ -164,6 +164,9 @@ only a passing candidate replaces the active model/metrics pair. Model hashes
 exclude refresh timestamps, so a scoring refresh cannot masquerade as learning.
 The metrics record accepted training history, actual split dates, independent
 match counts and descriptive old/new evaluation on a common unseen cohort.
+Separate TRAIN/VAL/TEST hashes distinguish changed fitting/calibration inputs
+from growth of the test cohort. Missing legacy hashes remain unknown; neither a
+new training timestamp nor changed weights alone proves improved quality.
 
 `current` refuses started fixtures, missing exact IDs and players without history.
 It freezes the first pre-match forecast per model/fixture in monthly

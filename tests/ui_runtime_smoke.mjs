@@ -102,6 +102,8 @@ if(readinessMeta){
 const neuron=await ctx.TENIS_AI_NEURON_DATA.summary();
 if(neuron?.status){assert(overview.includes(neuron.status),'Read real published Neuron artifact');if(!neuron.generated_at&&!neuron.updated_at)assert(overview.includes('świeżość niepotwierdzona'),'Do not fabricate freshness without timestamp')}
 assert(overview.includes('Wyniki prognoz zapisanych przed meczem'));
+assert(overview.includes('Dane uczące wagi do')&&overview.includes('Dane testowe do'));
+assert(!overview.includes('Dane treningowe do'));
 if(!neuron.prospective?.settled_matches)assert(overview.includes('Zbieranie wyników.'));
 // Scoring refresh must not turn into a new training date or invented live accuracy.
 {

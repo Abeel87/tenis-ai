@@ -29,6 +29,7 @@ async function summary(force=false){
     model_id:current.model_id||metrics.model_id||null,
     training_status:metrics.training_status||null,
     training_history:Array.isArray(metrics.training_history)?metrics.training_history:[],
+    learning_progress:metrics.learning_progress||null,
     prospective:current.prospective||null,
     common_holdout:metrics.common_holdout||null,
     no_score_reasons:current.no_score_reasons||{},

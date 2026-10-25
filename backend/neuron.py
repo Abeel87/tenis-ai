@@ -262,7 +262,17 @@ def training_artifacts():
 
 def _training_summary(report):
     return {k:report.get(k) for k in ('model_id','generated_at','dataset','splits','split_dates',
-            'training','test','elo_baseline_test','quality_gate','training_status')}
+            'split_feature_sha256','learning_progress','training','test','elo_baseline_test','quality_gate','training_status')}
+
+
+def learning_progress(previous_report, previous_model_id, model_id, split_hashes):
+    old=previous_report.get('split_feature_sha256') or {}
+    changed={name:(value!=old[name] if old.get(name) else None) for name,value in split_hashes.items()}
+    known=all(changed.get(name) is not None for name in ('train','validation'))
+    return {'input_changes':changed,
+            'training_inputs_status':('CHANGED' if changed['train'] or changed['validation'] else 'UNCHANGED') if known else 'UNKNOWN_PREVIOUS_INPUTS',
+            'model_parameters_changed':model_id!=previous_model_id if previous_model_id else None,
+            'quality_improvement_proven':False}
 
 
 def _incumbent_comparison(previous, A, B, C, Y, D, test_mask, candidate):
@@ -308,15 +318,19 @@ def train():
     boundaries={name:{'first_date':str(min(D[mask])),'last_date':str(max(D[mask])),
                       'unique_matches':int(mask.sum())//2} for name,mask in S.items()}
     data_sha=dataset_identity(arrays)
+    split_hashes={name:dataset_identity(tuple(values[mask] for values in arrays)) for name,mask in S.items()}
     mp={**m.dump(),**flags(),'generated_at':now,'inputs_policy':POLICY,'player_features':PF,
         'context_features':CF,'training_dataset_sha256':data_sha,
         'validation_end_date':boundaries['validation']['last_date'],
         'source_code_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
     mp['model_id']=model_identity(mp)
+    previous_id=model_identity(previous) if previous.get('format') else None
     report={**flags(),'generated_at':now,'training_started_at':started.isoformat(),
-            'model_id':mp['model_id'],'previous_model_id':model_identity(previous) if previous.get('format') else None,
+            'model_id':mp['model_id'],'previous_model_id':previous_id,
             'dataset':{**meta,'feature_dataset_sha256':data_sha},'source':info,'source_warnings':warn,
             'splits':{k:int(v.sum()) for k,v in S.items()},'split_dates':boundaries,'training':training,
+            'split_feature_sha256':split_hashes,
+            'learning_progress':learning_progress(previous_report,previous_id,mp['model_id'],split_hashes),
             'training_status':'ACCEPTED' if gate['passed'] else 'REJECTED_KEEP_PREVIOUS',
             'validation':vm,'test':tm,'elo_baseline_validation':ve,'elo_baseline_test':te_m,
             'quality_gate':gate,'promotion_eligible':False,
