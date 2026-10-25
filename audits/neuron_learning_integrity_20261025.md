@@ -161,3 +161,19 @@ Private delivery run `40232399304`, publish job `121286718159`, checked out
 `RUNTIME_PRIVATE_PUBLISH_OK`: three files and three uploaded objects in the
 Neuron layer at 20:48:18 UTC, generation
 `54d71172-dc66-44a5-be81-445883f48f06`.
+
+
+## Post-publication fixture correction
+
+The parallel core rebuild `40231944352` stopped in its test step (job
+`121286378460`): the synthetic scoring test froze time at 10:00 on 25 October,
+then loaded the actual newly trained model timestamped 20:43. The strict guard
+correctly raised INVALID_FROZEN_MODEL_TIME. This is a moving test-fixture date
+failure; the actual published forecasts passed the independent chronology check.
+
+PR #558 pins a prior training timestamp only on the temporary fixture copy.
+Runtime chronology checks and published weights/metadata remain unchanged.
+The failure was reproduced locally on actual main weights, followed by a full
+**1802 passed in 58.93s** after the test-only correction. Core recovery uses a
+rerun of the failed jobs from `40231944352` after merge; consult its latest
+attempt and PR #558 for the observed execution result.

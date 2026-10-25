@@ -232,6 +232,9 @@ def test_scoring_does_not_modify_model_or_training_metrics(tmp_path, monkeypatch
         def now(cls, tz=None):
             return cls(2026, 10, 25, 10, 0, 10 if cls.delayed else 0, tzinfo=timezone.utc)
     model = json.loads(Path('frontend/data/neuron_model.json').read_text())
+    # This temporary fixture has a frozen clock; a later runtime training must
+    # not import its moving timestamp into the synthetic pre-match scenario.
+    model['generated_at'] = '2026-10-24T10:00:00Z'
     data = tmp_path / 'frontend/data'; data.mkdir(parents=True)
     model_path = data / 'neuron_model.json'; report_path = data / 'neuron_metrics.json'
     model_path.write_text(json.dumps(model)); report_path.write_text('{"training": "unchanged"}')

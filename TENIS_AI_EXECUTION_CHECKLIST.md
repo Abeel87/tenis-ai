@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**NEURON LEARNING INTEGRITY — 2026-10-25 / SHADOW DEPLOYMENT VERIFIED**
+**NEURON LEARNING INTEGRITY — 2026-10-25 / SHADOW VERIFIED; CORE TEST FOLLOW-UP**
 - AUTHORIZATION: owner explicitly requested repairs after the audit. Preserve
   model mathematics and SHADOW/PROD separation; no real betting or promotion.
 - PRIMARY: PR #557 merged as `2536ba6d8d63fc4fa81059d22e4fa93338cdbd0e`
@@ -66,14 +66,25 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Private delivery run `40232399304`, publish job `121286718159`, SUCCESS:
   three Neuron files/objects published from data SHA `30510e7276e8885e463960c57fc586507be4f5c3`
   at 20:48:18 UTC; generation `54d71172-dc66-44a5-be81-445883f48f06`.
+- FOLLOW-UP #558: the first core rebuild read the new 20:43 model while a
+  synthetic regression fixture froze its clock at 10:00. The strict model-time
+  guard correctly failed `Test model` in core run `40231944352`, job
+  `121286378460`. Only the temporary test copy now gets a deterministic prior
+  training timestamp; runtime guards and published data are unchanged.
+- [x] Reproduced that failure locally on the published main weights; after the
+  fixture-only correction, full regression 1802 passed in 58.93s with data
+  isolation intact. PR #558 carries this correction and rollout documentation.
+- CORE RECOVERY: inspect the latest attempt of run `40231944352` and PR #558.
+  If already green, do not rerun. Otherwise, after #558 is merged, rerun only
+  failed jobs (build checks out fresh main), then verify `Test model` and build.
 - PROSPECTIVE: 53 pending, zero settled; accuracy/Brier correctly N/D. No quality
   improvement over the previous version is claimed. Its common unseen legacy
   cohort has only 17 matches and worse candidate Brier. Old split hashes did not
   exist, so first input-change comparison correctly remains UNKNOWN.
 - DO NOT REDO: source repair, old-model retraining, prior #553/#554/#555 repairs,
   unrelated open PRs or synthetic backfill of historical Neuron predictions.
-- NEXT EXACT ACTION: let normal scoring/evaluation collect exact prospective
-  outcomes. This documentation closeout follows the same green-merge protocol. Further
+- NEXT EXACT ACTION: resolve CORE RECOVERY according to its live status above,
+  then let normal scoring/evaluation collect exact prospective outcomes. Further
   performance/promotion claims require observed data. SHADOW remains unchanged.
 - DETAILED EVIDENCE: `audits/neuron_learning_integrity_20261025.md`.
 
