@@ -25,41 +25,57 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**NEURON LEARNING INTEGRITY — 2026-10-25 / LOCAL VALIDATION COMPLETE, CI NEXT**
-- AUTHORIZATION: after the audit the owner explicitly requested all necessary
-  repairs. Preserve model mathematics and SHADOW/PROD separation; no real betting.
-- TASK/BRANCH: `fix/neuron-learning-integrity-20261025`; base main
-  `d099d9ca41aca89a83410b181e9901b49f9e4a5d`, rechecked live during implementation.
-- [x] Read canonical contracts; inspect fresh main, open PRs and workflow logs.
-- [x] Audit: 23 October training succeeded but publication lost the candidate;
-  25 October scoring reused 22 October weights. Source evidence and limitations
-  are in `audits/neuron_learning_integrity_20261025.md`.
-- [x] Four failing reproductions before canonical repair: future history,
-  started fixtures, invented missing-player score and rejected-model overwrite.
-- [x] Canonical source repair, immutable Neuron/Elo forecast evidence, shared
-  exact outcome evaluation, race-safe publication and always-preserved artifacts.
-- [x] Additional red/green regression: a fixture starting while predictions are
-  computed must not be captured with the earlier download-start timestamp.
-- [x] Pinned-dependency targeted tests initially 35 passed; further provenance
-  checks added. Real isolated preflight trained new weights, passed quality,
-  and captured 55 pre-match forecasts without mutating deployed data.
-- [x] Static and runtime UI smoke; actual bridge distinguishes scoring/training,
-  N/D from zero and frozen model identity. Model/split/metrics ASTs unchanged.
-- [x] Full regression: 1802 passed in 57.65s with pinned dependencies and
-  published-data isolation intact. Updated exact UI source-line registry and
-  PWA cache-version assertions; no guard was bypassed.
-- [x] Publish PR #557. Initial Neuron training, artifact retention, browser and
-  security checks passed. Added explicit TRAIN/VAL/TEST change evidence and
-  separate UI dates; final-head CI must pass before merge.
-- [ ] All required final-head CI, fresh-main integration, green merge.
-- [ ] Verify main training publication, durable evidence, Pages/private delivery.
-- DO NOT REDO: prior production repairs #553/#554/#555; unrelated open PRs;
-  old-model retraining for the historical audit; no synthetic live-ledger backfill.
-- NEXT EXACT ACTION: publish source-only PR, merge only green
-  after fresh-main check, inspect actual new main training/scoring/delivery output.
-- LIMITS: preflight results are not deployment; common old/new cohort is only
-  17 matches and candidate Brier is worse. Prospective quality needs future
-  resolved matches. Train still uses chronological TRAIN/VAL/TEST; no online fit.
+**NEURON LEARNING INTEGRITY — 2026-10-25 / SHADOW DEPLOYMENT VERIFIED**
+- AUTHORIZATION: owner explicitly requested repairs after the audit. Preserve
+  model mathematics and SHADOW/PROD separation; no real betting or promotion.
+- PRIMARY: PR #557 merged as `2536ba6d8d63fc4fa81059d22e4fa93338cdbd0e`
+  from all-green head `c62ef88c123c7cb26e1f1e4f72342b264d963fc0`.
+- FRESH MAIN: immediately before merge, main still matched audited/retested base
+  `d099d9ca41aca89a83410b181e9901b49f9e4a5d`; no integration was skipped.
+- CLOSEOUT BRANCH: `docs/neuron-learning-closeout-20261025`. This records observed
+  evidence only. GitHub remains authoritative for its CI/merge state.
+- [x] Canonical audit and four original failing reproductions; additional
+  delayed-clock regression reproduced a match starting during computation.
+- [x] Canonical completed-match hygiene and cutoff; unknown/started fixtures
+  become NO_SCORE; every training trigger gates candidate acceptance.
+- [x] Effective model and separate TRAIN/VAL/TEST hashes, explicit split dates,
+  descriptive common holdout, immutable prospective Neuron/Elo forecasts and
+  canonical exact settlement. Growing TEST alone cannot masquerade as learning.
+- [x] Race-safe normal fast-forward publication and archives retained on failure.
+- [x] Model, chronological split, metrics and Elo mathematics preserved.
+- [x] Local full regression: 1802 passed in 57.65s; UI static/runtime smoke passed.
+- [x] Final-head CI: all nine workflows successful, including browser E2E,
+  dependencies/security, CodeQL, Symphony, four logic audits and Neuron training.
+  Health run `40231403881` / job `121283906004`: 1802 passed in 51.64s.
+  Neuron run `40231403871`: 40 focused tests and real training gate passed.
+- [x] Main run `40231944423` / job `121285345032`: actual training, gate,
+  scoring, exact outcome evaluation and publication all SUCCESS.
+- [x] Published model/metrics at 20:43:10 UTC, scoring at 20:43:31 UTC;
+  data commit `30510e7276e8885e463960c57fc586507be4f5c3`, first push attempt.
+  Effective model ID:
+  `neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c`.
+- [x] Independently recomputed model hash from published weights; matched source
+  code SHA and validated all 53 immutable, unique, strictly pre-match forecasts.
+  Frozen monthly ledger is tracked; no isolated preflight rows were copied in.
+- [x] Test on 2657 independent matches: accuracy 0.65035755 vs Elo 0.61272111;
+  Brier 0.21669280 vs 0.22823344. All source/quality checks passed.
+- [x] Main evidence artifact `12613153312`, `neuron-evidence-40231944423-1`,
+  4,751,212 bytes; candidate, metrics, exact feature arrays and predictions kept.
+- [x] Pages job `121285882980` SUCCESS at 20:47 UTC; public sw.js, app.js
+  and neuron-data-bridge.js returned HTTP 200 and byte hashes matched merged source.
+- [x] Private delivery run `40232399304`, publish job `121286718159`, SUCCESS:
+  three Neuron files/objects published from data SHA `30510e7276e8885e463960c57fc586507be4f5c3`
+  at 20:48:18 UTC; generation `54d71172-dc66-44a5-be81-445883f48f06`.
+- PROSPECTIVE: 53 pending, zero settled; accuracy/Brier correctly N/D. No quality
+  improvement over the previous version is claimed. Its common unseen legacy
+  cohort has only 17 matches and worse candidate Brier. Old split hashes did not
+  exist, so first input-change comparison correctly remains UNKNOWN.
+- DO NOT REDO: source repair, old-model retraining, prior #553/#554/#555 repairs,
+  unrelated open PRs or synthetic backfill of historical Neuron predictions.
+- NEXT EXACT ACTION: let normal scoring/evaluation collect exact prospective
+  outcomes. This documentation closeout follows the same green-merge protocol. Further
+  performance/promotion claims require observed data. SHADOW remains unchanged.
+- DETAILED EVIDENCE: `audits/neuron_learning_integrity_20261025.md`.
 
 ### Prior checkpoint (completed; retained as evidence)
 
