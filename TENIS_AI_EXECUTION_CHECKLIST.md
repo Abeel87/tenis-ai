@@ -25,42 +25,48 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION TRANSPORT**
-- AUTHORIZATION: user requested a list of confirmed remaining issues and immediate
-  technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
-- BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.
-- AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; fresh-main integration
-  `7930d7f7f72f725c465a12e211acfa6311d42930`. Recheck again before merge.
-- [x] Inspected recent main runs, core publication logs, rejected Neuron training,
-  current source files and Supabase error aggregates/security/performance advisors.
-- [x] Confirmed growing selection/settlement report blobs (94.23/93.29 MiB) and
-  roughly eight minutes spent fetching unrelated branches in core run 40422422372.
-- [x] Added reproductions: five failures before the fix; all 14 initial focused tests pass
-  afterwards, including exact bytes, corruption rejection, Pages/runtime archive
-  completeness and concurrent-main preservation using local Git remotes.
-- [x] Minimal repair in existing chunk owner and two existing publication steps.
-  Real reports round-trip with identical SHA-256, six parts each, maximum 16 MiB.
-- [x] Additional confirmed checkout bottleneck: keep full commit history and defer
-  obsolete blobs in the three existing full-history checkouts. Three before-fix
-  failures reproduce eager downloads; test complete ancestry/diffs/lazy old reads.
-- [x] All 17 transport cases passed in the combined validation; final scoped run below.
-- [x] Final full local regression: 1818 passed in 56.13s; two existing Neuron empty-fixture
-  warnings. Local CatBoost installation repaired and its binary SHA-256 verified.
-- [~] Eight PR workflows in progress; final fresh-main head must be green before merge.
-- [ ] Fresh-main integration, all required CI green, merge and production proof.
-- NEURON: run 40298154578 rejected an incomplete source set (empty ATP ongoing CSV,
-  no cache); the previous accepted model stayed active. Source now returns 11 rows.
-  Do not weaken the gate, change training or claim this was a model-quality defect.
-- SUPABASE: last-day HTTP 500 / SQLSTATE 57014 occurrences are the three GC runs
-  before deployment. No new error class found in the inspected HTTP/PG aggregate.
-- FILES: chunk transport, Pages cleanup, core/market fetch and checkout commands, regression
-  tests, architecture/registry, this checklist and publication audit/round-trip evidence.
-- COMPANION: validate the same two transport settings for Player DNA separately;
-  its complete SHADOW evaluation takes about an hour. No DNA model change.
-- DO NOT REDO: completed GC #560/#561, Neuron #557/#558/#559. No destructive
-  Git history rewrite, archive deletion or changes to active data/model contracts.
-- NEXT EXACT ACTION: finish regression, publish/review PR on fresh main and merge
-  only green; verify the normal producer packs both reports and Pages restores them.
+**POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION VERIFIED**
+- AUTHORIZATION: user requested confirmed remaining issues and immediate technical
+  repairs. Model mathematics, training, settlement and SHADOW/PROD remain frozen.
+- SOURCE #562: merged as `126eb6c8f988b84d19a9ef6c04b5e81cee6fc180` after 8/8
+  workflows passed on `eed462ae90b06c8648b180738f58695005dc9cb2`; fresh base
+  `7930d7f7f72f725c465a12e211acfa6311d42930` unchanged immediately before merge.
+- LAST VERIFIED MAIN / PRODUCTION DATA: `f0bc07f9e3118c136dba209031b4541fb7ca8569`.
+- [x] Audited recent main failures, publication logs, Neuron source rejection,
+  Supabase error aggregates, advisors and administrative RPC caller checks.
+- [x] Repaired two growing report blobs, unbounded core/market fetches and three
+  slow full-history checkouts in their existing owners; no alternate producer.
+- [x] Before-fix reproductions failed; 17 original transport tests pass. Full local
+  regression 1818 passed in 56.13s; final CI 1818 passed in 72.94s.
+- [x] Normal production run 40429939252 and Pages succeeded. Both full production
+  regressions passed (1818 cases in 51.57s and 54.09s). Publication step: 35s;
+  fetch/rebase under 1s after local commit versus about 8 minutes previously.
+- [x] Independent production reconstruction: all 94701 frozen predictions unchanged,
+  2304 new rows; all three documents have the same 97005 IDs and matching source
+  hashes. Selection/settlement: 101299842/100171509 bytes, 7/6 parts, max 16 MiB.
+- [x] Runtime source artifact 12702427235: all 55 files independently verified;
+  complete ledger/report JSON matches Git parts. No active source data lost.
+- [x] Remaining FAST Pages checkout cost reproduced: 207s in run 40429328294.
+  One-line filter repair and real-Git regression pass; 18 focused cases in 4.00s.
+- [~] FAST FOLLOW-UP: branch `fix/fast-pages-transport-20261027`; fresh-main CI,
+  merge and post-merge FAST production verification pending. GitHub is authoritative.
+- [~] DNA COMPANION: PR #563, head `f91fe620ae052b3157d1141d1a9760122e53d52c`.
+  Eight checks passed; complete DNA evaluation 40429514595 still running at this
+  checkpoint. Only two Git transport settings change. Reconcile current main
+  (including the FAST test case/docs), rerun required checks and merge only green.
+- NEURON: missing/empty ATP source correctly caused REJECTED_KEEP_PREVIOUS in
+  run 40298154578; a later read-only probe returned 11 rows. Do not weaken gates.
+- SUPABASE: inspected HTTP 500/SQLSTATE 57014 events predate the deployed GC fix;
+  no new error class or evidence justifying blanket ACL/index changes.
+- CAPACITY TO WATCH: runtime JSON 948570292 B versus the existing 1 GiB verifier
+  bound; current results.json warning 71.77 MiB. No truncation or limit increase.
+- FILES: FAST checkout/test, architecture/registry, audit and exact production
+  evidence JSON, this checkpoint. Source #562 and its production proof are complete.
+- DO NOT REDO: GC #560/#561, Neuron #557/#558/#559 or verified #562. No history
+  rewrite, source/active archive deletion, model or SHADOW/PROD policy change.
+- NEXT EXACT ACTION: finish FAST follow-up CI/merge/production verification, then
+  finish #563 on current main only when green. Review observed runtime capacity
+  separately; keep complete sources and the existing safety bound until tested.
 
 **TRAINING ARCHIVE GC TIMEOUT — 2026-10-27 / PRODUCTION VERIFIED**
 - AUTHORIZATION: repair repeated GC timeout while preserving 168h grace, latest

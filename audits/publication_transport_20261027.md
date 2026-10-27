@@ -70,8 +70,8 @@ existing credentials. No branch, commit or historical report is removed.
 - Final full local regression: **1818 passed in 56.13s**, two existing Neuron empty-fixture
   warnings. A truncated local CatBoost installation was reinstalled and its binary
   hash verified before this successful run; no repository dependency change.
-- Fresh-main integration, CI and production publication remain pending until
-  corresponding evidence is recorded in the live checkpoint.
+- Fresh-main integration, all eight CI workflows and production publication have
+  passed; immutable production evidence is recorded below.
 
 Reference: [GitHub large-file limits](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
 Checkout contract: [actions/checkout v6](https://github.com/actions/checkout/tree/v6).
@@ -85,3 +85,52 @@ search paths and internal caller checks for administrative/staff actions. The tw
 anonymous functions intentionally return aggregate public counts or a username
 availability boolean. No ACL change was made. Leaked-password protection remains
 an existing optional Auth hardening advisory, not an observed authorization bypass.
+
+## FAST Pages checkout follow-up
+
+The remaining FAST Pages full-history checkout has the same confirmed cost:
+run 40429328294, job 121942894969, 00:54:31–00:57:58 UTC (**207 seconds**).
+An added instance of the existing real-Git integration test failed before repair
+because it found the obsolete report blob locally. Adding `filter: blob:none`
+to that checkout preserves depth zero and passes the unchanged behavioral test.
+The focused transport suite now passes **18 cases in 4.00s**. Scope classification,
+source restoration, runtime archive, build and deployment are unchanged. Fresh-main
+CI and the post-merge FAST production check are recorded in the live checkpoint.
+
+## Production verification of #562
+
+PR #562 merged as `126eb6c8f988b84d19a9ef6c04b5e81cee6fc180` after all eight
+workflows succeeded on head `eed462ae90b06c8648b180738f58695005dc9cb2`.
+The checked base `7930d7f7f72f725c465a12e211acfa6311d42930` was unchanged
+immediately before merge. Final CI health: 1818 passed in 72.94s.
+
+Normal [production run 40429939252](https://github.com/Abeel87/tenis-ai/actions/runs/40429939252)
+completed successfully, including build 121945202492 and Pages 121952884115.
+Both production regressions passed: 1818 cases in 51.57s before generation and
+1818 in 54.09s after generated layers. Publication commit:
+`f0bc07f9e3118c136dba209031b4541fb7ca8569`.
+
+The complete commit/rebase/push step took 35 seconds (01:23:08–01:23:43 UTC).
+The unchanged-main fetch/rebase finished at 01:23:14.876, under one second after
+the local commit output at 01:23:14.584. No unrelated branch fetches or report
+size warnings remain for the two repaired reports. Git still warns separately
+about the current `results.json` blob (71.77 MiB); that source is not changed here.
+Core scope checkout took 44 seconds; UI checkout measured 42 seconds versus 342
+seconds before the filter, with full ancestry retained.
+
+Independent reconstruction of all three ledger/report files verified every part
+and full SHA-256. All **94,701** pre-existing frozen predictions retain their IDs
+and complete row hashes. The **2,304** new predictions bring all three exact ID
+sets to **97,005** rows. Canonical ledger/selection source hashes align and all
+SHADOW isolation flags remain false. The two reports contain 101,299,842 and
+100,171,509 bytes in seven and six parts respectively (maximum 16 MiB).
+
+Downloaded runtime artifact **12702427235** was independently verified: all
+55 source file sizes/checksums match its manifest; the three complete restored
+JSON files exactly match Git reconstruction. Machine-readable evidence:
+`publication_transport_production_20261027.json`.
+
+Capacity observation, not a changed policy: this runtime archive contains
+948,570,292 uncompressed JSON bytes against the existing 1 GiB verification
+bound. Preserve source data and review capacity before that bound is reached;
+this transport repair does not silently raise the bound or discard records.

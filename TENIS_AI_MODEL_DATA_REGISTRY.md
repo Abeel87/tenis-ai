@@ -1097,6 +1097,11 @@ PR #521 production full run 36438771639 succeeded. Latest reason-specific report
 Canonical storage transport owner: `scripts/history_publication_chunks.py`. The immutable `prediction_ledger_shadow.json` exceeded GitHub's 100 MiB object limit and blocked the entire core publication in run 37683103451. The existing exact-byte chunk transport now also packs/restores this ledger using its own `prediction_ledger_shadow_chunks` manifest and 16 MiB parts. All existing workflow restore boundaries retain the original JSON path for consumers; legacy unchunked checkouts remain supported. SHA-256 verification occurs before removal/restoration, and Pages removes redundant repository chunk copies only after source restoration and runtime archiving. No rows, probabilities, identity, timestamps, settlement or model calculations change. PR #525 passed 7/7 checks and merged as ad5924f. Full update/Pages runs 37734745919 and 37742821901 verified production chunk publication and restoration. See LIVE CHECKPOINT.
 
 
+FAST Pages transport follow-up (2026-10-27): run 40429328294 spent 207 seconds
+checking out complete historical blobs. Its existing full-history checkout now
+uses `filter: blob:none`; the scope/deploy contract and complete runtime sources
+are unchanged. The same real-Git regression reproduces the old eager transfer.
+
 Publication transport follow-up (2026-10-27): the same `history_publication_chunks.py`
 owner also covers the growing selection and settlement SHADOW reports. Run
 40422422372 warned about 94.23/93.29 MiB JSON blobs; exact 16 MiB parts preserve

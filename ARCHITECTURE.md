@@ -244,6 +244,10 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 ### Exact-byte repository publication transport
 
+The FAST Pages checkout uses the same full-history partial-clone contract:
+`fetch-depth: 0` plus `filter: blob:none`. Its scope check can still inspect the
+previous commit; its build, runtime source archive and deploy steps are unchanged.
+
 The full-history checkouts used by core scope classification, UI health and market
 retain `fetch-depth: 0` with `filter: blob:none`. Commit history and current
 working-tree files remain available; obsolete blob contents are fetched only on

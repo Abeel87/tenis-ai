@@ -66,6 +66,7 @@ def test_publication_fetch_excludes_other_branches_and_preserves_main(tmp_path, 
 
 
 @pytest.mark.parametrize('workflow', [
+    'deploy-pages-fast.yml',
     'ui-smoke.yml', 'update-and-pages.yml',
     'superbet-market-refresh.yml',
 ])
