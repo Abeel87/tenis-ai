@@ -134,3 +134,11 @@ Capacity observation, not a changed policy: this runtime archive contains
 948,570,292 uncompressed JSON bytes against the existing 1 GiB verification
 bound. Preserve source data and review capacity before that bound is reached;
 this transport repair does not silently raise the bound or discard records.
+
+FAST follow-up validation: all seven workflows passed on
+`19816b1db569ade429c51f783483bf595701b3ff`; health job 121954221226
+passed **1819 tests in 63.55s** and both project/runtime guards had zero failures.
+The real UI smoke also passed on the fresh 474-match / 312-Symphony-match feed.
+Main subsequently published market data. The branch now integrates
+`283c7ba2fd187b490ae6c7ca33a7ffe4e360cbde`; refreshed CI, merge and FAST
+production verification are pending. No generated snapshot is replaced by this PR.
