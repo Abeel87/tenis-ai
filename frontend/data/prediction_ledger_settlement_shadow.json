@@ -1,11 +1,11 @@
 {
   "schema_version": "prediction-ledger-settlement-shadow-v1",
   "mode": "SHADOW_ONLY",
-  "generated_at": "2026-10-26T22:19:54.795695+00:00",
+  "generated_at": "2026-10-27T00:12:53.186144+00:00",
   "source_ledger_schema_version": "prediction-ledger-shadow-v1",
-  "source_ledger_sha256": "sha256:7f1b4c49886f6b9d6d518ebff6584626b3613bf67624180e8e010d2532938677",
+  "source_ledger_sha256": "sha256:5459ff29d81ecd6b1a1a12357f1b7d2b86e69fe3b59ae5b57b5764165bd8cb3f",
   "source_selection_schema_version": "prediction-ledger-selection-shadow-v1",
-  "source_selection_sha256": "sha256:4835f7ef7d0b792b36f45a5b0754c8aa3c0b0bb5c7e788762eae68bd9aea75ab",
+  "source_selection_sha256": "sha256:3fb2b02c72630c7167495e1279de74c2ae73101ce63ee635a51cd5edf9c364cc",
   "settlement_contract": "EXACT_LIVE_TENNIS_MATCH_ID_AND_EXACT_SCHEDULE_THEN_CANONICAL_SIGNAL_SCORER",
   "absence_semantics": "N/D_NOT_FALSE",
   "network_fetch_enabled": false,
@@ -2596583,7 +2596583,7 @@
           "recalibration_enabled": false,
           "ranking_enabled": false,
           "promotion_enabled": false,
-          "as_of_utc_date": "2026-10-26",
+          "as_of_utc_date": "2026-10-27",
           "distinct_complete_utc_dates": [
             "2026-09-20",
             "2026-09-21",
@@ -2596620,11 +2596620,12 @@
             "2026-10-22",
             "2026-10-23",
             "2026-10-24",
-            "2026-10-25"
+            "2026-10-25",
+            "2026-10-26"
           ],
           "undated_binary_rows": 0,
-          "incomplete_or_future_utc_day_binary_rows": 5,
-          "fold_count": 35,
+          "incomplete_or_future_utc_day_binary_rows": 0,
+          "fold_count": 36,
           "folds": [
             {
               "fold": 1,
@@ -2645222,6 +2645223,927 @@
                   }
                 }
               }
+            },
+            {
+              "fold": 36,
+              "train_start_date": "2026-09-20",
+              "train_end_date": "2026-10-25",
+              "test_date": "2026-10-26",
+              "train_rows": 2573,
+              "train_rows_excluded_late_settlement": 41,
+              "test_rows": 5,
+              "match_key_overlap": 0,
+              "test_metrics": {
+                "n": 5,
+                "hit_rate": 0.8,
+                "models": {
+                  "current": {
+                    "n": 5,
+                    "binary_accuracy_at_0_5": 0.8,
+                    "brier": 0.16904,
+                    "log_loss": 0.520683,
+                    "mean_probability": 0.715289,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.667318,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 3,
+                        "mean_probability": 0.747269,
+                        "observed_hit_rate": 0.666667
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  },
+                  "catboost": {
+                    "n": 5,
+                    "binary_accuracy_at_0_5": 0.8,
+                    "brier": 0.135375,
+                    "log_loss": 0.436777,
+                    "mean_probability": 0.726041,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.652901,
+                        "observed_hit_rate": 0.5
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.731222,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.861959,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  },
+                  "tabpfn": {
+                    "n": 5,
+                    "binary_accuracy_at_0_5": 0.8,
+                    "brier": 0.151025,
+                    "log_loss": 0.470196,
+                    "mean_probability": 0.801872,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.76244,
+                        "observed_hit_rate": 0.5
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 3,
+                        "mean_probability": 0.828159,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  }
+                }
+              },
+              "test_markets": {
+                "match_total": {
+                  "n": 1,
+                  "hit_rate": 1.0,
+                  "models": {
+                    "current": {
+                      "n": 1,
+                      "binary_accuracy_at_0_5": 1.0,
+                      "brier": 0.069406,
+                      "log_loss": 0.305779,
+                      "mean_probability": 0.736549,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.736549,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "catboost": {
+                      "n": 1,
+                      "binary_accuracy_at_0_5": 1.0,
+                      "brier": 0.108506,
+                      "log_loss": 0.399585,
+                      "mean_probability": 0.670598,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.670598,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "tabpfn": {
+                      "n": 1,
+                      "binary_accuracy_at_0_5": 1.0,
+                      "brier": 0.036632,
+                      "log_loss": 0.212444,
+                      "mean_probability": 0.808605,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.808605,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    }
+                  }
+                },
+                "set1_total": {
+                  "n": 4,
+                  "hit_rate": 0.75,
+                  "models": {
+                    "current": {
+                      "n": 4,
+                      "binary_accuracy_at_0_5": 0.75,
+                      "brier": 0.193949,
+                      "log_loss": 0.574409,
+                      "mean_probability": 0.709973,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.667318,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.752628,
+                          "observed_hit_rate": 0.5
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "catboost": {
+                      "n": 4,
+                      "binary_accuracy_at_0_5": 0.75,
+                      "brier": 0.142092,
+                      "log_loss": 0.446075,
+                      "mean_probability": 0.739901,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.635204,
+                          "observed_hit_rate": 0.0
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.731222,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.861959,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "tabpfn": {
+                      "n": 4,
+                      "binary_accuracy_at_0_5": 0.75,
+                      "brier": 0.179624,
+                      "log_loss": 0.534634,
+                      "mean_probability": 0.800189,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.76244,
+                          "observed_hit_rate": 0.5
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.837937,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
             }
           ]
         }
@@ -2647056,7 +2647978,7 @@
           "recalibration_enabled": false,
           "ranking_enabled": false,
           "promotion_enabled": false,
-          "as_of_utc_date": "2026-10-26",
+          "as_of_utc_date": "2026-10-27",
           "distinct_complete_utc_dates": [
             "2026-09-20",
             "2026-09-21",
@@ -2647093,11 +2648015,12 @@
             "2026-10-22",
             "2026-10-23",
             "2026-10-24",
-            "2026-10-25"
+            "2026-10-25",
+            "2026-10-26"
           ],
           "undated_binary_rows": 0,
-          "incomplete_or_future_utc_day_binary_rows": 3,
-          "fold_count": 35,
+          "incomplete_or_future_utc_day_binary_rows": 0,
+          "fold_count": 36,
           "folds": [
             {
               "fold": 1,
@@ -2685393,6 +2686316,624 @@
                   }
                 }
               }
+            },
+            {
+              "fold": 36,
+              "train_start_date": "2026-09-20",
+              "train_end_date": "2026-10-25",
+              "test_date": "2026-10-26",
+              "train_rows": 1232,
+              "train_rows_excluded_late_settlement": 21,
+              "test_rows": 3,
+              "match_key_overlap": 0,
+              "test_metrics": {
+                "n": 3,
+                "hit_rate": 0.666667,
+                "models": {
+                  "current": {
+                    "n": 3,
+                    "binary_accuracy_at_0_5": 0.666667,
+                    "brier": 0.221706,
+                    "log_loss": 0.631049,
+                    "mean_probability": 0.724192,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.667318,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.752628,
+                        "observed_hit_rate": 0.5
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  },
+                  "catboost": {
+                    "n": 3,
+                    "binary_accuracy_at_0_5": 0.666667,
+                    "brier": 0.160504,
+                    "log_loss": 0.478384,
+                    "mean_probability": 0.751439,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.635204,
+                        "observed_hit_rate": 0.0
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.757155,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.861959,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  },
+                  "tabpfn": {
+                    "n": 3,
+                    "binary_accuracy_at_0_5": 0.666667,
+                    "brier": 0.218513,
+                    "log_loss": 0.616545,
+                    "mean_probability": 0.817222,
+                    "calibration_bins_10": [
+                      {
+                        "index": 0,
+                        "lower_inclusive": 0.0,
+                        "upper": 0.1,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 1,
+                        "lower_inclusive": 0.1,
+                        "upper": 0.2,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 2,
+                        "lower_inclusive": 0.2,
+                        "upper": 0.3,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 3,
+                        "lower_inclusive": 0.3,
+                        "upper": 0.4,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 4,
+                        "lower_inclusive": 0.4,
+                        "upper": 0.5,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 5,
+                        "lower_inclusive": 0.5,
+                        "upper": 0.6,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 6,
+                        "lower_inclusive": 0.6,
+                        "upper": 0.7,
+                        "upper_inclusive": false,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      },
+                      {
+                        "index": 7,
+                        "lower_inclusive": 0.7,
+                        "upper": 0.8,
+                        "upper_inclusive": false,
+                        "n": 1,
+                        "mean_probability": 0.775794,
+                        "observed_hit_rate": 0.0
+                      },
+                      {
+                        "index": 8,
+                        "lower_inclusive": 0.8,
+                        "upper": 0.9,
+                        "upper_inclusive": false,
+                        "n": 2,
+                        "mean_probability": 0.837937,
+                        "observed_hit_rate": 1.0
+                      },
+                      {
+                        "index": 9,
+                        "lower_inclusive": 0.9,
+                        "upper": 1.0,
+                        "upper_inclusive": true,
+                        "n": 0,
+                        "mean_probability": null,
+                        "observed_hit_rate": null
+                      }
+                    ]
+                  }
+                }
+              },
+              "test_markets": {
+                "set1_total": {
+                  "n": 3,
+                  "hit_rate": 0.666667,
+                  "models": {
+                    "current": {
+                      "n": 3,
+                      "binary_accuracy_at_0_5": 0.666667,
+                      "brier": 0.221706,
+                      "log_loss": 0.631049,
+                      "mean_probability": 0.724192,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.667318,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.752628,
+                          "observed_hit_rate": 0.5
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "catboost": {
+                      "n": 3,
+                      "binary_accuracy_at_0_5": 0.666667,
+                      "brier": 0.160504,
+                      "log_loss": 0.478384,
+                      "mean_probability": 0.751439,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.635204,
+                          "observed_hit_rate": 0.0
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.757155,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.861959,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    },
+                    "tabpfn": {
+                      "n": 3,
+                      "binary_accuracy_at_0_5": 0.666667,
+                      "brier": 0.218513,
+                      "log_loss": 0.616545,
+                      "mean_probability": 0.817222,
+                      "calibration_bins_10": [
+                        {
+                          "index": 0,
+                          "lower_inclusive": 0.0,
+                          "upper": 0.1,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 1,
+                          "lower_inclusive": 0.1,
+                          "upper": 0.2,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 2,
+                          "lower_inclusive": 0.2,
+                          "upper": 0.3,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 3,
+                          "lower_inclusive": 0.3,
+                          "upper": 0.4,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 4,
+                          "lower_inclusive": 0.4,
+                          "upper": 0.5,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 5,
+                          "lower_inclusive": 0.5,
+                          "upper": 0.6,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 6,
+                          "lower_inclusive": 0.6,
+                          "upper": 0.7,
+                          "upper_inclusive": false,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        },
+                        {
+                          "index": 7,
+                          "lower_inclusive": 0.7,
+                          "upper": 0.8,
+                          "upper_inclusive": false,
+                          "n": 1,
+                          "mean_probability": 0.775794,
+                          "observed_hit_rate": 0.0
+                        },
+                        {
+                          "index": 8,
+                          "lower_inclusive": 0.8,
+                          "upper": 0.9,
+                          "upper_inclusive": false,
+                          "n": 2,
+                          "mean_probability": 0.837937,
+                          "observed_hit_rate": 1.0
+                        },
+                        {
+                          "index": 9,
+                          "lower_inclusive": 0.9,
+                          "upper": 1.0,
+                          "upper_inclusive": true,
+                          "n": 0,
+                          "mean_probability": null,
+                          "observed_hit_rate": null
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
             }
           ]
         }
@@ -2686318,7 +2687859,7 @@
           "recalibration_enabled": false,
           "ranking_enabled": false,
           "promotion_enabled": false,
-          "as_of_utc_date": "2026-10-26",
+          "as_of_utc_date": "2026-10-27",
           "distinct_complete_utc_dates": [
             "2026-09-20",
             "2026-09-22",
@@ -2699617,7 +2701158,7 @@
           "recalibration_enabled": false,
           "ranking_enabled": false,
           "promotion_enabled": false,
-          "as_of_utc_date": "2026-10-26",
+          "as_of_utc_date": "2026-10-27",
           "distinct_complete_utc_dates": [
             "2026-09-20",
             "2026-09-22",
