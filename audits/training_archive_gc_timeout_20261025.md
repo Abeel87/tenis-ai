@@ -97,3 +97,85 @@ protected-manifest integrity. Check advisors against the pre-migration baseline.
 If the query repair needs reverting, restore the preceding two function bodies
 with their existing 30s budgets and ACLs. This is a code rollback only: never
 recreate expired entry references or undo audited object removals blindly.
+
+
+## Production verification — 2026-10-27
+
+Source PR [#560](https://github.com/Abeel87/tenis-ai/pull/560) merged as
+`55cff432c9d05df7c40e4c77989d24c9046fd4dc`. All eight CI workflows passed on
+`4e86afc50aa098c7e721d9341147fe8eb94415bd`, including the ten PostgreSQL tests.
+The final health job `121317103822` reported 1806 Python tests passed in 60.06s.
+Fresh main immediately before merge still matched the integrated
+`8967cf37cff33c7c6868a33b6b27924014afa4a8`.
+
+The earlier deployment approval requests expired; the migration was absent on
+26 October and at the start of this continuation. Successful deployment was
+confirmed on 27 October at 00:04 UTC under live migration version
+`20261027000420`, name `training_archive_gc_query_plan`. The repository file
+remains `20261025224109_training_archive_gc_query_plan.sql`; its SHA-256 is
+`03298b84383dc6d3fb6a6662cd97c6e962c239de4ed1cbfd2569100f067e3f20`.
+
+Both live PL/pgSQL bodies matched the reviewed file exactly. Owner `postgres`,
+SECURITY DEFINER, fixed search paths, 30s budgets and ACLs were unchanged:
+`anon` and `authenticated` cannot execute either function; `service_role`
+can. Pre/post migration snapshots matched on all counts and all seven ordered
+metadata fingerprints (manifests, objects, candidates, pins, retention audits,
+apply audits and apply objects). The migration changed no archive rows or files.
+
+### Normal workflow, real PostgreSQL 17
+
+[Run 40196696824, attempt 2](https://github.com/Abeel87/tenis-ai/actions/runs/40196696824/attempts/2)
+and job `121925205544` completed successfully through the existing OIDC path.
+
+| Step | UTC interval | Result |
+| --- | --- | --- |
+| Preview seven-day retention gate | 00:05:33–00:05:35 | success |
+| Apply grace-ready archive retention | 00:05:35–00:05:42 | success |
+| Database apply audit | apply_id 111 | complete; 0 expired, planned, deleted or skipped |
+
+Detailed log timestamps put the apply command at about 6.4s including transport,
+versus the earlier roughly 32s cancellation. This is an end-to-end workflow
+measurement, distinct from the individual read-only plans above.
+
+The job checked out current main
+`45c061a3556fbca305e7d6233db48e15f44798b3`. GitHub reruns retain the original
+run SHA: `ca0e03e49db501fa5107576773db1b7331af8e3f`, which is also the
+authenticated audit source SHA. These are intentionally recorded separately.
+The Edge contract revision remained
+`sha256:92b6049dc3586120bbb2d4e215ef94ebcb0362539e16b7aba24c7bb18e4f1ac8`.
+
+### Why a successful run removed zero bytes
+
+Preview reported 77 complete manifests, 2 retained and 75 expirable; 3829
+eligible objects, of which 3597 were grace-ready (1317383873 B). However, 232
+objects still had unexpired grace. An indexed reference check showed that these
+young objects block all 75 expirable manifests. Every eligible object was
+physically present with the expected size.
+
+The next individual grace boundary observed was 2026-10-27 07:44:54.483028 UTC.
+It does not guarantee that any entire manifest will then become ready. No grace,
+reference, pin or latest-two gate was weakened to force deletion. This production
+run validates successful preparation and safe no-op handling; nonempty removal,
+recovery and rollback paths are exercised by the isolated SQL tests.
+
+### Post-run integrity
+
+| Check | Result |
+| --- | --- |
+| Archive entries | 1161922, unchanged |
+| Registered / physical archive objects | 19344 / 19344, unchanged |
+| Registered archive bytes | 1692826501, unchanged |
+| Protected unique objects | 15515; zero missing or wrong-size |
+| Active pins / pending apply batches | 0 / 0 |
+| Latest complete manifests | ca57bbb4-a944-4361-98b0-abab755b18c0; 02813937-0832-4fc8-97ec-6d6fb3c5bc15 |
+
+Manifest/object fingerprints remained unchanged after the workflow. Candidate
+observation metadata and audit rows advanced normally. Security advisor findings
+were identical before and after deployment; existing unrelated findings were not
+silently treated as resolved. Performance advisors listed 11 unused-index INFO
+findings and one auth-connection INFO finding; no indexes or connection settings
+were changed.
+
+The repair is deployed and production-verified. Continue through the existing
+scheduled GC. Model mathematics, training, settlement and SHADOW/PROD rules remain
+outside this infrastructure-only change.
