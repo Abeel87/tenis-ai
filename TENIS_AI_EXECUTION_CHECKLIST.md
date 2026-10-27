@@ -30,7 +30,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
 - BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.
 - AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; fresh-main integration
-  `1547f44573c8666541c97475be335afdb5dd5d2f`. Recheck again immediately before merge.
+  `1547f44573c8666541c97475be335afdb5dd5d2f`. Recheck again before merge.
 - [x] Inspected recent main runs, core publication logs, rejected Neuron training,
   current source files and Supabase error aggregates/security/performance advisors.
 - [x] Confirmed growing selection/settlement report blobs (94.23/93.29 MiB) and
@@ -40,7 +40,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   completeness and concurrent-main preservation using local Git remotes.
 - [x] Minimal repair in existing chunk owner and three existing publication steps.
   Real reports round-trip with identical SHA-256, six parts each, maximum 16 MiB.
-- [x] Full local regression: 1816 passed in 65.18s; two existing Neuron empty-fixture
+- [x] Additional confirmed checkout bottleneck: keep full commit history and defer
+  obsolete blobs in the four existing full-history checkouts. Four before-fix
+  failures reproduce eager downloads; test complete ancestry/diffs/lazy old reads.
+- [x] All 19 final focused transport tests pass (4.09s).
+- [x] Final full local regression: 1820 passed in 60.63s; two existing Neuron empty-fixture
   warnings. Local CatBoost installation repaired and its binary SHA-256 verified.
 - [~] Nine PR workflows in progress; final fresh-main head must be green before merge.
 - [ ] Fresh-main integration, all required CI green, merge and production proof.

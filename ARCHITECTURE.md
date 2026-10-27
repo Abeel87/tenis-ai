@@ -244,6 +244,12 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 ### Exact-byte repository publication transport
 
+The full-history checkouts used by core scope classification, UI health, market
+and DNA retain `fetch-depth: 0` with `filter: blob:none`. Commit history and current
+working-tree files remain available; obsolete blob contents are fetched only on
+demand. Change classification and historical provenance checks keep their existing
+Git contracts without eagerly transferring every archived JSON generation.
+
 `scripts/history_publication_chunks.py` owns Git-safe storage for `history.json`, `prediction_ledger_shadow.json`, `prediction_ledger_selection_shadow.json` and `prediction_ledger_settlement_shadow.json`. Its existing workflow restore/pack boundaries preserve each complete source byte-for-byte using separate SHA-256 manifests and 16 MiB parts. Core/market generation restores before consumers and packs before Git staging. Pages restores canonical JSON before runtime snapshot creation and excludes the redundant chunk directories from its artifact. Existing prediction/settlement owners and JSON paths remain unchanged. Core, market and full DNA publication fetch only `main` without tags before their existing rebase/push; unrelated branches are not publication inputs. Freshness checks, conflict handling and non-forced pushes are unchanged.
 
 

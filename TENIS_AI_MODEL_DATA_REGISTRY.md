@@ -1106,6 +1106,11 @@ retention change. Existing core, market and full DNA publishers now fetch only
 branches. Rebase, concurrent-report preservation, freshness and non-forced push
 remain unchanged. Evidence: `audits/publication_transport_20261027.md`.
 
+The same audit also confirmed CI checkout delays over five minutes. Core scope,
+UI health, market and DNA keep full commit history with `filter: blob:none`;
+historical blob contents load on demand. A local Git integration test verifies
+current content, merge-base, name-only change classification and historical reads.
+
 ## Superbet watchdog completion wakeups — 2026-10-08
 
 `.github/workflows/superbet-market-watchdog.yml` now also wakes after successful main Neuron SHADOW research and Player DNA SHADOW refresh completion. This addresses a demonstrated scheduling gap where independent Neuron completed at 10:55 UTC but no market refresh followed the 07:51 publication. `.github/scripts/superbet_refresh_guard.py` rejects failed, non-main, PR and unrecognized completion sources before Actions lookup. Existing active-core/market exclusion, five-minute post-core grace, 40-minute work-start freshness and exact operator semantics remain unchanged. This is another trigger for the existing guard, not another refresh producer or a guarantee of GitHub scheduler availability.
