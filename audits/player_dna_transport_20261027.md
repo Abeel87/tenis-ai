@@ -1,6 +1,6 @@
 # Player DNA transport optimization — 2026-10-27
 
-Companion to publication repair #562. Two existing workflow settings change:
+PR #563, companion to publication repair #562. Merge #562 first. Two existing workflow settings change:
 full commit history is retained with `filter: blob:none`, and full-report
 publication fetches only main without tags before the existing snapshot freshness
 check, rebase and non-forced push.
