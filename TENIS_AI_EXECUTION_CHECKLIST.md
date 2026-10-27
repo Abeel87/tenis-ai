@@ -30,7 +30,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
 - BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.
 - AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; fresh-main integration
-  `0ea8325d3fcdb0752f8a97ec8cc369a162fa9730`. Recheck again immediately before merge.
+  `1547f44573c8666541c97475be335afdb5dd5d2f`. Recheck again immediately before merge.
 - [x] Inspected recent main runs, core publication logs, rejected Neuron training,
   current source files and Supabase error aggregates/security/performance advisors.
 - [x] Confirmed growing selection/settlement report blobs (94.23/93.29 MiB) and
