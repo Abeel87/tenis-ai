@@ -25,6 +25,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION TRANSPORT**
+- AUTHORIZATION: user requested a list of confirmed remaining issues and immediate
+  technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
+- BRANCH: `fix/publication-transport-20261027`; PR/CI pending.
+- AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; subsequent live main
+  `604de6aee5f9bbe39075e1529375b4f948287f68`. Recheck before PR/merge.
+- [x] Inspected recent main runs, core publication logs, rejected Neuron training,
+  current source files and Supabase error aggregates/security/performance advisors.
+- [x] Confirmed growing selection/settlement report blobs (94.23/93.29 MiB) and
+  roughly eight minutes spent fetching unrelated branches in core run 40422422372.
+- [x] Added reproductions: six failures before the fix; all 15 focused tests pass
+  afterwards, including exact bytes, corruption rejection, Pages/runtime archive
+  completeness and concurrent-main preservation using local Git remotes.
+- [x] Minimal repair in existing chunk owner and three existing publication steps.
+  Real reports round-trip with identical SHA-256, six parts each, maximum 16 MiB.
+- [x] Full local regression: 1816 passed in 65.18s; two existing Neuron empty-fixture
+  warnings. Local CatBoost installation repaired and its binary SHA-256 verified.
+- [~] PR CI pending.
+- [ ] Fresh-main integration, all required CI green, merge and production proof.
+- NEURON: run 40298154578 rejected an incomplete source set (empty ATP ongoing CSV,
+  no cache); the previous accepted model stayed active. Source now returns 11 rows.
+  Do not weaken the gate, change training or claim this was a model-quality defect.
+- SUPABASE: last-day HTTP 500 / SQLSTATE 57014 occurrences are the three GC runs
+  before deployment. No new error class found in the inspected HTTP/PG aggregate.
+- FILES: chunk transport, Pages cleanup, core/market/DNA fetch commands, regression
+  tests, architecture/registry, this checklist and publication audit/round-trip evidence.
+- DO NOT REDO: completed GC #560/#561, Neuron #557/#558/#559. No destructive
+  Git history rewrite, archive deletion or changes to active data/model contracts.
+- NEXT EXACT ACTION: finish regression, publish/review PR on fresh main and merge
+  only green; verify the normal producer packs both reports and Pages restores them.
+
 **TRAINING ARCHIVE GC TIMEOUT — 2026-10-27 / PRODUCTION VERIFIED**
 - AUTHORIZATION: repair repeated GC timeout while preserving 168h grace, latest
   two complete manifests, pins and all active training references.

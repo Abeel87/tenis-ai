@@ -317,7 +317,7 @@ jobs:
           git add frontend/data
           git diff --cached --quiet || git commit -m "data: refresh tennis analysis"
           for attempt in 1 2 3; do
-            git fetch origin
+            git fetch origin --no-tags main:refs/remotes/origin/main
             if ! git rebase origin/main; then
               # Only the full producer may replace meta after a readiness-only
               # commit, and only when its fixture snapshot is strictly newer.

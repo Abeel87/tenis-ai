@@ -320,7 +320,7 @@ jobs:
           fi
           git commit -m "data: refresh Superbet market context"
           for attempt in 1 2 3; do
-            git fetch origin
+            git fetch origin --no-tags main:refs/remotes/origin/main
             if git rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0

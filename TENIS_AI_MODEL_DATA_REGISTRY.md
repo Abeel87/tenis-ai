@@ -1097,6 +1097,15 @@ PR #521 production full run 36438771639 succeeded. Latest reason-specific report
 Canonical storage transport owner: `scripts/history_publication_chunks.py`. The immutable `prediction_ledger_shadow.json` exceeded GitHub's 100 MiB object limit and blocked the entire core publication in run 37683103451. The existing exact-byte chunk transport now also packs/restores this ledger using its own `prediction_ledger_shadow_chunks` manifest and 16 MiB parts. All existing workflow restore boundaries retain the original JSON path for consumers; legacy unchunked checkouts remain supported. SHA-256 verification occurs before removal/restoration, and Pages removes redundant repository chunk copies only after source restoration and runtime archiving. No rows, probabilities, identity, timestamps, settlement or model calculations change. PR #525 passed 7/7 checks and merged as ad5924f. Full update/Pages runs 37734745919 and 37742821901 verified production chunk publication and restoration. See LIVE CHECKPOINT.
 
 
+Publication transport follow-up (2026-10-27): the same `history_publication_chunks.py`
+owner also covers the growing selection and settlement SHADOW reports. Run
+40422422372 warned about 94.23/93.29 MiB JSON blobs; exact 16 MiB parts preserve
+every byte at the same restored consumer paths. No research/settlement logic or
+retention change. Existing core, market and full DNA publishers now fetch only
+`main` without tags; the core run spent about eight minutes fetching unrelated
+branches. Rebase, concurrent-report preservation, freshness and non-forced push
+remain unchanged. Evidence: `audits/publication_transport_20261027.md`.
+
 ## Superbet watchdog completion wakeups — 2026-10-08
 
 `.github/workflows/superbet-market-watchdog.yml` now also wakes after successful main Neuron SHADOW research and Player DNA SHADOW refresh completion. This addresses a demonstrated scheduling gap where independent Neuron completed at 10:55 UTC but no market refresh followed the 07:51 publication. `.github/scripts/superbet_refresh_guard.py` rejects failed, non-main, PR and unrecognized completion sources before Actions lookup. Existing active-core/market exclusion, five-minute post-core grace, 40-minute work-start freshness and exact operator semantics remain unchanged. This is another trigger for the existing guard, not another refresh producer or a guarantee of GitHub scheduler availability.
