@@ -79,7 +79,7 @@ joins and label grouping no longer retain the full raw population. Every later
 consumer gets an independent read, with unchanged feature/label semantics.
 Initial CI RSS: recent-form 4,089,540 KB; scorer 4,755,876 KB, both exit zero.
 The merged repair is active; the 2026-10-23 audit confirmed later successful normal
-market and DNA workflows. A further allocation
+market workflows. A further allocation
 regression covers pandas flattening shared feature maps before evaluation. The
 canonical frame adapter now preserves exact values/types/order column by column;
 fitted coefficients and predictions remain exactly equal in parity regressions.
@@ -1096,6 +1096,20 @@ PR #521 production full run 36438771639 succeeded. Latest reason-specific report
 
 Canonical storage transport owner: `scripts/history_publication_chunks.py`. The immutable `prediction_ledger_shadow.json` exceeded GitHub's 100 MiB object limit and blocked the entire core publication in run 37683103451. The existing exact-byte chunk transport now also packs/restores this ledger using its own `prediction_ledger_shadow_chunks` manifest and 16 MiB parts. All existing workflow restore boundaries retain the original JSON path for consumers; legacy unchunked checkouts remain supported. SHA-256 verification occurs before removal/restoration, and Pages removes redundant repository chunk copies only after source restoration and runtime archiving. No rows, probabilities, identity, timestamps, settlement or model calculations change. PR #525 passed 7/7 checks and merged as ad5924f. Full update/Pages runs 37734745919 and 37742821901 verified production chunk publication and restoration. See LIVE CHECKPOINT.
 
+
+Publication transport follow-up (2026-10-27): the same `history_publication_chunks.py`
+owner also covers the growing selection and settlement SHADOW reports. Run
+40422422372 warned about 94.23/93.29 MiB JSON blobs; exact 16 MiB parts preserve
+every byte at the same restored consumer paths. No research/settlement logic or
+retention change. Existing core and market publishers now fetch only
+`main` without tags; the core run spent about eight minutes fetching unrelated
+branches. Rebase, concurrent-report preservation, freshness and non-forced push
+remain unchanged. Evidence: `audits/publication_transport_20261027.md`.
+
+The same audit also confirmed CI checkout delays over five minutes. Core scope,
+UI health and market keep full commit history with `filter: blob:none`;
+historical blob contents load on demand. A local Git integration test verifies
+current content, merge-base, name-only change classification and historical reads.
 
 ## Superbet watchdog completion wakeups — 2026-10-08
 

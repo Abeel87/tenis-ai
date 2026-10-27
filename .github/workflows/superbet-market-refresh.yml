@@ -88,6 +88,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.sha || 'main' }}
           fetch-depth: 0
+          filter: blob:none
       - name: Recheck refresh freshness after concurrency wait
         id: freshness
         env:
@@ -320,7 +321,7 @@ jobs:
           fi
           git commit -m "data: refresh Superbet market context"
           for attempt in 1 2 3; do
-            git fetch origin
+            git fetch origin --no-tags main:refs/remotes/origin/main
             if git rebase origin/main && git push origin HEAD:main; then
               echo "changed=true" >> "$GITHUB_OUTPUT"
               exit 0

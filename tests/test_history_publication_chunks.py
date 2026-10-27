@@ -5,6 +5,12 @@ import pytest
 
 from scripts import history_publication_chunks as publication
 
+LEDGER_FILES = [
+    'prediction_ledger_shadow.json',
+    'prediction_ledger_selection_shadow.json',
+    'prediction_ledger_settlement_shadow.json',
+]
+
 
 def test_history_survives_repository_publication(tmp_path, monkeypatch):
     monkeypatch.setattr(publication, 'CHUNK_BYTES', 128)
@@ -21,7 +27,7 @@ def test_history_survives_repository_publication(tmp_path, monkeypatch):
     assert hashlib.sha256((tmp_path / 'history.json').read_bytes()).digest() == hashlib.sha256(original).digest()
 
 
-@pytest.mark.parametrize('filename', ['history.json', 'prediction_ledger_shadow.json'])
+@pytest.mark.parametrize('filename', ['history.json', *LEDGER_FILES])
 def test_corrupt_chunk_refuses_restore(tmp_path, monkeypatch, filename):
     monkeypatch.setattr(publication, 'CHUNK_BYTES', 16)
     (tmp_path / filename).write_bytes(b'1234567890' * 10)
@@ -32,13 +38,14 @@ def test_corrupt_chunk_refuses_restore(tmp_path, monkeypatch, filename):
     assert not (tmp_path / filename).exists()
 
 
-def test_cli_preserves_prediction_ledger_across_publication(tmp_path):
+@pytest.mark.parametrize('filename', LEDGER_FILES)
+def test_cli_preserves_prediction_ledger_across_publication(tmp_path, filename):
     import subprocess
     import sys
 
     ledger = b'{"rows":[{"id":"frozen", "probability":0.713}],"mode":"SHADOW_ONLY"}\n'
     (tmp_path / 'history.json').write_bytes(b'[]\n')
-    target = tmp_path / 'prediction_ledger_shadow.json'
+    target = tmp_path / filename
     target.write_bytes(ledger)
     command = [sys.executable, str(publication.ROOT / 'scripts/history_publication_chunks.py')]
     subprocess.run(command + ['pack', '--data', str(tmp_path)], check=True)
@@ -48,9 +55,9 @@ def test_cli_preserves_prediction_ledger_across_publication(tmp_path):
     assert target.read_bytes() == ledger
 
 
-def test_prediction_ledger_multiple_chunks_and_repack(tmp_path, monkeypatch):
+@pytest.mark.parametrize('name', LEDGER_FILES)
+def test_prediction_ledger_multiple_chunks_and_repack(tmp_path, monkeypatch, name):
     monkeypatch.setattr(publication, 'CHUNK_BYTES', 32)
-    name = 'prediction_ledger_shadow.json'
     target = tmp_path / name
     original = json.dumps({'rows': [{'id': i, 'probability': 0.713} for i in range(20)]}).encode()
     target.write_bytes(original)
@@ -64,3 +71,30 @@ def test_prediction_ledger_multiple_chunks_and_repack(tmp_path, monkeypatch):
     assert len(list(folder.glob('*.part'))) == 1
     publication.restore(tmp_path, name)
     assert target.read_bytes() == b'{"rows":[]}'
+
+
+def test_pages_retains_all_ledger_bytes_but_removes_repository_parts(tmp_path):
+    import subprocess
+    import sys
+    from scripts import runtime_snapshot
+
+    data = tmp_path / 'frontend/data'
+    data.mkdir(parents=True)
+    originals = {name: json.dumps({'report': name, 'rows': [{'p': 0.713}]}).encode()
+                 for name in ['history.json', *LEDGER_FILES]}
+    for name, body in originals.items():
+        (data / name).write_bytes(body)
+        publication.pack(data, name)
+    command = [sys.executable, str(publication.ROOT / 'scripts/history_publication_chunks.py')]
+    subprocess.run(command + ['restore', '--data', str(data)], check=True)
+    archive = tmp_path / 'runtime.tar.gz'
+    runtime_snapshot.pack(data, archive)
+    manifest = runtime_snapshot.verify(archive)
+    for name, body in originals.items():
+        assert manifest['files'][name]['sha256'] == hashlib.sha256(body).hexdigest()
+    action = (publication.ROOT / '.github/actions/prepare-pages/action.yml').read_text()
+    cleanup = next(line.strip().removeprefix('run: ') for line in action.splitlines()
+                   if line.strip().startswith('run: rm -rf '))
+    subprocess.run(['bash', '-e', '-c', cleanup], cwd=tmp_path, check=True)
+    assert not list(data.glob('*_chunks')), 'Pages must not ship redundant repository parts'
+    assert {name: (data / name).read_bytes() for name in originals} == originals

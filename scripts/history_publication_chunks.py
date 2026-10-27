@@ -97,13 +97,16 @@ def main() -> None:
     args = parser.parse_args()
     action = {'pack': pack, 'restore': restore, 'verify': verify}[args.action]
     action(args.data)
-    # Legacy checkouts still contain the ledger JSON. Once packed, every existing
-    # restore boundary reconstructs the identical bytes before any consumer runs.
-    filename = 'prediction_ledger_shadow.json'
-    target, _, manifest = paths(args.data, filename)
-    if target.exists() or manifest.exists():
-        if args.action != 'verify' or manifest.exists():
-            action(args.data, filename=filename)
+    # Ledger reports grow with the same frozen population as the source ledger.
+    # Legacy unchunked and absent optional reports remain supported. Every
+    # existing restore boundary reconstructs exact bytes before consumers run.
+    for filename in ('prediction_ledger_shadow.json',
+                     'prediction_ledger_selection_shadow.json',
+                     'prediction_ledger_settlement_shadow.json'):
+        target, _, manifest = paths(args.data, filename)
+        if target.exists() or manifest.exists():
+            if args.action != 'verify' or manifest.exists():
+                action(args.data, filename=filename)
 
 
 if __name__ == '__main__':
