@@ -25,31 +25,53 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**TRAINING ARCHIVE GC TIMEOUT — 2026-10-25 / CI IN PROGRESS**
+**TRAINING ARCHIVE GC TIMEOUT — 2026-10-27 / PRODUCTION VERIFIED**
 - AUTHORIZATION: repair repeated GC timeout while preserving 168h grace, latest
   two complete manifests, pins and all active training references.
-- BRANCH: `fix/archive-gc-timeout-20261025`; PR #560.
-- SOURCE BASELINE: `f4f224868b5e45f7723331bd97788376f5281204`.
+- SOURCE PR: #560, merged as `55cff432c9d05df7c40e4c77989d24c9046fd4dc`.
+  Branch: `fix/archive-gc-timeout-20261025`; all eight workflows green on
+  `4e86afc50aa098c7e721d9341147fe8eb94415bd`.
+- LAST VERIFIED RUNTIME MAIN: `45c061a3556fbca305e7d6233db48e15f44798b3`.
+  Documentation closeout branch: `docs/archive-gc-verified-20261027`;
+  GitHub remains authoritative for this documentation-only PR's CI/merge.
 - [x] Inspected failed runs 39962502594, 40139133284 and 40196696824, live
   PostgreSQL error context, function definitions/ACLs, indexes and advisors.
 - [x] Reproduced the scan cost: 1.1M entries scanned for empty terminal manifests;
   observer candidate query 14.5s; entry-level prepare anti-join near/over budget.
 - [x] Minimal replacement of the two canonical SQL functions; fixed 30s timeout,
   grace, ownership and deletion pipeline preserved. No index or Edge changes.
-- [x] Read-only live equivalence checks; isolated SQL safety tests 10/10 pass.
-- [x] Full Python suite: 1806 passed in 61.03s in an isolated temporary checkout.
-  Query-isolation regressions prove all surrounding grace/mutation code unchanged.
-- [x] Fresh-main comparison at `707c39607c3a5ac2e186baae9b632aabc1782eab`:
-  only generated frontend data moved. PR #560 preserves that current base.
-- [~] PR published; remote CI in progress. Recheck fresh main before merge.
-- [ ] Apply reviewed migration, verify definitions/ACLs/unchanged data, run normal
-  OIDC workflow and reconcile its audit/protected-object integrity.
+- [x] Live read-only equivalence checks; isolated SQL safety tests 10/10 pass.
+  Full Python suite: 1806 passed locally in 61.03s and in final CI in 60.06s
+  (health job 121317103822). Surrounding grace/mutation code remains identical.
+- [x] Integrated fresh main `8967cf37cff33c7c6868a33b6b27924014afa4a8`,
+  reran all eight workflows and confirmed unchanged main immediately before merge.
+- [x] Applied exact reviewed SQL to Supabase on 2026-10-27 at 00:04 UTC.
+  Live migration version: `20261027000420`, name `training_archive_gc_query_plan`.
+  Earlier approval requests expired without deployment; they were not success.
+- [x] Both live function bodies exactly match the migration. Owner, SECURITY
+  DEFINER, fixed search paths, service-only ACLs and 30s timeout unchanged.
+  Pre/post migration counts and all seven metadata fingerprints identical.
+- [x] Normal OIDC GC run `40196696824`, attempt 2, job `121925205544`: SUCCESS.
+  Preview 00:05:33–00:05:35 UTC; Apply 00:05:35–00:05:42 UTC. Unchanged Edge
+  contract revision `sha256:92b6049dc3586120bbb2d4e215ef94ebcb0362539e16b7aba24c7bb18e4f1ac8`.
+- [x] Database apply audit 111: complete, zero expired/planned/deleted/skipped.
+  The rerun's original GitHub/OIDC source SHA is
+  `ca0e03e49db501fa5107576773db1b7331af8e3f`; checkout used current main above.
+- [x] Retention gates explain zero deletion: 3829 eligible objects, 3597 mature,
+  232 still in grace; those young objects block all 75 expirable manifests.
+  No eligible object is absent or wrong-size. No bytes were claimed as freed.
+- [x] Post-run integrity: 15515 protected unique objects, zero absent/wrong-size;
+  latest two manifests, all 1161922 entries, 19344 objects / 1692826501 B unchanged.
+  Zero active pins and zero pending batches; pin protection is covered by SQL tests.
+- [x] Security advisor findings unchanged from the pre-migration baseline.
 - FILES: query-plan migration, PostgreSQL tests and their CI, pinned test dependency,
   GC documentation, `audits/training_archive_gc_timeout_20261025.md`, this checkpoint.
-- DO NOT REDO: Neuron #557/#558/#559, earlier capacity/compression changes or
-  unrelated open PRs. No model/training/settlement/SHADOW-PROD changes.
-- NEXT EXACT ACTION: finish PR #560 CI, recheck fresh main and merge only green,
-  then verify production through the existing GC owner.
+- BLOCKERS: none for the timeout repair. Remaining grace is expected policy.
+- DO NOT REDO: #560 repair, Neuron #557/#558/#559, earlier capacity/compression
+  changes or unrelated open PRs. No model/training/settlement/SHADOW-PROD changes.
+- NEXT EXACT ACTION: let the existing scheduled GC re-evaluate retention normally.
+  A grace boundary does not guarantee manifest expiry; never bypass remaining
+  references, latest-two retention, pins or continuous 168h eligibility.
 
 ### Prior checkpoint (completed; retained as evidence)
 
