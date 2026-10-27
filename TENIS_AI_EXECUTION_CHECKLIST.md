@@ -30,31 +30,33 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
 - BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.
 - AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; fresh-main integration
-  `1547f44573c8666541c97475be335afdb5dd5d2f`. Recheck again before merge.
+  `7930d7f7f72f725c465a12e211acfa6311d42930`. Recheck again before merge.
 - [x] Inspected recent main runs, core publication logs, rejected Neuron training,
   current source files and Supabase error aggregates/security/performance advisors.
 - [x] Confirmed growing selection/settlement report blobs (94.23/93.29 MiB) and
   roughly eight minutes spent fetching unrelated branches in core run 40422422372.
-- [x] Added reproductions: six failures before the fix; all 15 focused tests pass
+- [x] Added reproductions: five failures before the fix; all 14 initial focused tests pass
   afterwards, including exact bytes, corruption rejection, Pages/runtime archive
   completeness and concurrent-main preservation using local Git remotes.
-- [x] Minimal repair in existing chunk owner and three existing publication steps.
+- [x] Minimal repair in existing chunk owner and two existing publication steps.
   Real reports round-trip with identical SHA-256, six parts each, maximum 16 MiB.
 - [x] Additional confirmed checkout bottleneck: keep full commit history and defer
-  obsolete blobs in the four existing full-history checkouts. Four before-fix
+  obsolete blobs in the three existing full-history checkouts. Three before-fix
   failures reproduce eager downloads; test complete ancestry/diffs/lazy old reads.
-- [x] All 19 final focused transport tests pass (4.09s).
-- [x] Final full local regression: 1820 passed in 60.63s; two existing Neuron empty-fixture
+- [x] All 17 transport cases passed in the combined validation; final scoped run below.
+- [x] Final full local regression: 1818 passed in 56.13s; two existing Neuron empty-fixture
   warnings. Local CatBoost installation repaired and its binary SHA-256 verified.
-- [~] Nine PR workflows in progress; final fresh-main head must be green before merge.
+- [~] Eight PR workflows in progress; final fresh-main head must be green before merge.
 - [ ] Fresh-main integration, all required CI green, merge and production proof.
 - NEURON: run 40298154578 rejected an incomplete source set (empty ATP ongoing CSV,
   no cache); the previous accepted model stayed active. Source now returns 11 rows.
   Do not weaken the gate, change training or claim this was a model-quality defect.
 - SUPABASE: last-day HTTP 500 / SQLSTATE 57014 occurrences are the three GC runs
   before deployment. No new error class found in the inspected HTTP/PG aggregate.
-- FILES: chunk transport, Pages cleanup, core/market/DNA fetch commands, regression
+- FILES: chunk transport, Pages cleanup, core/market fetch and checkout commands, regression
   tests, architecture/registry, this checklist and publication audit/round-trip evidence.
+- COMPANION: validate the same two transport settings for Player DNA separately;
+  its complete SHADOW evaluation takes about an hour. No DNA model change.
 - DO NOT REDO: completed GC #560/#561, Neuron #557/#558/#559. No destructive
   Git history rewrite, archive deletion or changes to active data/model contracts.
 - NEXT EXACT ACTION: finish regression, publish/review PR on fresh main and merge

@@ -79,7 +79,7 @@ joins and label grouping no longer retain the full raw population. Every later
 consumer gets an independent read, with unchanged feature/label semantics.
 Initial CI RSS: recent-form 4,089,540 KB; scorer 4,755,876 KB, both exit zero.
 The merged repair is active; the 2026-10-23 audit confirmed later successful normal
-market and DNA workflows. A further allocation
+market workflows. A further allocation
 regression covers pandas flattening shared feature maps before evaluation. The
 canonical frame adapter now preserves exact values/types/order column by column;
 fitted coefficients and predictions remain exactly equal in parity regressions.
@@ -1101,13 +1101,13 @@ Publication transport follow-up (2026-10-27): the same `history_publication_chun
 owner also covers the growing selection and settlement SHADOW reports. Run
 40422422372 warned about 94.23/93.29 MiB JSON blobs; exact 16 MiB parts preserve
 every byte at the same restored consumer paths. No research/settlement logic or
-retention change. Existing core, market and full DNA publishers now fetch only
+retention change. Existing core and market publishers now fetch only
 `main` without tags; the core run spent about eight minutes fetching unrelated
 branches. Rebase, concurrent-report preservation, freshness and non-forced push
 remain unchanged. Evidence: `audits/publication_transport_20261027.md`.
 
 The same audit also confirmed CI checkout delays over five minutes. Core scope,
-UI health, market and DNA keep full commit history with `filter: blob:none`;
+UI health and market keep full commit history with `filter: blob:none`;
 historical blob contents load on demand. A local Git integration test verifies
 current content, merge-base, name-only change classification and historical reads.
 
