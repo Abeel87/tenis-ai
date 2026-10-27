@@ -48,8 +48,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   complete ledger/report JSON matches Git parts. No active source data lost.
 - [x] Remaining FAST Pages checkout cost reproduced: 207s in run 40429328294.
   One-line filter repair and real-Git regression pass; 18 focused cases in 4.00s.
-- [~] FAST FOLLOW-UP: branch `fix/fast-pages-transport-20261027`; fresh-main CI,
-  merge and post-merge FAST production verification pending. GitHub is authoritative.
+- [~] FAST FOLLOW-UP: PR #564, branch `fix/fast-pages-transport-20261027`;
+  integrated fresh main `b992541dfde728f0b66e3e2bd4ffc2272c512696` (Neuron data only).
+  CI, merge and post-merge FAST production verification pending.
 - [~] DNA COMPANION: PR #563, head `f91fe620ae052b3157d1141d1a9760122e53d52c`.
   Eight checks passed; complete DNA evaluation 40429514595 still running at this
   checkpoint. Only two Git transport settings change. Reconcile current main
