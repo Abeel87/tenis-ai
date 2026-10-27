@@ -15,6 +15,7 @@ def git(cwd, *args):
 @pytest.mark.parametrize('workflow,step_name', [
     ('update-and-pages.yml', 'Commit refreshed JSON'),
     ('superbet-market-refresh.yml', 'Commit refreshed market context'),
+    ('player-dna-shadow-refresh.yml', 'Publish Player DNA SHADOW reports'),
 ])
 def test_publication_fetch_excludes_other_branches_and_preserves_main(tmp_path, workflow, step_name):
     remote = tmp_path / 'remote.git'
@@ -67,7 +68,7 @@ def test_publication_fetch_excludes_other_branches_and_preserves_main(tmp_path, 
 
 @pytest.mark.parametrize('workflow', [
     'ui-smoke.yml', 'update-and-pages.yml',
-    'superbet-market-refresh.yml',
+    'superbet-market-refresh.yml', 'player-dna-shadow-refresh.yml',
 ])
 def test_full_history_checkout_defers_old_blobs_but_keeps_history(tmp_path, workflow):
     remote = tmp_path / 'remote.git'

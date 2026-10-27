@@ -123,6 +123,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           fetch-depth: 0
+          filter: blob:none
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -1344,7 +1345,7 @@ jobs:
           fi
           git commit -m "data: refresh Player DNA SHADOW"
           for attempt in 1 2 3; do
-            git fetch origin
+            git fetch origin --no-tags main:refs/remotes/origin/main
             # A newer core results snapshot invalidates this run-local SHADOW projection.
             if ! python - <<'PY'
           import json

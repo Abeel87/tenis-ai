@@ -1110,6 +1110,9 @@ The same audit also confirmed CI checkout delays over five minutes. Core scope,
 UI health and market keep full commit history with `filter: blob:none`;
 historical blob contents load on demand. A local Git integration test verifies
 current content, merge-base, name-only change classification and historical reads.
+The independently validated Player DNA workflow uses the same deferred-blob
+checkout and main-only full-report publication fetch. Its existing snapshot
+freshness rejection, SHADOW isolation and evaluation steps remain unchanged.
 
 ## Superbet watchdog completion wakeups — 2026-10-08
 
