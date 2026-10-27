@@ -50,7 +50,8 @@ repository's historical size.
   CLI paths, missing reports from restored runtime archive, three unbounded fetches).
 - After repair: **15 passed**. Coverage includes corruption rejection, multi-part
   restore/repack, unchanged bytes, complete runtime archive and Pages cleanup.
-- Local-Git integration executes each real workflow fetch command and proves it
+- Local-Git integration uses an actual shallow checkout with an all-branches fetch
+  refspec, executes each real workflow fetch command and proves it
   obtains new main, excludes unrelated branch/tag objects and preserves both a
   concurrent report and the current generated report through rebase/non-forced push.
 - Real production report round-trips are recorded in
@@ -63,3 +64,9 @@ repository's historical size.
   corresponding evidence is recorded in the live checkpoint.
 
 Reference: [GitHub large-file limits](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-large-files-on-github).
+
+Read-only inspection of all 13 advisor-listed public functions confirmed fixed
+search paths and internal caller checks for administrative/staff actions. The two
+anonymous functions intentionally return aggregate public counts or a username
+availability boolean. No ACL change was made. Leaked-password protection remains
+an existing optional Auth hardening advisory, not an observed authorization bypass.

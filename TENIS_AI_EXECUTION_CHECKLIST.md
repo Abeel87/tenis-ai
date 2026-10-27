@@ -28,7 +28,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 **POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION TRANSPORT**
 - AUTHORIZATION: user requested a list of confirmed remaining issues and immediate
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
-- BRANCH: `fix/publication-transport-20261027`; PR/CI pending.
+- BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.
 - AUDIT BASE: `fea8efce330f031649d42be5f58096273a04f586`; subsequent live main
   `604de6aee5f9bbe39075e1529375b4f948287f68`. Recheck before PR/merge.
 - [x] Inspected recent main runs, core publication logs, rejected Neuron training,
@@ -42,7 +42,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Real reports round-trip with identical SHA-256, six parts each, maximum 16 MiB.
 - [x] Full local regression: 1816 passed in 65.18s; two existing Neuron empty-fixture
   warnings. Local CatBoost installation repaired and its binary SHA-256 verified.
-- [~] PR CI pending.
+- [~] Nine PR workflows in progress; final fresh-main head must be green before merge.
 - [ ] Fresh-main integration, all required CI green, merge and production proof.
 - NEURON: run 40298154578 rejected an incomplete source set (empty ATP ongoing CSV,
   no cache); the previous accepted model stayed active. Source now returns 11 rows.

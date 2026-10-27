@@ -29,7 +29,9 @@ def test_publication_fetch_excludes_other_branches_and_preserves_main(tmp_path, 
     git(source, 'commit', '-m', 'base')
     git(source, 'push', 'origin', 'main')
     worker = tmp_path / 'worker'
-    git(tmp_path, 'clone', str(remote), str(worker))
+    # Actions checks out shallow history but can retain an all-branches fetch
+    # refspec. Use file:// so Git really honors depth for this local fixture.
+    git(tmp_path, 'clone', '--depth=1', '--no-single-branch', remote.as_uri(), str(worker))
     git(worker, 'config', 'user.name', 'test')
     git(worker, 'config', 'user.email', 'test@example.invalid')
     # An unrelated stale branch/tag must not be downloaded by publication.
