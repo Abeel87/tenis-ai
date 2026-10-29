@@ -25,6 +25,30 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**REPOSITORY RELIABILITY AUDIT — 2026-10-29 / VALIDATION IN PROGRESS**
+- AUTHORIZATION: user requested review and repair of all GitHub projects. This
+  change covers transport/publication only; model and SHADOW/PROD policy unchanged.
+- BRANCH: `fix/runtime-upload-retry-20261029`, based on main
+  `8778a92ed29fa5f6a9a7d8aff8c2d8f7e2a2f536`; check live main again before merge.
+- [x] Reconciled historical checkpoint: #562 is merged and its normal core
+  publication completed; #563 and #564 remain open with green older heads.
+- [x] Confirmed private publication run `40636213894`, job `122643672984`, failed
+  on transient HTTP 520 while uploading `frontend/data/market_lab_history.json`.
+  Subsequent runs recovered; no permanent data/model defect was inferred.
+- [x] Added failing regressions before repair: 17 signed-upload cases and three
+  missing transport cases. Existing CAS, immutable payload and conflict behavior
+  are explicitly covered. Signed response bodies are excluded from failure text.
+- [x] Ported the small transport changes from #563/#564 onto this current base:
+  blobless full-history FAST/DNA checkout and main-only DNA report-publication fetch.
+- [x] Full local regression: 1838 passed in 66.80s; two existing empty-fixture
+  Neuron warnings. Focused transport/upload suite: 25 passed in 4.89s.
+- [~] Fresh-head CI; audit details are recorded in
+  `audits/repository_reliability_20261029.md`.
+- [ ] Merge only green, verify normal production publications, then close #563/#564
+  as superseded. No model readiness promotion is part of this work.
+- NEXT EXACT ACTION: finish validation, create/review PR, verify unchanged main,
+  merge and record the actual CI/deployment evidence in this checkpoint.
+
 **POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION TRANSPORT**
 - AUTHORIZATION: user requested a list of confirmed remaining issues and immediate
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.

@@ -17,6 +17,14 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-10-29 transport reliability:** `scripts/publish_runtime_private.py` remains
+the signed-upload owner. Bounded retries of transient HTTP 5xx preserve identical
+prepared bytes, non-overwrite uploads and the existing activation CAS; exhausted
+uploads cannot activate. FAST/DNA full-history checkouts defer old blobs, and DNA
+report publication fetches main only. No source population, model calculation,
+readiness rule, training or SHADOW/PROD ownership changes. Validation/deployment
+status is in the live checkpoint and `audits/repository_reliability_20261029.md`.
+
 **2026-10-23 deployed verification:** PRs #553/#554/#555 are merged. Real core
 run `39919786176` passed all 1768 tests after generation and published source
 `77339f48319865a9ec4b635ac0bc6e9d274b0986` with tracker v4. Public verification

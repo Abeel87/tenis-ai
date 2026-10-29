@@ -4,6 +4,14 @@
 
 ## 1. Produkcja danych
 
+The existing private runtime publisher retries only transient signed PUT HTTP
+500/502/503/504/520/521/522/523/524 responses, at most three attempts with 1s/3s
+delays. Every attempt sends the same captured bytes to the same prepared object;
+the existing non-overwrite/conflict contract and generation CAS remain unchanged.
+Exhaustion never activates a generation. Errors contain status codes, not signed
+response bodies. FAST and Player DNA retain full commit history with blobless
+checkout; DNA report publication fetches only main without unrelated tags/refs.
+
 Market publication explicitly dispatches `runtime-private-delivery` (`market`),
 `ineed-shadow` and the existing fast-readiness path of `player-dna-shadow-refresh`.
 These consumers no longer subscribe to market completion via `workflow_run`,
