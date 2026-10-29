@@ -126,7 +126,7 @@ def test_player_dna_post_update_host_delivers_exact_snapshot_readiness_sidecar()
     publish = player.split("- name: Publish Player DNA SHADOW reports", 1)[1].split(
         "- name: Dispatch FAST Pages deploy", 1
     )[0]
-    assert "frontend/data/readiness_engine_shadow.json" in publish
+    assert "python scripts/publish_player_dna_reports.py full" in publish
     assert "frontend/data/history_coverage_audit_v949.json" not in publish
     assert "frontend/data/player_dna_player_state_shadow.json" not in publish
 
@@ -175,7 +175,7 @@ def test_player_dna_refresh_is_existing_post_update_candidate_host():
     assert "Build strict Player DNA point dataset" in player
     assert "Build leakage-safe Player DNA profiles" in player
     assert "Publish Player DNA SHADOW reports" in player
-    assert "git push origin HEAD:main" in player
+    assert "python scripts/publish_player_dna_reports.py full" in player
     assert "gh workflow run deploy-pages-fast.yml --ref main" in player
 
 
@@ -339,9 +339,7 @@ def test_player_dna_publishes_meta_only_after_exact_snapshot_guard_and_checks_ma
     publish = workflow.index("- name: Publish Player DNA SHADOW reports")
     assert guard < project < publish
     assert "project_observability_meta(" in workflow[project:publish]
-    assert "frontend/data/meta.json" in workflow[publish:]
-    assert "origin/main:frontend/data/results.json" in workflow[publish:]
-    assert "skipping stale full-report publish" in workflow[publish:]
+    assert "python scripts/publish_player_dna_reports.py full" in workflow[publish:]
 
 
 def test_exact_readiness_publishes_before_long_backtests_and_hourly_market_refresh():
@@ -351,9 +349,6 @@ def test_exact_readiness_publishes_before_long_backtests_and_hourly_market_refre
     early = workflow.index("- name: Publish exact LOGIC-08 readiness before long backtests")
     backtest = workflow.index("- name: Backtest simulated markets on historical holdout")
     assert guard < project < early < backtest
-    assert "git add frontend/data/readiness_engine_shadow.json frontend/data/meta.json" in workflow[early:backtest]
-    assert "origin/main:frontend/data/results.json" in workflow[early:backtest]
-    assert "skipping stale readiness publish" in workflow[early:backtest]
-    assert "rebase.autoStash=true" in workflow[early:backtest]
+    assert "python scripts/publish_player_dna_reports.py readiness" in workflow[early:backtest]
     assert 'workflows: ["Update tennis data and deploy Pages"]' in workflow
     assert "FAST_READINESS_ONLY != 'true'" in workflow[backtest:]

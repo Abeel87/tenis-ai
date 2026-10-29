@@ -4,6 +4,14 @@
 
 ## 1. Produkcja danych
 
+Player DNA's early readiness and final report stages share one Git publication
+owner, `scripts/publish_player_dna_reports.py`. It builds an exact owned-file tree
+on the freshly fetched main using a temporary Git index, preserving the running
+audit's worktree and index. Latest foreign metadata is retained by the canonical
+SHADOW projection; stale results block publication. A normal fast-forward push
+rejects concurrent main advances and retries from their new base. This replaces
+both conflicting inline rebase loops without changing producers or model policy.
+
 The existing private runtime publisher retries only transient signed PUT HTTP
 500/502/503/504/520/521/522/523/524 responses, at most three attempts with 1s/3s
 delays. Every attempt sends the same captured bytes to the same prepared object;

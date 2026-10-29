@@ -25,40 +25,73 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**REPOSITORY RELIABILITY AUDIT — 2026-10-29 / VALIDATION IN PROGRESS**
-- AUTHORIZATION: user requested review and repair of all GitHub projects. This
-  change covers transport/publication only; model and SHADOW/PROD policy unchanged.
-- BRANCH / PR: `fix/runtime-upload-retry-20261029`, #565. Initial baseline
-  `8778a92ed29fa5f6a9a7d8aff8c2d8f7e2a2f536`; fresh-main integration
-  `9b0c740bd5f02a6a71b1dba3130b2438ee45f619`. Recheck before merge.
-- [x] Reconciled historical checkpoint: #562 is merged and its normal core
-  publication completed; #563 and #564 remain open with green older heads.
-- [x] Confirmed private publication run `40636213894`, job `122643672984`, failed
-  on transient HTTP 520 while uploading `frontend/data/market_lab_history.json`.
-  Subsequent runs recovered; no permanent data/model defect was inferred.
-- [x] Added failing regressions before repair: 17 signed-upload cases and three
-  missing transport cases. Existing CAS, immutable payload and conflict behavior
-  are explicitly covered. Signed response bodies are excluded from failure text.
-- [x] Ported the small transport changes from #563/#564 onto this current base:
-  blobless full-history FAST/DNA checkout and main-only DNA report-publication fetch.
-- [x] Full local regression: 1838 passed in 66.80s; two existing empty-fixture
-  Neuron warnings. Focused transport/upload suite: 25 passed in 4.89s.
-- [x] Reviewed intervening core/Neuron/market generated-data changes; local
-  integration with `44a557196a5167535d2a6f5fa0315560cc3eea27` again passed
-  all 1838 tests in 67.24s. The following main commit only refreshes readiness/meta.
-- [x] All completed code/security/browser/project-health checks on initial PR
-  head `0ed1f4e8d0ab6f8f0bbf97a0f884277a6e1ca045` passed. Its full DNA run
-  reached walk-forward evaluation before fresh-main integration; do not claim
-  that initial long run completed. Fresh-head CI is authoritative.
-- [~] Fresh-head CI after integrating the complete normal publication cycle;
-  audit details are recorded in
-  `audits/repository_reliability_20261029.md`.
-- [ ] Merge only green, verify normal production publications, then close #563/#564
-  as superseded. No model readiness promotion is part of this work.
-- NEXT EXACT ACTION: finish current-head CI, review PR #565, verify unchanged main,
-  merge and record the actual CI/deployment evidence in this checkpoint.
+**PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / FOLLOW-UP VALIDATION**
+- BRANCH: `fix/player-dna-publication-race-20261029`; PR pending creation.
+  Reviewed source base: `a39c702f03c52196712ed06e03afb5ae8eb72490`.
+  PR retains generated core data from fresh main `39a462e561cff1ec44ce5625e4b42a6d6e31fab0`;
+  recursive-tree comparison confirmed no intervening source/workflow change.
+- [x] Post-merge run `40849136860`, job `123363935382`, failed at early readiness
+  publication: the full and fast producers changed the same two generated JSON
+  files. Retrying the same rebase repeated the identical conflict three times.
+- [x] Reproduced both early and final publication conflicts with real local Git
+  remotes before repair: 2 failures. The repaired cases pass.
+- [x] Replaced both inline publication loops with their single canonical owner,
+  `scripts/publish_player_dna_reports.py`. Each attempt starts a temporary Git
+  index at fresh main, installs only the declared exact report bytes and projects
+  SHADOW readiness onto latest meta through the unchanged canonical function.
+  A normal fast-forward push preserves concurrent main or rejects for retry.
+  Results changes still skip stale publication. The audit worktree/index stay intact.
+- [x] 12 real-Git regression cases cover both modes, concurrent readiness/meta,
+  push-time races, newer results, immutable report bytes, unrelated refs,
+  missing/invalid reports, retry exhaustion, no-op and local work isolation.
+  Focused suite: 37 passed. Full local regression: 1849 passed in 75.31s,
+  with the two existing Neuron empty-fixture warnings.
+- [~] Publish follow-up PR, require green current-head CI, validate its merge
+  against fresh main and verify ordinary readiness publication after deployment.
+- DO NOT CHANGE: model computations, training, thresholds, SHADOW/PROD, scheduler,
+  concurrency groups, retention or the canonical readiness projection semantics.
+- NEXT EXACT ACTION: finish follow-up CI, merge only green and record real
+  production publication evidence here. Do not mark the observed race repaired
+  in production before that evidence exists.
 
-**POST-GC RELIABILITY AUDIT — 2026-10-27 / PUBLICATION TRANSPORT**
+**REPOSITORY RELIABILITY AUDIT — 2026-10-29 / MERGED, VERIFYING PRODUCTION**
+- AUTHORIZATION: review and repair all GitHub projects. Scope is publication
+  transport only; model mathematics, training and SHADOW/PROD policy are unchanged.
+- [x] PR #565 merged as `b0c3752285423e915bc64a4c3a0c22fa0d5a357a`.
+  Exact source head `544ad8360c74825824bbe8b10b9b92ba04805406` passed all 11 checks,
+  including full Player DNA run `40838950601` and health run `40838950384`.
+- [x] Confirmed the earlier HTTP 520 upload failure in run `40636213894`, job
+  `122643672984`. Added failing regressions, then bounded retries in the canonical
+  signed-upload owner. Same bytes, non-overwrite objects and activation CAS remain.
+- [x] Completed FAST/DNA blobless full-history checkout and main-only DNA report
+  fetch. PRs #563/#564 are closed as superseded by the merged replacement.
+- [x] Fresh main advanced during CI only through 31 generated data files, to
+  `1c21abfd1faf63eb5143c5c4bf6a123091d1b16b`; no source/workflow blob changed.
+  Rebuilt the prospective merge against that base and reran all 1838 tests
+  (64.59s), UI checks and project-health stages with the exact CI baseline.
+  The actual merged tree is the identical verified tree
+  `3cee273e1e8eb49016344e1b0659e6b73f502011`, retaining all newer producer data.
+- [x] Runtime health: 0 failures / 2 existing payload-size warnings. Current raw
+  results/history are 35.67/234.20 MiB and are not enlarged by this change.
+  A standalone local invocation without CI metadata applies its strict 50 MiB
+  threshold; the authoritative merge check uses the existing exact-base comparison.
+- [x] Private DNA publication `40849777414` activated generation
+  `a3945afa-249b-45a6-87ee-7fc4d742c1ee` from source `a39c702`; FAST Pages
+  `40849774219` deployed successfully. The newer runtime publisher was used.
+- [~] Core/Pages `40849136609` remains in progress. Full DNA hit the separate
+  generated-file publication race recorded in the follow-up checkpoint above.
+- FILES: canonical private publisher, two existing workflow checkouts/fetch,
+  regression tests, architecture/registry, checklist and repository audit.
+- DO NOT REDO: #562 publication chunks, #560/#561 GC, #557/#558/#559 Neuron,
+  and the fixes in #565. No retention/GC-grace, model or SHADOW/PROD changes.
+- NEXT EXACT ACTION: verify normal post-merge publications, then replace the
+  pending item with actual run IDs, activation evidence and source commits.
+
+**HISTORICAL CHECKPOINT — POST-GC RELIABILITY AUDIT, 2026-10-27**
+
+This dated snapshot is preserved for history. PR #562 is merged; its remaining
+companion transport work was completed by #565 above. The current next action
+is the newest checkpoint, not the historical unfinished boxes below.
 - AUTHORIZATION: user requested a list of confirmed remaining issues and immediate
   technical repairs; model mathematics, training, settlement and SHADOW/PROD remain frozen.
 - BRANCH: `fix/publication-transport-20261027`; PR #562, CI in progress.

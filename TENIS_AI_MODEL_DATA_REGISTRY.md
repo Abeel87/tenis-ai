@@ -17,6 +17,16 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-10-29 concurrent DNA publication follow-up:** the single Git publication
+owner is `scripts/publish_player_dna_reports.py`, called by the existing early and
+final workflow stages. The old inline rebase loops are removed. It preserves the
+run-local audit worktree, captures report bytes once, checks exact results against
+fresh main, and projects readiness into current metadata using the unchanged
+`backend/readiness_engine_shadow.py::project_observability_meta`. A temporary Git
+index replaces only declared owned files; ordinary fast-forward push and bounded
+retry retain concurrent producer changes. Model/training/SHADOW policy is unchanged.
+Validation and rollout status are in the live checkpoint.
+
 **2026-10-29 transport reliability:** `scripts/publish_runtime_private.py` remains
 the signed-upload owner. Bounded retries of transient HTTP 5xx preserve identical
 prepared bytes, non-overwrite uploads and the existing activation CAS; exhausted
