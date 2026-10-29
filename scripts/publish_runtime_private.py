@@ -394,20 +394,31 @@ def upload_signed(url: str, source: Path) -> None:
         },
         method="PUT",
     )
-    try:
-        with urllib.request.urlopen(request, timeout=180) as response:
-            if response.status not in (200, 201):
+    # Only the immutable PUT is retried. Prepare/activation keep their existing
+    # generation/CAS semantics. Reuse the same bytes even if the local file moves.
+    delays = (1, 3)
+    transient_statuses = {500, 502, 503, 504, 520, 521, 522, 523, 524}
+    for attempt in range(len(delays) + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response:
+                if response.status not in (200, 201):
+                    raise PublishError(
+                        f"Signed upload returned unexpected HTTP {response.status}"
+                    )
+            return
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            exc.close()
+            # Preserve concurrent immutable-object handling; activation still
+            # verifies completeness and the expected generation after all PUTs.
+            if status == 409:
+                return
+            if status not in transient_statuses or attempt == len(delays):
+                # Signed URLs and upstream response bodies may contain tokens.
                 raise PublishError(
-                    f"Signed upload returned unexpected HTTP {response.status}"
-                )
-    except urllib.error.HTTPError as exc:
-        # Content-addressed objects are immutable. A 409 only means another
-        # concurrent generation already uploaded the exact same SHA object.
-        if exc.code != 409:
-            detail = exc.read().decode("utf-8", errors="replace")
-            raise PublishError(
-                f"Signed upload failed for {source}: HTTP {exc.code} {detail[:300]}"
-            ) from exc
+                    f"Signed upload failed for {source}: HTTP {status}"
+                ) from None
+            time.sleep(delays[attempt])
 
 
 def publish(layer: str, *, attempts: int = 2) -> dict[str, Any]:
