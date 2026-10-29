@@ -26,7 +26,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / FOLLOW-UP VALIDATION**
-- BRANCH: `fix/player-dna-publication-race-20261029`; PR pending creation.
+- BRANCH: `fix/player-dna-publication-race-20261029`; PR #566.
   Reviewed source base: `a39c702f03c52196712ed06e03afb5ae8eb72490`.
   PR retains generated core data from fresh main `39a462e561cff1ec44ce5625e4b42a6d6e31fab0`;
   recursive-tree comparison confirmed no intervening source/workflow change.
