@@ -42,9 +42,9 @@ the following readiness/meta-only update `9b0c740bd5f02a6a71b1dba3130b2438ee45f6
 All completed code/security/browser/project-health checks on the initial PR head
 passed. Its long DNA evaluation had reached walk-forward processing when the
 branch was refreshed; this is not recorded as a completed full evaluation.
-Current-head CI and production evidence must be recorded in the live checkpoint
-before this work is described as deployed. Earlier green runs are useful baseline
-evidence, not proof of this new commit's deployment.
+Completed current-head CI and production evidence are recorded below and in the
+live checkpoint. Earlier green runs are baseline evidence only; deployment claims
+below use the actual new source and producer runs.
 
 ## Completed source validation and merge
 
@@ -66,11 +66,13 @@ limit against the complete restored history; that is not the PR comparison.
 No limit or health policy was relaxed. The actual merged Git tree exactly equals
 the validated tree `3cee273e1e8eb49016344e1b0659e6b73f502011`.
 
-## Production rollout in progress
+## Signed-upload production verification
 
-Normal post-merge core/Pages run `40849136609` is in progress. Its successful
-completion and downstream private activation must be recorded here before this
-new code is described as production-verified.
+Normal core/Pages run `40849136609` completed successfully. Private core run
+`40852401197`, job `123374872402`, activated generation
+`82a61d1e-8399-4189-aca1-50bc82305947` from source `39a462e`: 270 files and
+251 uploaded objects. Its retention cleanup also succeeded. This is deployment
+proof for the signed-upload owner from #565, not an inference from older runs.
 
 ## Concurrent publication follow-up
 
@@ -92,4 +94,31 @@ contract, scheduler or concurrency group is changed, and run-local audit work is
 preserved. Twelve Git regressions cover conflict recovery, foreign metadata,
 immutable payloads, stale results, retry exhaustion, no-op, unrelated refs and
 invalid reports. Focused suite: 37 passed; full regression: 1849 passed in 75.31s.
-This follow-up still requires its own green CI and production verification.
+PR #566 merged as `fb117a59131c8608f295eedbb3a7c01d5ba5eb0c` after all 11 checks
+on exact head `81528eea7f6005134b1ac67af631381709af6236` passed. Full DNA run
+`40852815341` passed; health `40852815352` passed all 1849 tests in 85.87s.
+
+The fresh-main merge against `647e9576ac73db982c7d3c9b8ca7e719236b9a7c` also
+passed all 1849 tests in 65.09s and every UI/project-health workflow stage with
+the exact CI baseline. Intervening changes were generated runtime data and
+verified Neuron prediction history. Actual merged tree
+`691be953439559296297cca4a64a0a6155603b3e` equals that validated tree.
+
+## Concurrent publisher production verification
+
+Ordinary post-merge DNA run `40859564272`, job `123399637781`, completed the
+repaired early publication step at 10:56:55–10:57:00 UTC and its FAST deployment
+dispatch at 10:57:00–10:57:04 UTC. The published commit is
+`b6070832183329eca08a7eef533ec5dad0ae5a42`, with parent
+`fb117a59131c8608f295eedbb3a7c01d5ba5eb0c`. Only the readiness and meta files
+changed. Independent validation confirmed the exact canonical projection against
+the unchanged 210-match results snapshot and preservation of every foreign meta
+field. Report generation time is `2026-10-29T10:56:51.331338+00:00`.
+
+Downstream FAST Pages run `40861559349`, job `123405809386`, deployed successfully
+at 11:00:21 UTC. Post-merge health, browser, dependency and CodeQL checks passed.
+The long production DNA evaluation remains ordinary background work: this record
+does not claim its completion or a completed production final-report publish.
+The full required PR evaluation and real-Git tests of both publication modes
+passed before merge. Publication repairs #565/#566 are complete; model policy,
+retention and the existing explicit payload warnings remain unchanged.
