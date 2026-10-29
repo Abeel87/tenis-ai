@@ -37,7 +37,7 @@ jobs:
           tests/test_insufficient_history_evidence.py
 
       - name: Restore existing history cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/cache
           key: tennis-history-${{ runner.os }}-task010-${{ github.run_id }}
