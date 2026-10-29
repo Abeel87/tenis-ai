@@ -25,7 +25,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / FOLLOW-UP VALIDATION**
+**PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
+- LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.
 - BRANCH: `fix/player-dna-publication-race-20261029`; PR #566.
   Reviewed source base: `a39c702f03c52196712ed06e03afb5ae8eb72490`.
   PR retains generated core data from fresh main `39a462e561cff1ec44ce5625e4b42a6d6e31fab0`;
@@ -46,15 +47,35 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   missing/invalid reports, retry exhaustion, no-op and local work isolation.
   Focused suite: 37 passed. Full local regression: 1849 passed in 75.31s,
   with the two existing Neuron empty-fixture warnings.
-- [~] Publish follow-up PR, require green current-head CI, validate its merge
-  against fresh main and verify ordinary readiness publication after deployment.
+- [x] PR #566 merged as `fb117a59131c8608f295eedbb3a7c01d5ba5eb0c`.
+  Exact head `81528eea7f6005134b1ac67af631381709af6236` passed all 11 checks,
+  including full DNA `40852815341` and health `40852815352` (1849 tests, 85.87s).
+- [x] Fresh main `647e9576ac73db982c7d3c9b8ca7e719236b9a7c` added generated
+  runtime data and verified Neuron prediction history only. Its prospective merge
+  passed all 1849 tests in 65.09s and all UI/project-health stages. Runtime health
+  retained the 2 existing payload warnings with 0 failures. The actual merged tree
+  exactly matches verified tree `691be953439559296297cca4a64a0a6155603b3e`.
+- [x] Ordinary post-merge DNA run `40859564272`, job `123399637781`, passed
+  the repaired early publication and deployment-dispatch steps at 10:56:55–10:57:04 UTC.
+  It published `b6070832183329eca08a7eef533ec5dad0ae5a42` directly on `fb117a5`.
+  Only readiness/meta changed. Exact canonical projection, all foreign meta fields
+  and the results snapshot were independently verified for all 210 matches.
+- [x] Downstream FAST Pages run `40861559349`, job `123405809386`, deployed
+  successfully at 11:00:21 UTC. Post-merge health, browser, dependency and CodeQL
+  checks also passed. The long production DNA evaluation continues normally;
+  its eventual completion/final-report publication is not claimed here. The
+  required full PR evaluation and both real-Git publication modes already passed.
 - DO NOT CHANGE: model computations, training, thresholds, SHADOW/PROD, scheduler,
   concurrency groups, retention or the canonical readiness projection semantics.
-- NEXT EXACT ACTION: finish follow-up CI, merge only green and record real
-  production publication evidence here. Do not mark the observed race repaired
-  in production before that evidence exists.
+- BLOCKERS: none for these publication repairs. Existing payload-size warnings
+  remain visible; this work does not change retention or enlarge the payload.
+- NEXT EXACT ACTION: maintenance repairs #565/#566 are complete. Let the existing
+  scheduled producers continue; inspect fresh main and actual logs if a new failure
+  occurs. Continue model research only within the existing registry/authorization.
+- DO NOT REDO: the completed audit, publication fixes or green full PR evaluation.
+  Routine background model refreshes are separate from this completed repair.
 
-**REPOSITORY RELIABILITY AUDIT — 2026-10-29 / MERGED, VERIFYING PRODUCTION**
+**REPOSITORY RELIABILITY AUDIT — 2026-10-29 / SIGNED-UPLOAD PRODUCTION VERIFIED**
 - AUTHORIZATION: review and repair all GitHub projects. Scope is publication
   transport only; model mathematics, training and SHADOW/PROD policy are unchanged.
 - [x] PR #565 merged as `b0c3752285423e915bc64a4c3a0c22fa0d5a357a`.
@@ -78,14 +99,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Private DNA publication `40849777414` activated generation
   `a3945afa-249b-45a6-87ee-7fc4d742c1ee` from source `a39c702`; FAST Pages
   `40849774219` deployed successfully. The newer runtime publisher was used.
-- [~] Core/Pages `40849136609` remains in progress. Full DNA hit the separate
-  generated-file publication race recorded in the follow-up checkpoint above.
+- [x] Normal core/Pages `40849136609` completed successfully. Private core
+  `40852401197`, job `123374872402`, activated generation
+  `82a61d1e-8399-4189-aca1-50bc82305947` from `39a462e` with 270 files and
+  251 uploaded objects. Private retention cleanup also completed successfully.
+  The separate full-DNA publication race is handled by #566 above.
 - FILES: canonical private publisher, two existing workflow checkouts/fetch,
   regression tests, architecture/registry, checklist and repository audit.
 - DO NOT REDO: #562 publication chunks, #560/#561 GC, #557/#558/#559 Neuron,
   and the fixes in #565. No retention/GC-grace, model or SHADOW/PROD changes.
-- NEXT EXACT ACTION: verify normal post-merge publications, then replace the
-  pending item with actual run IDs, activation evidence and source commits.
+- NEXT EXACT ACTION: this signed-upload/checkout repair is complete. Continue only
+  the newer concurrent-publication checkpoint above; do not redo #565.
 
 **HISTORICAL CHECKPOINT — POST-GC RELIABILITY AUDIT, 2026-10-27**
 
