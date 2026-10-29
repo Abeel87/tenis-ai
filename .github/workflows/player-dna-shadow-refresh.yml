@@ -10,6 +10,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/publish_player_dna_reports.py'
       - 'backend/atomic_point_transition.py'
       - 'backend/canonical_point_event.py'
       - 'backend/player_dna_point_dataset.py'
@@ -44,6 +45,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'scripts/publish_player_dna_reports.py'
       - 'backend/atomic_point_transition.py'
       - 'backend/canonical_point_event.py'
       - 'backend/player_dna_point_dataset.py'
@@ -71,6 +73,7 @@ on:
       - 'backend/player_dna_hold_walk_forward.py'
       - 'backend/player_dna_prospective_validation.py'
       - 'backend/player_identity.py'
+      - 'tests/test_player_dna_publication.py'
       - 'tests/test_atomic_point_transition.py'
       - 'tests/test_canonical_point_event.py'
       - 'tests/test_player_dna_point_dataset.py'
@@ -309,45 +312,9 @@ jobs:
         if: github.event_name != 'pull_request'
         id: readiness_commit
         run: |
-          set -euo pipefail
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add frontend/data/readiness_engine_shadow.json frontend/data/meta.json
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git commit -m "data: publish exact LOGIC-08 readiness"
-          for attempt in 1 2 3; do
-            git fetch origin main
-            if ! python - <<'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-          from backend.snapshot_digest import canonical_json_sha256
-
-          current = json.loads(Path('frontend/data/results.json').read_text(encoding='utf-8'))
-          latest = json.loads(subprocess.check_output(
-              ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
-          ))
-          if canonical_json_sha256(current) != canonical_json_sha256(latest):
-              raise SystemExit('LOGIC-08 results changed on main; skipping stale readiness publish')
-          PY
-            then
-              echo "stale=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if git -c rebase.autoStash=true rebase origin/main && git push origin HEAD:main; then
-              echo "changed=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            git rebase --abort || true
-            if [ "$attempt" -eq 3 ]; then
-              echo "Failed to publish exact LOGIC-08 readiness after 3 attempts"
-              exit 1
-            fi
-            sleep $((attempt * 2))
-          done
+          python scripts/publish_player_dna_reports.py readiness
 
       - name: Deploy exact LOGIC-08 readiness
         if: github.event_name != 'pull_request' && steps.readiness_commit.outputs.changed == 'true'
@@ -1338,44 +1305,7 @@ jobs:
         run: |
           git config user.name "tenis-ai-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add             frontend/data/player_dna_point_dataset_summary.json             frontend/data/player_dna_profile_readiness.json             frontend/data/player_dna_shadow_profile_summary.json             frontend/data/player_dna_point_scorer.json             frontend/data/player_dna_current_shadow.json             frontend/data/player_dna_current_dynamic_shadow.json             frontend/data/player_dna_current_simulation.json             frontend/data/player_dna_market_backtest.json             frontend/data/player_dna_hold_calibration_audit.json             frontend/data/player_dna_hold_walk_forward.json             frontend/data/player_dna_prospective_validation.json             frontend/data/readiness_engine_shadow.json             frontend/data/meta.json
-          if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git commit -m "data: refresh Player DNA SHADOW"
-          for attempt in 1 2 3; do
-            git fetch origin --no-tags main:refs/remotes/origin/main
-            # A newer core results snapshot invalidates this run-local SHADOW projection.
-            if ! python - <<'PY'
-          import json
-          import subprocess
-          from pathlib import Path
-          from backend.snapshot_digest import canonical_json_sha256
-
-          current = json.loads(Path('frontend/data/results.json').read_text(encoding='utf-8'))
-          latest = json.loads(subprocess.check_output(
-              ['git', 'show', 'origin/main:frontend/data/results.json'], text=True
-          ))
-          if canonical_json_sha256(current) != canonical_json_sha256(latest):
-              raise SystemExit('LOGIC-08 results changed on main; skipping stale full-report publish')
-          PY
-            then
-              echo "changed=false" >> "$GITHUB_OUTPUT"
-              echo "stale=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if git rebase origin/main && git push origin HEAD:main; then
-              echo "changed=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            git rebase --abort || true
-            if [ "$attempt" -eq 3 ]; then
-              echo "Failed to publish Player DNA SHADOW after 3 attempts"
-              exit 1
-            fi
-            sleep $((attempt * 2))
-          done
+          python scripts/publish_player_dna_reports.py full
 
       - name: Dispatch FAST Pages deploy
         if: github.event_name != 'pull_request' && env.FAST_READINESS_ONLY != 'true' && steps.commit.outputs.changed == 'true'
