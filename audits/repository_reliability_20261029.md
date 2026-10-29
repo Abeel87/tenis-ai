@@ -36,6 +36,12 @@ thresholds, model populations, storage retention or SHADOW/PROD boundaries.
 
 Local full regression: **1838 passed in 66.80s**, with the two existing Neuron
 empty-fixture warnings. Final focused transport/upload suite: 25 passed in 4.89s.
+After normal producer updates, local integration with main `44a557196a5167535d2a6f5fa0315560cc3eea27`
+again passed **1838 tests in 67.24s**. The fresh PR integration also incorporates
+the following readiness/meta-only update `9b0c740bd5f02a6a71b1dba3130b2438ee45f619`.
+All completed code/security/browser/project-health checks on the initial PR head
+passed. Its long DNA evaluation had reached walk-forward processing when the
+branch was refreshed; this is not recorded as a completed full evaluation.
 Current-head CI and production evidence must be recorded in the live checkpoint
 before this work is described as deployed. Earlier green runs are useful baseline
 evidence, not proof of this new commit's deployment.
