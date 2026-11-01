@@ -12,6 +12,13 @@ LEDGER_FILES = [
 ]
 
 
+def test_insufficient_history_audit_restores_publication_before_full_regression():
+    workflow = (publication.ROOT / '.github/workflows/insufficient-history-evidence-audit.yml').read_text()
+    restore = workflow.index('python scripts/history_publication_chunks.py restore')
+    regression = workflow.index('python -m pytest -q')
+    assert restore < regression
+
+
 def test_history_survives_repository_publication(tmp_path, monkeypatch):
     monkeypatch.setattr(publication, 'CHUNK_BYTES', 128)
     original = json.dumps([{'id': i, 'value': 'ą' * 15} for i in range(20)], ensure_ascii=False).encode()

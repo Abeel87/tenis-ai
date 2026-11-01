@@ -116,6 +116,9 @@ remains publishable. `backend/api_quota.py` continues reading the live account
 allowance: renewal from 100 to 10,000/day automatically changes the fixture daily
 cap from 8 to 800 without resetting recorded spend or changing any quota policy.
 See `audits/fixture_pagination_20261102.md` and the live checkpoint for rollout.
+The insufficient-history CI audit also restores exact repository chunks before
+its full suite. Independent historical-source audit failures currently block
+PR #568; the pagination repair is not yet deployed.
 
 **Rola:** bieżące mecze i dane fixture/provider.
 

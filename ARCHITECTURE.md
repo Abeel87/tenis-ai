@@ -270,6 +270,10 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 ### Exact-byte repository publication transport
 
+The insufficient-history evidence audit restores the canonical repository chunks
+before its full regression suite, which reads the complete prediction ledger.
+This uses the same transport owner as production and does not alter audit data.
+
 The full-history checkouts used by core scope classification, UI health and market
 retain `fetch-depth: 0` with `filter: blob:none`. Commit history and current
 working-tree files remain available; obsolete blob contents are fetched only on

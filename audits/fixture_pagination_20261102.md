@@ -45,3 +45,30 @@ failed before the repair. The focused suite passed 39 tests; the full suite pass
 and UI static checks passed. Exact readiness source-line references were updated
 with no change to the frozen readiness semantics. PR #568 carries the repair;
 CI and production status are recorded in the live execution checkpoint.
+
+## CI input blockers
+
+On head `74289fb`, health, browser, dependency, CodeQL and four diagnostic audits
+passed. Three other audits failed for independently verified input problems:
+
+- Insufficient-history run `41361706544` did not restore the chunked prediction
+  ledger before its full suite, so two snapshot tests could not open
+  `prediction_ledger_shadow.json`. Its workflow now uses the existing canonical
+  restore command before regression; an ordering regression reproduced the
+  omission before that repair. No history bytes or retention policy change.
+- Freshness-preview run `41361706429` fetched six of seven declared sources.
+  Independent read-only retrieval confirms `ch_ongoing` currently has zero rows
+  and the expected 50 columns. The current audit classifies empty CSVs as failed
+  refreshes. The other six inputs are nonempty. This task does not change the
+  historical-source acceptance policy or replace this audit's cache inputs.
+- Runtime-equivalence run `41361706419`, artifact `13105526751`, fetched all four
+  2024 inputs but the ATP, Challenger and WTA logical fingerprints differ from the
+  frozen manifest; ATP qualifying still matches. Candidate rows remain 12,474,
+  but candidate fingerprint is `cb2ba4f6f53f553972ea0b4ebc81a262932bf019ed219053ba6afc61699cc2d9`
+  instead of `876feb9ed27cb1aa56da1fc33dba534806a5ded87a87d82198f2b3298632cd4d`.
+  No lock is rewritten and no 2024 data is enabled for production.
+
+The two source-audit blockers are outside fixture retrieval. Their owning source
+contracts need a separate verified repair before PR #568 can meet the mandatory
+all-green merge rule. An account-renewal recovery through the existing production
+workflow does not depend on merging this PR.

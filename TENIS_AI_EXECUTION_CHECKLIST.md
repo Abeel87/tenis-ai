@@ -25,11 +25,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**FIXTURE PAGINATION / SOURCE FRESHNESS — 2026-11-02 / IN VALIDATION**
+**FIXTURE PAGINATION / SOURCE FRESHNESS — 2026-11-02 / SOURCE-AUDIT BLOCKED**
 - USER CONTEXT: expired Live Tennis subscription renewed to 10,000 calls/day.
   Diagnose and recover missing fixtures; maintain the existing quota policy.
 - BASE: `4634eb203388aba8bc7407e86ff01e6e346c79e3`; branch
   `fix/fixture-pagination-freshness-20261102`; PR #568. Recheck fresh main before merge.
+  Fresh main `46ec8887ffbb9c72037e4405d5634ee6f960c0bf` adds only generated
+  readiness/meta; no intervening source or workflow change.
 - [x] Production run `41310350896` used the last of 8 daily fixture calls;
   catalogue fell from 453 visible fixtures to 60, all starting before 14:15 UTC.
   Later run `41358825315` skipped fixtures but advanced the apparent source time.
@@ -42,16 +44,28 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Full local regression: 1866 passed in 68.75s, with the two existing Neuron
   empty-sample warnings. Delivery projection and UI static checks also passed.
   Readiness matrix source-line references moved with the code; semantics unchanged.
+- [x] Head `74289fb` passed health, browser, dependencies, CodeQL and four audits.
+  The insufficient-history audit exposed a missing chunk restore before full
+  tests. Reproduced it, added the canonical restore step and its ordering test.
+  Final local regression: 1867 passed in 64.93s, the same two existing warnings.
+- [!] Independent source-audit blockers: freshness preview `41361706429` sees an
+  empty `ch_ongoing` CSV (0 rows / 50 expected columns); runtime-equivalence
+  `41361706419` artifact `13105526751` sees changed 2024 ATP/CH/WTA fingerprints.
+  The candidate still has 12,474 rows but fails the frozen fingerprint contract.
+  See incident audit. No lock, historical acceptance policy or guard is weakened.
 - [~] Re-ran core job `125004833421` in run `41358825315` to recover the catalogue
   from the renewed account; result and live 10,000/day confirmation pending.
 - [ ] Exact-head PR CI, fresh-main integration and green merge.
 - [ ] Verify production uses repaired source and publishes fresh complete fixtures.
 - FILES: `backend/update.py`, dedicated regression tests, readiness source-line
-  matrix/test, registry, architecture, this checkpoint and incident audit.
+  matrix/test, insufficient-history audit workflow/chunk regression, registry,
+  architecture, this checkpoint and incident audit.
 - DO NOT REDO: #565/#566 transport repairs; do not reset cache/usage, fabricate
   fixtures, relax identity/PLAYABLE, change model mathematics or execute real bets.
-- NEXT EXACT ACTION: finish full tests and PR checks, merge only green against
-  current main, then verify the ordinary core/Pages/private delivery output.
+- NEXT EXACT ACTION: verify renewed-account core/Pages/private delivery from run
+  `41358825315` attempt 2. Separately repair the historical-source audit inputs
+  under their owning contracts, then recheck fresh main and all PR checks before
+  merging #568. Account-renewal recovery does not require this blocked PR.
 
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
 - LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.
