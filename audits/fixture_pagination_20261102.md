@@ -40,5 +40,8 @@ The 12-call run cap, request pacing, reserves and other consumer budgets remain.
 Seventeen isolated cases cover partial and complete pagination, exact page
 boundaries, missing totals, contradictory pages, genuine empty results, preserved
 source timestamps/data and subscription renewal with retained usage. Eleven
-failed before the repair. Full-suite, CI and production status are recorded in
-the live execution checkpoint; no deployment is claimed by this source audit.
+failed before the repair. The focused suite passed 39 tests; the full suite passed
+1866 in 68.75s, with two existing Neuron empty-sample warnings. Delivery projection
+and UI static checks passed. Exact readiness source-line references were updated
+with no change to the frozen readiness semantics. PR #568 carries the repair;
+CI and production status are recorded in the live execution checkpoint.

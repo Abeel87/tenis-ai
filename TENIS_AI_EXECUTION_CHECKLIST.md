@@ -29,7 +29,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - USER CONTEXT: expired Live Tennis subscription renewed to 10,000 calls/day.
   Diagnose and recover missing fixtures; maintain the existing quota policy.
 - BASE: `4634eb203388aba8bc7407e86ff01e6e346c79e3`; branch
-  `fix/fixture-pagination-freshness-20261102`; recheck fresh main before merge.
+  `fix/fixture-pagination-freshness-20261102`; PR #568. Recheck fresh main before merge.
 - [x] Production run `41310350896` used the last of 8 daily fixture calls;
   catalogue fell from 453 visible fixtures to 60, all starting before 14:15 UTC.
   Later run `41358825315` skipped fixtures but advanced the apparent source time.
@@ -39,12 +39,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   incomplete reads; attempts/reasons are separate. No new producer or quota owner.
 - [x] Focused regression: 39 passed, including renewal from 100 to 10,000/day
   without erasing the 8 recorded calls. No quota/model/training policy changes.
+- [x] Full local regression: 1866 passed in 68.75s, with the two existing Neuron
+  empty-sample warnings. Delivery projection and UI static checks also passed.
+  Readiness matrix source-line references moved with the code; semantics unchanged.
 - [~] Re-ran core job `125004833421` in run `41358825315` to recover the catalogue
   from the renewed account; result and live 10,000/day confirmation pending.
-- [ ] Full regression, exact-head PR CI, fresh-main integration and green merge.
+- [ ] Exact-head PR CI, fresh-main integration and green merge.
 - [ ] Verify production uses repaired source and publishes fresh complete fixtures.
-- FILES: `backend/update.py`, dedicated regression tests, registry, architecture,
-  this checkpoint and `audits/fixture_pagination_20261102.md`.
+- FILES: `backend/update.py`, dedicated regression tests, readiness source-line
+  matrix/test, registry, architecture, this checkpoint and incident audit.
 - DO NOT REDO: #565/#566 transport repairs; do not reset cache/usage, fabricate
   fixtures, relax identity/PLAYABLE, change model mathematics or execute real bets.
 - NEXT EXACT ACTION: finish full tests and PR checks, merge only green against
