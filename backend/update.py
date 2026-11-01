@@ -228,6 +228,7 @@ def fetch_fixtures():
     min_interval=request_interval_seconds(per_minute,utilization=0.90)
 
     rows=[]; seen=set(); offset=0; calls=0; last_call_monotonic=0.0
+    complete=False
     while calls<budget:
         if last_call_monotonic>0 and min_interval>0:
             wait=min_interval-(time.monotonic()-last_call_monotonic)
@@ -283,10 +284,16 @@ def fetch_fixtures():
             })
         offset += len(page)
         total=meta.get('total')
-        if not page or len(page)<200:
-            break
         if isinstance(total,(int,float)) and offset>=int(total):
+            complete=True
             break
+        if not page or len(page)<200:
+            # A short page is terminal only when it does not contradict the
+            # provider's declared total. Never publish a truncated catalogue.
+            complete=not isinstance(total,(int,float))
+            break
+    if not complete:
+        return None,'pagination-incomplete-safe-skip'
     return rows,'live-tennis-api-basic'
 
 
@@ -354,12 +361,16 @@ def main():
     fixtures,mode=fetch_fixtures()
     if fixtures is None:
         meta=_load_existing_meta()
-        reason='fixture_rate_limit_safe_skip' if mode=='rate-limit-safe-skip' else 'fixture_quota_safe_skip'
+        reason={
+            'rate-limit-safe-skip':'fixture_rate_limit_safe_skip',
+            'pagination-incomplete-safe-skip':'fixture_pagination_incomplete_safe_skip',
+        }.get(mode,'fixture_quota_safe_skip')
         meta.update({
             'fixtures_mode':mode,
             'fixtures_quota_safe_skip':True,
             'fixtures_refresh_degraded_reason':reason,
-            'updated_at':now.isoformat(),
+            'degraded_reason':reason,
+            'fixtures_refresh_attempted_at':now.isoformat(),
         })
         _write_json(OUT/'meta.json',meta)
         print(json.dumps({'degraded':True,'reason':reason},ensure_ascii=False,indent=2))
@@ -390,6 +401,7 @@ def main():
     semantic_readiness_shadow=observability_meta_payload(results,_load_readiness_shadow_report())
     meta={
         'updated_at':now.isoformat(),'fixtures_mode':mode,
+        'fixtures_refresh_attempted_at':now.isoformat(),
         'fixtures':len(fixtures),'visible_fixtures':len(results),'hidden_stale':hidden_stale,'model_ready':ready,
         'semantic_readiness_shadow':semantic_readiness_shadow,
         'history_rows_raw':len(hist),'player_rows':len(long_df),'download_warnings':errors,

@@ -25,6 +25,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**FIXTURE PAGINATION / SOURCE FRESHNESS — 2026-11-02 / IN VALIDATION**
+- USER CONTEXT: expired Live Tennis subscription renewed to 10,000 calls/day.
+  Diagnose and recover missing fixtures; maintain the existing quota policy.
+- BASE: `4634eb203388aba8bc7407e86ff01e6e346c79e3`; branch
+  `fix/fixture-pagination-freshness-20261102`; recheck fresh main before merge.
+- [x] Production run `41310350896` used the last of 8 daily fixture calls;
+  catalogue fell from 453 visible fixtures to 60, all starting before 14:15 UTC.
+  Later run `41358825315` skipped fixtures but advanced the apparent source time.
+- [x] Added 17 isolated cases; before repair 11 failed and 6 passed. Confirmed
+  truncated pagination and false freshness; complete and empty catalogues covered.
+- [x] Minimal canonical-reader repair preserves prior data and source time on
+  incomplete reads; attempts/reasons are separate. No new producer or quota owner.
+- [x] Focused regression: 39 passed, including renewal from 100 to 10,000/day
+  without erasing the 8 recorded calls. No quota/model/training policy changes.
+- [~] Re-ran core job `125004833421` in run `41358825315` to recover the catalogue
+  from the renewed account; result and live 10,000/day confirmation pending.
+- [ ] Full regression, exact-head PR CI, fresh-main integration and green merge.
+- [ ] Verify production uses repaired source and publishes fresh complete fixtures.
+- FILES: `backend/update.py`, dedicated regression tests, registry, architecture,
+  this checkpoint and `audits/fixture_pagination_20261102.md`.
+- DO NOT REDO: #565/#566 transport repairs; do not reset cache/usage, fabricate
+  fixtures, relax identity/PLAYABLE, change model mathematics or execute real bets.
+- NEXT EXACT ACTION: finish full tests and PR checks, merge only green against
+  current main, then verify the ordinary core/Pages/private delivery output.
+
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
 - LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.
 - BRANCH: `fix/player-dna-publication-race-20261029`; PR #566.

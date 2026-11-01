@@ -106,6 +106,17 @@ fitted coefficients and predictions remain exactly equal in parity regressions.
 
 ## A1. Live Tennis API — fixtures / provider context
 
+**2026-11-02 fixture completeness repair:** `backend/update.py::fetch_fixtures`
+publishes a replacement catalogue only after confirmed pagination completion.
+An exhausted request budget or a short/empty page contradicting the declared
+total preserves the previous results and history through the existing skip path.
+That path preserves `meta.updated_at`, records `fixtures_refresh_attempted_at`
+separately and exposes the degradation reason. A genuine complete empty response
+remains publishable. `backend/api_quota.py` continues reading the live account
+allowance: renewal from 100 to 10,000/day automatically changes the fixture daily
+cap from 8 to 800 without resetting recorded spend or changing any quota policy.
+See `audits/fixture_pagination_20261102.md` and the live checkpoint for rollout.
+
 **Rola:** bieżące mecze i dane fixture/provider.
 
 **Może dostarczać:**

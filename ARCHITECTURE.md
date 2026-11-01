@@ -4,6 +4,16 @@
 
 ## 1. Produkcja danych
 
+The canonical fixture reader in `backend/update.py` requires pagination
+completion before replacing `results.json`. A partial catalogue is a degraded
+skip, preserving the last complete results and history. Quota, rate-limit and
+incomplete-pagination skips retain the original `meta.updated_at`; the attempt
+time is separate in `fixtures_refresh_attempted_at`, with an explicit degradation
+reason. Existing delivery and watchdog consumers therefore retain actual source
+freshness. The central quota owner reads the provider's current account limits
+on every run, including subscription renewal; policies and model owners do not
+change.
+
 Player DNA's early readiness and final report stages share one Git publication
 owner, `scripts/publish_player_dna_reports.py`. It builds an exact owned-file tree
 on the freshly fetched main using a temporary Git index, preserving the running
