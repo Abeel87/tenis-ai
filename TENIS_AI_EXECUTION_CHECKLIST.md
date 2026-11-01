@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**FIXTURE PAGINATION / SOURCE FRESHNESS — 2026-11-02 / SOURCE-AUDIT BLOCKED**
+**FIXTURE RECOVERY VERIFIED / PAGINATION REPAIR SOURCE-AUDIT BLOCKED — 2026-11-02**
 - USER CONTEXT: expired Live Tennis subscription renewed to 10,000 calls/day.
   Diagnose and recover missing fixtures; maintain the existing quota policy.
 - BASE: `4634eb203388aba8bc7407e86ff01e6e346c79e3`; branch
@@ -48,13 +48,29 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   The insufficient-history audit exposed a missing chunk restore before full
   tests. Reproduced it, added the canonical restore step and its ordering test.
   Final local regression: 1867 passed in 64.93s, the same two existing warnings.
+- [x] Repair head `ff5b42549cfa2db2bda1035ccd9ac6d48ea23e3a` passed health,
+  browser, dependencies, CodeQL and all five other audits. The repaired
+  insufficient-history audit `41362197823` passed 1867 tests and its cache audit.
+  Only the two independently identified historical-source audits remain red.
 - [!] Independent source-audit blockers: freshness preview `41361706429` sees an
   empty `ch_ongoing` CSV (0 rows / 50 expected columns); runtime-equivalence
   `41361706419` artifact `13105526751` sees changed 2024 ATP/CH/WTA fingerprints.
   The candidate still has 12,474 rows but fails the frozen fingerprint contract.
   See incident audit. No lock, historical acceptance policy or guard is weakened.
-- [~] Re-ran core job `125004833421` in run `41358825315` to recover the catalogue
-  from the renewed account; result and live 10,000/day confirmation pending.
+- [x] Re-ran core job `125004833421` in run `41358825315` attempt 2. Recovery
+  job `125011817194` and Pages job `125018125598` both succeeded. It published
+  main `87fe7c9f234ff505e6f3837e4fc5228fa2117f20`; the production baseline's full
+  final suite passed 1849 tests. These are production tests without the PR repair.
+- [x] Live quota is 10,000/day, 300/minute; fixture usage advanced from 8 to 9,
+  without a reset or numerical policy override. End-of-run remaining estimate:
+  9340. Fresh API retrieval returned 126 singles, 112 after stale filtering,
+  with `degraded_reason=null` and source time `2026-11-01T23:18:42.902352+00:00`.
+- [x] Public Pages index/meta/quota independently matched the new publication:
+  112 rows, 111 future at verification, latest start `2026-11-02T23:30:00Z`.
+- [x] Core private-delivery run `41363348007` completed SUCCESS on the same
+  source SHA. Publish job `125018227466` activated generation
+  `c10a9127-a4a3-40d5-b90f-23ff8fcc0f0d`: 173 files, 156 uploaded objects.
+  The subsequent GC job also passed. Renewed-account recovery is complete.
 - [ ] Exact-head PR CI, fresh-main integration and green merge.
 - [ ] Verify production uses repaired source and publishes fresh complete fixtures.
 - FILES: `backend/update.py`, dedicated regression tests, readiness source-line
@@ -62,8 +78,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   architecture, this checkpoint and incident audit.
 - DO NOT REDO: #565/#566 transport repairs; do not reset cache/usage, fabricate
   fixtures, relax identity/PLAYABLE, change model mathematics or execute real bets.
-- NEXT EXACT ACTION: verify renewed-account core/Pages/private delivery from run
-  `41358825315` attempt 2. Separately repair the historical-source audit inputs
+- NEXT EXACT ACTION: recovery is complete; do not rerun or reset it. Repair the
+  independently blocked historical-source audit inputs
   under their owning contracts, then recheck fresh main and all PR checks before
   merging #568. Account-renewal recovery does not require this blocked PR.
 

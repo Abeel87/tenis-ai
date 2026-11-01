@@ -72,3 +72,26 @@ The two source-audit blockers are outside fixture retrieval. Their owning source
 contracts need a separate verified repair before PR #568 can meet the mandatory
 all-green merge rule. An account-renewal recovery through the existing production
 workflow does not depend on merging this PR.
+
+## Renewed-account recovery
+
+Run `41358825315` attempt 2 completed successfully: build `125011817194`, Pages
+deployment `125018125598`, publication commit
+`87fe7c9f234ff505e6f3837e4fc5228fa2117f20`. The unchanged production baseline
+passed its final 1849 tests. API usage returned 10,000/day and 300/minute, fixture
+usage advanced from 8 to 9, and the final remaining estimate was 9340. No counter
+reset or quota override was needed.
+
+Source time is `2026-11-01T23:18:42.902352+00:00`: 126 fetched singles, 112 after
+the existing stale filter, `fixtures_mode=live-tennis-api-basic`, no degraded
+reason. Independent reads of public Pages index, meta and quota confirmed those
+values. The index contained 111 future fixtures at verification, with its latest
+scheduled time `2026-11-02T23:30:00Z`. Core private-delivery run `41363348007`
+also completed successfully on the same source commit: publish job
+`125018227466` activated generation `c10a9127-a4a3-40d5-b90f-23ff8fcc0f0d`,
+with 173 files and 156 uploaded objects. Its subsequent GC passed as well.
+
+This recovers service through the renewed subscription. The pagination/timestamp
+repair remains unmerged because its historical-source audits are still blocked.
+Repair head `ff5b4254` passed every other check, including 1867 tests in the
+repaired insufficient-history workflow `41362197823`.
