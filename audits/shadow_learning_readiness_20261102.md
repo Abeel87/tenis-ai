@@ -94,3 +94,17 @@ existing empty-fixture NumPy warnings. All UI smoke scenarios and required
 project-health stages passed; runtime health reports zero failures and the two
 existing payload warnings against base `9a75e590...`. Merge/deploy are unperformed
 while the unchanged external source gates remain red. See #569 for final-head CI.
+
+
+Final source head `13379befc6074476603ef964a1af778c9bb06dcb`, preserving fresh
+main `42eb1415066a97789c6a3719101965cb9c41dd5f`, passed all three repaired audit
+workflows (41407962109, 41407962185, 41407962295). The last includes 1879 passing
+tests in 86.51 seconds. Neuron and Self Evolution passed again (41407962300,
+41407962157). Freshness 41407962119, archive equivalence 41407962077 and archive
+candidate lock 41407962323 remain red. The archive preview has both mismatched
+fingerprints and 9 visible identity-resolution changes; silently relocking it
+would not establish its safety. Merge/deployment remain unperformed. This
+closeout updates evidence only and does not change the verified implementation.
+
+UI & Project Health 41407962296 also completed successfully. The verified source
+head has 20 successful workflows and the 3 source-contract failures above.

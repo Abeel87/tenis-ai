@@ -72,8 +72,20 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   `125151813103` fetched 6 of 7 refreshable sources; TML 2024 equivalence run
   `41407197746` / job `125151813410` has `locked_candidate_verified=false`.
   These pre-existing source contracts also blocked #568. They remain unchanged.
-- [~] Final PR CI after the audit-input and rounding repairs; inspect live #569
-  for current head/checks. Merge and deployment remain blocked by source gates.
+- [x] Final source head `13379befc6074476603ef964a1af778c9bb06dcb` passed all
+  three repaired audit workflows: safe identity `41407962109`, insufficient
+  history `41407962185`, repeated-match identity `41407962295`. The latter's
+  full regression passed 1879 tests in 86.51s. Neuron `41407962300` and Self
+  Evolution `41407962157` passed again on the preserved fresh-main data.
+  UI & Project Health `41407962296` also passed: final source CI has 20
+  successful workflows and 3 red source-contract audits.
+- [!] Final-source blockers: freshness `41407962119` still fails; 2024 runtime
+  equivalence `41407962077` and candidate lock `41407962323` fail. Candidate
+  lock reports mismatched fingerprints and 9 visible identity-resolution changes
+  when previewing the archive. This is not permission to import/relock the archive.
+- [~] Merge/deployment remain blocked. This closeout changes evidence/docs only;
+  source validation above refers to exact implementation head `13379bef...`.
+  Inspect current #569 checks and fresh main before any later merge.
 - [ ] Merge only after all required checks are green and fresh-main verification.
 - [ ] Verify ordinary runtime stores new frozen ensemble scores, Neuron cache
   restore/scoring/evaluation, and next Self Evolution report/admin projection.
@@ -83,8 +95,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - BLOCKER: source freshness and locked 2024 evidence need their canonical
   owner investigation. Do not relock sources, relax guards, fabricate history,
   move identity into another owner to avoid CI or merge a red PR.
-- NEXT EXACT ACTION: inspect final #569 CI and confirm the three restored-input
-  audits pass; resolve the two source-contract blockers with verified inputs.
+- NEXT EXACT ACTION: inspect current #569 CI; the three restored-input audits
+  are confirmed green. Resolve fresh-source completeness and the locked 2024
+  fingerprint/identity evidence with verified inputs.
   Then recheck fresh main, run required checks and merge only green. Verify new
   frozen ensemble rows and scheduled SHADOW reports after actual deployment.
 - DO NOT REDO: prior Neuron #557/#558/#559 and publication #565/#566 repairs;
