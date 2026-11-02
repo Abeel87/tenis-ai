@@ -17,6 +17,28 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-11-02 ongoing TML empty-snapshot contract (deployment pending):**
+`backend/update.py::history_source_frame_valid` is the shared validation owner
+for downloaded and cached TML frames; `tml_freshness_preview` consumes it. Only
+the three explicitly declared ongoing feeds may be valid header-only snapshots.
+They replace obsolete rolling-cache rows and report `empty_source_keys`; they
+do not add historical observations. Annual empty files, malformed schema and
+transport failures remain failures; fallback never renews the source timestamp.
+Actual-source preview: 7/7 successful, zero failed retrievals, zero short-history
+players newly reaching five matches. Of 394 current fixtures, 216/217 ITF,
+33/124 Challenger, 6/29 WTA and 1/24 ATP have at least one player absent from the
+strict full-token current/2025 history. This is coverage, not a scoring gain.
+The 2024 archive remains outside runtime/training. Its old lock drift was
+reproduced; the current audit candidate is separately revalidated with all former
+exclusions plus 236 frozen archive-only identity exclusions, leaving 11,620 rows.
+Both canonical archive audits now require every remaining identity to exist in
+the current baseline, including players absent from today's fixtures. Fingerprint,
+ID, score and visible-resolution checks remain fail-closed; no auto-relocking.
+The original manifest and limitations of the unavailable old raw-byte comparison
+are retained in the evidence. Existing PBP schema audit has 0/30 projectable payloads
+and does not authorize a new history adapter. Evidence:
+`audits/history_source_contracts_20261102.json`; full audit/rollout is in the checkpoint.
+
 **2026-10-29 concurrent DNA publication follow-up:** the single Git publication
 owner is `scripts/publish_player_dna_reports.py`, called by the existing early and
 final workflow stages. The old inline rebase loops are removed. It preserves the

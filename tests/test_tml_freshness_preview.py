@@ -134,3 +134,27 @@ def test_provider_outage_is_reported_without_mutation(tmp_path):
     assert report["summary"]["refresh_failures"] == 7
     assert report["summary"]["players_reaching_minimum_5"] == 0
     assert report["policy"]["fresh_data_authorized_for_runtime"] is False
+
+
+def test_valid_empty_ongoing_is_observed_as_fresh_without_inventing_rows(tmp_path):
+    cache = tmp_path / "cache"
+    _write_cache(cache, _history(4))
+    results = tmp_path / "results.json"
+    _write_results(results)
+    before = {p.name: p.read_bytes() for p in cache.iterdir()}
+    empty = pd.DataFrame(columns=[
+        'tourney_id', 'tourney_name', 'surface', 'tourney_date', 'match_num',
+        'winner_id', 'winner_name', 'loser_id', 'loser_name', 'score',
+    ])
+    report = audit.build_report(
+        cache_root=cache, results_path=results,
+        downloader=lambda url: empty.copy() if 'challenger_ongoing' in url else _history(5),
+    )
+    assert report['summary']['refresh_success'] == 7
+    assert report['summary']['refresh_failures'] == 0
+    row = next(s for s in report['sources'] if s['key'] == 'ch_ongoing')
+    assert row['fetch_success'] is True
+    assert row['fresh_empty'] is True
+    assert row['fresh_rows'] == row['new_row_signatures'] == 0
+    assert row['fresh_latest_tourney_date'] is None
+    assert {p.name: p.read_bytes() for p in cache.iterdir()} == before

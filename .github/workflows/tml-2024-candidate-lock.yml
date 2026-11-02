@@ -110,6 +110,7 @@ jobs:
           assert p['runtime_change_authorized'] is False
           assert p['archive_data_authorized_for_runtime'] is False
           assert p['tml_sources_changed'] is False
+          assert p['require_current_baseline_identity'] is True
 
           assert s['all_2024_sources_fetched'] is True
           assert s['manifest_sources_match_task014'] is True
@@ -124,6 +125,8 @@ jobs:
           assert s['exact_shadow_variant_collisions'] == 0
           assert s['archive_involved_score_conflicts'] == 0
           assert s['visible_resolution_changes'] == 0
+          assert s['archive_only_players'] == 0
+          assert s['current_baseline_identity_verified'] is True
           assert s['candidate_lock_safety_verified'] is True
 
           if manifest.get('expected'):

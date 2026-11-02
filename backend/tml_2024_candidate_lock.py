@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RESULTS = ROOT / "frontend" / "data" / "results.json"
 DEFAULT_MANIFEST = ROOT / "audits" / "tml_2024_candidate_lock_manifest.json"
 DEFAULT_OUTPUT = ROOT / "artifacts" / "tml_2024_candidate_lock.json"
-VERSION = "task-017-tml-2024-candidate-lock-v3"
+VERSION = "task-017-tml-2024-candidate-lock-v4"
 MIN_MATCHES = task014.MIN_MATCHES
 
 
@@ -174,16 +174,27 @@ def _apply_global_hardening(candidate: pd.DataFrame, manifest: dict[str, Any]) -
     resolution_keys = {
         str(v).strip() for v in (hardening.get("exclude_visible_resolution_player_keys") or []) if str(v).strip()
     }
+    baseline_absent_keys = {
+        str(v).strip() for v in (hardening.get("exclude_baseline_absent_player_keys") or []) if str(v).strip()
+    }
     id_evidence = _id_evidence(manifest)
     id_hits = [0 for _ in id_evidence]
     shadow_hits = {key: 0 for key in sorted(shadow_keys)}
     resolution_hits = {key: 0 for key in sorted(resolution_keys)}
+    baseline_absent_hits = {key: 0 for key in sorted(baseline_absent_keys)}
     reason_counts = Counter()
     keep = []
 
     for index, row in candidate.iterrows():
         blocked = False
         row_keys = {_key(row.get(f"{side}_name")) for side in ("winner", "loser")}
+
+        touched_baseline_absent = row_keys & baseline_absent_keys
+        if touched_baseline_absent:
+            blocked = True
+            reason_counts["archive_only_identity"] += 1
+            for key in touched_baseline_absent:
+                baseline_absent_hits[key] += 1
 
         touched_shadow = row_keys & shadow_keys
         if touched_shadow:
@@ -213,6 +224,7 @@ def _apply_global_hardening(candidate: pd.DataFrame, manifest: dict[str, Any]) -
     unmatched_id = [row for row in id_match_rows if row["matched_rows"] <= 0]
     unmatched_shadow = [key for key, count in shadow_hits.items() if count <= 0]
     unmatched_resolution = [key for key, count in resolution_hits.items() if count <= 0]
+    unmatched_baseline_absent = [key for key, count in baseline_absent_hits.items() if count <= 0]
     return final, {
         "input_rows": int(len(candidate)),
         "output_rows": int(len(final)),
@@ -221,10 +233,12 @@ def _apply_global_hardening(candidate: pd.DataFrame, manifest: dict[str, Any]) -
         "id_evidence_matches": id_match_rows,
         "shadow_evidence_matches": shadow_hits,
         "visible_resolution_evidence_matches": resolution_hits,
+        "baseline_absent_evidence_matches": baseline_absent_hits,
         "unmatched_id_evidence": unmatched_id,
         "unmatched_shadow_evidence": unmatched_shadow,
         "unmatched_visible_resolution_evidence": unmatched_resolution,
-        "all_evidence_matched": not unmatched_id and not unmatched_shadow and not unmatched_resolution,
+        "unmatched_baseline_absent_evidence": unmatched_baseline_absent,
+        "all_evidence_matched": not unmatched_id and not unmatched_shadow and not unmatched_resolution and not unmatched_baseline_absent,
     }
 
 
@@ -233,6 +247,15 @@ def _all_player_keys(frame: pd.DataFrame) -> set[str]:
     if long_df is None or long_df.empty or "player_key" not in long_df.columns:
         return set()
     return {str(v).strip() for v in long_df["player_key"].dropna().unique().tolist() if str(v).strip()}
+
+
+def _archive_only_player_keys(baseline_clean: pd.DataFrame, candidate: pd.DataFrame) -> list[str]:
+    """Review every candidate identity, including players absent from today's fixtures.
+
+    This is an audit restriction, not a resolver or a source of current form.
+    The frozen manifest exclusions never adapt automatically to a new baseline.
+    """
+    return sorted(_all_player_keys(candidate) - _all_player_keys(baseline_clean))
 
 
 def _global_id_conflicts(baseline_clean: pd.DataFrame, candidate: pd.DataFrame) -> list[dict[str, Any]]:
@@ -362,6 +385,8 @@ def build_report(
     )
 
     candidate, hardening = _apply_global_hardening(task016_manifest_candidate, manifest)
+    require_current_identity = (manifest.get("global_hardening") or {}).get("require_current_baseline_identity") is True
+    archive_only_players = _archive_only_player_keys(baseline_clean, candidate)
     global_id = _global_id_conflicts(baseline_clean, candidate)
     archive_global_id = [row for row in global_id if row.get("archive_involved")]
     exact_shadow = _exact_shadow_collisions(baseline_clean, candidate)
@@ -398,6 +423,8 @@ def build_report(
         and not exact_shadow
         and not archive_score
         and not visible_resolution_changes
+        and require_current_identity
+        and not archive_only_players
     )
 
     return {
@@ -418,6 +445,7 @@ def build_report(
             "runtime_change_authorized": False,
             "archive_data_authorized_for_runtime": False,
             "tml_sources_changed": False,
+            "require_current_baseline_identity": require_current_identity,
         },
         "summary": {
             "visible_matches": len(results),
@@ -437,6 +465,8 @@ def build_report(
             "exact_shadow_variant_collisions": len(exact_shadow),
             "archive_involved_score_conflicts": len(archive_score),
             "visible_resolution_changes": len(visible_resolution_changes),
+            "archive_only_players": len(archive_only_players),
+            "current_baseline_identity_verified": bool(require_current_identity and not archive_only_players),
             "all_candidate_rows_within_2024": all_2024,
             "players_with_positive_2024_gain": int(preview["summary"]["players_with_positive_2024_gain"]),
             "players_reaching_minimum_5": int(preview["summary"]["players_reaching_minimum_5"]),
@@ -468,6 +498,7 @@ def build_report(
         "score_conflicts": score_conflicts,
         "archive_involved_score_conflicts": archive_score,
         "visible_resolution_changes": visible_resolution_changes,
+        "archive_only_player_keys": archive_only_players,
         "gain_preview": {
             "summary": preview["summary"],
             "priority": preview["priority"],

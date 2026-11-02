@@ -1,5 +1,5 @@
 {
-  "version": "task-017-tml-2024-candidate-lock-manifest-v3",
+  "version": "task-017-tml-2024-candidate-lock-manifest-v4",
   "basis": {
     "task016_pr": 380,
     "task016_merge_sha": "7a40fb453f754280f08fcdd81a09bbea9392cf69",
@@ -8,7 +8,31 @@
     "fingerprint_discovery_head": "d33c4f41bc51ab730509a6bdf625861e4c851e3b",
     "fingerprint_discovery_merge_sha": "6d8d3272dc545e5e5c35fe8c950a46552a2e2c1c",
     "fingerprint_discovery_run": 35252302356,
-    "evidence": "TASK 016 frozen safe subset plus TASK 017 full-baseline and current-visible fail-closed diagnostics"
+    "evidence": "TASK 016 frozen safe subset plus TASK 017 full-baseline and current-visible fail-closed diagnostics",
+    "source_revalidation_20261102": {
+      "reviewed_at": "2026-11-02T09:02:21.418030+00:00",
+      "base_sha": "83ab0ca7d56aa9edb474f833b84286a6dfc046d4",
+      "evidence": "audits/history_source_contracts_20261102.json",
+      "previous_expected": {
+        "candidate_rows": 12474,
+        "source_counts": {
+          "atp_2024": 2956,
+          "atp_quali_2024": 1293,
+          "ch_2024": 5683,
+          "wta_2024": 2542
+        },
+        "candidate_logical_sha256": "876feb9ed27cb1aa56da1fc33dba534806a5ded87a87d82198f2b3298632cd4d",
+        "source_logical_sha256": {
+          "atp_2024": "73ea64a0fe70fcc883b6d28c88d42a6afed49b0011749434ad913f0ddbc224e5",
+          "atp_quali_2024": "ff524b6934a025e4de69beb4d876f8f9bdb6e5591c843eed9c2045477ec62d7a",
+          "ch_2024": "c3da80f8ba6519bf14630d1efc2dda4280df060fcec25765b950cd33ef652c98",
+          "wta_2024": "f4dc2d9467e5df12d13270413b26e1bb2899b8c80da479aafd740e770992f47f"
+        }
+      },
+      "scope": "New separately reviewed audit candidate from current official 2024 bytes; preserve all former exclusions and additionally exclude all archive-only identities, not just current visible fixtures. No runtime integration.",
+      "original_raw_diff_available": false,
+      "baseline_identity_sha256": "228db1e7465766d05f27adb0f40eb22e8cba9828a850a7c02bf21b49559bb890"
+    }
   },
   "sources": [
     {
@@ -43,10 +67,34 @@
       "yufei ren"
     ],
     "exclude_score_identities": [
-      ["ATP", "20240401", "Estoril", "Pablo Llamas Ruiz", "David Jorda Sanchis"],
-      ["ATP", "20240722", "Kitzbuhel", "Daniel Elahi Galan", "Hamad Medjedovic"],
-      ["CH", "20240121", "Indian Wells 1", "Learner Tien", "Giovanni Oradini"],
-      ["CH", "20240226", "Kigali 1", "Daniel Cukierman", "Ernest Habiyambere"]
+      [
+        "ATP",
+        "20240401",
+        "Estoril",
+        "Pablo Llamas Ruiz",
+        "David Jorda Sanchis"
+      ],
+      [
+        "ATP",
+        "20240722",
+        "Kitzbuhel",
+        "Daniel Elahi Galan",
+        "Hamad Medjedovic"
+      ],
+      [
+        "CH",
+        "20240121",
+        "Indian Wells 1",
+        "Learner Tien",
+        "Giovanni Oradini"
+      ],
+      [
+        "CH",
+        "20240226",
+        "Kigali 1",
+        "Daniel Cukierman",
+        "Ernest Habiyambere"
+      ]
     ],
     "dedupe_model_columns": [
       "tourney_date",
@@ -63,32 +111,52 @@
       {
         "namespace": "CH",
         "player_key": "ivan denisov",
-        "baseline_ids": ["DB63"],
-        "archive_new_ids": ["D09V"]
+        "baseline_ids": [
+          "DB63"
+        ],
+        "archive_new_ids": [
+          "D09V"
+        ]
       },
       {
         "namespace": "CH",
         "player_key": "jeremy zhang",
-        "baseline_ids": ["M0QK"],
-        "archive_new_ids": ["Z0CN"]
+        "baseline_ids": [
+          "M0QK"
+        ],
+        "archive_new_ids": [
+          "Z0CN"
+        ]
       },
       {
         "namespace": "CH",
         "player_key": "julien de cuyper",
-        "baseline_ids": ["F0DM"],
-        "archive_new_ids": ["D0CQ"]
+        "baseline_ids": [
+          "F0DM"
+        ],
+        "archive_new_ids": [
+          "D0CQ"
+        ]
       },
       {
         "namespace": "CH",
         "player_key": "lennon roark jones",
-        "baseline_ids": ["M0NL"],
-        "archive_new_ids": ["J0DB"]
+        "baseline_ids": [
+          "M0NL"
+        ],
+        "archive_new_ids": [
+          "J0DB"
+        ]
       },
       {
         "namespace": "CH",
         "player_key": "miguel cejudo",
-        "baseline_ids": ["S0WT"],
-        "archive_new_ids": ["C0N9"]
+        "baseline_ids": [
+          "S0WT"
+        ],
+        "archive_new_ids": [
+          "C0N9"
+        ]
       }
     ],
     "exclude_exact_shadow_player_keys": [
@@ -97,7 +165,9 @@
     "exact_shadow_evidence": [
       {
         "archive_exact_key": "nicolas alvarez",
-        "baseline_variant_candidates": ["nicolas alvarez varona"],
+        "baseline_variant_candidates": [
+          "nicolas alvarez varona"
+        ],
         "baseline_resolution_before": "expanded-name",
         "resolution_after_candidate": "exact"
       }
@@ -132,6 +202,245 @@
         "baseline_mode": "none",
         "augmented_mode": "exact"
       }
+    ],
+    "require_current_baseline_identity": true,
+    "exclude_baseline_absent_player_keys": [
+      "abel hernandez aguila",
+      "abraham asaba",
+      "adam neff",
+      "agustin eduardo cuellar lorberg",
+      "aisam ul haq qureshi",
+      "alejandro arcila",
+      "aleksandr lobanov",
+      "alessandro giannessi",
+      "alessandro pecci",
+      "alexa noel",
+      "alexandar lazarov",
+      "alexander erler",
+      "alexander stater",
+      "alice robbe",
+      "alison van uytvanck",
+      "altug celikbilek",
+      "amarissa kiara toth",
+      "amelia rajecki",
+      "andrey kuznetsov",
+      "andy murray",
+      "angelique kerber",
+      "anna danilina",
+      "anna karolina schmiedlova",
+      "anthony genov",
+      "anthony susanto",
+      "antoine bellier",
+      "artem dubrivnyy",
+      "artem sitak",
+      "attila boros",
+      "benedict badza",
+      "benjamin lock",
+      "benjamin torres",
+      "benjamin winter lopez",
+      "blake mott",
+      "blaz rola",
+      "bogdan bobrov",
+      "bogdan pavel",
+      "camila giorgi",
+      "carlos gimeno valero",
+      "caroline wozniacki",
+      "casey hoole",
+      "chiraz bechri",
+      "chun ming gary yam",
+      "collin altamirano",
+      "cooper woestendick",
+      "credit chaiyarin",
+      "cristina andreea mitu",
+      "damien salvestre",
+      "damien wenger",
+      "daniel cox",
+      "daniela seguel",
+      "david naharro",
+      "davis rolis",
+      "deney wassermann",
+      "deni zmak",
+      "denis kudla",
+      "diego fernandez flores",
+      "dominic thiem",
+      "duckhee lee",
+      "edoardo lavagno",
+      "ekaterina makarova",
+      "ela nala milic",
+      "emiliano aguilera",
+      "emilien voisin",
+      "emilio gomez",
+      "evan furness",
+      "evgeny donskoy",
+      "ezekiel clark",
+      "fangzhou liu",
+      "fanny stollar",
+      "federica di sarra",
+      "federico gaio",
+      "fernanda contreras gomez",
+      "filip krajinovic",
+      "francisco castro",
+      "gabriel roveri sidney",
+      "georgia pedone",
+      "gerald melzer",
+      "gergana topalova",
+      "gilbert klier junior",
+      "gillian osmont",
+      "giuliana olmos",
+      "gonzalo escobar",
+      "guido andreozzi",
+      "guilherme clezar",
+      "guillermo tunas",
+      "hamidreza nadaf",
+      "hamza karmoussi",
+      "hanwen li",
+      "harrison adams",
+      "henri laaksonen",
+      "henry lieberman",
+      "heve kelley",
+      "hillel rousseau",
+      "hong kit wong",
+      "ignacio antonio becerra otarola",
+      "ignacio carou",
+      "ioan alexandru chirita",
+      "isaac nortey",
+      "jack cheng",
+      "jaden weekes",
+      "jaimee floyd angele",
+      "jaycer lyeons",
+      "jea moon lee",
+      "jeremy jin",
+      "jerry barton",
+      "jesse flores",
+      "jia jing lu",
+      "jiaji wang",
+      "jj tracy",
+      "joan nadal",
+      "joan torres espinosa",
+      "joao sousa",
+      "john millman",
+      "jonathan eysseric",
+      "jorge plans",
+      "joris de loore",
+      "joshua lapadat",
+      "juan bautista otegui",
+      "juan carlos fuentes vasquez",
+      "juan ignacio londero",
+      "juan jose bianchi",
+      "juan pablo paz",
+      "julian ocleppo",
+      "kacper zuk",
+      "kaito uesugi",
+      "katarina zavatska",
+      "kateryna baindl",
+      "kateryna bondarenko",
+      "katherine hui",
+      "kevin king",
+      "kevin krawietz",
+      "komlavi loglo",
+      "ksenia laskutova",
+      "kwok shun dasson chan",
+      "lasse poertner",
+      "lesia tsurenko",
+      "linh giang trinh",
+      "liv hovde",
+      "lola radivojevic",
+      "louis tessa",
+      "luca fantini",
+      "luca giacomini",
+      "lucas bouquet",
+      "lucas renard",
+      "lucija ciric bagaric",
+      "luke saville",
+      "makoto ochi",
+      "malak el allami",
+      "marcel kamrowski",
+      "marcela zacarias",
+      "marcos lee chan baratau",
+      "margarita gasparyan",
+      "mariano tammaro",
+      "marie benoit",
+      "marina melnikova",
+      "marius copil",
+      "marko maksimovic",
+      "markos kalovelonis",
+      "marlon vankan",
+      "martins rocens",
+      "matavao fanguna",
+      "mate valkusz",
+      "mateo castaneda",
+      "matias franco descotte",
+      "matic kriznik",
+      "matija pecotic",
+      "matthew ebden",
+      "maxence rivet",
+      "meiling wang",
+      "mikalai haliak",
+      "milos raonic",
+      "minkyu song",
+      "n sriram balaji",
+      "nam hoang ly",
+      "natalia szabanin",
+      "natalija stevanovic",
+      "nate bonetto",
+      "nick chappell",
+      "nicola kuhn",
+      "niki kaliyanda poonacha",
+      "niklas schell",
+      "nikolay nedelchev",
+      "nikos lehmann",
+      "omni kumar",
+      "oscar otte",
+      "pablo cuevas",
+      "patrick kaukovalta",
+      "peter benjamin privara",
+      "peter heller",
+      "petr iamachkine",
+      "petros chrysochos",
+      "philip hjorth",
+      "qiang wang",
+      "rafael nadal",
+      "rafael ymer",
+      "rashed nawaf",
+      "ray ho",
+      "riccardo bonadio",
+      "richard zusman",
+      "rishab agarwal",
+      "robin haase",
+      "rodrigo crespo piedra",
+      "roko horvat",
+      "rubin statham",
+      "sachia vickery",
+      "salvatore caruso",
+      "santiago ledesma",
+      "sara saito",
+      "saveliy ivanov",
+      "scott jones",
+      "seita watanabe",
+      "shelby rogers",
+      "siddharth vishwakarma",
+      "simone agostini",
+      "sina moghimi",
+      "steve johnson",
+      "su jeong jang",
+      "tamira paszek",
+      "tanguy genier",
+      "tennys sandgren",
+      "tim puetz",
+      "timea babos",
+      "timo stodder",
+      "ulises blanch",
+      "victor lilov",
+      "vittoria paganetti",
+      "vlad andrei dancu",
+      "wesley koolhof",
+      "william mroz",
+      "yannik kelm",
+      "yua taka",
+      "yuquan jin",
+      "yuriko miyazaki",
+      "yusuf qaed",
+      "yuvan nandal"
     ]
   },
   "task016_expected_shape": {
@@ -148,19 +457,19 @@
     "newly_model_ready_matches": 1
   },
   "expected": {
-    "candidate_rows": 12474,
+    "candidate_rows": 11620,
     "source_counts": {
-      "atp_2024": 2956,
-      "atp_quali_2024": 1293,
-      "ch_2024": 5683,
-      "wta_2024": 2542
+      "atp_2024": 2841,
+      "atp_quali_2024": 1200,
+      "ch_2024": 5246,
+      "wta_2024": 2333
     },
-    "candidate_logical_sha256": "876feb9ed27cb1aa56da1fc33dba534806a5ded87a87d82198f2b3298632cd4d",
+    "candidate_logical_sha256": "01563e378159716e40c51578764be13db5e0d6aac31f9b56ad268f2c85af7858",
     "source_logical_sha256": {
-      "atp_2024": "73ea64a0fe70fcc883b6d28c88d42a6afed49b0011749434ad913f0ddbc224e5",
+      "atp_2024": "d3f0a2109c2e18693c3d835fc2e5f67a050057a3ba8330365700e0901ce11d19",
       "atp_quali_2024": "ff524b6934a025e4de69beb4d876f8f9bdb6e5591c843eed9c2045477ec62d7a",
-      "ch_2024": "c3da80f8ba6519bf14630d1efc2dda4280df060fcec25765b950cd33ef652c98",
-      "wta_2024": "f4dc2d9467e5df12d13270413b26e1bb2899b8c80da479aafd740e770992f47f"
+      "ch_2024": "3e1a83f60a011f9c232cecd9c8d2a4a6e434b566e54d30801b7ea9557ef964d2",
+      "wta_2024": "071e8bbec9a0257ad8ab9b4e8f794793a20cc445db10cfbb7920468f38732fb0"
     }
   }
 }

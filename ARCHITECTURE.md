@@ -172,6 +172,26 @@ The active evidence-capture step uses `backend/superbet_builder_terminal_evidenc
 
 ### Neuron SHADOW training and evidence ownership
 
+The canonical TML loader now distinguishes a valid zero-row rolling snapshot
+from a failed download. `update.history_source_frame_valid` governs downloads,
+cache reads and the read-only freshness preview. Only the three declared ongoing
+feeds opt into a validated header-only result; annual empties and malformed
+schemas remain invalid. A real empty snapshot replaces the old rolling cache,
+is recorded with zero rows and its actual fetch time, and contributes no model
+observations. An outage may reuse that snapshot with its original timestamp and
+an explicit warning. No historical provider, model calculation or archive lock
+is changed by the loader repair.
+
+The separate 2024 audit candidate has its own reviewed manifest. Its canonical
+`tml_2024_candidate_lock` owner applies frozen evidence-backed exclusions to all
+archive-only identities, then revalidates against the current baseline, exact
+source/candidate hashes and existing conflict checks. This replaces reliance on
+only the changing visible-fixture population: a player absent from today's UI
+cannot bypass identity safety. `tml_2024_runtime_equivalence_audit` consumes that
+same owner and also requires current baseline identity proof. The reviewed
+11,620-row candidate stays audit-only; neither owner adds 2024 to runtime sources,
+training or current-form histories. Source drift still requires a separate review.
+
 The 2026-11-02 readiness repair restores the canonical core TML cache before
 Neuron training/scoring. It does not save a competing cache or refresh old
 source timestamps. `current_features` uses the canonical history resolver's

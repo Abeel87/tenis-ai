@@ -3,10 +3,12 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
 from update import fetch_fixtures, load_history
+import update
 
 
 def source(refresh_hours=None):
@@ -50,6 +52,71 @@ def test_total_outage_without_cache_returns_none_not_exception(tmp_path):
     assert info['mode']=='unavailable'
     assert info['missing_sources']==1
     assert warnings
+
+
+def empty_ongoing_frame():
+    # A real HTTP 200 ongoing feed may contain only this documented match schema.
+    return pd.DataFrame(columns=[
+        'tourney_id', 'tourney_name', 'surface', 'tourney_date', 'match_num',
+        'winner_id', 'winner_name', 'loser_id', 'loser_name', 'score',
+    ])
+
+
+@pytest.mark.parametrize('source_key', ['atp_ongoing', 'ch_ongoing', 'wta_ongoing'])
+def test_valid_empty_ongoing_refresh_replaces_previous_snapshot(tmp_path, source_key):
+    declared = next(s for s in update.TML_SOURCES if s['key'] == source_key)
+    now = datetime(2026, 11, 2, 8, tzinfo=timezone.utc)
+    load_history(tmp_path, [declared], now, lambda url: frame())
+    history, warnings, info = load_history(
+        tmp_path, [declared], now + timedelta(hours=1), lambda url: empty_ongoing_frame(),
+    )
+    assert history is None  # No synthetic rows or stale ongoing results.
+    assert warnings == []
+    assert info['fresh_sources'] == 1
+    assert info['cached_sources'] == info['missing_sources'] == 0
+    assert info['empty_source_keys'] == [source_key]
+    cached = update._read_cached(tmp_path, declared)
+    assert cached is not None and cached.empty
+    assert update._load_manifest(tmp_path)['sources'][source_key]['rows'] == 0
+
+
+def test_valid_empty_ongoing_cache_survives_outage_without_renewing_timestamp(tmp_path):
+    declared = next(s for s in update.TML_SOURCES if s['key'] == 'ch_ongoing')
+    now = datetime(2026, 11, 2, 8, tzinfo=timezone.utc)
+    load_history(tmp_path, [declared], now, lambda url: empty_ongoing_frame())
+    before = update._load_manifest(tmp_path)
+
+    def unavailable(url):
+        raise TimeoutError('offline')
+
+    history, warnings, info = load_history(tmp_path, [declared], now + timedelta(hours=1), unavailable)
+    assert history is None
+    assert info['fresh_sources'] == info['missing_sources'] == 0
+    assert info['cached_sources'] == 1
+    assert info['empty_source_keys'] == ['ch_ongoing']
+    assert warnings and 'użyto cache' in warnings[0]
+    assert update._load_manifest(tmp_path) == before
+
+
+@pytest.mark.parametrize('source_key,empty', [
+    ('ch_2026', empty_ongoing_frame()),
+    ('ch_2025', empty_ongoing_frame()),
+    ('ch_ongoing', pd.DataFrame()),
+    ('ch_ongoing', empty_ongoing_frame().drop(columns=['winner_id'])),
+    ('ch_ongoing', pd.DataFrame({'error': ['temporary outage']})),
+])
+def test_empty_archive_or_invalid_ongoing_preserves_last_good_cache(tmp_path, source_key, empty):
+    declared = dict(next(s for s in update.TML_SOURCES if s['key'] == source_key))
+    now = datetime(2026, 11, 2, 8, tzinfo=timezone.utc)
+    load_history(tmp_path, [declared], now, lambda url: frame())
+    before = update._load_manifest(tmp_path)
+    # Force revalidation here; immutable archives otherwise intentionally stay cached.
+    declared['refresh_hours'] = 0
+    history, warnings, info = load_history(tmp_path, [declared], now + timedelta(hours=1), lambda url: empty)
+    assert len(history) == 1
+    assert info['fresh_sources'] == 0 and info['cached_sources'] == 1
+    assert warnings
+    assert update._load_manifest(tmp_path) == before
 
 
 def test_fetch_fixtures_preserves_provider_rank_context(monkeypatch):
