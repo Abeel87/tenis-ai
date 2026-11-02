@@ -360,6 +360,23 @@ def quality_gate():
     return {'passed':True,'model_id':candidate['model_id']}
 
 
+def current_history_identity(st, fixture):
+    # The canonical identity owner supplies an exact full-token-only mode. Never
+    # import its broader short-name/initial policy into this SHADOW model.
+    try:
+        from .model import _resolve_history_player_key
+    except ImportError:
+        from model import _resolve_history_player_key
+    names=pd.DataFrame({'player_key':[name for name,p in st.p.items() if p['h']]})
+    result={}
+    for side, alternative in (('p1','player1'),('p2','player2')):
+        name=fixture.get(side) or fixture.get(alternative)
+        resolved,mode=_resolve_history_player_key(names,name,exact_tokens_only=True)
+        result[side]={'history_key':resolved,'mode':mode,
+                      'retained_matches':len(st.p[resolved]['h']) if resolved else 0}
+    return result
+
+
 def current_features(st,m,now=None):
     now=now or datetime.now(timezone.utc)
     start=utc(m.get('scheduled_time') or m.get('start_time'))
@@ -367,8 +384,11 @@ def current_features(st,m,now=None):
     if start<=now: raise ValueError('MATCH_NOT_PREMATCH')
     a=key(m.get('p1') or m.get('player1')); b=key(m.get('p2') or m.get('player2'))
     if not a or not b or a==b: raise ValueError('MISSING_OR_AMBIGUOUS_PLAYERS')
-    if any(name not in st.p or not st.p[name]['h'] for name in (a,b)):
+    identity=current_history_identity(st,m)
+    a,b=(identity[side]['history_key'] for side in ('p1','p2'))
+    if not a or not b:
         raise ValueError('NO_PLAYER_HISTORY')
+    if a==b: raise ValueError('MISSING_OR_AMBIGUOUS_PLAYERS')
     # Even for tomorrow's fixture, today's un-timed results are not used.
     d=pd.Timestamp(min(start.date(),now.date())); s=surface(m.get('surface'))
     r=dict(m); r['source_tour']=m.get('tour'); r['tourney_level']=m.get('level')
@@ -451,8 +471,59 @@ def freeze_predictions(existing, rows, model_id, trained_at, captured_at, histor
     return result
 
 
-def summarize_predictions(rows):
+def _production_index(document):
+    if document is None:
+        return {}
+    try:
+        from .prediction_ledger_shadow import frozen_ensemble_probability
+    except ImportError:
+        from prediction_ledger_shadow import frozen_ensemble_probability
+    if (not isinstance(document,dict) or document.get('schema_version')!='prediction-ledger-shadow-v1'
+            or document.get('mode')!='SHADOW_ONLY' or not isinstance(document.get('rows'),list)):
+        raise ValueError('INVALID_PRODUCTION_EVIDENCE_LEDGER')
+    seen=set(); index={}
+    for row in document['rows']:
+        pid=row.get('prediction_id') if isinstance(row,dict) else None
+        if not pid or pid in seen: raise ValueError('DUPLICATE_OR_INVALID_PRODUCTION_PREDICTION')
+        seen.add(pid)
+        p=frozen_ensemble_probability(row)
+        if p is None or row.get('market')!='match_winner' or row.get('line') is not None:
+            continue
+        match=str(row.get('match_key') or '')
+        if not match.startswith('id:') or not match[3:].isdigit() or not key(row.get('pick')):
+            continue
+        signature=(match,utc(row['scheduled_time']),key(row['pick']))
+        item=(utc(row['captured_at']),pid,p)
+        if signature not in index or item[:2]<index[signature][:2]: index[signature]=item
+    return index
+
+
+def _production_metrics(scored, index):
+    targets=[]; neural=[]; production=[]
+    for row in scored:
+        choices=[]
+        for side in ('p1','p2'):
+            item=index.get((row['match_key'],utc(row['scheduled_time']),key(row[side])))
+            if item is not None: choices.append((*item,side))
+        if not choices: continue
+        _,_,p,side=min(choices)
+        target=float(row['settlement']['result']=='hit')
+        estimate=row['p1_win_probability']
+        targets.append(target if side=='p1' else 1-target)
+        neural.append(estimate if side=='p1' else 1-estimate)
+        production.append(p)
+    return {'status':'HAS_FROZEN_COMMON_EVIDENCE' if targets else 'NO_FROZEN_PRODUCTION_BASELINE',
+            'baseline':'FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION',
+            'population':'FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION',
+            'settled_matches':len(targets),'missing_baseline_matches':len(scored)-len(targets),
+            'neuron':metrics(np.asarray(targets),np.asarray(neural)) if targets else None,
+            'production':metrics(np.asarray(targets),np.asarray(production)) if targets else None,
+            'promotion_authorized':False,'historical_reconstruction':False}
+
+
+def summarize_predictions(rows, production_ledger=None):
     values=list(rows.values()) if isinstance(rows,dict) else list(rows)
+    production_index=_production_index(production_ledger)
     def summary(items):
         first={}
         for row in sorted(items,key=lambda x:(utc(x['captured_at']),x['prediction_id'])):
@@ -462,9 +533,12 @@ def summarize_predictions(rows):
         y=np.asarray([1. if r['settlement']['result']=='hit' else 0. for r in scored])
         return {'unique_fixtures':len(unique),'settled_matches':len(scored),
                 'pending_matches':sum(r.get('settlement',{}).get('status')!='SETTLED' for r in unique),
+                'pending_reasons':dict(Counter(r.get('settlement',{}).get('reason') or 'UNKNOWN'
+                    for r in unique if r.get('settlement',{}).get('status')!='SETTLED')),
                 'void_matches':sum(r.get('settlement',{}).get('result')=='void' for r in unique),
                 'neuron':metrics(y,np.asarray([r['p1_win_probability'] for r in scored])) if scored else None,
-                'elo':metrics(y,np.asarray([r['elo_p1_win_probability'] for r in scored])) if scored else None}
+                'elo':metrics(y,np.asarray([r['elo_p1_win_probability'] for r in scored])) if scored else None,
+                'production_comparison':_production_metrics(scored,production_index)}
     by_model=defaultdict(list)
     for row in values: by_model[row['model_id']].append(row)
     aggregate=summary(values)
@@ -483,7 +557,8 @@ def current():
     for x in src:
         if not isinstance(x,dict): continue
         row={'match_id':x.get('match_id') or x.get('id'),'p1':x.get('p1') or x.get('player1'),'p2':x.get('p2') or x.get('player2'),
-             'scheduled_time':x.get('scheduled_time') or x.get('start_time'),'model_id':model_id}
+             'scheduled_time':x.get('scheduled_time') or x.get('start_time'),'model_id':model_id,
+             'history_identity':current_history_identity(st,x)}
         try:
             if not str(row['match_id']).isdigit(): raise ValueError('MISSING_EXACT_FIXTURE_ID')
             a,b,c=current_features(st,x,now=now); p=float(m.predict(a,b,c)[0])
@@ -557,7 +632,8 @@ def evaluate():
     rows=settle_predictions(load_predictions(),history)
     save_predictions(rows)
     current_report=read_json(CURRENT,{})
-    current_report['prospective']=summarize_predictions(rows)
+    current_report['prospective']=summarize_predictions(
+        rows,production_ledger=read_json(DATA/'prediction_ledger_shadow.json'))
     current_report['prospective']['evaluated_at']=datetime.now(timezone.utc).isoformat()
     write(CURRENT,current_report)
     return current_report['prospective']

@@ -1245,7 +1245,7 @@ def build_current_rows(results: list[dict]) -> tuple[list[dict], list[tuple[int,
 
 
 def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs, weights,
-                      status="COLLECTING", dynamic_telemetry=None):
+                      status="COLLECTING", dynamic_telemetry=None, ensemble_evidence=None):
     per_match = defaultdict(list)
     telemetry = dynamic_telemetry if isinstance(dynamic_telemetry, dict) else {}
 
@@ -1276,6 +1276,10 @@ def _decorate_results(results, current_rows, current_probs, cat_probs, tab_probs
             }
 
         ensemble_probability = _dynamic_weighted_probability(probs, local_weights)
+        if ensemble_evidence is not None:
+            # Observe the existing result before presentation rounding. This
+            # does not recompute probability or change dynamic/global weights.
+            ensemble_evidence.append(ensemble_probability)
         item = {
             "key": row["candidate_key"], "label": row["label"], "market": row["market"],
             "pick": row["pick"], "checkpoint": row.get("checkpoint"),
@@ -1589,10 +1593,12 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
         weight_policy = {"status": "collecting", "allowed": False}
 
     # Ensure missing challenger probabilities do not dilute the available models.
+    ensemble_evidence = []
     decorated = _decorate_results(
         results, current_rows, current_probs, cat_probs, tab_probs, weights,
         "ACTIVE" if cat_status == "active" else "COLLECTING",
         dynamic_telemetry=dynamic_telemetry,
+        ensemble_evidence=ensemble_evidence,
     )
     dynamic_summary = _summarize_dynamic(decorated)
     ledger_status = {
@@ -1603,13 +1609,15 @@ def run(now=None, force_retrain=False, force_tabpfn=False):
     }
     try:
         existing_ledger = _read(PREDICTION_LEDGER_PATH, {})
+        ledger_captured_at = datetime.now(timezone.utc)
         ledger_rows = prediction_ledger_shadow.capture_rows(
             current_rows, current_probs, cat_probs, tab_probs,
-            now=now, producer_version=VERSION,
+            now=ledger_captured_at, producer_version=VERSION,
             readiness_snapshot=meta.get("semantic_readiness_shadow"),
+            ensemble_probs=ensemble_evidence,
         )
         ledger_payload = prediction_ledger_shadow.merge_ledger(
-            existing_ledger, ledger_rows, now=now
+            existing_ledger, ledger_rows, now=ledger_captured_at
         )
         _write(PREDICTION_LEDGER_PATH, ledger_payload)
         ledger_status = {

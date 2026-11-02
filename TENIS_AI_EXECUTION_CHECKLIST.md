@@ -25,6 +25,85 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+
+**NEURON / SELF EVOLUTION — SHADOW READINESS REPAIR, 2026-11-02**
+- AUTHORIZATION: owner requested the proposed history/evaluation repair. Scope:
+  exact identity and cache recovery, actual frozen AutoLearn comparison, honest
+  evidence/UI. No probability math, training, weights, thresholds, settlement,
+  betting or SHADOW-to-PROD promotion.
+- LAST VERIFIED MAIN: `42eb1415066a97789c6a3719101965cb9c41dd5f`.
+  It changes 31 generated data files relative to audited base `9a75e590...`;
+  all source/workflow blobs are unchanged. Final branch retains these newer data.
+- BRANCH: `fix/shadow-learning-evidence-20261102`; PR #569 (`https://github.com/Abeel87/tenis-ai/pull/569`).
+- [x] Reproduced missing complete-token reordered identities and missing actual
+  AutoLearn baseline before repair. Existing canonical resolver gains an opt-in
+  strict mode; default Current behavior is unchanged. Neuron restores core TML
+  cache without taking save ownership or refreshing old source timestamps.
+- [x] Same-input actual-fixture replay: 425 fixtures; scored 132 -> 136,
+  NO_PLAYER_HISTORY 289 -> 285, started 4 -> 4; all 132 existing feature arrays
+  identical. Five exact full-name reorderings, four complete fixtures recovered.
+  Most missing history remains absent from declared sources. Audit `.md`/`.json`:
+  `audits/shadow_learning_readiness_20261102`.
+- [x] Actual AutoLearn post-dynamic-weight output is observed at its owner,
+  captured after computation and before match start, and stored only in new
+  ledger rows. No historical reconstruction or frozen-row mutation. Neuron and
+  Self Evolution compare exact common evidence; candidate selection and internal
+  SHADOW promotion remain unchanged. UI exposes paired evidence and missingness.
+- [x] Existing 111019 ledger rows contain zero actual ensemble baselines. Active
+  Neuron has 32 settled fixtures; Brier 0.211445 vs Elo 0.204309. No superiority
+  or PROD readiness is established. Pending schedule conflicts remain pending.
+- [x] Isolated full local suite on audited base: 1879 passed in 68.64s; two existing
+  empty-fixture NumPy warnings. All UI static/runtime/readiness/time/decision
+  checks and required project-health stages passed. Runtime health has zero
+  failures and the two existing payload-size warnings against the exact base.
+- [x] Initial PR head `49317cba3b759c16295e38fbf7127fb339ba3f2c`: Neuron
+  run `41407198027` / job `125151814633` passed real training and quality gate.
+  Restored core cache: 2 fresh + 9 cached sources, 0 missing, 11 files; fresh
+  `ch_ongoing` unavailable is still explicit. This is CI proof, not deployment.
+  Self Evolution tests/isolation, delivery/security, CodeQL and related checks
+  passed. No candidate was published from a PR run.
+- [x] Three older audit workflows failed full regression because exact chunked
+  ledgers were not restored. Added the existing restore command before pytest
+  in safe-player-history, insufficient-history-evidence and repeat-match-identity
+  audits. All three ordering regressions failed before repair and now pass.
+  No tests or audit assertions are skipped. Final report status also refuses
+  to present sub-reporting-precision roundoff as an improvement (regression tested).
+- [!] External source gates reproduced: TML freshness run `41407197693` / job
+  `125151813103` fetched 6 of 7 refreshable sources; TML 2024 equivalence run
+  `41407197746` / job `125151813410` has `locked_candidate_verified=false`.
+  These pre-existing source contracts also blocked #568. They remain unchanged.
+- [x] Final source head `13379befc6074476603ef964a1af778c9bb06dcb` passed all
+  three repaired audit workflows: safe identity `41407962109`, insufficient
+  history `41407962185`, repeated-match identity `41407962295`. The latter's
+  full regression passed 1879 tests in 86.51s. Neuron `41407962300` and Self
+  Evolution `41407962157` passed again on the preserved fresh-main data.
+  UI & Project Health `41407962296` also passed: final source CI has 20
+  successful workflows and 3 red source-contract audits.
+- [!] Final-source blockers: freshness `41407962119` still fails; 2024 runtime
+  equivalence `41407962077` and candidate lock `41407962323` fail. Candidate
+  lock reports mismatched fingerprints and 9 visible identity-resolution changes
+  when previewing the archive. This is not permission to import/relock the archive.
+- [~] Merge/deployment remain blocked. This closeout changes evidence/docs only;
+  source validation above refers to exact implementation head `13379bef...`.
+  Inspect current #569 checks and fresh main before any later merge.
+- [ ] Merge only after all required checks are green and fresh-main verification.
+- [ ] Verify ordinary runtime stores new frozen ensemble scores, Neuron cache
+  restore/scoring/evaluation, and next Self Evolution report/admin projection.
+- CHANGED OWNERS: canonical history resolver; Neuron/workflow; AutoLearn capture;
+  Prediction Ledger reader/writer; Self Evolution reporting; private projection;
+  frontend presentation; regression tests, readiness line matrix and canonical docs.
+- BLOCKER: source freshness and locked 2024 evidence need their canonical
+  owner investigation. Do not relock sources, relax guards, fabricate history,
+  move identity into another owner to avoid CI or merge a red PR.
+- NEXT EXACT ACTION: inspect current #569 CI; the three restored-input audits
+  are confirmed green. Resolve fresh-source completeness and the locked 2024
+  fingerprint/identity evidence with verified inputs.
+  Then recheck fresh main, run required checks and merge only green. Verify new
+  frozen ensemble rows and scheduled SHADOW reports after actual deployment.
+- DO NOT REDO: prior Neuron #557/#558/#559 and publication #565/#566 repairs;
+  the same-input audit and frozen-legacy-baseline diagnosis are complete.
+- HARD LIMIT: Neuron and Self Evolution stay SHADOW; no real bets or automatic promotion.
+
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
 - LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.
 - BRANCH: `fix/player-dna-publication-race-20261029`; PR #566.

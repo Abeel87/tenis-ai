@@ -31,6 +31,21 @@ def test_exact_projection_preserves_zero_missing_and_inputs():
     assert all(out[k] is False for k in FLAGS)
 
 
+def test_production_baseline_projection_preserves_paired_counts_and_missingness():
+    report,memory,run=documents()
+    comparison={'status':'NO_FROZEN_PRODUCTION_BASELINE','independent_matches':0,
+                'candidate_brier':None,'production_brier':None,'raw_predictions':['private']}
+    report['production_comparison']=comparison
+    memory['source_research_sha256']=digest(report)
+    memory['tracks']['ALL']['last_evaluation']={'status':'COLLECTING_FUTURE_FIXTURES',
+                                               'production_comparison':comparison}
+    out=project(report,memory,run)
+    shown=out['historical']['production_comparison']
+    assert shown['independent_matches']==0 and shown['production_brier'] is None
+    assert out['tracks'][0]['last_evaluation']['production_comparison']==shown
+    assert 'raw_predictions' not in str(out)
+
+
 @pytest.mark.parametrize('field',FLAGS+('auto_promote',))
 def test_rejects_research_authority(field):
     docs=documents();docs[0][field]=True;docs[1]['source_research_sha256']=digest(docs[0])

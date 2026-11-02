@@ -14,6 +14,11 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+try:
+    from .prediction_ledger_shadow import frozen_ensemble_probability
+except ImportError:
+    from prediction_ledger_shadow import frozen_ensemble_probability
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "frontend" / "data"
 LEDGER = DATA / "prediction_ledger_shadow.json"
@@ -129,6 +134,7 @@ def _samples(ledger, settlement, now):
                         "match_key": key, "market": market, "day": scheduled.date().isoformat(),
                         "captured_at": captured, "scheduled_at": scheduled,
                         "settled_at": settled, "p": scores,
+                        "production_probability": frozen_ensemble_probability(row),
                         "y": int(outcome["result"] == "hit")})
     return samples, dict(excluded)
 
@@ -149,6 +155,43 @@ def _metric(samples, weights):
         total, n = by_match.get(sample["match_key"], (0.0, 0))
         by_match[sample["match_key"]] = (total + (p - sample["y"]) ** 2, n + 1)
     return round(sum(total / n for total, n in by_match.values()) / len(by_match), 9)
+
+
+def _production_comparison(samples, weights):
+    """Compare candidate and actual production on the same frozen observations."""
+    by_fixture = {}
+    for sample in samples:
+        production = sample.get('production_probability')
+        if production is None:
+            continue
+        candidate = sum(w * p for w, p in zip(weights, sample['p']))
+        by_fixture.setdefault(sample['match_key'], []).append(
+            (sample['day'], (candidate - sample['y']) ** 2, (production - sample['y']) ** 2))
+    pairs = [(sum(v[1] for v in values) / len(values),
+              sum(v[2] for v in values) / len(values)) for values in by_fixture.values()]
+    n = len(pairs)
+    candidate = sum(a for a, _ in pairs) / n if n else None
+    production = sum(b for _, b in pairs) / n if n else None
+    diffs = [b - a for a, b in pairs]
+    improvement = sum(diffs) / n if n else None
+    variance = sum((d - improvement) ** 2 for d in diffs) / (n - 1) if n > 1 else None
+    lower = improvement - 3 * math.sqrt(variance / n) if variance is not None else None
+    return {
+        'status': ('NO_FROZEN_PRODUCTION_BASELINE' if not n else
+                   'DESCRIPTIVE_IMPROVEMENT' if round(improvement, 9) > 0 else 'NO_DESCRIPTIVE_IMPROVEMENT'),
+        'baseline': 'FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION',
+        'population': 'EXACT_COMMON_ROWS_FIXTURE_BALANCED',
+        'independent_matches': n,
+        'independent_utc_days': len({v[0][0] for v in by_fixture.values()}),
+        'paired_rows': sum(len(v) for v in by_fixture.values()),
+        'missing_baseline_rows': sum(s.get('production_probability') is None for s in samples),
+        'candidate_brier': round(candidate, 9) if candidate is not None else None,
+        'production_brier': round(production, 9) if production is not None else None,
+        'paired_brier_improvement': round(improvement, 9) if improvement is not None else None,
+        'lower_confidence_bound_approx': round(lower, 9) if lower is not None else None,
+        'promotion_authorized': False,
+        'historical_reconstruction': False,
+    }
 
 
 def _split(samples):
@@ -247,6 +290,7 @@ def build_report(ledger, settlement, *, now):
         "network_fetch_enabled": False, "optimizer": "DETERMINISTIC_CONVEX_GRID_BRIER",
         "selection_metric": "Brier (smaller is better)", "economic_roi_evaluated": False,
         "samples": len(samples), "excluded": excluded,
+        "production_comparison": _production_comparison([], (1., 0., 0.)),
         "quote_provenance": {
             "status": "NO_FROZEN_EXACT_HISTORICAL_OPERATOR_QUOTES_JOINED",
             "verified_priced_actions": None,
@@ -289,6 +333,7 @@ def build_report(ledger, settlement, *, now):
                            "holdout_delta_vs_current": round(test_brier - baseline_test, 9)}
     result["status"] = "SHADOW_EVIDENCE_POSITIVE" if val_brier < baseline_val and test_brier < baseline_test else "SHADOW_NOT_BETTER"
     result["market_research"] = _market_research(train, val, test)
+    result["production_comparison"] = _production_comparison(test, selected)
     result["reason"] = "DESCRIPTIVE_RESEARCH_ONLY_NO_AUTOMATIC_PRODUCTION_PROMOTION"
     return result
 
@@ -401,6 +446,11 @@ def _prospective_evaluation(samples, track, champion, challenger, *, as_of):
     matured = as_of >= deadline
     sufficient = n >= MEMORY_MIN_FIXTURES and len(days) >= MEMORY_MIN_UTC_DAYS
     positive = matured and sufficient and lower is not None and lower > MEMORY_LOWER_BOUND_MARGIN
+    production_comparison = _production_comparison(list(unique.values()), challenger_weights)
+    production_comparison['evaluation_completed'] = matured
+    production_comparison['sufficient_prospective_evidence'] = (
+        matured and production_comparison['independent_matches'] >= MEMORY_MIN_FIXTURES
+        and production_comparison['independent_utc_days'] >= MEMORY_MIN_UTC_DAYS)
     result = {
         "status": ("COLLECTING_FUTURE_FIXTURES" if not matured else
                    "ELIGIBLE_SHADOW_CHAMPION" if positive else
@@ -416,6 +466,7 @@ def _prospective_evaluation(samples, track, champion, challenger, *, as_of):
         "paired_brier_improvement": round(mean_diff, 9) if mean_diff is not None else None,
         "lower_confidence_bound_approx": round(lower, 9) if lower is not None else None,
         "production_promotion_authorized": False,
+        "production_comparison": production_comparison,
         "roi": None,
     }
     return result
@@ -553,9 +604,12 @@ def main():
         temp.write_text(json.dumps(memory, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         temp.replace(args.memory_output)
         print(json.dumps({"memory_run_number": memory["run_number"], "tracks": len(memory["tracks"]),
-                          "prospective_only": True}, ensure_ascii=False))
+                          "prospective_only": True,
+                          "evaluations": {label: track['last_evaluation']
+                                          for label, track in memory['tracks'].items()}}, ensure_ascii=False))
     print(json.dumps({"status": report["status"], "windows": report["windows"],
-                      "candidate": report["candidate"]}, ensure_ascii=False))
+                      "candidate": report["candidate"],
+                      "production_comparison": report['production_comparison']}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

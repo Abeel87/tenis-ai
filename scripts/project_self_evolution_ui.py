@@ -9,6 +9,7 @@ from pathlib import Path
 FLAGS = ('production_influence','playable_influence','symphony_influence','ineed_influence','real_betting_enabled','economic_roi_evaluated')
 EVALUATION = ('status','registered_at','evaluation_deadline','evaluation_completed','independent_matches','independent_utc_days','champion_brier','challenger_brier','paired_brier_improvement','lower_confidence_bound_approx')
 HISTORICAL = ('train_brier','validation_brier','holdout_brier','current_validation_brier','current_holdout_brier','validation_delta_vs_current','holdout_delta_vs_current')
+PRODUCTION = ('status','independent_matches','independent_utc_days','paired_rows','missing_baseline_rows','candidate_brier','production_brier','paired_brier_improvement','lower_confidence_bound_approx','evaluation_completed','sufficient_prospective_evidence')
 
 def digest(doc):
     raw=json.dumps(doc,ensure_ascii=False,sort_keys=True,separators=(',',':'),default=str)
@@ -23,6 +24,12 @@ def pick(doc, keys):
         if isinstance(value,float) and not math.isfinite(value): raise ValueError('Non-finite report field')
         if isinstance(value,str) and len(value)>256: raise ValueError('Unbounded report field')
         out[key]=value
+    return out
+
+def evaluation(doc):
+    out=pick(doc,EVALUATION)
+    if out is not None:
+        out['production_comparison']=pick(doc.get('production_comparison'),PRODUCTION)
     return out
 
 def project(report,memory,run):
@@ -48,14 +55,15 @@ def project(report,memory,run):
         if not isinstance(history,list) or len(history)>40: raise ValueError('Invalid retained history')
         rows.append({'key':label,'champion':pick(track.get('champion'),('id','registered_at')),
           'challenger':pick(track.get('challenger'),('id','registered_at')),
-          'last_evaluation':pick(track.get('last_evaluation'),EVALUATION),
-          'history':[{**pick(h,('champion_id','challenger_id','decision','decision_at')),'evidence':pick(h.get('evidence'),EVALUATION)} for h in history]})
+          'last_evaluation':evaluation(track.get('last_evaluation')),
+          'history':[{**pick(h,('champion_id','challenger_id','decision','decision_at')),'evidence':evaluation(h.get('evidence'))} for h in history]})
     return {'schema':1,'mode':'SHADOW_ONLY','generated_at':report['generated_at'],
       'source':{'run_id':run['id'],'head_sha':run['head_sha'],'research_sha256':digest(report),'memory_sha256':digest(memory)},
       **{k:False for k in FLAGS},'auto_promote_to_prod':False,
       'run_number':memory.get('run_number'),'historical':{**pick(report,('status','reason','samples')),
       'windows':pick(report.get('windows'),('train_matches','validation_matches','holdout_matches','train_rows','validation_rows','holdout_rows','validation_start_day','holdout_start_day')),
-      'candidate':pick(report.get('candidate'),HISTORICAL)},'tracks':rows,
+      'candidate':pick(report.get('candidate'),HISTORICAL),
+      'production_comparison':pick(report.get('production_comparison'),PRODUCTION)},'tracks':rows,
       'completed_in_retained_history':sum(len(r['history']) for r in rows)}
 
 if __name__=='__main__':

@@ -77,6 +77,14 @@ jobs:
           assert f['auto_promote'] is False
           assert 'NO_LEGACY_NEURON_OUTPUTS' in POLICY
           PY
+      - name: Restore canonical tennis history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-${{ hashFiles('data/cache/*.csv.gz') }}-
+            tennis-history-${{ runner.os }}-
       - name: Train from Tenis AI raw history
         if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.schedule == '35 3 * * 1,4'
         run: python backend/neuron.py train
@@ -96,6 +104,7 @@ jobs:
           from pathlib import Path
           from scripts.history_publication_chunks import restore
           restore(Path('frontend/data'), filename='history.json')
+          restore(Path('frontend/data'), filename='prediction_ledger_shadow.json')
           PY
           python backend/neuron.py evaluate
       - name: Audit isolation

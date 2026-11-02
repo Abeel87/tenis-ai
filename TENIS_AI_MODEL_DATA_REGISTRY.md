@@ -456,6 +456,33 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B15. Neuron
 
+**Naprawa gotowości SHADOW (2026-11-02, przed wdrożeniem):**
+- Kanoniczny resolver `backend/model.py::_resolve_history_player_key` udostępnia
+  Neuronowi tryb `exact_tokens_only=True`: dokładny komplet członów pełnego
+  nazwiska, ewentualnie inna kolejność, jednoznaczny klucz historii. Nie używa
+  inicjałów, fuzzy ani skracania nazw. Domyślna polityka pozostałych odbiorców
+  pozostaje identyczna. Snapshot zapisuje sposób dopasowania i liczbę zachowanych
+  rekordów (maks. 64 zgodnie z istniejącym stanem Neuronu).
+- Workflow odtwarza ten sam cache TML co core przed treningiem/scoringiem.
+  Core pozostaje właścicielem zapisu cache; istniejące znaczniki czasu i bramki
+  jakości nie są zastępowane. UI pokazuje świeżość źródeł bieżącego scoringu
+  oddzielnie od źródeł treningu.
+  Trzy audyty historii/tożsamości odtwarzają dokładne zapisane dane przed pełnym
+  pytest przez istniejący `history_publication_chunks.py`; nie pomijają testów.
+- Neuron i Self Evolution porównują się opisowo z rzeczywistym, zamrożonym
+  przed meczem wynikiem zespołu AutoLearn. AutoLearn obserwuje własny wynik
+  po dynamicznym doborze wag, przed zaokrągleniem prezentacyjnym i selekcją;
+  istniejący Prediction Ledger zapisuje go z normalną precyzją 12 miejsc.
+  Czas zapisu jest pobierany po obliczeniu prognoz. To porównanie zespołu
+  AutoLearn PRE_SELECTION, nie końcowej selekcji PLAYABLE ani wyniku finansowego.
+- Stare wiersze bez `model_scores.ensemble` pozostają N/D i nie są uzupełniane
+  dzisiejszymi wagami. Neuron wymaga dokładnego ID/startu/selekcji zwycięzcy;
+  Self Evolution używa dokładnie wspólnych wierszy oraz równoważenia po meczu.
+  Istniejące progi, trening i wybór wewnętrznego championa SHADOW nie zmieniają się.
+- Audyt: `audits/shadow_learning_readiness_20261102.json` i `.md`.
+  Status merge/deploy znajduje się w najnowszym LIVE CHECKPOINT.
+
+
 **Status:** SHADOW_RESEARCH.
 
 **Odpowiedzialność:** eksperymentalna niezależna analiza/research.
@@ -1138,7 +1165,7 @@ current content, merge-base, name-only change classification and historical read
 
 ## B18. Self Evolution Research (SHADOW, 2026-10-08)
 
-**Status:** implementation proposed on branch `feature/self-evolution-shadow-research`; no PROD promotion.
+**Status:** active scheduled SHADOW research with prospective memory and private admin evidence; no PROD promotion.
 **Canonical owner:** `backend/self_evolution_shadow.py`, read-only research consumer of frozen pre-selection Prediction Ledger and exact settlement SHADOW sidecar.
 **Role:** autonomously evaluate 66 deterministic three-model convex ensembles on chronological TRAIN/VAL/HOLDOUT and compare against Current using Brier on the same samples. Missing/void evidence must fail closed. Requires independent fixture sample sizes; reports uncertainty/insufficient history rather than fake wins.
 **Exclusions:** no trained production probability, thresholds, Adaptive weights, Neuron, Player DNA, Symfonia, iNeed$, PLAYABLE, real bets or model promotion. No odds or profitability claims. No external requests. See `docs/SELF_EVOLUTION_SHADOW.md`.

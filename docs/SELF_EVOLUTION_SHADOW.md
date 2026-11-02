@@ -186,3 +186,23 @@ Observed morning evidence before UI change on 2026-10-09:
   rejection reasons. This does NOT mean the operator had no offers.
 - This UI presents live run/artifact metadata; it cannot infer a learning
   improvement from either fact.
+
+
+## Frozen AutoLearn comparison — 2026-11-02
+
+The historical Current comparison and internal prospective SHADOW champion
+rules remain unchanged. An additional descriptive comparison uses the actual
+AutoLearn ensemble probability frozen by its canonical producer in the same
+Prediction Ledger row. It includes dynamic weighting and is captured after
+computation, strictly before the fixture start, at the ledger's existing
+12-decimal precision. Global weights are never used to reconstruct old outputs.
+
+Only rows with both candidate inputs and a valid frozen ensemble score enter
+the paired metrics; loss is averaged within each exact fixture before averaging
+fixtures. Reports expose paired row/match/day counts, missing-baseline rows,
+both Brier scores and an approximate paired lower bound. The existing prospective
+registration, deduplication and fixed 14-day window also apply. A sufficient
+sample is descriptive evidence, not a production promotion decision. The
+baseline represents AutoLearn before downstream selection, not PLAYABLE,
+operator profit or final betting decisions. Legacy missing baselines remain N/D.
+The private admin projection displays these fields without exporting raw rows.

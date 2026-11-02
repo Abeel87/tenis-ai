@@ -28,6 +28,32 @@ def test_candidate_key_matches_scenario_total_key():
     assert _candidate_key({"market":"set1_total","pick":"over","line":8.5}) == "set1_total|8.5|over"
 
 
+def test_ensemble_evidence_captures_actual_dynamic_result_without_changing_output(monkeypatch):
+    from backend import autolearn_v84 as a
+    row = {'match_key': 'id:42', 'candidate_key': 'set1_total|8.5|over',
+           'market': 'set1_total', 'label': 'Over 8.5', 'pick': 'over', 'line': 8.5, 'support': 3}
+    match = {'id': 42, 'p1': 'Alpha', 'p2': 'Beta'}
+    monkeypatch.setattr(a, '_resolve_dynamic_weights',
+                        lambda *args: ({'catboost': .5, 'tabpfn': .5}, {'active': True}))
+    args = ([match], [row], [.61], [.7212345], [.8123456], {'catboost': .8, 'tabpfn': .2})
+    ordinary = a._decorate_results(*args)
+    evidence = []
+    observed = a._decorate_results(*args, ensemble_evidence=evidence)
+    assert observed == ordinary
+    assert len(evidence) == 1
+    assert abs(evidence[0] - (.7212345 + .8123456) / 2) < 1e-12
+
+
+def test_ledger_capture_time_is_taken_after_probability_computation():
+    from pathlib import Path
+    source = (Path(__file__).resolve().parents[1] / 'backend/autolearn_v84.py').read_text()
+    decorate = source.index('decorated = _decorate_results(')
+    capture_clock = source.index('ledger_captured_at = datetime.now(timezone.utc)', decorate)
+    freeze = source.index('prediction_ledger_shadow.capture_rows(', decorate)
+    assert decorate < capture_clock < freeze
+    assert 'now=ledger_captured_at' in source[freeze:source.index('except Exception as exc:', freeze)]
+
+
 def test_training_row_joins_models_on_same_concrete_signal():
     rows=build_training_rows([_entry(1,"hit")])
     assert len(rows)==1

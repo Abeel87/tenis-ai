@@ -172,6 +172,32 @@ The active evidence-capture step uses `backend/superbet_builder_terminal_evidenc
 
 ### Neuron SHADOW training and evidence ownership
 
+The 2026-11-02 readiness repair restores the canonical core TML cache before
+Neuron training/scoring. It does not save a competing cache or refresh old
+source timestamps. `current_features` uses the canonical history resolver's
+opt-in complete-token-only mode: exact full names or one unique reordering,
+with no initials/fuzzy expansion. Current rows expose identity diagnostics.
+Existing direct matches, training math, date cutoff and quality gates remain.
+The identity, insufficient-history and repeated-match audit workflows restore
+exact chunked publication inputs through `history_publication_chunks.py` before
+their full regression suites; all tests and audit contracts remain enabled.
+
+The append-only Prediction Ledger now observes the actual AutoLearn ensemble
+output inside `_decorate_results`, after dynamic weighting and before display
+rounding/selection. `capture_rows` stores the optional `model_scores.ensemble`
+with its existing 12-decimal score precision and a clock taken after computation.
+No output is reconstructed from today's weights and existing rows never acquire
+a retroactive baseline. The shared `frozen_ensemble_probability` reader requires
+valid producer/score ownership, finite 0–1 probability and strict timezone-aware
+pre-match capture. Self Evolution reports fixture-balanced paired comparisons
+on the same holdout/prospective rows without altering candidate selection or
+internal SHADOW promotion. Neuron compares first frozen forecasts on exact
+match ID, start and winner selection, with a separate current-model cohort.
+These descriptive comparisons target AutoLearn PRE_SELECTION only; they neither
+measure final operator-selected decisions nor authorize production promotion.
+Private admin presentation preserves missing values and source provenance.
+
+
 `backend/neuron.py` owns full retraining, existing-weight scoring and its
 prospective evidence. `train` uses the existing Model mathematics and date split,
 with canonical completed-match hygiene and an exclusive UTC-day cutoff. It
@@ -272,7 +298,7 @@ Git contracts without eagerly transferring every archived JSON generation.
 The existing Superbet watchdog also accepts successful main Neuron/Player DNA workflow completion as a wakeup when cron is delayed. It checks out main and validates source eligibility before querying Actions. The canonical orchestration guard suppresses active core/market work and preserves the five-minute post-core grace. It then checks actual `frontend/data/meta.json` source time: core age of at least 120 minutes, or a missing/invalid/naive/future timestamp, selects the existing full `update-and-pages.yml` workflow. Otherwise the existing 40-minute market freshness check selects `superbet-market-refresh.yml` only when needed. A successful market publication cannot hide stale core data. The guard outputs the selected workflow and explicit reason; PR validation performs no API lookup or dispatch. No new producer, clock, quota, model or PLAYABLE semantics are introduced.
 
 
-## Self Evolution SHADOW research (proposed, 2026-10-08)
+## Self Evolution SHADOW research (active; introduced 2026-10-08)
 
 A separate **research-only** read path consumes exact `prediction_ledger_shadow.json` plus `prediction_ledger_settlement_shadow.json`, joins on frozen exact prediction ID and canonical match/schedule, and refuses mismatched SHA/provenance. It trains bounded convex ensembles from Current/CatBoost/TabPFN probabilities on chronologically disjoint whole UTC fixture days with strict settlement-as-of cutoffs. Validation picks a research candidate; holdout only reports descriptive quality against the frozen Current baseline. This module cannot change probability owners, Dynamic Weights, production models, Symfonia, PLAYABLE, iNeed$ or frontend. Daily dedicated GitHub Actions runs produce a short-lived report artifact, not a public PROD data feed. See `docs/SELF_EVOLUTION_SHADOW.md`.
 
