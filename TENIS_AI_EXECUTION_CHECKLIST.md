@@ -26,6 +26,64 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
 
+**CURRENT TASK — source-contract repairs, 2026-11-02 (in progress)**
+- OWNER FOLLOW-UP: “No to naprawiaj słucham pomysłów i wdrazaj żeby wszystko dzialalao”.
+  Repair and deploy verified data fixes; no model-math change, historical forecast
+  reconstruction, real bets or Neuron/Self Evolution PROD promotion.
+- Fresh base `83ab0ca7d56aa9edb474f833b84286a6dfc046d4`, branch
+  `fix/history-source-contracts-20261102`; PR #571. Previous SHADOW deployment
+  below is complete and must not be repeated.
+- [x] Challenger ongoing source returns HTTP 200 and a valid 493-byte CSV header
+  with zero records. The official catalogue confirms the same declared URL.
+  Canonical `update.load_history` incorrectly classified this as an outage.
+- [x] Regression reproduced before repair (5 failed); canonical schema validation
+  now accepts an explicitly declared rolling feed with zero rows, replaces its
+  obsolete snapshot, and retains failure/fallback behavior for annual empties,
+  malformed CSV and transport errors. Freshness preview consumes the same rule.
+  Focused suite: 22 passed. No fabricated rows or renewed stale-cache timestamps.
+- [x] Reproduced 2024 lock against 394 current fixtures: candidate still 12,474,
+  but source/candidate fingerprints differ. All nine visible changes are
+  `none -> exact` for archive-only players; global ID, exact-shadow and score
+  conflicts are zero. The original Sept 17 report confirms the old Challenger
+  raw source had 6,063 rows versus 5,936 today. Old source row bytes are not in
+  that artifact; no claim of a complete old/new row diff or safe relock.
+- [x] Real seven-source refresh: 7 successful / 0 failed, no short-history gain.
+  Strict coverage census: missing at least one player in 216/217 ITF, 33/124 CH,
+  6/29 WTA and 1/24 ATP fixtures. Existing PBP schema audit has zero projectable
+  payloads out of 30 and no duplicate calibration proof; no invented adapter.
+- [x] First full regression: 1889 passed in 81.01s. The required source-line
+  evidence matrix was updated after inserting the loader validator; contracts
+  and token counts remain unchanged. Isolated verification retains actual Git
+  HEAD and restores exact chunked history. Two existing NumPy fixture warnings.
+- [~] Separately revalidating the 2024 audit candidate under this new repair
+  request: all old exclusions preserved plus 236 frozen archive-only identity
+  exclusions, 11,620 rows; zero violations in ten numeric consistency checks.
+  Both canonical archive audits now require every candidate identity in the
+  current baseline, including players absent from today's fixture list. No
+  source/identity guard is disabled and no archive integration is performed.
+  Previous manifest, source receipts and per-key evidence are retained in
+  `audits/history_source_contracts_20261102.json`. Candidate audit PASSED:
+  matching fingerprints, all exclusions evidenced, zero global ID/exact-shadow/
+  score/visible-resolution/archive-only conflicts. Remote CI/deployment pending.
+- [x] Final local suite: 1893 passed in 87.04s; archive focused: 16 passed.
+  Actual built-delivery UI and both readiness fixtures passed (394 matches,
+  all 216 Symphony cards). Runtime equivalence verifies the new lock and zero
+  identity changes but blocks archive integration: 35 unrelated output changes
+  from shared surface priors. This negative integration result remains visible.
+- [x] Earlier main core `41410144798` and Pages job `125188554576` succeeded.
+  Published main `d4dc1c384e5cee8886b603a60acdcd8649762599` changes 60 generated
+  files only; no source overlap. AutoLearn reports 111507 ledger rows, 16 newly
+  captured; exact new ensemble values/chronology still need direct verification.
+- [~] PR #571 refreshed onto that exact main while retaining all generated files.
+  Original head `a7cc0e137a18bba2f69af69d5175d2000f66de11` already passed freshness
+  and runtime-equivalence CI; require all checks on the refreshed head before merge.
+- NEXT EXACT ACTION: verify all PR #571 exact-head checks, compare fresh main,
+  merge only green and verify the first main source refresh. Inspect the 16 new
+  ledger records for actual ensemble ownership/time; no historical backfill.
+  Do not hide archive drift, backfill old forecasts, change learning gates or
+  assert full data coverage. Record any independent CI blocker before deployment.
+
+
 **NEURON / SELF EVOLUTION — SHADOW DEPLOYED, 2026-11-02**
 - OWNER FOLLOW-UP: after the concrete PR summary disclosed the three red source
   audits, the owner instructed “Oka to wdrazaj i jazd”. This new instruction

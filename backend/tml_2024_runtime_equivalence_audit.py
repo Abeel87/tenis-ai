@@ -260,11 +260,15 @@ def _materialize_locked_candidate(
         candidate=candidate,
         source_fingerprints=source_fp,
     )
+    require_current_identity = (manifest.get("global_hardening") or {}).get("require_current_baseline_identity") is True
+    archive_only_players = task017._archive_only_player_keys(baseline_clean, candidate)
     return candidate, {
         "task016_materialization": materialization,
         "hardening": hardening,
         "source_fingerprints": source_fp,
         "expectation_check": expectation,
+        "archive_only_player_keys": archive_only_players,
+        "current_baseline_identity_verified": bool(require_current_identity and not archive_only_players),
     }
 
 
@@ -287,7 +291,10 @@ def build_report(
         len(source_status) == len(task014.TML_2024_SOURCES)
         and all(row.get("fetch_success") for row in source_status)
     )
-    locked_candidate_verified = bool(expectation.get("locked") and expectation.get("matches"))
+    locked_candidate_verified = bool(
+        expectation.get("locked") and expectation.get("matches")
+        and candidate_lock["current_baseline_identity_verified"]
+    )
 
     augmented_raw = pd.concat([baseline_raw, candidate], ignore_index=True, sort=False)
     augmented_clean, augmented_hygiene = clean_history(augmented_raw)

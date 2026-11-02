@@ -5,6 +5,23 @@ import pandas as pd
 import tml_2024_runtime_equivalence_audit as task018
 
 
+def test_materialization_keeps_current_identity_review_separate_from_fingerprint(monkeypatch):
+    candidate = pd.DataFrame([{"winner_name": "Archive Only", "loser_name": "Known"}])
+    monkeypatch.setattr(task018.task017, "_annotated_archive", lambda frames: candidate)
+    monkeypatch.setattr(task018.task017, "_materialize_task016_manifest_candidate", lambda **kwargs: (candidate, {}))
+    monkeypatch.setattr(task018.task017, "_apply_global_hardening", lambda frame, manifest: (frame, {}))
+    monkeypatch.setattr(task018.task017, "_source_fingerprints", lambda frames: [])
+    monkeypatch.setattr(task018.task017, "_expectation_check", lambda **kwargs: {"locked": True, "matches": True})
+    monkeypatch.setattr(task018.task017, "_archive_only_player_keys", lambda baseline, frame: ["archive only"])
+    _, review = task018._materialize_locked_candidate(
+        baseline_clean=pd.DataFrame(), archive_frames={},
+        manifest={"global_hardening": {"require_current_baseline_identity": True}},
+    )
+    assert review["expectation_check"]["matches"] is True
+    assert review["current_baseline_identity_verified"] is False
+    assert review["archive_only_player_keys"] == ["archive only"]
+
+
 def test_fixture_from_result_keeps_only_runtime_fixture_inputs():
     row = {
         "id": 123,

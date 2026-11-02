@@ -83,6 +83,7 @@ jobs:
           from pathlib import Path
 
           report = json.loads(Path('artifacts/tml_2024_runtime_equivalence_audit.json').read_text(encoding='utf-8'))
+          manifest = json.loads(Path('audits/tml_2024_candidate_lock_manifest.json').read_text(encoding='utf-8'))
           p = report['policy']
           s = report['summary']
           d = report['decision']
@@ -106,7 +107,9 @@ jobs:
           assert s['visible_fixtures_audited'] > 0
           assert s['all_2024_sources_fetched'] is True
           assert s['locked_candidate_verified'] is True
-          assert s['locked_candidate_rows'] == 12474
+          assert s['locked_candidate_rows'] == manifest['expected']['candidate_rows'] > 0
+          assert report['candidate_lock']['current_baseline_identity_verified'] is True
+          assert report['candidate_lock']['archive_only_player_keys'] == []
           assert s['runtime_contains_locked_2024_sources'] is False
 
           assert d['runtime_change'] is False

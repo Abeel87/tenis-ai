@@ -47,12 +47,7 @@ IDENTITY_COLUMNS = (
 
 
 def _read_cached(cache_root: Path, source: dict[str, Any]) -> pd.DataFrame | None:
-    path = cache_root / f"{source['key']}.csv.gz"
-    try:
-        frame = pd.read_csv(path, compression="gzip", low_memory=False)
-    except Exception:
-        return None
-    return frame if not frame.empty else None
+    return update._read_cached(cache_root, source)
 
 
 def _read_manifest(cache_root: Path) -> dict[str, Any]:
@@ -179,8 +174,8 @@ def build_report(
             refresh_attempts += 1
             try:
                 candidate = downloader(source["url"])
-                if candidate is None or candidate.empty:
-                    raise RuntimeError("empty_csv")
+                if not update.history_source_frame_valid(candidate, source):
+                    raise RuntimeError("invalid_history_csv")
                 fresh = candidate
                 preview_frames[source["key"]] = fresh
                 refresh_success += 1
@@ -201,6 +196,7 @@ def build_report(
             "manifest_fetched_at": manifest_row.get("fetched_at"),
             "cached_rows": int(len(cached)) if cached is not None else 0,
             "fresh_rows": int(len(fresh)) if fresh is not None else None,
+            "fresh_empty": bool(fresh is not None and fresh.empty),
             "cached_latest_tourney_date": _latest_tourney_date(cached),
             "fresh_latest_tourney_date": _latest_tourney_date(fresh),
             "new_row_signatures": len(new_sigs - old_sigs) if fresh is not None else 0,

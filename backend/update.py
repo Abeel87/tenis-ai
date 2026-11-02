@@ -36,9 +36,9 @@ CACHE_MANIFEST='manifest.json'
 #   12   -> refresh current-year archive twice a day
 #   None -> immutable/old archive: download only if cache is missing
 TML_SOURCES=[
-    {'key':'atp_ongoing','tour':'ATP','url':'https://stats.tennismylife.org/data/ongoing_tourneys.csv','refresh_hours':0},
-    {'key':'ch_ongoing','tour':'CH','url':'https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv','refresh_hours':0},
-    {'key':'wta_ongoing','tour':'WTA','url':'https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv','refresh_hours':0},
+    {'key':'atp_ongoing','tour':'ATP','url':'https://stats.tennismylife.org/data/ongoing_tourneys.csv','refresh_hours':0,'allow_empty':True},
+    {'key':'ch_ongoing','tour':'CH','url':'https://stats.tennismylife.org/data/challenger_ongoing_tourneys.csv','refresh_hours':0,'allow_empty':True},
+    {'key':'wta_ongoing','tour':'WTA','url':'https://stats.tennismylife.org/data/wta_ongoing_tourneys.csv','refresh_hours':0,'allow_empty':True},
     {'key':'atp_2026','tour':'ATP','url':'https://stats.tennismylife.org/data/2026.csv','refresh_hours':12},
     {'key':'atp_quali_2026','tour':'ATP','url':'https://stats.tennismylife.org/data/atp_quali/2026_atp_quali.csv','refresh_hours':12},
     {'key':'ch_2026','tour':'CH','url':'https://stats.tennismylife.org/data/2026_challenger.csv','refresh_hours':12},
@@ -83,12 +83,31 @@ def _cache_path(cache_dir: Path, source: dict):
     return cache_dir/f"{source['key']}.csv.gz"
 
 
+def history_source_frame_valid(frame, source: dict) -> bool:
+    """A header-only ongoing feed is an observation, not a download outage.
+
+    Only declared rolling feeds may be empty, and their identity/schema must
+    still be present. Annual archives, empty bodies and error documents remain
+    invalid. The same contract applies to downloads, caches and freshness audits.
+    """
+    required = {'tourney_date', 'winner_name', 'loser_name', 'score'}
+    if not isinstance(frame, pd.DataFrame) or not required.issubset(frame.columns):
+        return False
+    if not frame.empty:
+        return True
+    empty_schema = required | {
+        'tourney_id', 'tourney_name', 'surface', 'match_num', 'winner_id', 'loser_id',
+    }
+    return source.get('allow_empty') is True and empty_schema.issubset(frame.columns)
+
+
 def _read_cached(cache_dir: Path, source: dict):
     p=_cache_path(cache_dir,source)
     if not p.exists():
         return None
     try:
-        return pd.read_csv(p,compression='gzip',low_memory=False)
+        frame = pd.read_csv(p,compression='gzip',low_memory=False)
+        return frame if history_source_frame_valid(frame, source) else None
     except Exception:
         return None
 
@@ -156,8 +175,8 @@ def load_history(cache_dir=CACHE_DIR, sources=None, now=None, downloader=downloa
                 source=futures[fut]
                 try:
                     d=fut.result()
-                    if d is None or d.empty:
-                        raise RuntimeError('pusty plik CSV')
+                    if not history_source_frame_valid(d, source):
+                        raise RuntimeError('invalid history CSV')
                     _write_cached(cache_dir,source,d)
                     manifest['sources'][source['key']]={
                         'fetched_at':now.isoformat(),'rows':int(len(d)),'url':source['url']
@@ -165,7 +184,7 @@ def load_history(cache_dir=CACHE_DIR, sources=None, now=None, downloader=downloa
                     resolved[source['key']]=d; fresh.append(source['key'])
                 except Exception as e:
                     fallback=_read_cached(cache_dir,source)
-                    if fallback is not None and not fallback.empty:
+                    if fallback is not None:
                         resolved[source['key']]=fallback; cached.append(source['key'])
                         warnings.append(f"{source['key']}: świeże dane niedostępne, użyto cache ({type(e).__name__})")
                     else:
@@ -185,6 +204,7 @@ def load_history(cache_dir=CACHE_DIR, sources=None, now=None, downloader=downloa
         'cached_sources':len(set(cached)),
         'missing_sources':len(set(missing)),
         'cache_files':sum(1 for s in sources if _cache_path(cache_dir,s).exists()),
+        'empty_source_keys':sorted(key for key, frame in resolved.items() if frame.empty),
     }
     if fresh and cached: info['mode']='fresh+cache'
     elif fresh: info['mode']='fresh'

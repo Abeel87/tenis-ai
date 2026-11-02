@@ -111,6 +111,57 @@ def test_exact_shadow_collision_detects_new_exact_key_that_was_baseline_variant(
     assert collisions[0]["baseline_variant_candidates"] == ["carlos alcaraz garfia"]
 
 
+def test_archive_only_exclusions_are_frozen_and_require_actual_row_evidence():
+    candidate = pd.DataFrame([
+        _row("20240101", "Old only", "Archive Only", "Known Player"),
+        _row("20240102", "Keep", "Known Player", "Other Known"),
+    ])
+    manifest = {"global_hardening": {"exclude_baseline_absent_player_keys": ["archive only"]}}
+    hardened, details = task017._apply_global_hardening(candidate, manifest)
+    assert list(hardened["tourney_name"]) == ["Keep"]
+    assert details["baseline_absent_evidence_matches"] == {"archive only": 1}
+    assert details["reason_counts"] == {"archive_only_identity": 1}
+    assert details["all_evidence_matched"] is True
+
+    manifest["global_hardening"]["exclude_baseline_absent_player_keys"].append("not in archive")
+    _, details = task017._apply_global_hardening(candidate, manifest)
+    assert details["unmatched_baseline_absent_evidence"] == ["not in archive"]
+    assert details["all_evidence_matched"] is False
+
+
+def test_current_identity_review_checks_all_archive_players_without_name_expansion():
+    baseline = pd.DataFrame([_row("20260101", "Current", "Carlos Alcaraz Garfia", "Known Player")])
+    candidate = pd.DataFrame([
+        _row("20240101", "Old", "Carlos Alcaraz", "Known Player"),
+        _row("20240102", "Other", "Archive Only", "Known Player"),
+    ])
+    assert task017._archive_only_player_keys(baseline, candidate) == ["archive only", "carlos alcaraz"]
+
+
+def test_lock_safety_rejects_archive_only_player_even_when_no_visible_fixture_uses_it():
+    baseline = pd.DataFrame([_row("20260101", "Current", "Known Player", "Other Known")])
+    archive = _row("20240101", "Old", "Archive Only", "Other Known", winner_id="A_ONLY")
+    sources = task017.task014.TML_2024_SOURCES
+    frames = {s["key"]: pd.DataFrame([archive]) if s["key"] == "atp_2024" else pd.DataFrame() for s in sources}
+    counts = {s["key"]: int(s["key"] == "atp_2024") for s in sources}
+    manifest = {
+        "sources": [{k: s[k] for k in ("key", "tour", "url")} for s in sources],
+        "task016_expected_shape": {"candidate_rows": 1, "source_counts": counts},
+        "global_hardening": {"require_current_baseline_identity": True},
+    }
+    args = dict(results=[], archive_frames=frames, manifest=manifest,
+                source_status=[{"fetch_success": True} for _ in sources])
+    rejected = task017.build_report(baseline_raw=baseline, **args)
+    assert rejected["summary"]["visible_resolution_changes"] == 0
+    assert rejected["summary"]["archive_only_players"] == 1
+    assert rejected["summary"]["candidate_lock_safety_verified"] is False
+
+    current = _row("20260102", "Current 2", "Archive Only", "Other Known", winner_id="A_ONLY")
+    verified = task017.build_report(baseline_raw=pd.concat([baseline, pd.DataFrame([current])]), **args)
+    assert verified["summary"]["archive_only_players"] == 0
+    assert verified["summary"]["candidate_lock_safety_verified"] is True
+
+
 def test_task016_frozen_shape_is_independent_of_current_results_drift():
     candidate = pd.DataFrame([
         _row("20240101", "A", "A Player", "B Player", source_key="atp_2024"),
