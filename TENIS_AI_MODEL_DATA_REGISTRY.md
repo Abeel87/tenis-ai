@@ -17,7 +17,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-02 ongoing TML empty-snapshot contract (deployment pending):**
+**2026-11-02 ongoing TML empty-snapshot contract (PR #571 deployed):**
 `backend/update.py::history_source_frame_valid` is the shared validation owner
 for downloaded and cached TML frames; `tml_freshness_preview` consumes it. Only
 the three explicitly declared ongoing feeds may be valid header-only snapshots.
@@ -38,6 +38,15 @@ The original manifest and limitations of the unavailable old raw-byte comparison
 are retained in the evidence. Existing PBP schema audit has 0/30 projectable payloads
 and does not authorize a new history adapter. Evidence:
 `audits/history_source_contracts_20261102.json`; full audit/rollout is in the checkpoint.
+PR #571 merged after 14/14 green checks and 1893 passing tests on the fresh-main
+merge. Main Neuron run `41420205489` passed training/quality/scoring and Pages:
+3 fresh + 8 cached sources, zero missing, zero source warnings, valid empty
+`ch_ongoing`. Private Neuron delivery `41420874849` also succeeded. The model ID
+is unchanged; this verifies source handling, not an accuracy gain. The reviewed
+archive audit passes, while its integration gate remains false (35 unrelated
+output changes through shared priors). Actual prospective ensemble capture is
+also verified: 16 new records, zero legacy mutations; outcomes must settle
+naturally before using them as learning comparisons.
 
 **2026-10-29 concurrent DNA publication follow-up:** the single Git publication
 owner is `scripts/publish_player_dna_reports.py`, called by the existing early and

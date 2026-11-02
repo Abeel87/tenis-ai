@@ -45,7 +45,7 @@ calibration sample proved schema compatibility. Existing bounded provider
 backfill remains active; raw point tapes are not substituted for validated
 serve/return histories or cross-provider identities.
 
-The frozen 2024 candidate still contains 12,474 rows, but three source hashes and
+Reproducing the previous frozen 2024 candidate yielded 12,474 rows, but three source hashes and
 the candidate hash differ from the Sept 17 lock. Original artifact `10509752222`
 records 6,063 raw Challenger rows versus 5,936 now. It contains hashes/reports,
 not the old raw rows, so a complete old/new field comparison is unavailable.
@@ -88,8 +88,59 @@ identity changes. Its separate integration gate correctly remains **false**:
 adding the candidate would alter shared surface priors and change 35 matches
 without direct archive history. This is reported, not suppressed, and no archive
 is imported. Model probability, training and current form remain unchanged.
-The full candidate safety audit passed: exact source/candidate hashes match, every exclusion has evidence, and global ID, exact-shadow, score, visible-resolution and archive-only identity conflicts are zero. Remote CI is pending. No provider replacement
+The full candidate safety audit passed: exact source/candidate hashes match, every exclusion has evidence, and global ID, exact-shadow, score, visible-resolution and archive-only identity conflicts are zero. All three source audits subsequently passed remote CI. No provider replacement
 or automatic re-locking is authorized or performed.
 
-Machine-readable receipts, hashes, before/after summaries and exact limitations
-are in `history_source_contracts_20261102.json`. PR #571 carries the repair. Fresh main d4dc1c384e5cee8886b603a60acdcd8649762599 adds only 60 generated data files; the refreshed PR preserves them. Full CI and deployment are pending.
+## Green merge and deployed verification
+
+[PR #571](https://github.com/Abeel87/tenis-ai/pull/571) merged as
+`7b034576ccb9121fbb13652e6948cfd515f94b7f`. Exact reviewed head
+`ec893d34953af9ef49a76196154476e9415d16db` passed all 14 check runs across
+11 workflows. Candidate-lock (`41418930931`), freshness (`41418930998`) and
+runtime-equivalence (`41418931176`) audits are green; the last one still reports
+the negative integration decision rather than suppressing it.
+
+Fresh main `65b76ee05a1c26b55ef742ea6609a028780ac2fd` added three generated
+Neuron files with no source overlap. The prospective merge passed **1893 tests
+in 72.83s** and the actual rebuilt-delivery UI smoke. Actual merge tree
+`89ea8583aeeb9977e8c90f81ba2dd79b20c58ae8` exactly equals the verified tree.
+Post-merge UI/project-health, CodeQL and delivery/security checks also succeeded.
+
+[Main Neuron run 41420205489](https://github.com/Abeel87/tenis-ai/actions/runs/41420205489)
+executed the merged source from `b59d2e76260ebe1a104f62c5f644d69697323e89`:
+training **ACCEPTED**, every candidate quality check passed, and training/scoring
+both report **3 fresh + 8 cached sources, 0 missing, 0 source warnings** with
+`empty_source_keys=["ch_ongoing"]`. Training was generated at 09:25:08Z and
+scoring at 09:25:25Z. Model ID remains
+`neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7`;
+this does not establish improved predictive performance. Routine GitHub action
+runtime deprecation notices are separate from data-source warnings.
+
+Both Neuron job `125193663665` and Pages job `125194762183` succeeded. Evidence
+artifact: `13129378010`; published commit:
+`c19d7ad2d917dabd0d8f874b46c9f8a838d9b580`. Private runtime delivery
+`41420874849` also succeeded and published all three Neuron objects in generation
+`edda659f-1bfb-4b0a-9c0e-f53ff164d6f6`.
+
+![Verified Neuron training and Pages deployment](history_source_deployment_20261102.jpg)
+
+## Prospective learning-baseline capture
+
+The earlier regular core run `41410144798` and Pages job `125188554576`
+succeeded and published `d4dc1c384e5cee8886b603a60acdcd8649762599`. A direct
+ledger comparison confirms growth from 111,491 to 111,507 records: **16 new
+records across 11 fixtures**, each with the actual frozen ensemble probability,
+owner/version and a pre-match capture timestamp (08:56:01.802753Z). No prior
+record was changed or removed. These are supported-market forecasts, not eleven
+settled match-winner comparison pairs. No past forecast is reconstructed.
+
+At 09:30Z the independent post-repair full core run `41420067325` was still
+running after passing tests and update analysis. Its final regression and Pages
+publication are not claimed by this checkpoint. The dedicated Neuron training,
+scoring, Pages and private-delivery verification above are complete. The next
+agent should inspect that existing run without duplicating it, then collect
+naturally settled SHADOW comparisons; ITF history remains a separate coverage
+limitation and the reviewed 2024 candidate remains outside runtime/training.
+
+Machine-readable receipts, hashes, before/after summaries, deployed evidence
+and explicit limitations are in `history_source_contracts_20261102.json`.
