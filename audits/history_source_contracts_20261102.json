@@ -2950,6 +2950,62 @@
         "separate_mitigation_or_integration_pr_required": true,
         "reason": "TASK 018 is audit-only. A false equivalence gate means locked 2024 history has model-output blast radius outside players with direct candidate rows; no runtime integration is authorized."
       }
+    },
+    "candidate_after": {
+      "summary": {
+        "visible_matches": 394,
+        "all_2024_sources_fetched": true,
+        "manifest_sources_match_task014": true,
+        "task016_candidate_rows": 12486,
+        "task016_candidate_source_counts": {
+          "atp_2024": 2956,
+          "atp_quali_2024": 1294,
+          "ch_2024": 5694,
+          "wta_2024": 2542
+        },
+        "task016_frozen_shape_matches": true,
+        "current_task016_dynamic_matches_frozen": false,
+        "current_task016_candidate_rows": 12482,
+        "current_task016_candidate_source_counts": {
+          "atp_2024": 2956,
+          "atp_quali_2024": 1293,
+          "ch_2024": 5687,
+          "wta_2024": 2546
+        },
+        "global_hardening_removed_rows": 866,
+        "global_hardening_all_evidence_matched": true,
+        "candidate_rows": 11620,
+        "candidate_source_counts": {
+          "atp_2024": 2841,
+          "atp_quali_2024": 1200,
+          "ch_2024": 5246,
+          "wta_2024": 2333
+        },
+        "archive_involved_global_id_conflicts": 0,
+        "exact_shadow_variant_collisions": 0,
+        "archive_involved_score_conflicts": 0,
+        "visible_resolution_changes": 0,
+        "archive_only_players": 0,
+        "current_baseline_identity_verified": true,
+        "all_candidate_rows_within_2024": true,
+        "players_with_positive_2024_gain": 15,
+        "players_reaching_minimum_5": 9,
+        "total_net_2024_clean_pre_match_rows": 37,
+        "baseline_model_ready_matches": 115,
+        "augmented_model_ready_matches": 117,
+        "newly_model_ready_matches": 2,
+        "candidate_lock_safety_verified": true,
+        "fingerprint_lock_present": true,
+        "fingerprint_lock_matches": true,
+        "candidate_ready_for_separate_integration_review": true
+      },
+      "decision": {
+        "runtime_change": false,
+        "authorize_2024_archive": false,
+        "candidate_lock_ready": true,
+        "separate_integration_pr_required": true,
+        "reason": "TASK 017 locks provenance and an evidence-hardened candidate only; it never changes runtime history inputs."
+      }
     }
   },
   "pbp_schema_evidence": {
@@ -2963,7 +3019,7 @@
       "duplicate_observations_compared": 0,
       "duplicate_field_comparisons": 0,
       "duplicate_fields_within_2pp": 0,
-      "duplicate_field_agreement_rate": 0.0,
+      "duplicate_field_agreement_rate": 0,
       "unmatched_observations_audited": 30,
       "unmatched_target_projection_ready": 0,
       "unmatched_both_players_projection_ready": 0,
@@ -2985,7 +3041,8 @@
     "full_suite": "1893 passed in 87.04s, two pre-existing NumPy empty-fixture warnings",
     "full_suite_before_archive_revalidation": "1889 passed in 81.01s, two pre-existing NumPy empty-fixture warnings",
     "archive_focused": "16 passed in 2.58s; added restrictions reproduced failing before implementation",
-    "ui": "static/time/decision checks and actual built delivery runtime checks passed; 394 matches and 216 Symphony cards retained, readiness AVAILABLE/N-D fixtures passed"
+    "ui": "static/time/decision checks and actual built delivery runtime checks passed; 394 matches and 216 Symphony cards retained, readiness AVAILABLE/N-D fixtures passed",
+    "runtime_health": "0 failures, 2 inherited payload-size warnings against exact audited base; no payload increase"
   },
   "deployment": "pending",
   "policy": {
@@ -2993,5 +3050,10 @@
     "no_forecast_backfill": true,
     "no_new_provider": true,
     "no_probability_training_or_promotion_change": true
+  },
+  "fresh_main_recheck": {
+    "sha": "d4dc1c384e5cee8886b603a60acdcd8649762599",
+    "changes": "60 generated data files only; no source overlap; retained in refreshed PR head",
+    "ci": "pending"
   }
 }

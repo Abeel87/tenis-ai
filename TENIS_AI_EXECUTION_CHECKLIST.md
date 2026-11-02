@@ -31,7 +31,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Repair and deploy verified data fixes; no model-math change, historical forecast
   reconstruction, real bets or Neuron/Self Evolution PROD promotion.
 - Fresh base `83ab0ca7d56aa9edb474f833b84286a6dfc046d4`, branch
-  `fix/history-source-contracts-20261102`; no PR yet. Previous SHADOW deployment
+  `fix/history-source-contracts-20261102`; PR #571. Previous SHADOW deployment
   below is complete and must not be repeated.
 - [x] Challenger ongoing source returns HTTP 200 and a valid 493-byte CSV header
   with zero records. The official catalogue confirms the same declared URL.
@@ -62,16 +62,24 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   current baseline, including players absent from today's fixture list. No
   source/identity guard is disabled and no archive integration is performed.
   Previous manifest, source receipts and per-key evidence are retained in
-  `audits/history_source_contracts_20261102.json`. Final full audits/CI pending.
+  `audits/history_source_contracts_20261102.json`. Candidate audit PASSED:
+  matching fingerprints, all exclusions evidenced, zero global ID/exact-shadow/
+  score/visible-resolution/archive-only conflicts. Remote CI/deployment pending.
 - [x] Final local suite: 1893 passed in 87.04s; archive focused: 16 passed.
   Actual built-delivery UI and both readiness fixtures passed (394 matches,
   all 216 Symphony cards). Runtime equivalence verifies the new lock and zero
   identity changes but blocks archive integration: 35 unrelated output changes
   from shared surface priors. This negative integration result remains visible.
-- [~] Main core run `41410144798` is now active, past Update analysis. Inspect its
-  first real new ensemble ledger rows and publication when it completes.
-- NEXT EXACT ACTION: finish source candidate/equivalence verification;
-  complete final regression, publish the repair and inspect exact-head CI.
+- [x] Earlier main core `41410144798` and Pages job `125188554576` succeeded.
+  Published main `d4dc1c384e5cee8886b603a60acdcd8649762599` changes 60 generated
+  files only; no source overlap. AutoLearn reports 111507 ledger rows, 16 newly
+  captured; exact new ensemble values/chronology still need direct verification.
+- [~] PR #571 refreshed onto that exact main while retaining all generated files.
+  Original head `a7cc0e137a18bba2f69af69d5175d2000f66de11` already passed freshness
+  and runtime-equivalence CI; require all checks on the refreshed head before merge.
+- NEXT EXACT ACTION: verify all PR #571 exact-head checks, compare fresh main,
+  merge only green and verify the first main source refresh. Inspect the 16 new
+  ledger records for actual ensemble ownership/time; no historical backfill.
   Do not hide archive drift, backfill old forecasts, change learning gates or
   assert full data coverage. Record any independent CI blocker before deployment.
 

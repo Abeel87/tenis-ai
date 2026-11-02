@@ -88,8 +88,8 @@ identity changes. Its separate integration gate correctly remains **false**:
 adding the candidate would alter shared surface priors and change 35 matches
 without direct archive history. This is reported, not suppressed, and no archive
 is imported. Model probability, training and current form remain unchanged.
-The full candidate safety audit and remote CI are pending. No provider replacement
+The full candidate safety audit passed: exact source/candidate hashes match, every exclusion has evidence, and global ID, exact-shadow, score, visible-resolution and archive-only identity conflicts are zero. Remote CI is pending. No provider replacement
 or automatic re-locking is authorized or performed.
 
 Machine-readable receipts, hashes, before/after summaries and exact limitations
-are in `history_source_contracts_20261102.json`. Full CI and deployment are pending.
+are in `history_source_contracts_20261102.json`. PR #571 carries the repair. Fresh main d4dc1c384e5cee8886b603a60acdcd8649762599 adds only 60 generated data files; the refreshed PR preserves them. Full CI and deployment are pending.
