@@ -26,62 +26,73 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
 
-**CURRENT TASK — source-contract repairs, 2026-11-02 (in progress)**
+**CURRENT TASK — source-contract repairs DEPLOYED, 2026-11-02**
 - OWNER FOLLOW-UP: “No to naprawiaj słucham pomysłów i wdrazaj żeby wszystko dzialalao”.
   Repair and deploy verified data fixes; no model-math change, historical forecast
   reconstruction, real bets or Neuron/Self Evolution PROD promotion.
-- Fresh base `83ab0ca7d56aa9edb474f833b84286a6dfc046d4`, branch
-  `fix/history-source-contracts-20261102`; PR #571. Previous SHADOW deployment
-  below is complete and must not be repeated.
-- [x] Challenger ongoing source returns HTTP 200 and a valid 493-byte CSV header
-  with zero records. The official catalogue confirms the same declared URL.
-  Canonical `update.load_history` incorrectly classified this as an outage.
-- [x] Regression reproduced before repair (5 failed); canonical schema validation
-  now accepts an explicitly declared rolling feed with zero rows, replaces its
-  obsolete snapshot, and retains failure/fallback behavior for annual empties,
-  malformed CSV and transport errors. Freshness preview consumes the same rule.
-  Focused suite: 22 passed. No fabricated rows or renewed stale-cache timestamps.
-- [x] Reproduced 2024 lock against 394 current fixtures: candidate still 12,474,
-  but source/candidate fingerprints differ. All nine visible changes are
-  `none -> exact` for archive-only players; global ID, exact-shadow and score
-  conflicts are zero. The original Sept 17 report confirms the old Challenger
-  raw source had 6,063 rows versus 5,936 today. Old source row bytes are not in
-  that artifact; no claim of a complete old/new row diff or safe relock.
-- [x] Real seven-source refresh: 7 successful / 0 failed, no short-history gain.
-  Strict coverage census: missing at least one player in 216/217 ITF, 33/124 CH,
-  6/29 WTA and 1/24 ATP fixtures. Existing PBP schema audit has zero projectable
-  payloads out of 30 and no duplicate calibration proof; no invented adapter.
-- [x] First full regression: 1889 passed in 81.01s. The required source-line
-  evidence matrix was updated after inserting the loader validator; contracts
-  and token counts remain unchanged. Isolated verification retains actual Git
-  HEAD and restores exact chunked history. Two existing NumPy fixture warnings.
-- [~] Separately revalidating the 2024 audit candidate under this new repair
-  request: all old exclusions preserved plus 236 frozen archive-only identity
-  exclusions, 11,620 rows; zero violations in ten numeric consistency checks.
-  Both canonical archive audits now require every candidate identity in the
-  current baseline, including players absent from today's fixture list. No
-  source/identity guard is disabled and no archive integration is performed.
-  Previous manifest, source receipts and per-key evidence are retained in
-  `audits/history_source_contracts_20261102.json`. Candidate audit PASSED:
-  matching fingerprints, all exclusions evidenced, zero global ID/exact-shadow/
-  score/visible-resolution/archive-only conflicts. Remote CI/deployment pending.
-- [x] Final local suite: 1893 passed in 87.04s; archive focused: 16 passed.
-  Actual built-delivery UI and both readiness fixtures passed (394 matches,
-  all 216 Symphony cards). Runtime equivalence verifies the new lock and zero
-  identity changes but blocks archive integration: 35 unrelated output changes
-  from shared surface priors. This negative integration result remains visible.
-- [x] Earlier main core `41410144798` and Pages job `125188554576` succeeded.
-  Published main `d4dc1c384e5cee8886b603a60acdcd8649762599` changes 60 generated
-  files only; no source overlap. AutoLearn reports 111507 ledger rows, 16 newly
-  captured; exact new ensemble values/chronology still need direct verification.
-- [~] PR #571 refreshed onto that exact main while retaining all generated files.
-  Original head `a7cc0e137a18bba2f69af69d5175d2000f66de11` already passed freshness
-  and runtime-equivalence CI; require all checks on the refreshed head before merge.
-- NEXT EXACT ACTION: verify all PR #571 exact-head checks, compare fresh main,
-  merge only green and verify the first main source refresh. Inspect the 16 new
-  ledger records for actual ensemble ownership/time; no historical backfill.
-  Do not hide archive drift, backfill old forecasts, change learning gates or
-  assert full data coverage. Record any independent CI blocker before deployment.
+- [x] PR #571 merged as `7b034576ccb9121fbb13652e6948cfd515f94b7f`.
+  Reviewed head `ec893d34953af9ef49a76196154476e9415d16db`: all 14 check runs
+  across all 11 workflows succeeded, including all three formerly failing
+  source audits. Fresh main `65b76ee05a1c26b55ef742ea6609a028780ac2fd` added
+  only three generated Neuron files; no source overlap. Prospective merge:
+  1893 tests passed in 72.83s, two existing NumPy fixture warnings; rebuilt
+  delivery UI smoke passed. Actual merge tree equals the verified tree
+  `89ea8583aeeb9977e8c90f81ba2dd79b20c58ae8`.
+- [x] Canonical `update.history_source_frame_valid` accepts a valid header-only
+  snapshot only for the three explicitly declared ongoing TML feeds. The actual
+  Challenger source is HTTP 200 / 493 bytes / zero rows, not an outage. Valid
+  emptiness replaces stale rolling-cache rows; malformed/annual empties and
+  transport errors remain failures. Cache/preview share this validator; failed
+  refreshes never renew timestamps. Regression: 5 failures before, 22 passed after.
+- [x] Seven-source live preview: 7 successful / 0 failed. No short-history player
+  newly reached five matches. Same-input coverage remains incomplete: at least
+  one player absent in 216/217 ITF, 33/124 CH, 6/29 WTA and 1/24 ATP fixtures.
+  PBP schema audit has 0/30 projectable payloads and no duplicate calibration
+  proof. Existing bounded player-priority provider backfill remains active.
+- [x] Separately reviewed 2024 audit candidate: all old exclusions preserved plus
+  236 frozen archive-only identity exclusions; 11,620 rows, ten numeric checks
+  with zero violations. Both canonical audits require every candidate identity
+  in the current baseline, including players absent from today's fixtures.
+  Source/candidate hashes match, all exclusions have evidence, all ID/score/
+  visible-resolution/archive-only conflict counters are zero. Remote candidate
+  audit `41418930931` and runtime-equivalence audit `41418931176` succeeded.
+  Original manifest, old/current source receipts and per-key evidence are retained.
+  Old raw row bytes are unavailable; no claim of a complete historical row diff.
+- [!] Archive integration gate remains FALSE: 35 unrelated output changes through
+  shared surface priors despite zero identity changes. No 2024 archive is added
+  to runtime/training; no claim of coverage or accuracy improvement.
+- [x] New source code verified on main by Neuron run `41420205489` (source
+  `b59d2e76260ebe1a104f62c5f644d69697323e89`): training ACCEPTED, quality gate
+  passed, training and scoring both report 3 fresh + 8 cached sources, zero
+  missing, `empty_source_keys=[ch_ongoing]`, zero source warnings. Same model ID;
+  training parameters and output policy remain unchanged. Evidence artifact
+  `13129378010`; generated training 09:25:08Z and scoring 09:25:25Z.
+- [x] Neuron job `125193663665` and Pages job `125194762183` both SUCCESS.
+  Published main `c19d7ad2d917dabd0d8f874b46c9f8a838d9b580`. Private delivery
+  run `41420874849` SUCCESS, Neuron generation
+  `edda659f-1bfb-4b0a-9c0e-f53ff164d6f6`, all three objects published. Post-merge
+  UI/health, CodeQL and delivery/security checks on `7b03457` also succeeded.
+  Screenshot: `audits/history_source_deployment_20261102.jpg`.
+- [x] Earlier normal core `41410144798` and Pages job `125188554576` succeeded.
+  Direct comparison of its published ledger (`d4dc1c384e5cee8886b603a60acdcd8649762599`)
+  proves 16 new records across 11 fixtures, all with actual frozen ensemble
+  probability, owner/version and pre-match capture time (08:56:01Z). Zero old
+  rows changed or removed. This is prospective capture, not reconstructed history
+  or 11 settled match-winner comparison pairs. See the audit JSON for evidence.
+- [~] Independent full core refresh `41420067325`, source `7b03457`, was still
+  running at the 09:30Z verification (tests/update analysis succeeded; downstream
+  stages pending). Do not duplicate/cancel it or claim its final publication.
+- LAST VERIFIED MAIN: `c19d7ad2d917dabd0d8f874b46c9f8a838d9b580` (verify live again).
+  Closeout branch: `docs/history-source-deployment-20261102`; documentation and
+  deployment receipts only. Source changes in #571 are already merged/deployed.
+- DO NOT REDO: completed #569/#571 repairs, source refresh, candidate review,
+  exact frozen-baseline verification or Neuron deployment. Preserve bot data.
+- NEXT EXACT ACTION: inspect the existing core run's final regression/Pages result
+  when complete; then collect naturally settled prospective SHADOW comparisons.
+  Improve missing ITF/player history only through a validated provider/schema/
+  identity contract. No fictitious history, automatic archive relock/import,
+  changed learning gates, historical forecast backfill or SHADOW-to-PROD claim.
+  Full receipts: `audits/history_source_contracts_20261102.{md,json}`.
 
 
 **NEURON / SELF EVOLUTION — SHADOW DEPLOYED, 2026-11-02**

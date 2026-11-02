@@ -3042,9 +3042,104 @@
     "full_suite_before_archive_revalidation": "1889 passed in 81.01s, two pre-existing NumPy empty-fixture warnings",
     "archive_focused": "16 passed in 2.58s; added restrictions reproduced failing before implementation",
     "ui": "static/time/decision checks and actual built delivery runtime checks passed; 394 matches and 216 Symphony cards retained, readiness AVAILABLE/N-D fixtures passed",
-    "runtime_health": "0 failures, 2 inherited payload-size warnings against exact audited base; no payload increase"
+    "runtime_health": "0 failures, 2 inherited payload-size warnings against exact audited base; no payload increase",
+    "fresh_main_merge": "1893 passed in 72.83s, two pre-existing NumPy empty-fixture warnings; actual rebuilt-delivery UI smoke passed"
   },
-  "deployment": "pending",
+  "deployment": {
+    "status": "merged_and_verified",
+    "pr": 571,
+    "reviewed_head": "ec893d34953af9ef49a76196154476e9415d16db",
+    "merge_sha": "7b034576ccb9121fbb13652e6948cfd515f94b7f",
+    "checks_passed": 14,
+    "workflows_passed": 11,
+    "source_audit_runs": {
+      "candidate_lock": 41418930931,
+      "freshness": 41418930998,
+      "runtime_equivalence": 41418931176
+    },
+    "post_merge_checks": {
+      "ui_health": 41420067254,
+      "codeql": 41420067340,
+      "delivery_security": 41420067252,
+      "all_conclusions": "success"
+    },
+    "neuron": {
+      "run_id": 41420205489,
+      "conclusion": "success",
+      "source_sha": "b59d2e76260ebe1a104f62c5f644d69697323e89",
+      "training_job": 125193663665,
+      "pages_job": 125194762183,
+      "evidence_artifact": 13129378010,
+      "published_sha": "c19d7ad2d917dabd0d8f874b46c9f8a838d9b580",
+      "model_unchanged": true,
+      "evidence": {
+        "neuron_metrics.json": {
+          "generated_at": "2026-11-02T09:25:08.753726+00:00",
+          "model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
+          "training_status": "ACCEPTED",
+          "quality_gate": {
+            "beats_elo_log_loss": true,
+            "beats_elo_accuracy": true,
+            "ece_le_0_05": true,
+            "test_rows_ge_1000": true,
+            "all_history_sources_available": true,
+            "finite_metrics": true,
+            "passed": true
+          },
+          "source": {
+            "fresh_sources": 3,
+            "cached_sources": 8,
+            "missing_sources": 0,
+            "cache_files": 11,
+            "empty_source_keys": [
+              "ch_ongoing"
+            ],
+            "mode": "fresh+cache"
+          },
+          "source_warnings": []
+        },
+        "neuron_current.json": {
+          "generated_at": "2026-11-02T09:25:25.489803+00:00",
+          "model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
+          "model_trained_at": "2026-11-02T09:25:08.753726+00:00",
+          "source": {
+            "fresh_sources": 3,
+            "cached_sources": 8,
+            "missing_sources": 0,
+            "cache_files": 11,
+            "empty_source_keys": [
+              "ch_ongoing"
+            ],
+            "mode": "fresh+cache"
+          },
+          "source_warnings": []
+        }
+      }
+    },
+    "private_neuron": {
+      "run_id": 41420874849,
+      "publish_job": 125195833125,
+      "conclusion": "success",
+      "generation": "edda659f-1bfb-4b0a-9c0e-f53ff164d6f6",
+      "files": 3,
+      "uploaded_objects": 3
+    },
+    "independent_core": {
+      "run_id": 41420067325,
+      "source_sha": "7b034576ccb9121fbb13652e6948cfd515f94b7f",
+      "observed_at": "2026-11-02T09:30:00Z",
+      "status": "in_progress",
+      "tests_and_update_analysis": "success",
+      "final_regression_and_pages": "not_yet_verified"
+    },
+    "screenshot": "audits/history_source_deployment_20261102.jpg",
+    "limitations": [
+      "No accuracy improvement is established; the Neuron model ID did not change.",
+      "Neuron and Self Evolution remain SHADOW.",
+      "2024 archive integration remains blocked and no candidate history is imported.",
+      "ITF/player history gaps remain; no synthetic data or unvalidated PBP adapter."
+    ]
+  },
   "policy": {
     "no_synthetic_history": true,
     "no_forecast_backfill": true,
@@ -3052,8 +3147,63 @@
     "no_probability_training_or_promotion_change": true
   },
   "fresh_main_recheck": {
-    "sha": "d4dc1c384e5cee8886b603a60acdcd8649762599",
-    "changes": "60 generated data files only; no source overlap; retained in refreshed PR head",
-    "ci": "pending"
+    "sha": "65b76ee05a1c26b55ef742ea6609a028780ac2fd",
+    "changes": "Three generated Neuron files after the previously refreshed d4dc main; no source overlap; all generated files preserved",
+    "ci": "all 14 check runs across 11 workflows succeeded on ec893d34953af9ef49a76196154476e9415d16db",
+    "verified_tree": "89ea8583aeeb9977e8c90f81ba2dd79b20c58ae8",
+    "actual_merge_tree": "89ea8583aeeb9977e8c90f81ba2dd79b20c58ae8"
+  },
+  "prospective_ensemble_capture": {
+    "source_sha": "d4dc1c384e5cee8886b603a60acdcd8649762599",
+    "core_run": 41410144798,
+    "pages_job": 125188554576,
+    "generated_at": "2026-11-02T08:56:01.802753+00:00",
+    "old_rows": 111491,
+    "published_rows": 111507,
+    "new_rows": 16,
+    "new_rows_with_valid_actual_frozen_ensemble": 16,
+    "new_distinct_fixtures": 11,
+    "legacy_rows_changed": 0,
+    "legacy_rows_removed": 0,
+    "captured_at": [
+      "2026-11-02T08:56:01.802753+00:00"
+    ],
+    "example": {
+      "prediction_id": "pred_f4a427b94ac9808067d6df1269efdd6a6c544b451c1d6eeb6eafd9ddcb5efccd",
+      "match_key": "id:213344",
+      "candidate_key": "set1_total|8.5|under",
+      "scheduled_time": "2026-11-02T17:00:00+00:00",
+      "captured_at": "2026-11-02T08:56:01.802753+00:00",
+      "producer": {
+        "owner": "autolearn_v84",
+        "version": "v8.4B"
+      },
+      "model_scores": {
+        "current": {
+          "available": true,
+          "value": 0.448668682153,
+          "owner": "current_engine",
+          "version": "autolearn_calibrated_current"
+        },
+        "catboost": {
+          "available": true,
+          "value": 0.500331755594,
+          "owner": "catboost_autolearn",
+          "version": "catboost_v84"
+        },
+        "tabpfn": {
+          "available": false,
+          "value": null,
+          "owner": "tabpfn_challenger",
+          "version": "TabPFN-2_V2"
+        },
+        "ensemble": {
+          "available": true,
+          "value": 0.484368073432,
+          "owner": "autolearn_ensemble",
+          "version": "v8.4B"
+        }
+      }
+    }
   }
 }
