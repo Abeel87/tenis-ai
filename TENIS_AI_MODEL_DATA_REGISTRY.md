@@ -47,6 +47,13 @@ archive audit passes, while its integration gate remains false (35 unrelated
 output changes through shared priors). Actual prospective ensemble capture is
 also verified: 16 new records, zero legacy mutations; outcomes must settle
 naturally before using them as learning comparisons.
+Full core run `41420067325` subsequently completed its final 1893-test regression,
+Pages deployment and private core publication. Its published coverage is 113/324
+model-ready matches, with 186 missing at least one player's history. The booster
+added 473 PBP tapes (433 parsed, 40 not parsed); these are not automatically new
+canonical model-history records. Current-model Neuron prospective evaluation
+at 09:59:49Z has zero settled matches and zero settled production-baseline pairs;
+167 older-model settlements cannot prove new-model performance.
 
 **2026-10-29 concurrent DNA publication follow-up:** the single Git publication
 owner is `scripts/publish_player_dna_reports.py`, called by the existing early and

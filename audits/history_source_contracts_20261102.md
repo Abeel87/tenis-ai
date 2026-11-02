@@ -134,13 +134,56 @@ owner/version and a pre-match capture timestamp (08:56:01.802753Z). No prior
 record was changed or removed. These are supported-market forecasts, not eleven
 settled match-winner comparison pairs. No past forecast is reconstructed.
 
-At 09:30Z the independent post-repair full core run `41420067325` was still
-running after passing tests and update analysis. Its final regression and Pages
-publication are not claimed by this checkpoint. The dedicated Neuron training,
-scoring, Pages and private-delivery verification above are complete. The next
-agent should inspect that existing run without duplicating it, then collect
-naturally settled SHADOW comparisons; ITF history remains a separate coverage
-limitation and the reviewed 2024 candidate remains outside runtime/training.
+## Completed full core and measured backfill yield
+
+The previously pending full core run
+[41420067325](https://github.com/Abeel87/tenis-ai/actions/runs/41420067325)
+completed successfully: build `125193821970`, Pages `125208384717`. Final full
+regression after generated layers passed **1893 tests in 68.34s**, with the same
+two existing NumPy fixture warnings. It published
+`f2c9c3fe86925f325277c58b64f13d4197a901ee`. The actual core source read reports
+3 fresh + 8 cached sources, zero missing and zero download warnings.
+
+Private core delivery `41424859714` also succeeded: generation
+`f7f92e6b-45a8-4c62-af7c-ca3588fb5085`, 385 files with 367 objects uploaded.
+The existing private-publisher receipt verifies publication; it is not a claim
+of an authenticated end-user UI session.
+
+The booster made **530 API calls** in three existing bounded passes:
+
+| Pass | Calls | New PBP tapes | Parsed | Not parsed |
+| --- | ---: | ---: | ---: | ---: |
+| Current-player priority (24 players) | 50 | 2 | 2 | 0 |
+| Global pass 1 | 240 | 236 | 219 | 17 |
+| Global pass 2 | 240 | 235 | 212 | 23 |
+| Total | 530 | 473 | 433 | 40 |
+
+The tape cache increased from 17,183 to 17,656. Failed extraction remains
+visible; no row is invented or counted as valid to conceal a failure. PBP tapes
+feed their declared point-history consumers. They do not automatically satisfy
+the serve/return model-history schema, solve player identity, or demonstrate
+increased ITF coverage. The current-player pass's two usable tapes are the
+directly measured target yield, not 473 newly covered current players.
+
+The published canonical coverage audit at 09:47:16Z contains **324 visible
+matches**, 138 with history for both players, **113** satisfying the five-match
+minimum, and **186** missing history for at least one player. The clean declared
+model-history input has 25,430 rows. This is a different fixture population from
+the earlier 394-match audit, so the two counts do not establish before/after
+coverage improvement. Latest verified main for this receipt:
+`5eec71f86db96218a3084723afaa4297ada4c3e1`.
+
+Subsequent scheduled Neuron run `41424859731` also passed scoring/evaluation and
+Pages. Its evaluation at 09:59:49Z reports **zero settled current-model matches
+(137 pending)** and **zero settled frozen-production comparison pairs**. The 167
+settled forecasts across older model versions are separate evidence. No new-model
+accuracy or production-readiness claim follows from them. Neuron/Self Evolution
+remain SHADOW; the 2024 archive integration gate remains false.
+
+The deployment verification is complete. Further evaluation needs naturally
+settled current-model comparisons and measured same-input history coverage gains,
+not another replay of the completed rollout. A later scheduled core run is a new
+normal cycle and does not change the success of run `41420067325`.
 
 Machine-readable receipts, hashes, before/after summaries, deployed evidence
 and explicit limitations are in `history_source_contracts_20261102.json`.

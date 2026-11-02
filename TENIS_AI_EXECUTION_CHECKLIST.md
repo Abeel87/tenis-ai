@@ -79,18 +79,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   probability, owner/version and pre-match capture time (08:56:01Z). Zero old
   rows changed or removed. This is prospective capture, not reconstructed history
   or 11 settled match-winner comparison pairs. See the audit JSON for evidence.
-- [~] Independent full core refresh `41420067325`, source `7b03457`, was still
-  running at the 09:30Z verification (tests/update analysis succeeded; downstream
-  stages pending). Do not duplicate/cancel it or claim its final publication.
-- LAST VERIFIED MAIN: `c19d7ad2d917dabd0d8f874b46c9f8a838d9b580` (verify live again).
-  Closeout branch: `docs/history-source-deployment-20261102`; documentation and
-  deployment receipts only. Source changes in #571 are already merged/deployed.
+- [x] Full core refresh `41420067325` completed: build `125193821970` and
+  Pages `125208384717` SUCCESS. Final regression after generated layers:
+  1893 passed in 68.34s, two existing NumPy warnings. Published
+  `f2c9c3fe86925f325277c58b64f13d4197a901ee`. Source ingestion again reports
+  3 fresh + 8 cached, zero missing and zero download warnings. Private core
+  delivery `41424859714` SUCCESS, generation
+  `f7f92e6b-45a8-4c62-af7c-ca3588fb5085` (385 files, 367 new objects).
+- [x] Actual history-booster yield from that run: 530 API calls, 473 new PBP
+  tapes (2 current-player priority + 236 + 235 global), 433 parse successes,
+  40 parse failures. Cache 17,183 -> 17,656. Priority pass: 24 players, 50 calls,
+  2 usable tapes. Parse failures remain failures. These are PBP observations,
+  not automatically model-history rows or a proven ITF coverage improvement.
+- [x] Published core coverage at 09:47Z: 324 visible matches, 138 with history
+  for both players, 113 meeting the five-match minimum, 186 missing at least
+  one player's history. Clean declared model history: 25,430 rows. This is a
+  different fixture population from the earlier 394-fixture audit; do not
+  interpret the changing counts as measured coverage gain.
+- [x] Subsequent scheduled Neuron `41424859731` and Pages succeeded. Evaluation
+  at 09:59:49Z still has zero settled matches for the current model (137 pending)
+  and zero settled frozen-production comparison pairs. The 167 settled forecasts
+  across older models do not validate this new model. SHADOW policy is unchanged.
+- LAST VERIFIED MAIN: `5eec71f86db96218a3084723afaa4297ada4c3e1` (verify live again).
+  Source repair #571 and deployment record #572 are merged. Follow-up branch:
+  `docs/core-verification-20261102`; completed-core receipts only. Changes since
+  the last reviewed main are generated data only; source contracts are unchanged.
 - DO NOT REDO: completed #569/#571 repairs, source refresh, candidate review,
-  exact frozen-baseline verification or Neuron deployment. Preserve bot data.
-- NEXT EXACT ACTION: inspect the existing core run's final regression/Pages result
-  when complete; then collect naturally settled prospective SHADOW comparisons.
-  Improve missing ITF/player history only through a validated provider/schema/
-  identity contract. No fictitious history, automatic archive relock/import,
+  exact frozen-baseline verification, Neuron deployment or completed full core.
+  A later scheduled core run is a normal new cycle, not the prior pending run.
+- NEXT EXACT ACTION: inspect naturally settled current-model/frozen-production
+  comparisons when they exist. For missing ITF/player history, require a measured
+  same-input coverage gain from a validated provider/schema/identity contract;
+  downloaded PBP counts alone do not establish it. The separate 2024 integration
+  gate remains false. No fictitious history, automatic archive relock/import,
   changed learning gates, historical forecast backfill or SHADOW-to-PROD claim.
   Full receipts: `audits/history_source_contracts_20261102.{md,json}`.
 
