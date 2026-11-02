@@ -5,12 +5,12 @@
   "symphony_influence": false,
   "ineed_influence": false,
   "auto_promote": false,
-  "generated_at": "2026-11-02T09:25:08.753726+00:00",
-  "training_started_at": "2026-11-02T09:24:52.717170+00:00",
+  "generated_at": "2026-11-02T11:35:05.398974+00:00",
+  "training_started_at": "2026-11-02T11:34:53.897585+00:00",
   "model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
   "previous_model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
   "dataset": {
-    "raw_rows": 26503,
+    "raw_rows": 26505,
     "usable_matches": 25392,
     "rows": 50784,
     "date_min": "2024-12-29",
@@ -18,10 +18,10 @@
     "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION",
     "date_basis": "source_tourney_date; no intraday ordering inferred",
     "history_cutoff_exclusive": "2026-11-02",
-    "excluded_same_day_or_future": 23,
+    "excluded_same_day_or_future": 25,
     "hygiene": {
-      "raw_rows": 26503,
-      "kept_rows": 25430,
+      "raw_rows": 26505,
+      "kept_rows": 25432,
       "removed_rows": 1073
     },
     "feature_dataset_sha256": "0f0a546c07c92e5dba46d1b457725b0cc7e6420896f2ec3fd8f0c39bcf8924d0"
@@ -80,7 +80,7 @@
     "input_changes": {
       "train": false,
       "validation": false,
-      "test": true
+      "test": false
     },
     "training_inputs_status": "UNCHANGED",
     "model_parameters_changed": false,
@@ -122,7 +122,7 @@
   },
   "promotion_eligible": false,
   "promotion_reason": "manual architecture and quality review required",
-  "run_id": "41420205489",
+  "run_id": "41437782922",
   "common_holdout": {
     "status": "DESCRIPTIVE_COMMON_HOLDOUT",
     "matches": 2513,
@@ -617,6 +617,98 @@
           "train": false,
           "validation": false,
           "test": true
+        },
+        "training_inputs_status": "UNCHANGED",
+        "model_parameters_changed": false,
+        "quality_improvement_proven": false
+      },
+      "training": {
+        "optimizer": "adam",
+        "residual_prior": "pre_match_elo_logit",
+        "dropout": 0.15,
+        "best_epoch": 6,
+        "epochs_ran": 18,
+        "validation_start_log_loss": 0.6518622633861022,
+        "validation_best_log_loss": 0.6254739373934314,
+        "validation_start_accuracy": 0.6105371900826446,
+        "validation_best_accuracy": 0.6479338842975206,
+        "temperature": 1.02
+      },
+      "test": {
+        "accuracy": 0.6414643851969757,
+        "log_loss": 0.6288477183785741,
+        "brier": 0.2197473812892143,
+        "ece_10": 0.015074852475701603
+      },
+      "elo_baseline_test": {
+        "accuracy": 0.6152009550338241,
+        "log_loss": 0.6494485473587965,
+        "brier": 0.2290081250930835,
+        "ece_10": 0.009513047049506724
+      },
+      "quality_gate": {
+        "beats_elo_log_loss": true,
+        "beats_elo_accuracy": true,
+        "ece_le_0_05": true,
+        "test_rows_ge_1000": true,
+        "all_history_sources_available": true,
+        "finite_metrics": true,
+        "passed": true
+      },
+      "training_status": "ACCEPTED"
+    },
+    {
+      "model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
+      "generated_at": "2026-11-02T11:35:05.398974+00:00",
+      "dataset": {
+        "raw_rows": 26505,
+        "usable_matches": 25392,
+        "rows": 50784,
+        "date_min": "2024-12-29",
+        "date_max": "2026-11-01",
+        "leakage": "STRICT_PRE_DATE; SAME_DAY_RESULTS_APPLIED_AFTER_FEATURISATION",
+        "date_basis": "source_tourney_date; no intraday ordering inferred",
+        "history_cutoff_exclusive": "2026-11-02",
+        "excluded_same_day_or_future": 25,
+        "hygiene": {
+          "raw_rows": 26505,
+          "kept_rows": 25432,
+          "removed_rows": 1073
+        },
+        "feature_dataset_sha256": "0f0a546c07c92e5dba46d1b457725b0cc7e6420896f2ec3fd8f0c39bcf8924d0"
+      },
+      "splits": {
+        "train": 40918,
+        "validation": 4840,
+        "test": 5026
+      },
+      "split_dates": {
+        "train": {
+          "first_date": "2024-12-29",
+          "last_date": "2026-07-01",
+          "unique_matches": 20459
+        },
+        "validation": {
+          "first_date": "2026-07-02",
+          "last_date": "2026-08-30",
+          "unique_matches": 2420
+        },
+        "test": {
+          "first_date": "2026-08-31",
+          "last_date": "2026-11-01",
+          "unique_matches": 2513
+        }
+      },
+      "split_feature_sha256": {
+        "train": "53e447fde02e4e67a53072290ac4771cccc8ed8809173af25c772e004724aadd",
+        "validation": "fe7765f9774c4800f3a7a2f5c0c38a51192223a346ced9149e24feec7d87e878",
+        "test": "8acce720608e9f154a24e3c5b4b454494bcfe74b0eeae00e5ca33f08ed28cdf7"
+      },
+      "learning_progress": {
+        "input_changes": {
+          "train": false,
+          "validation": false,
+          "test": false
         },
         "training_inputs_status": "UNCHANGED",
         "model_parameters_changed": false,
