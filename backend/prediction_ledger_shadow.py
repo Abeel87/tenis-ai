@@ -71,6 +71,36 @@ def _readiness_reference(value: Any) -> dict[str, Any] | None:
     }
 
 
+def frozen_ensemble_probability(row: Any) -> float | None:
+    """Read only an actual, timestamped AutoLearn ensemble output; never rebuild it."""
+    if not isinstance(row, dict) or row.get('schema_version') != SCHEMA_VERSION:
+        return None
+    if row.get('mode') != MODE or row.get('score_semantics') != 'probability_0_1':
+        return None
+    producer = row.get('producer')
+    scores = row.get('model_scores')
+    if not isinstance(producer, dict) or not isinstance(scores, dict):
+        return None
+    score = scores.get('ensemble')
+    if not isinstance(score, dict):
+        return None
+    if (producer.get('owner') != OWNER or not producer.get('version') or
+            score.get('owner') != 'autolearn_ensemble' or
+            score.get('version') != producer['version'] or score.get('available') is not True):
+        return None
+    try:
+        captured = datetime.fromisoformat(str(row.get('captured_at')).replace('Z', '+00:00'))
+        start = datetime.fromisoformat(str(row.get('scheduled_time')).replace('Z', '+00:00'))
+        if captured.tzinfo is None or start.tzinfo is None or captured >= start:
+            return None
+    except (TypeError, ValueError):
+        return None
+    value = score.get('value')
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if math.isfinite(value) and 0 <= value <= 1 else None
+
+
 def capture_rows(
     current_rows: list[dict[str, Any]],
     current_probs: list[Any],
@@ -80,9 +110,12 @@ def capture_rows(
     now: datetime,
     producer_version: str = "v8.4B",
     readiness_snapshot: dict[str, Any] | None = None,
+    ensemble_probs: list[Any] | None = None,
 ) -> list[dict[str, Any]]:
     if not (len(current_rows) == len(current_probs) == len(catboost_probs) == len(tabpfn_probs)):
         raise ValueError("prediction arrays must align exactly")
+    if ensemble_probs is not None and len(ensemble_probs) != len(current_rows):
+        raise ValueError('ensemble prediction array must align exactly')
     captured_at = _parse_dt(now)
     if captured_at is None:
         raise ValueError("capture time must be valid")
@@ -142,6 +175,12 @@ def capture_rows(
             },
             "immutable_after_match_start": True,
         }
+        if ensemble_probs is not None:
+            value = ensemble_probs[index]
+            if (isinstance(value, bool) or not isinstance(value, (int, float)) or
+                    not math.isfinite(value) or not 0 <= value <= 1):
+                raise ValueError('invalid frozen score for autolearn ensemble')
+            item['model_scores']['ensemble'] = _score(value, 'autolearn_ensemble', producer_version)
         out.append(item)
     return out
 

@@ -172,6 +172,29 @@ The active evidence-capture step uses `backend/superbet_builder_terminal_evidenc
 
 ### Neuron SHADOW training and evidence ownership
 
+The 2026-11-02 readiness repair restores the canonical core TML cache before
+Neuron training/scoring. It does not save a competing cache or refresh old
+source timestamps. `current_features` uses the canonical history resolver's
+opt-in complete-token-only mode: exact full names or one unique reordering,
+with no initials/fuzzy expansion. Current rows expose identity diagnostics.
+Existing direct matches, training math, date cutoff and quality gates remain.
+
+The append-only Prediction Ledger now observes the actual AutoLearn ensemble
+output inside `_decorate_results`, after dynamic weighting and before display
+rounding/selection. `capture_rows` stores the optional `model_scores.ensemble`
+with its existing 12-decimal score precision and a clock taken after computation.
+No output is reconstructed from today's weights and existing rows never acquire
+a retroactive baseline. The shared `frozen_ensemble_probability` reader requires
+valid producer/score ownership, finite 0–1 probability and strict timezone-aware
+pre-match capture. Self Evolution reports fixture-balanced paired comparisons
+on the same holdout/prospective rows without altering candidate selection or
+internal SHADOW promotion. Neuron compares first frozen forecasts on exact
+match ID, start and winner selection, with a separate current-model cohort.
+These descriptive comparisons target AutoLearn PRE_SELECTION only; they neither
+measure final operator-selected decisions nor authorize production promotion.
+Private admin presentation preserves missing values and source provenance.
+
+
 `backend/neuron.py` owns full retraining, existing-weight scoring and its
 prospective evidence. `train` uses the existing Model mathematics and date split,
 with canonical completed-match hygiene and an exclusive UTC-day cutoff. It

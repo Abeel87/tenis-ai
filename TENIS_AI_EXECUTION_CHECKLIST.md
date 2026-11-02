@@ -25,6 +25,53 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+
+**NEURON / SELF EVOLUTION — SHADOW READINESS REPAIR, 2026-11-02**
+- AUTHORIZATION: owner requested the proposed history/evaluation repair. Scope:
+  exact identity and cache recovery, actual frozen AutoLearn comparison, honest
+  evidence/UI. No probability math, training, weights, thresholds, settlement,
+  betting or SHADOW-to-PROD promotion.
+- LAST VERIFIED MAIN: `9a75e590114ce6458b4c83d10be33275ea7c802d` (rechecked live).
+- BRANCH: `fix/shadow-learning-evidence-20261102`; PR pending publication.
+- [x] Reproduced missing complete-token reordered identities and missing actual
+  AutoLearn baseline before repair. Existing canonical resolver gains an opt-in
+  strict mode; default Current behavior is unchanged. Neuron restores core TML
+  cache without taking save ownership or refreshing old source timestamps.
+- [x] Same-input actual-fixture replay: 425 fixtures; scored 132 -> 136,
+  NO_PLAYER_HISTORY 289 -> 285, started 4 -> 4; all 132 existing feature arrays
+  identical. Five exact full-name reorderings, four complete fixtures recovered.
+  Most missing history remains absent from declared sources. Audit `.md`/`.json`:
+  `audits/shadow_learning_readiness_20261102`.
+- [x] Actual AutoLearn post-dynamic-weight output is observed at its owner,
+  captured after computation and before match start, and stored only in new
+  ledger rows. No historical reconstruction or frozen-row mutation. Neuron and
+  Self Evolution compare exact common evidence; candidate selection and internal
+  SHADOW promotion remain unchanged. UI exposes paired evidence and missingness.
+- [x] Existing 111019 ledger rows contain zero actual ensemble baselines. Active
+  Neuron has 32 settled fixtures; Brier 0.211445 vs Elo 0.204309. No superiority
+  or PROD readiness is established. Pending schedule conflicts remain pending.
+- [x] Focused regression and all UI static/runtime/readiness/time/decision-center
+  checks passed. Full local suite: 1875 passed; publication read-only teardown
+  detected concurrent temporary filesystem files, so a clean isolated full run
+  is required before claiming full GREEN.
+- [~] Clean full suite / required health checks, PR CI and delivery verification.
+- [ ] Merge only after all required checks are green and fresh-main verification.
+- [ ] Verify ordinary runtime stores new frozen ensemble scores, Neuron cache
+  restore/scoring/evaluation, and next Self Evolution report/admin projection.
+- CHANGED OWNERS: canonical history resolver; Neuron/workflow; AutoLearn capture;
+  Prediction Ledger reader/writer; Self Evolution reporting; private projection;
+  frontend presentation; regression tests, readiness line matrix and canonical docs.
+- KNOWN EXTERNAL RISK: PR #568 already has red TML freshness (empty ongoing
+  Challenger CSV) and 2024 archive equivalence (locked upstream fingerprints
+  changed). This branch changes model.py and may trigger those same audits.
+  Do not relock sources, relax guards, fabricate history or merge red.
+- NEXT EXACT ACTION: finish isolated validation, publish reviewed PR, inspect its
+  actual checks. Merge/deploy only if green. If external TML blockers recur,
+  preserve the tested branch and exact CI evidence for the source-owner repair.
+- DO NOT REDO: prior Neuron #557/#558/#559 and publication #565/#566 repairs;
+  the same-input audit and frozen-legacy-baseline diagnosis are complete.
+- HARD LIMIT: every model stays SHADOW; no real bets or automatic promotion.
+
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
 - LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.
 - BRANCH: `fix/player-dna-publication-race-20261029`; PR #566.

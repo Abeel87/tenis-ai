@@ -96,6 +96,49 @@ def test_brier_is_fixture_balanced_not_candidate_count_weighted():
     assert agent._metric(samples, (1.0, 0.0, 0.0)) == 0.5
 
 
+def _with_production_baseline(ledger, evidence, probability=.5):
+    for row in ledger['rows']:
+        row.update({'schema_version': 'prediction-ledger-shadow-v1', 'mode': 'SHADOW_ONLY',
+                    'producer': {'owner': 'autolearn_v84', 'version': 'v8.4B'}})
+        row['model_scores']['ensemble'] = {'available': True, 'value': probability,
+                                          'owner': 'autolearn_ensemble', 'version': 'v8.4B'}
+    evidence['source_ledger_sha256'] = agent._digest(ledger)
+
+
+def test_positive_vs_current_is_not_presented_as_beating_actual_production():
+    ledger, evidence = fixture()
+    _with_production_baseline(ledger, evidence)
+    report = agent.build_report(ledger, evidence, now=NOW)
+    assert report['status'] == 'SHADOW_EVIDENCE_POSITIVE'
+    comparison = report['production_comparison']
+    assert comparison['status'] == 'NO_DESCRIPTIVE_IMPROVEMENT'
+    assert comparison['independent_matches'] == report['windows']['holdout_matches']
+    assert comparison['candidate_brier'] == comparison['production_brier'] == .25
+    assert comparison['promotion_authorized'] is False
+
+
+def test_missing_old_production_scores_are_not_reconstructed_from_todays_weights():
+    ledger, evidence = fixture()
+    report = agent.build_report(ledger, evidence, now=NOW)
+    comparison = report['production_comparison']
+    assert comparison['status'] == 'NO_FROZEN_PRODUCTION_BASELINE'
+    assert comparison['independent_matches'] == 0
+    assert comparison['candidate_brier'] is None
+    assert comparison['production_brier'] is None
+
+
+def test_comparison_uses_same_paired_population_with_fixture_balancing():
+    ledger, evidence = fixture()
+    _with_production_baseline(ledger, evidence)
+    for row in ledger['rows'][::2]:
+        del row['model_scores']['ensemble']
+    evidence['source_ledger_sha256'] = agent._digest(ledger)
+    report = agent.build_report(ledger, evidence, now=NOW)
+    comparison = report['production_comparison']
+    assert comparison['independent_matches'] == report['windows']['holdout_matches'] // 2
+    assert comparison['candidate_brier'] == comparison['production_brier'] == .25
+
+
 def test_nightly_workflow_generates_settlement_after_restore():
     from pathlib import Path
     workflow = (Path(__file__).resolve().parents[1] /
@@ -239,6 +282,27 @@ def test_memory_cannot_reuse_pre_registration_labels():
     assert track["last_evaluation"]["champion_brier"] is None
     assert track["champion"] == first["tracks"]["ALL"]["champion"]
     assert track["challenger"] == first["tracks"]["ALL"]["challenger"]
+
+
+def test_prospective_production_comparison_obeys_registration_and_fixed_horizon():
+    ledger, evidence = fixture()
+    _with_production_baseline(ledger, evidence)
+    first = _memory_run(ledger, evidence)
+    early = _memory_run(ledger, evidence, first, now=NOW + timedelta(days=2))
+    comparison = early['tracks']['ALL']['last_evaluation']['production_comparison']
+    assert comparison['independent_matches'] == 0
+    assert comparison['sufficient_prospective_evidence'] is False
+    _extend_with_new_prospective_fixtures(ledger, evidence)
+    _with_production_baseline(ledger, evidence)
+    halfway = _memory_run(ledger, evidence, early, now=NOW + timedelta(days=8))
+    assert halfway['tracks']['ALL']['last_evaluation']['production_comparison']['sufficient_prospective_evidence'] is False
+    final = _memory_run(ledger, evidence, halfway, now=NOW + timedelta(days=16))
+    comparison = final['tracks']['ALL']['history'][-1]['evidence']['production_comparison']
+    assert comparison['independent_matches'] >= 100
+    assert comparison['independent_utc_days'] >= 7
+    assert comparison['sufficient_prospective_evidence'] is True
+    assert comparison['status'] == 'NO_DESCRIPTIVE_IMPROVEMENT'
+    assert comparison['promotion_authorized'] is False
 
 
 def test_memory_internal_shadow_champion_only_after_fixed_prospective_horizon():

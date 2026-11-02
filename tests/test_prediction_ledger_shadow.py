@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+import copy
+import pytest
 
 import backend.prediction_ledger_shadow as ledger
 
@@ -96,3 +98,47 @@ def test_existing_unknown_schema_fails_closed():
     now = datetime(2026, 9, 21, 10, 0, tzinfo=timezone.utc)
     with pytest.raises(ValueError, match="schema mismatch"):
         ledger.merge_ledger({"schema_version": "other", "rows": []}, [], now=now)
+
+
+def test_production_ensemble_is_frozen_verbatim_and_never_backfilled():
+    now = datetime(2026, 9, 21, 10, tzinfo=timezone.utc)
+    first = ledger.capture_rows([_row()], [.61], [.64], [.59], now=now)[0]
+    before = copy.deepcopy(first)
+    enriched = ledger.capture_rows([_row()], [.61], [.64], [.59], now=now,
+                                   ensemble_probs=[.637412345678])[0]
+    assert enriched['model_scores']['ensemble']['value'] == .637412345678
+    assert enriched['model_scores']['ensemble']['owner'] == 'autolearn_ensemble'
+    assert ledger.frozen_ensemble_probability(enriched) == .637412345678
+    assert ledger.frozen_ensemble_probability(first) is None
+    merged = ledger.merge_ledger({'schema_version': ledger.SCHEMA_VERSION, 'rows': [first]},
+                                 [enriched], now=now)
+    assert merged['rows'] == [before]
+
+
+@pytest.mark.parametrize('value', [True, -0.1, 1.1, float('nan')])
+def test_invalid_production_baseline_cannot_enter_ledger(value):
+    with pytest.raises(ValueError, match='ensemble'):
+        ledger.capture_rows([_row()], [.6], [.7], [.8],
+                            now=datetime(2026, 9, 21, 10, tzinfo=timezone.utc),
+                            ensemble_probs=[value])
+
+
+def test_production_baseline_requires_real_owner_and_valid_prematch_time():
+    row = ledger.capture_rows([_row()], [.6], [.7], [.8],
+                              now=datetime(2026, 9, 21, 10, tzinfo=timezone.utc),
+                              ensemble_probs=[.73])[0]
+    for field, value in [('captured_at', '2026-09-21T13:00:00Z'),
+                         ('captured_at', '2026-09-21T10:00:00'),
+                         ('mode', 'PROD'), ('score_semantics', 'percent')]:
+        assert ledger.frozen_ensemble_probability({**row, field: value}) is None
+    row['model_scores']['ensemble']['owner'] = 'reconstructed_from_current_weights'
+    assert ledger.frozen_ensemble_probability(row) is None
+
+
+@pytest.mark.parametrize('field,value', [('producer', []), ('model_scores', 'invalid'),
+                                         ('model_scores', {'ensemble': []})])
+def test_malformed_production_provenance_is_missing_evidence(field, value):
+    row = ledger.capture_rows([_row()], [.6], [.7], [.8],
+                              now=datetime(2026, 9, 21, 10, tzinfo=timezone.utc),
+                              ensemble_probs=[.73])[0]
+    assert ledger.frozen_ensemble_probability({**row, field: value}) is None

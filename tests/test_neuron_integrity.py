@@ -35,6 +35,45 @@ def test_current_features_do_not_invent_score_for_unknown_players():
                                       'scheduled_time': '2099-01-01T12:00:00Z'})
 
 
+def test_current_history_resolves_only_unique_complete_name_tokens():
+    _, st, _ = n.build(history(2), False)
+    now = datetime(2026, 7, 4, tzinfo=timezone.utc)
+    fixture = {'p1': 'Alpha Audit', 'p2': 'Audit Beta', 'surface': 'Hard',
+               'scheduled_time': '2026-07-05T12:00:00Z'}
+    a, b, c = n.current_features(st, fixture, now=now)
+    expected = n.current_features(st, {**fixture, 'p1': 'Audit Alpha'}, now=now)
+    for actual, wanted in zip((a, b, c), expected):
+        np.testing.assert_array_equal(actual, wanted)
+    evidence = n.current_history_identity(st, fixture)
+    assert evidence['p1']['mode'] == 'exact-full-token-reorder'
+    assert evidence['p1']['history_key'] == 'audit alpha'
+    for name in ('A Alpha', 'Audit Alph', 'Alpha'):
+        with pytest.raises(ValueError, match='NO_PLAYER_HISTORY'):
+            n.current_features(st, {**fixture, 'p1': name}, now=now)
+
+
+def test_neuron_does_not_choose_between_ambiguous_full_token_histories():
+    st = n.State()
+    row = history(1).iloc[0].to_dict()
+    for name in ('Audit Middle Alpha', 'Middle Audit Alpha'):
+        st.update({**row, 'winner_name': name}, pd.Timestamp('2026-07-01'))
+    fixture = {'p1': 'Alpha Audit Middle', 'p2': 'Audit Beta',
+               'scheduled_time': '2026-07-05T12:00:00Z'}
+    evidence = n.current_history_identity(st, fixture)
+    assert evidence['p1']['mode'] == 'ambiguous'
+    assert evidence['p1']['history_key'] is None
+    with pytest.raises(ValueError, match='NO_PLAYER_HISTORY'):
+        n.current_features(st, fixture, now=datetime(2026, 7, 4, tzinfo=timezone.utc))
+
+
+def test_neuron_workflow_restores_same_history_cache_before_training():
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/neuron-shadow.yml').read_text()
+    restore = workflow.index('name: Restore canonical tennis history cache')
+    assert restore < workflow.index('name: Train from Tenis AI raw history')
+    assert 'tennis-history-${{ runner.os }}-' in workflow[restore:]
+    assert 'actions/cache/save' not in workflow
+
+
 def test_current_features_reject_already_started_fixture():
     _, st, _ = n.build(history(), False)
     with pytest.raises(ValueError, match='MATCH_NOT_PREMATCH'):
@@ -202,6 +241,48 @@ def test_no_results_are_reported_as_missing_not_zero_accuracy():
     report = n.summarize_predictions(frozen_rows())
     assert report['neuron'] is None and report['elo'] is None
     assert report['pending_matches'] == 1 and report['settled_matches'] == 0
+
+
+def production_ledger_for_neuron():
+    from backend.prediction_ledger_shadow import capture_rows, SCHEMA_VERSION
+    rows = capture_rows([{'match_key': 'id:42', 'candidate_key': 'match_winner|Audit Alpha',
+                         'market': 'match_winner', 'pick': 'Audit Alpha', 'line': -1,
+                         'scheduled_time': '2026-10-21T12:00:00Z'}], [.6], [.9], [.7],
+                        now=datetime(2026, 10, 20, 9, tzinfo=timezone.utc), ensemble_probs=[.9])
+    return {'schema_version': SCHEMA_VERSION, 'mode': 'SHADOW_ONLY', 'rows': rows}
+
+
+def test_neuron_compares_actual_production_on_exact_common_set_without_rewriting_forecasts():
+    rows = n.settle_predictions(frozen_rows(), terminal_history())
+    ledger = production_ledger_for_neuron()
+    before = json.dumps([rows, ledger], sort_keys=True)
+    report = n.summarize_predictions(rows, production_ledger=ledger)
+    paired = report['production_comparison']
+    assert paired['settled_matches'] == 1
+    assert paired['neuron']['brier'] == pytest.approx(.04)
+    assert paired['production']['brier'] == pytest.approx(.01)
+    assert report['by_model']['neuron-test']['production_comparison'] == paired
+    assert json.dumps([rows, ledger], sort_keys=True) == before
+
+
+@pytest.mark.parametrize('field,value', [
+    ('scheduled_time', '2026-10-21T12:01:00Z'), ('match_key', 'id:43'),
+    ('market', 'set1_winner'), ('pick', 'Audit A'), ('captured_at', '2026-10-21T13:00:00Z'),
+])
+def test_neuron_production_comparison_rejects_different_contract_or_post_start(field, value):
+    ledger = production_ledger_for_neuron()
+    ledger['rows'][0][field] = value
+    report = n.summarize_predictions(n.settle_predictions(frozen_rows(), terminal_history()),
+                                     production_ledger=ledger)
+    assert report['production_comparison']['settled_matches'] == 0
+    assert report['production_comparison']['production'] is None
+
+
+def test_neuron_duplicate_production_identity_fails_closed():
+    ledger = production_ledger_for_neuron()
+    ledger['rows'] *= 2
+    with pytest.raises(ValueError, match='DUPLICATE'):
+        n.summarize_predictions(frozen_rows(), production_ledger=ledger)
 
 
 @pytest.mark.parametrize('change,reason', [

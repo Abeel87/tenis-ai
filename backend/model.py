@@ -121,7 +121,7 @@ def _history_name_variant_matches(requested_key: str, candidate_key: str) -> boo
     return False
 
 
-def _resolve_history_player_key(long_df, player: str):
+def _resolve_history_player_key(long_df, player: str, *, exact_tokens_only: bool = False):
     """Resolve an exact or single unambiguous history key; otherwise fail closed."""
     requested_key = _core._key(player)
     if not requested_key or long_df is None or getattr(long_df, "empty", False):
@@ -145,12 +145,13 @@ def _resolve_history_player_key(long_df, player: str):
     if requested_key in keys:
         return requested_key, "exact"
 
-    candidates = sorted(
-        key for key in keys
-        if _history_name_variant_matches(requested_key, key)
-    )
+    if exact_tokens_only:
+        tokens = sorted(requested_key.split())
+        candidates = sorted(key for key in keys if len(tokens) >= 2 and sorted(key.split()) == tokens)
+    else:
+        candidates = sorted(key for key in keys if _history_name_variant_matches(requested_key, key))
     if len(candidates) == 1:
-        return candidates[0], "expanded-name"
+        return candidates[0], "exact-full-token-reorder" if exact_tokens_only else "expanded-name"
     return None, "ambiguous" if candidates else "none"
 
 
