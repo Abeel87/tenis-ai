@@ -98,3 +98,15 @@ def test_pages_retains_all_ledger_bytes_but_removes_repository_parts(tmp_path):
     subprocess.run(['bash', '-e', '-c', cleanup], cwd=tmp_path, check=True)
     assert not list(data.glob('*_chunks')), 'Pages must not ship redundant repository parts'
     assert {name: (data / name).read_bytes() for name in originals} == originals
+
+
+@pytest.mark.parametrize('workflow', [
+    'safe-player-history-audit.yml',
+    'insufficient-history-evidence-audit.yml',
+    'repeat-match-identity-bridge-audit.yml',
+])
+def test_history_audits_restore_exact_publication_before_full_regression(workflow):
+    source = (publication.ROOT / '.github/workflows' / workflow).read_text()
+    restore = 'python scripts/history_publication_chunks.py restore'
+    assert source.count(restore) == 1
+    assert source.index(restore) < source.index('python -m pytest -q')

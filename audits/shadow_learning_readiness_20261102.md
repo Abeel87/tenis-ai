@@ -66,3 +66,31 @@ Current test/PR/merge/deployment results and next steps are recorded in the
 latest `TENIS_AI_EXECUTION_CHECKLIST.md` LIVE CHECKPOINT. Existing TML freshness
 and locked-2024-source audits have external-source blockers in PR #568; these
 contracts must not be weakened or relocked merely to make this change mergeable.
+
+
+PR #569 initial head `49317cba3b759c16295e38fbf7127fb339ba3f2c` passed the
+actual Neuron training workflow (run 41407198027, job 125151814633): core cache
+restored, 2 fresh + 9 cached sources, zero missing sources, 11 cache files,
+training ACCEPTED and quality gate passed. The ongoing Challenger source remained
+explicitly cached because fresh retrieval failed. This proves the cache wiring
+in PR CI, not a main deployment. Self Evolution PR isolation/tests passed too.
+
+The same initial head reproduced two existing external blockers: freshness run
+41407197693 has 6/7 fresh source retrievals; 2024 equivalence run 41407197746 cannot
+verify the locked candidate fingerprint. Neither contract is relaxed. Three
+older identity/history audit workflows also failed full regression because they
+did not restore the exact chunked ledger. The workflows now invoke the existing
+canonical restore command before pytest. Three failing-before regression cases
+cover that ordering; no tests, assertions or audit gates are skipped.
+
+A final review also reproduced a floating-point rounding case where equal
+reported Brier values could be labelled improved. The new descriptive status
+now uses its existing nine-decimal reporting precision; model values, optimization
+and promotion thresholds are untouched. Regression test records that example.
+
+
+Final local source validation: 1879 tests passed in 68.64 seconds with the two
+existing empty-fixture NumPy warnings. All UI smoke scenarios and required
+project-health stages passed; runtime health reports zero failures and the two
+existing payload warnings against base `9a75e590...`. Merge/deploy are unperformed
+while the unchanged external source gates remain red. See #569 for final-head CI.

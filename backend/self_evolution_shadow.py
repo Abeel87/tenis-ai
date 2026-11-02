@@ -178,7 +178,7 @@ def _production_comparison(samples, weights):
     lower = improvement - 3 * math.sqrt(variance / n) if variance is not None else None
     return {
         'status': ('NO_FROZEN_PRODUCTION_BASELINE' if not n else
-                   'DESCRIPTIVE_IMPROVEMENT' if improvement > 0 else 'NO_DESCRIPTIVE_IMPROVEMENT'),
+                   'DESCRIPTIVE_IMPROVEMENT' if round(improvement, 9) > 0 else 'NO_DESCRIPTIVE_IMPROVEMENT'),
         'baseline': 'FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION',
         'population': 'EXACT_COMMON_ROWS_FIXTURE_BALANCED',
         'independent_matches': n,

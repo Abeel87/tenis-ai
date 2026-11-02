@@ -356,3 +356,12 @@ def test_memory_workflow_restores_previous_artifact_with_readonly_permissions():
     assert "name: self-evolution-memory" in workflow
     assert "contents: read" in workflow
     assert "contents: write" not in workflow
+
+
+def test_production_comparison_does_not_label_roundoff_as_improvement():
+    sample = {'match_key': 'id:1', 'day': '2026-11-02',
+              'p': [.6, .6, .6], 'production_probability': .60000000000001, 'y': 0}
+    result = agent._production_comparison([sample], (1., 0., 0.))
+    assert result['paired_brier_improvement'] == 0.0
+    assert result['candidate_brier'] == result['production_brier']
+    assert result['status'] == 'NO_DESCRIPTIVE_IMPROVEMENT'

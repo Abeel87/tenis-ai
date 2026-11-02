@@ -31,8 +31,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   exact identity and cache recovery, actual frozen AutoLearn comparison, honest
   evidence/UI. No probability math, training, weights, thresholds, settlement,
   betting or SHADOW-to-PROD promotion.
-- LAST VERIFIED MAIN: `9a75e590114ce6458b4c83d10be33275ea7c802d` (rechecked live).
-- BRANCH: `fix/shadow-learning-evidence-20261102`; PR pending publication.
+- LAST VERIFIED MAIN: `42eb1415066a97789c6a3719101965cb9c41dd5f`.
+  It changes 31 generated data files relative to audited base `9a75e590...`;
+  all source/workflow blobs are unchanged. Final branch retains these newer data.
+- BRANCH: `fix/shadow-learning-evidence-20261102`; PR #569 (`https://github.com/Abeel87/tenis-ai/pull/569`).
 - [x] Reproduced missing complete-token reordered identities and missing actual
   AutoLearn baseline before repair. Existing canonical resolver gains an opt-in
   strict mode; default Current behavior is unchanged. Neuron restores core TML
@@ -50,27 +52,44 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Existing 111019 ledger rows contain zero actual ensemble baselines. Active
   Neuron has 32 settled fixtures; Brier 0.211445 vs Elo 0.204309. No superiority
   or PROD readiness is established. Pending schedule conflicts remain pending.
-- [x] Focused regression and all UI static/runtime/readiness/time/decision-center
-  checks passed. Full local suite: 1875 passed; publication read-only teardown
-  detected concurrent temporary filesystem files, so a clean isolated full run
-  is required before claiming full GREEN.
-- [~] Clean full suite / required health checks, PR CI and delivery verification.
+- [x] Isolated full local suite on audited base: 1879 passed in 68.64s; two existing
+  empty-fixture NumPy warnings. All UI static/runtime/readiness/time/decision
+  checks and required project-health stages passed. Runtime health has zero
+  failures and the two existing payload-size warnings against the exact base.
+- [x] Initial PR head `49317cba3b759c16295e38fbf7127fb339ba3f2c`: Neuron
+  run `41407198027` / job `125151814633` passed real training and quality gate.
+  Restored core cache: 2 fresh + 9 cached sources, 0 missing, 11 files; fresh
+  `ch_ongoing` unavailable is still explicit. This is CI proof, not deployment.
+  Self Evolution tests/isolation, delivery/security, CodeQL and related checks
+  passed. No candidate was published from a PR run.
+- [x] Three older audit workflows failed full regression because exact chunked
+  ledgers were not restored. Added the existing restore command before pytest
+  in safe-player-history, insufficient-history-evidence and repeat-match-identity
+  audits. All three ordering regressions failed before repair and now pass.
+  No tests or audit assertions are skipped. Final report status also refuses
+  to present sub-reporting-precision roundoff as an improvement (regression tested).
+- [!] External source gates reproduced: TML freshness run `41407197693` / job
+  `125151813103` fetched 6 of 7 refreshable sources; TML 2024 equivalence run
+  `41407197746` / job `125151813410` has `locked_candidate_verified=false`.
+  These pre-existing source contracts also blocked #568. They remain unchanged.
+- [~] Final PR CI after the audit-input and rounding repairs; inspect live #569
+  for current head/checks. Merge and deployment remain blocked by source gates.
 - [ ] Merge only after all required checks are green and fresh-main verification.
 - [ ] Verify ordinary runtime stores new frozen ensemble scores, Neuron cache
   restore/scoring/evaluation, and next Self Evolution report/admin projection.
 - CHANGED OWNERS: canonical history resolver; Neuron/workflow; AutoLearn capture;
   Prediction Ledger reader/writer; Self Evolution reporting; private projection;
   frontend presentation; regression tests, readiness line matrix and canonical docs.
-- KNOWN EXTERNAL RISK: PR #568 already has red TML freshness (empty ongoing
-  Challenger CSV) and 2024 archive equivalence (locked upstream fingerprints
-  changed). This branch changes model.py and may trigger those same audits.
-  Do not relock sources, relax guards, fabricate history or merge red.
-- NEXT EXACT ACTION: finish isolated validation, publish reviewed PR, inspect its
-  actual checks. Merge/deploy only if green. If external TML blockers recur,
-  preserve the tested branch and exact CI evidence for the source-owner repair.
+- BLOCKER: source freshness and locked 2024 evidence need their canonical
+  owner investigation. Do not relock sources, relax guards, fabricate history,
+  move identity into another owner to avoid CI or merge a red PR.
+- NEXT EXACT ACTION: inspect final #569 CI and confirm the three restored-input
+  audits pass; resolve the two source-contract blockers with verified inputs.
+  Then recheck fresh main, run required checks and merge only green. Verify new
+  frozen ensemble rows and scheduled SHADOW reports after actual deployment.
 - DO NOT REDO: prior Neuron #557/#558/#559 and publication #565/#566 repairs;
   the same-input audit and frozen-legacy-baseline diagnosis are complete.
-- HARD LIMIT: every model stays SHADOW; no real bets or automatic promotion.
+- HARD LIMIT: Neuron and Self Evolution stay SHADOW; no real bets or automatic promotion.
 
 **PLAYER DNA CONCURRENT PUBLICATION — 2026-10-29 / PRODUCTION VERIFIED**
 - LAST VERIFIED MAIN / CLOSEOUT BASE: `2bf115399b6e74c94de72c56d7e88f144e20c5a1`; recheck live GitHub on resume.

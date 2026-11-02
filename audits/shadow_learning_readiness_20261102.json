@@ -233,5 +233,51 @@
         "historical_reconstruction": false
       }
     }
+  },
+  "ci_evidence": {
+    "pull_request": 569,
+    "tested_head": "49317cba3b759c16295e38fbf7127fb339ba3f2c",
+    "neuron": {
+      "run_id": 41407198027,
+      "job_id": 125151814633,
+      "conclusion": "success",
+      "scope": "PR_TRAINING_AND_QUALITY_GATE_NOT_RUNTIME_DEPLOYMENT",
+      "history_sources": {
+        "fresh_sources": 2,
+        "cached_sources": 9,
+        "missing_sources": 0,
+        "cache_files": 11
+      },
+      "cached_source_warning": "ch_ongoing: fresh source unavailable, existing cache used",
+      "training_status": "ACCEPTED"
+    },
+    "self_evolution_tests": {
+      "run_id": 41407197760,
+      "conclusion": "success",
+      "scope": "PR_UNIT_AND_ISOLATION_TESTS"
+    },
+    "external_source_blockers": [
+      {
+        "run_id": 41407197693,
+        "job_id": 125151813103,
+        "reason": "TML refresh_success=6, refresh_failures=1; declared refreshable sources=7"
+      },
+      {
+        "run_id": 41407197746,
+        "job_id": 125151813410,
+        "reason": "Locked 2024 candidate fingerprint no longer verified; locked_candidate_verified=false"
+      }
+    ],
+    "additional_workflow_repair": {
+      "failed_jobs": [
+        125151813357,
+        125151813333,
+        125151813396
+      ],
+      "reason": "full regressions did not restore exact chunked Prediction Ledger",
+      "fix": "invoke existing history_publication_chunks.py restore before pytest; leave tests and audit guards intact"
+    },
+    "merged": false,
+    "deployed": false
   }
 }
