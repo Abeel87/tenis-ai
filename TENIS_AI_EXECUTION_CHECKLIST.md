@@ -26,6 +26,60 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
 
+**NEURON / SELF EVOLUTION — SHADOW DEPLOYED, 2026-11-02**
+- OWNER FOLLOW-UP: after the concrete PR summary disclosed the three red source
+  audits, the owner instructed “Oka to wdrazaj i jazd”. This new instruction
+  authorized deployment of this reviewed SHADOW repair with those known failures
+  left visible. It supersedes the no-merge decision in the historical checkpoint
+  below for PR #569 only; it does not change general merge policy or authorize
+  archive import/relocking, probability/training changes, real bets or PROD promotion.
+- [x] PR #569 merged as `39bc81174277c8b17c9702b46d438056d6bfa5bb`.
+  Reviewed head: `e33da60fc6e99474f50f7b099a1920c20a73fb21`.
+  Fresh main: `2f80d5af96f0b927e53488aba159d6c4cb2bec36`; only three generated
+  files changed since the prior verified base. Prospective merge: 1879 tests
+  passed in 91.93s, two existing NumPy warnings; JS syntax and UI smoke passed
+  with 425 matches and 189 Symphony matches. Actual merge tree exactly matches
+  verified tree `2cf663ee9ac0224a3e593548cf9de6b1fbfc2edb`.
+- [x] Main Neuron run `41410144535`: training ACCEPTED, quality gate passed,
+  cache restored (2 fresh + 9 cached, 0 missing), scoring/evaluation published.
+  Model `neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7`.
+  The fresh Challenger-source failure remains explicit. The new model's cohort
+  has 127 pending and zero settled matches; no live superiority is established.
+- [x] Real Pages deployment job `125161870310` succeeded at 08:06:28 UTC.
+  https://abeel87.github.io/tenis-ai/ renders the login screen. Deployed `app.js`
+  and `neuron-data-bridge.js` bytes exactly match reviewed source (SHA-256 in audit).
+  An authenticated browser view was not claimed; no account settings were changed.
+- [x] Main health `41410144803`, delivery/security `41410144749` and CodeQL
+  `41410144893` succeeded. FAST `41410144693` is not used as deployment proof;
+  actual Neuron Pages deployment above is the evidence.
+- [x] Private Neuron publication `41410648364` activated generation
+  `9812715a-4ef6-4ebd-ba67-6aae4e32567b` (three files).
+- [x] Manually dispatched main Self Evolution `41410638588` on `6123855...`
+  succeeded. Restored memory from `41302075293`; run 25, three tracks, unchanged
+  registration window. Report/memory isolation assertions passed. Actual frozen
+  production comparison correctly remains N/D (zero paired rows, no backfill).
+- [x] Private research publication `41410860422` used that exact new Self run,
+  projected three tracks and activated generation
+  `350edc4d-895a-4df2-ab11-e35e5c5045a7` (one file). Screenshot evidence:
+  `audits/self_evolution_deployment_20261102.jpg`.
+- [~] Ordinary core/Pages run `41410144798` is pending behind the earlier main
+  update `41408549926`. No cancellation, concurrency change or duplicate update
+  was introduced. First runtime capture of new frozen AutoLearn scores is NOT
+  yet verified; code deployment and both SHADOW report publications are verified.
+- [!] Unchanged known research/source issues: 6/7 fresh TML retrievals; locked
+  2024 archive fingerprint mismatch and nine visible identity-resolution changes
+  in its separate preview. These audits remain red; archive integration is not
+  part of this deployment. PR #568 remains separate and unmerged.
+- LAST VERIFIED MAIN / CLOSEOUT BASE: `6123855006370340dcb8d1cb886a7e2a25c856f1`.
+- NEXT EXACT ACTION: after ordinary core `41410144798` completes, verify its
+  first NEW ledger rows have the actual pre-selection ensemble score and valid
+  pre-match capture chronology, plus downstream core publication. Do not retrofit
+  legacy rows. Continue collecting exact paired outcomes before any readiness claim.
+- DO NOT REDO: #569 is merged and deployed; the checkpoint below is historical.
+- HARD LIMIT: Neuron/Self Evolution remain SHADOW; no automatic PROD promotion.
+
+**HISTORICAL PRE-DEPLOYMENT CHECKPOINT — superseded by owner follow-up above**
+
 **NEURON / SELF EVOLUTION — SHADOW READINESS REPAIR, 2026-11-02**
 - AUTHORIZATION: owner requested the proposed history/evaluation repair. Scope:
   exact identity and cache recovery, actual frozen AutoLearn comparison, honest

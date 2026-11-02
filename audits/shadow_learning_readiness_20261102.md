@@ -108,3 +108,46 @@ closeout updates evidence only and does not change the verified implementation.
 
 UI & Project Health 41407962296 also completed successfully. The verified source
 head has 20 successful workflows and the 3 source-contract failures above.
+
+
+## Deployment after explicit owner follow-up
+
+After disclosure of the three red source audits, the owner instructed “Oka to
+wdrazaj i jazd”. PR #569 was merged as `39bc81174277c8b17c9702b46d438056d6bfa5bb`
+under that specific follow-up authorization. This does not relock the 2024
+archive, alter its failing audit, change general merge policy or promote SHADOW
+models to production. Earlier unmerged status in this audit is historical.
+
+The exact reviewed head `e33da60fc6e99474f50f7b099a1920c20a73fb21` was replayed
+against fresh main `2f80d5af96f0b927e53488aba159d6c4cb2bec36`: 1879 tests passed
+in 91.93 seconds, with the same two NumPy warnings; UI smoke and JS syntax passed.
+The merged tree exactly equals locally verified tree
+`2cf663ee9ac0224a3e593548cf9de6b1fbfc2edb`.
+
+Neuron main run [41410144535](https://github.com/Abeel87/tenis-ai/actions/runs/41410144535)
+trained an accepted SHADOW model, passed its quality gate and published scoring
+and evaluation. Cache availability is 2 fresh + 9 cached, zero missing; fresh
+Challenger retrieval remains an explicit warning. The new model has 127 pending
+fixtures and zero settled outcomes, so it establishes no live superiority.
+The real Pages job 125161870310 succeeded at 08:06:28 UTC. Public app.js and
+neuron-data-bridge.js hashes exactly match reviewed source. Browser inspection
+confirmed the public login screen; an authenticated private-screen review is not
+claimed. Main health/security/CodeQL passed. Private Neuron run 41410648364
+activated generation `9812715a-4ef6-4ebd-ba67-6aae4e32567b`.
+
+[Self Evolution run 41410638588](https://github.com/Abeel87/tenis-ai/actions/runs/41410638588)
+was manually dispatched on main `6123855006370340dcb8d1cb886a7e2a25c856f1`.
+It restored previous memory from 41302075293 and completed run 25 with three
+tracks. All no-production-authority assertions passed. The actual-production
+comparison has zero paired rows and remains explicitly unavailable; historical
+rows were not backfilled. Private research run 41410860422 used this exact report
+and activated generation `350edc4d-895a-4df2-ab11-e35e5c5045a7`.
+
+![Successful main Self Evolution run](self_evolution_deployment_20261102.jpg)
+
+Core/Pages run 41410144798 is still pending behind existing update 41408549926
+at this checkpoint. First runtime capture of new AutoLearn baselines is not yet
+claimed. The code, UI and SHADOW report publications are deployed and verified;
+follow the normal core completion to verify its new immutable ledger rows and
+private core publication. No schedules/concurrency were changed and no running
+update was cancelled. Known source freshness and archive-lock issues remain open.

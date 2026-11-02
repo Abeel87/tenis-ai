@@ -456,7 +456,7 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B15. Neuron
 
-**Naprawa gotowości SHADOW (2026-11-02, przed wdrożeniem):**
+**Naprawa gotowości SHADOW (2026-11-02, wdrożona przez PR #569):**
 - Kanoniczny resolver `backend/model.py::_resolve_history_player_key` udostępnia
   Neuronowi tryb `exact_tokens_only=True`: dokładny komplet członów pełnego
   nazwiska, ewentualnie inna kolejność, jednoznaczny klucz historii. Nie używa
@@ -480,7 +480,10 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
   Self Evolution używa dokładnie wspólnych wierszy oraz równoważenia po meczu.
   Istniejące progi, trening i wybór wewnętrznego championa SHADOW nie zmieniają się.
 - Audyt: `audits/shadow_learning_readiness_20261102.json` i `.md`.
-  Status merge/deploy znajduje się w najnowszym LIVE CHECKPOINT.
+  Neuron i Self Evolution zakończyły uruchomienia na main; raporty i UI są
+  opublikowane. Pierwszy zapis nowych wyników AutoLearn oczekuje na zwykły
+  pipeline core. Znane błędy źródeł/archiwum pozostają otwarte. Dokładny status
+  i dowody znajdują się w najnowszym LIVE CHECKPOINT.
 
 
 **Status:** SHADOW_RESEARCH.
