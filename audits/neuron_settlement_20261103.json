@@ -1,6 +1,6 @@
 {
   "audit_date": "2026-11-03",
-  "status": "PREPARED_NOT_DEPLOYED_OWNER_APPROVAL_REQUIRED",
+  "status": "DEPLOYED_AND_VERIFIED_SHADOW",
   "base_main": "0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5",
   "model_id": "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7",
   "latest_published_evaluation": {
@@ -381,16 +381,18 @@
   },
   "isolation": {
     "production_probabilities_changed": false,
-    "model_parameters_changed": false,
+    "model_parameters_changed": true,
     "training_changed": false,
     "settlement_rules_changed": false,
     "historical_forecasts_rewritten": false,
     "workflow_schedule_changed": false,
     "real_bets_executed": false,
     "shadow_to_production": false,
-    "deployed": false
+    "deployed": true,
+    "model_parameter_change_scope": "Existing push-triggered training refreshed the Neuron SHADOW model only; no change to production model parameters or training algorithm.",
+    "production_model_parameters_changed": false
   },
-  "approval": "Explicit user approval required before merge/deployment.",
+  "approval": "Owner explicitly approved deployment after review: “Oka wdrażaj poprawiaj i jazda” (2026-11-03).",
   "real_source_publication_replay": {
     "local_bare_git_only": true,
     "publication_status": "PUBLISHED",
@@ -401,5 +403,290 @@
     "production_ledger_not_published": true,
     "github_main_changed": false
   },
-  "pull_request": "https://github.com/Abeel87/tenis-ai/pull/574"
+  "pull_request": "https://github.com/Abeel87/tenis-ai/pull/574",
+  "deployment": {
+    "approval": "Oka wdrażaj poprawiaj i jazda",
+    "pr": 574,
+    "head": "8cbd330e2bf53bf293d84dfd25bd191907a5e5f8",
+    "merge": "e8905dcddaa32123d811eb353c07c6b07cc7ea9a",
+    "publication": "7658df096c9a86438a882696a45e5f9578c6580b",
+    "ci": {
+      "workflows": [
+        {
+          "id": 41614244666,
+          "name": "LOGIC-03 population priors audit",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244604,
+          "name": "LOGIC-04 context engine SHADOW",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244612,
+          "name": "Delivery and security checks",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244670,
+          "name": "LOGIC-01 freshness counterfactual",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244627,
+          "name": "LOGIC-02 ranking provenance audit",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244629,
+          "name": "Neuron SHADOW research",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244615,
+          "name": "CodeQL",
+          "conclusion": "success"
+        },
+        {
+          "id": 41614244602,
+          "name": "Tenis AI UI & Project Health",
+          "conclusion": "success"
+        }
+      ],
+      "checks": [
+        {
+          "name": "deploy-neuron-ui",
+          "status": "completed",
+          "conclusion": "skipped",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244629/job/125844448352"
+        },
+        {
+          "name": "CodeQL",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/runs/125844277305"
+        },
+        {
+          "name": "analyze (python)",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244615/job/125843573095"
+        },
+        {
+          "name": "health",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244602/job/125843572769"
+        },
+        {
+          "name": "browser",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244612/job/125843572709"
+        },
+        {
+          "name": "analyze (javascript-typescript)",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244615/job/125843572621"
+        },
+        {
+          "name": "neuron",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244629/job/125843572457"
+        },
+        {
+          "name": "dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244612/job/125843572343"
+        },
+        {
+          "name": "audit",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244666/job/125843572094"
+        },
+        {
+          "name": "audit",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244670/job/125843571998"
+        },
+        {
+          "name": "audit",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244627/job/125843571876"
+        },
+        {
+          "name": "audit",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/Abeel87/tenis-ai/actions/runs/41614244604/job/125843571371"
+        }
+      ],
+      "tests_passed": 1905,
+      "seconds": 64.62,
+      "project_health": "PASS",
+      "runtime_health": "PASS"
+    },
+    "neuron_run": 41615284201,
+    "neuron_job": 125847093316,
+    "pages_job": 125848209020,
+    "pages_status": "success",
+    "pages_source_sha": "7658df096c9a86438a882696a45e5f9578c6580b",
+    "private_run": 41616088718,
+    "private_job": 125849775889,
+    "private_status": "success",
+    "private_activation": {
+      "files": 3,
+      "generation": "d9d0ba16-956b-46b1-badd-4bbf1c009d6d",
+      "layer": "neuron",
+      "uploaded_objects": 3
+    },
+    "published_summary_equals_evaluator_log": true,
+    "previous_run": {
+      "id": 41613144750,
+      "job": 125839849391,
+      "evaluated_pairs": 2,
+      "published_pairs": 0
+    },
+    "notes": [
+      "Existing push-triggered training accepted a new SHADOW model; model math and training rules are unchanged.",
+      "The new cohort does not inherit older settled evidence.",
+      "Scheduled and pre-existing core workflows are independent of this Neuron-only publication."
+    ],
+    "verification": {
+      "status": "PASS",
+      "before": "88e7d5844cc69012c544162a3ecd60ec19e9d27e",
+      "published": "7658df096c9a86438a882696a45e5f9578c6580b",
+      "published_parent": "e8905dcddaa32123d811eb353c07c6b07cc7ea9a",
+      "changed_files": [
+        "data/neuron_predictions/2026-11.json",
+        "frontend/data/neuron_current.json",
+        "frontend/data/neuron_metrics.json",
+        "frontend/data/neuron_model.json"
+      ],
+      "frozen_snapshots_preserved": 1380,
+      "frozen_snapshots_after": 1511,
+      "terminal_snapshots_preserved": 452,
+      "production_ledger_source_commit": "e8905dcddaa32123d811eb353c07c6b07cc7ea9a",
+      "production_ledger_sha256": "bcee15685e2e4cb30501506560995f68af7871da342fe9de9f45b269e599c7f1",
+      "production_ledger_rows": 114797,
+      "generated_at": "2026-11-03T10:00:04.847802+00:00",
+      "evaluated_at": "2026-11-03T10:00:14.101130+00:00",
+      "active_model": "neuron-9817ecdab70dd503db4a183f2386a37e2fa2c30f8cde9698303967d166c73c9c",
+      "flags": {
+        "mode": "SHADOW_RESEARCH",
+        "production_influence": false,
+        "playable_influence": false,
+        "symphony_influence": false,
+        "ineed_influence": false,
+        "auto_promote": false
+      },
+      "aggregate_comparison": {
+        "status": "HAS_FROZEN_COMMON_EVIDENCE",
+        "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+        "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+        "settled_matches": 2,
+        "missing_baseline_matches": 192,
+        "neuron": {
+          "accuracy": 0.0,
+          "log_loss": 1.0764428222227291,
+          "brier": 0.4336582193050001,
+          "ece_10": 0.6578080000000001
+        },
+        "production": {
+          "accuracy": 0.0,
+          "log_loss": 0.776106012994088,
+          "brier": 0.29119587157210713,
+          "ece_10": 0.538567254589
+        },
+        "promotion_authorized": false,
+        "historical_reconstruction": false
+      },
+      "by_model": {
+        "neuron-1a18adcb227b8ec8775f5078472fa9eb74c6ce088b629cdf83e1822ead12f91c": {
+          "unique_fixtures": 353,
+          "settled_matches": 99,
+          "pending_matches": 240,
+          "void_matches": 14,
+          "production_comparison": {
+            "status": "NO_FROZEN_PRODUCTION_BASELINE",
+            "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+            "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+            "settled_matches": 0,
+            "missing_baseline_matches": 99,
+            "neuron": null,
+            "production": null,
+            "promotion_authorized": false,
+            "historical_reconstruction": false
+          }
+        },
+        "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7": {
+          "unique_fixtures": 212,
+          "settled_matches": 28,
+          "pending_matches": 177,
+          "void_matches": 7,
+          "production_comparison": {
+            "status": "HAS_FROZEN_COMMON_EVIDENCE",
+            "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+            "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+            "settled_matches": 2,
+            "missing_baseline_matches": 26,
+            "neuron": {
+              "accuracy": 0.0,
+              "log_loss": 1.0764428222227291,
+              "brier": 0.4336582193050001,
+              "ece_10": 0.6578080000000001
+            },
+            "production": {
+              "accuracy": 0.0,
+              "log_loss": 0.776106012994088,
+              "brier": 0.29119587157210713,
+              "ece_10": 0.538567254589
+            },
+            "promotion_authorized": false,
+            "historical_reconstruction": false
+          }
+        },
+        "neuron-9817ecdab70dd503db4a183f2386a37e2fa2c30f8cde9698303967d166c73c9c": {
+          "unique_fixtures": 131,
+          "settled_matches": 0,
+          "pending_matches": 131,
+          "void_matches": 0,
+          "production_comparison": {
+            "status": "NO_FROZEN_PRODUCTION_BASELINE",
+            "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+            "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+            "settled_matches": 0,
+            "missing_baseline_matches": 0,
+            "neuron": null,
+            "production": null,
+            "promotion_authorized": false,
+            "historical_reconstruction": false
+          }
+        },
+        "neuron-dde77f2c18073f88a288e5f3f32f8bf5474b11b26cbc377e4344f907f88c4cc0": {
+          "unique_fixtures": 386,
+          "settled_matches": 120,
+          "pending_matches": 247,
+          "void_matches": 19,
+          "production_comparison": {
+            "status": "NO_FROZEN_PRODUCTION_BASELINE",
+            "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+            "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+            "settled_matches": 0,
+            "missing_baseline_matches": 120,
+            "neuron": null,
+            "production": null,
+            "promotion_authorized": false,
+            "historical_reconstruction": false
+          }
+        }
+      }
+    }
+  }
 }

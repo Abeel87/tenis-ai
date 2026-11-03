@@ -1,6 +1,9 @@
 # Neuron / AutoLearn: audyt rozliczeń i publikacji porównań
 
-Status: **poprawka przygotowana; bez wdrożenia; wymagana zgoda właściciela**.
+Status: **wdrożono i zweryfikowano po zgodzie właściciela — SHADOW**.
+PR [#574](https://github.com/Abeel87/tenis-ai/pull/574), merge `e8905dc`;
+opublikowane dane `7658df0`. Pierwotne ustalenia poniżej zachowują datę audytu;
+wynik wdrożenia znajduje się na końcu dokumentu.
 Audytowany main: `0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5`.
 Daty i godziny poniżej podano w UTC. Dowody maszynowe i hashe wejść:
 [`neuron_settlement_20261103.json`](neuron_settlement_20261103.json).
@@ -104,8 +107,9 @@ tej historii ani nie zmienia jej właściciela.
 3. Rejestr modeli, architektura i LIVE CHECKPOINT oraz niniejszy audyt JSON/MD.
 
 Łącznie siedem plików. Jedyny zmieniony plik wykonywalny to istniejący
-publisher; bez alternatywnej ścieżki. Bez zmian probability, treningu, modeli,
-settlementu, workflowów, UI, historycznych snapshotów i realnych zakładów.
+publisher; bez alternatywnej ścieżki. Bez zmian produkcyjnych probability,
+algorytmów treningu, settlementu, workflowów, UI i historycznych snapshotów;
+bez realnych zakładów. Zwykły trening SHADOW podczas wdrożenia opisano poniżej.
 
 ## Walidacja i zatwierdzenie
 
@@ -121,7 +125,55 @@ Dla kodu `82885fc` przeszły na GitHubie Neuron, browser/security, dependencies,
 CodeQL i audyty źródeł. Health był w toku w chwili zapisania tego potwierdzenia;
 aktualny stan wszystkich kontroli: [PR #574](https://github.com/Abeel87/tenis-ai/pull/574/checks).
 
-Nie wykonano merge ani wdrożenia. Draft [PR #574](https://github.com/Abeel87/tenis-ai/pull/574)
-oczekuje na decyzję właściciela. Po zgodzie wymagane są aktualny main,
-zielone CI i zwykła weryfikacja SHADOW. Nie zmieniać produkcyjnych probability
-ani nie promować Neuronu na podstawie tej małej próby.
+## Wdrożenie i kontrola rzeczywistych danych
+
+Po przeglądzie właściciel zatwierdził wdrożenie: „Oka wdrażaj poprawiaj i jazda”.
+Odświeżony head `8cbd330e2bf53bf293d84dfd25bd191907a5e5f8` zachował nowe dane
+z main `88e7d58`. Wszystkie osiem workflowów i 11 checków zakończyło się sukcesem.
+[Pełna regresja CI](https://github.com/Abeel87/tenis-ai/actions/runs/41614244602):
+1905 testów w 64,62 s, Project Health PASS, Runtime Health PASS. PR #574 scalono
+jako `e8905dcddaa32123d811eb353c07c6b07cc7ea9a`; drzewo merge jest identyczne
+ze sprawdzonym drzewem PR.
+
+Przebieg sprzed poprawki [41613144750](https://github.com/Abeel87/tenis-ai/actions/runs/41613144750)
+dostarczył dodatkowy bezpośredni dowód błędu: ewaluator miał dwie pary o 09:44Z,
+a jego publisher zapisał zero w `88e7d58`.
+
+Po poprawce [Neuron 41615284201](https://github.com/Abeel87/tenis-ai/actions/runs/41615284201)
+zakończył się sukcesem, łącznie z Pages. Publikacja
+`7658df096c9a86438a882696a45e5f9578c6580b` zachowała **pełny wynik ewaluatora**
+z 10:00:14Z; niezależne ponowne przeliczenie z dokładnie tym samym ledgerem
+AutoLearn dało identyczny raport.
+
+| Kohorta po wdrożeniu | Prognozowane mecze | Rozliczone binarnie | Pary AutoLearn | Pending | Void |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Poprzedni model `neuron-27a48846…` | 212 | 28 | 2 | 177 | 7 |
+| Nowy model `neuron-9817ecda…` | 131 | 0 | 0 | 131 | 0 |
+
+Istniejący workflow po push uruchamia trening i przyjął nową wersję SHADOW.
+Nie zmieniono algorytmu treningu ani modelu produkcyjnego AutoLearn. Parametry
+nowego Neuronu i jego kohorta są odrębne: **zero rozliczeń nowej wersji jest
+prawidłowe**, a dwie pary starszej wersji nie są na nią przenoszone. Zagregowany
+raport zachowuje dwie pary; N=2 nadal nie uzasadnia wniosku o przewadze.
+
+Weryfikacja na rzeczywistym commicie potwierdziła:
+- 1380/1380 wcześniejszych zamrożonych snapshotów zachowało treść i hash;
+- 452/452 istniejące terminalne snapshoty zachowały dokładny settlement;
+- dopisano 131 prognoz nowego modelu, łącznie 1511 snapshotów;
+- commit publikacji zmienił tylko listopadowy ledger Neuronu oraz jego
+  `current`, `metrics` i `model`; ledger i probability AutoLearn nie zostały zapisane;
+- źródłowy ledger AutoLearn ma 114797 wierszy, SHA-256
+  `bcee15685e2e4cb30501506560995f68af7871da342fe9de9f45b269e599c7f1`;
+- wszystkie flagi wpływu produkcyjnego, playable, Symphony, iNeed, automatycznej
+  promocji i operator-playable pozostały false; tryb `SHADOW_RESEARCH`.
+
+Pages zbudowano z `7658df0` i zachowano odtwarzalny artefakt
+`runtime-source-41615284201-1` (ID `13220528505`).
+[Prywatna publikacja 41616088718](https://github.com/Abeel87/tenis-ai/actions/runs/41616088718)
+potwierdziła aktywację trzech plików warstwy `neuron`, generacja
+`d9d0ba16-956b-46b1-badd-4bbf1c009d6d`, z tego samego commita.
+To dowód publikacji i aktywacji danych; nie deklaracja testu ręcznie zalogowanej sesji.
+
+Luki pokrycia i konflikty terminów z pierwotnego audytu pozostają oddzielnym
+ograniczeniem. Nie rozluźniono reguł tożsamości ani chronologii, nie dopisano
+historycznych probability i nie uruchomiono rzeczywistych zakładów.
