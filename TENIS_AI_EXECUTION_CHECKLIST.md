@@ -25,8 +25,46 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT TASK — Neuron settlement / AutoLearn comparison audit, 2026-11-03**
+- OWNER SCOPE: inspect exact prospective outcome pairing, prepare technical fixes
+  and tests; show the exact diff and obtain explicit approval BEFORE deployment.
+  Earlier broad rollout authorizations do not authorize this task's deployment.
+- BASE MAIN: `0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5`.
+  Branch `fix/neuron-settlement-audit-20261103`; PR pending.
+- [x] Read current source, PRs #572/#573, open PRs and live run evidence.
+  Latest Neuron `41571432561` published `37d1efa` at 03:20Z: current model has
+  26 settled / 4 void / 177 pending / zero paired. The evaluator itself also
+  had zero paired then: all 26 settled rows lack a frozen legacy ensemble.
+- [x] Read-only replay against the newer exact history at base main gives
+  28 settled / 7 void / 172 pending and TWO paired fixtures (`214269`, `214271`).
+  Both models' probabilities were captured on Nov 2 before the Nov 3 starts;
+  their terminal evidence arrived at 07:04:56Z. No historical prediction backfill.
+- [x] Technical bug reproduced: publisher recomputed the merged Neuron summary
+  without the AutoLearn ledger, always dropping paired comparisons to zero.
+  Six integration regression cases failed before the repair; the initial Neuron
+  suite passed 58 tests after it. Expanded comparison/isolation pack: 85 passed.
+- [x] Minimal fix prepared in `scripts/publish_neuron_shadow.py`: validate/freeze
+  the run-local production ledger once, pass it to the existing summary owner,
+  reject concurrent changes to its reader, preserve foreign data on retries.
+  Missing/corrupt ledger fails publication instead of replacing evidence with zero.
+- [x] Full locked-dependency suite: 1905 passed in 99.76s; two existing NumPy
+  empty-fixture warnings. Real-source local bare-Git publication preserved both
+  pairs, the full evaluator summary and all 1370 frozen snapshots. PR CI pending.
+  Audit evidence in
+  `audits/neuron_settlement_20261103.{md,json}`; regression tests in
+  `tests/test_neuron_publication.py`. Registry and architecture updated.
+- [!] Coverage is still limited: 26/28 settled fixtures have no frozen ensemble;
+  65 lack exact canonical history, 78 have schedule conflicts, 29 await terminal
+  history. No relaxation, guessed outcome, old-row mutation or sample inflation.
+- DO NOT REDO: completed #569/#571 source/model rollout. No production output,
+  model weights, training, thresholds, settlement rules, schedules or real bets
+  are changed by this proposal. SHADOW remains mandatory.
+- NEXT EXACT ACTION: complete local/PR validation, show final scope and request
+  owner approval. Do not merge, dispatch production or regenerate main artifacts
+  before that approval. Two common fixtures do not establish model superiority.
 
-**CURRENT TASK — source-contract repairs DEPLOYED, 2026-11-02**
+
+**PREVIOUS TASK — source-contract repairs DEPLOYED, 2026-11-02**
 - OWNER FOLLOW-UP: “No to naprawiaj słucham pomysłów i wdrazaj żeby wszystko dzialalao”.
   Repair and deploy verified data fixes; no model-math change, historical forecast
   reconstruction, real bets or Neuron/Self Evolution PROD promotion.

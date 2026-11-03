@@ -494,6 +494,21 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B15. Neuron
 
+**Audyt rozliczeń i poprawka publikacji (2026-11-03, oczekuje na zatwierdzenie):**
+`backend/neuron.py::settle_predictions` nadal korzysta wyłącznie z istniejącego
+exact-ID/start/provenance settlementu. Snapshot `0d2f6bb` zawiera 26 rozliczonych
+meczów bieżącego modelu w raporcie z 03:20Z; wszystkie 26 nie mają historycznego
+wyniku ensemble AutoLearn. Ponowne odczytanie nowszej kanonicznej historii daje
+28 rozliczonych meczów i dwie poprawne pary, bez tworzenia nowych prognoz.
+`scripts/publish_neuron_shadow.py` gubił baseline przy przeliczeniu agregatów
+po scaleniu wierszy Neuronu. Przygotowana poprawka przekazuje odtworzony ledger
+AutoLearn z tego samego przebiegu, raz wczytany i zweryfikowany przed próbami
+publikacji. Brak/uszkodzenie ledgeru blokuje publikację; zmiana kontraktu
+`prediction_ledger_shadow.py` na main także ją blokuje. Ledger AutoLearn pozostaje
+read-only, a istniejące reguły tożsamości, chronologii, pierwszej prognozy i SHADOW
+nie zmieniają się. Dwie pary nie dowodzą przewagi; chwile prognoz obu modeli
+nie są identyczne. Szczegóły: `audits/neuron_settlement_20261103.{md,json}`.
+
 **Naprawa gotowości SHADOW (2026-11-02, wdrożona przez PR #569):**
 - Kanoniczny resolver `backend/model.py::_resolve_history_player_key` udostępnia
   Neuronowi tryb `exact_tokens_only=True`: dokładny komplet członów pełnego

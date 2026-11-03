@@ -22,6 +22,7 @@ ARTIFACTS = tuple(f'frontend/data/neuron_{name}.json' for name in ('model', 'met
 LEDGER_PREFIX = 'data/neuron_predictions/'
 OWNERS = ('backend/neuron.py', 'backend/history_hygiene_v78a.py',
           'backend/signal_settlement.py', 'backend/prediction_ledger_settlement_shadow.py',
+          'backend/prediction_ledger_shadow.py',
           'scripts/publish_neuron_shadow.py', '.github/workflows/neuron-shadow.yml',
           'requirements.txt', 'requirements.lock')
 
@@ -75,6 +76,13 @@ def publish(root=ROOT, attempts=3, before_push=None):
     ledger_dir = root / LEDGER_PREFIX
     local_ledgers = {str(path.relative_to(root)): json.loads(path.read_text())
                     for path in ledger_dir.glob('*.json')}
+    # Evaluation restores and validates this run's exact frozen AutoLearn ledger.
+    # Capture it once: retries may merge Neuron rows from fresh main, but must not
+    # discard the baseline or silently switch to a later production snapshot.
+    production_ledger = json.loads((root / 'frontend/data/prediction_ledger_shadow.json').read_text())
+    if production_ledger is None:
+        raise ValueError('INVALID_PRODUCTION_EVIDENCE_LEDGER')
+    neuron._production_index(production_ledger)
     model, report, current = (incoming[path] for path in ARTIFACTS)
     model_id = neuron.model_identity(model)
     if report.get('quality_gate', {}).get('passed') is not True:
@@ -113,7 +121,7 @@ def publish(root=ROOT, attempts=3, before_push=None):
             documents[path] = merged
             all_rows.extend(merged['predictions'])
         documents[ARTIFACTS[2]] = {**current, 'prospective': {
-            **neuron.summarize_predictions(all_rows),
+            **neuron.summarize_predictions(all_rows, production_ledger=production_ledger),
             'evaluated_at': current.get('prospective', {}).get('evaluated_at')}}
 
         with tempfile.TemporaryDirectory(prefix='neuron-index-') as directory:
