@@ -25,12 +25,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — Neuron settlement / AutoLearn comparison audit, 2026-11-03**
-- OWNER SCOPE: inspect exact prospective outcome pairing, prepare technical fixes
-  and tests; show the exact diff and obtain explicit approval BEFORE deployment.
-  Earlier broad rollout authorizations do not authorize this task's deployment.
+**CURRENT TASK — Neuron comparison publication DEPLOYMENT AUTHORIZED, 2026-11-03**
+- OWNER APPROVAL: after reviewing the exact seven-file scope and green PR #574,
+  the owner instructed “Oka wdrażaj poprawiaj i jazda”. Merge/deploy this reviewed
+  publication repair and verify real SHADOW evidence. No production probability,
+  settlement-rule, real-betting or SHADOW-to-PROD change is authorized.
 - BASE MAIN: `0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5`.
-  Branch `fix/neuron-settlement-audit-20261103`; draft PR #574:
+  Fresh main `88e7d5844cc69012c544162a3ecd60ec19e9d27e` adds only the normal
+  Neuron current report and November forecast ledger. Both are preserved.
+  Branch `fix/neuron-settlement-audit-20261103`; PR #574:
   https://github.com/Abeel87/tenis-ai/pull/574 .
 - [x] Read current source, PRs #572/#573, open PRs and live run evidence.
   Latest Neuron `41571432561` published `37d1efa` at 03:20Z: current model has
@@ -64,9 +67,16 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - DO NOT REDO: completed #569/#571 source/model rollout. No production output,
   model weights, training, thresholds, settlement rules, schedules or real bets
   are changed by this proposal. SHADOW remains mandatory.
-- NEXT EXACT ACTION: await owner approval of PR #574; before any authorized
-  deployment, recheck fresh main and all required CI on the final head. Do not
-  merge, dispatch production or regenerate main artifacts before that approval.
+- [x] Approved head `e510d90` passed all eight workflows / 11 successful checks;
+  GitHub full regression: 1905 passed in 77.41s; Project/Runtime Health PASS.
+- [x] Refreshed the approved branch onto the two-file bot-only main advance;
+  fresh-main local regression: 1905 passed in 82.64s (two existing NumPy warnings).
+  Scheduled Neuron `41613144750` completed successfully and is preserved.
+- [~] Waiting for exact-head CI before the authorized merge/deployment.
+- NEXT EXACT ACTION: merge only green against fresh main, then verify the normal
+  main Neuron publication, public/private delivery and frozen-ledger preservation.
+  Record old/new model cohorts separately: an existing push-triggered SHADOW
+  training may accept a new model, which cannot inherit older settled evidence.
   Two common fixtures do not establish model superiority.
 
 
