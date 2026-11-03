@@ -30,7 +30,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   and tests; show the exact diff and obtain explicit approval BEFORE deployment.
   Earlier broad rollout authorizations do not authorize this task's deployment.
 - BASE MAIN: `0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5`.
-  Branch `fix/neuron-settlement-audit-20261103`; PR pending.
+  Branch `fix/neuron-settlement-audit-20261103`; draft PR #574:
+  https://github.com/Abeel87/tenis-ai/pull/574 .
 - [x] Read current source, PRs #572/#573, open PRs and live run evidence.
   Latest Neuron `41571432561` published `37d1efa` at 03:20Z: current model has
   26 settled / 4 void / 177 pending / zero paired. The evaluator itself also
@@ -49,7 +50,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Missing/corrupt ledger fails publication instead of replacing evidence with zero.
 - [x] Full locked-dependency suite: 1905 passed in 99.76s; two existing NumPy
   empty-fixture warnings. Real-source local bare-Git publication preserved both
-  pairs, the full evaluator summary and all 1370 frozen snapshots. PR CI pending.
+  pairs, the full evaluator summary and all 1370 frozen snapshots. All local
+  UI static/runtime/readiness/time/decision checks passed. Code head `82885fc`
+  passed Neuron, browser/security, dependencies, CodeQL and source-audit CI;
+  full health was running when this receipt was written. Latest required checks:
+  https://github.com/Abeel87/tenis-ai/pull/574/checks .
   Audit evidence in
   `audits/neuron_settlement_20261103.{md,json}`; regression tests in
   `tests/test_neuron_publication.py`. Registry and architecture updated.
@@ -59,9 +64,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - DO NOT REDO: completed #569/#571 source/model rollout. No production output,
   model weights, training, thresholds, settlement rules, schedules or real bets
   are changed by this proposal. SHADOW remains mandatory.
-- NEXT EXACT ACTION: complete local/PR validation, show final scope and request
-  owner approval. Do not merge, dispatch production or regenerate main artifacts
-  before that approval. Two common fixtures do not establish model superiority.
+- NEXT EXACT ACTION: await owner approval of PR #574; before any authorized
+  deployment, recheck fresh main and all required CI on the final head. Do not
+  merge, dispatch production or regenerate main artifacts before that approval.
+  Two common fixtures do not establish model superiority.
 
 
 **PREVIOUS TASK — source-contract repairs DEPLOYED, 2026-11-02**

@@ -116,9 +116,12 @@ ostrzeżenia NumPy z pustej próbki testowej. Pełna regresja na zależnościach
 Dodatkowy replay na rzeczywistych wejściach, opublikowany wyłącznie do lokalnego
 bare Git, zachował pełny raport evaluatora: 28 rozliczeń i dwie pary. Wszystkie
 1370 zamrożonych snapshotów zachowało treść; ledger AutoLearn nie został
-opublikowany. CI PR pozostaje do odnotowania w checkpoint.
+opublikowany. Lokalne kontrole UI static/runtime/readiness/time/decision przeszły.
+Dla kodu `82885fc` przeszły na GitHubie Neuron, browser/security, dependencies,
+CodeQL i audyty źródeł. Health był w toku w chwili zapisania tego potwierdzenia;
+aktualny stan wszystkich kontroli: [PR #574](https://github.com/Abeel87/tenis-ai/pull/574/checks).
 
-Nie wykonano merge ani wdrożenia. Kolejny krok: zakończyć walidację, przedstawić
-PR i poprosić właściciela o zatwierdzenie. Po zgodzie wymagane są aktualny main,
+Nie wykonano merge ani wdrożenia. Draft [PR #574](https://github.com/Abeel87/tenis-ai/pull/574)
+oczekuje na decyzję właściciela. Po zgodzie wymagane są aktualny main,
 zielone CI i zwykła weryfikacja SHADOW. Nie zmieniać produkcyjnych probability
 ani nie promować Neuronu na podstawie tej małej próby.
