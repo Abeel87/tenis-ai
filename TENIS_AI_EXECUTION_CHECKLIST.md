@@ -25,59 +25,50 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — Neuron comparison publication DEPLOYMENT AUTHORIZED, 2026-11-03**
-- OWNER APPROVAL: after reviewing the exact seven-file scope and green PR #574,
-  the owner instructed “Oka wdrażaj poprawiaj i jazda”. Merge/deploy this reviewed
-  publication repair and verify real SHADOW evidence. No production probability,
-  settlement-rule, real-betting or SHADOW-to-PROD change is authorized.
-- BASE MAIN: `0d2f6bb7553e2407e1eac05d40ddcec3cc418bd5`.
-  Fresh main `88e7d5844cc69012c544162a3ecd60ec19e9d27e` adds only the normal
-  Neuron current report and November forecast ledger. Both are preserved.
-  Branch `fix/neuron-settlement-audit-20261103`; PR #574:
-  https://github.com/Abeel87/tenis-ai/pull/574 .
-- [x] Read current source, PRs #572/#573, open PRs and live run evidence.
-  Latest Neuron `41571432561` published `37d1efa` at 03:20Z: current model has
-  26 settled / 4 void / 177 pending / zero paired. The evaluator itself also
-  had zero paired then: all 26 settled rows lack a frozen legacy ensemble.
-- [x] Read-only replay against the newer exact history at base main gives
-  28 settled / 7 void / 172 pending and TWO paired fixtures (`214269`, `214271`).
-  Both models' probabilities were captured on Nov 2 before the Nov 3 starts;
-  their terminal evidence arrived at 07:04:56Z. No historical prediction backfill.
-- [x] Technical bug reproduced: publisher recomputed the merged Neuron summary
-  without the AutoLearn ledger, always dropping paired comparisons to zero.
-  Six integration regression cases failed before the repair; the initial Neuron
-  suite passed 58 tests after it. Expanded comparison/isolation pack: 85 passed.
-- [x] Minimal fix prepared in `scripts/publish_neuron_shadow.py`: validate/freeze
-  the run-local production ledger once, pass it to the existing summary owner,
-  reject concurrent changes to its reader, preserve foreign data on retries.
-  Missing/corrupt ledger fails publication instead of replacing evidence with zero.
-- [x] Full locked-dependency suite: 1905 passed in 99.76s; two existing NumPy
-  empty-fixture warnings. Real-source local bare-Git publication preserved both
-  pairs, the full evaluator summary and all 1370 frozen snapshots. All local
-  UI static/runtime/readiness/time/decision checks passed. Code head `82885fc`
-  passed Neuron, browser/security, dependencies, CodeQL and source-audit CI;
-  full health was running when this receipt was written. Latest required checks:
-  https://github.com/Abeel87/tenis-ai/pull/574/checks .
-  Audit evidence in
-  `audits/neuron_settlement_20261103.{md,json}`; regression tests in
-  `tests/test_neuron_publication.py`. Registry and architecture updated.
-- [!] Coverage is still limited: 26/28 settled fixtures have no frozen ensemble;
-  65 lack exact canonical history, 78 have schedule conflicts, 29 await terminal
-  history. No relaxation, guessed outcome, old-row mutation or sample inflation.
-- DO NOT REDO: completed #569/#571 source/model rollout. No production output,
-  model weights, training, thresholds, settlement rules, schedules or real bets
-  are changed by this proposal. SHADOW remains mandatory.
-- [x] Approved head `e510d90` passed all eight workflows / 11 successful checks;
-  GitHub full regression: 1905 passed in 77.41s; Project/Runtime Health PASS.
-- [x] Refreshed the approved branch onto the two-file bot-only main advance;
-  fresh-main local regression: 1905 passed in 82.64s (two existing NumPy warnings).
-  Scheduled Neuron `41613144750` completed successfully and is preserved.
-- [~] Waiting for exact-head CI before the authorized merge/deployment.
-- NEXT EXACT ACTION: merge only green against fresh main, then verify the normal
-  main Neuron publication, public/private delivery and frozen-ledger preservation.
-  Record old/new model cohorts separately: an existing push-triggered SHADOW
-  training may accept a new model, which cannot inherit older settled evidence.
-  Two common fixtures do not establish model superiority.
+**CURRENT TASK — Neuron comparison publication DEPLOYED AND VERIFIED, 2026-11-03**
+- OWNER APPROVAL: “Oka wdrażaj poprawiaj i jazda” after the exact seven-file
+  review. SHADOW, production-probability and real-betting boundaries remain.
+- [x] PR #574 merged as `e8905dcddaa32123d811eb353c07c6b07cc7ea9a`:
+  https://github.com/Abeel87/tenis-ai/pull/574 . Final head `8cbd330` preserved
+  fresh main `88e7d58`; all eight workflows / 11 checks passed. Full CI regression
+  1905 passed in 64.62s; Project/Runtime Health PASS. Verified merge tree equals
+  tested tree `3edc9534f38a18b57080351b3e05e2ed3a649296`.
+- [x] Canonical publisher repaired; 12 integration cases added. Six regressions
+  failed before the fix. Expanded comparison/isolation pack: 85 passed; full
+  local fresh-main suite: 1905 passed in 82.64s, two existing NumPy warnings.
+- [x] Neuron + Pages run `41615284201` SUCCESS. LAST VERIFIED DATA MAIN:
+  `7658df096c9a86438a882696a45e5f9578c6580b`, generated 10:00:04Z / evaluated
+  10:00:14Z. Published summary exactly matches the evaluator log and recomputation
+  from the run's original 114797-row frozen AutoLearn ledger.
+- [x] Before deployment, scheduled `41613144750` independently reproduced the
+  bug: evaluator had two pairs, publication `88e7d58` erased them. Fixed publisher
+  now retains both. The earlier 03:20Z zero was legitimate: its 26 settled
+  fixtures all lacked a frozen production baseline; later outcomes enabled two.
+- [x] Old model `neuron-27a48846…`: 212 fixtures, 28 binary settled, 2 AutoLearn
+  pairs, 177 pending, 7 void. Current `neuron-9817ecda…`: 131 forecasts, zero
+  settled/pairs, all pending. The existing push-triggered SHADOW training accepted
+  this new candidate; no training-algorithm or AutoLearn model change. Do not
+  transfer older evidence into the new model's cohort.
+- [x] All 1380 old frozen snapshots and 452 terminal snapshots unchanged;
+  1511 snapshots after 131 new prematch forecasts. Publication changes only four
+  Neuron-owned files; production ledger and other owners' files are untouched.
+- [x] Pages source `7658df0`, runtime artifact `13220528505` preserved.
+  Private delivery `41616088718`, publish job `125849775889`, activated three
+  Neuron files: generation `d9d0ba16-956b-46b1-badd-4bbf1c009d6d`.
+- FILES: fix in `scripts/publish_neuron_shadow.py`, regressions in
+  `tests/test_neuron_publication.py`; registry, architecture and full deployment
+  proof in `audits/neuron_settlement_20261103.{md,json}`. Documentation closeout
+  branch: `docs/neuron-pairing-deployment-20261103`; no further executable change.
+- LIMITATIONS: N=2 cannot establish superiority. Legacy missing ensemble,
+  incomplete exact-history coverage and schedule conflicts stay excluded.
+  No matching guard was relaxed; no historical probability was reconstructed.
+  These coverage limits do not block the verified publication repair.
+- DO NOT REDO: #569/#571 source rollout or #574 publisher repair. No production
+  probability/threshold/settlement-policy change, SHADOW-to-PROD promotion or real
+  betting. The ordinary Neuron-only artifact refresh is not a production promotion.
+- NEXT EXACT ACTION: task complete; any later evaluation must verify fresh main,
+  the active model's own cohort and exact frozen common fixtures. Continue normal
+  SHADOW collection; do not claim success from training accuracy or PBP counts.
 
 
 **PREVIOUS TASK — source-contract repairs DEPLOYED, 2026-11-02**

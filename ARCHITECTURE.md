@@ -247,14 +247,19 @@ merging immutable ledger rows and preserving all other owners' files. Concurrent
 source/newer-model changes block publication. Neuron remains SHADOW_RESEARCH with
 all production influence and auto-promotion flags false.
 
-Pending owner approval (2026-11-03): the Neuron publisher also consumes the exact
+Deployed by PR #574 (2026-11-03): the Neuron publisher also consumes the exact
 run-local restored `prediction_ledger_shadow.json` when recomputing summaries
 after merging concurrent immutable Neuron rows. It validates and reads that
 production baseline once before publication retries, never writes it, and
 rejects a missing/malformed ledger or concurrent change to its canonical reader.
 Previously this summary call omitted the baseline and erased paired metrics.
 No settlement, probability, model/training, workflow or promotion rule changes.
-Audit and deployment boundary: `audits/neuron_settlement_20261103.md`.
+Verified publication `7658df0` preserves the evaluator's two paired fixtures,
+all 1380 previous frozen snapshots and 452 terminal snapshots. The existing
+push-triggered SHADOW training accepted a new model with 131 forecasts and zero
+settled evidence; older cohort comparisons remain separate. Pages and private
+Neuron delivery use the verified published commit. Deployment receipts:
+`audits/neuron_settlement_20261103.{md,json}`.
 
 The shell also owns the shared readable-report presenter: source values become
 escaped labeled fields, expandable groups and bounded pages without changing

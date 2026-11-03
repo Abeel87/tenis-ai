@@ -494,20 +494,26 @@ snapshot-specific Direct counts, not PLAYABLE or guaranteed complete coverage.
 
 ## B15. Neuron
 
-**Audyt rozliczeń i poprawka publikacji (2026-11-03, oczekuje na zatwierdzenie):**
+**Audyt rozliczeń i poprawka publikacji (2026-11-03, wdrożone przez PR #574):**
 `backend/neuron.py::settle_predictions` nadal korzysta wyłącznie z istniejącego
 exact-ID/start/provenance settlementu. Snapshot `0d2f6bb` zawiera 26 rozliczonych
 meczów bieżącego modelu w raporcie z 03:20Z; wszystkie 26 nie mają historycznego
 wyniku ensemble AutoLearn. Ponowne odczytanie nowszej kanonicznej historii daje
 28 rozliczonych meczów i dwie poprawne pary, bez tworzenia nowych prognoz.
 `scripts/publish_neuron_shadow.py` gubił baseline przy przeliczeniu agregatów
-po scaleniu wierszy Neuronu. Przygotowana poprawka przekazuje odtworzony ledger
+po scaleniu wierszy Neuronu. Wdrożona poprawka przekazuje odtworzony ledger
 AutoLearn z tego samego przebiegu, raz wczytany i zweryfikowany przed próbami
 publikacji. Brak/uszkodzenie ledgeru blokuje publikację; zmiana kontraktu
 `prediction_ledger_shadow.py` na main także ją blokuje. Ledger AutoLearn pozostaje
 read-only, a istniejące reguły tożsamości, chronologii, pierwszej prognozy i SHADOW
 nie zmieniają się. Dwie pary nie dowodzą przewagi; chwile prognoz obu modeli
 nie są identyczne. Szczegóły: `audits/neuron_settlement_20261103.{md,json}`.
+Publikacja `7658df0` po merge `e8905dc` zachowuje dwie pary starszego modelu
+(28 rozliczeń); aktywny `neuron-9817ecda…`, przyjęty przez istniejący trening
+SHADOW po push, ma 131 nowych prognoz i zero rozliczeń. Nie dziedziczy metryk
+starszej kohorty. Zweryfikowano 1380 niezmienionych wcześniejszych snapshotów
+oraz 452 terminalne settlementy, zgodność opublikowanego raportu z ewaluatorem,
+Pages i aktywację trzech plików prywatnej warstwy `neuron` (run `41616088718`).
 
 **Naprawa gotowości SHADOW (2026-11-02, wdrożona przez PR #569):**
 - Kanoniczny resolver `backend/model.py::_resolve_history_player_key` udostępnia
