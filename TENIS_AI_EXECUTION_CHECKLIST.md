@@ -25,33 +25,46 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — archive GC timeout follow-up, 2026-11-06**
+**CURRENT TASK — GC code merged; Supabase confirmation required, 2026-11-06**
 - AUTHORIZATION: owner requested continuing the full-app audit and repairs.
-- FRESH MAIN: `59ee7c1318d496d32ca28201b171628aced292ab`.
-  BRANCH: `fix/runtime-refresh-gc-20261106`; PR not yet opened.
-- [x] New failure `42195698453`: PostgreSQL 57014 in the canonical
-  `training_archive_gc_prepare` ready-manifest query, before deletion.
-- [x] Read-only production EXPLAIN reproduced 39.05s and 58,342 blocking
-  references. The 100,000-entry isolated fixture reproduced unnecessary
-  traversal (100,002 visited rows).
-- [x] Minimal first-blocker query fix; all 10 PostgreSQL safety cases pass,
-  including 24 mixed-fixture comparisons against both prior SQL definitions.
-  The performance fixture now visits fewer than 1,000 entry rows.
-- [x] Latest-two/pins/in-flight references/168h grace/size gates, bounded batches,
-  locking, 30s timeout and service-only privileges are unchanged.
-- [x] Full local suite: 1932 passed in 71.23s, two known Neuron warnings.
-- [~] Remote CI pending; production migration not applied.
-- [~] Native retries requested for FAST Pages `42194878718` (syncing_files
-  timeout) and fast readiness `42194876202` (workflow dispatch HTTP 500).
-  These are GitHub service failures; no application root cause is yet proven.
-- FILES: one SQL migration, existing PostgreSQL/query-plan tests, registry,
-  this checkpoint and `audits/archive_gc_followup_20261106.md/.json`.
-- DO NOT REDO: completed #577/#578/#579 repairs, history identity work or training.
-- NEXT EXACT ACTION: finish full CI, recheck fresh main, merge only green,
-  apply the exact reviewed migration, rerun the existing GC job and verify
-  actual production completion plus retry outcomes. Update this checkpoint.
-- HARD BOUNDARIES: no new deletion policy, reduced grace, fabricated history,
-  model changes, real betting, auto-promotion or Auth/account-security changes.
+- FRESH MAIN: `032e244290fe91856593a6337873f1b5725d0137`.
+  IMPLEMENTATION PR #580: https://github.com/Abeel87/tenis-ai/pull/580 .
+  HANDOFF BRANCH: `docs/runtime-gc-handoff-20261106`.
+- [x] Diagnosed PostgreSQL 57014 in run `42195698453`: canonical prepare
+  query expanded all blocking references before archive deletion.
+- [x] Reproduced excessive traversal (100,002 rows) in a 100,000-entry fixture.
+  Minimal first-blocker fix passes all 10 PostgreSQL cases, including 24 mixed
+  fixtures compared with both previous SQL definitions. Traversal is under 1,000.
+- [x] Local full suite 1932 passed (71.23s); remote full suite 1932 passed
+  (83.18s), two known Neuron warnings. All 11 remote checks SUCCESS on
+  `5b1c1af82479c6186ef1c77f25bcc856666152a0`; Project/Runtime Health PASS.
+- [x] Fresh-main merge `7c183c5828ea8a858dfe0b43daa200fee970bbc2` exactly
+  matches tested tree `75deec7543f25d9f3691e2d1a48585e43c06c4b5`.
+- [!] PRODUCTION MIGRATION NOT APPLIED: both Supabase `apply_migration`
+  confirmations expired. Direct pg_get_functiondef inspection confirms the old
+  function is still active. This is a provider confirmation blocker, not a code
+  or test failure. No bypass was attempted and the GC job was not rerun.
+- [x] Player DNA fast readiness run `42194876202`, attempt 2, SUCCESS;
+  exact-snapshot delivery guard passed for all 101 matches.
+- [x] FAST Pages retry of `42194878718` failed again with empty deployment
+  status. The subsequent readiness-triggered Pages run `42200919016` SUCCESS;
+  live HTTP 200 manifest matches `032e244290fe91856593a6337873f1b5725d0137`.
+  Recovery is verified; a permanent fix for the GitHub timeouts is not claimed.
+- [x] Private DNA run `42200921810` and its GC SUCCESS. SQL confirms active
+  generation `2775bef5-0c14-4f8d-a3cc-12d5c437d9f1`, same source SHA, all 14
+  storage objects present with matching sizes. No full-body rehash is claimed.
+- FILES: SQL migration `20261106095517_training_archive_gc_first_blocker.sql`,
+  existing PostgreSQL/query-plan tests, registry/checkpoint and
+  `audits/archive_gc_followup_20261106.md/.json`.
+- DO NOT REDO: #577/#578/#579/#580 code repairs or training. Keep normal long
+  DNA research running; it has not failed and is not part of this blocker.
+- NEXT EXACT ACTION: when the owner can complete the provider confirmation,
+  reissue apply_migration for the exact #580 SQL; verify function body and ACLs;
+  rerun the existing GC job `127818291913` and verify actual apply completion,
+  protected manifests and storage. Then record deployed proof in this checkpoint.
+- HARD BOUNDARIES: latest-two/pins/in-flight refs/168h grace/size gates, batches,
+  locking, timeout and service ACLs unchanged. No model changes, invented history,
+  real betting, auto-promotion or Auth/account-security changes.
 
 **PREVIOUS COMPLETED TASK — application audit below**
 

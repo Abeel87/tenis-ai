@@ -17,12 +17,15 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-06 archive GC follow-up (deployment pending):**
+**2026-11-06 archive GC follow-up (PR #580 merged; Supabase confirmation pending):**
 `public.training_archive_gc_prepare` remains the canonical prepare owner.
-The ready-manifest query stops at the first blocking reference per manifest
+The reviewed migration stops at the first blocking reference per manifest
 instead of collecting all references of all blocking objects. Existing primary
 key order and hashed membership keep the lookup bounded in the reproduced
 skewed fixture. No retention policy, deletion stage, timeout or privilege changes.
+All 11 CI checks and 1932 tests passed. Two provider confirmation requests expired;
+direct database inspection confirms the old function is still active. Do not
+claim production GC is repaired until migration and an actual run are verified.
 See `audits/archive_gc_followup_20261106.md` and the live checkpoint.
 
 **2026-11-06 application audit / repairs merged in PRs #577 and #578:**
