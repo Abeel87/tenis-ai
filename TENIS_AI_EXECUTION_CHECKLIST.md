@@ -25,6 +25,39 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT TASK — whole-app audit and publication/fixture repair, 2026-11-06**
+- AUTHORIZATION: owner requested checking the entire app and repairing confirmed
+  problems. Scope: delivery, fixture completeness and truthful freshness. No
+  probability, training, settlement, quota, identity or SHADOW/PROD changes.
+- AUDITED MAIN: `06145f96734120abe322d7119bb96c84a21c8a8a`.
+  BRANCH: `fix/app-audit-pages-20261106`; PR pending creation.
+- [x] Read current contracts, open PRs, recent workflows, live Supabase health
+  and available runtime data. Earlier #574 repair remains verified and intact.
+- [x] Reproduced 11 fixture completeness/freshness failures from unmerged #568.
+  Added eight Pages archive/exclusion regressions; all 25 new cases pass.
+- [x] Focused transport/fixture suite: 35 passed. Full suite: 1930 passed,
+  two existing empty-sample Neuron warnings. Project health and baseline-aware
+  runtime health pass; existing payload warnings remain explicit.
+- [x] Existing UI smoke covers auth/roles, match detail, Symphony, coupons,
+  error recovery, account isolation and freshness. Real-source exclusion removes
+  545,693,538 bytes (about 53.4% of Pages files); all 55 archive sources remain
+  verified and all 52 retained flat JSON files have identical hashes.
+- [ ] Exact-head remote CI, fresh-main integration and green merge.
+- [ ] Verify Pages deployment, source manifest, preserved runtime archive,
+  new complete fixture publication and unchanged SHADOW boundaries.
+- FILES: shared Pages action, canonical fixture reader, two new test files,
+  readiness line references, architecture/registry/checkpoint and audit receipts.
+- LIMITATIONS: live browser inspection timed out before an authenticated view;
+  repository smoke tests are not a real-user login proof. Supabase is healthy,
+  with no HTTP 5xx in the inspected 24-hour edge/function log window. Existing
+  leaked-password protection advisory remains; no Auth setting was changed.
+- DO NOT REDO: #569/#571/#574 repairs, source relocking or training. Do not import
+  the blocked 2024 archive or fabricate absent player history.
+- NEXT EXACT ACTION: create PR, verify all required checks and fresh main, then
+  merge and observe actual deployment. Close #568 as superseded only after merge.
+
+**PREVIOUS COMPLETED TASK (the November 3 record below is historical)**
+
 **CURRENT TASK — Neuron comparison publication DEPLOYED AND VERIFIED, 2026-11-03**
 - OWNER APPROVAL: “Oka wdrażaj poprawiaj i jazda” after the exact seven-file
   review. SHADOW, production-probability and real-betting boundaries remain.

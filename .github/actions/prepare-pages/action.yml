@@ -22,6 +22,43 @@ runs:
     - name: Build match delivery
       shell: bash
       run: node scripts/build_delivery.mjs
+    - name: Exclude verified archived research ledgers from Pages
+      shell: bash
+      run: |
+        python - <<'PY'
+        import hashlib
+        import json
+        import os
+        from pathlib import Path
+        from scripts.runtime_snapshot import verify
+
+        data = Path('frontend/data')
+        archive = Path(os.environ['RUNNER_TEMP']) / 'tenis-runtime.tar.gz'
+        manifest = verify(archive)
+        research_files = (
+            'prediction_ledger_shadow.json',
+            'prediction_ledger_selection_shadow.json',
+            'prediction_ledger_settlement_shadow.json',
+        )
+        verified = []
+        for name in research_files:
+            source = data / name
+            if not source.is_file() or source.is_symlink():
+                raise ValueError('Research source missing or unsafe: ' + name)
+            with source.open('rb') as stream:
+                digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+            expected = manifest['files'].get(name)
+            if expected != {'bytes': source.stat().st_size, 'sha256': digest}:
+                raise ValueError('Research source differs from preserved archive: ' + name)
+            verified.append(source)
+        # Validate every exclusion before the first publication-copy removal.
+        removed_bytes = sum(source.stat().st_size for source in verified)
+        for source in verified:
+            source.unlink()
+        print(json.dumps({'excluded_from_pages_only': list(research_files),
+                          'excluded_bytes': removed_bytes,
+                          'preserved_archive': archive.name}))
+        PY
     - name: Remove repository-only history chunks from Pages payload
       shell: bash
       run: rm -rf frontend/data/history_chunks frontend/data/prediction_ledger_shadow_chunks frontend/data/prediction_ledger_selection_shadow_chunks frontend/data/prediction_ledger_settlement_shadow_chunks

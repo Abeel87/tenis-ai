@@ -4,6 +4,13 @@
 
 ## 1. Produkcja danych
 
+The canonical fixture reader, `backend/update.py::fetch_fixtures`, requires
+confirmed pagination completion before replacing the catalogue. Budget exhaustion
+or a short page contradicting the declared total retains the last complete results
+and history. This degraded path preserves `meta.updated_at`, publishes the reason
+and records `fixtures_refresh_attempted_at` separately. A confirmed complete empty
+catalogue remains valid. The existing quota policy and model owners are unchanged.
+
 Player DNA's early readiness and final report stages share one Git publication
 owner, `scripts/publish_player_dna_reports.py`. It builds an exact owned-file tree
 on the freshly fetched main using a temporary Git index, preserving the running
@@ -319,6 +326,17 @@ Każdy konflikt między dokumentami ma być jawnie rozwiązany w dokumentacji; n
 
 
 ### Exact-byte repository publication transport
+
+The shared `.github/actions/prepare-pages/action.yml` preserves and uploads the
+complete 90-day runtime source archive before reducing the public Pages payload.
+After building delivery, it verifies the archive and compares the exact lengths
+and SHA-256 digests of all three raw prediction/selection/settlement research
+ledgers. Only after every comparison succeeds does it remove those three local
+Pages copies. Their repository chunks and complete runtime archive remain intact;
+history, Neuron reports and all UI data remain published. The three unused raw
+research JSON URLs are no longer part of Pages. Archive failure aborts exclusion
+without deleting an earlier verified copy. All three Pages producers share this
+boundary; no timeout, concurrency, model or research-consumer policy changes.
 
 The full-history checkouts used by core scope classification, UI health and market
 retain `fetch-depth: 0` with `filter: blob:none`. Commit history and current
