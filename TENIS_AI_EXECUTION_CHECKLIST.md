@@ -25,6 +25,37 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT TASK — archive GC timeout follow-up, 2026-11-06**
+- AUTHORIZATION: owner requested continuing the full-app audit and repairs.
+- FRESH MAIN: `59ee7c1318d496d32ca28201b171628aced292ab`.
+  BRANCH: `fix/runtime-refresh-gc-20261106`; PR not yet opened.
+- [x] New failure `42195698453`: PostgreSQL 57014 in the canonical
+  `training_archive_gc_prepare` ready-manifest query, before deletion.
+- [x] Read-only production EXPLAIN reproduced 39.05s and 58,342 blocking
+  references. The 100,000-entry isolated fixture reproduced unnecessary
+  traversal (100,002 visited rows).
+- [x] Minimal first-blocker query fix; all 10 PostgreSQL safety cases pass,
+  including 24 mixed-fixture comparisons against both prior SQL definitions.
+  The performance fixture now visits fewer than 1,000 entry rows.
+- [x] Latest-two/pins/in-flight references/168h grace/size gates, bounded batches,
+  locking, 30s timeout and service-only privileges are unchanged.
+- [x] Full local suite: 1932 passed in 71.23s, two known Neuron warnings.
+- [~] Remote CI pending; production migration not applied.
+- [~] Native retries requested for FAST Pages `42194878718` (syncing_files
+  timeout) and fast readiness `42194876202` (workflow dispatch HTTP 500).
+  These are GitHub service failures; no application root cause is yet proven.
+- FILES: one SQL migration, existing PostgreSQL/query-plan tests, registry,
+  this checkpoint and `audits/archive_gc_followup_20261106.md/.json`.
+- DO NOT REDO: completed #577/#578/#579 repairs, history identity work or training.
+- NEXT EXACT ACTION: finish full CI, recheck fresh main, merge only green,
+  apply the exact reviewed migration, rerun the existing GC job and verify
+  actual production completion plus retry outcomes. Update this checkpoint.
+- HARD BOUNDARIES: no new deletion policy, reduced grace, fabricated history,
+  model changes, real betting, auto-promotion or Auth/account-security changes.
+
+**PREVIOUS COMPLETED TASK — application audit below**
+
+
 **CURRENT TASK — whole-app audit / repairs DEPLOYED AND VERIFIED, 2026-11-06**
 - AUTHORIZATION: owner requested checking the entire app and repairing confirmed
   problems. Scope: delivery, fixture completeness and truthful freshness. No

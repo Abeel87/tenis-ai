@@ -37,3 +37,18 @@ def test_migration_replaces_only_the_two_existing_gc_query_owners():
     assert re.findall(r"create or replace function public\.(\w+)", NEW, re.IGNORECASE) == [
         "training_archive_retention_observe", "training_archive_gc_prepare",
     ]
+
+
+def test_first_blocker_fix_preserves_all_other_prepare_code():
+    latest = (MIGRATIONS / "20261106095517_training_archive_gc_first_blocker.sql").read_text()
+    old = body(NEW, "training_archive_gc_prepare")
+    new = body(latest, "training_archive_gc_prepare")
+    old_start = old.index("blocked_manifests as materialized (")
+    new_start = new.index("ready_manifests as (")
+    end = "select coalesce(array_agg(r.manifest_id"
+    normalize = lambda value: " ".join(value.split())
+    assert normalize(old[:old_start]) == normalize(new[:new_start])
+    assert normalize(old[old.index(end):]) == normalize(new[new.index(end):])
+    assert re.findall(r"create or replace function public\.(\w+)", latest, re.IGNORECASE) == [
+        "training_archive_gc_prepare",
+    ]
