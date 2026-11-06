@@ -30,7 +30,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   problems. Scope: delivery, fixture completeness and truthful freshness. No
   probability, training, settlement, quota, identity or SHADOW/PROD changes.
 - AUDITED MAIN: `06145f96734120abe322d7119bb96c84a21c8a8a`.
-  BRANCH: `fix/app-audit-pages-20261106`; PR pending creation.
+  BRANCH: `fix/app-audit-pages-20261106`; PR #577:
+  https://github.com/Abeel87/tenis-ai/pull/577 . Fresh integration base:
+  `de2654ef18f86d43228d203918a2765b3009927c` (only newer generated data).
 - [x] Read current contracts, open PRs, recent workflows, live Supabase health
   and available runtime data. Earlier #574 repair remains verified and intact.
 - [x] Reproduced 11 fixture completeness/freshness failures from unmerged #568.
@@ -53,7 +55,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   leaked-password protection advisory remains; no Auth setting was changed.
 - DO NOT REDO: #569/#571/#574 repairs, source relocking or training. Do not import
   the blocked 2024 archive or fabricate absent player history.
-- NEXT EXACT ACTION: create PR, verify all required checks and fresh main, then
+- NEXT EXACT ACTION: verify PR #577 checks and fresh main, then
   merge and observe actual deployment. Close #568 as superseded only after merge.
 
 **PREVIOUS COMPLETED TASK (the November 3 record below is historical)**
