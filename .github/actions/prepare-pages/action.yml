@@ -1,5 +1,9 @@
 name: Prepare verifiable Pages data
 description: Preserve a runtime source snapshot and build the lightweight match delivery projection.
+inputs:
+  exclude-research-ledgers:
+    description: Omit archived raw research from public Pages only; private delivery keeps it.
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -23,6 +27,7 @@ runs:
       shell: bash
       run: node scripts/build_delivery.mjs
     - name: Exclude verified archived research ledgers from Pages
+      if: inputs.exclude-research-ledgers == 'true'
       shell: bash
       run: |
         python - <<'PY'

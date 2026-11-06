@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import textwrap
@@ -108,3 +109,15 @@ def test_all_pages_producers_preserve_archive_before_excluding_research():
     for name in ('update-and-pages.yml', 'neuron-shadow.yml', 'deploy-pages-fast.yml'):
         workflow = (ROOT / '.github/workflows' / name).read_text()
         assert workflow.index('uses: ./.github/actions/prepare-pages') < workflow.index('uses: actions/upload-pages-artifact@v4')
+
+
+def test_private_publisher_keeps_research_ledgers_outside_pages_exclusion():
+    action = ACTION.read_text()
+    assert re.search(r"(?m)^  exclude-research-ledgers:\n(?:    [^\n]*\n)*?    default: 'true'$", action)
+    exclusion = action.split(f'- name: {STEP}', 1)[1].split('\n    - name:', 1)[0]
+    assert "      if: inputs.exclude-research-ledgers == 'true'\n" in exclusion
+    workflow = (ROOT / '.github/workflows/runtime-private-delivery.yml').read_text()
+    preparation = next(step for step in re.split(r'(?m)^      - ', workflow)
+        if 'uses: ./.github/actions/prepare-pages' in step)
+    assert "        with:\n          exclude-research-ledgers: 'false'\n" in preparation
+    assert workflow.index('uses: ./.github/actions/prepare-pages') < workflow.index('scripts/publish_runtime_private.py')

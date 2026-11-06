@@ -17,15 +17,19 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-06 application audit / repair under validation:**
+**2026-11-06 application audit / repair merged in PR #577:**
 `backend/update.py::fetch_fixtures` owns catalogue completeness. Incomplete
 pagination must preserve the last complete publication and original source time;
-attempt time and degradation reasons are separate. This completes the still-open
-source repair from #568 against current main; its old source-audit blockers were
-resolved by #571. Quota, model mathematics and matching remain unchanged.
+attempt time and degradation reasons are separate. This completes the source
+repair from #568 against current main; its old source-audit blockers were
+resolved by #571. PR #568 is closed as superseded. Quota, model mathematics and
+matching remain unchanged.
 The shared `prepare-pages` action owns the public payload boundary: three unused
 raw research ledgers are excluded only after their full uploaded runtime archive
-and local byte hashes match. No research data is discarded. See
+and local byte hashes match. The private core publisher also uses this shared
+action, so its invocation explicitly disables the public-only exclusion through
+`exclude-research-ledgers: 'false'`. Its raw ledger/chunk contract remains intact.
+No research data is discarded. See
 `audits/app_audit_20261106.md` and the live checkpoint for actual CI/deployment.
 
 **2026-11-02 ongoing TML empty-snapshot contract (PR #571 deployed):**

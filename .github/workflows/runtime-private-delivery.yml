@@ -86,6 +86,8 @@ jobs:
       - name: Rebuild lazy Pages bundles for core snapshot
         if: steps.layer.outputs.layer == 'core'
         uses: ./.github/actions/prepare-pages
+        with:
+          exclude-research-ledgers: 'false'
 
       - name: Restore and project trusted SHADOW research evidence
         if: steps.layer.outputs.layer == 'research'

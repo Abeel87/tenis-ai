@@ -44,9 +44,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   error recovery, account isolation and freshness. Real-source exclusion removes
   545,693,538 bytes (about 53.4% of Pages files); all 55 archive sources remain
   verified and all 52 retained flat JSON files have identical hashes.
-- [ ] Exact-head remote CI, fresh-main integration and green merge.
+- [x] Exact head `2584cd05139c6863fbed6893866510a5271a927d`: all 13 remote
+  checks SUCCESS; remote full suite 1930 passed in 94.55s, two known warnings.
+  Mobile Chromium UI checks pass for user, moderator and admin; all 393 PLAYABLE
+  equivalence checks pass. Fresh-main merge #577 is
+  `4394ed912d676261b7c7345384c86831d2e44711`; merge tree equals the tested tree
+  `d9017996638196b3bbe4a7fc7ae1c2fb0cb28f74`. PR #568 closed as superseded.
 - [ ] Verify Pages deployment, source manifest, preserved runtime archive,
   new complete fixture publication and unchanged SHADOW boundaries.
+- [x] Follow-up consumer audit reproduced one missing private-delivery boundary:
+  the private core workflow also invokes the shared Pages action. Added an
+  explicit opt-out there so full raw ledgers remain available to its publisher.
+  Public Pages defaults remain unchanged. Focused regressions: 26 passed;
+  full local suite 1931 passed in 71.74s with the two known NumPy warnings.
+- [ ] Boundary follow-up branch `fix/pages-private-boundary-20261106`: complete
+  full/remote tests, green merge and verify the active private core generation.
 - FILES: shared Pages action, canonical fixture reader, two new test files,
   readiness line references, architecture/registry/checkpoint and audit receipts.
 - LIMITATIONS: live browser inspection timed out before an authenticated view;
@@ -55,8 +67,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   leaked-password protection advisory remains; no Auth setting was changed.
 - DO NOT REDO: #569/#571/#574 repairs, source relocking or training. Do not import
   the blocked 2024 archive or fabricate absent player history.
-- NEXT EXACT ACTION: verify PR #577 checks and fresh main, then
-  merge and observe actual deployment. Close #568 as superseded only after merge.
+- NEXT EXACT ACTION: finish the private-consumer boundary follow-up, observe
+  production run `42186836607` and verify Pages plus active private core data.
+  Persist exact release evidence after both publication paths are verified.
 
 **PREVIOUS COMPLETED TASK (the November 3 record below is historical)**
 
