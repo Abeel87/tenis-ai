@@ -1,17 +1,17 @@
 {
   "version": "v8.9.1",
-  "generated_at": "2026-11-06T09:22:04.244746+00:00",
+  "generated_at": "2026-11-06T11:17:37.198242+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
   "auto_promotion": false,
   "training": {
-    "rows_total": 11179,
-    "matches_total": 2344,
-    "train_rows": 8946,
-    "train_matches": 1875,
-    "holdout_rows": 2233,
-    "holdout_matches": 469,
+    "rows_total": 11182,
+    "matches_total": 2346,
+    "train_rows": 8944,
+    "train_matches": 1876,
+    "holdout_rows": 2238,
+    "holdout_matches": 470,
     "chronological_match_split": "80/20",
     "leakage_policy": "policy_fit_train_only_holdout_untouched"
   },
@@ -21,10 +21,10 @@
     "train_scope": "chronological_first_80pct_matches_only",
     "global_alpha": 0.15,
     "global_fit": {
-      "n": 8946,
-      "matches": 1875,
-      "brier": 0.21729,
-      "log_loss": 0.62537
+      "n": 8944,
+      "matches": 1876,
+      "brier": 0.21725,
+      "log_loss": 0.62528
     },
     "quality_caps": {
       "HIGH": 0.45,
@@ -62,44 +62,18 @@
         "shrink_n": 70.0,
         "specificity_weight": 1.0,
         "segments": {
-          "MATCH_WINNER": {
-            "fields": [
-              "market"
-            ],
-            "n": 265,
-            "matches": 265,
-            "raw_alpha": 0.2,
-            "alpha": 0.1933,
-            "reliability": 0.8668,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.2075,
-            "train_log_loss_at_raw_alpha": 0.605
-          },
           "SET1_TOTAL": {
             "fields": [
               "market"
             ],
-            "n": 3923,
-            "matches": 1867,
-            "raw_alpha": 0.15,
-            "alpha": 0.15,
+            "n": 3925,
+            "matches": 1868,
+            "raw_alpha": 0.175,
+            "alpha": 0.1747,
             "reliability": 0.9875,
             "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.19879,
-            "train_log_loss_at_raw_alpha": 0.58634
-          },
-          "GAME_STATE": {
-            "fields": [
-              "market"
-            ],
-            "n": 4314,
-            "matches": 1502,
-            "raw_alpha": 0.15,
-            "alpha": 0.15,
-            "reliability": 0.9874,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.23398,
-            "train_log_loss_at_raw_alpha": 0.66055
+            "train_brier_at_raw_alpha": 0.19873,
+            "train_log_loss_at_raw_alpha": 0.58619
           },
           "SET1_WINNER": {
             "fields": [
@@ -114,6 +88,19 @@
             "train_brier_at_raw_alpha": 0.20463,
             "train_log_loss_at_raw_alpha": 0.59926
           },
+          "GAME_STATE": {
+            "fields": [
+              "market"
+            ],
+            "n": 4311,
+            "matches": 1501,
+            "raw_alpha": 0.125,
+            "alpha": 0.1253,
+            "reliability": 0.9874,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.23395,
+            "train_log_loss_at_raw_alpha": 0.66048
+          },
           "SET3_WINNER": {
             "fields": [
               "market"
@@ -126,6 +113,19 @@
             "specificity_weight": 1.0,
             "train_brier_at_raw_alpha": 0.24543,
             "train_log_loss_at_raw_alpha": 0.68394
+          },
+          "MATCH_WINNER": {
+            "fields": [
+              "market"
+            ],
+            "n": 264,
+            "matches": 264,
+            "raw_alpha": 0.175,
+            "alpha": 0.1717,
+            "reliability": 0.8664,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.20781,
+            "train_log_loss_at_raw_alpha": 0.60564
           },
           "SET2_WINNER": {
             "fields": [
@@ -154,27 +154,27 @@
             "fields": [
               "surface"
             ],
-            "n": 6287,
+            "n": 6283,
             "matches": 1302,
             "raw_alpha": 0.15,
             "alpha": 0.15,
             "reliability": 0.988,
             "specificity_weight": 0.85,
-            "train_brier_at_raw_alpha": 0.21705,
-            "train_log_loss_at_raw_alpha": 0.62476
+            "train_brier_at_raw_alpha": 0.217,
+            "train_log_loss_at_raw_alpha": 0.62464
           },
           "CLAY": {
             "fields": [
               "surface"
             ],
-            "n": 2626,
-            "matches": 563,
+            "n": 2628,
+            "matches": 564,
             "raw_alpha": 0.125,
             "alpha": 0.1257,
             "reliability": 0.9722,
             "specificity_weight": 0.85,
-            "train_brier_at_raw_alpha": 0.21803,
-            "train_log_loss_at_raw_alpha": 0.62714
+            "train_brier_at_raw_alpha": 0.21801,
+            "train_log_loss_at_raw_alpha": 0.6271
           },
           "GRASS": {
             "fields": [
@@ -199,19 +199,6 @@
         "shrink_n": 65.0,
         "specificity_weight": 1.0,
         "segments": {
-          "MEDIUM": {
-            "fields": [
-              "pi_quality"
-            ],
-            "n": 2547,
-            "matches": 502,
-            "raw_alpha": 0.15,
-            "alpha": 0.15,
-            "reliability": 0.974,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.21579,
-            "train_log_loss_at_raw_alpha": 0.62247
-          },
           "HIGH": {
             "fields": [
               "pi_quality"
@@ -225,18 +212,31 @@
             "train_brier_at_raw_alpha": 0.21894,
             "train_log_loss_at_raw_alpha": 0.62871
           },
+          "MEDIUM": {
+            "fields": [
+              "pi_quality"
+            ],
+            "n": 2543,
+            "matches": 502,
+            "raw_alpha": 0.15,
+            "alpha": 0.15,
+            "reliability": 0.974,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.21566,
+            "train_log_loss_at_raw_alpha": 0.62217
+          },
           "N/D": {
             "fields": [
               "pi_quality"
             ],
-            "n": 513,
-            "matches": 175,
+            "n": 515,
+            "matches": 176,
             "raw_alpha": 0.1,
             "alpha": 0.1047,
-            "reliability": 0.9065,
+            "reliability": 0.9069,
             "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.20515,
-            "train_log_loss_at_raw_alpha": 0.60029
+            "train_brier_at_raw_alpha": 0.20513,
+            "train_log_loss_at_raw_alpha": 0.6002
           },
           "LOW": {
             "fields": [
@@ -262,20 +262,6 @@
         "shrink_n": 110.0,
         "specificity_weight": 1.35,
         "segments": {
-          "MATCH_WINNER||HARD": {
-            "fields": [
-              "market",
-              "surface"
-            ],
-            "n": 188,
-            "matches": 188,
-            "raw_alpha": 0.45,
-            "alpha": 0.3799,
-            "reliability": 0.7663,
-            "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.20199,
-            "train_log_loss_at_raw_alpha": 0.59369
-          },
           "SET1_TOTAL||HARD": {
             "fields": [
               "market",
@@ -283,26 +269,12 @@
             ],
             "n": 2750,
             "matches": 1296,
-            "raw_alpha": 0.125,
-            "alpha": 0.1256,
-            "reliability": 0.9753,
-            "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.19973,
-            "train_log_loss_at_raw_alpha": 0.58803
-          },
-          "GAME_STATE||HARD": {
-            "fields": [
-              "market",
-              "surface"
-            ],
-            "n": 3031,
-            "matches": 1055,
             "raw_alpha": 0.15,
             "alpha": 0.15,
-            "reliability": 0.9759,
+            "reliability": 0.9753,
             "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.23392,
-            "train_log_loss_at_raw_alpha": 0.6604
+            "train_brier_at_raw_alpha": 0.19964,
+            "train_log_loss_at_raw_alpha": 0.58782
           },
           "SET1_WINNER||HARD": {
             "fields": [
@@ -318,19 +290,33 @@
             "train_brier_at_raw_alpha": 0.20487,
             "train_log_loss_at_raw_alpha": 0.59974
           },
+          "GAME_STATE||HARD": {
+            "fields": [
+              "market",
+              "surface"
+            ],
+            "n": 3028,
+            "matches": 1054,
+            "raw_alpha": 0.125,
+            "alpha": 0.1256,
+            "reliability": 0.9759,
+            "specificity_weight": 1.35,
+            "train_brier_at_raw_alpha": 0.23388,
+            "train_log_loss_at_raw_alpha": 0.66031
+          },
           "SET1_TOTAL||CLAY": {
             "fields": [
               "market",
               "surface"
             ],
-            "n": 1152,
-            "matches": 561,
-            "raw_alpha": 0.15,
-            "alpha": 0.15,
-            "reliability": 0.9437,
+            "n": 1154,
+            "matches": 562,
+            "raw_alpha": 0.175,
+            "alpha": 0.1736,
+            "reliability": 0.9438,
             "specificity_weight": 1.35,
             "train_brier_at_raw_alpha": 0.19653,
-            "train_log_loss_at_raw_alpha": 0.58225
+            "train_log_loss_at_raw_alpha": 0.58224
           },
           "GAME_STATE||CLAY": {
             "fields": [
@@ -345,6 +331,20 @@
             "specificity_weight": 1.35,
             "train_brier_at_raw_alpha": 0.23432,
             "train_log_loss_at_raw_alpha": 0.66131
+          },
+          "MATCH_WINNER||HARD": {
+            "fields": [
+              "market",
+              "surface"
+            ],
+            "n": 187,
+            "matches": 187,
+            "raw_alpha": 0.425,
+            "alpha": 0.3605,
+            "reliability": 0.7654,
+            "specificity_weight": 1.35,
+            "train_brier_at_raw_alpha": 0.20246,
+            "train_log_loss_at_raw_alpha": 0.59468
           },
           "SET2_WINNER||HARD": {
             "fields": [
@@ -413,48 +413,6 @@
         "shrink_n": 95.0,
         "specificity_weight": 1.3,
         "segments": {
-          "MATCH_WINNER||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 98,
-            "matches": 98,
-            "raw_alpha": 0.0,
-            "alpha": 0.05,
-            "reliability": 0.6666,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.2083,
-            "train_log_loss_at_raw_alpha": 0.6061
-          },
-          "SET1_TOTAL||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 1048,
-            "matches": 501,
-            "raw_alpha": 0.0,
-            "alpha": 0.0083,
-            "reliability": 0.9444,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.19787,
-            "train_log_loss_at_raw_alpha": 0.58467
-          },
-          "GAME_STATE||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 1240,
-            "matches": 430,
-            "raw_alpha": 0.2,
-            "alpha": 0.1974,
-            "reliability": 0.9484,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.23133,
-            "train_log_loss_at_raw_alpha": 0.65519
-          },
           "SET1_TOTAL||HIGH": {
             "fields": [
               "market",
@@ -497,19 +455,47 @@
             "train_brier_at_raw_alpha": 0.23533,
             "train_log_loss_at_raw_alpha": 0.66332
           },
+          "SET1_TOTAL||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 1048,
+            "matches": 501,
+            "raw_alpha": 0.0,
+            "alpha": 0.0083,
+            "reliability": 0.9444,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.19767,
+            "train_log_loss_at_raw_alpha": 0.58419
+          },
+          "GAME_STATE||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 1237,
+            "matches": 429,
+            "raw_alpha": 0.2,
+            "alpha": 0.1974,
+            "reliability": 0.9483,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.23123,
+            "train_log_loss_at_raw_alpha": 0.65499
+          },
           "SET1_TOTAL||N/D": {
             "fields": [
               "market",
               "pi_quality"
             ],
-            "n": 371,
-            "matches": 175,
-            "raw_alpha": 0.2,
-            "alpha": 0.1929,
-            "reliability": 0.8586,
+            "n": 373,
+            "matches": 176,
+            "raw_alpha": 0.225,
+            "alpha": 0.2144,
+            "reliability": 0.8592,
             "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.19595,
-            "train_log_loss_at_raw_alpha": 0.58118
+            "train_brier_at_raw_alpha": 0.19592,
+            "train_log_loss_at_raw_alpha": 0.58101
           },
           "GAME_STATE||N/D": {
             "fields": [
@@ -567,6 +553,20 @@
             "train_brier_at_raw_alpha": 0.20606,
             "train_log_loss_at_raw_alpha": 0.6022
           },
+          "MATCH_WINNER||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 97,
+            "matches": 97,
+            "raw_alpha": 0.0,
+            "alpha": 0.0503,
+            "reliability": 0.6644,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.20907,
+            "train_log_loss_at_raw_alpha": 0.60765
+          },
           "SET1_WINNER||MEDIUM": {
             "fields": [
               "market",
@@ -620,20 +620,6 @@
         "shrink_n": 105.0,
         "specificity_weight": 1.15,
         "segments": {
-          "HARD||MEDIUM": {
-            "fields": [
-              "surface",
-              "pi_quality"
-            ],
-            "n": 1693,
-            "matches": 327,
-            "raw_alpha": 0.225,
-            "alpha": 0.2213,
-            "reliability": 0.9502,
-            "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.21373,
-            "train_log_loss_at_raw_alpha": 0.61815
-          },
           "HARD||HIGH": {
             "fields": [
               "surface",
@@ -667,14 +653,14 @@
               "surface",
               "pi_quality"
             ],
-            "n": 166,
-            "matches": 61,
-            "raw_alpha": 0.075,
-            "alpha": 0.0971,
-            "reliability": 0.7058,
+            "n": 168,
+            "matches": 62,
+            "raw_alpha": 0.125,
+            "alpha": 0.1323,
+            "reliability": 0.7085,
             "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.2033,
-            "train_log_loss_at_raw_alpha": 0.59634
+            "train_brier_at_raw_alpha": 0.20328,
+            "train_log_loss_at_raw_alpha": 0.59614
           },
           "CLAY||HIGH": {
             "fields": [
@@ -689,6 +675,20 @@
             "specificity_weight": 1.15,
             "train_brier_at_raw_alpha": 0.21805,
             "train_log_loss_at_raw_alpha": 0.62713
+          },
+          "HARD||MEDIUM": {
+            "fields": [
+              "surface",
+              "pi_quality"
+            ],
+            "n": 1689,
+            "matches": 327,
+            "raw_alpha": 0.2,
+            "alpha": 0.1975,
+            "reliability": 0.9502,
+            "specificity_weight": 1.15,
+            "train_brier_at_raw_alpha": 0.21354,
+            "train_log_loss_at_raw_alpha": 0.6177
           },
           "HARD||N/D": {
             "fields": [
@@ -742,10 +742,10 @@
     "train_scope": "chronological_first_80pct_matches_only",
     "global_alpha": 0.125,
     "global_fit": {
-      "n": 11179,
-      "matches": 2344,
-      "brier": 0.21778,
-      "log_loss": 0.6264
+      "n": 11182,
+      "matches": 2346,
+      "brier": 0.21771,
+      "log_loss": 0.62626
     },
     "quality_caps": {
       "HIGH": 0.45,
@@ -783,44 +783,18 @@
         "shrink_n": 70.0,
         "specificity_weight": 1.0,
         "segments": {
-          "MATCH_WINNER": {
-            "fields": [
-              "market"
-            ],
-            "n": 326,
-            "matches": 326,
-            "raw_alpha": 0.15,
-            "alpha": 0.1472,
-            "reliability": 0.8884,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.20791,
-            "train_log_loss_at_raw_alpha": 0.60588
-          },
           "SET1_TOTAL": {
             "fields": [
               "market"
             ],
-            "n": 4931,
-            "matches": 2333,
+            "n": 4934,
+            "matches": 2335,
             "raw_alpha": 0.15,
             "alpha": 0.1498,
             "reliability": 0.99,
             "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.19925,
-            "train_log_loss_at_raw_alpha": 0.58732
-          },
-          "GAME_STATE": {
-            "fields": [
-              "market"
-            ],
-            "n": 5372,
-            "matches": 1865,
-            "raw_alpha": 0.125,
-            "alpha": 0.125,
-            "reliability": 0.9898,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.23459,
-            "train_log_loss_at_raw_alpha": 0.66184
+            "train_brier_at_raw_alpha": 0.19917,
+            "train_log_loss_at_raw_alpha": 0.58713
           },
           "SET1_WINNER": {
             "fields": [
@@ -835,6 +809,19 @@
             "train_brier_at_raw_alpha": 0.20964,
             "train_log_loss_at_raw_alpha": 0.60991
           },
+          "GAME_STATE": {
+            "fields": [
+              "market"
+            ],
+            "n": 5373,
+            "matches": 1866,
+            "raw_alpha": 0.125,
+            "alpha": 0.125,
+            "reliability": 0.9898,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.23451,
+            "train_log_loss_at_raw_alpha": 0.66168
+          },
           "SET3_WINNER": {
             "fields": [
               "market"
@@ -847,6 +834,19 @@
             "specificity_weight": 1.0,
             "train_brier_at_raw_alpha": 0.24417,
             "train_log_loss_at_raw_alpha": 0.68134
+          },
+          "MATCH_WINNER": {
+            "fields": [
+              "market"
+            ],
+            "n": 325,
+            "matches": 325,
+            "raw_alpha": 0.125,
+            "alpha": 0.125,
+            "reliability": 0.8881,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.20816,
+            "train_log_loss_at_raw_alpha": 0.60639
           },
           "SET2_WINNER": {
             "fields": [
@@ -875,14 +875,14 @@
             "fields": [
               "surface"
             ],
-            "n": 8156,
-            "matches": 1689,
+            "n": 8159,
+            "matches": 1691,
             "raw_alpha": 0.125,
             "alpha": 0.125,
             "reliability": 0.9907,
             "specificity_weight": 0.85,
-            "train_brier_at_raw_alpha": 0.21754,
-            "train_log_loss_at_raw_alpha": 0.62581
+            "train_brier_at_raw_alpha": 0.21744,
+            "train_log_loss_at_raw_alpha": 0.62561
           },
           "CLAY": {
             "fields": [
@@ -920,24 +920,11 @@
         "shrink_n": 65.0,
         "specificity_weight": 1.0,
         "segments": {
-          "MEDIUM": {
-            "fields": [
-              "pi_quality"
-            ],
-            "n": 3020,
-            "matches": 601,
-            "raw_alpha": 0.125,
-            "alpha": 0.125,
-            "reliability": 0.9781,
-            "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.21632,
-            "train_log_loss_at_raw_alpha": 0.6236
-          },
           "HIGH": {
             "fields": [
               "pi_quality"
             ],
-            "n": 6985,
+            "n": 6986,
             "matches": 1409,
             "raw_alpha": 0.125,
             "alpha": 0.125,
@@ -946,31 +933,44 @@
             "train_brier_at_raw_alpha": 0.21917,
             "train_log_loss_at_raw_alpha": 0.62915
           },
+          "MEDIUM": {
+            "fields": [
+              "pi_quality"
+            ],
+            "n": 3017,
+            "matches": 600,
+            "raw_alpha": 0.125,
+            "alpha": 0.125,
+            "reliability": 0.9781,
+            "specificity_weight": 1.0,
+            "train_brier_at_raw_alpha": 0.21613,
+            "train_log_loss_at_raw_alpha": 0.6232
+          },
           "N/D": {
             "fields": [
               "pi_quality"
             ],
-            "n": 732,
-            "matches": 245,
+            "n": 734,
+            "matches": 246,
             "raw_alpha": 0.15,
             "alpha": 0.1483,
-            "reliability": 0.9321,
+            "reliability": 0.9323,
             "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.2063,
-            "train_log_loss_at_raw_alpha": 0.60269
+            "train_brier_at_raw_alpha": 0.20664,
+            "train_log_loss_at_raw_alpha": 0.60347
           },
           "LOW": {
             "fields": [
               "pi_quality"
             ],
-            "n": 442,
-            "matches": 89,
+            "n": 445,
+            "matches": 91,
             "raw_alpha": 0.0,
-            "alpha": 0.0165,
-            "reliability": 0.8679,
+            "alpha": 0.0163,
+            "reliability": 0.8696,
             "specificity_weight": 1.0,
-            "train_brier_at_raw_alpha": 0.22435,
-            "train_log_loss_at_raw_alpha": 0.64072
+            "train_brier_at_raw_alpha": 0.22327,
+            "train_log_loss_at_raw_alpha": 0.63836
           }
         }
       },
@@ -983,47 +983,19 @@
         "shrink_n": 110.0,
         "specificity_weight": 1.35,
         "segments": {
-          "MATCH_WINNER||HARD": {
-            "fields": [
-              "market",
-              "surface"
-            ],
-            "n": 237,
-            "matches": 237,
-            "raw_alpha": 0.4,
-            "alpha": 0.3458,
-            "reliability": 0.8031,
-            "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.20518,
-            "train_log_loss_at_raw_alpha": 0.60049
-          },
           "SET1_TOTAL||HARD": {
             "fields": [
               "market",
               "surface"
             ],
-            "n": 3586,
-            "matches": 1680,
+            "n": 3589,
+            "matches": 1682,
             "raw_alpha": 0.125,
             "alpha": 0.125,
             "reliability": 0.9809,
             "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.1989,
-            "train_log_loss_at_raw_alpha": 0.58633
-          },
-          "GAME_STATE||HARD": {
-            "fields": [
-              "market",
-              "surface"
-            ],
-            "n": 3924,
-            "matches": 1360,
-            "raw_alpha": 0.125,
-            "alpha": 0.125,
-            "reliability": 0.9812,
-            "specificity_weight": 1.35,
-            "train_brier_at_raw_alpha": 0.23513,
-            "train_log_loss_at_raw_alpha": 0.66294
+            "train_brier_at_raw_alpha": 0.19879,
+            "train_log_loss_at_raw_alpha": 0.58607
           },
           "SET1_WINNER||HARD": {
             "fields": [
@@ -1038,6 +1010,20 @@
             "specificity_weight": 1.35,
             "train_brier_at_raw_alpha": 0.21307,
             "train_log_loss_at_raw_alpha": 0.61727
+          },
+          "GAME_STATE||HARD": {
+            "fields": [
+              "market",
+              "surface"
+            ],
+            "n": 3925,
+            "matches": 1361,
+            "raw_alpha": 0.125,
+            "alpha": 0.125,
+            "reliability": 0.9812,
+            "specificity_weight": 1.35,
+            "train_brier_at_raw_alpha": 0.23502,
+            "train_log_loss_at_raw_alpha": 0.66273
           },
           "SET1_TOTAL||CLAY": {
             "fields": [
@@ -1066,6 +1052,20 @@
             "specificity_weight": 1.35,
             "train_brier_at_raw_alpha": 0.23329,
             "train_log_loss_at_raw_alpha": 0.65921
+          },
+          "MATCH_WINNER||HARD": {
+            "fields": [
+              "market",
+              "surface"
+            ],
+            "n": 236,
+            "matches": 236,
+            "raw_alpha": 0.375,
+            "alpha": 0.3256,
+            "reliability": 0.8024,
+            "specificity_weight": 1.35,
+            "train_brier_at_raw_alpha": 0.20556,
+            "train_log_loss_at_raw_alpha": 0.60128
           },
           "SET2_WINNER||HARD": {
             "fields": [
@@ -1148,48 +1148,6 @@
         "shrink_n": 95.0,
         "specificity_weight": 1.3,
         "segments": {
-          "MATCH_WINNER||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 111,
-            "matches": 111,
-            "raw_alpha": 0.0,
-            "alpha": 0.0385,
-            "reliability": 0.6917,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.20054,
-            "train_log_loss_at_raw_alpha": 0.59009
-          },
-          "SET1_TOTAL||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 1250,
-            "matches": 599,
-            "raw_alpha": 0.0,
-            "alpha": 0.0059,
-            "reliability": 0.953,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.19809,
-            "train_log_loss_at_raw_alpha": 0.58518
-          },
-          "GAME_STATE||MEDIUM": {
-            "fields": [
-              "market",
-              "pi_quality"
-            ],
-            "n": 1477,
-            "matches": 512,
-            "raw_alpha": 0.175,
-            "alpha": 0.1728,
-            "reliability": 0.9563,
-            "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.23277,
-            "train_log_loss_at_raw_alpha": 0.65819
-          },
           "SET1_TOTAL||HIGH": {
             "fields": [
               "market",
@@ -1223,28 +1181,56 @@
               "market",
               "pi_quality"
             ],
-            "n": 3470,
-            "matches": 1205,
+            "n": 3471,
+            "matches": 1206,
             "raw_alpha": 0.125,
             "alpha": 0.125,
             "reliability": 0.9809,
             "specificity_weight": 1.3,
             "train_brier_at_raw_alpha": 0.23537,
-            "train_log_loss_at_raw_alpha": 0.6634
+            "train_log_loss_at_raw_alpha": 0.66339
+          },
+          "SET1_TOTAL||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 1248,
+            "matches": 598,
+            "raw_alpha": 0.0,
+            "alpha": 0.0059,
+            "reliability": 0.9529,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.19788,
+            "train_log_loss_at_raw_alpha": 0.58471
+          },
+          "GAME_STATE||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 1477,
+            "matches": 512,
+            "raw_alpha": 0.175,
+            "alpha": 0.1728,
+            "reliability": 0.9563,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.2325,
+            "train_log_loss_at_raw_alpha": 0.65763
           },
           "SET1_TOTAL||N/D": {
             "fields": [
               "market",
               "pi_quality"
             ],
-            "n": 516,
-            "matches": 245,
+            "n": 518,
+            "matches": 246,
             "raw_alpha": 0.2,
-            "alpha": 0.192,
-            "reliability": 0.8938,
+            "alpha": 0.1921,
+            "reliability": 0.8942,
             "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.19766,
-            "train_log_loss_at_raw_alpha": 0.58456
+            "train_brier_at_raw_alpha": 0.19818,
+            "train_log_loss_at_raw_alpha": 0.58575
           },
           "GAME_STATE||N/D": {
             "fields": [
@@ -1265,14 +1251,14 @@
               "market",
               "pi_quality"
             ],
-            "n": 184,
-            "matches": 88,
+            "n": 187,
+            "matches": 90,
             "raw_alpha": 0.45,
-            "alpha": 0.3701,
-            "reliability": 0.7543,
+            "alpha": 0.3712,
+            "reliability": 0.7575,
             "specificity_weight": 1.3,
-            "train_brier_at_raw_alpha": 0.21361,
-            "train_log_loss_at_raw_alpha": 0.61805
+            "train_brier_at_raw_alpha": 0.21118,
+            "train_log_loss_at_raw_alpha": 0.61269
           },
           "GAME_STATE||LOW": {
             "fields": [
@@ -1301,6 +1287,20 @@
             "specificity_weight": 1.3,
             "train_brier_at_raw_alpha": 0.21349,
             "train_log_loss_at_raw_alpha": 0.61774
+          },
+          "MATCH_WINNER||MEDIUM": {
+            "fields": [
+              "market",
+              "pi_quality"
+            ],
+            "n": 110,
+            "matches": 110,
+            "raw_alpha": 0.0,
+            "alpha": 0.0388,
+            "reliability": 0.6899,
+            "specificity_weight": 1.3,
+            "train_brier_at_raw_alpha": 0.20114,
+            "train_log_loss_at_raw_alpha": 0.59131
           },
           "SET1_WINNER||MEDIUM": {
             "fields": [
@@ -1369,32 +1369,18 @@
         "shrink_n": 105.0,
         "specificity_weight": 1.15,
         "segments": {
-          "HARD||MEDIUM": {
-            "fields": [
-              "surface",
-              "pi_quality"
-            ],
-            "n": 2057,
-            "matches": 405,
-            "raw_alpha": 0.175,
-            "alpha": 0.1729,
-            "reliability": 0.959,
-            "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.21346,
-            "train_log_loss_at_raw_alpha": 0.61757
-          },
           "HARD||HIGH": {
             "fields": [
               "surface",
               "pi_quality"
             ],
-            "n": 5266,
+            "n": 5267,
             "matches": 1060,
             "raw_alpha": 0.1,
             "alpha": 0.1004,
             "reliability": 0.9837,
             "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.21946,
+            "train_brier_at_raw_alpha": 0.21947,
             "train_log_loss_at_raw_alpha": 0.62963
           },
           "CLAY||MEDIUM": {
@@ -1439,33 +1425,47 @@
             "train_brier_at_raw_alpha": 0.21818,
             "train_log_loss_at_raw_alpha": 0.62745
           },
+          "HARD||MEDIUM": {
+            "fields": [
+              "surface",
+              "pi_quality"
+            ],
+            "n": 2054,
+            "matches": 404,
+            "raw_alpha": 0.175,
+            "alpha": 0.1729,
+            "reliability": 0.9589,
+            "specificity_weight": 1.15,
+            "train_brier_at_raw_alpha": 0.21319,
+            "train_log_loss_at_raw_alpha": 0.61698
+          },
           "HARD||N/D": {
             "fields": [
               "surface",
               "pi_quality"
             ],
-            "n": 471,
-            "matches": 152,
+            "n": 473,
+            "matches": 153,
             "raw_alpha": 0.125,
             "alpha": 0.125,
-            "reliability": 0.8653,
+            "reliability": 0.8659,
             "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.20796,
-            "train_log_loss_at_raw_alpha": 0.6063
+            "train_brier_at_raw_alpha": 0.20847,
+            "train_log_loss_at_raw_alpha": 0.60748
           },
           "HARD||LOW": {
             "fields": [
               "surface",
               "pi_quality"
             ],
-            "n": 362,
-            "matches": 72,
+            "n": 365,
+            "matches": 74,
             "raw_alpha": 0.0,
-            "alpha": 0.0243,
-            "reliability": 0.8056,
+            "alpha": 0.024,
+            "reliability": 0.8081,
             "specificity_weight": 1.15,
-            "train_brier_at_raw_alpha": 0.22435,
-            "train_log_loss_at_raw_alpha": 0.64073
+            "train_brier_at_raw_alpha": 0.22304,
+            "train_log_loss_at_raw_alpha": 0.63785
           },
           "CLAY||LOW": {
             "fields": [
@@ -1487,83 +1487,83 @@
   },
   "holdout": {
     "ensemble_player_learning": {
-      "n": 2233,
-      "selected_n": 1040,
-      "accuracy": 72.1,
-      "brier": 0.2198,
-      "log_loss": 0.63072,
-      "avg_probability": 58.2
+      "n": 2238,
+      "selected_n": 1042,
+      "accuracy": 72.2,
+      "brier": 0.21959,
+      "log_loss": 0.63031,
+      "avg_probability": 58.3
     },
     "baselines": {
       "ensemble": {
-        "n": 2233,
-        "selected_n": 1039,
+        "n": 2238,
+        "selected_n": 1043,
         "accuracy": 72.1,
-        "brier": 0.21974,
-        "log_loss": 0.63056,
+        "brier": 0.21955,
+        "log_loss": 0.6302,
         "avg_probability": 58.6
       },
       "fixed_ensemble_player_formula": {
-        "n": 2233,
-        "selected_n": 1037,
+        "n": 2238,
+        "selected_n": 1041,
         "accuracy": 72.4,
-        "brier": 0.21973,
-        "log_loss": 0.63057,
+        "brier": 0.21953,
+        "log_loss": 0.63019,
         "avg_probability": 58.2
       },
       "player_formula": {
-        "n": 2233,
-        "selected_n": 1033,
+        "n": 2238,
+        "selected_n": 1036,
         "accuracy": 71.2,
-        "brier": 0.22806,
-        "log_loss": 0.65413,
-        "avg_probability": 55.5
+        "brier": 0.22789,
+        "log_loss": 0.65378,
+        "avg_probability": 55.4
       },
       "catboost": {
-        "n": 2233,
-        "selected_n": 1059,
+        "n": 2238,
+        "selected_n": 1063,
         "accuracy": 71.9,
-        "brier": 0.22024,
-        "log_loss": 0.63182,
+        "brier": 0.2201,
+        "log_loss": 0.63155,
         "avg_probability": 58.9
       }
     },
     "alpha_summary": {
-      "avg": 0.1361,
+      "avg": 0.1353,
       "min": 0.0487,
-      "max": 0.2111
+      "max": 0.2084
     },
     "segments": {
       "market": {
         "SET1_TOTAL": {
-          "n": 1008,
-          "selected_n": 867,
-          "accuracy": 73.2,
-          "brier": 0.20109,
-          "log_loss": 0.59124,
+          "n": 1009,
+          "selected_n": 870,
+          "accuracy": 73.3,
+          "brier": 0.20089,
+          "log_loss": 0.59087,
           "avg_probability": 71.6
         },
         "GAME_STATE": {
-          "n": 1058,
-          "selected_n": 62,
-          "accuracy": 59.7,
-          "brier": 0.23717,
-          "log_loss": 0.66734,
-          "avg_probability": 44.1
+          "n": 1062,
+          "selected_n": 63,
+          "accuracy": 60.3,
+          "brier": 0.23687,
+          "log_loss": 0.66671,
+          "avg_probability": 44.2
         },
         "SET1_WINNER": {
           "n": 67,
           "selected_n": 55,
           "accuracy": 67.3,
           "brier": 0.21952,
-          "log_loss": 0.63077,
+          "log_loss": 0.63078,
           "avg_probability": 68.1
         },
         "MATCH_WINNER": {
           "n": 61,
-          "selected_n": 45,
-          "accuracy": 75.6,
-          "brier": 0.20995,
+          "selected_n": 43,
+          "accuracy": 74.4,
+          "brier": 0.20994,
           "log_loss": 0.61016,
           "avg_probability": 67.6
         },
@@ -1572,60 +1572,60 @@
           "selected_n": 10,
           "accuracy": 60.0,
           "brier": 0.25089,
-          "log_loss": 0.69522,
+          "log_loss": 0.69524,
           "avg_probability": 63.9
         }
       },
       "surface": {
         "HARD": {
-          "n": 1869,
-          "selected_n": 869,
+          "n": 1876,
+          "selected_n": 873,
           "accuracy": 73.0,
-          "brier": 0.21924,
-          "log_loss": 0.62948,
+          "brier": 0.21898,
+          "log_loss": 0.62894,
           "avg_probability": 58.6
         },
         "CLAY": {
-          "n": 364,
-          "selected_n": 171,
-          "accuracy": 67.8,
-          "brier": 0.22268,
-          "log_loss": 0.63711,
+          "n": 362,
+          "selected_n": 169,
+          "accuracy": 68.0,
+          "brier": 0.22278,
+          "log_loss": 0.63739,
           "avg_probability": 56.5
         }
       },
       "quality": {
-        "MEDIUM": {
-          "n": 473,
-          "selected_n": 207,
-          "accuracy": 73.9,
-          "brier": 0.21919,
-          "log_loss": 0.62981,
-          "avg_probability": 55.8
-        },
-        "N/D": {
-          "n": 219,
-          "selected_n": 132,
-          "accuracy": 72.0,
-          "brier": 0.20949,
-          "log_loss": 0.60961,
-          "avg_probability": 60.9
-        },
         "HIGH": {
-          "n": 1430,
-          "selected_n": 652,
-          "accuracy": 71.6,
-          "brier": 0.22008,
-          "log_loss": 0.63086,
+          "n": 1431,
+          "selected_n": 651,
+          "accuracy": 71.7,
+          "brier": 0.22009,
+          "log_loss": 0.63087,
           "avg_probability": 58.8
         },
         "LOW": {
-          "n": 111,
-          "selected_n": 49,
+          "n": 114,
+          "selected_n": 52,
+          "accuracy": 73.1,
+          "brier": 0.23439,
+          "log_loss": 0.66394,
+          "avg_probability": 56.9
+        },
+        "MEDIUM": {
+          "n": 474,
+          "selected_n": 206,
+          "accuracy": 73.8,
+          "brier": 0.21869,
+          "log_loss": 0.62883,
+          "avg_probability": 55.7
+        },
+        "N/D": {
+          "n": 219,
+          "selected_n": 133,
           "accuracy": 71.4,
-          "brier": 0.23918,
-          "log_loss": 0.6745,
-          "avg_probability": 56.4
+          "brier": 0.21061,
+          "log_loss": 0.61226,
+          "avg_probability": 61.0
         }
       }
     }
@@ -1635,11 +1635,11 @@
     "production_influence": false,
     "auto_promotion": false,
     "comparison_baseline": "fixed_ensemble_player_formula",
-    "brier_gain": -7e-05,
-    "log_loss_gain": -0.00015,
-    "accuracy_delta_pp": -0.3,
+    "brier_gain": -6e-05,
+    "log_loss_gain": -0.00012,
+    "accuracy_delta_pp": -0.2,
     "reason": "shadow_only_manual_gate"
   },
-  "current_scored_signals": 365,
+  "current_scored_signals": 344,
   "note": "Ensemble + Player Learning uczy udziału Player Intelligence z historii, rynku, nawierzchni i jakości profilu. Działa wyłącznie w SHADOW i nie zmienia Ensemble, Generatora, Adaptive PROD ani final_score."
 }
