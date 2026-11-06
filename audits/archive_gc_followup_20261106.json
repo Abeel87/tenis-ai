@@ -1,7 +1,7 @@
 {
   "date": "2026-11-06",
   "base_sha": "59ee7c1318d496d32ca28201b171628aced292ab",
-  "status": "merged_pending_supabase_confirmation",
+  "status": "deployed_and_verified",
   "incident": {
     "run_id": 42195698453,
     "job_id": 127818291913,
@@ -101,15 +101,56 @@
     "health_run": 42199640605
   },
   "deployment": {
-    "status": "blocked_pending_confirmation",
+    "status": "deployed_and_verified",
     "provider": "Supabase apply_migration",
-    "attempts": 2,
-    "responses": [
-      "confirmation expired",
-      "confirmation expired"
+    "migration_version": "20261106103400",
+    "body_matches_merged_sql": true,
+    "security_matches_before": true,
+    "health_advisories": 0,
+    "verification_run": 42195698453,
+    "verification_attempt": 2,
+    "verification_job": 127844925988,
+    "previous_expired_confirmations": 2,
+    "confirmation_accepted": true,
+    "checkout_sha": "e75716b03420b60645310b9fa8e7ab63a27e6317",
+    "audit": {
+      "apply_id": 138,
+      "archive_run_id": 42195698453,
+      "archive_run_attempt": 2,
+      "status": "complete",
+      "expired_manifests": 0,
+      "planned_objects": 100,
+      "planned_bytes": 2507202,
+      "deleted_objects": 100,
+      "deleted_bytes": 2507202,
+      "skipped_objects": 0,
+      "finished_at": "2026-11-06 10:36:41.888263+00"
+    },
+    "protected_manifests": [
+      {
+        "manifest_id": "a54ecf89-71de-4576-b5d7-5e8d4a137b9c",
+        "created_at": "2026-11-06 09:20:06.312963+00",
+        "status": "complete",
+        "entries": 19555,
+        "bytes": 227393821,
+        "reference_digest": "c60826d3f86d8ea8f64bb8c014fe76d2"
+      },
+      {
+        "manifest_id": "f5e891c7-87c5-4f54-920d-72b41be662b9",
+        "created_at": "2026-11-06 08:41:31.991318+00",
+        "status": "complete",
+        "entries": 19555,
+        "bytes": 227393821,
+        "reference_digest": "c60826d3f86d8ea8f64bb8c014fe76d2"
+      }
     ],
-    "installed": false,
-    "gc_rerun_requested": false
+    "protected_storage": {
+      "protected_objects": 19555,
+      "missing": 0,
+      "wrong_size": 0
+    },
+    "protected_reference_digests_unchanged": true,
+    "physical_verification_limit": "Storage presence and metadata byte sizes verified; no full-body rehash claimed."
   },
   "code": {
     "pr": 580,

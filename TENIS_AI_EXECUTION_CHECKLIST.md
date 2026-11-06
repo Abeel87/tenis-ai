@@ -25,11 +25,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — GC code merged; Supabase confirmation required, 2026-11-06**
+**CURRENT TASK — archive GC DEPLOYED AND VERIFIED, 2026-11-06**
 - AUTHORIZATION: owner requested continuing the full-app audit and repairs.
-- FRESH MAIN: `032e244290fe91856593a6337873f1b5725d0137`.
+- RESUME MAIN: `e75716b03420b60645310b9fa8e7ab63a27e6317`.
   IMPLEMENTATION PR #580: https://github.com/Abeel87/tenis-ai/pull/580 .
-  HANDOFF BRANCH: `docs/runtime-gc-handoff-20261106`.
+  CLOSEOUT BRANCH: `docs/runtime-gc-verified-20261106`.
 - [x] Diagnosed PostgreSQL 57014 in run `42195698453`: canonical prepare
   query expanded all blocking references before archive deletion.
 - [x] Reproduced excessive traversal (100,002 rows) in a 100,000-entry fixture.
@@ -40,10 +40,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   `5b1c1af82479c6186ef1c77f25bcc856666152a0`; Project/Runtime Health PASS.
 - [x] Fresh-main merge `7c183c5828ea8a858dfe0b43daa200fee970bbc2` exactly
   matches tested tree `75deec7543f25d9f3691e2d1a48585e43c06c4b5`.
-- [!] PRODUCTION MIGRATION NOT APPLIED: both Supabase `apply_migration`
-  confirmations expired. Direct pg_get_functiondef inspection confirms the old
-  function is still active. This is a provider confirmation blocker, not a code
-  or test failure. No bypass was attempted and the GC job was not rerun.
+- [x] Owner completed the Supabase confirmation after returning. Migration
+  `20261106103400_training_archive_gc_first_blocker` applied. The live body
+  exactly matches reviewed SQL; service-only ACL, fixed search path, security
+  definer and 30-second timeout match their previous values. Health has zero
+  advisories; existing security advisories are unchanged.
+- [x] GC run `42195698453`, attempt 2, job `127844925988`, SUCCESS on checkout
+  `e75716b03420b60645310b9fa8e7ab63a27e6317`. Preview and apply pass. Audit 138
+  completed at 10:36:41Z: 100 planned/deleted objects, 2,507,202 bytes, zero
+  skipped objects and zero expired manifests.
+- [x] Both retained manifests still have 19,555 entries and identical before/
+  after reference digests. All 19,555 unique protected Storage objects exist
+  with matching sizes; zero missing or wrong-sized objects. This checks stored
+  sizes, not independently downloaded body hashes.
 - [x] Player DNA fast readiness run `42194876202`, attempt 2, SUCCESS;
   exact-snapshot delivery guard passed for all 101 matches.
 - [x] FAST Pages retry of `42194878718` failed again with empty deployment
@@ -58,10 +67,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   `audits/archive_gc_followup_20261106.md/.json`.
 - DO NOT REDO: #577/#578/#579/#580 code repairs or training. Keep normal long
   DNA research running; it has not failed and is not part of this blocker.
-- NEXT EXACT ACTION: when the owner can complete the provider confirmation,
-  reissue apply_migration for the exact #580 SQL; verify function body and ACLs;
-  rerun the existing GC job `127818291913` and verify actual apply completion,
-  protected manifests and storage. Then record deployed proof in this checkpoint.
+- NEXT EXACT ACTION: no GC deployment or confirmation remains pending.
+  Continue normal scheduled retention and SHADOW evidence collection. For any
+  new work, inspect fresh GitHub first; do not rerun completed migrations,
+  source relocking or training. The separate missing-history and Auth-setting
+  limitations from the prior app audit remain, without fabricated data.
 - HARD BOUNDARIES: latest-two/pins/in-flight refs/168h grace/size gates, batches,
   locking, timeout and service ACLs unchanged. No model changes, invented history,
   real betting, auto-promotion or Auth/account-security changes.

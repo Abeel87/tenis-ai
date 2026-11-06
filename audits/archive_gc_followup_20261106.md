@@ -24,7 +24,7 @@ pins, staged references, seven-day grace, size checks, partial-batch resumption,
 rollback, deletion claims and service-only privileges are covered. The final
 live read-only query took 358 ms on a warmed cache. This is observational evidence,
 not a controlled cold-cache speed comparison. Full local regression: 1932 passed in 71.23s, with two existing empty-sample
-Neuron warnings. Remote CI is now verified below; production deployment remains blocked.
+Neuron warnings. Remote CI and production deployment are now verified below.
 
 ## Verified merge and recovery
 
@@ -42,15 +42,28 @@ Private DNA run 42200921810 and its GC succeeded. Direct SQL confirms active
 generation `2775bef5-0c14-4f8d-a3cc-12d5c437d9f1` from that same source,
 14 physical objects, zero missing objects and zero size mismatches.
 
-## Remaining provider confirmation
+## Production deployment verified
 
-The migration is **not applied to production**. Two `apply_migration` requests
-returned confirmation-expired responses. A fresh read of the deployed function
-confirms the old query remains. No alternative route bypassed that confirmation,
-and the archive GC job was not rerun against the old function.
+The owner returned and completed the provider confirmation. Supabase migration
+`20261106103400_training_archive_gc_first_blocker` applied successfully. Its
+function body exactly matches repository migration
+`20261106095517_training_archive_gc_first_blocker.sql`. Service-only execution,
+security-definer status, search path and 30-second timeout are unchanged.
+Health advisories are empty; existing security advisories are unchanged.
 
-The next step is to obtain the provider confirmation for the exact merged SQL,
-verify the deployed body and unchanged service-only ACLs, then rerun existing
-GC job 127818291913 and verify actual completion and protected manifests.
-Models, training, identity, thresholds, SHADOW/PROD boundaries and Auth settings
-remain unchanged. Missing player history remains an explicit coverage limitation.
+[GC run 42195698453, attempt 2](https://github.com/Abeel87/tenis-ai/actions/runs/42195698453)
+succeeded, including preview and apply, on checkout
+`e75716b03420b60645310b9fa8e7ab63a27e6317`. Direct database audit 138 confirms
+completion at 10:36:41Z: 100 planned and deleted objects, 2,507,202 deleted
+bytes, zero skipped objects and zero expired manifests.
+
+The two protected manifests retained all 19,555 entries each, identical byte
+totals and reference digests. All 19,555 unique protected Storage objects exist
+with matching metadata byte sizes, with zero missing or wrong-sized objects.
+No independent full-body download/hash verification is claimed. The seven-day
+grace, newest-two retention, active pins and bounded deletion policy are intact.
+
+No confirmation or GC deployment is pending. Continue normal scheduled cleanup
+and SHADOW evidence collection. Models, training, identity, thresholds, SHADOW/PROD
+boundaries and Auth settings remain unchanged. Missing player history remains
+an explicit coverage limitation.
