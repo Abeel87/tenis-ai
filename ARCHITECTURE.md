@@ -27,6 +27,12 @@ Exhaustion never activates a generation. Errors contain status codes, not signed
 response bodies. FAST and Player DNA retain full commit history with blobless
 checkout; DNA report publication fetches only main without unrelated tags/refs.
 
+The shared Pages preparation action defaults `exclude-research-ledgers` to
+`true` for public publication. The private core workflow explicitly sets it to
+`false`, preserving all three raw ledgers for the private publisher's existing
+exact-byte chunk projection. Both targets still preserve the complete runtime
+archive; only public Pages excludes the three raw copies.
+
 Market publication explicitly dispatches `runtime-private-delivery` (`market`),
 `ineed-shadow` and the existing fast-readiness path of `player-dna-shadow-refresh`.
 These consumers no longer subscribe to market completion via `workflow_run`,
