@@ -50,14 +50,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   equivalence checks pass. Fresh-main merge #577 is
   `4394ed912d676261b7c7345384c86831d2e44711`; merge tree equals the tested tree
   `d9017996638196b3bbe4a7fc7ae1c2fb0cb28f74`. PR #568 closed as superseded.
-- [ ] Verify Pages deployment, source manifest, preserved runtime archive,
-  new complete fixture publication and unchanged SHADOW boundaries.
+- [x] Pages run `42186836607` SUCCESS; live HTTP 200 manifest equals published
+  source `a3ecc403a1bcb971180587fc9c0a490f2941c9a7`. Runtime artifact
+  `13489605132` preserves all 55 sources; Pages excludes 545,704,377 raw bytes.
+  Live fixture/attempt time is 08:23:00Z, 112 fixtures, 36 model-ready,
+  zero missing history feeds and no degraded source reason.
 - [x] Follow-up consumer audit reproduced one missing private-delivery boundary:
   the private core workflow also invokes the shared Pages action. Added an
   explicit opt-out there so full raw ledgers remain available to its publisher.
   Public Pages defaults remain unchanged. Focused regressions: 26 passed;
   full local suite 1931 passed in 71.74s with the two known NumPy warnings.
-- [ ] Boundary follow-up branch `fix/pages-private-boundary-20261106`: complete
+- [ ] Boundary follow-up PR #578, branch `fix/pages-private-boundary-20261106`: complete
   full/remote tests, green merge and verify the active private core generation.
 - FILES: shared Pages action, canonical fixture reader, two new test files,
   readiness line references, architecture/registry/checkpoint and audit receipts.
@@ -68,8 +71,9 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - DO NOT REDO: #569/#571/#574 repairs, source relocking or training. Do not import
   the blocked 2024 archive or fabricate absent player history.
 - NEXT EXACT ACTION: finish the private-consumer boundary follow-up, observe
-  production run `42186836607` and verify Pages plus active private core data.
-  Persist exact release evidence after both publication paths are verified.
+  its deployment and verify active private core data including all three ledger
+  manifests. Public run `42186836607` is already verified. Persist exact release
+  evidence after both publication paths are verified.
 
 **PREVIOUS COMPLETED TASK (the November 3 record below is historical)**
 
