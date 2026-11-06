@@ -17,15 +17,19 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-06 archive GC follow-up (PR #580 merged; Supabase confirmation pending):**
+**2026-11-06 archive GC follow-up (PR #580 deployed and verified):**
 `public.training_archive_gc_prepare` remains the canonical prepare owner.
-The reviewed migration stops at the first blocking reference per manifest
+The deployed migration stops at the first blocking reference per manifest
 instead of collecting all references of all blocking objects. Existing primary
 key order and hashed membership keep the lookup bounded in the reproduced
 skewed fixture. No retention policy, deletion stage, timeout or privilege changes.
-All 11 CI checks and 1932 tests passed. Two provider confirmation requests expired;
-direct database inspection confirms the old function is still active. Do not
-claim production GC is repaired until migration and an actual run are verified.
+All 11 CI checks and 1932 tests passed. After the owner completed the provider
+confirmation, migration `20261106103400_training_archive_gc_first_blocker` applied.
+The live function body matches reviewed SQL and its privileges/config are unchanged.
+GC run `42195698453`, attempt 2, SUCCESS: 100/100 planned objects removed,
+2,507,202 bytes, zero skipped objects, zero expired manifests. Both protected
+manifest reference digests are unchanged; all 19,555 unique protected physical
+objects exist with matching sizes. No full-body rehash is claimed.
 See `audits/archive_gc_followup_20261106.md` and the live checkpoint.
 
 **2026-11-06 application audit / repairs merged in PRs #577 and #578:**
