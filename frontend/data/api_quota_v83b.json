@@ -1,17 +1,17 @@
 {
   "version": "v8.3B",
-  "updated_at": "2026-11-06T00:03:17.577183+00:00",
-  "status": "not-started",
+  "updated_at": "2026-11-06T00:24:46.122850+00:00",
+  "status": "ready",
   "quota_day": "2026-11-06",
-  "daily_limit": null,
-  "calls_at_begin": null,
-  "remaining_at_begin": null,
-  "managed_calls_this_run": 0,
-  "remaining_estimate": null,
-  "per_minute": null,
+  "daily_limit": 10000,
+  "calls_at_begin": 196,
+  "remaining_at_begin": 9804,
+  "managed_calls_this_run": 303,
+  "remaining_estimate": 9501,
+  "per_minute": 300,
   "categories": {
     "fixtures": {
-      "calls": 0,
+      "calls": 2,
       "policy": {
         "daily_fraction": 0.08,
         "run_cap": 12,
@@ -21,7 +21,7 @@
       }
     },
     "pbp_current": {
-      "calls": 0,
+      "calls": 32,
       "policy": {
         "daily_fraction": 0.42,
         "run_cap": 180,
@@ -31,7 +31,7 @@
       }
     },
     "pbp_tracker": {
-      "calls": 0,
+      "calls": 36,
       "policy": {
         "daily_fraction": 0.07,
         "run_cap": 36,
@@ -41,7 +41,7 @@
       }
     },
     "history_settle": {
-      "calls": 0,
+      "calls": 1,
       "policy": {
         "daily_fraction": 0.18,
         "run_cap": 48,
@@ -51,7 +51,7 @@
       }
     },
     "history_backfill": {
-      "calls": 0,
+      "calls": 232,
       "policy": {
         "daily_fraction": 0.12,
         "run_cap": 120,
@@ -61,7 +61,18 @@
       }
     }
   },
-  "last_allocation": null,
+  "last_allocation": {
+    "role": "history_backfill",
+    "requested": 240,
+    "budget": 240,
+    "reason": "ok",
+    "remaining_before": 9685,
+    "role_spent_today": 48,
+    "daily_cap": 6000,
+    "reserve": 2000,
+    "priority": "background",
+    "at": "2026-11-06T00:19:19.709936+00:00"
+  },
   "canonical_module": "backend/api_quota.py",
   "policy_note": "fixtures/current PBP first; settlements next; historical backfill only from spare quota"
 }
