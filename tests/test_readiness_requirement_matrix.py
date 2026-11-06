@@ -14,7 +14,7 @@ EXPECTED_LINE_SITES = {
     "backend/autolearn_v84.py": {1229},
     "backend/specialist_learning_v79b.py": {465},
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
-    "backend/update.py": {402, 413},
+    "backend/update.py": {413, 425},
     "backend/prediction_integrity_v78a.py": {156},
     "frontend/app.js": {206, 245, 278, 305, 326, 335},
 }
@@ -56,8 +56,8 @@ def test_requirement_matrix_keeps_distinct_contracts_and_selects_observability_o
     assert "learning_model_ready" in matrix
     assert "Superbet operator availability" in matrix
     assert "FIRST OBSERVABILITY IMPLEMENTATION" in matrix
-    assert "backend/update.py:L402" in matrix
     assert "backend/update.py:L413" in matrix
+    assert "backend/update.py:L425" in matrix
     assert "preserves `meta.model_ready`" in matrix
     assert "meta.semantic_readiness_shadow" in matrix
     assert "No runtime/learning consumer is approved for gate replacement" in matrix
