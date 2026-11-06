@@ -25,10 +25,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — whole-app audit and publication/fixture repair, 2026-11-06**
+**CURRENT TASK — whole-app audit / repairs DEPLOYED AND VERIFIED, 2026-11-06**
 - AUTHORIZATION: owner requested checking the entire app and repairing confirmed
   problems. Scope: delivery, fixture completeness and truthful freshness. No
-  probability, training, settlement, quota, identity or SHADOW/PROD changes.
+  algorithm/policy changes to probability, training, settlement, quota, identity
+  or SHADOW/PROD. Existing producer refreshes still run normally.
 - AUDITED MAIN: `06145f96734120abe322d7119bb96c84a21c8a8a`.
   BRANCH: `fix/app-audit-pages-20261106`; PR #577:
   https://github.com/Abeel87/tenis-ai/pull/577 . Fresh integration base:
@@ -60,20 +61,41 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   explicit opt-out there so full raw ledgers remain available to its publisher.
   Public Pages defaults remain unchanged. Focused regressions: 26 passed;
   full local suite 1931 passed in 71.74s with the two known NumPy warnings.
-- [ ] Boundary follow-up PR #578, branch `fix/pages-private-boundary-20261106`: complete
-  full/remote tests, green merge and verify the active private core generation.
+- [x] Boundary follow-up PR #578: final head `9847da376fad6bc2884ef4da20ea345b360be408`
+  passed all 10 remote checks, including 1931 tests in 92.87s. Fresh base
+  `e86ed5540b3f30e8800552307e96fe0c660252fd`; merge
+  `f0adbbbae94350e3e4402d613ea6a3a0c99169dc` exactly matches tested tree
+  `e042a81fefa0b68dfbb36e6f9bee258ff25315ea`.
+- [x] Corrected producer `42186836607`, attempt 2, SUCCESS. Full suite passed
+  1931 cases before and after generation (95.61s / 90.97s). Published source
+  `8621a387a00a72f5acf9d96d48722c300a76dba1`; live HTTP 200 manifest and meta
+  verified: 08:59:05Z, 101 fixtures, 35 model-ready, no missing history feeds or
+  degraded source reason. Archive `13490986620` preserves all 55 runtime files.
+  Live Neuron remains SHADOW with all production-influence/auto-promotion flags false.
+- [x] Private core run `42194029429` and its GC SUCCESS. The log confirms
+  `exclude-research-ledgers: false`, 165 published objects and active generation
+  `204cef77-cebd-48e5-8b95-045bc4639808`. Direct database/storage checks confirm
+  all three raw-ledger manifests and 31 ledger objects restored. All 204 objects
+  across the five active layers exist with matching stored byte sizes; zero
+  missing objects and zero size mismatches. The temporary incomplete generation
+  is superseded. No independent full-body download/hash verification is claimed.
 - FILES: shared Pages action, canonical fixture reader, two new test files,
   readiness line references, architecture/registry/checkpoint and audit receipts.
 - LIMITATIONS: live browser inspection timed out before an authenticated view;
   repository smoke tests are not a real-user login proof. Supabase is healthy,
   with no HTTP 5xx in the inspected 24-hour edge/function log window. Existing
-  leaked-password protection advisory remains; no Auth setting was changed.
+  leaked-password protection advisory remains; its dashboard requires separate
+  sign-in. No Auth/account-security setting was changed. Missing player history
+  and known results/history payload warnings remain explicit, not fabricated away.
 - DO NOT REDO: #569/#571/#574 repairs, source relocking or training. Do not import
   the blocked 2024 archive or fabricate absent player history.
-- NEXT EXACT ACTION: finish the private-consumer boundary follow-up, observe
-  its deployment and verify active private core data including all three ledger
-  manifests. Public run `42186836607` is already verified. Persist exact release
-  evidence after both publication paths are verified.
+- CLOSEOUT: `docs/app-audit-closeout-20261106`; receipts in
+  `audits/app_audit_20261106.md` and `.json`. No further executable repair is pending
+  for the confirmed fixture/public/private publication defects.
+- NEXT EXACT ACTION: audit complete. Verify fresh GitHub before any later work;
+  continue normal SHADOW evidence collection. Treat absent player history and
+  the separate Auth-setting login requirement as remaining limitations, not
+  permission to invent data, relax identity or promote a model.
 
 **PREVIOUS COMPLETED TASK (the November 3 record below is historical)**
 

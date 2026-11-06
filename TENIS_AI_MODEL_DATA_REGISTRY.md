@@ -17,7 +17,7 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-06 application audit / repair merged in PR #577:**
+**2026-11-06 application audit / repairs merged in PRs #577 and #578:**
 `backend/update.py::fetch_fixtures` owns catalogue completeness. Incomplete
 pagination must preserve the last complete publication and original source time;
 attempt time and degradation reasons are separate. This completes the source
