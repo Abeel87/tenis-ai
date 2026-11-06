@@ -1,7 +1,7 @@
 {
   "date": "2026-11-06",
   "base_sha": "59ee7c1318d496d32ca28201b171628aced292ab",
-  "status": "implementation_verified_pending_ci_and_deployment",
+  "status": "merged_pending_supabase_confirmation",
   "incident": {
     "run_id": 42195698453,
     "job_id": 127818291913,
@@ -72,20 +72,63 @@
   "related_external_failures": [
     {
       "run_id": 42194878718,
-      "reason": "Pages syncing_files timeout",
-      "recovery": "attempt 2 requested; verification pending"
+      "reason": "Pages syncing_files timeout, then empty status in retry",
+      "recovery": "Attempt 2 also failed. Fresh Pages run 42200919016 succeeded; live source verified.",
+      "root_cause": "not established; no confirmed permanent infrastructure fix"
     },
     {
       "run_id": 42194876202,
       "reason": "GitHub workflow_dispatch HTTP 500 after readiness commit",
-      "recovery": "attempt 2 requested; verification pending"
+      "recovery": "Attempt 2 succeeded; downstream Pages and private DNA publication succeeded."
     }
   ],
   "full_suite": {
-    "passed": 1932,
-    "warnings": 2,
-    "seconds": 71.23
+    "local": {
+      "passed": 1932,
+      "warnings": 2,
+      "seconds": 71.23
+    },
+    "ci": {
+      "passed": 1932,
+      "warnings": 2,
+      "seconds": 83.18
+    }
   },
-  "ci": null,
-  "deployment": null
+  "ci": {
+    "checks": 11,
+    "all_success": true,
+    "postgres_run": 42199640563,
+    "health_run": 42199640605
+  },
+  "deployment": {
+    "status": "blocked_pending_confirmation",
+    "provider": "Supabase apply_migration",
+    "attempts": 2,
+    "responses": [
+      "confirmation expired",
+      "confirmation expired"
+    ],
+    "installed": false,
+    "gc_rerun_requested": false
+  },
+  "code": {
+    "pr": 580,
+    "head": "5b1c1af82479c6186ef1c77f25bcc856666152a0",
+    "merge": "7c183c5828ea8a858dfe0b43daa200fee970bbc2",
+    "tested_tree": "75deec7543f25d9f3691e2d1a48585e43c06c4b5"
+  },
+  "live_pages": {
+    "http_status": 200,
+    "run_id": 42200919016,
+    "source_sha": "032e244290fe91856593a6337873f1b5725d0137"
+  },
+  "private_dna": {
+    "layer": "dna",
+    "generation": "2775bef5-0c14-4f8d-a3cc-12d5c437d9f1",
+    "source_sha": "032e244290fe91856593a6337873f1b5725d0137",
+    "status": "active",
+    "objects": 14,
+    "missing": 0,
+    "wrong_size": 0
+  }
 }
