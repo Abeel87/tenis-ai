@@ -41,7 +41,7 @@ jobs:
           tests/test_pbp_short_history_supply_audit.py
 
       - name: Restore existing history and PBP cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/cache
           key: tennis-history-${{ runner.os }}-task008-${{ github.run_id }}
