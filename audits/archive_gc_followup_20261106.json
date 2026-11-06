@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-06",
+  "base_sha": "59ee7c1318d496d32ca28201b171628aced292ab",
+  "status": "implementation_verified_pending_ci_and_deployment",
+  "incident": {
+    "run_id": 42195698453,
+    "job_id": 127818291913,
+    "sql_state": "57014",
+    "owner": "public.training_archive_gc_prepare",
+    "statement": "ready manifest selection",
+    "entry_estimate": 1501580,
+    "blocking_objects": 1000,
+    "old_blocking_references": 58342,
+    "old_execution_ms": 39047.634
+  },
+  "fix": {
+    "migration": "supabase/migrations/20261106095517_training_archive_gc_first_blocker.sql",
+    "description": "Stop at the first blocking reference of each candidate manifest using the existing primary key and hashed blocker membership.",
+    "unchanged": [
+      "latest two complete manifests",
+      "active pins",
+      "in-flight references",
+      "168-hour grace",
+      "physical size gate",
+      "100-object batches",
+      "advisory lock",
+      "claim/recheck/finalize",
+      "30-second timeout",
+      "service-only ACL",
+      "all model and SHADOW/PROD policies"
+    ]
+  },
+  "reproduction": {
+    "postgres_fixture_entries": 100000,
+    "old_entry_rows_visited": 100002,
+    "new_entry_rows_visited_less_than": 1000,
+    "safety_cases_passed": 10,
+    "deterministic_equivalence_fixtures": 24
+  },
+  "read_only_production_plan": {
+    "execution_ms": 358.208,
+    "read_blocks": 0,
+    "hit_blocks": 80711,
+    "entry_scans": [
+      {
+        "type": "Bitmap Heap Scan",
+        "rows": 19555,
+        "loops": 2,
+        "removed": 0,
+        "read": 0,
+        "hit": 1494
+      },
+      {
+        "type": "Bitmap Heap Scan",
+        "rows": 0,
+        "loops": 146,
+        "removed": 0,
+        "read": 0,
+        "hit": 1205
+      },
+      {
+        "type": "Index Scan",
+        "rows": 486,
+        "loops": 93,
+        "removed": 0,
+        "read": 0,
+        "hit": 2342
+      }
+    ]
+  },
+  "timing_limit": "Before and after are observations on the live database with different cache conditions, not a controlled benchmark.",
+  "related_external_failures": [
+    {
+      "run_id": 42194878718,
+      "reason": "Pages syncing_files timeout",
+      "recovery": "attempt 2 requested; verification pending"
+    },
+    {
+      "run_id": 42194876202,
+      "reason": "GitHub workflow_dispatch HTTP 500 after readiness commit",
+      "recovery": "attempt 2 requested; verification pending"
+    }
+  ],
+  "full_suite": {
+    "passed": 1932,
+    "warnings": 2,
+    "seconds": 71.23
+  },
+  "ci": null,
+  "deployment": null
+}

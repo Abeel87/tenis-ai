@@ -7,10 +7,11 @@ import { PGlite } from '@electric-sql/pglite';
 
 const root = new URL('../', import.meta.url);
 const read = path => readFileSync(new URL(path, root), 'utf8');
-const migration = 'supabase/migrations/20261025224109_training_archive_gc_query_plan.sql';
+const migration = 'supabase/migrations/20261106095517_training_archive_gc_first_blocker.sql';
+const previousSQL = read('supabase/migrations/20261025224109_training_archive_gc_query_plan.sql');
 const oldObserve = read('supabase/migrations/20260916140500_training_archive_retention_observe_returning_fix.sql');
 const oldPrepare = read('supabase/migrations/20260922203000_training_archive_gc_apply.sql');
-const newSQL = read(migration);
+const newSQL = previousSQL.split('CREATE OR REPLACE FUNCTION public.training_archive_gc_prepare')[0] + read(migration);
 const bucket = 'tenis-ai-training-archive-private';
 const sha = n => n.toString(16).padStart(64, '0');
 const uuid = n => `00000000-0000-0000-0000-${n.toString(16).padStart(12, '0')}`;
@@ -217,6 +218,7 @@ test('old and optimized SQL agree across deterministic mixed retention fixtures'
     const optimized=candidateQuery(newSQL).trim().replace(/;$/,'');
     assert.equal(await scalar(`with a${col} as (${original}),b${col} as (${optimized}) select to_jsonb(a)=to_jsonb(b) from a,b`),true,`candidate seed ${seed}`);
     assert.deepEqual(await rows(readyQuery(newSQL)),await rows(readyQuery(oldPrepare)),`expiry seed ${seed}`);
+    assert.deepEqual(await rows(readyQuery(newSQL)),await rows(readyQuery(previousSQL)),`previous expiry seed ${seed}`);
     await db.exec('rollback to savepoint fixture');
   }
 });
@@ -247,4 +249,18 @@ test('skewed terminal manifests use indexed entry lookups instead of full entry 
   }
   assert.ok(entryScans.length>0);
   assert.equal(entryScans.filter(p=>p['Node Type']==='Seq Scan').length,0,JSON.stringify(entryScans));
+
+  // The production regression used indexed lookups, but still read every
+  // reference of every blocking object. One blocker per manifest is enough.
+  const actual = await scalar('explain (analyze, format json) '+readyQuery(newSQL));
+  const visited = [];
+  function countEntries(p) {
+    if (p['Relation Name']==='training_archive_entries') {
+      visited.push(((p['Actual Rows']||0)+(p['Rows Removed by Filter']||0))*(p['Actual Loops']||0));
+    }
+    for (const child of p.Plans||[]) countEntries(child);
+  }
+  countEntries(actual[0].Plan);
+  assert.ok(visited.reduce((a,b)=>a+b,0)<1000,
+    `GC should stop at the first blocking reference: visited ${visited}`);
 });

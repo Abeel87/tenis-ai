@@ -17,6 +17,14 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-11-06 archive GC follow-up (deployment pending):**
+`public.training_archive_gc_prepare` remains the canonical prepare owner.
+The ready-manifest query stops at the first blocking reference per manifest
+instead of collecting all references of all blocking objects. Existing primary
+key order and hashed membership keep the lookup bounded in the reproduced
+skewed fixture. No retention policy, deletion stage, timeout or privilege changes.
+See `audits/archive_gc_followup_20261106.md` and the live checkpoint.
+
 **2026-11-06 application audit / repairs merged in PRs #577 and #578:**
 `backend/update.py::fetch_fixtures` owns catalogue completeness. Incomplete
 pagination must preserve the last complete publication and original source time;
