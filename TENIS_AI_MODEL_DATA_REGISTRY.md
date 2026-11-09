@@ -17,6 +17,21 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-11-09 archive publication size repair (review pending):**
+`scripts/publish_training_archive.py` remains the sole archive transport owner.
+An oversized raw JSON candidate is staged as deterministic gzip under the same
+relative path plus `.gz`, using the archive's existing JSON-gzip format. Source
+size/SHA is checked against the raw inventory, the streaming compression input
+is rechecked, and complete decompression must reproduce the original size/SHA
+before any manifest starts. Cache and raw inventory are never changed. Manifest
+counts, hashes and sizes describe stored bytes; the existing 45 MiB gate remains.
+Already compressed or still-too-large objects fail closed. Temporary files live
+through upload and are cleaned on return/failure. No backend, data-selection,
+training, probability, identity, settlement or SHADOW/PROD policy changes.
+Production recovery requires a newer successful inventory/publish run; local
+regressions alone do not prove that deployment.
+
+
 **2026-11-06 archive GC follow-up (PR #580 deployed and verified):**
 `public.training_archive_gc_prepare` remains the canonical prepare owner.
 The deployed migration stops at the first blocking reference per manifest

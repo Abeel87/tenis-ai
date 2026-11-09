@@ -441,3 +441,17 @@ Large-file transport accepts legacy base64 and gzip-base64 manifests while prese
 Compressed history chunks use `json-array-gzip-base64-chunks-v1`; the compatible reader retains the legacy array format, verifies each original chunk hash/length and entry count, and decodes sequentially to bound transient memory. Both history and oversized exact-JSON chunks use one bounded decoder. Original source files and their record order are unchanged.
 
 The writer applies deterministic gzip (level 6, mtime 0) to the original history chunk bytes and oversized exact-JSON blocks through one envelope encoder. History manifest hashes/lengths continue describing the original uncompressed chunk, and `entries` retains the original array count. Deployment uses the unchanged single-layer OIDC workflow: DNA, existing GC, core, existing GC. No authorization or workflow changes are needed.
+
+
+### Durable training archive oversized JSON transport (2026-11-09)
+
+The canonical `scripts/publish_training_archive.py` stages raw JSON objects above
+45 MiB as deterministic gzip in a temporary directory, without modifying the
+producer cache. An archived `pbp_v7/players.json.gz` restores to the original
+`pbp_v7/players.json` by gzip decoding. The retained raw inventory records the
+original path, byte length and SHA-256; the archive manifest records the stored
+`.json.gz` path, compressed length and hash. Both the compression input and full
+decoded output are checked against the original inventory before publication.
+Manifest totals are derived from those exact stored objects, including dedupe.
+The existing publisher, private bucket, object limit, OIDC, retention and GC
+contracts are unchanged. No runtime consumer or model reads the staging copy.

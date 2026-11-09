@@ -214,3 +214,122 @@ def test_archive_finalize_rechecks_physical_storage_before_complete():
     assert "s.bucket_id = 'tenis-ai-training-archive-private'" in migration
     assert "revoke all on function public.training_archive_finalize_manifest(uuid)" in migration
     assert "grant execute on function public.training_archive_finalize_manifest(uuid)\n  to service_role" in migration
+
+
+def test_oversized_json_is_losslessly_staged_without_mutating_cache(tmp_path, monkeypatch):
+    payload = b'{"players":[' + b' {"id":42},' * 200 + b'null]}'
+    cache = tmp_path / 'cache'
+    source = cache / 'pbp_v7/players.json'
+    _write(source, payload)
+    inventory = {'summary': {'archive_candidate_files': 1}, 'archive_candidates': [{
+        'logical_path': 'pbp_v7/players.json', 'class': 'pbp_state',
+        'provider': 'live_tennis_api_index', 'size_bytes': len(payload),
+        'sha256': _sha(payload),
+    }]}
+    monkeypatch.setattr(archive_publish, 'MAX_OBJECT_BYTES', 256)
+    stage = tmp_path / 'stage'
+    rows, sources = prepare_candidates(inventory, cache, staging_root=stage)
+    row = rows[0]
+    compressed = sources[row['sha256']].read_bytes()
+    assert row['path'] == 'pbp_v7/players.json.gz'
+    assert row['size_bytes'] == len(compressed) <= 256
+    assert row['sha256'] == _sha(compressed)
+    assert gzip.decompress(compressed) == payload
+    assert source.read_bytes() == payload
+    assert not source.with_suffix('.json.gz').exists()
+    assert inventory['archive_candidates'][0]['sha256'] == _sha(payload)
+    # Gzip header must not include a random temporary filename or wall-clock time.
+    second, second_sources = prepare_candidates(inventory, cache, staging_root=tmp_path / 'other')
+    assert second == rows
+    assert second_sources[row['sha256']].read_bytes() == compressed
+
+
+def test_archive_publish_uses_stored_sizes_and_keeps_stage_until_upload(tmp_path, monkeypatch):
+    import json
+    payload = b'{"players":[' + b' {"id":42},' * 200 + b'null]}'
+    cache = tmp_path / 'cache'
+    _write(cache / 'pbp_v7/players.json', payload)
+    inventory = {'schema_version': 1, 'summary': {'archive_candidate_files': 1,
+        'archive_candidate_bytes': len(payload), 'unique_archive_objects': 1,
+        'unique_archive_bytes': len(payload)}, 'archive_candidates': [{
+        'logical_path': 'pbp_v7/players.json', 'class': 'pbp_state',
+        'provider': 'live_tennis_api_index', 'size_bytes': len(payload),
+        'sha256': _sha(payload)}]}
+    path = tmp_path / 'inventory.json'
+    path.write_text(json.dumps(inventory))
+    monkeypatch.setattr(archive_publish, 'MAX_OBJECT_BYTES', 256)
+    calls, uploaded = [], []
+    def call(body):
+        calls.append(body)
+        if body['action'] == 'start':
+            return {'manifest_id': 'manifest'}
+        if body['action'] == 'prepare_batch':
+            return {'uploads': [{'sha256': body['files'][0]['sha256'], 'signed_url': 'mock-upload'}]}
+        return {'ok': True}
+    def upload(url, source):
+        assert gzip.decompress(source.read_bytes()) == payload
+        uploaded.append(source)
+    monkeypatch.setattr(archive_publish, 'publisher_call', call)
+    monkeypatch.setattr(archive_publish, 'upload_signed', upload)
+    result = archive_publish.publish(path, cache)
+    assert result['uploaded_objects'] == 1
+    start, batch = calls[0], calls[1]
+    assert start['expected_bytes'] == batch['files'][0]['size_bytes'] < len(payload)
+    assert start['expected_unique_bytes'] == start['expected_bytes']
+    assert start['expected_unique_objects'] == start['expected_files'] == 1
+    assert all(not source.exists() for source in uploaded)
+    assert (cache / 'pbp_v7/players.json').read_bytes() == payload
+
+
+def test_oversized_existing_gzip_is_not_silently_recompressed(tmp_path, monkeypatch):
+    cache = tmp_path / 'cache'
+    payload = b'already-compressed-object'
+    _write(cache / 'pbp_v7/matches/42.json.gz', payload)
+    inventory = {'summary': {'archive_candidate_files': 1}, 'archive_candidates': [{
+        'logical_path': 'pbp_v7/matches/42.json.gz', 'class': 'pbp_match_raw',
+        'provider': 'live_tennis_api', 'size_bytes': len(payload), 'sha256': _sha(payload)}]}
+    monkeypatch.setattr(archive_publish, 'MAX_OBJECT_BYTES', 8)
+    with pytest.raises(ArchivePublishError, match='exceeds'):
+        prepare_candidates(inventory, cache, staging_root=tmp_path / 'stage')
+
+
+def test_incompressible_source_stays_fail_closed_before_manifest(tmp_path, monkeypatch):
+    import json
+    import random
+    payload = random.Random(42).randbytes(2048)
+    cache = tmp_path / 'cache'
+    _write(cache / 'pbp_v7/players.json', payload)
+    inventory = {'summary': {'archive_candidate_files': 1}, 'archive_candidates': [{
+        'logical_path': 'pbp_v7/players.json', 'class': 'pbp_state',
+        'provider': 'live_tennis_api_index', 'size_bytes': len(payload), 'sha256': _sha(payload)}]}
+    path = tmp_path / 'inventory.json'
+    path.write_text(json.dumps(inventory))
+    monkeypatch.setattr(archive_publish, 'MAX_OBJECT_BYTES', 256)
+    calls = []
+    monkeypatch.setattr(archive_publish, 'publisher_call', lambda body: calls.append(body))
+    with pytest.raises(ArchivePublishError, match='compressed archive object exceeds'):
+        archive_publish.publish(path, cache)
+    assert calls == []
+    assert (cache / 'pbp_v7/players.json').read_bytes() == payload
+
+
+def test_archive_staging_rejects_source_changed_during_compression(tmp_path):
+    source = tmp_path / 'players.json'
+    source.write_bytes(b'new')
+    with pytest.raises(ArchivePublishError, match='source changed during'):
+        archive_publish._stage_gzip(source, tmp_path / 'out.json.gz', _sha(b'old'), 3)
+
+
+def test_compressed_archive_path_collision_is_rejected(tmp_path, monkeypatch):
+    payload = b'a' * 2048
+    cache = tmp_path / 'cache'
+    compressed = gzip.compress(payload)
+    entries = []
+    for logical, data in [('pbp_v7/players.json', payload), ('pbp_v7/players.json.gz', compressed)]:
+        _write(cache / logical, data)
+        entries.append({'logical_path': logical, 'class': 'pbp_state',
+                        'provider': 'live_tennis_api_index', 'size_bytes': len(data), 'sha256': _sha(data)})
+    monkeypatch.setattr(archive_publish, 'MAX_OBJECT_BYTES', 256)
+    with pytest.raises(ArchivePublishError, match='duplicate archive path'):
+        prepare_candidates({'summary': {'archive_candidate_files': 2}, 'archive_candidates': entries},
+                           cache, staging_root=tmp_path / 'stage')

@@ -25,6 +25,47 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT TASK — weekly-report follow-up repairs, 2026-11-09 (NOT DEPLOYED)**
+- AUTHORIZATION: owner requested fixing confirmed faults from the weekly report.
+  Preserve model math, thresholds, weights, training, identity and SHADOW/PROD.
+- AUDITED MAIN: `fde0bd59bf4c8e9952fe106a0d1df7d8b25d8326`.
+  BRANCH: `fix/archive-json-size-20261109`; PR #583:
+  https://github.com/Abeel87/tenis-ai/pull/583 .
+- [x] Reproduced oversized `pbp_v7/players.json` failure in canonical publisher.
+  Three initial regressions failed before the change, including real publish flow.
+- [x] Added deterministic temporary gzip transport, complete round-trip length/SHA
+  verification and stored-byte manifest totals. Raw cache/inventory unchanged;
+  45 MiB gate, existing compressed objects, ACL, GC and OIDC remain unchanged.
+- [x] Focused archive/Pages/readiness/publication suite: 109 passed. Six new
+  regressions cover lossless deterministic bytes, publish totals/lifetime,
+  already-compressed and incompressible oversize rejection, changed source and
+  archive-path collision. Synthetic 57,500,018-byte JSON round trip verified;
+  compressed size 139,551 bytes. This is a fixture, not a production size claim.
+- [x] Local full repository suite: 1938 passed in 127.84s, two existing empty-
+  sample Neuron warnings. Restored canonical history/ledger chunks first.
+  Project Health PASS. Focused pack: 109 passed.
+- [ ] Final fresh-main remote CI on PR #583. Initial source head
+  `a96de846e95343ae3650a2e39729578bf4174c7e` passed the remote full-suite step;
+  final integration base is `43fec8cf8139f1b082e98d948d86b29655f2ca30`
+  (only 15 generated frontend data files changed). All source owners unchanged.
+- [ ] Review/merge and successful production inventory publication with exact SHA.
+- REPORT CORRECTIONS: previous PR search omitted dependency PRs; fresh REST list
+  contains 11 open PRs, including dependency-only PRs. No dependency update is
+  merged under this task. Core run `42582255930` has since succeeded, as has
+  Neuron `42584997908`; full DNA `42584997512` is still running. Do not treat
+  missing-history coverage, deliberate snapshot N/D or running DNA as evidence
+  authorizing fabricated data, weakened identity or a model-policy change.
+- FILES: canonical publisher, existing publisher tests, registry, architecture,
+  this checkpoint. No workflow or model changes in this repair.
+- DO NOT REDO: #577/#578/#580 repairs, migrations, source relocking or training.
+- NEXT EXACT ACTION: complete full CI and inspect the concrete PR. Deploy only
+  reviewed green code, then require newer inventory publish evidence. Pages
+  timeout recurrence and history coverage remain monitored; recovery is not
+  claimed from this local patch. No Supabase/GCP direct access was performed.
+
+**PREVIOUS COMPLETED TASK — November 6 record follows**
+
+
 **CURRENT TASK — archive GC DEPLOYED AND VERIFIED, 2026-11-06**
 - AUTHORIZATION: owner requested continuing the full-app audit and repairs.
 - RESUME MAIN: `e75716b03420b60645310b9fa8e7ab63a27e6317`.
