@@ -29,7 +29,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - AUTHORIZATION: owner requested fixing confirmed faults from the weekly report.
   Preserve model math, thresholds, weights, training, identity and SHADOW/PROD.
 - AUDITED MAIN: `fde0bd59bf4c8e9952fe106a0d1df7d8b25d8326`.
-  BRANCH: `fix/archive-json-size-20261109`; PR to be recorded after creation.
+  BRANCH: `fix/archive-json-size-20261109`; PR #583:
+  https://github.com/Abeel87/tenis-ai/pull/583 .
 - [x] Reproduced oversized `pbp_v7/players.json` failure in canonical publisher.
   Three initial regressions failed before the change, including real publish flow.
 - [x] Added deterministic temporary gzip transport, complete round-trip length/SHA
@@ -40,7 +41,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   already-compressed and incompressible oversize rejection, changed source and
   archive-path collision. Synthetic 57,500,018-byte JSON round trip verified;
   compressed size 139,551 bytes. This is a fixture, not a production size claim.
-- [ ] Full repository suite and fresh-main remote CI.
+- [x] Local full repository suite: 1938 passed in 127.84s, two existing empty-
+  sample Neuron warnings. Restored canonical history/ledger chunks first.
+  Project Health PASS. Focused pack: 109 passed.
+- [ ] Final fresh-main remote CI on PR #583. Initial source head
+  `a96de846e95343ae3650a2e39729578bf4174c7e` passed the remote full-suite step;
+  final integration base is `43fec8cf8139f1b082e98d948d86b29655f2ca30`
+  (only 15 generated frontend data files changed). All source owners unchanged.
 - [ ] Review/merge and successful production inventory publication with exact SHA.
 - REPORT CORRECTIONS: previous PR search omitted dependency PRs; fresh REST list
   contains 11 open PRs, including dependency-only PRs. No dependency update is
