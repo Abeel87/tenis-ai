@@ -9,10 +9,12 @@ SHADOW/PROD or iNeed$ calculations.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -57,7 +59,36 @@ def batches(rows: list[dict[str, Any]], size: int = BATCH_SIZE) -> Iterable[list
         yield rows[start : start + size]
 
 
-def prepare_candidates(inventory: dict[str, Any], cache_root: Path) -> tuple[list[dict[str, Any]], dict[str, Path]]:
+def _stage_gzip(source: Path, target: Path, expected_sha: str, expected_size: int) -> None:
+    """Encode exact source bytes, then verify the complete round trip before upload."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256()
+    size = 0
+    with source.open("rb") as original, target.open("wb") as encoded:
+        with gzip.GzipFile(filename="", mode="wb", fileobj=encoded, compresslevel=6, mtime=0) as compressed:
+            for chunk in iter(lambda: original.read(1024 * 1024), b""):
+                digest.update(chunk)
+                size += len(chunk)
+                compressed.write(chunk)
+    if size != expected_size or digest.hexdigest() != expected_sha:
+        raise ArchivePublishError(f"source changed during archive compression: {source.name}")
+    if target.stat().st_size > MAX_OBJECT_BYTES:
+        raise ArchivePublishError(f"compressed archive object exceeds 45 MiB: {source.name}")
+    digest = hashlib.sha256()
+    size = 0
+    with gzip.open(target, "rb") as restored:
+        for chunk in iter(lambda: restored.read(1024 * 1024), b""):
+            size += len(chunk)
+            if size > expected_size:
+                raise ArchivePublishError(f"archive gzip expands beyond source size: {source.name}")
+            digest.update(chunk)
+    if size != expected_size or digest.hexdigest() != expected_sha:
+        raise ArchivePublishError(f"archive gzip round-trip mismatch: {source.name}")
+
+
+def prepare_candidates(
+    inventory: dict[str, Any], cache_root: Path, *, staging_root: Path | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Path]]:
     summary = inventory.get("summary") or {}
     raw_rows = inventory.get("archive_candidates") or []
     if not isinstance(raw_rows, list) or not raw_rows:
@@ -69,6 +100,7 @@ def prepare_candidates(inventory: dict[str, Any], cache_root: Path) -> tuple[lis
     rows: list[dict[str, Any]] = []
     by_sha: dict[str, Path] = {}
     seen_paths: set[str] = set()
+    archive_paths: set[str] = set()
     for raw in raw_rows:
         if not isinstance(raw, dict):
             raise ArchivePublishError("inventory candidate is not an object")
@@ -88,16 +120,30 @@ def prepare_candidates(inventory: dict[str, Any], cache_root: Path) -> tuple[lis
         actual_size = source.stat().st_size
         if actual_size != expected_size:
             raise ArchivePublishError(f"size changed after inventory: {logical}")
-        if actual_size > MAX_OBJECT_BYTES:
-            raise ArchivePublishError(f"archive object exceeds 45 MiB: {logical}")
 
         expected_sha = str(raw.get("sha256") or "").lower()
         actual_sha = sha256_file(source)
         if actual_sha != expected_sha:
             raise ArchivePublishError(f"sha256 changed after inventory: {logical}")
 
+        archive_path = logical
+        if actual_size > MAX_OBJECT_BYTES:
+            if staging_root is None or source.suffix != ".json":
+                raise ArchivePublishError(f"archive object exceeds 45 MiB: {logical}")
+            # The archive already supports .json.gz. Only the temporary transport
+            # copy changes; the live cache and raw inventory remain byte-exact.
+            archive_path += ".gz"
+            staged = staging_root / archive_path
+            _stage_gzip(source, staged, expected_sha, actual_size)
+            source = staged
+            actual_size = source.stat().st_size
+            actual_sha = sha256_file(source)
+        if archive_path in archive_paths:
+            raise ArchivePublishError(f"duplicate archive path after compression: {archive_path}")
+        archive_paths.add(archive_path)
+
         row = {
-            "path": logical,
+            "path": archive_path,
             "class": str(raw.get("class") or ""),
             "provider": str(raw.get("provider") or ""),
             "sha256": actual_sha,
@@ -244,57 +290,58 @@ def _optional_positive_env(name: str) -> int | None:
 
 def publish(inventory_path: Path, cache_root: Path) -> dict[str, Any]:
     inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-    rows, by_sha = prepare_candidates(inventory, cache_root)
-    summary = inventory["summary"]
+    with tempfile.TemporaryDirectory(prefix="training-archive-") as directory:
+        rows, by_sha = prepare_candidates(inventory, cache_root, staging_root=Path(directory))
+        unique_sizes = {row["sha256"]: row["size_bytes"] for row in rows}
 
-    started = publisher_call(
-        {
-            "action": "start",
-            "inventory_schema_version": int(inventory.get("schema_version") or 0),
-            "expected_files": int(summary["archive_candidate_files"]),
-            "expected_bytes": int(summary["archive_candidate_bytes"]),
-            "expected_unique_objects": int(summary["unique_archive_objects"]),
-            "expected_unique_bytes": int(summary["unique_archive_bytes"]),
-            "source_cache_key": os.environ.get("TRAINING_ARCHIVE_SOURCE_CACHE_KEY") or None,
-            "producer_run_id": _optional_positive_env("TRAINING_ARCHIVE_PRODUCER_RUN_ID"),
-            "producer_head_sha": os.environ.get("TRAINING_ARCHIVE_PRODUCER_HEAD_SHA") or None,
-        }
-    )
-    manifest_id = str(started.get("manifest_id") or "")
-    if not manifest_id:
-        raise ArchivePublishError("publisher did not return manifest_id")
-    if started.get("status") == "complete":
-        return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": 0, "reused": True}
+        started = publisher_call(
+            {
+                "action": "start",
+                "inventory_schema_version": int(inventory.get("schema_version") or 0),
+                "expected_files": len(rows),
+                "expected_bytes": sum(row["size_bytes"] for row in rows),
+                "expected_unique_objects": len(unique_sizes),
+                "expected_unique_bytes": sum(unique_sizes.values()),
+                "source_cache_key": os.environ.get("TRAINING_ARCHIVE_SOURCE_CACHE_KEY") or None,
+                "producer_run_id": _optional_positive_env("TRAINING_ARCHIVE_PRODUCER_RUN_ID"),
+                "producer_head_sha": os.environ.get("TRAINING_ARCHIVE_PRODUCER_HEAD_SHA") or None,
+            }
+        )
+        manifest_id = str(started.get("manifest_id") or "")
+        if not manifest_id:
+            raise ArchivePublishError("publisher did not return manifest_id")
+        if started.get("status") == "complete":
+            return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": 0, "reused": True}
 
-    uploaded = 0
-    try:
-        for batch in batches(rows):
-            prepared = publisher_call({"action": "prepare_batch", "manifest_id": manifest_id, "files": batch})
-            uploads = prepared.get("uploads") or []
-            for item in uploads:
-                sha = str(item.get("sha256") or "")
-                source = by_sha.get(sha)
-                signed_url = item.get("signed_url")
-                if source is None or not isinstance(signed_url, str) or not signed_url:
-                    raise ArchivePublishError("publisher returned an invalid upload manifest")
-                upload_signed(signed_url, source)
-                uploaded += 1
-
-            unique_shas = list(dict.fromkeys(str(row["sha256"]) for row in batch))
-            publisher_call({"action": "confirm_batch", "manifest_id": manifest_id, "sha256": unique_shas})
-
-        completed = publisher_call({"action": "complete", "manifest_id": manifest_id})
-        if completed.get("ok") is not True:
-            raise ArchivePublishError("archive manifest did not complete")
-        return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": uploaded, "reused": False}
-    except (ArchivePublishError, OSError, ValueError):
+        uploaded = 0
         try:
-            publisher_call({"action": "abandon", "manifest_id": manifest_id})
+            for batch in batches(rows):
+                prepared = publisher_call({"action": "prepare_batch", "manifest_id": manifest_id, "files": batch})
+                uploads = prepared.get("uploads") or []
+                for item in uploads:
+                    sha = str(item.get("sha256") or "")
+                    source = by_sha.get(sha)
+                    signed_url = item.get("signed_url")
+                    if source is None or not isinstance(signed_url, str) or not signed_url:
+                        raise ArchivePublishError("publisher returned an invalid upload manifest")
+                    upload_signed(signed_url, source)
+                    uploaded += 1
+
+                unique_shas = list(dict.fromkeys(str(row["sha256"]) for row in batch))
+                publisher_call({"action": "confirm_batch", "manifest_id": manifest_id, "sha256": unique_shas})
+
+            completed = publisher_call({"action": "complete", "manifest_id": manifest_id})
+            if completed.get("ok") is not True:
+                raise ArchivePublishError("archive manifest did not complete")
+            return {"manifest_id": manifest_id, "files": len(rows), "uploaded_objects": uploaded, "reused": False}
         except (ArchivePublishError, OSError, ValueError):
-            # A later GC run reaps staged manifests only after the bounded
-            # stale window. Never hide the original publication failure.
-            pass
-        raise
+            try:
+                publisher_call({"action": "abandon", "manifest_id": manifest_id})
+            except (ArchivePublishError, OSError, ValueError):
+                # A later GC run reaps staged manifests only after the bounded
+                # stale window. Never hide the original publication failure.
+                pass
+            raise
 
 
 def main() -> int:
