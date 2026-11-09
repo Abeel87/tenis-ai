@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — weekly-report follow-up repairs, 2026-11-09 (NOT DEPLOYED)**
+**CURRENT TASK — weekly-report archive repair DEPLOYED AND VERIFIED, 2026-11-09**
 - AUTHORIZATION: owner requested fixing confirmed faults from the weekly report.
   Preserve model math, thresholds, weights, training, identity and SHADOW/PROD.
 - AUDITED MAIN: `fde0bd59bf4c8e9952fe106a0d1df7d8b25d8326`.
@@ -44,11 +44,26 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Local full repository suite: 1938 passed in 127.84s, two existing empty-
   sample Neuron warnings. Restored canonical history/ledger chunks first.
   Project Health PASS. Focused pack: 109 passed.
-- [ ] Final fresh-main remote CI on PR #583. Initial source head
-  `a96de846e95343ae3650a2e39729578bf4174c7e` passed the remote full-suite step;
-  final integration base is `43fec8cf8139f1b082e98d948d86b29655f2ca30`
-  (only 15 generated frontend data files changed). All source owners unchanged.
-- [ ] Review/merge and successful production inventory publication with exact SHA.
+- [x] Final fresh-main PR head `22e0bb34b6e211533a332f2ccdc9b918000e34b4`:
+  all 10 checks SUCCESS. Remote full suite: 1938 passed in 82.27s, two existing
+  warnings; Project Health and Runtime Health PASS. CI run `42586977297`.
+- [x] Fresh-main merge #583 is `bcac45ef7cf41264d7c88150408afbd2aba264d3`.
+  Its tree exactly equals tested tree `152a99ae48af36f41fc7699f9a650c7f8b5adeab`.
+- [x] Production inventory run `42587764148`, job `129061590076`, SUCCESS on
+  checkout `bcac45ef7cf41264d7c88150408afbd2aba264d3`. At 08:54:32Z,
+  TRAINING_ARCHIVE_PUBLISH_OK: 19,944 files, 894 uploaded objects, reused=false,
+  complete manifest `d724ad97-7533-4238-91d1-5c9e82039057`.
+  Raw inventory: 236,258,217 candidate bytes; its sole oversized input is
+  `pbp_v7/players.json`, 50,535,181 bytes, raw SHA-256
+  `8a55983d8f90c72b74457f4267833cdf06da8c328c2511907aedca8cf15a03ab`.
+  Artifact `13659318461` (expires November 16) preserves raw provenance.
+  The publisher verified compression input and decoded output against that
+  inventory before upload. This is workflow evidence, not an independent
+  post-upload full-body rehash of all archived objects.
+- [x] Normal DNA readiness publication `1f0269cc3237063c93b57e7ad93d7e7c6a2df68c`
+  has exact snapshot alignment: 385 matches, generated 08:43:05Z. This replaces
+  earlier snapshot N/D without weakening its contract. Freshness remains UNKNOWN
+  for 385/385; alignment is not evidence that source history is fresh.
 - REPORT CORRECTIONS: previous PR search omitted dependency PRs; fresh REST list
   contains 11 open PRs, including dependency-only PRs. No dependency update is
   merged under this task. Core run `42582255930` has since succeeded, as has
@@ -58,10 +73,11 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - FILES: canonical publisher, existing publisher tests, registry, architecture,
   this checkpoint. No workflow or model changes in this repair.
 - DO NOT REDO: #577/#578/#580 repairs, migrations, source relocking or training.
-- NEXT EXACT ACTION: complete full CI and inspect the concrete PR. Deploy only
-  reviewed green code, then require newer inventory publish evidence. Pages
-  timeout recurrence and history coverage remain monitored; recovery is not
-  claimed from this local patch. No Supabase/GCP direct access was performed.
+- NEXT EXACT ACTION: archive repair complete; no retry, migration, training or
+  object-limit increase is pending. Continue normal archive/SHADOW collection.
+  Inspect fresh GitHub before later work. Missing-history coverage and intermittent
+  upstream Pages timeouts remain limitations, not fabricated away or claimed fixed.
+  All verification used GitHub; no direct Supabase/GCP access was performed.
 
 **PREVIOUS COMPLETED TASK — November 6 record follows**
 
