@@ -19,3 +19,9 @@ Release decision: the archive remains blocked from integration, with both red re
 ## Merge/publication boundary
 
 Immediately before merge main must still equal aad184a6fa3fe5e0b323581becab11b44d6db5a3. Merge #590 with expected source head, then require actual merge tree to equal tested candidate 6c5184e7fdc3ea149f873a7a68b32fbfad6b586d. The synthetic pull/590/merge ref was stale (parents fe997e1... and f01df12...); it is not fresh-main proof. Actual publication requires a normal successful data/Pages pipeline plus a direct public runtime-7/learning-7 snapshot, exhaustive supported binary-pair validation and live frontend verification. A green build or merge alone is insufficient.
+
+## Actual merge and publication handoff
+
+PR #590 merged as 2be8a27e19a89adb0c5dbc4c2e31fca1a1df81d6 with expected source head. Actual merge parents aad184a6fa3fe5e0b323581becab11b44d6db5a3 and f01df12c2dc8cd1c879938aece7b7f5f865c1a59, tree6c5184e7fdc3ea149f873a7a68b32fbfad6b586d EXACTLY matches tested candidate. #591 closed without merge.
+
+Normal production Update tennis data and deploy Pages run43094143033 started20:11:23Z on merge. Publication remains pending. Direct HTTP read still sees runtime-6/learning-6 generated18:50:47Z (148 matches,237 complete supported binary pairs,237 inconsistent,0 duplicate groups; SHA256f4635b10063cc949a11675b4a9027b7e857f965df1581d76900e8249df431500). This is old public data and must not be called a verified repair. Continue production verification before closing task/disabling automation.
