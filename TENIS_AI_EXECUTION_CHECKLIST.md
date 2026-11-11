@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — binary probability fix MERGED; production publication pending, 2026-11-11**
+**CURRENT TASK — binary probability fix DEPLOYED and verified, 2026-11-11**
 - AUTHORIZATION: owner "Dobra jak wszystko będzie git to wdrazaj to"; continue without reconfirmation. No real betting, model promotion, frozen ledger edits or archive imports.
 - [x] PR #590 source f01df12c2dc8cd1c879938aece7b7f5f865c1a59 passed 14 checks, with one expected deploy-neuron-ui skip. Original Point Tape run 43062117267/job130667168120 completed SUCCESS; it was not restarted.
 - [x] Fresh-main candidate #591 75e548461c45f00252002d17dff324e6dcf4a159 passed applicable runtime/browser/health/security/context checks: 1957 tests +9 subtests, Project/Runtime Health PASS.
@@ -34,12 +34,12 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - [x] Verification-only #591 CLOSED UNMERGED.
 - [x] Full production run 43094143033 regenerated runtime-7/learning-7, passed 1957 tests plus 9 subtests after generation, then pushed `f576cffa70afc86f30f753978b6d6c86898f138c`, direct child of the #590 merge. Independently fetched that GitHub JSON: 160 matches, 237 complete supported pairs, all sum to 100, zero duplicate complete groups; SHA-256 de9927297150bbd898149b8ef8546da518ca832d4c25412b477d862d46e8ef58.
 - [!] Full run 43094143033 build job 130779051700 failed inside the shared Pages preparation action at `Preserve reproducible runtime artifact`: GitHub CreateArtifact returned HTML instead of JSON after five retries. Runtime source pack and verification passed. Pages deploy was skipped. Post-merge health, security and CodeQL succeeded.
-- [~] Retrying the existing manual Fast frontend deploy 43063200247 (new job 130794241515), which checks out newest main and runs the same Pages preparation and runtime-source preservation before publishing. No guard bypass or code change.
-- [!] PUBLICATION NOT YET VERIFIED. Direct public HTTP read at approximately20:12Z still returns runtime-6/learning-6 generated2026-11-11T18:50:47.149404+00:00: 148 matches,237 complete supported yes/no pairs,237 inconsistent,zero duplicate groups. SHA256 f4635b10063cc949a11675b4a9027b7e857f965df1581d76900e8249df431500. This is PRE-fix data, not a post-fix regression claim. Earlier public143matches/265badpairs is also pre-fix evidence.
-- [ ] Finish actual normal data/Pages publication, fetch public symphony2_current.json, require runtime-7/learning-7 and exhaustively check all complete supported pairs sum100. Verify public presentation-data.js and actual page do not round uncertain values to0/100 (99.98 -> >99.9%,0.02 -> <0.1%,exact0/100 preserved).
-- [ ] Close out documentation on fresh main after actual publication; preserve newer docs evidence on this branch. Current detailed evidence: audits/binary_probability_incident_20261111.md and audits/binary_probability_release_gate_20261111.md.
-- RESUMPTION: enabled automation Automation_56e38c85e4d48191a0509bf56c1392f6. Keep enabled while publication is pending; notify meaningful outcome/blocker only, disable after confirmed completion. Do not create another task. Public endpoint https://abeel87.github.io/tenis-ai/data/symphony2_current.json; app https://abeel87.github.io/tenis-ai/ .
-- NEXT EXACT ACTION: inspect retry 43063200247 and verify live public runtime-7/learning-7 JSON, manifest and frontend. If retry fails, inspect exact failing step before choosing further recovery. Do not repeat the #590 merge, merge #591, relock/import TML-2024 or promote SHADOW.
+- [x] Existing manual Fast frontend deploy 43063200247 attempt 2, job 130794241515, completed SUCCESS at 21:19:44Z from newest main `f576cffa70afc86f30f753978b6d6c86898f138c`. It uploaded the verified runtime archive, uploaded the Pages artifact and deployed it. Browser/runtime route checks succeeded.
+- [x] Direct public read after deploy confirmed runtime-7/learning-7, generated 20:29:15.584547Z, 160 matches, 237 complete supported yes/no pairs and 0 inconsistent or duplicate complete groups. The public file SHA-256 matches both main and the live manifest (de9927297150bbd898149b8ef8546da518ca832d4c25412b477d862d46e8ef58). The served delivery bundle uses the same generation and contains 160 matches. Pre-fix observations remain in the incident and release-gate audits.
+- [x] Fetched the public page and executed its shipped event renderer with boundary fixtures: 99.98 displays >99.9%, 0.02 displays <0.1%, and exact 0/100 remain exact. Verified the new service-worker cache version. Live stats show both rank-reversing fits for the exactly-two-sets markets rejected and no accepted fit with a negative slope.
+- [x] Closeout recorded on the current checkpoint branch in this file and audits/binary_probability_release_gate_20261111.md. No additional release PR was merged.
+- RESUMPTION: production verification complete. Stop the deployment monitor after saving this evidence.
+- NEXT EXACT ACTION: none for #590. The separate TML-2024 archive integration gate remains red and isolated. Preserve frozen sources and model authorization.
 
 **PREVIOUS TASK — eight analysis features merged and public delivery verified**
 - PR #587 merged as `86e12147cebdd685807c9b6258f2dfc3c1ea0446`; original source checks 17 green / 2 expected publication skips. Full suite: 1951 passed + 9 subtests, Project/Runtime guards passed.
