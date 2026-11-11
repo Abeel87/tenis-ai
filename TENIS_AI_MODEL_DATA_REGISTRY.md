@@ -17,7 +17,13 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
-**2026-11-11 analysis evidence development (implementation; release verification pending):**
+**2026-11-11 binary probability incident (source correction, release pending):**
+`symphony2_engine._cohere_exclusive_probabilities` remains the single owner of exclusive-pair consistency and now includes supported complete yes/no pairs at exact market/line/player/checkpoint scope. Raw, calibrated and pre-coherence evidence remain separate. Runtime version is 7.
+`symphony2_learning._accepted_calibrator` now requires finite non-decreasing Platt curves as well as the existing later unseen Brier validation; rejection uses unchanged raw predictions and explicit diagnostic reason. Learning version is 7. This repairs invalid production P and does not establish predictive superiority.
+Frontend only formats non-certain boundaries and preserves missing vs zero; it does not normalize P. Frozen history, settlement, operator gates and execution mode are unchanged. Evidence and negative/positive tests: `audits/binary_probability_incident_20261111.md`.
+
+
+**2026-11-11 analysis evidence development (PR #587 merged; public delivery verified):**
 Existing `frontend/app.js`, `presentation-data.js` and `history-ui.js` own all eight
 product views; no parallel renderer. `scripts/build_delivery.mjs` adds compact
 profile counts to the index, full exact-snapshot readiness/Player State evidence

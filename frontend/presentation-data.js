@@ -6,7 +6,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const norm=v=>String(v??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function identityIds(m){return [...new Set([m?.id,m?.match_id,m?.match_key].filter(v=>v!=null&&String(v)!=='').map(String))];}
 function key(m){const ids=identityIds(m);return ids.length===1?ids[0]:null;}
-const pct=v=>num(v)==null?'Brak danych':`${Number(v).toFixed(1).replace('.0','')}%`;
+const pct=v=>num(v)==null?'Brak danych':Number(v)>0&&Number(v)<0.05?'<0.1%':Number(v)<100&&Number(v)>=99.95?'>99.9%':`${Number(v).toFixed(1).replace('.0','')}%`;
 const score=v=>num(v)==null?'Brak danych':`${Number(v).toFixed(1).replace('.0','')}/100`;
 const ratio=v=>pct(num(v)==null?null:Number(v)*100);
 const best=o=>Object.entries(o||{}).filter(([,v])=>num(v)!=null).sort((a,b)=>b[1]-a[1])[0];

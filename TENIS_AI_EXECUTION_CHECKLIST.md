@@ -25,45 +25,27 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — eight analysis-development features + publication capacity, 2026-11-11**
-- AUTHORIZATION: owner approved all eight proposed product improvements
-  ("dobra wprowadz wszystko"). Diagnostic/model-context additions remain SHADOW;
-  no real bets, reservations, model promotion or new probability/ranking policy.
-- AUDITED MAIN: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
-  BRANCH: `feat/analysis-evidence-20261111`; PR #587:
-  https://github.com/Abeel87/tenis-ai/pull/587 .
-- [x] Canonical owners inspected; UI decisions, Builder component comparison,
-  profile quality, per-version Neuron common-fixture metrics, Player State context,
-  prematch observation journal, postmatch review and targeted backfill telemetry
-  implemented in existing owners. See `audits/analysis_development_20261111.md`.
-- [x] Local 13 focused Python tests and `tests/analysis_ui_contracts.mjs` pass.
-  The latter executes full-app routes/roles on isolated temporary fixtures.
-  Tests preserve raw results and final PLAYABLE projection, reject stale/foreign
-  quotes, preserve zero vs missing, and verify exact archive round-trip bytes.
-- [x] Confirmed existing FAST publication failure: run `42995748539`, job
-  `130439311641`, runtime snapshot verification rejected >1 GiB sources.
-  Main tree JSON sizes plus restored chunk manifests total 1,090,044,204 bytes.
-  Canonical snapshot now streams files, retains checksums/traversal checks,
-  and has an explicit 4 GiB expanded-byte budget. Private Storage limits unchanged.
-- [x] Initial head `115a013df5a17ab76b923af08c558f14521634d0` passed actual
-  Chromium user/moderator/admin checks at 320/412/1280 px; index 562,645 bytes,
-  1,071 PLAYABLE equivalence checks. Browser run `43025107452`, artifact
-  `13856113663` retains screenshots (not inspected locally: download unavailable).
-- [x] Full CI first run `43025107855`: 1949 passed, two stale pinned-reference
-  failures (frontend line matrix and PWA cache version). Updated both references;
-  all 9 affected source-contract tests pass locally, with original guards intact.
-- [~] Full CI rerun and production publication verification remain pending.
-  Local pytest/Playwright are unavailable and local
-  shell network cannot install them; focused stdlib/Node checks passed locally.
-- FILES: canonical UI/presentation/history/service worker, existing Neuron,
-  Symphony engine/tracker, iNeed Builder diagnostics, Player State/readiness,
-  history-priority backfill, delivery builder/runtime snapshot, tests and docs.
-- DO NOT REDO: previous archive/GC/source repairs or migrations. Existing source
-  gaps stay N/D. Minutes-on-court lack a validated source. Old forecasts are never
-  backfilled with later context. Journals begin at the first post-release capture.
-- NEXT EXACT ACTION: publish reviewed change branch and PR; run full CI and real
-  Chromium tests; resolve failures, recheck fresh main, merge only green, verify
-  publication. Update this checkpoint with exact PR/SHA/check/deployment evidence.
+**CURRENT TASK — reported contradictory binary probabilities, 2026-11-11**
+- AUTHORIZATION: owner reported the live Tabata/Boyer "Tak 100% / Nie 100%" card and requested correction. This is a canonical probability-integrity repair; no new model promotion or real execution.
+- AUDITED MAIN: `fe997e1d7a8ddc1fade9a3ff9adb996a8c21b7ba`. BRANCH: `fix/symphony-binary-probabilities-20261111`.
+- [x] Reproduced production fixture 218909 from public delivery JSON: yes 99.98%, no 99.96%; UI rounded both to 100%.
+- [x] Identified omitted yes/no exclusive-pair projection and accepted inverse market calibration (a=-1.992322).
+- [x] Canonical engine/learning correction, probability formatting, missing Neuron count display, provenance and regression tests implemented. See `audits/binary_probability_incident_20261111.md`.
+- [x] 19 focused Python tests and full Node analysis UI contract passed locally. Initial negative tests failed as expected before the fix.
+- [ ] Full GitHub CI, fresh-main integration check, green merge and actual regenerated production evidence.
+- FILES: backend/symphony2_engine.py, backend/symphony2_learning.py, frontend/presentation-data.js, frontend/app.js, frontend/sw.js, tests/test_binary_probability_integrity.py, tests/analysis_ui_contracts.mjs, tests/test_self_evolution_ui.py, audit and canonical docs.
+- DO NOT REDO: already released analysis features, CI environment repair and archive capacity change. Do not rewrite frozen training/settlement records, replace supervised P with shared-state P, weaken guards, relock the independent TML archive, or call mathematical coherence proof of accuracy.
+- NEXT EXACT ACTION: create PR, complete full CI, refresh against newest main and merge only green; observe canonical data generation and public runtime-7, verify every complete supported yes/no pair sums to 100 and UI no longer rounds non-certain values to 0/100.
+
+**PREVIOUS TASK — eight analysis features merged and public delivery verified**
+- PR #587 merged as `86e12147cebdd685807c9b6258f2dfc3c1ea0446`; original source checks 17 green / 2 expected publication skips. Full suite: 1951 passed + 9 subtests, Project/Runtime guards passed.
+- Fresh-data candidate tree `fad01e4994c8dd7539153cb2a45242a33a629bf1` exactly equals merge tree. Candidate full suite, Chromium and dependencies green. Independent TML-2024 candidate-lock/runtime-equivalence checks failed on an unchanged frozen archive fingerprint; no relock or guard weakening. Candidate PR #588 closed unmerged.
+- CI browser environment PR #589 merged as `8c84158e75b2b9f0912aa5a255768c0fb4a6996b`, all checks green, official Playwright image and exact workspace ownership configuration.
+- Actual Neuron Pages deployment run 43055030004 succeeded; public manifest source `b3bb1fd8cfa19d8d0a25252c0e4e0b7cec629940`, directly descending from feature merge, verified by HTTP 200. Service worker analysis cache verified.
+- Full production run 43055030075 completed successfully including Symphony generation, all final guards and Pages deploy job 130658378631. FAST run 43057023055 also deployed successfully.
+- Private Neuron publication run 43055956110 succeeded (3 files, generation eaca88f4-b6fd-4d71-98b6-35459687b3dd). Per-version common-fixture metrics present for 7 version groups.
+- Player DNA run 43055029969 published readiness and completed scorer/market backtest, then was cancelled at dynamic lean walk-forward. Its unfinished long research stages are not claimed complete.
+- The eight features remain diagnostic/SHADOW as designed; the current binary-probability incident remains open until regenerated production verification.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 
