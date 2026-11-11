@@ -25,92 +25,58 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — eight analysis features; fresh-data delivery validation pending, 2026-11-11**
-- AUTHORIZATION: owner approved all eight product improvements
-  ("dobra wprowadz wszystko"). New model context/economics remain SHADOW;
-  no real bets, reservations, model promotion or new probability/ranking policy.
-- AUDITED MAIN: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
-  IMPLEMENTATION: `feat/analysis-evidence-20261111`, PR #587:
-  https://github.com/Abeel87/tenis-ai/pull/587 .
-  TESTED HEAD: `357f8c0f0937497ef4d29764b44d91f9d869ccec`;
-  tree: `a0a8fcf1b625c4c5bdadb065204a90b0719ca60c`.
-  Release-record branch: `docs/analysis-evidence-release-20261111`.
-- [x] All eight improvements implemented in canonical owners: decision card,
-  Builder component comparison, profile quality, per-version Neuron comparison,
-  Player State context, prematch observations, postmatch review and targeted
-  history yield. See `audits/analysis_development_20261111.md`.
-- [x] Local 13 focused Python tests and analysis UI contracts pass. These verify
-  immutable settlement, exact identity/quotes, missingness, preserved probabilities
-  and final PLAYABLE, lossless delivery and exact runtime-archive round trips.
-- [x] Full repository CI on the tested head: 1951 passed, 9 subtests passed,
-  two existing empty-sample Neuron warnings; Project/Runtime Health PASS.
-  Run `43026273549`, job `130541655071`. The initial two stale reference
-  failures were fixed; they are not outstanding failures.
-- [x] Real Chromium user/moderator/admin checks at 320/412/1280 px passed:
-  run `43026273846`, browser job `130541653777`. Initial equivalent head
-  recorded 1,071 PLAYABLE equivalence checks and a 562,645-byte first-render index.
-  Screenshots are retained by CI; not inspected locally because download failed.
-- [x] Confirmed old 1 GiB archive blocker in BOTH FAST run `42995748539`
-  (job `130439311641`) and full data publication `42970184545`
-  (job `130356996938`, 06:33:38Z). Audited source total: 1,090,044,204 bytes.
-  The canonical archive now streams pack/hash/restore under a bounded 4 GiB
-  expanded-byte budget and preserves integrity checks. Private Storage limits
-  and GC policy are unchanged.
-- [x] Original source checks are complete and green: 17 success, two expected
-  publication skips. Full DNA run `43026273663` completed 14:38:03Z (91 min);
-  full Point Tape run `43026274276` also succeeded. No research gate skipped.
-- [x] Main advanced through generated data only. Dedicated existing
-  `ci/symphony2-clean-base` was safely fast-forwarded from ancestor
-  `c4963a5cb153eda5672521cb7f3ae0e5ee450f90` to the tested source head,
-  after confirming no open PR used that base. No workflows were changed.
-- [x] Diagnostic PR #588: https://github.com/Abeel87/tenis-ai/pull/588 .
-  Prior candidate `df4adbae7af4d49d2ae7959a0f38f5221d02151f` integrated
-  main `bd5a1d89a7a45e6cb3e39c3f825651f8f557622d`.
-  Full suite again passed: 1951 + 9 subtests, Project/Runtime Health PASS
-  (run `43044950766`, job `130606309882`).
-- [!] Separate TML 2024 archive checks on that candidate rejected a fingerprint
-  mismatch (candidate lock `43044950330`, runtime equivalence `43044950268`).
-  Candidate identity safety passes; 11,620 rows; runtime_contains_locked_2024_sources=false.
-  Archive owners, lock manifest, model core, hygiene, coverage and update are
-  byte-identical on old main, refreshed main and candidate. This release does not
-  integrate that archive. These research gates stay fail-closed; do not relock
-  sources or claim they passed. Their independent investigation is out of scope.
-- [!] Prior browser job `130606309341` failed during apt/browser installation:
-  DNS resolution of security.ubuntu.com/archive.ubuntu.com failed, before tests.
-  Both CodeQL analyses passed; the separate ingestion/aggregate check timed out.
-  Infrastructure retries were started; no production check was disabled.
-- [~] Main's later change was a single readiness JSON. Current exact candidate:
-  `1dde41b8dff3db4f0ba2b739139ffd228619d57a`, tree `da065716853e9260e3ea9a42fff3ad51430b6160`,
-  main data `3f6d5d566c43f160f89d78cbdbd138bc1bfcfe02`. Source files unchanged.
-  PR #588 reruns existing production/delivery checks on this exact tree.
-  Health `43047992774`, browser/dependency `43047992626`, CodeQL `43047992421`.
-- [ ] #587 remains unmerged and production publication unverified. Observed old
-  public manifest source: `b09d6bdd41e0c14c65b580091ad8471e0345528e`.
-  Do not merge diagnostic PR #588. Preserve its negative archive findings.
-- DO NOT REDO: code implementation, the green full test suite or earlier archive/
-  GC repairs. Do not push the synthetic local Git baseline. Use the reviewed
-  remote branch and expected-head lease. Missing evidence stays N/D; minutes
-  have no validated source, and old forecasts never acquire later context.
-- [~] Browser DNS failures repeated on the current data candidate as well
-  (job `130617193355`). Dedicated infrastructure PR #589:
-  https://github.com/Abeel87/tenis-ai/pull/589 .
-  Branch `fix/browser-ci-image-20261111`, head
-  `6ab637248e87cb7713bbe62f688a3d51f9d71ffd`.
-  The browser job uses official Playwright 1.63.0 Noble (matching the lock),
-  Ubuntu 24.04, Python 3.12 and exact-workspace Git trust for provenance.
-  Every projection/browser test and dependency audit remains enabled.
-  First image run exposed mounted-checkout ownership; fixed on this head.
-  Current runs: browser `43051221543`, health `43051221484`,
-  CodeQL `43051221582`. No application/model source change in this PR.
-- NEXT EXACT ACTION: finish and merge #589 only after its actual checks pass
-  and the tested synthetic-merge main is confirmed. Main was e5adc211f05d02b0e080d1077b67ced8a5586d75
-  when #589 opened. Then build #588's exact fresh-main integration preserving
-  BOTH the new container setup and #587's screenshot retention step. Rerun
-  production/runtime and real browser checks. Keep independent TML archive
-  locks fail-closed; no relocking/import is authorized or claimed successful.
-  Merge the fully green source PR #587 against the verified integration tree,
-  verify real public/private publication, close diagnostic #588 honestly,
-  and finish the release-record branch. No real bets or model promotion.
+**CURRENT TASK — eight analysis features implemented; release validation, 2026-11-11**
+- AUTHORIZATION: owner approved all eight improvements ("dobra wprowadz wszystko").
+  No new probability/ranking policy, real bets, reservations or model promotion.
+- IMPLEMENTATION: PR #587, `feat/analysis-evidence-20261111`,
+  head `357f8c0f0937497ef4d29764b44d91f9d869ccec`.
+  Audited original main: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
+- [x] Decision card; exact Builder comparisons; profile quality; per-version Neuron
+  comparison; Player State context; bounded prematch journal; postmatch review;
+  targeted-history PBP yield. Canonical owners, immutable forecasts and exact IDs.
+  Full mapping/limits: `audits/analysis_development_20261111.md`.
+- [x] Local 13 focused Python tests and analysis UI contracts; full source CI:
+  1951 tests + 9 subtests, Project/Runtime Health PASS (43026273549).
+  Chromium roles and 320/412/1280px PASS (43026273846); screenshot artifacts
+  retained, not inspected locally. Full DNA 43026273663 and Point Tape 43026274276
+  PASS. Source head has 17 successful checks and two expected publication skips.
+- [x] Canonical runtime archive streams pack/hash/restore under a bounded 4 GiB
+  expansion budget. Old 1 GiB gate rejected 1,090,044,204 source bytes in FAST
+  42995748539 and full update 42970184545. Integrity and Storage/GC policies stay.
+- [x] Browser CI infrastructure repaired in PR #589, all checks green, merged as
+  `8c84158e75b2b9f0912aa5a255768c0fb4a6996b`; exact tested tree matched.
+  Official pinned Playwright 1.63.0 Noble avoids the Ubuntu apt DNS outage.
+  Python 3.12 and trust restricted to the exact mounted checkout fix provenance.
+  No browser/projection/dependency checks removed.
+- [x] Diagnostic PR #588 uses existing `ci/symphony2-clean-base`, safely
+  fast-forwarded to the tested source head from its proven ancestor; no open PR
+  previously used it. Do NOT merge this diagnostic PR.
+  Candidate `36ff70635da02804a1199e7d82721cf795cf28d9` on main 8c84158e:
+  1951 + 9 subtests, Project/Runtime PASS (43052494303), Chromium/dependencies
+  PASS (43052494081), both CodeQL analyses PASS; aggregate remained pending.
+- [~] Latest main `445ccf98ac635a17df9bcf714918e6e4cb87a7cc` changed only
+  meta.json and readiness_engine_shadow.json. Rebuilt exact integration:
+  head `ed36d15f7551d35132ce50d12a289c3b4d2c4740`,
+  tree `fad01e4994c8dd7539153cb2a45242a33a629bf1`;
+  tested synthetic merge `f0942598a91d2d6e48b742e9ed92d7a375709c48` has that tree.
+  Browser/dependencies 43053633076 PASS; CodeQL workflow 43053632864 PASS
+  (both languages), separate aggregate pending. Health 43053632776 is running.
+- [!] Independent TML 2024 archive audits reject a frozen fingerprint mismatch.
+  The 11,620-row candidate's identity safety passes, but runtime does not contain
+  the locked archive. Owners, lock manifest, model core/hygiene/update are unchanged.
+  Original evidence: 43044950330 / 43044950268; latest equivalence 43053632899.
+  No relocking, import, guard weakening, or claim these research checks passed.
+- [ ] #587 remains unmerged; production publication of these features unverified.
+  Release docs branch: `docs/analysis-evidence-release-20261111`.
+- DO NOT REDO: implementation, completed source DNA/Point Tape, or archive/GC work.
+  Do not push the synthetic local baseline. GitHub connector is the publish path.
+  Unknown minutes stay N/D; old predictions never gain later context.
+- NEXT EXACT ACTION: finish current fresh-data production/runtime tests, confirm
+  main has not moved and merge the green source PR #587 with expected head.
+  Verify merged tree against the tested integration; observe actual core/Pages
+  and private publication. Close #588 preserving negative archive evidence.
+  Complete docs/registry/architecture release records with actual production proof.
+  Do not call a skipped FAST scope step a successful deployment.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 
