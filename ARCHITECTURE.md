@@ -4,7 +4,9 @@
 
 ## 1. Produkcja danych
 
-Analysis evidence release (2026-11-11, validation in progress): the delivery builder
+Binary-probability repair (2026-11-11, release pending): the existing Symphony learning owner rejects nonfinite or rank-reversing Platt calibration; the existing engine owner projects complete supported yes/no pairs alongside winner/O/U pairs. Pre-coherence/raw/calibrated provenance remains available. Frontend displays these backend values without renormalization and avoids rounding non-boundary P to certainty. See `audits/binary_probability_incident_20261111.md`.
+
+Analysis evidence release (2026-11-11, PR #587 merged and public delivery verified): the delivery builder
 projects existing player-profile facts and exact-snapshot readiness evidence into
 lazy match bundles. It invokes the readiness owner's stdlib CLI, so the UI and
 publication do not reimplement snapshot hashing. The first-render index stays

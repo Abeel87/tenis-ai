@@ -25,61 +25,31 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — eight analysis features implemented; release validation, 2026-11-11**
-- AUTHORIZATION: owner approved all eight improvements ("dobra wprowadz wszystko").
-  No new probability/ranking policy, real bets, reservations or model promotion.
-- IMPLEMENTATION: PR #587, `feat/analysis-evidence-20261111`,
-  head `357f8c0f0937497ef4d29764b44d91f9d869ccec`.
-  Audited original main: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
-- [x] Decision card; exact Builder comparisons; profile quality; per-version Neuron
-  comparison; Player State context; bounded prematch journal; postmatch review;
-  targeted-history PBP yield. Canonical owners, immutable forecasts and exact IDs.
-  Full mapping/limits: `audits/analysis_development_20261111.md`.
-- [x] Local 13 focused Python tests and analysis UI contracts; full source CI:
-  1951 tests + 9 subtests, Project/Runtime Health PASS (43026273549).
-  Chromium roles and 320/412/1280px PASS (43026273846); screenshot artifacts
-  retained, not inspected locally. Full DNA 43026273663 and Point Tape 43026274276
-  PASS. Source head has 17 successful checks and two expected publication skips.
-- [x] Canonical runtime archive streams pack/hash/restore under a bounded 4 GiB
-  expansion budget. Old 1 GiB gate rejected 1,090,044,204 source bytes in FAST
-  42995748539 and full update 42970184545. Integrity and Storage/GC policies stay.
-- [x] Browser CI infrastructure repaired in PR #589, all checks green, merged as
-  `8c84158e75b2b9f0912aa5a255768c0fb4a6996b`; exact tested tree matched.
-  Official pinned Playwright 1.63.0 Noble avoids the Ubuntu apt DNS outage.
-  Python 3.12 and trust restricted to the exact mounted checkout fix provenance.
-  No browser/projection/dependency checks removed.
-- [x] Diagnostic PR #588 uses existing `ci/symphony2-clean-base`, safely
-  fast-forwarded to the tested source head from its proven ancestor; no open PR
-  previously used it. Do NOT merge this diagnostic PR.
-  Candidate `36ff70635da02804a1199e7d82721cf795cf28d9` on main 8c84158e:
-  1951 + 9 subtests, Project/Runtime PASS (43052494303), Chromium/dependencies
-  PASS (43052494081), both CodeQL analyses PASS; aggregate remained pending.
-- [~] Latest main `445ccf98ac635a17df9bcf714918e6e4cb87a7cc` changed only
-  meta.json and readiness_engine_shadow.json. Rebuilt exact integration:
-  head `ed36d15f7551d35132ce50d12a289c3b4d2c4740`,
-  tree `fad01e4994c8dd7539153cb2a45242a33a629bf1`;
-  tested synthetic merge `f0942598a91d2d6e48b742e9ed92d7a375709c48` has that tree.
-  Browser/dependencies 43053633076 PASS; CodeQL workflow 43053632864 PASS
-  (both languages), separate aggregate pending. Health 43053632776 is running.
-- [!] Independent TML 2024 archive audits reject a frozen fingerprint mismatch.
-  The 11,620-row candidate's identity safety passes, but runtime does not contain
-  the locked archive. Owners, lock manifest, model core/hygiene/update are unchanged.
-  Original evidence: 43044950330 / 43044950268; latest equivalence 43053632899.
-  No relocking, import, guard weakening, or claim these research checks passed.
-- [x] #587 merged as `86e12147cebdd685807c9b6258f2dfc3c1ea0446`; its tree exactly
-  matches tested `fad01e4994c8dd7539153cb2a45242a33a629bf1`.
-  Fresh-data health 43053632776 completed: 1951 tests + 9 subtests;
-  Project/Runtime PASS. Diagnostic #588 closed without merge and with negative
-  archive findings retained. Actual publication remains pending.
-  Core publication run 43055030075, build job 130642666647 has started.
-  Release docs branch: `docs/analysis-evidence-release-20261111`.
-- DO NOT REDO: implementation, completed source DNA/Point Tape, or archive/GC work.
-  Do not push the synthetic local baseline. GitHub connector is the publish path.
-  Unknown minutes stay N/D; old predictions never gain later context.
-- NEXT EXACT ACTION: observe actual core/Pages publication 43055030075 and
-  private runtime publication on the merged source. Verify public manifest and
-  source version, then complete docs/registry/architecture release records.
-  Do not call a skipped FAST scope step a successful deployment.
+**CURRENT TASK — reported contradictory binary probabilities, 2026-11-11**
+- AUTHORIZATION: owner reported the live Tabata/Boyer "Tak 100% / Nie 100%" card and requested correction. This is a canonical probability-integrity repair; no new model promotion or real execution.
+- AUDITED MAIN: `fe997e1d7a8ddc1fade9a3ff9adb996a8c21b7ba`. BRANCH: `fix/symphony-binary-probabilities-20261111`; PR #590: https://github.com/Abeel87/tenis-ai/pull/590 .
+- LATEST OBSERVED MAIN: `a2e8ae50eedf515b5081be6539a0fac09274a356`; compared to the PR base, only `frontend/data/meta.json`, `frontend/data/readiness_engine_shadow.json` changed. Fresh integration CI is still required before merge.
+- [x] Reproduced production fixture 218909 from public delivery JSON: yes 99.98%, no 99.96%; UI rounded both to 100%.
+- [x] Identified omitted yes/no exclusive-pair projection and accepted inverse market calibration (a=-1.992322).
+- [x] Canonical engine/learning correction, probability formatting, missing Neuron count display, provenance and regression tests implemented. See `audits/binary_probability_incident_20261111.md`.
+- [x] 19 focused Python tests and full Node analysis UI contract passed locally. Initial negative tests failed as expected before the fix.
+- [x] PR #590 head `f01df12c2dc8cd1c879938aece7b7f5f865c1a59`: 1957 tests + 9 subtests pass; Project/Runtime Health PASS; Chromium/browser, dependencies, CodeQL, Symphony contracts (121 tests), Neuron and context audits pass.
+- [~] 13 checks green, 1 expected Neuron deployment skip; only Point Tape historical audit remains running: https://github.com/Abeel87/tenis-ai/actions/runs/43062117267 . Last comparable run took 113 minutes. No failure observed.
+- [x] Read the later public runtime-6 generation 2026-11-11T16:40:23.516271+00:00 directly: 143 matches, 265 complete yes/no pairs, all 265 fail sum-to-100. This is PRE-fix evidence, not repair verification.
+- [ ] Fresh-main integration check/required CI, green merge and actual regenerated runtime-7 production verification. PR #590 IS NOT MERGED; the live site still uses the uncorrected source.
+- FILES: backend/symphony2_engine.py, backend/symphony2_learning.py, frontend/presentation-data.js, frontend/app.js, frontend/sw.js, tests/test_binary_probability_integrity.py, tests/analysis_ui_contracts.mjs, tests/test_self_evolution_ui.py, audit and canonical docs.
+- DO NOT REDO: already released analysis features, CI environment repair and archive capacity change. Do not rewrite frozen training/settlement records, replace supervised P with shared-state P, weaken guards, relock the independent TML archive, or call mathematical coherence proof of accuracy.
+- NEXT EXACT ACTION: check Point Tape run 43062117267; do not reset its long run with a metadata-only source commit. Once green, compare newest main (bots move data) and run required fresh-main integration CI before merging PR #590; then observe canonical data generation and public runtime-7, verify every complete supported yes/no pair sums to 100 and UI no longer rounds non-certain values to 0/100.
+
+**PREVIOUS TASK — eight analysis features merged and public delivery verified**
+- PR #587 merged as `86e12147cebdd685807c9b6258f2dfc3c1ea0446`; original source checks 17 green / 2 expected publication skips. Full suite: 1951 passed + 9 subtests, Project/Runtime guards passed.
+- Fresh-data candidate tree `fad01e4994c8dd7539153cb2a45242a33a629bf1` exactly equals merge tree. Candidate full suite, Chromium and dependencies green. Independent TML-2024 candidate-lock/runtime-equivalence checks failed on an unchanged frozen archive fingerprint; no relock or guard weakening. Candidate PR #588 closed unmerged.
+- CI browser environment PR #589 merged as `8c84158e75b2b9f0912aa5a255768c0fb4a6996b`, all checks green, official Playwright image and exact workspace ownership configuration.
+- Actual Neuron Pages deployment run 43055030004 succeeded; public manifest source `b3bb1fd8cfa19d8d0a25252c0e4e0b7cec629940`, directly descending from feature merge, verified by HTTP 200. Service worker analysis cache verified.
+- Full production run 43055030075 completed successfully including Symphony generation, all final guards and Pages deploy job 130658378631. FAST run 43057023055 also deployed successfully.
+- Private Neuron publication run 43055956110 succeeded (3 files, generation eaca88f4-b6fd-4d71-98b6-35459687b3dd). Per-version common-fixture metrics present for 7 version groups.
+- Player DNA run 43055029969 published readiness and completed scorer/market backtest, then was cancelled at dynamic lean walk-forward. Its unfinished long research stages are not claimed complete.
+- The eight features remain diagnostic/SHADOW as designed; the current binary-probability incident remains open until regenerated production verification.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 

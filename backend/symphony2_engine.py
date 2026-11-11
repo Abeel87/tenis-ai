@@ -49,7 +49,7 @@ CURRENT = DATA / "symphony2_current.json"
 STATS = DATA / "symphony2_stats.json"
 PHASE9_REPORT = DATA / "symphony2_phase9_player_dna_shared_state.json"
 PHASE10_OUT = DATA / "symphony2_phase10_bet_builder_dependency.json"
-VERSION = "symphony2-runtime-6"
+VERSION = "symphony2-runtime-7"
 PHASE10_VERSION = "symphony2-phase10-bet-builder-dependency-v1"
 PHASE10_MODE = "SHADOW_BET_BUILDER_DEPENDENCY_DIAGNOSTIC_ONLY"
 PHASE10_EXACT_EPS = 1e-12
@@ -213,6 +213,11 @@ def _existing_evidence(merged: dict) -> dict:
 
 
 COHERENT_WINNER_MARKETS = {"match_winner", "set1_winner", "set2_winner", "set3_winner"}
+COHERENT_YES_NO_MARKETS = {
+    "any_set_to_nil", "set1_tiebreak",
+    "p1_exactly_1_set", "p1_exactly_2_sets", "p2_exactly_1_set", "p2_exactly_2_sets",
+    "p1_wins_a_set", "p2_wins_a_set",
+}
 COHERENT_OU_MARKETS = {
     "match_total", "set1_total", "set2_total", "set3_total", "total_sets",
     "player_total_games", "match_total_aces", "player_aces", "player_double_faults",
@@ -221,6 +226,10 @@ COHERENT_OU_MARKETS = {
 
 def _coherence_pick(value) -> str:
     raw = _norm(value)
+    if raw in {"yes", "tak"}:
+        return "yes"
+    if raw in {"no", "nie"}:
+        return "no"
     if raw in {"o", "over", "powyzej"} or raw.startswith("over "):
         return "over"
     if raw in {"u", "under", "ponizej"} or raw.startswith("under "):
@@ -237,6 +246,8 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
         market = _market(row.get("market"))
         if market in COHERENT_WINNER_MARKETS:
             key = ("winner", market)
+        elif market in COHERENT_YES_NO_MARKETS and _coherence_pick(row.get("pick")) in {"yes", "no"}:
+            key = ("yes_no", market, _num(row.get("line")), _norm(row.get("player")), int(_num(row.get("checkpoint"), 0) or 0))
         elif market in COHERENT_OU_MARKETS and _coherence_pick(row.get("pick")) in {"over", "under"}:
             line = _num(row.get("line"))
             if line is None:
@@ -251,7 +262,8 @@ def _cohere_exclusive_probabilities(rows: list[dict]) -> list[dict]:
                 continue
         else:
             picks = {_coherence_pick(row.get("pick")) for row in group}
-            if len(group) != 2 or picks != {"over", "under"}:
+            expected = {"yes", "no"} if key[0] == "yes_no" else {"over", "under"}
+            if len(group) != 2 or picks != expected:
                 continue
         total = sum(_num(row.get("operator_model_probability"), 0.0) or 0.0 for row in group)
         if total <= 0:
@@ -1365,6 +1377,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
         "composition_dependency_diagnostics_policy": "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY_NO_RANKING_INFLUENCE",
         "phase9_player_dna_shared_state_policy": "SHADOW_ONLY; CROSS_FAMILY_EXACT_JOINT; NO_RANKING_OR_P_FINAL_INFLUENCE",
         "phase10_dependency_policy": "SHADOW_ONLY; EXACT_JOINT_CONDITIONAL_REDUNDANCY_CONFLICT_INFORMATION; NO_RANKING_OR_P_FINAL_INFLUENCE",
+        "exclusive_coherence_policy": "COMPLETE_WINNER_OU_AND_YES_NO_PAIRS; EXACT_MARKET_LINE_PLAYER_CHECKPOINT; PRESERVE_PRE_COHERENCE_PROBABILITY",
         "line_coherence_policy": "COMPLETE_OU_PAIRS_ONLY; OVER_NON_INCREASING; UNDER_COMPLEMENT; SUPERVISED_MONOTONIC_PROJECTION_ONLY",
         "legacy_symphony_stats_used": False, "prices_used": False}
     return current, stats

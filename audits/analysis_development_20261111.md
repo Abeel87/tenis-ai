@@ -51,9 +51,9 @@ the failure was the same exhausted 1 GiB archive bound.
   9 subtests passed, two existing empty-sample Neuron warnings. Project/Runtime
   Health PASS (run 43026273549); real Chromium roles/viewports PASS (43026273846).
 - Full Player DNA and Point Tape historical evaluations passed on the source head.
-  Fresh-data production tests also passed; final publication remains pending.
+  Fresh-data production tests passed; PR #587 merged and full production run 43055030075 completed, including Pages deployment.
   Isolated TML 2024 fingerprint locks remain rejected, without runtime import.
-  Browser infrastructure DNS failures are addressed by PR #589; exact current
+  Browser infrastructure DNS failures were repaired by merged PR #589; exact current
   status and full evidence are in the live checkpoint and validation JSON.
 
 ## Known limits and rollout

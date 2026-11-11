@@ -30,7 +30,7 @@ try:
 except Exception:  # pragma: no cover
     CatBoostClassifier = None
 
-VERSION = "symphony2-learning-6"
+VERSION = "symphony2-learning-7"
 MIN_TRAIN_ROWS = 200
 VALIDATION_FRACTION = 0.20
 MIN_CALIBRATION_FIT_ROWS = 40
@@ -388,13 +388,20 @@ def _accepted_calibrator(
         }
     calibrated = [candidate.predict(p) for p in eval_raw]
     calibrated_brier = _brier(calibrated, eval_targets)
-    accepted = calibrated_brier is not None and raw_brier is not None and calibrated_brier <= raw_brier + 1e-9
+    # Calibration adjusts confidence; it must not reverse the meaning/order of
+    # the model's hit probability. A mostly-positive holdout can otherwise reward
+    # an inverted curve that pushes both mutually exclusive outcomes near 100%.
+    monotonic = math.isfinite(candidate.a) and math.isfinite(candidate.b) and candidate.a >= 0.0
+    improves_brier = calibrated_brier is not None and raw_brier is not None and calibrated_brier <= raw_brier + 1e-9
+    accepted = monotonic and improves_brier
     chosen = candidate if accepted else PlattCalibrator()
     return chosen, {
         "fitted": candidate.fitted,
         "fit_rows": len(fit_raw),
         "evaluation_rows": len(eval_raw),
         "accepted": accepted,
+        "monotonic": monotonic,
+        "rejection_reason": None if accepted else ("NON_MONOTONIC_CALIBRATION" if not monotonic else "NO_BRIER_IMPROVEMENT"),
         "raw_brier": round(raw_brier, 6) if raw_brier is not None else None,
         "calibrated_brier": round(calibrated_brier, 6) if calibrated_brier is not None else None,
         "a": round(candidate.a, 6), "b": round(candidate.b, 6),
@@ -583,7 +590,7 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
             "CURRENT_FULL_HISTORY_NO_HOLDOUT; EXACT_OPERATOR_VERIFIED; "
             "NUMERIC_HISTORY_REQUIRES_FIXTURE_PROOF; NO_PLAYABLE_STATS_MUTATION"
         ),
-        "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
+        "calibration_policy": "CHRONOLOGICAL_CALIBRATION_FIT_PLUS_LATER_UNSEEN_EVAL; MONOTONIC_PER_MARKET_PLATT_ONLY_IF_EVAL_BRIER_IMPROVES; GLOBAL_DIAGNOSTIC_ONLY",
         "low_support_policy": "DO_NOT_DISTORT_PROBABILITY; ZERO_MARKET_SUPPORT_IS_UNSCORED",
     }
 
@@ -651,3 +658,4 @@ def train_operator_line_model(history: Iterable[dict]) -> OperatorLineModel:
     out.status = "ready"
     out.metrics = metrics
     return out
+

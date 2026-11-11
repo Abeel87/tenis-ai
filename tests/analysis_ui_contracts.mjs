@@ -11,6 +11,11 @@ const ctx={console,Date:class extends RealDate{static now(){return now}},Map,Set
 ctx.window=ctx;vm.createContext(ctx);
 for(const name of ['playable-ui.js','presentation-data.js'])vm.runInContext(fs.readFileSync('frontend/'+name,'utf8'),ctx);
 const D=ctx.TenisPresentation;
+assert.equal(D.pct(99.98),'>99.9%','Rounded model confidence must not imply certainty');
+assert.equal(D.pct(0.02),'<0.1%','A positive probability must not display as zero');
+assert.equal(D.pct(100),'100%');assert.equal(D.pct(0),'0%');
+assert.equal(D.pct(47.58),'47.6%');
+assert.equal(D.pct(null),'Brak danych');
 const match={id:1,p1:'Alpha',p2:'Beta',scheduled_time:'2026-11-11T15:00:00Z',superbet_market_v91:{operator:'superbet.pl',operator_verified:true,status:'VERIFIED',canonical_selections:[],source_generated_at:'2026-11-11T12:00:00Z',operator_start_time:'2026-11-11T15:00:00Z'}};
 const quote={combined_odds:2.75,expected_value_net:.21,odds_timestamp:'2026-11-11T12:00:00Z',price_status:'EXACT_CURRENT_QUOTE'};
 const comp={component_comparison:{mode:'SHADOW_COMPARISON',production_influence:false,ranking_influence:false,
@@ -48,6 +53,10 @@ assert(ctx.historySupplyPanel().includes('niedostępny'));
 const html=ctx.learningProgressPanel({model_id:'v2',prospective:{by_model:{v2:{settled_matches:1,
  production_comparison:{settled_matches:0},segments:{surface:{UNKNOWN:{production_comparison:{settled_matches:0}}}}}}}});
 assert(html.includes('Bieżąca wersja'));assert(html.includes('Nie zapisana'));assert(html.includes('N/D'));
+assert(html.includes('0 wspólnych meczów'),'An explicit observed zero must remain zero');
+const missingComparison=ctx.learningProgressPanel({model_id:'v2',prospective:{by_model:{v2:{segments:{surface:{UNKNOWN:{}}}}}}});
+assert(missingComparison.includes('N/D wspólnych meczów'),'Absent comparison evidence is not zero');
+assert(!missingComparison.includes('<td>0</td>'),'Absent segment evidence is not zero');
 
 // Synthetic fixtures live only in a temporary directory. Prove unchanged raw data,
 // identity-bound journals, deterministic index and full-app routing without remote data.
