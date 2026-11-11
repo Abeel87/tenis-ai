@@ -35,6 +35,10 @@ budget and 4 MiB manifest cap. Duplicate/path/type/membership/checksum guards
 remain; all bytes verify before first restore write. The complete archive is
 still preserved before public-only exclusions. Supabase object limits are unchanged.
 
+The full data publication also failed at the same verifier: run 42970184545,
+job 130356996938, 2026-11-11 06:33:38Z. The data build reached Pages preparation;
+the failure was the same exhausted 1 GiB archive bound.
+
 ## Verification
 
 - `python -m unittest tests.test_analysis_development tests.test_runtime_snapshot_capacity -v`: 13 pass locally.
@@ -43,8 +47,12 @@ still preserved before public-only exclusions. Supabase object limits are unchan
   delivery, full-app routes, roles and logout on isolated temporary fixtures.
 - Browser suite extended to Builder/changes/stats/decision panels at 320/412/1280px
   and retained screenshots. Full CI and production evidence tracked in checklist.
-- Local full pytest and Chromium execution require unavailable dependencies;
-  GitHub's normal dependency-equipped checks are the full-suite authority.
+- GitHub CI on 357f8c0f0937497ef4d29764b44d91f9d869ccec: 1951 tests and
+  9 subtests passed, two existing empty-sample Neuron warnings. Project/Runtime
+  Health PASS (run 43026273549); real Chromium roles/viewports PASS (43026273846).
+- Full Player DNA and Point Tape historical evaluations are still running.
+  Their completion, merge and actual production publication are tracked in the
+  live checkpoint. Local pytest/Chromium dependencies are unavailable.
 
 ## Known limits and rollout
 

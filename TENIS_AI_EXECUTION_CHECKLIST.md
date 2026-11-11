@@ -25,45 +25,54 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — eight analysis-development features + publication capacity, 2026-11-11**
-- AUTHORIZATION: owner approved all eight proposed product improvements
-  ("dobra wprowadz wszystko"). Diagnostic/model-context additions remain SHADOW;
+**CURRENT TASK — eight analysis-development features; full SHADOW CI pending, 2026-11-11**
+- AUTHORIZATION: owner approved all eight product improvements
+  ("dobra wprowadz wszystko"). New model context/economics remain SHADOW;
   no real bets, reservations, model promotion or new probability/ranking policy.
 - AUDITED MAIN: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
-  BRANCH: `feat/analysis-evidence-20261111`; PR #587:
+  IMPLEMENTATION: `feat/analysis-evidence-20261111`, PR #587:
   https://github.com/Abeel87/tenis-ai/pull/587 .
-- [x] Canonical owners inspected; UI decisions, Builder component comparison,
-  profile quality, per-version Neuron common-fixture metrics, Player State context,
-  prematch observation journal, postmatch review and targeted backfill telemetry
-  implemented in existing owners. See `audits/analysis_development_20261111.md`.
-- [x] Local 13 focused Python tests and `tests/analysis_ui_contracts.mjs` pass.
-  The latter executes full-app routes/roles on isolated temporary fixtures.
-  Tests preserve raw results and final PLAYABLE projection, reject stale/foreign
-  quotes, preserve zero vs missing, and verify exact archive round-trip bytes.
-- [x] Confirmed existing FAST publication failure: run `42995748539`, job
-  `130439311641`, runtime snapshot verification rejected >1 GiB sources.
-  Main tree JSON sizes plus restored chunk manifests total 1,090,044,204 bytes.
-  Canonical snapshot now streams files, retains checksums/traversal checks,
-  and has an explicit 4 GiB expanded-byte budget. Private Storage limits unchanged.
-- [x] Initial head `115a013df5a17ab76b923af08c558f14521634d0` passed actual
-  Chromium user/moderator/admin checks at 320/412/1280 px; index 562,645 bytes,
-  1,071 PLAYABLE equivalence checks. Browser run `43025107452`, artifact
-  `13856113663` retains screenshots (not inspected locally: download unavailable).
-- [x] Full CI first run `43025107855`: 1949 passed, two stale pinned-reference
-  failures (frontend line matrix and PWA cache version). Updated both references;
-  all 9 affected source-contract tests pass locally, with original guards intact.
-- [~] Full CI rerun and production publication verification remain pending.
-  Local pytest/Playwright are unavailable and local
-  shell network cannot install them; focused stdlib/Node checks passed locally.
-- FILES: canonical UI/presentation/history/service worker, existing Neuron,
-  Symphony engine/tracker, iNeed Builder diagnostics, Player State/readiness,
-  history-priority backfill, delivery builder/runtime snapshot, tests and docs.
-- DO NOT REDO: previous archive/GC/source repairs or migrations. Existing source
-  gaps stay N/D. Minutes-on-court lack a validated source. Old forecasts are never
-  backfilled with later context. Journals begin at the first post-release capture.
-- NEXT EXACT ACTION: publish reviewed change branch and PR; run full CI and real
-  Chromium tests; resolve failures, recheck fresh main, merge only green, verify
-  publication. Update this checkpoint with exact PR/SHA/check/deployment evidence.
+  TESTED HEAD: `357f8c0f0937497ef4d29764b44d91f9d869ccec`;
+  tree: `a0a8fcf1b625c4c5bdadb065204a90b0719ca60c`.
+  Release-record branch: `docs/analysis-evidence-release-20261111`.
+- [x] All eight improvements implemented in canonical owners: decision card,
+  Builder component comparison, profile quality, per-version Neuron comparison,
+  Player State context, prematch observations, postmatch review and targeted
+  history yield. See `audits/analysis_development_20261111.md`.
+- [x] Local 13 focused Python tests and analysis UI contracts pass. These verify
+  immutable settlement, exact identity/quotes, missingness, preserved probabilities
+  and final PLAYABLE, lossless delivery and exact runtime-archive round trips.
+- [x] Full repository CI on the tested head: 1951 passed, 9 subtests passed,
+  two existing empty-sample Neuron warnings; Project/Runtime Health PASS.
+  Run `43026273549`, job `130541655071`. The initial two stale reference
+  failures were fixed; they are not outstanding failures.
+- [x] Real Chromium user/moderator/admin checks at 320/412/1280 px passed:
+  run `43026273846`, browser job `130541653777`. Initial equivalent head
+  recorded 1,071 PLAYABLE equivalence checks and a 562,645-byte first-render index.
+  Screenshots are retained by CI; not inspected locally because download failed.
+- [x] Confirmed old 1 GiB archive blocker in BOTH FAST run `42995748539`
+  (job `130439311641`) and full data publication `42970184545`
+  (job `130356996938`, 06:33:38Z). Audited source total: 1,090,044,204 bytes.
+  The canonical archive now streams pack/hash/restore under a bounded 4 GiB
+  expanded-byte budget and preserves integrity checks. Private Storage limits
+  and GC policy are unchanged.
+- [~] All completed current-head CI checks are green. Two full SHADOW workflows
+  remain running: Player DNA `43026273663` / `130541788478`, Point Tape
+  `43026274276` / `130541655470`. At 14:29Z, their finished steps had
+  no failures. These are long historical evaluations; the preceding full DNA
+  run `42925842568` took 111 minutes. Do not cancel/skip guards to merge.
+- [ ] Fresh-main merge and actual production publication remain pending.
+  The observed public manifest still had source `b09d6bdd41e0c14c65b580091ad8471e0345528e`.
+  No claim that the new features are already live.
+- DO NOT REDO: code implementation, the green full test suite or earlier archive/
+  GC repairs. Do not push the synthetic local Git baseline. Use the reviewed
+  remote branch and expected-head lease. Missing evidence stays N/D; minutes
+  have no validated source, and old forecasts never acquire later context.
+- NEXT EXACT ACTION: inspect the two current-head SHADOW runs; fix only actual
+  failures. After green, recheck fresh main and PR head, merge #587, verify exact
+  tested tree and real publication/source SHA. Then finish these release records
+  on the docs branch and merge its docs-only closeout PR. New observations and
+  context arrive through the normal producers after release.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 
