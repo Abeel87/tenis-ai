@@ -6,9 +6,9 @@
   "ineed_influence": false,
   "auto_promote": false,
   "operator_playable": false,
-  "generated_at": "2026-11-11T14:44:00.846086+00:00",
-  "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
-  "model_trained_at": "2026-11-09T11:59:06.933484+00:00",
+  "generated_at": "2026-11-11T16:09:25.412767+00:00",
+  "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+  "model_trained_at": "2026-11-11T16:09:02.835365+00:00",
   "source": {
     "fresh_sources": 3,
     "cached_sources": 8,
@@ -20,16 +20,16 @@
   "source_warnings": [],
   "history_date_max": "2026-11-10",
   "history_cutoff_exclusive": "2026-11-11",
-  "history_sha256": "4a2584550bfaee875e44e72cfb36c3a7d4d5c5b14c483b2604dbaad4f795acd9",
+  "history_sha256": "551bdbbf076919e1805cde1c889478a7afe1fc8d66d393605966590bb58bfd7b",
   "history_hygiene": {
-    "raw_rows": 26929,
-    "kept_rows": 25846,
+    "raw_rows": 26935,
+    "kept_rows": 25852,
     "removed_rows": 1083
   },
-  "excluded_same_day_or_future": 0,
+  "excluded_same_day_or_future": 1,
   "no_score_reasons": {
-    "MATCH_NOT_PREMATCH": 11,
-    "NO_PLAYER_HISTORY": 142
+    "MATCH_NOT_PREMATCH": 55,
+    "NO_PLAYER_HISTORY": 112
   },
   "prospective": {
     "unique_fixtures": 1386,
@@ -74,7 +74,7 @@
       "promotion_authorized": false,
       "historical_reconstruction": false
     },
-    "forecast_snapshots": 2792,
+    "forecast_snapshots": 2859,
     "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE",
     "status": "HAS_SETTLED_EVIDENCE",
     "by_model": {
@@ -110,7 +110,250 @@
           "production": null,
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 353,
+              "settled_matches": 99,
+              "pending_matches": 240,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 132,
+                "NO_EXACT_HISTORY_MATCH": 107,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 1
+              },
+              "void_matches": 14,
+              "neuron": {
+                "accuracy": 0.5858585858585859,
+                "log_loss": 0.6726745410936137,
+                "brier": 0.23962338668268687,
+                "ece_10": 0.11037880808080809
+              },
+              "elo": {
+                "accuracy": 0.5656565656565656,
+                "log_loss": 0.6862975326491929,
+                "brier": 0.24638203993395952,
+                "ece_10": 0.11816157768340314
+              },
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 99,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 353,
+              "settled_matches": 99,
+              "pending_matches": 240,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 132,
+                "NO_EXACT_HISTORY_MATCH": 107,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 1
+              },
+              "void_matches": 14,
+              "neuron": {
+                "accuracy": 0.5858585858585859,
+                "log_loss": 0.6726745410936137,
+                "brier": 0.23962338668268687,
+                "ece_10": 0.11037880808080809
+              },
+              "elo": {
+                "accuracy": 0.5656565656565656,
+                "log_loss": 0.6862975326491929,
+                "brier": 0.24638203993395952,
+                "ece_10": 0.11816157768340314
+              },
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 99,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
+      },
+      "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b": {
+        "unique_fixtures": 67,
+        "settled_matches": 0,
+        "pending_matches": 67,
+        "pending_reasons": {
+          "EXACT_HISTORY_MATCH_NOT_TERMINAL": 46,
+          "NO_EXACT_HISTORY_MATCH": 21
+        },
+        "void_matches": 0,
+        "neuron": null,
+        "elo": null,
+        "production_comparison": {
+          "status": "NO_FROZEN_PRODUCTION_BASELINE",
+          "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+          "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+          "settled_matches": 0,
+          "missing_baseline_matches": 0,
+          "neuron": null,
+          "production": null,
+          "promotion_authorized": false,
+          "historical_reconstruction": false
+        },
+        "segments": {
+          "surface": {
+            "clay": {
+              "unique_fixtures": 21,
+              "settled_matches": 0,
+              "pending_matches": 21,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 9,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 12
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            },
+            "hard": {
+              "unique_fixtures": 46,
+              "settled_matches": 0,
+              "pending_matches": 46,
+              "pending_reasons": {
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 34,
+                "NO_EXACT_HISTORY_MATCH": 12
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "atp": {
+              "unique_fixtures": 2,
+              "settled_matches": 0,
+              "pending_matches": 2,
+              "pending_reasons": {
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 2
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            },
+            "challenger": {
+              "unique_fixtures": 37,
+              "settled_matches": 0,
+              "pending_matches": 37,
+              "pending_reasons": {
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 33,
+                "NO_EXACT_HISTORY_MATCH": 4
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            },
+            "itf": {
+              "unique_fixtures": 24,
+              "settled_matches": 0,
+              "pending_matches": 24,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 17,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 7
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            },
+            "wta": {
+              "unique_fixtures": 4,
+              "settled_matches": 0,
+              "pending_matches": 4,
+              "pending_reasons": {
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 4
+              },
+              "void_matches": 0,
+              "neuron": null,
+              "elo": null,
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 0,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       },
       "neuron-27a48846f9da06eac56a20bd9239b2821648f1e645ad17d62bb7193361f962d7": {
         "unique_fixtures": 212,
@@ -153,7 +396,101 @@
           },
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 212,
+              "settled_matches": 38,
+              "pending_matches": 164,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 66,
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 98
+              },
+              "void_matches": 10,
+              "neuron": {
+                "accuracy": 0.631578947368421,
+                "log_loss": 0.6309447429825891,
+                "brier": 0.2207853658566842,
+                "ece_10": 0.12219789473684207
+              },
+              "elo": {
+                "accuracy": 0.5789473684210527,
+                "log_loss": 0.6375724196550686,
+                "brier": 0.22366016488141835,
+                "ece_10": 0.18965598503378048
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 11,
+                "missing_baseline_matches": 27,
+                "neuron": {
+                  "accuracy": 0.45454545454545453,
+                  "log_loss": 0.7091044057326976,
+                  "brier": 0.2589983953939091,
+                  "ece_10": 0.24285881818181818
+                },
+                "production": {
+                  "accuracy": 0.2727272727272727,
+                  "log_loss": 0.7030031370974154,
+                  "brier": 0.25520393788788576,
+                  "ece_10": 0.32559520611072723
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 212,
+              "settled_matches": 38,
+              "pending_matches": 164,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 66,
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 98
+              },
+              "void_matches": 10,
+              "neuron": {
+                "accuracy": 0.631578947368421,
+                "log_loss": 0.6309447429825891,
+                "brier": 0.2207853658566842,
+                "ece_10": 0.12219789473684207
+              },
+              "elo": {
+                "accuracy": 0.5789473684210527,
+                "log_loss": 0.6375724196550686,
+                "brier": 0.22366016488141835,
+                "ece_10": 0.18965598503378048
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 11,
+                "missing_baseline_matches": 27,
+                "neuron": {
+                  "accuracy": 0.45454545454545453,
+                  "log_loss": 0.7091044057326976,
+                  "brier": 0.2589983953939091,
+                  "ece_10": 0.24285881818181818
+                },
+                "production": {
+                  "accuracy": 0.2727272727272727,
+                  "log_loss": 0.7030031370974154,
+                  "brier": 0.25520393788788576,
+                  "ece_10": 0.32559520611072723
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       },
       "neuron-9817ecdab70dd503db4a183f2386a37e2fa2c30f8cde9698303967d166c73c9c": {
         "unique_fixtures": 285,
@@ -197,7 +534,103 @@
           },
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 285,
+              "settled_matches": 52,
+              "pending_matches": 225,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 121,
+                "NO_EXACT_HISTORY_MATCH": 103,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 1
+              },
+              "void_matches": 8,
+              "neuron": {
+                "accuracy": 0.5769230769230769,
+                "log_loss": 0.6627000197873858,
+                "brier": 0.2349529193282115,
+                "ece_10": 0.1337190192307692
+              },
+              "elo": {
+                "accuracy": 0.6730769230769231,
+                "log_loss": 0.624423672745746,
+                "brier": 0.2165606398346957,
+                "ece_10": 0.11382423428024292
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 50,
+                "missing_baseline_matches": 2,
+                "neuron": {
+                  "accuracy": 0.58,
+                  "log_loss": 0.6576436619114554,
+                  "brier": 0.23253146279813997,
+                  "ece_10": 0.12942074000000003
+                },
+                "production": {
+                  "accuracy": 0.56,
+                  "log_loss": 0.6578649028549809,
+                  "brier": 0.23242145212562465,
+                  "ece_10": 0.07031806680367997
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 285,
+              "settled_matches": 52,
+              "pending_matches": 225,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 121,
+                "NO_EXACT_HISTORY_MATCH": 103,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 1
+              },
+              "void_matches": 8,
+              "neuron": {
+                "accuracy": 0.5769230769230769,
+                "log_loss": 0.6627000197873858,
+                "brier": 0.2349529193282115,
+                "ece_10": 0.1337190192307692
+              },
+              "elo": {
+                "accuracy": 0.6730769230769231,
+                "log_loss": 0.624423672745746,
+                "brier": 0.2165606398346957,
+                "ece_10": 0.11382423428024292
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 50,
+                "missing_baseline_matches": 2,
+                "neuron": {
+                  "accuracy": 0.58,
+                  "log_loss": 0.6576436619114554,
+                  "brier": 0.23253146279813997,
+                  "ece_10": 0.12942074000000003
+                },
+                "production": {
+                  "accuracy": 0.56,
+                  "log_loss": 0.6578649028549809,
+                  "brier": 0.23242145212562465,
+                  "ece_10": 0.07031806680367997
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       },
       "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66": {
         "unique_fixtures": 284,
@@ -241,7 +674,103 @@
           },
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 284,
+              "settled_matches": 66,
+              "pending_matches": 209,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 106,
+                "NO_EXACT_HISTORY_MATCH": 73,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 30
+              },
+              "void_matches": 9,
+              "neuron": {
+                "accuracy": 0.6212121212121212,
+                "log_loss": 0.6622409098766197,
+                "brier": 0.23424954031713635,
+                "ece_10": 0.05605401515151519
+              },
+              "elo": {
+                "accuracy": 0.5454545454545454,
+                "log_loss": 0.6696602362910266,
+                "brier": 0.23870808864159454,
+                "ece_10": 0.11122930957350095
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 66,
+                "missing_baseline_matches": 0,
+                "neuron": {
+                  "accuracy": 0.6212121212121212,
+                  "log_loss": 0.6622409098766197,
+                  "brier": 0.23424954031713635,
+                  "ece_10": 0.08187816666666664
+                },
+                "production": {
+                  "accuracy": 0.5909090909090909,
+                  "log_loss": 0.693716951980199,
+                  "brier": 0.2497029322058263,
+                  "ece_10": 0.15237280794583336
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 284,
+              "settled_matches": 66,
+              "pending_matches": 209,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 106,
+                "NO_EXACT_HISTORY_MATCH": 73,
+                "EXACT_HISTORY_MATCH_NOT_TERMINAL": 30
+              },
+              "void_matches": 9,
+              "neuron": {
+                "accuracy": 0.6212121212121212,
+                "log_loss": 0.6622409098766197,
+                "brier": 0.23424954031713635,
+                "ece_10": 0.05605401515151519
+              },
+              "elo": {
+                "accuracy": 0.5454545454545454,
+                "log_loss": 0.6696602362910266,
+                "brier": 0.23870808864159454,
+                "ece_10": 0.11122930957350095
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 66,
+                "missing_baseline_matches": 0,
+                "neuron": {
+                  "accuracy": 0.6212121212121212,
+                  "log_loss": 0.6622409098766197,
+                  "brier": 0.23424954031713635,
+                  "ece_10": 0.08187816666666664
+                },
+                "production": {
+                  "accuracy": 0.5909090909090909,
+                  "log_loss": 0.693716951980199,
+                  "brier": 0.2497029322058263,
+                  "ece_10": 0.15237280794583336
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       },
       "neuron-dde77f2c18073f88a288e5f3f32f8bf5474b11b26cbc377e4344f907f88c4cc0": {
         "unique_fixtures": 386,
@@ -274,7 +803,81 @@
           "production": null,
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 386,
+              "settled_matches": 120,
+              "pending_matches": 247,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 106,
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 141
+              },
+              "void_matches": 19,
+              "neuron": {
+                "accuracy": 0.6416666666666667,
+                "log_loss": 0.634681466065356,
+                "brier": 0.22253559034915,
+                "ece_10": 0.05579070000000004
+              },
+              "elo": {
+                "accuracy": 0.6083333333333333,
+                "log_loss": 0.6491389782253744,
+                "brier": 0.22950032729937556,
+                "ece_10": 0.13778022587504934
+              },
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 120,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 386,
+              "settled_matches": 120,
+              "pending_matches": 247,
+              "pending_reasons": {
+                "NO_EXACT_HISTORY_MATCH": 106,
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 141
+              },
+              "void_matches": 19,
+              "neuron": {
+                "accuracy": 0.6416666666666667,
+                "log_loss": 0.634681466065356,
+                "brier": 0.22253559034915,
+                "ece_10": 0.05579070000000004
+              },
+              "elo": {
+                "accuracy": 0.6083333333333333,
+                "log_loss": 0.6491389782253744,
+                "brier": 0.22950032729937556,
+                "ece_10": 0.13778022587504934
+              },
+              "production_comparison": {
+                "status": "NO_FROZEN_PRODUCTION_BASELINE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 0,
+                "missing_baseline_matches": 120,
+                "neuron": null,
+                "production": null,
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       },
       "neuron-e5140952895a2184e43318c3dbaa74f9b7090dbaff7af674072a5eeaa7c98b3f": {
         "unique_fixtures": 372,
@@ -317,12 +920,106 @@
           },
           "promotion_authorized": false,
           "historical_reconstruction": false
-        }
+        },
+        "segments": {
+          "surface": {
+            "UNKNOWN": {
+              "unique_fixtures": 372,
+              "settled_matches": 110,
+              "pending_matches": 252,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 156,
+                "NO_EXACT_HISTORY_MATCH": 96
+              },
+              "void_matches": 10,
+              "neuron": {
+                "accuracy": 0.5818181818181818,
+                "log_loss": 0.6588671789484044,
+                "brier": 0.23476207812374547,
+                "ece_10": 0.07884547272727276
+              },
+              "elo": {
+                "accuracy": 0.6,
+                "log_loss": 0.6569758608993156,
+                "brier": 0.23289496326120465,
+                "ece_10": 0.08318771755242897
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 110,
+                "missing_baseline_matches": 0,
+                "neuron": {
+                  "accuracy": 0.5818181818181818,
+                  "log_loss": 0.6588671789484044,
+                  "brier": 0.23476207812374547,
+                  "ece_10": 0.12362049090909091
+                },
+                "production": {
+                  "accuracy": 0.6090909090909091,
+                  "log_loss": 0.6550777875923002,
+                  "brier": 0.23147560841133158,
+                  "ece_10": 0.04257774752265451
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          },
+          "tour": {
+            "UNKNOWN": {
+              "unique_fixtures": 372,
+              "settled_matches": 110,
+              "pending_matches": 252,
+              "pending_reasons": {
+                "EXACT_MATCH_ID_SCHEDULE_CONFLICT": 156,
+                "NO_EXACT_HISTORY_MATCH": 96
+              },
+              "void_matches": 10,
+              "neuron": {
+                "accuracy": 0.5818181818181818,
+                "log_loss": 0.6588671789484044,
+                "brier": 0.23476207812374547,
+                "ece_10": 0.07884547272727276
+              },
+              "elo": {
+                "accuracy": 0.6,
+                "log_loss": 0.6569758608993156,
+                "brier": 0.23289496326120465,
+                "ece_10": 0.08318771755242897
+              },
+              "production_comparison": {
+                "status": "HAS_FROZEN_COMMON_EVIDENCE",
+                "baseline": "FROZEN_AUTOLEARN_ENSEMBLE_PRE_SELECTION",
+                "population": "FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE_AND_SELECTION",
+                "settled_matches": 110,
+                "missing_baseline_matches": 0,
+                "neuron": {
+                  "accuracy": 0.5818181818181818,
+                  "log_loss": 0.6588671789484044,
+                  "brier": 0.23476207812374547,
+                  "ece_10": 0.12362049090909091
+                },
+                "production": {
+                  "accuracy": 0.6090909090909091,
+                  "log_loss": 0.6550777875923002,
+                  "brier": 0.23147560841133158,
+                  "ece_10": 0.04257774752265451
+                },
+                "promotion_authorized": false,
+                "historical_reconstruction": false
+              }
+            }
+          }
+        },
+        "market": "match_winner",
+        "evidence_policy": "DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM"
       }
     },
     "automatic_promotion": false,
     "profitability_claimed": false,
-    "evaluated_at": "2026-11-11T14:44:14.151017+00:00"
+    "evaluated_at": "2026-11-11T16:09:38.521246+00:00"
   },
   "matches": [
     {
@@ -330,7 +1027,9 @@
       "p1": "Thiago Agustin Pernas",
       "p2": "Francisco Crosio",
       "scheduled_time": "2026-11-11T14:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -351,7 +1050,9 @@
       "p1": "Juan Ignacio Gallego",
       "p2": "Valentino Grippo",
       "scheduled_time": "2026-11-11T14:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "juan ignacio gallego",
@@ -372,7 +1073,9 @@
       "p1": "Federico Iannaccone",
       "p2": "Matteo Gribaldo",
       "scheduled_time": "2026-11-11T14:10:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "federico iannaccone",
@@ -393,7 +1096,9 @@
       "p1": "Joao Victor Couto Loureiro",
       "p2": "Valerio Aboian",
       "scheduled_time": "2026-11-11T14:20:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -414,7 +1119,9 @@
       "p1": "Pedro Rodrigues Longobardi",
       "p2": "Enrique Bogo",
       "scheduled_time": "2026-11-11T14:20:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "pedro rodrigues longobardi",
@@ -435,7 +1142,9 @@
       "p1": "Luisa Hrda",
       "p2": "Kauany Rodrigues",
       "scheduled_time": "2026-11-11T14:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -456,7 +1165,9 @@
       "p1": "Luana Plaza Araujo",
       "p2": "Giulia Gomes Ferreira",
       "scheduled_time": "2026-11-11T14:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -477,7 +1188,9 @@
       "p1": "Hugo Gaston",
       "p2": "Matteo Martineau",
       "scheduled_time": "2026-11-11T14:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "hugo gaston",
@@ -498,7 +1211,9 @@
       "p1": "Julia Pretti",
       "p2": "E. L. Lobo A.",
       "scheduled_time": "2026-11-11T14:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -519,7 +1234,9 @@
       "p1": "Bianca Bernardes",
       "p2": "Marjorie Souza",
       "scheduled_time": "2026-11-11T14:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -540,7 +1257,9 @@
       "p1": "Taylor Fritz",
       "p2": "Cameron Norrie",
       "scheduled_time": "2026-11-11T14:40:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "atp",
       "history_identity": {
         "p1": {
           "history_key": "taylor fritz",
@@ -561,7 +1280,9 @@
       "p1": "Giuseppe La Vela",
       "p2": "Leonardo Primucci",
       "scheduled_time": "2026-11-11T14:45:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "giuseppe la vela",
@@ -575,14 +1296,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218680,
       "p1": "Luca Potenza",
       "p2": "Gabriele Pennaforti",
-      "scheduled_time": "2026-11-11T14:55:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T14:55:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "luca potenza",
@@ -595,17 +1318,17 @@
           "retained_matches": 11
         }
       },
-      "p1_win_probability": 0.639073,
-      "p2_win_probability": 0.360927,
-      "elo_p1_win_probability": 0.5695065017502278,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218892,
       "p1": "Tatjana Maria",
       "p2": "Alice Tubello",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "tatjana maria",
@@ -618,17 +1341,17 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.652296,
-      "p2_win_probability": 0.347704,
-      "elo_p1_win_probability": 0.4976921190747304,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219025,
       "p1": "Andrea Lazaro Garcia",
       "p2": "Jazmin Ortenzi",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "andrea lazaro garcia",
@@ -641,17 +1364,17 @@
           "retained_matches": 7
         }
       },
-      "p1_win_probability": 0.397041,
-      "p2_win_probability": 0.602959,
-      "elo_p1_win_probability": 0.46631386738985997,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218659,
       "p1": "Aran Teixido Garcia",
       "p2": "Ema Burgic",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -665,14 +1388,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219118,
       "p1": "Rocco Valente",
       "p2": "Tomas Giangrasso",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -686,14 +1411,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219069,
       "p1": "Anita Sahdiieva",
       "p2": "Sofia Rocchetti",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -707,14 +1434,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219028,
       "p1": "Nikolas Sanchez Izquierdo",
       "p2": "Filip Misolic",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "nikolas sanchez izquierdo",
@@ -727,17 +1456,17 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.610967,
-      "p2_win_probability": 0.389033,
-      "elo_p1_win_probability": 0.5099771993928821,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219103,
       "p1": "Enzo Kohlmann de Freitas",
       "p2": "Zsombor Velcz",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "enzo kohlmann de freitas",
@@ -751,14 +1480,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218995,
       "p1": "Polona Hercog",
       "p2": "Carole Monnet",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -772,14 +1503,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218658,
       "p1": "Kylie Collins",
       "p2": "Capucine Jauffret",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -793,14 +1526,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219005,
       "p1": "Santiago De La Fuente",
       "p2": "Max Alcala Gurri",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "santiago de la fuente",
@@ -813,17 +1548,17 @@
           "retained_matches": 55
         }
       },
-      "p1_win_probability": 0.171316,
-      "p2_win_probability": 0.828684,
-      "elo_p1_win_probability": 0.2697454189126282,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219117,
       "p1": "Valentin Garay",
       "p2": "Tomas Farjat",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "valentin garay",
@@ -836,17 +1571,17 @@
           "retained_matches": 3
         }
       },
-      "p1_win_probability": 0.368135,
-      "p2_win_probability": 0.631865,
-      "elo_p1_win_probability": 0.5300204738299176,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219100,
       "p1": "William Nolan",
       "p2": "Justin Riley Anson",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -860,14 +1595,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218660,
       "p1": "Sachia Vickery",
       "p2": "Michaela Laki",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -881,14 +1618,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219149,
       "p1": "Matt Kuhar",
       "p2": "Joshua Peck",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "matt kuhar",
@@ -902,14 +1641,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219102,
       "p1": "Vitor Ceolin Joao Goncalves",
       "p2": "Evan Bynoe",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "joao vitor goncalves ceolin",
@@ -922,17 +1663,17 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.48904,
-      "p2_win_probability": 0.51096,
-      "elo_p1_win_probability": 0.5066535313385009,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219119,
       "p1": "Fermin Tenti",
       "p2": "Ian Luca Vertberger",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "fermin tenti",
@@ -946,14 +1687,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219146,
       "p1": "Thomas Gerbaud",
       "p2": "Jaden Weekes",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -967,14 +1710,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219151,
       "p1": "Theodore Dean",
       "p2": "Niels Peter Van Noord",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -988,14 +1733,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218342,
       "p1": "Cannon Kingsley",
       "p2": "Hoyoung Roh",
-      "scheduled_time": "2026-11-11T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "cannon kingsley",
@@ -1008,17 +1755,17 @@
           "retained_matches": 4
         }
       },
-      "p1_win_probability": 0.702078,
-      "p2_win_probability": 0.297922,
-      "elo_p1_win_probability": 0.49781851919690967,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219101,
       "p1": "Corey Craig",
       "p2": "E. Sanchez Bronzetti",
       "scheduled_time": "2026-11-11T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1032,14 +1779,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 217721,
       "p1": "Ugo Humbert",
       "p2": "Borna Gojo",
-      "scheduled_time": "2026-11-11T15:15:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:15:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "atp",
       "history_identity": {
         "p1": {
           "history_key": "ugo humbert",
@@ -1052,17 +1801,17 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.639548,
-      "p2_win_probability": 0.360452,
-      "elo_p1_win_probability": 0.45633018293338,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219104,
       "p1": "Jack Secord",
       "p2": "Tristan McCormick",
-      "scheduled_time": "2026-11-11T15:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T15:30:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "jack secord",
@@ -1075,17 +1824,17 @@
           "retained_matches": 14
         }
       },
-      "p1_win_probability": 0.311518,
-      "p2_win_probability": 0.688482,
-      "elo_p1_win_probability": 0.6275826420048781,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219159,
       "p1": "Ryan Colby",
       "p2": "Max Sheldon",
       "scheduled_time": "2026-11-11T15:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1099,14 +1848,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219107,
       "p1": "Robert Watzka",
       "p2": "Tomas Jirousek",
       "scheduled_time": "2026-11-11T15:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1120,14 +1871,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219158,
       "p1": "Felix Corwin",
       "p2": "Mitchell Sheldon",
       "scheduled_time": "2026-11-11T15:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "felix corwin",
@@ -1141,14 +1894,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219105,
       "p1": "Ryan Colby",
       "p2": "Mitchell Sheldon",
       "scheduled_time": "2026-11-11T15:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1162,14 +1917,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219106,
       "p1": "Felix Corwin",
       "p2": "Mi. Sheldon",
       "scheduled_time": "2026-11-11T15:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "felix corwin",
@@ -1183,14 +1940,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218343,
       "p1": "Daniel De Jonge",
       "p2": "Sasha Rozin",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "daniel de jonge",
@@ -1204,14 +1963,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219150,
       "p1": "Mikael Arseneault",
       "p2": "Volodymyr Gurenko",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "mikael arseneault",
@@ -1225,14 +1986,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219075,
       "p1": "Arina Bulatova",
       "p2": "Ava Catanzarite",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1246,14 +2009,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218839,
       "p1": "Jonas Forejtek",
       "p2": "Moise Kouame",
-      "scheduled_time": "2026-11-11T16:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T16:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "jonas forejtek",
@@ -1266,17 +2031,17 @@
           "retained_matches": 46
         }
       },
-      "p1_win_probability": 0.292107,
-      "p2_win_probability": 0.707893,
-      "elo_p1_win_probability": 0.4605050467429429,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219067,
       "p1": "Yael Saffar",
       "p2": "Dasha Plekhanova",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1290,14 +2055,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219006,
       "p1": "Clement Tabur",
       "p2": "Zsombor Piros",
-      "scheduled_time": "2026-11-11T16:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T16:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "clement tabur",
@@ -1310,17 +2077,17 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.3545,
-      "p2_win_probability": 0.6455,
-      "elo_p1_win_probability": 0.3405914629568403,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219138,
       "p1": "Hunter Heck",
       "p2": "Rishvanth Krishna",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "hunter heck",
@@ -1334,14 +2101,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219003,
       "p1": "Clement Chidekh",
       "p2": "Lui Maxted",
-      "scheduled_time": "2026-11-11T16:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T16:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "clement chidekh",
@@ -1354,17 +2123,17 @@
           "retained_matches": 15
         }
       },
-      "p1_win_probability": 0.714666,
-      "p2_win_probability": 0.285334,
-      "elo_p1_win_probability": 0.6807257972672055,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219152,
       "p1": "Louis Wessels",
       "p2": "Daniel Kliebhan",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "louis wessels",
@@ -1378,14 +2147,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219141,
       "p1": "Alejandro Moreno",
       "p2": "Alexander Okonkwo",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1399,14 +2170,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219070,
       "p1": "Julia Adams",
       "p2": "Adriana Reami",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1420,14 +2193,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219147,
       "p1": "Oskar Brostrom Poulsen",
       "p2": "Tiago Silva",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "oskar brostrom poulsen",
@@ -1441,14 +2216,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219143,
       "p1": "Keaton Hance",
       "p2": "Emanuel Ivanisevic",
-      "scheduled_time": "2026-11-11T16:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "scheduled_time": "2026-11-11T16:00:00Z",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "keaton hance",
@@ -1461,17 +2238,17 @@
           "retained_matches": 3
         }
       },
-      "p1_win_probability": 0.767354,
-      "p2_win_probability": 0.232646,
-      "elo_p1_win_probability": 0.5563571893383693,
-      "status": "SHADOW_SCORE"
+      "status": "NO_SCORE",
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 218662,
       "p1": "Bor Artnak",
       "p2": "Eli Stephenson",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "bor artnak",
@@ -1485,14 +2262,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219071,
       "p1": "Carolina Kuhl",
       "p2": "Kolie Allen",
       "scheduled_time": "2026-11-11T16:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1506,14 +2285,16 @@
         }
       },
       "status": "NO_SCORE",
-      "reason": "NO_PLAYER_HISTORY"
+      "reason": "MATCH_NOT_PREMATCH"
     },
     {
       "match_id": 219057,
       "p1": "Julia Camargo Silva Konishi",
       "p2": "Camila Markus",
       "scheduled_time": "2026-11-11T16:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1534,7 +2315,9 @@
       "p1": "Luna Maria Cinalli",
       "p2": "M. M. Citolino",
       "scheduled_time": "2026-11-11T16:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1555,7 +2338,9 @@
       "p1": "Elizabeth Mandlik",
       "p2": "Lucia Bronzetti",
       "scheduled_time": "2026-11-11T16:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "elizabeth mandlik",
@@ -1568,8 +2353,8 @@
           "retained_matches": 41
         }
       },
-      "p1_win_probability": 0.423488,
-      "p2_win_probability": 0.576512,
+      "p1_win_probability": 0.425109,
+      "p2_win_probability": 0.574891,
       "elo_p1_win_probability": 0.5419762538943566,
       "status": "SHADOW_SCORE"
     },
@@ -1578,7 +2363,9 @@
       "p1": "Tobia Grandinetti",
       "p2": "Joseph Hernandez",
       "scheduled_time": "2026-11-11T16:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1599,7 +2386,9 @@
       "p1": "Ryo Tabata",
       "p2": "Tristan Boyer",
       "scheduled_time": "2026-11-11T16:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "ryo tabata",
@@ -1612,8 +2401,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.252921,
-      "p2_win_probability": 0.747079,
+      "p1_win_probability": 0.226227,
+      "p2_win_probability": 0.773773,
       "elo_p1_win_probability": 0.40745563255944867,
       "status": "SHADOW_SCORE"
     },
@@ -1622,7 +2411,9 @@
       "p1": "Irene Burillo Escorihuela",
       "p2": "Julia Grabher",
       "scheduled_time": "2026-11-11T16:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "irene burillo escorihuela",
@@ -1635,8 +2426,8 @@
           "retained_matches": 21
         }
       },
-      "p1_win_probability": 0.438753,
-      "p2_win_probability": 0.561247,
+      "p1_win_probability": 0.42915,
+      "p2_win_probability": 0.57085,
       "elo_p1_win_probability": 0.5785434175706362,
       "status": "SHADOW_SCORE"
     },
@@ -1645,7 +2436,9 @@
       "p1": "Sofia Costoulas",
       "p2": "Laura Samson",
       "scheduled_time": "2026-11-11T16:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "sofia costoulas",
@@ -1658,8 +2451,8 @@
           "retained_matches": 5
         }
       },
-      "p1_win_probability": 0.438142,
-      "p2_win_probability": 0.561858,
+      "p1_win_probability": 0.424983,
+      "p2_win_probability": 0.575017,
       "elo_p1_win_probability": 0.45707046388501704,
       "status": "SHADOW_SCORE"
     },
@@ -1668,7 +2461,9 @@
       "p1": "Tomas Dummer Macedo",
       "p2": "Kaue Noatto",
       "scheduled_time": "2026-11-11T16:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1689,7 +2484,9 @@
       "p1": "Wilson Leite",
       "p2": "Juan Bautista Torres",
       "scheduled_time": "2026-11-11T16:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "wilson leite",
@@ -1702,8 +2499,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.285411,
-      "p2_win_probability": 0.714589,
+      "p1_win_probability": 0.341811,
+      "p2_win_probability": 0.658189,
       "elo_p1_win_probability": 0.4330984476860332,
       "status": "SHADOW_SCORE"
     },
@@ -1712,7 +2509,9 @@
       "p1": "Maxwell McKennon",
       "p2": "Dante Carlos Teramo",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "maxwell mckennon",
@@ -1733,7 +2532,9 @@
       "p1": "Carolina Bohrer Martins",
       "p2": "Rachel Gailis",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1754,7 +2555,9 @@
       "p1": "Nikola Slavic",
       "p2": "Felix Roussel",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "nikola slavic",
@@ -1775,7 +2578,9 @@
       "p1": "Ofek Shimanov",
       "p2": "Tom Sickenberger",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "ofek shimanov",
@@ -1796,7 +2601,9 @@
       "p1": "Ashley Lahey",
       "p2": "Brooke Black",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1817,7 +2624,9 @@
       "p1": "Gray Voelzke",
       "p2": "Mauricio Echazu",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "gray voelzke",
@@ -1838,7 +2647,9 @@
       "p1": "Matias Soto",
       "p2": "Alexander Bernard",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "matias soto",
@@ -1851,8 +2662,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.7662,
-      "p2_win_probability": 0.2338,
+      "p1_win_probability": 0.764417,
+      "p2_win_probability": 0.235583,
       "elo_p1_win_probability": 0.5107788850861044,
       "status": "SHADOW_SCORE"
     },
@@ -1861,7 +2672,9 @@
       "p1": "Amit Vales",
       "p2": "Maxime St-Hilaire",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "amit vales",
@@ -1882,7 +2695,9 @@
       "p1": "Jerrid Jr Gaines",
       "p2": "Kamil Stolarczyk",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1903,7 +2718,9 @@
       "p1": "Rafael De Alba",
       "p2": "Elijah Strode",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "rafael de alba",
@@ -1916,8 +2733,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.542974,
-      "p2_win_probability": 0.457026,
+      "p1_win_probability": 0.511872,
+      "p2_win_probability": 0.488128,
       "elo_p1_win_probability": 0.4444229306432089,
       "status": "SHADOW_SCORE"
     },
@@ -1926,7 +2743,9 @@
       "p1": "Dragos Nicolae Cazacu",
       "p2": "Jacob Brumm",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "dragos nicolae cazacu",
@@ -1939,8 +2758,8 @@
           "retained_matches": 2
         }
       },
-      "p1_win_probability": 0.59658,
-      "p2_win_probability": 0.40342,
+      "p1_win_probability": 0.575415,
+      "p2_win_probability": 0.424585,
       "elo_p1_win_probability": 0.5358806823628901,
       "status": "SHADOW_SCORE"
     },
@@ -1949,7 +2768,9 @@
       "p1": "Denis Petak",
       "p2": "Charlie Snow",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1970,7 +2791,9 @@
       "p1": "Dasha Ivanova",
       "p2": "Malwina Rowinska",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -1991,7 +2814,9 @@
       "p1": "Hiroki Sakagawa",
       "p2": "Victor Lilov",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2012,7 +2837,9 @@
       "p1": "Alexander Shevchenko",
       "p2": "Casper Ruud",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "atp",
       "history_identity": {
         "p1": {
           "history_key": "alexander shevchenko",
@@ -2025,8 +2852,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.194377,
-      "p2_win_probability": 0.805623,
+      "p1_win_probability": 0.188159,
+      "p2_win_probability": 0.811841,
       "elo_p1_win_probability": 0.24198410660133512,
       "status": "SHADOW_SCORE"
     },
@@ -2035,7 +2862,9 @@
       "p1": "Max Wiskandt",
       "p2": "Jake Fellows",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "max wiskandt",
@@ -2048,8 +2877,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.77417,
-      "p2_win_probability": 0.22583,
+      "p1_win_probability": 0.772955,
+      "p2_win_probability": 0.227045,
       "elo_p1_win_probability": 0.39212271086224126,
       "status": "SHADOW_SCORE"
     },
@@ -2058,7 +2887,9 @@
       "p1": "Davide Tortora",
       "p2": "Lucca Liu",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2079,7 +2910,9 @@
       "p1": "Charles Bertimon",
       "p2": "Youcef Rihane",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2100,7 +2933,9 @@
       "p1": "Kayla Cross",
       "p2": "Ingrid Carolina Millan",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "kayla cross",
@@ -2121,7 +2956,9 @@
       "p1": "Jannik Opitz",
       "p2": "Miko Lapalme",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "jannik opitz",
@@ -2142,7 +2979,9 @@
       "p1": "Jack Anthrop",
       "p2": "Aidan McHugh",
       "scheduled_time": "2026-11-11T17:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "jack anthrop",
@@ -2155,8 +2994,8 @@
           "retained_matches": 3
         }
       },
-      "p1_win_probability": 0.469613,
-      "p2_win_probability": 0.530387,
+      "p1_win_probability": 0.441211,
+      "p2_win_probability": 0.558789,
       "elo_p1_win_probability": 0.5001428265778979,
       "status": "SHADOW_SCORE"
     },
@@ -2165,7 +3004,9 @@
       "p1": "Jessica Hinojosa Gomez",
       "p2": "Anastasia Zolotareva",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2186,7 +3027,9 @@
       "p1": "Cadence Brace",
       "p2": "Carolina Gomez",
       "scheduled_time": "2026-11-11T17:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "cadence brace",
@@ -2207,7 +3050,9 @@
       "p1": "Michael Mmoh",
       "p2": "Daniel Milavsky",
       "scheduled_time": "2026-11-11T17:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "michael mmoh",
@@ -2220,8 +3065,8 @@
           "retained_matches": 45
         }
       },
-      "p1_win_probability": 0.630515,
-      "p2_win_probability": 0.369485,
+      "p1_win_probability": 0.655009,
+      "p2_win_probability": 0.344991,
       "elo_p1_win_probability": 0.6695187345752442,
       "status": "SHADOW_SCORE"
     },
@@ -2230,7 +3075,9 @@
       "p1": "Andreja Petrovic",
       "p2": "Nikita Filin",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2251,7 +3098,9 @@
       "p1": "Allegra Korpanec Davies",
       "p2": "Lexington Reed",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2272,7 +3121,9 @@
       "p1": "Tom Gentzsch",
       "p2": "Benjamin Bonzi",
       "scheduled_time": "2026-11-11T18:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "tom gentzsch",
@@ -2285,8 +3136,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.421902,
-      "p2_win_probability": 0.578098,
+      "p1_win_probability": 0.435351,
+      "p2_win_probability": 0.564649,
       "elo_p1_win_probability": 0.43598473284244965,
       "status": "SHADOW_SCORE"
     },
@@ -2295,7 +3146,9 @@
       "p1": "Alec Deckers",
       "p2": "Brandon Carpico",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "alec deckers",
@@ -2316,7 +3169,9 @@
       "p1": "Sophie Suh",
       "p2": "Maria Taranova",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2337,7 +3192,9 @@
       "p1": "Isabella Kruger",
       "p2": "Neda Rahimkhani",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2358,7 +3215,9 @@
       "p1": "Aishi Das",
       "p2": "Emma Rizzetto",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2379,7 +3238,9 @@
       "p1": "Claudia Gasparovic",
       "p2": "Mia Kupres",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2400,7 +3261,9 @@
       "p1": "Bianca Andreescu",
       "p2": "Laura Pigossi",
       "scheduled_time": "2026-11-11T18:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "bianca andreescu",
@@ -2413,8 +3276,8 @@
           "retained_matches": 9
         }
       },
-      "p1_win_probability": 0.660633,
-      "p2_win_probability": 0.339367,
+      "p1_win_probability": 0.648328,
+      "p2_win_probability": 0.351672,
       "elo_p1_win_probability": 0.4494702513285979,
       "status": "SHADOW_SCORE"
     },
@@ -2423,7 +3286,9 @@
       "p1": "Gavin Young",
       "p2": "Matthew Forbes",
       "scheduled_time": "2026-11-11T18:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "gavin young",
@@ -2436,8 +3301,8 @@
           "retained_matches": 5
         }
       },
-      "p1_win_probability": 0.285365,
-      "p2_win_probability": 0.714635,
+      "p1_win_probability": 0.320743,
+      "p2_win_probability": 0.679257,
       "elo_p1_win_probability": 0.4964961605324637,
       "status": "SHADOW_SCORE"
     },
@@ -2446,7 +3311,9 @@
       "p1": "Victoria Hu",
       "p2": "Jana Hossam Salah",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2467,7 +3334,9 @@
       "p1": "Lan Mi",
       "p2": "Jennifer Rosa Dourado Zimermman",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2488,7 +3357,9 @@
       "p1": "Aidan Kim",
       "p2": "Jonah Braswell",
       "scheduled_time": "2026-11-11T18:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "aidan kim",
@@ -2509,7 +3380,9 @@
       "p1": "Marina Ribera Bassols",
       "p2": "Maria Lourdes Carle",
       "scheduled_time": "2026-11-11T18:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "marina bassols ribera",
@@ -2522,8 +3395,8 @@
           "retained_matches": 14
         }
       },
-      "p1_win_probability": 0.599524,
-      "p2_win_probability": 0.400476,
+      "p1_win_probability": 0.656578,
+      "p2_win_probability": 0.343422,
       "elo_p1_win_probability": 0.5295288636992388,
       "status": "SHADOW_SCORE"
     },
@@ -2532,7 +3405,9 @@
       "p1": "Miomir Kecmanovic",
       "p2": "Holger Rune",
       "scheduled_time": "2026-11-11T18:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "atp",
       "history_identity": {
         "p1": {
           "history_key": "miomir kecmanovic",
@@ -2545,8 +3420,8 @@
           "retained_matches": 62
         }
       },
-      "p1_win_probability": 0.551383,
-      "p2_win_probability": 0.448617,
+      "p1_win_probability": 0.540342,
+      "p2_win_probability": 0.459658,
       "elo_p1_win_probability": 0.3553290823745644,
       "status": "SHADOW_SCORE"
     },
@@ -2555,7 +3430,9 @@
       "p1": "Alan Raul Sau Franco",
       "p2": "Luis Carlos Alvarez Valdes",
       "scheduled_time": "2026-11-11T18:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "alan raul sau franco",
@@ -2576,7 +3453,9 @@
       "p1": "Demi Tran",
       "p2": "Malaika Rapolu",
       "scheduled_time": "2026-11-11T19:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2597,7 +3476,9 @@
       "p1": "Rodrigo Alujas",
       "p2": "Blu Baker",
       "scheduled_time": "2026-11-11T19:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "rodrigo alujas",
@@ -2618,7 +3499,9 @@
       "p1": "Matteo Covato",
       "p2": "Kai Thompson",
       "scheduled_time": "2026-11-11T19:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "matteo covato",
@@ -2631,8 +3514,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.647522,
-      "p2_win_probability": 0.352478,
+      "p1_win_probability": 0.587186,
+      "p2_win_probability": 0.412814,
       "elo_p1_win_probability": 0.49555129675348547,
       "status": "SHADOW_SCORE"
     },
@@ -2641,7 +3524,9 @@
       "p1": "Emiliano Aguilera Guerrero",
       "p2": "Jesse Flores",
       "scheduled_time": "2026-11-11T19:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2662,7 +3547,9 @@
       "p1": "Miriana Tona",
       "p2": "Julia Garcia",
       "scheduled_time": "2026-11-11T19:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "miriana tona",
@@ -2675,8 +3562,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.522002,
-      "p2_win_probability": 0.477998,
+      "p1_win_probability": 0.525316,
+      "p2_win_probability": 0.474684,
       "elo_p1_win_probability": 0.5023213850049015,
       "status": "SHADOW_SCORE"
     },
@@ -2685,7 +3572,9 @@
       "p1": "Despina Papamichail",
       "p2": "Caterina Odorizzi",
       "scheduled_time": "2026-11-11T19:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "despina papamichail",
@@ -2706,7 +3595,9 @@
       "p1": "Ipek Oz",
       "p2": "Camille Allegre",
       "scheduled_time": "2026-11-11T19:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "ipek oz",
@@ -2727,7 +3618,9 @@
       "p1": "Ana Grubor",
       "p2": "Virginia Crocker",
       "scheduled_time": "2026-11-11T19:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2748,7 +3641,9 @@
       "p1": "Sascha Gueymard Wayenburg",
       "p2": "Mattia Bellucci",
       "scheduled_time": "2026-11-11T19:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "sascha gueymard wayenburg",
@@ -2761,8 +3656,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.322819,
-      "p2_win_probability": 0.677181,
+      "p1_win_probability": 0.344979,
+      "p2_win_probability": 0.655021,
       "elo_p1_win_probability": 0.34676524004201226,
       "status": "SHADOW_SCORE"
     },
@@ -2771,7 +3666,9 @@
       "p1": "Eva Maria Ionescu",
       "p2": "Catherine Rennard",
       "scheduled_time": "2026-11-11T19:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2792,7 +3689,9 @@
       "p1": "Merna Refaat",
       "p2": "Katelynn Kock",
       "scheduled_time": "2026-11-11T19:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2813,7 +3712,9 @@
       "p1": "Ava Esposito Cogan",
       "p2": "Briana Rademacher",
       "scheduled_time": "2026-11-11T19:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2834,7 +3735,9 @@
       "p1": "Elina Svitolina",
       "p2": "Karolina Muchova",
       "scheduled_time": "2026-11-11T20:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "wta",
       "history_identity": {
         "p1": {
           "history_key": "elina svitolina",
@@ -2847,8 +3750,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.439547,
-      "p2_win_probability": 0.560453,
+      "p1_win_probability": 0.432195,
+      "p2_win_probability": 0.567805,
       "elo_p1_win_probability": 0.4569804230056337,
       "status": "SHADOW_SCORE"
     },
@@ -2857,7 +3760,9 @@
       "p1": "Liam Draxl",
       "p2": "Petr Nesterov",
       "scheduled_time": "2026-11-11T20:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "liam draxl",
@@ -2870,8 +3775,8 @@
           "retained_matches": 29
         }
       },
-      "p1_win_probability": 0.69676,
-      "p2_win_probability": 0.30324,
+      "p1_win_probability": 0.677443,
+      "p2_win_probability": 0.322557,
       "elo_p1_win_probability": 0.6487999170437343,
       "status": "SHADOW_SCORE"
     },
@@ -2880,7 +3785,9 @@
       "p1": "William Manning",
       "p2": "Simon Caldwell",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "william manning",
@@ -2901,7 +3808,9 @@
       "p1": "Emily Sartz-Lunde",
       "p2": "Katie Spencer",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2922,7 +3831,9 @@
       "p1": "Maria Kononova",
       "p2": "Catherine Gagnon",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2943,7 +3854,9 @@
       "p1": "Karla Bartel",
       "p2": "Conley Raidt",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2964,7 +3877,9 @@
       "p1": "Giovana Schincariol Delatorre Barbosa",
       "p2": "Barbara Gatica",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -2985,7 +3900,9 @@
       "p1": "Kallista Liu",
       "p2": "Karlin Schock",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3006,7 +3923,9 @@
       "p1": "Juan Pablo Ficovich",
       "p2": "Jose Gutierrez Oscar",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "juan pablo ficovich",
@@ -3027,7 +3946,9 @@
       "p1": "Eduardo Ribeiro",
       "p2": "Agustin Eduardo Cuellar Lorberg",
       "scheduled_time": "2026-11-11T21:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "eduardo ribeiro",
@@ -3048,7 +3969,9 @@
       "p1": "Aryna Sabalenka",
       "p2": "Mirra Andreeva",
       "scheduled_time": "2026-11-11T21:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "wta",
       "history_identity": {
         "p1": {
           "history_key": "aryna sabalenka",
@@ -3061,8 +3984,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.536675,
-      "p2_win_probability": 0.463325,
+      "p1_win_probability": 0.543243,
+      "p2_win_probability": 0.456757,
       "elo_p1_win_probability": 0.5590027263639041,
       "status": "SHADOW_SCORE"
     },
@@ -3071,7 +3994,9 @@
       "p1": "Nicolas Mejia",
       "p2": "Max Hans Rehberg",
       "scheduled_time": "2026-11-11T23:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "nicolas mejia",
@@ -3084,8 +4009,8 @@
           "retained_matches": 59
         }
       },
-      "p1_win_probability": 0.46323,
-      "p2_win_probability": 0.53677,
+      "p1_win_probability": 0.469531,
+      "p2_win_probability": 0.530469,
       "elo_p1_win_probability": 0.5789641161548146,
       "status": "SHADOW_SCORE"
     },
@@ -3094,7 +4019,9 @@
       "p1": "Carol Youngsuh Lee",
       "p2": "Boyoung Jeong",
       "scheduled_time": "2026-11-12T00:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3115,7 +4042,9 @@
       "p1": "Savannah Broadus",
       "p2": "Olivia Gadecki",
       "scheduled_time": "2026-11-12T00:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3136,7 +4065,9 @@
       "p1": "Miguel Tobon",
       "p2": "Lautaro Midon",
       "scheduled_time": "2026-11-12T00:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "miguel tobon",
@@ -3149,8 +4080,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.27859,
-      "p2_win_probability": 0.72141,
+      "p1_win_probability": 0.337516,
+      "p2_win_probability": 0.662484,
       "elo_p1_win_probability": 0.29615247959559143,
       "status": "SHADOW_SCORE"
     },
@@ -3159,7 +4090,9 @@
       "p1": "Himeno Sakatsume",
       "p2": "Huang Yujia",
       "scheduled_time": "2026-11-12T00:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "himeno sakatsume",
@@ -3180,7 +4113,9 @@
       "p1": "Miriam Bianca Bulgaru",
       "p2": "Sofia Johnson",
       "scheduled_time": "2026-11-12T01:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "miriam bianca bulgaru",
@@ -3201,7 +4136,9 @@
       "p1": "Sarah Saito",
       "p2": "Momoko Kobori",
       "scheduled_time": "2026-11-12T01:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3222,7 +4159,9 @@
       "p1": "Dane Sweeny",
       "p2": "Casey Hoole",
       "scheduled_time": "2026-11-12T01:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "dane sweeny",
@@ -3235,8 +4174,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.573959,
-      "p2_win_probability": 0.426041,
+      "p1_win_probability": 0.587027,
+      "p2_win_probability": 0.412973,
       "elo_p1_win_probability": 0.49034892876584163,
       "status": "SHADOW_SCORE"
     },
@@ -3245,7 +4184,9 @@
       "p1": "Yexin Ma",
       "p2": "Rinko Matsuda",
       "scheduled_time": "2026-11-12T01:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3266,7 +4207,9 @@
       "p1": "Berfu Cengiz",
       "p2": "Remika Ohashi",
       "scheduled_time": "2026-11-12T01:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "berfu cengiz",
@@ -3287,7 +4230,9 @@
       "p1": "Victoria Rodriguez",
       "p2": "Vivian Wolff",
       "scheduled_time": "2026-11-12T01:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "victoria rodriguez",
@@ -3300,8 +4245,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.380811,
-      "p2_win_probability": 0.619189,
+      "p1_win_probability": 0.40062,
+      "p2_win_probability": 0.59938,
       "elo_p1_win_probability": 0.4661677317667581,
       "status": "SHADOW_SCORE"
     },
@@ -3310,7 +4255,9 @@
       "p1": "Yeonwoo Ku",
       "p2": "Naho Sato",
       "scheduled_time": "2026-11-12T01:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3331,7 +4278,9 @@
       "p1": "Sijia Wei",
       "p2": "Joanna Garland",
       "scheduled_time": "2026-11-12T01:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "sijia wei",
@@ -3344,8 +4293,8 @@
           "retained_matches": 12
         }
       },
-      "p1_win_probability": 0.358666,
-      "p2_win_probability": 0.641334,
+      "p1_win_probability": 0.38668,
+      "p2_win_probability": 0.61332,
       "elo_p1_win_probability": 0.4189730584530069,
       "status": "SHADOW_SCORE"
     },
@@ -3354,7 +4303,9 @@
       "p1": "Xinxin Yao",
       "p2": "Yuka Naito",
       "scheduled_time": "2026-11-12T01:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "xinxin yao",
@@ -3375,7 +4326,9 @@
       "p1": "Zhuoxuan Bai",
       "p2": "Naiktha Bains",
       "scheduled_time": "2026-11-12T01:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "zhuoxuan bai",
@@ -3396,7 +4349,9 @@
       "p1": "Sasikumar Mukund",
       "p2": "Hao Sheng Koay",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "mukund sasikumar",
@@ -3417,7 +4372,9 @@
       "p1": "Pacific Oceania",
       "p2": "Laos",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3438,7 +4395,9 @@
       "p1": "Maldives",
       "p2": "Guam",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3459,7 +4418,9 @@
       "p1": "Macau",
       "p2": "Laos",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3480,7 +4441,9 @@
       "p1": "Mongolia",
       "p2": "Guam",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3501,7 +4464,9 @@
       "p1": "Macau",
       "p2": "Bhutan",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3522,7 +4487,9 @@
       "p1": "United Arab Emirates",
       "p2": "Brunei",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3543,7 +4510,9 @@
       "p1": "Bangladesh",
       "p2": "Bahrain",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3564,7 +4533,9 @@
       "p1": "Tajikistan",
       "p2": "Yemen",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3585,7 +4556,9 @@
       "p1": "Yuto Oki",
       "p2": "Cooper Kose",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "yuto oki",
@@ -3606,7 +4579,9 @@
       "p1": "Pacific Oceania",
       "p2": "Bhutan",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3627,7 +4602,9 @@
       "p1": "Tajikistan",
       "p2": "Brunei",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3648,7 +4625,9 @@
       "p1": "Noritaka Koizumi",
       "p2": "Xiaoyin Yang",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3669,7 +4648,9 @@
       "p1": "Yue Xia",
       "p2": "Xirui Han",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3690,7 +4671,9 @@
       "p1": "James Connel",
       "p2": "Seong Chan Hong",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3711,7 +4694,9 @@
       "p1": "Tianhui Zhang",
       "p2": "Jordan Chiu",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "tianhui zhang",
@@ -3732,7 +4717,9 @@
       "p1": "United Arab Emirates",
       "p2": "Yemen",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3753,7 +4740,9 @@
       "p1": "Dev Javia",
       "p2": "Jayson Blando",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "dev javia",
@@ -3774,7 +4763,9 @@
       "p1": "Shunsuke Nakagawa",
       "p2": "Ognjen Milić",
       "scheduled_time": "2026-11-12T02:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "shunsuke nakagawa",
@@ -3787,8 +4778,8 @@
           "retained_matches": 31
         }
       },
-      "p1_win_probability": 0.23317,
-      "p2_win_probability": 0.76683,
+      "p1_win_probability": 0.240643,
+      "p2_win_probability": 0.759357,
       "elo_p1_win_probability": 0.5299245284732625,
       "status": "SHADOW_SCORE"
     },
@@ -3797,7 +4788,9 @@
       "p1": "Yua Taka",
       "p2": "Azuma Visaya",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3818,7 +4811,9 @@
       "p1": "Edoardo Cherie Ligniere",
       "p2": "Gunawan Trismuwantara",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3839,7 +4834,9 @@
       "p1": "Daniil Sarksian",
       "p2": "Madhwin Kamath",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3860,7 +4857,9 @@
       "p1": "Rio Noguchi",
       "p2": "Yi Zhou",
       "scheduled_time": "2026-11-12T02:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "rio noguchi",
@@ -3873,8 +4872,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.429169,
-      "p2_win_probability": 0.570831,
+      "p1_win_probability": 0.423318,
+      "p2_win_probability": 0.576682,
       "elo_p1_win_probability": 0.41531090822898864,
       "status": "SHADOW_SCORE"
     },
@@ -3883,7 +4882,9 @@
       "p1": "Nepal",
       "p2": "Bahrain",
       "scheduled_time": "2026-11-12T02:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -3904,7 +4905,9 @@
       "p1": "Hayu Kinoshita",
       "p2": "Elena Micic",
       "scheduled_time": "2026-11-12T02:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "hayu kinoshita",
@@ -3917,8 +4920,8 @@
           "retained_matches": 2
         }
       },
-      "p1_win_probability": 0.491426,
-      "p2_win_probability": 0.508574,
+      "p1_win_probability": 0.51883,
+      "p2_win_probability": 0.48117,
       "elo_p1_win_probability": 0.47776551338620454,
       "status": "SHADOW_SCORE"
     },
@@ -3927,7 +4930,9 @@
       "p1": "Rina Saigo",
       "p2": "Chia Yi Tsao",
       "scheduled_time": "2026-11-12T02:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "rina saigo",
@@ -3948,7 +4953,9 @@
       "p1": "Caroline Werner",
       "p2": "Kanon Sawashiro",
       "scheduled_time": "2026-11-12T02:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "caroline werner",
@@ -3969,7 +4976,9 @@
       "p1": "James McCabe",
       "p2": "Christian Langmo",
       "scheduled_time": "2026-11-12T02:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "james mccabe",
@@ -3982,8 +4991,8 @@
           "retained_matches": 44
         }
       },
-      "p1_win_probability": 0.631491,
-      "p2_win_probability": 0.368509,
+      "p1_win_probability": 0.608466,
+      "p2_win_probability": 0.391534,
       "elo_p1_win_probability": 0.5799832765034368,
       "status": "SHADOW_SCORE"
     },
@@ -3992,7 +5001,9 @@
       "p1": "Kyoka Okamura",
       "p2": "Yuhan Wang",
       "scheduled_time": "2026-11-12T02:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "kyoka okamura",
@@ -4013,7 +5024,9 @@
       "p1": "Heather Watson",
       "p2": "Hanna Chang",
       "scheduled_time": "2026-11-12T02:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "heather watson",
@@ -4034,7 +5047,9 @@
       "p1": "Penn Charusorn",
       "p2": "Kuan-Shou Chen",
       "scheduled_time": "2026-11-12T03:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4055,7 +5070,9 @@
       "p1": "Thanapet Chanta",
       "p2": "Hong-Lin Fu",
       "scheduled_time": "2026-11-12T03:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "thanapet chanta",
@@ -4076,7 +5093,9 @@
       "p1": "Denis Yevseyev",
       "p2": "Markus Malaszszak",
       "scheduled_time": "2026-11-12T03:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "denis yevseyev",
@@ -4097,7 +5116,9 @@
       "p1": "Leo Vithoontien",
       "p2": "Fons Van Sambeek",
       "scheduled_time": "2026-11-12T03:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "leo vithoontien",
@@ -4118,7 +5139,9 @@
       "p1": "Anmar Faleh Alhogbani",
       "p2": "Tin Chen",
       "scheduled_time": "2026-11-12T03:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4139,7 +5162,9 @@
       "p1": "Taro Daniel",
       "p2": "Max Schoenhaus",
       "scheduled_time": "2026-11-12T03:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "taro daniel",
@@ -4152,8 +5177,8 @@
           "retained_matches": 34
         }
       },
-      "p1_win_probability": 0.515124,
-      "p2_win_probability": 0.484876,
+      "p1_win_probability": 0.563523,
+      "p2_win_probability": 0.436477,
       "elo_p1_win_probability": 0.6349912878628835,
       "status": "SHADOW_SCORE"
     },
@@ -4162,7 +5187,9 @@
       "p1": "Rei Sakamoto",
       "p2": "Kasidit Samrej",
       "scheduled_time": "2026-11-12T03:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "rei sakamoto",
@@ -4175,8 +5202,8 @@
           "retained_matches": 41
         }
       },
-      "p1_win_probability": 0.798728,
-      "p2_win_probability": 0.201272,
+      "p1_win_probability": 0.779626,
+      "p2_win_probability": 0.220374,
       "elo_p1_win_probability": 0.722429522634156,
       "status": "SHADOW_SCORE"
     },
@@ -4185,7 +5212,9 @@
       "p1": "Muhamad Rifqi Fitriadi",
       "p2": "Samarth Sahita",
       "scheduled_time": "2026-11-12T03:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4206,7 +5235,9 @@
       "p1": "Tsz Fu Wong",
       "p2": "Nazar Oliynykov",
       "scheduled_time": "2026-11-12T04:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "tsz fu wong",
@@ -4227,7 +5258,9 @@
       "p1": "Zhao Zhao",
       "p2": "Dingzheng Nima",
       "scheduled_time": "2026-11-12T04:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "zhao zhao",
@@ -4248,7 +5281,9 @@
       "p1": "Linang Xiao",
       "p2": "Rigele Te",
       "scheduled_time": "2026-11-12T04:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "linang xiao",
@@ -4261,8 +5296,8 @@
           "retained_matches": 16
         }
       },
-      "p1_win_probability": 0.483906,
-      "p2_win_probability": 0.516094,
+      "p1_win_probability": 0.478947,
+      "p2_win_probability": 0.521053,
       "elo_p1_win_probability": 0.5388435073717938,
       "status": "SHADOW_SCORE"
     },
@@ -4271,7 +5306,9 @@
       "p1": "Shaoyun Liu",
       "p2": "Sheng Tang",
       "scheduled_time": "2026-11-12T04:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4292,7 +5329,9 @@
       "p1": "Emerson Jones",
       "p2": "Astra Sharma",
       "scheduled_time": "2026-11-12T04:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "emerson jones",
@@ -4305,8 +5344,8 @@
           "retained_matches": 4
         }
       },
-      "p1_win_probability": 0.519944,
-      "p2_win_probability": 0.480056,
+      "p1_win_probability": 0.474776,
+      "p2_win_probability": 0.525224,
       "elo_p1_win_probability": 0.4709466358244077,
       "status": "SHADOW_SCORE"
     },
@@ -4315,7 +5354,9 @@
       "p1": "Ergi Kirkin",
       "p2": "Julien De Cuyper",
       "scheduled_time": "2026-11-12T04:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "ergi kirkin",
@@ -4328,8 +5369,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.575615,
-      "p2_win_probability": 0.424385,
+      "p1_win_probability": 0.573349,
+      "p2_win_probability": 0.426651,
       "elo_p1_win_probability": 0.38988825345812783,
       "status": "SHADOW_SCORE"
     },
@@ -4338,7 +5379,9 @@
       "p1": "Sanhui Shin",
       "p2": "Jordan Hasson",
       "scheduled_time": "2026-11-12T04:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "sanhui shin",
@@ -4359,7 +5402,9 @@
       "p1": "James Van Herzeele",
       "p2": "Oscar Brown",
       "scheduled_time": "2026-11-12T04:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4380,7 +5425,9 @@
       "p1": "Carl Emil Overbeck",
       "p2": "Juncheng Shang",
       "scheduled_time": "2026-11-12T04:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "carl emil overbeck",
@@ -4393,8 +5440,8 @@
           "retained_matches": 29
         }
       },
-      "p1_win_probability": 0.380146,
-      "p2_win_probability": 0.619854,
+      "p1_win_probability": 0.384718,
+      "p2_win_probability": 0.615282,
       "elo_p1_win_probability": 0.3970083645655856,
       "status": "SHADOW_SCORE"
     },
@@ -4403,7 +5450,9 @@
       "p1": "Akira Santillan",
       "p2": "Cruz Hewitt",
       "scheduled_time": "2026-11-12T05:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "akira santillan",
@@ -4416,8 +5465,8 @@
           "retained_matches": 25
         }
       },
-      "p1_win_probability": 0.432379,
-      "p2_win_probability": 0.567621,
+      "p1_win_probability": 0.415752,
+      "p2_win_probability": 0.584248,
       "elo_p1_win_probability": 0.43820462175204333,
       "status": "SHADOW_SCORE"
     },
@@ -4426,7 +5475,9 @@
       "p1": "Dong Ju Kim",
       "p2": "Lorenzo Lorusso",
       "scheduled_time": "2026-11-12T05:30:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4447,7 +5498,9 @@
       "p1": "Marianne Argyrokastriti",
       "p2": "Anastasija Cvetkovic",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "marianne argyrokastriti",
@@ -4468,7 +5521,9 @@
       "p1": "Alisa Oktiabreva",
       "p2": "Natalija Senic",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "alisa oktiabreva",
@@ -4489,7 +5544,9 @@
       "p1": "Lucia Cortez Llorca",
       "p2": "Giulia Safina Popa",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4510,7 +5567,9 @@
       "p1": "Cezar Cretu",
       "p2": "Philip Henning",
       "scheduled_time": "2026-11-12T08:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "cezar cretu",
@@ -4523,8 +5582,8 @@
           "retained_matches": 43
         }
       },
-      "p1_win_probability": 0.445433,
-      "p2_win_probability": 0.554567,
+      "p1_win_probability": 0.435734,
+      "p2_win_probability": 0.564266,
       "elo_p1_win_probability": 0.5356040609387992,
       "status": "SHADOW_SCORE"
     },
@@ -4533,7 +5592,9 @@
       "p1": "Ane Mintegi Del Olmo",
       "p2": "Eliska Tichackova",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4554,7 +5615,9 @@
       "p1": "Raul Brancaccio",
       "p2": "Adrian Andreev",
       "scheduled_time": "2026-11-12T08:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "raul brancaccio",
@@ -4567,8 +5630,8 @@
           "retained_matches": 21
         }
       },
-      "p1_win_probability": 0.657865,
-      "p2_win_probability": 0.342135,
+      "p1_win_probability": 0.643437,
+      "p2_win_probability": 0.356563,
       "elo_p1_win_probability": 0.4979929635725662,
       "status": "SHADOW_SCORE"
     },
@@ -4577,7 +5640,9 @@
       "p1": "Lorenzo Carboni",
       "p2": "Ioannis Xilas",
       "scheduled_time": "2026-11-12T08:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "lorenzo carboni",
@@ -4590,8 +5655,8 @@
           "retained_matches": 27
         }
       },
-      "p1_win_probability": 0.416217,
-      "p2_win_probability": 0.583783,
+      "p1_win_probability": 0.416145,
+      "p2_win_probability": 0.583855,
       "elo_p1_win_probability": 0.3586700686480146,
       "status": "SHADOW_SCORE"
     },
@@ -4600,7 +5665,9 @@
       "p1": "Carlo Alberto Caniato",
       "p2": "Michele Ribecai",
       "scheduled_time": "2026-11-12T08:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "carlo alberto caniato",
@@ -4613,8 +5680,8 @@
           "retained_matches": 51
         }
       },
-      "p1_win_probability": 0.52983,
-      "p2_win_probability": 0.47017,
+      "p1_win_probability": 0.527774,
+      "p2_win_probability": 0.472226,
       "elo_p1_win_probability": 0.4753638622641461,
       "status": "SHADOW_SCORE"
     },
@@ -4623,7 +5690,9 @@
       "p1": "Loes Ebeling Koning",
       "p2": "Aurora Zantedeschi",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4644,7 +5713,9 @@
       "p1": "Jennifer Ruggeri",
       "p2": "Matilde Paoletti",
       "scheduled_time": "2026-11-12T08:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "jennifer ruggeri",
@@ -4665,7 +5736,9 @@
       "p1": "Elena Ruxandra Bertea",
       "p2": "Sapfo Sakellaridi",
       "scheduled_time": "2026-11-12T08:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "elena ruxandra bertea",
@@ -4678,8 +5751,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.525024,
-      "p2_win_probability": 0.474976,
+      "p1_win_probability": 0.525413,
+      "p2_win_probability": 0.474587,
       "elo_p1_win_probability": 0.4998569555211786,
       "status": "SHADOW_SCORE"
     },
@@ -4688,7 +5761,9 @@
       "p1": "Samuele Pieri",
       "p2": "Jacopo Berrettini",
       "scheduled_time": "2026-11-12T09:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "samuele pieri",
@@ -4701,8 +5776,8 @@
           "retained_matches": 24
         }
       },
-      "p1_win_probability": 0.714667,
-      "p2_win_probability": 0.285333,
+      "p1_win_probability": 0.69451,
+      "p2_win_probability": 0.30549,
       "elo_p1_win_probability": 0.5945972232711957,
       "status": "SHADOW_SCORE"
     },
@@ -4711,7 +5786,9 @@
       "p1": "Tommaso Compagnucci",
       "p2": "Oleksandr Ovcharenko",
       "scheduled_time": "2026-11-12T09:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "tommaso compagnucci",
@@ -4724,8 +5801,8 @@
           "retained_matches": 12
         }
       },
-      "p1_win_probability": 0.610678,
-      "p2_win_probability": 0.389322,
+      "p1_win_probability": 0.604908,
+      "p2_win_probability": 0.395092,
       "elo_p1_win_probability": 0.5128900463041329,
       "status": "SHADOW_SCORE"
     },
@@ -4734,7 +5811,9 @@
       "p1": "Patrick Schoen",
       "p2": "Diogo Morais",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "patrick schoen",
@@ -4747,8 +5826,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.738062,
-      "p2_win_probability": 0.261938,
+      "p1_win_probability": 0.778097,
+      "p2_win_probability": 0.221903,
       "elo_p1_win_probability": 0.4910202779897199,
       "status": "SHADOW_SCORE"
     },
@@ -4757,7 +5836,9 @@
       "p1": "Ivan Ivanov",
       "p2": "Vasco Leote Prata",
       "scheduled_time": "2026-11-12T10:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "ivan ivanov",
@@ -4778,7 +5859,9 @@
       "p1": "Marvin Moeller",
       "p2": "Aziz Ouakaa",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "marvin moeller",
@@ -4791,8 +5874,8 @@
           "retained_matches": 17
         }
       },
-      "p1_win_probability": 0.766367,
-      "p2_win_probability": 0.233633,
+      "p1_win_probability": 0.771118,
+      "p2_win_probability": 0.228882,
       "elo_p1_win_probability": 0.7655006504855477,
       "status": "SHADOW_SCORE"
     },
@@ -4801,7 +5884,9 @@
       "p1": "Nishesh Basavareddy",
       "p2": "Kyrian Jacquet",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "nishesh basavareddy",
@@ -4814,8 +5899,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.492294,
-      "p2_win_probability": 0.507706,
+      "p1_win_probability": 0.485157,
+      "p2_win_probability": 0.514843,
       "elo_p1_win_probability": 0.5031365448652735,
       "status": "SHADOW_SCORE"
     },
@@ -4824,7 +5909,9 @@
       "p1": "Rudolf Molleker",
       "p2": "Tomas Curras Abasolo",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "rudolf molleker",
@@ -4837,8 +5924,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.605965,
-      "p2_win_probability": 0.394035,
+      "p1_win_probability": 0.569778,
+      "p2_win_probability": 0.430222,
       "elo_p1_win_probability": 0.4778085908514079,
       "status": "SHADOW_SCORE"
     },
@@ -4847,7 +5934,9 @@
       "p1": "Garrett Johns",
       "p2": "Kenny De Schepper",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "garrett johns",
@@ -4860,8 +5949,8 @@
           "retained_matches": 7
         }
       },
-      "p1_win_probability": 0.520764,
-      "p2_win_probability": 0.479236,
+      "p1_win_probability": 0.531724,
+      "p2_win_probability": 0.468276,
       "elo_p1_win_probability": 0.39964669551563586,
       "status": "SHADOW_SCORE"
     },
@@ -4870,7 +5959,9 @@
       "p1": "Moez Echargui",
       "p2": "Mika Petkovic",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "moez echargui",
@@ -4883,8 +5974,8 @@
           "retained_matches": 21
         }
       },
-      "p1_win_probability": 0.521635,
-      "p2_win_probability": 0.478365,
+      "p1_win_probability": 0.52102,
+      "p2_win_probability": 0.47898,
       "elo_p1_win_probability": 0.5397190272247282,
       "status": "SHADOW_SCORE"
     },
@@ -4893,7 +5984,9 @@
       "p1": "Salvador Monteiro",
       "p2": "Pavel Lagutin",
       "scheduled_time": "2026-11-12T10:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4914,7 +6007,9 @@
       "p1": "Diogo Marques",
       "p2": "S. D. Lima",
       "scheduled_time": "2026-11-12T10:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -4935,7 +6030,9 @@
       "p1": "Lorenzo Giustino",
       "p2": "Dali Blanch",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "lorenzo giustino",
@@ -4948,8 +6045,8 @@
           "retained_matches": 53
         }
       },
-      "p1_win_probability": 0.476271,
-      "p2_win_probability": 0.523729,
+      "p1_win_probability": 0.516406,
+      "p2_win_probability": 0.483594,
       "elo_p1_win_probability": 0.5719354599406856,
       "status": "SHADOW_SCORE"
     },
@@ -4958,7 +6055,9 @@
       "p1": "Dalibor Svrcina",
       "p2": "Otto Virtanen",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "dalibor svrcina",
@@ -4971,8 +6070,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.504722,
-      "p2_win_probability": 0.495278,
+      "p1_win_probability": 0.466703,
+      "p2_win_probability": 0.533297,
       "elo_p1_win_probability": 0.5362278719364612,
       "status": "SHADOW_SCORE"
     },
@@ -4981,7 +6080,9 @@
       "p1": "Goncalo Marques",
       "p2": "Tiago Cacao",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "goncalo marques",
@@ -4994,8 +6095,8 @@
           "retained_matches": 1
         }
       },
-      "p1_win_probability": 0.57565,
-      "p2_win_probability": 0.42435,
+      "p1_win_probability": 0.552388,
+      "p2_win_probability": 0.447612,
       "elo_p1_win_probability": 0.49129641847238015,
       "status": "SHADOW_SCORE"
     },
@@ -5004,7 +6105,9 @@
       "p1": "Joao Domingues",
       "p2": "Lopez Escribano",
       "scheduled_time": "2026-11-12T10:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "joao domingues",
@@ -5025,7 +6128,9 @@
       "p1": "Calvin Hemery",
       "p2": "Sebastián Báez",
       "scheduled_time": "2026-11-12T10:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "calvin hemery",
@@ -5038,8 +6143,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.29527,
-      "p2_win_probability": 0.70473,
+      "p1_win_probability": 0.296851,
+      "p2_win_probability": 0.703149,
       "elo_p1_win_probability": 0.39210203469163757,
       "status": "SHADOW_SCORE"
     },
@@ -5048,7 +6153,9 @@
       "p1": "Izan Almazan Valiente",
       "p2": "Pierre Antoine Tailleu",
       "scheduled_time": "2026-11-12T10:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "izan almazan valiente",
@@ -5069,7 +6176,9 @@
       "p1": "Santiago Rodriguez Taverna",
       "p2": "Breno Braga",
       "scheduled_time": "2026-11-12T13:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "santiago rodriguez taverna",
@@ -5090,7 +6199,9 @@
       "p1": "Pedro Sakamoto",
       "p2": "Augusto Land",
       "scheduled_time": "2026-11-12T13:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "pedro sakamoto",
@@ -5111,7 +6222,9 @@
       "p1": "Pedro Boscardin Dias",
       "p2": "Barbieri Renner Guilherme",
       "scheduled_time": "2026-11-12T13:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "pedro boscardin dias",
@@ -5132,7 +6245,9 @@
       "p1": "Franco Roncadelli",
       "p2": "Francisco Comesana",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "franco roncadelli",
@@ -5145,8 +6260,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.377384,
-      "p2_win_probability": 0.622616,
+      "p1_win_probability": 0.379757,
+      "p2_win_probability": 0.620243,
       "elo_p1_win_probability": 0.4636357520361491,
       "status": "SHADOW_SCORE"
     },
@@ -5155,7 +6270,9 @@
       "p1": "Michael Zheng",
       "p2": "Ozan Baris",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "michael zheng",
@@ -5168,8 +6285,8 @@
           "retained_matches": 10
         }
       },
-      "p1_win_probability": 0.827283,
-      "p2_win_probability": 0.172717,
+      "p1_win_probability": 0.816527,
+      "p2_win_probability": 0.183473,
       "elo_p1_win_probability": 0.7024705710858864,
       "status": "SHADOW_SCORE"
     },
@@ -5178,7 +6295,9 @@
       "p1": "Alastair Gray",
       "p2": "Filip Jeff Planinsek",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "alastair gray",
@@ -5191,8 +6310,8 @@
           "retained_matches": 8
         }
       },
-      "p1_win_probability": 0.609582,
-      "p2_win_probability": 0.390418,
+      "p1_win_probability": 0.596128,
+      "p2_win_probability": 0.403872,
       "elo_p1_win_probability": 0.3999206070785717,
       "status": "SHADOW_SCORE"
     },
@@ -5201,7 +6320,9 @@
       "p1": "Abedallah Shelbayh",
       "p2": "Marcos Giron",
       "scheduled_time": "2026-11-12T15:00:00Z",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": null,
@@ -5222,7 +6343,9 @@
       "p1": "Stefan Kozlov",
       "p2": "Braden Shick",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "stefan kozlov",
@@ -5235,8 +6358,8 @@
           "retained_matches": 32
         }
       },
-      "p1_win_probability": 0.538084,
-      "p2_win_probability": 0.461916,
+      "p1_win_probability": 0.526522,
+      "p2_win_probability": 0.473478,
       "elo_p1_win_probability": 0.530332115336132,
       "status": "SHADOW_SCORE"
     },
@@ -5245,7 +6368,9 @@
       "p1": "Juan Pablo Varillas",
       "p2": "Genaro Alberto Olivieri",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "juan pablo varillas",
@@ -5258,8 +6383,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.566087,
-      "p2_win_probability": 0.433913,
+      "p1_win_probability": 0.594243,
+      "p2_win_probability": 0.405757,
       "elo_p1_win_probability": 0.5752959801793643,
       "status": "SHADOW_SCORE"
     },
@@ -5268,7 +6393,9 @@
       "p1": "Raphael Perot",
       "p2": "Michael Antonius",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "raphael perot",
@@ -5281,8 +6408,8 @@
           "retained_matches": 5
         }
       },
-      "p1_win_probability": 0.376365,
-      "p2_win_probability": 0.623635,
+      "p1_win_probability": 0.421836,
+      "p2_win_probability": 0.578164,
       "elo_p1_win_probability": 0.41637569315081363,
       "status": "SHADOW_SCORE"
     },
@@ -5291,7 +6418,9 @@
       "p1": "Vladislav Melnic",
       "p2": "Nicolas Arseneault",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "itf",
       "history_identity": {
         "p1": {
           "history_key": "vladislav melnic",
@@ -5304,8 +6433,8 @@
           "retained_matches": 11
         }
       },
-      "p1_win_probability": 0.480704,
-      "p2_win_probability": 0.519296,
+      "p1_win_probability": 0.474242,
+      "p2_win_probability": 0.525758,
       "elo_p1_win_probability": 0.5729451958658354,
       "status": "SHADOW_SCORE"
     },
@@ -5314,7 +6443,9 @@
       "p1": "Alex Barrena",
       "p2": "Alan Magadan",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "alex barrena",
@@ -5327,8 +6458,8 @@
           "retained_matches": 28
         }
       },
-      "p1_win_probability": 0.596412,
-      "p2_win_probability": 0.403588,
+      "p1_win_probability": 0.597963,
+      "p2_win_probability": 0.402037,
       "elo_p1_win_probability": 0.5999889677176049,
       "status": "SHADOW_SCORE"
     },
@@ -5337,7 +6468,9 @@
       "p1": "Gonzalo Bueno",
       "p2": "Joao Lucas Reis Da Silva",
       "scheduled_time": "2026-11-12T15:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "clay",
+      "tour": "challenger",
       "history_identity": {
         "p1": {
           "history_key": "gonzalo bueno",
@@ -5350,8 +6483,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.423111,
-      "p2_win_probability": 0.576889,
+      "p1_win_probability": 0.416066,
+      "p2_win_probability": 0.583934,
       "elo_p1_win_probability": 0.43965553722390527,
       "status": "SHADOW_SCORE"
     },
@@ -5360,7 +6493,9 @@
       "p1": "Coco Gauff",
       "p2": "Marta Kostyuk",
       "scheduled_time": "2026-11-12T20:00:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "wta",
       "history_identity": {
         "p1": {
           "history_key": "coco gauff",
@@ -5373,8 +6508,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.679114,
-      "p2_win_probability": 0.320886,
+      "p1_win_probability": 0.698761,
+      "p2_win_probability": 0.301239,
       "elo_p1_win_probability": 0.6210658981757087,
       "status": "SHADOW_SCORE"
     },
@@ -5383,7 +6518,9 @@
       "p1": "Jessica Pegula",
       "p2": "Linda Noskova",
       "scheduled_time": "2026-11-12T21:30:00+00:00",
-      "model_id": "neuron-ca644b0b03e29974c8da1e4ba276e06f075b031cb43e6ae60f655df5c6acdd66",
+      "model_id": "neuron-1ea9ac7fdc3bba9fc4d0df8624df343e7bc408ab20c995aaef7c117244474d3b",
+      "surface": "hard",
+      "tour": "wta",
       "history_identity": {
         "p1": {
           "history_key": "jessica pegula",
@@ -5396,8 +6533,8 @@
           "retained_matches": 64
         }
       },
-      "p1_win_probability": 0.435117,
-      "p2_win_probability": 0.564883,
+      "p1_win_probability": 0.438435,
+      "p2_win_probability": 0.561565,
       "elo_p1_win_probability": 0.518446260471739,
       "status": "SHADOW_SCORE"
     }
