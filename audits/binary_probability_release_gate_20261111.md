@@ -25,3 +25,9 @@ Immediately before merge main must still equal aad184a6fa3fe5e0b323581becab11b44
 PR #590 merged as 2be8a27e19a89adb0c5dbc4c2e31fca1a1df81d6 with expected source head. Actual merge parents aad184a6fa3fe5e0b323581becab11b44d6db5a3 and f01df12c2dc8cd1c879938aece7b7f5f865c1a59, tree6c5184e7fdc3ea149f873a7a68b32fbfad6b586d EXACTLY matches tested candidate. #591 closed without merge.
 
 Normal production Update tennis data and deploy Pages run43094143033 started20:11:23Z on merge. Publication remains pending. Direct HTTP read still sees runtime-6/learning-6 generated18:50:47Z (148 matches,237 complete supported binary pairs,237 inconsistent,0 duplicate groups; SHA256f4635b10063cc949a11675b4a9027b7e857f965df1581d76900e8249df431500). This is old public data and must not be called a verified repair. Continue production verification before closing task/disabling automation.
+
+## Canonical build and Pages retry
+
+Full run [43094143033](https://github.com/Abeel87/tenis-ai/actions/runs/43094143033) generated runtime-7/learning-7, passed 1957 tests plus 9 subtests after generation, and pushed `f576cffa70afc86f30f753978b6d6c86898f138c` (parent #590 merge). Independent read from that SHA at GitHub confirmed 160 matches, 237 complete supported pairs summing exactly to 100, zero duplicate complete groups, SHA-256 `de9927297150bbd898149b8ef8546da518ca832d4c25412b477d862d46e8ef58`.
+
+Build job 130779051700 packed and verified the runtime source archive. Inside shared Pages preparation, the runtime-source artifact CreateArtifact request returned HTML instead of JSON for all five attempts. As a result the Pages deployment step was skipped. Public HTTP still served runtime-6/learning-6. The existing manual [Fast frontend deploy](https://github.com/Abeel87/tenis-ai/actions/runs/43063200247) was rerun (job 130794241515) because it checks out newest main and runs the same archive, publication and Pages checks on the already regenerated snapshot.
