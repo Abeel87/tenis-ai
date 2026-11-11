@@ -30,7 +30,7 @@ jobs:
         run: python -m pytest -q tests/test_ranking_provenance_audit.py
       - name: Restore latest production tennis cache
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: data/cache
           key: logic-02-ranking-${{ runner.os }}-${{ github.run_id }}
