@@ -1379,6 +1379,18 @@ def run() -> dict:
         raise RuntimeError("history.json invalid")
     current, stats = build(results, history)
     projected_results = _project_final_playable(results, current)
+    # Diagnostics are attached after ranking/final projection. They cannot select
+    # a composition or alter its probability, PLAYABLE status or reservation state.
+    try:
+        from .ineed_builder_shadow import compare_builder_components
+    except ImportError:
+        from ineed_builder_shadow import compare_builder_components
+    direct = _read(DATA / "superbet_direct_current.json", {})
+    quotes = _read(DATA / "superbet_builder_quotes_current.json", {})
+    cfg = _read(ROOT / "config" / "ineed_superbet_pl.json", {})
+    for match in current["matches"]:
+        for comp in match["compositions"].values():
+            comp["component_comparison"] = compare_builder_components(match, comp, direct, quotes, cfg)
     _write(CURRENT, current)
     _write(STATS, stats)
     _write(RESULTS, projected_results)
@@ -1395,3 +1407,4 @@ def run() -> dict:
 
 if __name__ == "__main__":
     print(json.dumps(run(), ensure_ascii=False, indent=2))
+

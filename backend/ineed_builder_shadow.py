@@ -295,6 +295,90 @@ SINGLE_VOID_REPRICE_SCHEMA = "logic12-builder-single-void-reprice-v1"
 MAX_BUILDER_LEGS = 6
 
 
+def compare_builder_components(match, composition, direct, artifact, cfg, *, now=None):
+    """Read-only price/EV comparison of a supported composition and its subsets.
+
+    Symphony owns every probability; this owner reuses exact quote resolution
+    and economics. No recommendation, reservation, synthetic price or network I/O.
+    """
+    now = now or datetime.now(timezone.utc)
+    mid = _canonical_match_id(match)
+    legs = composition.get("selection") or []
+    joint = _num(composition.get("joint_probability"))
+    diagnostic = composition.get("dependency_diagnostics") or {}
+    supported = (mid is not None and 2 <= len(legs) <= 6
+                 and composition.get("joint_status") == "EXACT_SHARED_STATE"
+                 and joint is not None and 0 <= joint <= 100
+                 and all(isinstance(s, dict) and s.get("fixture_line_verified") is True for s in legs))
+    age_limit = _num(cfg.get("odds_max_age_minutes"))
+    start = _iso(match.get("scheduled_time"))
+    matches = [r for r in direct.get("matches") or [] if isinstance(r, dict)
+               and _text(r.get("match_id", r.get("id"))) == mid]
+    direct_at = _iso(direct.get("generated_at"))
+    context_ok = (direct.get("operator") == OPERATOR and direct.get("status") == "OK"
+                  and direct.get("prices_used") is False and len(matches) == 1
+                  and age_limit is not None and age_limit > 0 and direct_at is not None
+                  and 0 <= (now-direct_at).total_seconds() <= age_limit*60
+                  and start is not None and start > now)
+    if context_ok:
+        source = matches[0]
+        operator_start = _iso(source.get("operator_start_time"))
+        context_ok = (source.get("direct_match_verified") is True
+                      and all(_text(source.get(k)) == _text(match.get(k)) and _text(match.get(k)) for k in ("p1", "p2"))
+                      and operator_start is not None and operator_start > now
+                      and abs((operator_start-start).total_seconds()) <= 4*3600)
+
+    def view(selected, probability):
+        out = {"leg_count": len(selected), "joint_probability": probability,
+               "combined_odds": None, "expected_value_net": None, "odds_timestamp": None,
+               "price_status": "NO_EXACT_CURRENT_QUOTE", "price_provenance": None}
+        if not supported or probability is None or not 0 <= probability <= 100:
+            return {**out, "price_status": "UNSUPPORTED_PROBABILITY"}
+        if not context_ok or _num(cfg.get("stake_tax_rate")) is None:
+            return out
+        if len(selected) == 1:
+            quote = direct_quote(direct, mid, selected[0])
+            price = _num((quote or {}).get("operator_price"))
+            stamp = (quote or {}).get("odds_timestamp")
+            provenance = {"source": "superbet_direct_exact_selection", "operator_selection_id": (quote or {}).get("operator_selection_id")}
+        else:
+            candidate = {"match_id": mid, "p1": match.get("p1"), "p2": match.get("p2"),
+                         "legs": selected, "composition_id": _composition_id(mid, selected)}
+            quote = resolve_artifact_combined_quote(candidate, direct, artifact)
+            price = _num((quote or {}).get("combined_odds"))
+            stamp = (quote or {}).get("odds_timestamp")
+            provenance = quote
+        observed = _iso(stamp)
+        if price is None or price <= 1 or observed is None or not 0 <= (now-observed).total_seconds() <= age_limit*60:
+            return out
+        return {**out, "combined_odds": price, "odds_timestamp": stamp,
+                "price_status": "EXACT_CURRENT_QUOTE", "price_provenance": provenance,
+                "expected_value_net": economics(probability, price, cfg, stake=1.0)["expected_value_net"]}
+
+    full = view(legs, joint if supported else None)
+    impacts = diagnostic.get("per_leg") or []
+    variants = []
+    if supported and diagnostic.get("status") == "EXACT_SHARED_STATE_DIAGNOSTIC_ONLY":
+        for index, leg in enumerate(legs):
+            sid = leg.get("selection_id")
+            hits = [r for r in impacts if sid is not None and r.get("selection_id") == sid]
+            probability = _num(hits[0].get("joint_without_leg_probability")) if len(hits) == 1 else None
+            if probability is not None and probability < joint:
+                probability = None
+            subset = view(legs[:index] + legs[index+1:], probability)
+            variants.append({**subset, "removed_selection_id": sid,
+                             "joint_probability_change_pp": round(probability-joint, 3) if probability is not None else None,
+                             "odds_change": round(subset["combined_odds"]-full["combined_odds"], 6)
+                             if subset["combined_odds"] is not None and full["combined_odds"] is not None else None,
+                             "net_ev_change": round(subset["expected_value_net"]-full["expected_value_net"], 6)
+                             if subset["expected_value_net"] is not None and full["expected_value_net"] is not None else None})
+    return {"mode": "SHADOW_COMPARISON", "generated_at": now.isoformat(),
+            "full": full, "without_leg": variants, "stake_basis_pln": 1.0,
+            "config_version": cfg.get("version"), "odds_max_age_minutes": age_limit,
+            "production_influence": False, "ranking_influence": False, "reservation_enabled": False,
+            "automatic_real_betting": False, "synthetic_prices": False}
+
+
 def _single_void_reprice_plan(composition: dict, direct: dict) -> dict | None:
     if not all(isinstance(x, dict) for x in (composition, direct)):
         return None
@@ -757,3 +841,4 @@ def evaluate_builder_economics_shadow(
         available -= stake
 
     return [row for row in results if row is not None]
+

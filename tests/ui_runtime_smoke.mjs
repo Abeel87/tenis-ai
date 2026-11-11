@@ -64,7 +64,7 @@ if(candidates.length){
 assert((await route('#admin/dashboard')).includes('Brak uprawnień'));assert((await route('#moderator')).includes('Brak uprawnień'));
 role='moderator';assert((await route('#moderator')).includes('Panel moderatora'));assert((await route('#admin/dashboard')).includes('Brak uprawnień'));
 role='admin';for(const tab of ['dashboard','models','data','superbet','system','users','diagnostics'])assert((await route('#admin/'+tab)).includes('Admin Control Center'));
-const id=encodeURIComponent(ctx.TenisPresentation.key(matches[0]));for(const tab of ['summary','trajectory','stats','h2h'])assert((await route('#match/'+id+'/'+tab)).includes('detail-body'));
+const id=encodeURIComponent(ctx.TenisPresentation.key(matches[0]));for(const tab of ['summary','builder','changes','trajectory','stats','h2h'])assert((await route('#match/'+id+'/'+tab)).includes('detail-body'));
 assert((await route('#player/'+id+'/p1')).includes(matches[0].p1));assert((await route('#players')).includes('player-query'));await route('#history');
 const rich=matches.find(m=>m.match_win&&m.player_intelligence_v85?.profiles?.p1?.windows?.['10']?.metrics?.won?.adjusted!=null);
 if(rich){const key=encodeURIComponent(ctx.TenisPresentation.key(rich));const summary=await route('#match/'+key+'/summary');assert(summary.includes('SZYBKA OCENA'));assert(summary.includes('Porównanie zawodników'));assert(summary.includes('Przewaga'));assert((await route('#match/'+key+'/stats')).includes('Trend:'));}
@@ -154,3 +154,4 @@ for(const r of ['moderator','admin']){serverProfile={...serverProfile,role:r};aw
 serverProfile.banned_at='2026-09-10';await authContext.TenisAccount.sync();assert(!authContext.TenisAccount.authenticated);assert(authNode('#product-shell').hidden);
 serverProfile=null;await authContext.TenisAccount.sync();assert(!authContext.TenisAccount.authenticated);
 console.log('PASS: real auth controller rejects guests, missing/banned profiles and metadata role escalation');
+

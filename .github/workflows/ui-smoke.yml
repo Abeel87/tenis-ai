@@ -57,6 +57,7 @@ jobs:
 
       - name: UI static smoke
         run: |
+          node tests/analysis_ui_contracts.mjs
           node tests/ui_static_smoke.mjs
           node scripts/build_delivery.mjs
           node tests/ui_runtime_smoke.mjs

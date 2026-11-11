@@ -25,6 +25,16 @@ jobs:
           node scripts/build_delivery.mjs
       - run: node tests/delivery_projection.mjs
       - run: npm run test:e2e
+        env:
+          TENIS_UI_SCREENSHOTS: artifacts/ui
+      - name: Preserve UI verification screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-ui-${{ github.run_id }}
+          path: artifacts/ui
+          if-no-files-found: ignore
+          retention-days: 14
   dependencies:
     runs-on: ubuntu-latest
     steps:

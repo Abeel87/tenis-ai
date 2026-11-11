@@ -81,5 +81,21 @@ function marketChoice(s){const api=window.TENIS_AI_PLAYABLE_UI_V917,market=api.c
 function marketChoiceLabel(s,m){const choice=marketChoice(s);if(choice.startsWith('game_state:')){const [,cp,kind]=choice.split(':');return kind==='draw'?`Remis ${Number(cp)/2}:${Number(cp)/2}`:`Prowadzenie po ${cp} gemach`;}if(/^p[12]_wins_a_set$/.test(choice))return `${choice[1]==='1'?'Pierwszy':'Drugi'} zawodnik wygra seta`;if(/^p[12]_exactly_1_?set$/.test(choice))return `${choice[1]==='1'?'Pierwszy':'Drugi'} zawodnik wygra dokładnie 1 set`;return label(s,m);}
 function tournamentGroups(rows){const groups=new Map();for(const m of rows){const k=JSON.stringify([m.tour||'',m.tournament||'',m.surface||'']);if(!groups.has(k))groups.set(k,{key:k,tour:m.tour,tournament:m.tournament,surface:m.surface,matches:[]});groups.get(k).matches.push(m)}return [...groups.values()];}
 
-window.TenisPresentation={operatorPrice,groupEvents,marketChoice,marketChoiceLabel,tournamentGroups,num,esc,norm,key,pct,ratio,score,best,label,pick,json,find,routableRows,allEvents,availability,couponTotals,filterRows,clearCache:()=>cache.clear()};
+function builderComparison(m,comp,now=Date.now()){
+ const report=comp?.component_comparison,api=window.TENIS_AI_PLAYABLE_UI_V917;
+ if(report?.mode!=='SHADOW_COMPARISON'||report.production_influence!==false||report.automatic_real_betting!==false||report.ranking_influence!==false||report.reservation_enabled!==false||report.synthetic_prices!==false)return null;
+ const live=api?.preMatch(m,now)&&api?.active(m,now),limit=num(report.odds_max_age_minutes);
+ const clean=row=>{if(!row)return null;const at=Date.parse(row.odds_timestamp),fresh=row.price_status==='EXACT_CURRENT_QUOTE'&&num(row.combined_odds)>1&&live&&limit>0&&Number.isFinite(at)&&at<=now&&now-at<=limit*60000;
+  return {...row,combined_odds:fresh?num(row.combined_odds):null,expected_value_net:fresh?num(row.expected_value_net):null,odds_change:fresh?num(row.odds_change):null,net_ev_change:fresh?num(row.net_ev_change):null,price_status:fresh?row.price_status:'QUOTE_NOT_CURRENT'};};
+ const full=clean(report.full),without_leg=(report.without_leg||[]).map(clean);
+ if(full?.combined_odds==null)for(const row of without_leg){row.odds_change=null;row.net_ev_change=null}
+ return {...report,full,without_leg};
+}
+function postMatchReview(m){
+ const final=m?.final,rows=(m?.predictions||[]).map(p=>({label:label(p.signal,m)+' · '+pick(p.signal,m),result:p.result,value:p.value,unit:p.unit,capturedAt:p.capturedAt}));
+ return {score:final?.score_text||final?.sets?.map(s=>Array.isArray(s)?s.join(':'):'').filter(Boolean).join(' · ')||null,
+  missed:rows.filter(r=>r.result==='miss'),hit:rows.filter(r=>r.result==='hit'),unresolved:rows.filter(r=>!['hit','miss','void'].includes(r.result)),
+  void:rows.filter(r=>r.result==='void'),causalConclusion:null};
+}
+window.TenisPresentation={builderComparison,postMatchReview,operatorPrice,groupEvents,marketChoice,marketChoiceLabel,tournamentGroups,num,esc,norm,key,pct,ratio,score,best,label,pick,json,find,routableRows,allEvents,availability,couponTotals,filterRows,clearCache:()=>cache.clear()};
 })();

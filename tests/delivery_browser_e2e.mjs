@@ -58,7 +58,12 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
   const analysis=page.locator(`a[href="${hash}"]`).first();await analysis.scrollIntoViewIfNeeded();const y=await page.evaluate(()=>scrollY);
   await analysis.click();await page.locator('#detail-body').waitFor();
   assert(requests.includes(first.detail_path),'Match detail is lazy-loaded');
-  for(const tab of ['stats','h2h','summary']){await page.evaluate(h=>location.hash=h,hash.replace('/summary','/'+tab));await page.locator('#detail-body').waitFor()}
+  for(const [tab,selector] of [['builder','[data-builder-impact]'],['changes','[data-analysis-timeline]'],['stats','[data-player-state]'],['summary','[data-analysis-decision]']]){
+   await page.evaluate(h=>location.hash=h,hash.replace('/summary','/'+tab));await page.locator(selector).first().waitFor();
+   for(const width of [320,412,1280]){await page.setViewportSize({width,height:915});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),tab+' detail fits '+width+'px');}
+   await page.setViewportSize({width:412,height:915});
+   if(role==='user'&&process.env.TENIS_UI_SCREENSHOTS){fs.mkdirSync(process.env.TENIS_UI_SCREENSHOTS,{recursive:true});await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'analysis-'+tab+'.png')});}
+  }
   await page.locator('[data-back]').click();await page.locator('[data-filter="query"]').waitFor();
   assert.equal(await page.locator('[data-filter="query"]').inputValue(),first.p1,'Filter survives return');
   await page.waitForTimeout(100);assert(Math.abs(await page.evaluate(()=>scrollY)-y)<5,'Scroll survives return');
@@ -142,3 +147,4 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
  }
  console.log(JSON.stringify({engine:'Chromium',viewport:'412x915',auth:'isolated mock transport, real account.js and DOM',results},null,2));
 }finally{await browser.close();await new Promise(r=>server.close(r))}
+
