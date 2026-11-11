@@ -66,16 +66,19 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   the locked archive. Owners, lock manifest, model core/hygiene/update are unchanged.
   Original evidence: 43044950330 / 43044950268; latest equivalence 43053632899.
   No relocking, import, guard weakening, or claim these research checks passed.
-- [ ] #587 remains unmerged; production publication of these features unverified.
+- [x] #587 merged as `86e12147cebdd685807c9b6258f2dfc3c1ea0446`; its tree exactly
+  matches tested `fad01e4994c8dd7539153cb2a45242a33a629bf1`.
+  Fresh-data health 43053632776 completed: 1951 tests + 9 subtests;
+  Project/Runtime PASS. Diagnostic #588 closed without merge and with negative
+  archive findings retained. Actual publication remains pending.
+  Core publication run 43055030075, build job 130642666647 has started.
   Release docs branch: `docs/analysis-evidence-release-20261111`.
 - DO NOT REDO: implementation, completed source DNA/Point Tape, or archive/GC work.
   Do not push the synthetic local baseline. GitHub connector is the publish path.
   Unknown minutes stay N/D; old predictions never gain later context.
-- NEXT EXACT ACTION: finish current fresh-data production/runtime tests, confirm
-  main has not moved and merge the green source PR #587 with expected head.
-  Verify merged tree against the tested integration; observe actual core/Pages
-  and private publication. Close #588 preserving negative archive evidence.
-  Complete docs/registry/architecture release records with actual production proof.
+- NEXT EXACT ACTION: observe actual core/Pages publication 43055030075 and
+  private runtime publication on the merged source. Verify public manifest and
+  source version, then complete docs/registry/architecture release records.
   Do not call a skipped FAST scope step a successful deployment.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
