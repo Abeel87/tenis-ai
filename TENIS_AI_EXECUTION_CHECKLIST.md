@@ -25,7 +25,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT TASK — eight analysis-development features; full SHADOW CI pending, 2026-11-11**
+**CURRENT TASK — eight analysis features; fresh-data delivery validation pending, 2026-11-11**
 - AUTHORIZATION: owner approved all eight product improvements
   ("dobra wprowadz wszystko"). New model context/economics remain SHADOW;
   no real bets, reservations, model promotion or new probability/ranking policy.
@@ -56,23 +56,48 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   The canonical archive now streams pack/hash/restore under a bounded 4 GiB
   expanded-byte budget and preserves integrity checks. Private Storage limits
   and GC policy are unchanged.
-- [~] All completed current-head CI checks are green. Two full SHADOW workflows
-  remain running: Player DNA `43026273663` / `130541788478`, Point Tape
-  `43026274276` / `130541655470`. At 14:29Z, their finished steps had
-  no failures. These are long historical evaluations; the preceding full DNA
-  run `42925842568` took 111 minutes. Do not cancel/skip guards to merge.
-- [ ] Fresh-main merge and actual production publication remain pending.
-  The observed public manifest still had source `b09d6bdd41e0c14c65b580091ad8471e0345528e`.
-  No claim that the new features are already live.
+- [x] Original source checks are complete and green: 17 success, two expected
+  publication skips. Full DNA run `43026273663` completed 14:38:03Z (91 min);
+  full Point Tape run `43026274276` also succeeded. No research gate skipped.
+- [x] Main advanced through generated data only. Dedicated existing
+  `ci/symphony2-clean-base` was safely fast-forwarded from ancestor
+  `c4963a5cb153eda5672521cb7f3ae0e5ee450f90` to the tested source head,
+  after confirming no open PR used that base. No workflows were changed.
+- [x] Diagnostic PR #588: https://github.com/Abeel87/tenis-ai/pull/588 .
+  Prior candidate `df4adbae7af4d49d2ae7959a0f38f5221d02151f` integrated
+  main `bd5a1d89a7a45e6cb3e39c3f825651f8f557622d`.
+  Full suite again passed: 1951 + 9 subtests, Project/Runtime Health PASS
+  (run `43044950766`, job `130606309882`).
+- [!] Separate TML 2024 archive checks on that candidate rejected a fingerprint
+  mismatch (candidate lock `43044950330`, runtime equivalence `43044950268`).
+  Candidate identity safety passes; 11,620 rows; runtime_contains_locked_2024_sources=false.
+  Archive owners, lock manifest, model core, hygiene, coverage and update are
+  byte-identical on old main, refreshed main and candidate. This release does not
+  integrate that archive. These research gates stay fail-closed; do not relock
+  sources or claim they passed. Their independent investigation is out of scope.
+- [!] Prior browser job `130606309341` failed during apt/browser installation:
+  DNS resolution of security.ubuntu.com/archive.ubuntu.com failed, before tests.
+  Both CodeQL analyses passed; the separate ingestion/aggregate check timed out.
+  Infrastructure retries were started; no production check was disabled.
+- [~] Main's later change was a single readiness JSON. Current exact candidate:
+  `1dde41b8dff3db4f0ba2b739139ffd228619d57a`, tree `da065716853e9260e3ea9a42fff3ad51430b6160`,
+  main data `3f6d5d566c43f160f89d78cbdbd138bc1bfcfe02`. Source files unchanged.
+  PR #588 reruns existing production/delivery checks on this exact tree.
+  Health `43047992774`, browser/dependency `43047992626`, CodeQL `43047992421`.
+- [ ] #587 remains unmerged and production publication unverified. Observed old
+  public manifest source: `b09d6bdd41e0c14c65b580091ad8471e0345528e`.
+  Do not merge diagnostic PR #588. Preserve its negative archive findings.
 - DO NOT REDO: code implementation, the green full test suite or earlier archive/
   GC repairs. Do not push the synthetic local Git baseline. Use the reviewed
   remote branch and expected-head lease. Missing evidence stays N/D; minutes
   have no validated source, and old forecasts never acquire later context.
-- NEXT EXACT ACTION: inspect the two current-head SHADOW runs; fix only actual
-  failures. After green, recheck fresh main and PR head, merge #587, verify exact
-  tested tree and real publication/source SHA. Then finish these release records
-  on the docs branch and merge its docs-only closeout PR. New observations and
-  context arrive through the normal producers after release.
+- NEXT EXACT ACTION: inspect current #588 production/runtime and actual browser
+  results; resolve relevant failures, keep the independent TML archive blocked.
+  Recheck current main and #587 head. Merge the fully green source PR #587 only
+  against the production-validated integration tree; verify exact merged tree,
+  actual Pages source and private publication as applicable. Close #588 with its
+  full diagnostic findings, then finish and merge this release-record branch.
+  No real bets, archive import, relocking or model promotion is authorized here.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 
