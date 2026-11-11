@@ -19,6 +19,8 @@ jobs:
       options: --shm-size=1g
     steps:
       - uses: actions/checkout@v6
+      - name: Trust checked-out workspace for provenance reads
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v7
         with:
           node-version: '22'

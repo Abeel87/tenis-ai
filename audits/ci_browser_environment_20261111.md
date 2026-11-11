@@ -9,7 +9,8 @@ The existing browser job now uses Microsoft's Playwright 1.63.0 Noble image,
 matching the repository's locked Playwright dependency. Browsers and their system
 libraries are already present. The Ubuntu 24.04 host matches the container's
 distribution for the setup-python toolcache; Python 3.12 remains available for
-the delivery builder. Shared memory is bounded to 1 GiB without host IPC sharing.
+the delivery builder. The exact mounted GITHUB_WORKSPACE is registered as a
+trusted Git directory so the builder can read commit provenance. Shared memory is bounded to 1 GiB without host IPC sharing.
 
 All existing projection and real Chromium tests still run. Dependency audits,
 read-only permissions, role coverage and application source are unchanged.
