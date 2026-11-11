@@ -50,9 +50,11 @@ the failure was the same exhausted 1 GiB archive bound.
 - GitHub CI on 357f8c0f0937497ef4d29764b44d91f9d869ccec: 1951 tests and
   9 subtests passed, two existing empty-sample Neuron warnings. Project/Runtime
   Health PASS (run 43026273549); real Chromium roles/viewports PASS (43026273846).
-- Full Player DNA and Point Tape historical evaluations are still running.
-  Their completion, merge and actual production publication are tracked in the
-  live checkpoint. Local pytest/Chromium dependencies are unavailable.
+- Full Player DNA and Point Tape historical evaluations passed on the source head.
+  Fresh-data production tests also passed; final publication remains pending.
+  Isolated TML 2024 fingerprint locks remain rejected, without runtime import.
+  Browser infrastructure DNS failures are addressed by PR #589; exact current
+  status and full evidence are in the live checkpoint and validation JSON.
 
 ## Known limits and rollout
 

@@ -91,13 +91,26 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   GC repairs. Do not push the synthetic local Git baseline. Use the reviewed
   remote branch and expected-head lease. Missing evidence stays N/D; minutes
   have no validated source, and old forecasts never acquire later context.
-- NEXT EXACT ACTION: inspect current #588 production/runtime and actual browser
-  results; resolve relevant failures, keep the independent TML archive blocked.
-  Recheck current main and #587 head. Merge the fully green source PR #587 only
-  against the production-validated integration tree; verify exact merged tree,
-  actual Pages source and private publication as applicable. Close #588 with its
-  full diagnostic findings, then finish and merge this release-record branch.
-  No real bets, archive import, relocking or model promotion is authorized here.
+- [~] Browser DNS failures repeated on the current data candidate as well
+  (job `130617193355`). Dedicated infrastructure PR #589:
+  https://github.com/Abeel87/tenis-ai/pull/589 .
+  Branch `fix/browser-ci-image-20261111`, head
+  `6ab637248e87cb7713bbe62f688a3d51f9d71ffd`.
+  The browser job uses official Playwright 1.63.0 Noble (matching the lock),
+  Ubuntu 24.04, Python 3.12 and exact-workspace Git trust for provenance.
+  Every projection/browser test and dependency audit remains enabled.
+  First image run exposed mounted-checkout ownership; fixed on this head.
+  Current runs: browser `43051221543`, health `43051221484`,
+  CodeQL `43051221582`. No application/model source change in this PR.
+- NEXT EXACT ACTION: finish and merge #589 only after its actual checks pass
+  and the tested synthetic-merge main is confirmed. Main was e5adc211f05d02b0e080d1077b67ced8a5586d75
+  when #589 opened. Then build #588's exact fresh-main integration preserving
+  BOTH the new container setup and #587's screenshot retention step. Rerun
+  production/runtime and real browser checks. Keep independent TML archive
+  locks fail-closed; no relocking/import is authorized or claimed successful.
+  Merge the fully green source PR #587 against the verified integration tree,
+  verify real public/private publication, close diagnostic #588 honestly,
+  and finish the release-record branch. No real bets or model promotion.
 
 **PREVIOUS COMPLETED TASK — November 9 record follows**
 
