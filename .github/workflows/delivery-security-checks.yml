@@ -12,15 +12,23 @@ concurrency:
   cancel-in-progress: true
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    container:
+      # Keep this version aligned with the locked Playwright dependency.
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --shm-size=1g
     steps:
       - uses: actions/checkout@v6
+      - name: Trust checked-out workspace for provenance reads
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
       - run: |
           node scripts/build_delivery.mjs
       - run: node tests/delivery_projection.mjs
