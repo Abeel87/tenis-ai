@@ -16,7 +16,7 @@ EXPECTED_LINE_SITES = {
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {413, 425},
     "backend/prediction_integrity_v78a.py": {156},
-    "frontend/app.js": {206, 245, 278, 305, 326, 335},
+    "frontend/app.js": {206, 289, 322, 349, 370, 379},
 }
 
 
@@ -82,3 +82,4 @@ def test_r16_moderator_problem_filter_remains_legacy_only_during_r18_r19():
     assert "if(f==='problems')rows=rows.filter(m=>state.moderation.get(D.key(m))?.problem||!m.model_ready)" in app
     moderator = app.split("function moderatorList", 1)[1].split("async function moderationWrite", 1)[0]
     assert "semantic_readiness_shadow" not in moderator
+

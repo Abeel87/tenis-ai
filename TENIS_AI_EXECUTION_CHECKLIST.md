@@ -25,6 +25,48 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT TASK — eight analysis-development features + publication capacity, 2026-11-11**
+- AUTHORIZATION: owner approved all eight proposed product improvements
+  ("dobra wprowadz wszystko"). Diagnostic/model-context additions remain SHADOW;
+  no real bets, reservations, model promotion or new probability/ranking policy.
+- AUDITED MAIN: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
+  BRANCH: `feat/analysis-evidence-20261111`; PR #587:
+  https://github.com/Abeel87/tenis-ai/pull/587 .
+- [x] Canonical owners inspected; UI decisions, Builder component comparison,
+  profile quality, per-version Neuron common-fixture metrics, Player State context,
+  prematch observation journal, postmatch review and targeted backfill telemetry
+  implemented in existing owners. See `audits/analysis_development_20261111.md`.
+- [x] Local 13 focused Python tests and `tests/analysis_ui_contracts.mjs` pass.
+  The latter executes full-app routes/roles on isolated temporary fixtures.
+  Tests preserve raw results and final PLAYABLE projection, reject stale/foreign
+  quotes, preserve zero vs missing, and verify exact archive round-trip bytes.
+- [x] Confirmed existing FAST publication failure: run `42995748539`, job
+  `130439311641`, runtime snapshot verification rejected >1 GiB sources.
+  Main tree JSON sizes plus restored chunk manifests total 1,090,044,204 bytes.
+  Canonical snapshot now streams files, retains checksums/traversal checks,
+  and has an explicit 4 GiB expanded-byte budget. Private Storage limits unchanged.
+- [x] Initial head `115a013df5a17ab76b923af08c558f14521634d0` passed actual
+  Chromium user/moderator/admin checks at 320/412/1280 px; index 562,645 bytes,
+  1,071 PLAYABLE equivalence checks. Browser run `43025107452`, artifact
+  `13856113663` retains screenshots (not inspected locally: download unavailable).
+- [x] Full CI first run `43025107855`: 1949 passed, two stale pinned-reference
+  failures (frontend line matrix and PWA cache version). Updated both references;
+  all 9 affected source-contract tests pass locally, with original guards intact.
+- [~] Full CI rerun and production publication verification remain pending.
+  Local pytest/Playwright are unavailable and local
+  shell network cannot install them; focused stdlib/Node checks passed locally.
+- FILES: canonical UI/presentation/history/service worker, existing Neuron,
+  Symphony engine/tracker, iNeed Builder diagnostics, Player State/readiness,
+  history-priority backfill, delivery builder/runtime snapshot, tests and docs.
+- DO NOT REDO: previous archive/GC/source repairs or migrations. Existing source
+  gaps stay N/D. Minutes-on-court lack a validated source. Old forecasts are never
+  backfilled with later context. Journals begin at the first post-release capture.
+- NEXT EXACT ACTION: publish reviewed change branch and PR; run full CI and real
+  Chromium tests; resolve failures, recheck fresh main, merge only green, verify
+  publication. Update this checkpoint with exact PR/SHA/check/deployment evidence.
+
+**PREVIOUS COMPLETED TASK — November 9 record follows**
+
 **CURRENT TASK — weekly-report archive repair DEPLOYED AND VERIFIED, 2026-11-09**
 - AUTHORIZATION: owner requested fixing confirmed faults from the weekly report.
   Preserve model math, thresholds, weights, training, identity and SHADOW/PROD.
@@ -1716,3 +1758,4 @@ Celem checklisty jest to, żeby **stan projektu był w repo, a nie w pamięci po
 - DO NOT REDO: audits on `audit/ineed-learning-readiness-20261012`; no reset of experiments or speculative probability formula.
 - NEXT EXACT ACTION: source repair is deployed; collect prospective post-repair evidence before any profitability or promotion claim. Self Evolution and Neuron readiness remain separate SHADOW evaluations. No repeated source repair/replay needed.
 - RISKS: retrospective quality improvement is not financial/prospective superiority; Neuron/Self Evolution and real betting remain unpromoted.
+

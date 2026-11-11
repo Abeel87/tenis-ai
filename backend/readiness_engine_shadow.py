@@ -574,6 +574,15 @@ def _state_legacy_model_ready(row: dict[str, Any] | None) -> Any:
     reference = row.get("current_engine_reference") or {}
     selected = reference.get("selected_existing_fields") or {}
     return selected.get("model_ready")
+def _same_fixture_time(left, right):
+    try:
+        a = datetime.fromisoformat(str(left).replace("Z", "+00:00"))
+        b = datetime.fromisoformat(str(right).replace("Z", "+00:00"))
+        return a.tzinfo is not None and b.tzinfo is not None and a == b
+    except (TypeError, ValueError):
+        return False
+
+
 def compose_readiness(
     results: list[dict[str, Any]],
     history_report: dict[str, Any],
@@ -646,6 +655,17 @@ def compose_readiness(
                 "legacy_model_ready_unchanged": True,
                 "current_engine_reference_consistent": legacy_consistent,
                 "dimensions": dimensions,
+                "player_state_evidence": {
+                    "generated_at": player_state_report.get("generated_at"),
+                    "players": {
+                        side: {key: value for key, value in (state_row.get("player_state", {}).get(side) or {}).items()
+                               if key in {"current_season", "current_surface_state", "ranking_momentum", "inactivity",
+                                          "opponent_adjusted_performance_trend", "recent_activity", "provenance"}}
+                        for side in ("p1", "p2")
+                    },
+                } if (state_row and _same_fixture_time(state_row.get("scheduled_time"), match.get("scheduled_time"))
+                      and all(str(state_row.get(side+"_id")) == str(match.get(side+"_id"))
+                              and match.get(side+"_id") is not None for side in ("p1", "p2"))) else None,
                 "market_readiness": {
                     "pbp_early_hold": {
                         "contract_owner": "backend/pbp_market_evidence.py",
@@ -728,6 +748,39 @@ def compose_readiness(
     }
 
 
+def project_match_evidence(results, report):
+    """Compact evidence through the existing exact-snapshot authority.
+
+    Basic profile facts remain visible if SHADOW evidence is unavailable.
+    Missing reports never upgrade readiness or change production probability.
+    """
+    results = results if isinstance(results, list) else []
+    report = report if isinstance(report, dict) else {}
+    verdict = observability_meta_payload(results, report)
+    rows = (report.get("matches") or []) if verdict.get("available") is True else []
+    out = {}
+    for match in results:
+        if not isinstance(match, dict):
+            continue
+        mid = _match_key(match.get("id"))
+        if mid is None:
+            continue
+        hits = [r for r in rows if isinstance(r, dict) and r.get("match_id") == mid
+                and all(r.get(k) == match.get(k) for k in ("p1", "p2", "scheduled_time"))]
+        evidence = hits[0] if len(hits) == 1 else {}
+        out[mid] = {
+            "diagnostic_only": True, "probability_influence": False,
+            "shadow_available": bool(evidence), "shadow_reason": verdict.get("reason"),
+            "generated_at": report.get("generated_at") if evidence else None,
+            "dimensions": evidence.get("dimensions"), "player_state": evidence.get("player_state_evidence"),
+            "players": {side: {key: (match.get(side+"_stats") or {}).get(key) for key in
+                                ("matches", "surface_matches", "days_since_last", "quality", "coverage", "matches_7d")}
+                        for side in ("p1", "p2")},
+            "profile_source": "Current Engine published player profile; source history dates",
+        }
+    return out
+
+
 def build(output_path: Path = OUT) -> dict[str, Any]:
     results = _load_json(RESULTS, [])
     if not isinstance(results, list):
@@ -757,4 +810,12 @@ def build(output_path: Path = OUT) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    build()
+    import sys
+    if len(sys.argv) == 3 and sys.argv[1] == "project-match-evidence":
+        directory = Path(sys.argv[2])
+        print(json.dumps(project_match_evidence(
+            _load_json(directory / "results.json", []),
+            _load_json(directory / "readiness_engine_shadow.json", {})), ensure_ascii=False))
+    else:
+        build()
+

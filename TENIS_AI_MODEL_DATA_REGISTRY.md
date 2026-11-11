@@ -17,6 +17,31 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-11-11 analysis evidence development (implementation; release verification pending):**
+Existing `frontend/app.js`, `presentation-data.js` and `history-ui.js` own all eight
+product views; no parallel renderer. `scripts/build_delivery.mjs` adds compact
+profile counts to the index, full exact-snapshot readiness/Player State evidence
+and identity-bound observations to lazy match bundles, and an admin supply report.
+`readiness_engine_shadow.project_match_evidence` reuses the canonical snapshot
+alignment authority; foreign/stale snapshots remain N/D. Model numbers are copied.
+`ineed_builder_shadow.compare_builder_components` owns diagnostic exact quote and
+net-EV comparisons using Symphony's existing joint/without-leg probabilities and
+existing economics. The engine attaches them only AFTER final PLAYABLE projection.
+No odds multiplication, ranking changes, reservations or real-money execution.
+The existing tracker owns a separate bounded prematch observation journal; frozen
+training/settlement entries remain unchanged. Neuron freezes surface/tour only
+for new forecasts; descriptive metrics group common baseline evidence by version
+and surface/tour. No historical reconstruction or promotion.
+Player State adds known prior 48-hour starts by exact player ID, with unknown
+minutes kept null. The canonical backfill prioritizer adds next-start tie breaking
+and per-player PBP yield; PBP downloads are explicitly not canonical history gains.
+`scripts/runtime_snapshot.py` remains archive owner: streaming pack/hash/restore,
+4 GiB expansion budget, exact membership/checksum verification before any restore.
+This fixes the observed 1,090,044,204-byte source set exceeding the old 1 GiB limit.
+The separate private Storage/object limits and archive GC policy are unchanged.
+See `audits/analysis_development_20261111.md` and the live checkpoint.
+
+
 **2026-11-09 archive publication size repair (PR #583 deployed and verified):**
 `scripts/publish_training_archive.py` remains the sole archive transport owner.
 An oversized raw JSON candidate is staged as deterministic gzip under the same
@@ -1347,3 +1372,4 @@ The canonical `frontend/runtime-data-transport.js` reader supports both `exact-j
 History transport is also included: after the main data refresh, migrating only oversized files would temporarily require 1,158,770,321 B. Compressing the existing history chunk bytes avoids that peak. The new history reader verifies original chunk SHA-256, lengths and entry counts while preserving legacy reads; it does not alter history or settlement. Real-source reconstruction preserved all 2,500 records and every original chunk byte.
 
 Compressed publication changes only representation in `scripts/publish_runtime_private.py`. Original source JSON, historical row order, null/zero/false values, chunk digests and ownership tiers are preserved. Publisher output remains deterministic and content-addressed; existing generation activation and GC remain authoritative. Rollback keeps the compatible reader and republishes original data through the former writer.
+

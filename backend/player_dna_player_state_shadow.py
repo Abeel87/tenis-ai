@@ -787,6 +787,19 @@ def build_current_card_states(
                 last_match_time={player: last_time} if last_time is not None else {},
                 recent_form_status=recent_form_status,
             )
+            recent = [m for m in ordered
+                      if str(m.get("match_id") or "") not in current_ids
+                      and player in (m.get("p1"), m.get("p2"))
+                      and isinstance((m.get("contrib") or {}).get(player), dict)
+                      and 0 < (scheduled-m["scheduled"]).total_seconds() <= 48*3600]
+            match_state["player_state"][side]["recent_activity"] = {
+                "observed_matches_started_48h": len(recent),
+                "minutes_on_court_48h": None,
+                "minutes_reason": "NO_VALIDATED_DURATION_SOURCE",
+                "coverage": "AVAILABLE_EXACT_PBP_HISTORY_ONLY",
+                "source_matches": [{"match_id": m["match_id"], "scheduled_time": m["scheduled"].isoformat()} for m in recent],
+                "fatigue_inferred": False,
+            }
         out.append(match_state)
     return out
 
@@ -1008,3 +1021,4 @@ def build() -> dict[str, Any]:
 
 if __name__ == "__main__":
     build()
+

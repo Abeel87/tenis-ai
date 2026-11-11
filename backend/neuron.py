@@ -464,7 +464,8 @@ def freeze_predictions(existing, rows, model_id, trained_at, captured_at, histor
                 'p1_win_probability':row['p1_win_probability'],
                 'elo_p1_win_probability':row['elo_p1_win_probability'],
                 'feature_snapshot':row['feature_snapshot'],'history_sha256':history_sha,
-                'market':'match_win','pick':row['p1']}
+                'market':'match_win','pick':row['p1'],
+                'surface':row.get('surface'), 'tour':row.get('tour')}
         record['snapshot_sha256']=digest(record)
         record['settlement']={'status':'N/D','result':None,'reason':'AWAITING_EXACT_TERMINAL_EVIDENCE'}
         validate_prediction(record); result[pid]=record
@@ -524,14 +525,14 @@ def _production_metrics(scored, index):
 def summarize_predictions(rows, production_ledger=None):
     values=list(rows.values()) if isinstance(rows,dict) else list(rows)
     production_index=_production_index(production_ledger)
-    def summary(items):
+    def summary(items, include_segments=False):
         first={}
         for row in sorted(items,key=lambda x:(utc(x['captured_at']),x['prediction_id'])):
             first.setdefault(row['match_key'],row)
         unique=list(first.values())
         scored=[r for r in unique if r.get('settlement',{}).get('result') in ('hit','miss')]
         y=np.asarray([1. if r['settlement']['result']=='hit' else 0. for r in scored])
-        return {'unique_fixtures':len(unique),'settled_matches':len(scored),
+        result = {'unique_fixtures':len(unique),'settled_matches':len(scored),
                 'pending_matches':sum(r.get('settlement',{}).get('status')!='SETTLED' for r in unique),
                 'pending_reasons':dict(Counter(r.get('settlement',{}).get('reason') or 'UNKNOWN'
                     for r in unique if r.get('settlement',{}).get('status')!='SETTLED')),
@@ -539,12 +540,22 @@ def summarize_predictions(rows, production_ledger=None):
                 'neuron':metrics(y,np.asarray([r['p1_win_probability'] for r in scored])) if scored else None,
                 'elo':metrics(y,np.asarray([r['elo_p1_win_probability'] for r in scored])) if scored else None,
                 'production_comparison':_production_metrics(scored,production_index)}
+        if include_segments:
+            result['segments'] = {}
+            for field in ('surface', 'tour'):
+                groups = defaultdict(list)
+                for row in unique:
+                    groups[str(row.get(field) or 'UNKNOWN')].append(row)
+                result['segments'][field] = {name: summary(group) for name, group in sorted(groups.items())}
+            result['market'] = 'match_winner'
+            result['evidence_policy'] = 'DESCRIPTIVE_ONLY; NO_SMALL_SAMPLE_SUPERIORITY_CLAIM'
+        return result
     by_model=defaultdict(list)
     for row in values: by_model[row['model_id']].append(row)
     aggregate=summary(values)
     return {**aggregate,'forecast_snapshots':len(values),'population':'FIRST_PREMATCH_FORECAST_PER_EXACT_FIXTURE',
             'status':'HAS_SETTLED_EVIDENCE' if aggregate['settled_matches'] else 'COLLECTING_PROSPECTIVE_EVIDENCE',
-            'by_model':{name:summary(items) for name,items in sorted(by_model.items())},
+            'by_model':{name:summary(items, include_segments=True) for name,items in sorted(by_model.items())},
             'automatic_promotion':False,'profitability_claimed':False}
 
 
@@ -557,7 +568,8 @@ def current():
     for x in src:
         if not isinstance(x,dict): continue
         row={'match_id':x.get('match_id') or x.get('id'),'p1':x.get('p1') or x.get('player1'),'p2':x.get('p2') or x.get('player2'),
-             'scheduled_time':x.get('scheduled_time') or x.get('start_time'),'model_id':model_id,
+              'scheduled_time':x.get('scheduled_time') or x.get('start_time'),'model_id':model_id,
+              'surface':x.get('surface'), 'tour':x.get('tour'),
              'history_identity':current_history_identity(st,x)}
         try:
             if not str(row['match_id']).isdigit(): raise ValueError('MISSING_EXACT_FIXTURE_ID')
@@ -646,3 +658,4 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(); p.add_argument('action',choices=['train','gate','current','evaluate','audit'])
     actions={'train':train,'gate':quality_gate,'current':current,'evaluate':evaluate,'audit':audit}
     print(json.dumps(actions[p.parse_args().action](),ensure_ascii=False,indent=2))
+

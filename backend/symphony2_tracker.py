@@ -522,6 +522,82 @@ def performance_stats(history_doc: dict) -> dict:
     }
 
 
+def observe_analysis(current: dict, history_doc: dict, *, now=None, results=None) -> dict:
+    """Append bounded source observations, independently of immutable forecasts.
+
+    These are changes observed at publication, not causal explanations or
+    retrospective forecasts. Only exact, unchanged fixture identities may join.
+    """
+    now = now or datetime.now(timezone.utc)
+    source_at = _dt(current.get("generated_at"))
+    if source_at is None or source_at > now:
+        return history_doc
+    journals = dict(history_doc.get("analysis_observations") or {})
+    result_rows = results if isinstance(results, list) else []
+    changed = False
+    matches = [m for m in current.get("matches") or [] if isinstance(m, dict)]
+    for match in matches:
+        mid = _match_id(match)
+        if not mid or not str(mid).isdigit() or sum(_match_id(m) == mid for m in matches) != 1:
+            continue
+        start = _dt(match.get("scheduled_time"))
+        if start is None or start <= now or source_at >= start or not match.get("p1") or not match.get("p2"):
+            continue
+        identity = {k: match.get(k) for k in ("p1", "p2", "scheduled_time")}
+        prior = journals.get(mid)
+        if prior and prior.get("identity") != identity:
+            continue
+        observations = list((prior or {}).get("observations") or [])
+        if observations and (_dt(observations[-1].get("source_generated_at")) is None
+                             or source_at <= _dt(observations[-1]["source_generated_at"])):
+            continue
+        comp = (match.get("compositions") or {}).get(str(match.get("recommended_leg_count"))) or {}
+        selections = comp.get("selection") or (match.get("scored_selections") or [])[:32]
+        selection_rows = sorted([
+            {"selection_id": s.get("selection_id"), "market": s.get("market"),
+             "pick": s.get("pick"), "line": s.get("line"), "checkpoint": s.get("checkpoint"),
+             "player": s.get("player"), "probability": s.get("operator_model_probability")}
+            for s in selections if isinstance(s, dict)
+        ], key=lambda s: json.dumps({k:v for k,v in s.items() if k != "probability"}, sort_keys=True))
+        evidence = [r for r in result_rows if str(r.get("id")) == mid
+                    and all(r.get(k) == identity[k] for k in identity)]
+        quality = {side: (evidence[0].get(side + "_stats") or {}).get("matches")
+                   for side in ("p1", "p2")} if len(evidence) == 1 else None
+        price = (comp.get("component_comparison") or {}).get("full") or {}
+        observation = {
+            "engine_version": current.get("version"), "selections": selection_rows,
+            "recommended_leg_count": match.get("recommended_leg_count"),
+            "joint_probability": comp.get("joint_probability"),
+            "available_selections": match.get("offer_selections"),
+            "combined_odds": price.get("combined_odds"), "history_counts": quality,
+        }
+        fingerprint = hashlib.sha256(json.dumps(observation, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        previous = observations[-1] if observations else None
+        if previous and previous.get("fingerprint") == fingerprint:
+            continue
+        changes = []
+        if previous:
+            if previous.get("engine_version") != observation["engine_version"]:
+                changes.append("ENGINE_VERSION_CHANGED")
+            keys = lambda rows: [{k:v for k,v in row.items() if k != "probability"} for row in rows]
+            if keys(previous["selections"]) != keys(selection_rows) or previous["recommended_leg_count"] != observation["recommended_leg_count"]:
+                changes.append("RECOMMENDATION_CHANGED")
+            if previous["selections"] != selection_rows or previous["joint_probability"] != observation["joint_probability"]:
+                changes.append("MODEL_PROBABILITY_CHANGED")
+            for field, code in (("available_selections", "AVAILABLE_MARKETS_CHANGED"),
+                                ("combined_odds", "OPERATOR_QUOTE_CHANGED"), ("history_counts", "HISTORY_COUNTS_CHANGED")):
+                if previous.get(field) != observation[field]:
+                    changes.append(code)
+        observations.append({**observation, "fingerprint": fingerprint,
+                             "source_generated_at": source_at.isoformat(), "observed_at": now.isoformat(),
+                             "changes": changes or ["FIRST_OBSERVATION"], "causal_explanation": None})
+        journals[mid] = {"identity": identity, "observations": observations[-32:],
+                         "omitted_older_observations": (prior or {}).get("omitted_older_observations", 0) + max(0, len(observations)-32),
+                         "policy": "OBSERVED_PREMATCH_PUBLICATIONS; NOT_TRAINING_OR_SETTLEMENT"}
+        changed = True
+    return {**history_doc, "analysis_observations": journals} if changed else history_doc
+
+
 def run() -> dict:
     current = _read(CURRENT, {})
     base_history = _read(BASE_HISTORY, [])
@@ -533,6 +609,7 @@ def run() -> dict:
 
     history_doc, captured = capture(current, old_history)
     history_doc, settled = settle(history_doc, base_history)
+    history_doc = observe_analysis(current, history_doc, results=_read(DATA / "results.json", []))
     _write(HISTORY, history_doc)
 
     stats = _read(STATS, {})
@@ -553,3 +630,4 @@ def run() -> dict:
 
 if __name__ == "__main__":
     print(json.dumps(run(), ensure_ascii=False, indent=2))
+

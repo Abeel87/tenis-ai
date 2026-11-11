@@ -4,11 +4,16 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 export function buildDelivery(root='frontend') {
  const data=path.join(root,'data');
  const read=n=>JSON.parse(fs.readFileSync(path.join(data,n),'utf8'));
  const results=read('results.json'), symphony=read('symphony2_current.json');
  const dna=read('player_dna_current_shadow.json'),direct=read('superbet_direct_current.json'),meta=read('meta.json');
+ const optional=n=>fs.existsSync(path.join(data,n))?read(n):null;
+ const matchEvidence=JSON.parse(execFileSync(process.env.PYTHON||'python',['-X','utf8','backend/readiness_engine_shadow.py','project-match-evidence',data],{encoding:'utf8',maxBuffer:16*1024*1024}));
+ const journal=optional('symphony2_history.json')?.analysis_observations||{};
+ const priority=optional('history_player_priority_v83.json');
  const stamp=Math.max(...[meta.updated_at,symphony.generated_at,direct.generated_at].map(x=>Date.parse(x)||0));
  const SourceDate=class extends Date{static now(){return stamp}};
  const ctx={console:{log(){},info(){}},Date:SourceDate,Map,Set,URL,JSON,Math,Number,String,Object,Array,localStorage:{getItem(){return null}},document:{querySelector(){return null},getElementById(){return {}},addEventListener(){}},setInterval(){},setTimeout(){},addEventListener(){}};
@@ -32,7 +37,10 @@ export function buildDelivery(root='frontend') {
   const evidence=layer?.playable===true?{superbet_market_v91:compactContext(m,new Set((layer.signals||[]).map(api.signature))),symphony2_playable:layer}:{};
   const symEvidence=s?{id:s.id,match_key:s.match_key,recommended_leg_count:s.recommended_leg_count,compositions:selected?{[String(s.recommended_leg_count)]:{selection:(selected.selection||[]).map(x=>pick(x,eventKeys))}}:{}}:null;
   const item={...pick(m,['id','tour','tournament','surface','p1','p2','p1_id','p2_id','p1_rank','p2_rank','scheduled_time','best_of','feed_status','event_status','status','model_ready','quality','risk','exact_match_score']),p1_stats:pick(m.p1_stats,['matches','won','hold_rate']),p2_stats:pick(m.p2_stats,['matches','won','hold_rate']),...evidence,delivery_summary:true,ui_summary:{top:top?pick(top,eventKeys):null,probability:top?events.find(e=>e.source==='Model bazowy'&&api.signature(e)===api.signature(top))?.value??null:null,has_data:events.some(e=>e.value!=null),has_dna:!!m.player_intelligence_v85},playable:events.some(e=>D.availability(m,e,s,symphony.generated_at).playable),symphony_evidence:symEvidence};
-  const detail={match:m,symphony:s,symphony_generated_at:symphony.generated_at,dna:D.find(dna.matches||[],m),direct:{...pick(direct,['generated_at','operator','status']),matches:(direct.matches||[]).filter(r=>D.find([r],m))}};
+  const observed=journal[String(m.id)],sameIdentity=observed&&['p1','p2','scheduled_time'].every(k=>observed.identity?.[k]===m[k]);
+  const analysis=matchEvidence[String(m.id)]||null;
+  item.analysis_quality=analysis?{players:analysis.players,shadow_available:analysis.shadow_available,freshness:analysis.dimensions?.freshness?.status??'UNKNOWN'}:null;
+  const detail={match:m,symphony:s,symphony_generated_at:symphony.generated_at,analysis_evidence:analysis,analysis_journal:sameIdentity?observed:null,dna:D.find(dna.matches||[],m),direct:{...pick(direct,['generated_at','operator','status']),matches:(direct.matches||[]).filter(r=>D.find([r],m))}};
   const bytes=JSON.stringify(detail),file=hash(bytes)+'.json';fs.writeFileSync(path.join(out,'matches',file),bytes);item.detail_path='data/delivery/matches/'+file;
   summaries.push(item);
   if(s)symRows.push({...item,ui_events:events.map(x=>pick(x,eventKeys)),superbet_market_v91:compactContext(m),...symEvidence});
@@ -40,8 +48,10 @@ export function buildDelivery(root='frontend') {
  const index={schema:1,generated_at:meta.updated_at,symphony_generated_at:symphony.generated_at,symphony_count:(symphony.matches||[]).length,source_status:{operator_at:direct.generated_at??null,models_at:meta.autolearn_v84_updated_at??null},matches:summaries};
  const sizes={index:write('index.json',index),symphony:write('symphony.json',{generated_at:symphony.generated_at,matches:symRows}),before:fs.statSync(path.join(data,'results.json')).size+fs.statSync(path.join(data,'symphony2_current.json')).size+fs.statSync(path.join(data,'superbet_direct_current.json')).size+fs.statSync(path.join(data,'player_dna_current_shadow.json')).size+fs.statSync(path.join(data,'meta.json')).size};
  const coverage=read('history_coverage_audit_v949.json'),stats=read('symphony2_stats.json'),training=stats.training||{},calibration=training.market_calibration||{};
+ write('history-supply.json',priority?{...priority,diagnostic_only:true}:{status:'N/D',diagnostic_only:true});
  write('diagnostics.json',{superbet_direct:pick(direct,['generated_at','status','app_matches_seen','listing_match_urls_found','candidate_app_matches','resolved_app_matches','coverage','match_diagnostics']),diagnostic_only:true,production_influence:false,coverage_generated_at:coverage.generated_at,coverage:coverage.summary,markets_generated_at:stats.generated_at,support_label_policy:'UI_ONLY: LOW <100; MEDIUM 100-999; HIGH >=1000 training rows; no effect on model thresholds',markets:Object.entries(training.market_support||{}).sort(([a],[b])=>a.localeCompare(b)).map(([market,count])=>{const cal=calibration[market]||{};return {market,training_rows:count,validation_rows:cal.rows??null,calibration_fit_rows:cal.fit_rows??null,calibration_evaluation_rows:cal.evaluation_rows??null,test_rows:null,log_loss:null,raw_brier:cal.raw_brier??null,calibrated_brier:cal.calibrated_brier??null,calibration_accepted:cal.accepted??null,support_label:count<100?'LOW':count<1000?'MEDIUM':'HIGH'}})});
- write('manifest.json',{schema:1,source_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),source_files:Object.fromEntries(['results.json','symphony2_current.json','superbet_direct_current.json','player_dna_current_shadow.json','meta.json'].map(n=>[n,hash(fs.readFileSync(path.join(data,n)))])),sizes});
+ write('manifest.json',{schema:1,source_sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),source_files:Object.fromEntries(['results.json','symphony2_current.json','superbet_direct_current.json','player_dna_current_shadow.json','meta.json','readiness_engine_shadow.json','symphony2_history.json','history_player_priority_v83.json','history_coverage_audit_v949.json','symphony2_stats.json'].filter(n=>fs.existsSync(path.join(data,n))).map(n=>[n,hash(fs.readFileSync(path.join(data,n)))])),sizes});
  return sizes;
 }
-if(process.argv[1]===new URL(import.meta.url).pathname)console.log(JSON.stringify(buildDelivery(process.argv[2]||'frontend')));
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))console.log(JSON.stringify(buildDelivery(process.argv[2]||'frontend')));
+

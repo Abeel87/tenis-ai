@@ -229,6 +229,8 @@ def _priority_players(
                 "current": str(k) in current_keys,
                 "indexed_matches": len(summaries),
                 "cached_recent": cached_recent,
+                "next_match_at": (upcoming_times or {}).get(str(k)).isoformat()
+                if str(k) in (upcoming_times or {}) else None,
                 "last_attempt_at": last.isoformat() if last else None,
             }
         )
@@ -238,6 +240,7 @@ def _priority_players(
             0 if upcoming_times is not None and row["key"] in upcoming_times else 1,
             0 if row["current"] else 1,
             int(row["cached_recent"]),
+            row["next_match_at"] or "9999",
             int(row["indexed_matches"]),
             row["last_attempt_at"] or "",
             row["key"],
@@ -292,7 +295,11 @@ def run(now: datetime | None = None) -> dict:
         "version": VERSION,
         "updated_at": now.isoformat(),
         "status": "init",
-        "policy": "current-players-first; strict-from-start-only; central-spare-quota; fail-closed",
+        "policy": "upcoming-first; smallest-cache-first; soonest-match-tiebreak; strict-from-start-only; central-spare-quota; fail-closed",
+        "supply_unit": "POINT_BY_POINT_TAPE",
+        "canonical_model_history_gain": None,
+        "canonical_model_history_gain_reason": "PBP_DOWNLOADS_ARE_NOT_CANONICAL_MODEL_HISTORY",
+        "targets": [],
         "calls_this_run": 0,
         "target_players_available": 0,
         "current_target_players": 0,
@@ -331,6 +338,7 @@ def run(now: datetime | None = None) -> dict:
     )
     report["target_players_available"] = len(candidates)
     report["current_target_players"] = sum(1 for row in candidates if row["current"])
+    report["queue_preview"] = [dict(row) for row in candidates[:max_players]]
 
     budget, usage = quota_budget("history_backfill", run_cap)
     q_today = usage.get("today") or {}
@@ -376,6 +384,8 @@ def run(now: datetime | None = None) -> dict:
         report["players_attempted"] += 1
         downloaded_for_player = 0
         found_candidates = 0
+        calls_before = api.calls
+        parsed_before = report["tape_parse_ok"]
 
         try:
             for page_no in range(max_pages):
@@ -437,6 +447,15 @@ def run(now: datetime | None = None) -> dict:
         attempt["last_found_candidates"] = found_candidates
         attempt["last_downloaded"] = downloaded_for_player
         attempt["last_calls_total"] = api.calls
+        report["targets"].append({
+            "player_id": target["player_id"], "player": target["player"],
+            "next_match_at": target["next_match_at"],
+            "cached_tapes_before": target["cached_recent"],
+            "downloaded_tapes": downloaded_for_player,
+            "parsed_tapes": report["tape_parse_ok"] - parsed_before,
+            "calls": api.calls - calls_before,
+            "identity_source": "live_tennis_exact_provider_id",
+        })
 
         # Persist progress after every player so a cancelled workflow does not
         # re-hit the same targets on the next run.
@@ -466,3 +485,4 @@ def run(now: datetime | None = None) -> dict:
 
 if __name__ == "__main__":
     run()
+

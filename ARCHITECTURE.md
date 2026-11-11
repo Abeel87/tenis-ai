@@ -4,6 +4,24 @@
 
 ## 1. Produkcja danych
 
+Analysis evidence release (2026-11-11, validation in progress): the delivery builder
+projects existing player-profile facts and exact-snapshot readiness evidence into
+lazy match bundles. It invokes the readiness owner's stdlib CLI, so the UI and
+publication do not reimplement snapshot hashing. The first-render index stays
+under its existing 1 MB gate; full Player State and observation rows load on demand.
+The manifest hashes every consumed optional evidence file as well as core sources.
+Builder component diagnostics are attached after Symphony's final projection;
+existing iNeed exact quote resolution/economics are reused, and stale display prices
+are hidden by the existing operator availability/time guards. No execution path is
+activated. The tracker stores prematch observations separately from immutable
+settlement entries. History compares frozen predictions with existing settlement.
+Neuron comparison segments stay inside each model version and use common frozen
+AutoLearn fixtures. New context is never retroactively assigned to older forecasts.
+The runtime snapshot archive streams source files and verifies hashes with a bounded
+4 GiB expansion limit; this replaces the exhausted 1 GiB gate without omitting data.
+Detailed ownership, validation and limitations: `audits/analysis_development_20261111.md`.
+
+
 The canonical fixture reader, `backend/update.py::fetch_fixtures`, requires
 confirmed pagination completion before replacing the catalogue. Budget exhaustion
 or a short page contradicting the declared total retains the last complete results
@@ -455,3 +473,4 @@ decoded output are checked against the original inventory before publication.
 Manifest totals are derived from those exact stored objects, including dedupe.
 The existing publisher, private bucket, object limit, OIDC, retention and GC
 contracts are unchanged. No runtime consumer or model reads the staging copy.
+
