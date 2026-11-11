@@ -30,7 +30,8 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   ("dobra wprowadz wszystko"). Diagnostic/model-context additions remain SHADOW;
   no real bets, reservations, model promotion or new probability/ranking policy.
 - AUDITED MAIN: `c71abdb5dd7c9797529dd67080b8c0f6f8fdb3a2`.
-  BRANCH: `feat/analysis-evidence-20261111`; PR pending publication.
+  BRANCH: `feat/analysis-evidence-20261111`; PR #587:
+  https://github.com/Abeel87/tenis-ai/pull/587 .
 - [x] Canonical owners inspected; UI decisions, Builder component comparison,
   profile quality, per-version Neuron common-fixture metrics, Player State context,
   prematch observation journal, postmatch review and targeted backfill telemetry
@@ -44,8 +45,15 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Main tree JSON sizes plus restored chunk manifests total 1,090,044,204 bytes.
   Canonical snapshot now streams files, retains checksums/traversal checks,
   and has an explicit 4 GiB expanded-byte budget. Private Storage limits unchanged.
-- [~] Full remote CI, actual Chromium responsive checks and production publication
-  verification remain pending. Local pytest/Playwright are unavailable and local
+- [x] Initial head `115a013df5a17ab76b923af08c558f14521634d0` passed actual
+  Chromium user/moderator/admin checks at 320/412/1280 px; index 562,645 bytes,
+  1,071 PLAYABLE equivalence checks. Browser run `43025107452`, artifact
+  `13856113663` retains screenshots (not inspected locally: download unavailable).
+- [x] Full CI first run `43025107855`: 1949 passed, two stale pinned-reference
+  failures (frontend line matrix and PWA cache version). Updated both references;
+  all 9 affected source-contract tests pass locally, with original guards intact.
+- [~] Full CI rerun and production publication verification remain pending.
+  Local pytest/Playwright are unavailable and local
   shell network cannot install them; focused stdlib/Node checks passed locally.
 - FILES: canonical UI/presentation/history/service worker, existing Neuron,
   Symphony engine/tracker, iNeed Builder diagnostics, Player State/readiness,
