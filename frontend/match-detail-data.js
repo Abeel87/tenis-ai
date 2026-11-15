@@ -27,13 +27,13 @@ function comparison(m){
  const profiles=m.player_intelligence_v85?.profiles||{};
  const row=(label,get,format=D.ratio,lower=false,highlight=true)=>{
   const a=D.num(get('p1')),b=D.num(get('p2'));
-  const winner=highlight&&a!=null&&b!=null&&a!==b?((lower?a<b:a>b)?'p1':'p2'):null;
+  const winner=!D.historyBlocked(m)&&highlight&&a!=null&&b!=null&&a!==b?((lower?a<b:a>b)?'p1':'p2'):null;
   return {label,a,b,winner,displayA:a==null?'N/D':format(a),displayB:b==null?'N/D':format(b)};
  };
  return [row('Ranking',s=>m[s+'_rank']??m[s+'_stats']?.rank,v=>String(v),true),
- ...[20,10,5].map(n=>row('Forma '+n,s=>profiles[s]?.windows?.[n]?.metrics?.won?.adjusted)),
- row('Forma · indeks',s=>profiles[s]?.indexes?.form,D.score),
- row('Wygrane mecze',s=>m[s+'_stats']?.won),
+ ...[20,10,5].map(n=>row('Profil nawierzchni · okno '+n+' · SHADOW',s=>profiles[s]?.windows?.[n]?.metrics?.won?.adjusted,D.ratio,false,false)),
+ row('Indeks profilu · SHADOW',s=>profiles[s]?.indexes?.form,D.score,false,false),
+ row('Wygrane w próbce modelu',s=>m[s+'_stats']?.won),
  row('Serwis · utrzymany',s=>m[s+'_stats']?.hold_rate),
  row('Return · przełamania',s=>m[s+'_stats']?.break_rate),
  row('Return · wygrane punkty',s=>m[s+'_stats']?.return_points_won),
@@ -43,12 +43,13 @@ function comparison(m){
  ].filter(r=>r.a!=null||r.b!=null);
 }
 function assessment(m){
+ if(D.historyBlocked(m))return {p:null,winner:null};
  const p=['p1','p2'].map(s=>D.num(m.match_win?.[m[s]]));
  if(p.every(v=>v!=null&&v>=0&&v<=100))return {p,winner:p[0]===p[1]?null:p[0]>p[1]?'p1':'p2'};
  return {p:null,winner:null};
 }
 function form(m,side){
- const rows=[20,10,5].map(n=>({n,v:D.num(m.player_intelligence_v85?.profiles?.[side]?.windows?.[n]?.metrics?.won?.adjusted)}));
+ const rows=[20,10,5].map(n=>{const w=m.player_intelligence_v85?.profiles?.[side]?.windows?.[n]||{};return {n,v:D.num(w.metrics?.won?.adjusted),sample:D.num(w.sample_matches),latest:w.latest_source_date,oldest:w.oldest_source_date};});
  const v=rows.map(x=>x.v);
  let trend='N/D';
  if(v.every(x=>x!=null))trend=v.every(x=>x===v[0])?'stabilny':v[0]<=v[1]&&v[1]<=v[2]?'rosnący':v[0]>=v[1]&&v[1]>=v[2]?'spadkowy':'zmienny';

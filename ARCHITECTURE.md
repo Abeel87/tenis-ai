@@ -4,6 +4,29 @@
 
 ## 1. Produkcja danych
 
+**2026-11-15 current history publication repair (owner-authorized, release pending):**
+`model_core.normalize_matches/player_profile` retain tournament-week precision,
+round/match order and the exact 20-row source sample. Same-week sorting is by
+round then source match number. No new source, fuzzy identity or synthetic stats.
+`player_intelligence_v85` remains SHADOW/same-surface; it publishes actual window
+sample counts/date bounds and keys its cache by source content, not row count.
+`history_coverage_audit.attach_current_history_evidence` owns the `history_input`
+contract. It uses the existing PBP index 12-hour TTL and minimum five observations,
+strict same-provider IDs plus full names, completed outcomes before the fixture,
+and the existing unique TML pair/score/surface/eight-day tournament overlap rule.
+It compares ONLY against the model's frozen input sample, never a newer DB snapshot.
+Unknown, stale, ambiguous or missing evidence disallows recommendation publication.
+`symphony2_engine.run` always attaches that evidence before scoring; blocked rows
+have no scored markets, compositions or final PLAYABLE signals. iNeed consumes
+that existing final contract. UI reads the decision, suppresses recommendation
+percentages/types and shows reason and observed results; no probability rewriting.
+Source limitation: Challenger qualifying results are absent from current TML
+inputs. PBP-derived model statistics remain unpromoted. Five observed cached events
+do not prove an exhaustive player match list. Existing historical predictions,
+settlement, training, thresholds, staking and SHADOW/PROD roles remain unchanged.
+Evidence: `audits/donski_hemery_form_20261115.md`.
+
+
 Binary-probability repair (2026-11-11, release pending): the existing Symphony learning owner rejects nonfinite or rank-reversing Platt calibration; the existing engine owner projects complete supported yes/no pairs alongside winner/O/U pairs. Pre-coherence/raw/calibrated provenance remains available. Frontend displays these backend values without renormalization and avoids rounding non-boundary P to certainty. See `audits/binary_probability_incident_20261111.md`.
 
 Analysis evidence release (2026-11-11, PR #587 merged and public delivery verified): the delivery builder

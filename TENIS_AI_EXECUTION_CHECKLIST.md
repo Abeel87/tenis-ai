@@ -25,6 +25,36 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**CURRENT REPAIR — Donski / Hemery history and publication, 2026-11-15**
+- AUTHORIZATION: owner explicitly requested repairing the bug affecting published
+  recommendations (follow-up after the investigation). No real bet execution.
+- AUDITED MAIN: `0387b698f8b89cbcf90ebb2d6ac9fd65deb62bb1`;
+  rebased onto fresh `b1b961c3a2c38036567a600435bf5c532ea9c2fd` (data-only advances);
+  branch `fix/player-form-history-20261115`; PR pending.
+- [x] Exact source diagnosis: TML Challenger source omits qualifying results;
+  current PBP contains them. Hemery's Nov 13 result is present under tournament
+  week Nov 9, so the former "6 days stale" interpretation is NOT a missing match.
+- [x] Core retains round/match ordering and exact model sample; SHADOW profile
+  cache invalidates on content changes and publishes sample/date provenance.
+- [x] Canonical history coverage owner checks observed PBP results against exact
+  model sample. Symphony publication fails closed on missing/unknown coverage;
+  no scoring/compositions/final signals for those fixtures. UI explains the
+  decision and labels SHADOW/surface/window samples truthfully.
+- [x] Eleven focused positive/negative backend regressions pass, plus the existing
+  profile and final PLAYABLE tests. UI runtime/static, delivery projection (477 equivalence checks) and 29
+  existing targeted tests passed. Full suite assertions: 1967 passed; rerun
+  required after sequentializing the local publication builder/fixture guard.
+  Local Chromium cannot start (sandbox socket restriction); CI browser required.
+- [ ] Full CI, fresh-main integration, green merge and production verification.
+- LIMIT: no PBP-derived statistics promoted into canonical training. Comparison
+  covers five latest *observed* results, not guaranteed complete player history.
+  Raw/frozen probabilities remain auditable; never swap players or invent P.
+- DO NOT REDO: screenshot diagnosis, provider/date audit, prior binary repair.
+- NEXT EXACT ACTION: finish full tests, publish repair PR, verify green CI against
+  latest main, merge and inspect actual regenerated fixture/publication evidence.
+- Evidence: `audits/donski_hemery_form_20261115.md`.
+
+
 **CURRENT TASK — reported contradictory binary probabilities, 2026-11-11**
 - AUTHORIZATION: owner reported the live Tabata/Boyer "Tak 100% / Nie 100%" card and requested correction. This is a canonical probability-integrity repair; no new model promotion or real execution.
 - AUDITED MAIN: `fe997e1d7a8ddc1fade9a3ff9adb996a8c21b7ba`. BRANCH: `fix/symphony-binary-probabilities-20261111`.

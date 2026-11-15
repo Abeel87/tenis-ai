@@ -16,7 +16,7 @@ EXPECTED_LINE_SITES = {
     "backend/shadow_lab_v78e6.py": {109, 125, 148},
     "backend/update.py": {413, 425},
     "backend/prediction_integrity_v78a.py": {156},
-    "frontend/app.js": {206, 289, 322, 349, 370, 379},
+    "frontend/app.js": {206, 291, 324, 351, 372, 381},
 }
 
 

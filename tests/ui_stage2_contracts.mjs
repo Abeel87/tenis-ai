@@ -29,6 +29,13 @@ assert.equal(d.sampleLabel(null),'N/D - brak danych o liczbie meczów w próbce'
 assert.equal(d.sampleLabel(undefined),'N/D - brak danych o liczbie meczów w próbce','Undefined sample count must stay N/D');
 assert.equal(d.sampleLabel(0),'0 meczów w próbce','Explicit backend zero must remain a real zero');
 assert.equal(d.sampleLabel(12),'12 meczów w próbce','Published sample count must be preserved');
+const blocked={...fixture,match_win:{'Łukasz Żuk':55.7,'João Silva':44.3},exact_match_score:{'2:0':40},p1_rank:150,p2_rank:100,history_input:{recommendation_allowed:false},player_intelligence_v85:{profiles:{p1:{windows:{20:{sample_matches:10,latest_source_date:'2026-08-03',oldest_source_date:'2026-01-01',metrics:{won:{adjusted:.7}}}}}}}};
+assert.equal(d.assessment(blocked).p,null,'Unverified history must not present a recommendation probability');
+assert.equal(d.comparison(blocked).some(r=>r.winner),false,'Unverified history must not claim statistical advantages');
+assert.equal(presentation.allEvents(blocked,{scored_selections:[{market:'match_winner',operator_model_probability:90}]}).length,0,'Blocked input must suppress old scored events');
+assert.equal(presentation.forecast(blocked),null,'Exact-score recommendation must also be withheld');
+assert.equal(d.form(blocked,'p1').rows[0].sample,10,'Window 20 must report its real sample of 10');
+assert.equal(d.form(blocked,'p1').rows[0].latest,'2026-08-03');
 const profileRows=[{id:'a',p1:'Łukasz Żuk',p2:'X',p1_id:10,p2_id:30,surface:'hard'},{id:'b',p1:'Alias',p2:'Łukasz Żuk',p1_id:40,p2_id:10,surface:'clay'},{id:'c',p1:'Łukasz Żuk',p2:'Y',p1_id:99,p2_id:50,surface:'grass'}];
 assert.deepEqual(Array.from(d.playerRows(profileRows,fixture,'p1'),r=>r.surface),['hard','clay'],'Player profile cross-row association must use canonical ID across both slots');
 assert.equal(d.playerRows(profileRows,{...fixture,p1_id:null},'p1').length,0,'Missing canonical player ID must fail closed instead of falling back to name');

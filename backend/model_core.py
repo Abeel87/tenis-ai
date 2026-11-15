@@ -127,6 +127,11 @@ def normalize_matches(df: pd.DataFrame) -> pd.DataFrame:
 
             row = {
                 'date': date,
+                'date_precision': 'tournament',
+                'tourney_id': str(r.get('tourney_id') or ''),
+                'round': str(r.get('round') or ''),
+                'match_num': _num(r.get('match_num')),
+                'score_text': str(r.get('score') or ''),
                 'surface': surface,
                 'source_tour': source_tour,
                 'player': name.strip(),
@@ -155,6 +160,36 @@ def normalize_matches(df: pd.DataFrame) -> pd.DataFrame:
                 row[f'first_set_over{key}'] = (1.0 if first_set_games > line else 0.0) if first_set_games is not None else float('nan')
             out.append(row)
     return pd.DataFrame(out)
+
+
+def sort_player_history(frame: pd.DataFrame) -> pd.DataFrame:
+    """Newest tournament/round first; never invent a calendar match date."""
+    if frame.empty or 'date' not in frame.columns:
+        return frame
+    rounds = {r: i for i, r in enumerate(('Q1', 'Q2', 'Q3', 'R128', 'R64', 'R32', 'R16', 'QF', 'SF', 'F'))}
+    out = frame.copy()
+    out['_round_order'] = out.get('round', pd.Series(index=out.index, dtype='str')).map(rounds)
+    out['_match_order'] = pd.to_numeric(out.get('match_num', pd.Series(index=out.index, dtype='float64')), errors='coerce')
+    return out.sort_values(['date', '_round_order', '_match_order'], ascending=False,
+                           kind='stable', na_position='last').drop(columns=['_round_order', '_match_order'])
+
+
+def history_sample(frame: pd.DataFrame) -> list[dict]:
+    """Freeze the exact descriptive rows used, including source date precision."""
+    rows = []
+    for _, row in frame.iterrows():
+        day = row.get('date')
+        if pd.isna(day):
+            continue
+        item = {'date': pd.Timestamp(day).date().isoformat(), 'date_precision': row.get('date_precision', 'unknown')}
+        for key in ('player', 'opponent', 'surface', 'source_tour', 'tourney_id', 'round', 'score_text'):
+            value = row.get(key)
+            item[key] = None if value is None or pd.isna(value) else str(value)
+        for key in ('won', 'match_num'):
+            value = row.get(key)
+            item[key] = None if value is None or pd.isna(value) else float(value)
+        rows.append(item)
+    return rows
 
 
 def _weighted_mean(values, weights):
@@ -224,7 +259,7 @@ def player_profile(long_df: pd.DataFrame, player: str, surface: str = '', as_of=
     cut = _fixture_date(as_of)
     if 'date' in x.columns:
         x = x[x['date'].isna() | (x['date'] <= cut)]
-    x = x.sort_values('date', ascending=False).head(20)
+    x = sort_player_history(x).head(20)
     if x.empty:
         return {'player': player, 'matches': 0, 'quality': 'LOW'}
 
@@ -303,6 +338,7 @@ def player_profile(long_df: pd.DataFrame, player: str, surface: str = '', as_of=
         'coverage': round(float(coverage), 3), 'effective_n': round(float(effective_n), 2),
         'rank': latest_rank, 'days_since_last': days_since_last, 'matches_7d': matches_7d,
         'sets_7d': round(sets_7d, 1), 'fatigue_load': round(fatigue, 3), 'data_confidence': confidence,
+        'history_sample': history_sample(x),
         **metrics,
     }
 
