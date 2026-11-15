@@ -29,7 +29,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 - AUTHORIZATION: owner explicitly requested repairing the bug affecting published
   recommendations (follow-up after the investigation). No real bet execution.
 - AUDITED MAIN: `0387b698f8b89cbcf90ebb2d6ac9fd65deb62bb1`;
-  rebased onto fresh `b1b961c3a2c38036567a600435bf5c532ea9c2fd` (data-only advances);
+  rebased onto fresh `6e843f7a282479efb5e992f8a48bc27e8c32d9d2` (data-only advances);
   branch `fix/player-form-history-20261115`; PR #592: https://github.com/Abeel87/tenis-ai/pull/592.
 - [x] Exact source diagnosis: TML Challenger source omits qualifying results;
   current PBP contains them. Hemery's Nov 13 result is present under tournament
@@ -48,13 +48,17 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   11,620 rows, all identity safeguards and ten numeric consistency checks pass.
   Evidence: audits/tml_2024_review_20261115.json. Prior hashes retained; no old/new
   byte equivalence claimed. No 2024 history is enabled in production.
-- [ ] Full CI, fresh-main integration, green merge and production verification.
+- [x] Fresh-main integration: the only later commit changes meta/readiness data;
+  source changes rebase cleanly and preserve both updated data files.
+- [~] Full CI on the refreshed integration head; green merge and actual production
+  verification still pending. Prior head b19149e already passed browser/security,
+  Symphony, CodeQL and the inactive-archive integration safety gate.
 - LIMIT: no PBP-derived statistics promoted into canonical training. Comparison
   covers five latest *observed* results, not guaranteed complete player history.
   Raw/frozen probabilities remain auditable; never swap players or invent P.
 - DO NOT REDO: screenshot diagnosis, provider/date audit, prior binary repair.
-- NEXT EXACT ACTION: finish full tests, publish repair PR, verify green CI against
-  latest main, merge and inspect actual regenerated fixture/publication evidence.
+- NEXT EXACT ACTION: finish CI for PR #592's fresh-main integration, recheck main,
+  merge only green and inspect actual regenerated fixture/publication evidence.
 - Evidence: `audits/donski_hemery_form_20261115.md`.
 
 
