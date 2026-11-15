@@ -30,13 +30,15 @@ export function buildDelivery(root='frontend') {
  const write=(name,value)=>{const bytes=JSON.stringify(value);fs.writeFileSync(path.join(out,name),bytes);return Buffer.byteLength(bytes)};
  const summaries=[],symRows=[];
  for(const m of results){
-  const s=D.find(symphony.matches||[],m),events=D.allEvents(m,s),top=ctx.TENIS_AI_MODEL_API.signals(m,1)[0]||null;
+  const s=D.find(symphony.matches||[],m),events=D.allEvents(m,s),top=D.historyBlocked(m)?null:ctx.TENIS_AI_MODEL_API.signals(m,1)[0]||null;
   const selected=s?.compositions?.[String(s.recommended_leg_count)];
   const layer=m.symphony2_playable;
   // Keep the exact source evidence, never make PLAYABLE true from a cached boolean.
   const evidence=layer?.playable===true?{superbet_market_v91:compactContext(m,new Set((layer.signals||[]).map(api.signature))),symphony2_playable:layer}:{};
   const symEvidence=s?{id:s.id,match_key:s.match_key,recommended_leg_count:s.recommended_leg_count,compositions:selected?{[String(s.recommended_leg_count)]:{selection:(selected.selection||[]).map(x=>pick(x,eventKeys))}}:{}}:null;
   const item={...pick(m,['id','tour','tournament','surface','p1','p2','p1_id','p2_id','p1_rank','p2_rank','scheduled_time','best_of','feed_status','event_status','status','model_ready','quality','risk','exact_match_score']),p1_stats:pick(m.p1_stats,['matches','won','hold_rate']),p2_stats:pick(m.p2_stats,['matches','won','hold_rate']),...evidence,delivery_summary:true,ui_summary:{top:top?pick(top,eventKeys):null,probability:top?events.find(e=>e.source==='Model bazowy'&&api.signature(e)===api.signature(top))?.value??null:null,has_data:events.some(e=>e.value!=null),has_dna:!!m.player_intelligence_v85},playable:events.some(e=>D.availability(m,e,s,symphony.generated_at).playable),symphony_evidence:symEvidence};
+  item.history_input=m.history_input?pick(m.history_input,['version','generated_at','recommendation_allowed','status']):null;
+  if(D.historyBlocked(m))item.exact_match_score=null;
   const observed=journal[String(m.id)],sameIdentity=observed&&['p1','p2','scheduled_time'].every(k=>observed.identity?.[k]===m[k]);
   const analysis=matchEvidence[String(m.id)]||null;
   item.analysis_quality=analysis?{players:analysis.players,shadow_available:analysis.shadow_available,freshness:analysis.dimensions?.freshness?.status??'UNKNOWN'}:null;

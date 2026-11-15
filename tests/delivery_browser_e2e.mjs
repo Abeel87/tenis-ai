@@ -124,7 +124,19 @@ window.supabase={createClient(){let logged=false;const q={select(){return this},
    const request=await held;await page.getByText('Wczytuję szczegóły…',{exact:true}).waitFor();
    await request.fulfill({status:503,body:'isolated outage'});
    await page.locator('[data-retry-route]').waitFor();
-   await page.unroute('**/'+other.detail_path);await page.locator('[data-retry-route]').click();await page.locator('#detail-body').waitFor();
+   await page.unroute('**/'+other.detail_path);
+   const blocked=JSON.parse(fs.readFileSync(root+'/'+other.detail_path));
+   blocked.match.history_input={recommendation_allowed:false,generated_at:'2026-11-15T09:00:00Z',players:{p1:{status:'MISSING_RECENT_RESULTS',model_sample_count:10,oldest_model_source_date:'2026-01-01',latest_model_source_date:'2026-08-03',recent_observed:[]},p2:{status:'CHECKED',model_sample_count:20,recent_observed:[]}}};
+   blocked.match.match_win={[blocked.match.p1]:55.7,[blocked.match.p2]:44.3};
+   await page.route('**/'+other.detail_path,r=>r.fulfill({contentType:'application/json',body:JSON.stringify(blocked)}));
+   await page.locator('[data-retry-route]').click();await page.locator('[data-history-input]').waitFor();
+   assert((await page.locator('[data-history-input]').innerText()).includes('Rekomendacja wstrzymana'));
+   assert.equal(await page.locator('.assessment-sides strong').count(),0,'Blocked history hides winner probabilities');
+   assert.equal(await page.locator('.advantage-list').count(),0,'Blocked history does not claim form advantages');
+   for(const width of [320,412,1280]){await page.setViewportSize({width,height:915});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'History notice fits '+width+'px');}
+   await page.setViewportSize({width:412,height:915});
+   if(process.env.TENIS_UI_SCREENSHOTS)await page.screenshot({path:path.join(process.env.TENIS_UI_SCREENSHOTS,'history-blocked.png')});
+   await page.unroute('**/'+other.detail_path);
    await page.evaluate(()=>location.hash='#matches');await page.locator('[data-filter="query"]').waitFor();
    await page.route('**/data/delivery/index.json',r=>r.fulfill({status:503,body:'isolated outage'}));
    await page.locator('#refresh').click();await page.getByText('Nie udało się odświeżyć',{exact:true}).waitFor();

@@ -187,7 +187,10 @@ def classify_overlap(
     clean_index: dict[tuple[str, str], list[dict[str, Any]]],
     raw_index: dict[tuple[str, str], list[dict[str, Any]]],
 ) -> tuple[str, list[dict[str, Any]]]:
-    """Classify one terminal PBP event without authorizing any runtime use."""
+    """Classify overlap; never import PBP statistics into canonical model history.
+
+    The publication coverage checker also reuses this deterministic assertion.
+    """
     if not score:
         return "ambiguous_missing_pbp_score", []
 

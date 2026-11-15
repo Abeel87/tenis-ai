@@ -17,6 +17,35 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+**2026-11-15 current history publication repair (owner-authorized, release pending):**
+`model_core.normalize_matches/player_profile` retain tournament-week precision,
+round/match order and the exact 20-row source sample. Same-week sorting is by
+round then source match number. No new source, fuzzy identity or synthetic stats.
+`player_intelligence_v85` remains SHADOW/same-surface; it publishes actual window
+sample counts/date bounds and keys its cache by source content, not row count.
+`history_coverage_audit.attach_current_history_evidence` owns the `history_input`
+contract. It uses the existing PBP index 12-hour TTL and minimum five observations,
+strict same-provider IDs plus full names, completed outcomes before the fixture,
+and the existing unique TML pair/score/surface/eight-day tournament overlap rule.
+It compares ONLY against the model's frozen input sample, never a newer DB snapshot.
+Unknown, stale, ambiguous or missing evidence disallows recommendation publication.
+`symphony2_engine.run` always attaches that evidence before scoring; blocked rows
+have no scored markets, compositions or final PLAYABLE signals. iNeed consumes
+that existing final contract. UI reads the decision, suppresses recommendation
+percentages/types and shows reason and observed results; no probability rewriting.
+Source limitation: Challenger qualifying results are absent from current TML
+inputs. PBP-derived model statistics remain unpromoted. Five observed cached events
+do not prove an exhaustive player match list. Existing historical predictions,
+settlement, training, thresholds, staking and SHADOW/PROD roles remain unchanged.
+Evidence: `audits/donski_hemery_form_20261115.md`.
+Release prerequisite: provider ATP 2024 drift was separately reviewed as inactive
+archive candidate manifest v5, with original hashes retained. Official source
+receipts, exact 11,620-row derivation and ten numeric checks are recorded in
+`audits/tml_2024_review_20261115.json`; all prior exclusions and strict guard code
+remain unchanged. The runtime-integration decision stays false; 2024 is not added
+to current sources. Old raw bytes are unavailable, so equivalence is not claimed.
+
+
 **2026-11-11 binary probability incident (source correction, release pending):**
 `symphony2_engine._cohere_exclusive_probabilities` remains the single owner of exclusive-pair consistency and now includes supported complete yes/no pairs at exact market/line/player/checkpoint scope. Raw, calibrated and pre-coherence evidence remain separate. Runtime version is 7.
 `symphony2_learning._accepted_calibrator` now requires finite non-decreasing Platt curves as well as the existing later unseen Brier validation; rejection uses unchanged raw predictions and explicit diagnostic reason. Learning version is 7. This repairs invalid production P and does not establish predictive superiority.

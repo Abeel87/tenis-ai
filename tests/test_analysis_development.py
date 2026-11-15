@@ -185,7 +185,8 @@ class AnalysisDevelopmentTests(unittest.TestCase):
         expected = engine._project_final_playable([source], current)
         reads = {engine.RESULTS: [source], engine.HISTORY: [], engine.DATA/'superbet_direct_current.json': direct,
                  engine.DATA/'superbet_builder_quotes_current.json': artifact, engine.ROOT/'config'/'ineed_superbet_pl.json': cfg}
-        with patch.object(engine, '_read', side_effect=lambda path, default: reads.get(path, default)), \
+        with patch('history_coverage_audit.attach_current_history_evidence', side_effect=lambda rows: rows), \
+             patch.object(engine, '_read', side_effect=lambda path, default: reads.get(path, default)), \
              patch.object(engine, 'build', return_value=(deepcopy(current), stats)), patch.object(engine, '_write') as write:
             engine.run()
         published = {call.args[0]: call.args[1] for call in write.call_args_list}

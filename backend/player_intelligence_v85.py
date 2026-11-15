@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import re
 import sqlite3
@@ -12,6 +13,11 @@ from statistics import pstdev
 from typing import Any
 
 import pandas as pd
+
+try:
+    from .model_core import sort_player_history, history_sample
+except ImportError:
+    from model_core import sort_player_history, history_sample
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "frontend" / "data"
@@ -164,7 +170,8 @@ def _source_fingerprint(df: pd.DataFrame) -> str:
         return "0:none"
     d = pd.to_datetime(df.get("date"), errors="coerce") if "date" in df.columns else pd.Series(dtype="datetime64[ns]")
     mx = "none" if d.empty or d.dropna().empty else str(d.max().date())
-    return f"{len(df)}:{mx}"
+    digest = hashlib.sha256(pd.util.hash_pandas_object(df, index=True).values.tobytes()).hexdigest()
+    return f"sample-v1:{len(df)}:{mx}:{digest}"
 
 
 def _parse_tourney_date(value):
@@ -413,7 +420,7 @@ def build_profile(df: pd.DataFrame, player: str, surface: str, as_of, early_ehs=
         x = x[x["date"].notna() & (x["date"] < cut_naive.normalize())]
     if "surface" in x.columns:
         x = x[x["surface"].astype(str).map(_surface) == surface]
-    x = x.sort_values("date", ascending=False, na_position="last") if "date" in x.columns else x
+    x = sort_player_history(x)
 
     primary = x
     if "date" in x.columns:
@@ -429,6 +436,11 @@ def build_profile(df: pd.DataFrame, player: str, surface: str, as_of, early_ehs=
     coverage = 0.0 if not coverage_cols or usable.empty else sum(float(pd.to_numeric(usable[c], errors="coerce").notna().mean()) for c in coverage_cols) / len(coverage_cols)
     quality = _quality(len(usable), coverage, fallback_used)
     windows = {str(n): _window_pack(usable, n, priors) for n in WINDOWS}
+    for n in WINDOWS:
+        sample = history_sample(usable.head(n))
+        windows[str(n)]['latest_source_date'] = sample[0]['date'] if sample else None
+        windows[str(n)]['oldest_source_date'] = sample[-1]['date'] if sample else None
+        windows[str(n)]['date_precision'] = 'tournament'
     profile = {
         "version": VERSION,
         "player": player,
@@ -441,6 +453,7 @@ def build_profile(df: pd.DataFrame, player: str, surface: str, as_of, early_ehs=
         "sample_matches": int(len(usable)),
         "quality": quality,
         "coverage": round(coverage, 4),
+        "history_sample": history_sample(usable),
         "windows": windows,
         "trend": _trend(usable),
         "data_policy": "same_surface_only_l5_l10_l20_rank_weighted_shrinkage_dated_history_only",

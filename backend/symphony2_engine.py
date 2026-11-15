@@ -1279,9 +1279,10 @@ def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
             continue
         match = dict(raw)
         row = current_by_key.get(_match_key(raw))
+        history_blocked = (raw.get('history_input') or {}).get('recommendation_allowed') is False
         comp = None
         recommended = None
-        if isinstance(row, dict):
+        if isinstance(row, dict) and not history_blocked:
             recommended = row.get("recommended_leg_count")
             if recommended is not None:
                 candidate = (row.get("compositions") or {}).get(str(recommended))
@@ -1307,7 +1308,7 @@ def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
             "final_playable_authority": True,
             "operator": OPERATOR,
             "status": (
-                "PLAYABLE"
+                "HISTORY_INPUT_UNVERIFIED" if history_blocked else "PLAYABLE"
                 if playable
                 else "NO_RECOMMENDED_COMPOSITION"
                 if row is not None
@@ -1331,16 +1332,25 @@ def _project_final_playable(results: list[dict], current: dict) -> list[dict]:
 def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     model = train_operator_line_model(history)
     matches, all_scored = [], []
-    fixture_count = selection_count = actionable_count = state_supported_count = 0
+    fixture_count = selection_count = actionable_count = state_supported_count = history_blocked_count = 0
     generated_at_dt = datetime.now(timezone.utc)
     for match in results or []:
         if not isinstance(match, dict) or not _operator_context(match) or not _is_current_pre_match_fixture(match, generated_at_dt):
+            continue
+        fixture_count += 1
+        if (match.get('history_input') or {}).get('recommendation_allowed') is False:
+            history_blocked_count += 1
+            matches.append({'match_key': _match_key(match), 'id': match.get('match_id', match.get('id')),
+                'p1': match.get('p1'), 'p2': match.get('p2'), 'scheduled_time': match.get('scheduled_time'),
+                'tour': match.get('tour'), 'surface': match.get('surface'),
+                'status': 'HISTORY_INPUT_UNVERIFIED', 'history_input': match['history_input'],
+                'offer_selections': 0, 'shared_state_outcomes': 0, 'scored_selections': [],
+                'compositions': {}, 'recommended_leg_count': None})
             continue
         outcomes = build_outcomes(match)
         phase9_outcomes = build_player_dna_shared_outcomes(match)
         scored = _score_offer(match, model, outcomes, phase9_outcomes)
         all_scored.extend(scored)
-        fixture_count += 1
         selection_count += len(scored)
         actionable_count += sum(1 for x in scored if _num(x.get("operator_model_probability"), 0.0) >= MIN_ACTIONABLE_P * 100.0)
         state_supported_count += sum(1 for x in scored if x.get("state_supported") is True)
@@ -1371,6 +1381,7 @@ def build(results: list[dict], history: list[dict]) -> tuple[dict, dict]:
     stats = {"version": VERSION, "generated_at": generated_at, "operator": OPERATOR, "model_status": model.status,
         "training": model.metrics or {"version": LEARNING_VERSION, "training_rows": model.trained_rows},
         "current_offer": {"verified_fixtures": fixture_count, "exact_operator_selections": selection_count,
+            "history_input_blocked_fixtures": history_blocked_count,
             "state_supported_selections": state_supported_count, "selections_above_actionable_threshold": actionable_count,
             "threshold": MIN_ACTIONABLE_P * 100.0, "probability_diagnostics": probability_diagnostics},
         "joint_probability_policy": "EXACT_SHARED_STATE_ONLY", "semantic_redundancy_policy": "REDUNDANT_LEGS_REJECTED",
@@ -1390,6 +1401,8 @@ def run() -> dict:
         raise RuntimeError("results.json missing/empty")
     if not isinstance(history, list):
         raise RuntimeError("history.json invalid")
+    from history_coverage_audit import attach_current_history_evidence
+    results = attach_current_history_evidence(results)
     current, stats = build(results, history)
     projected_results = _project_final_playable(results, current)
     # Diagnostics are attached after ranking/final projection. They cannot select
