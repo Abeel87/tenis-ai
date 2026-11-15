@@ -60,6 +60,10 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Original fixture 220525 is no longer present after the schedule refresh;
   no claim of a newly verified live prediction for that finished/started fixture.
   Frozen evidence: audits/donski_hemery_release_20261115.json.
+- [x] Real regenerated-data Chromium verification passed in release-record PR
+  #593. Updated the legacy runtime smoke assertion to require a withheld-history
+  notice for blocked inputs and retain winner-view checks for verified inputs;
+  it must not demand a recommendation for an explicitly blocked real fixture.
 - FILES: backend/model_core.py, player_intelligence_v85.py, history_coverage_audit.py,
   symphony2_engine.py; frontend/app.js, presentation-data.js, match-detail-data.js,
   sw.js; scripts/build_delivery.mjs; focused Python/JS/browser regressions;

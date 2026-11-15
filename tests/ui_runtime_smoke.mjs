@@ -66,8 +66,16 @@ role='moderator';assert((await route('#moderator')).includes('Panel moderatora')
 role='admin';for(const tab of ['dashboard','models','data','superbet','system','users','diagnostics'])assert((await route('#admin/'+tab)).includes('Admin Control Center'));
 const id=encodeURIComponent(ctx.TenisPresentation.key(matches[0]));for(const tab of ['summary','builder','changes','trajectory','stats','h2h'])assert((await route('#match/'+id+'/'+tab)).includes('detail-body'));
 assert((await route('#player/'+id+'/p1')).includes(matches[0].p1));assert((await route('#players')).includes('player-query'));await route('#history');
-const rich=matches.find(m=>m.match_win&&m.player_intelligence_v85?.profiles?.p1?.windows?.['10']?.metrics?.won?.adjusted!=null);
+const rich=matches.find(m=>!ctx.TenisPresentation.historyBlocked(m)&&m.match_win&&m.player_intelligence_v85?.profiles?.p1?.windows?.['10']?.metrics?.won?.adjusted!=null);
 if(rich){const key=encodeURIComponent(ctx.TenisPresentation.key(rich));const summary=await route('#match/'+key+'/summary');assert(summary.includes('SZYBKA OCENA'));assert(summary.includes('Porównanie zawodników'));assert(summary.includes('Przewaga'));assert((await route('#match/'+key+'/stats')).includes('Trend:'));}
+const blockedHistory=matches.find(m=>ctx.TenisPresentation.historyBlocked(m)&&m.match_win);
+if(blockedHistory){
+ const key=encodeURIComponent(ctx.TenisPresentation.key(blockedHistory)),summary=await route('#match/'+key+'/summary');
+ assert(summary.includes('data-history-input')&&summary.includes('Rekomendacja wstrzymana'),'Blocked live history displays the publication reason');
+ assert(!summary.includes('SZYBKA OCENA')&&!summary.includes('Opublikowana prognoza zwycięzcy meczu'),'Blocked live history cannot display the winner recommendation');
+ assert.equal(ctx.TenisMatchDetail.assessment(blockedHistory).p,null);
+ assert.equal(ctx.TenisPresentation.allEvents(blockedHistory,ctx.TenisPresentation.find(symphony.matches,blockedHistory)).length,0);
+}
 const realHistory=feed('history.json')||[];
 const existingH2H=matches.find(m=>ctx.TenisMatchDetail.historyRows(realHistory,m,'p1',true).length);
 if(existingH2H){
