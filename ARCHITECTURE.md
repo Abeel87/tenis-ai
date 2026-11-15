@@ -25,6 +25,12 @@ inputs. PBP-derived model statistics remain unpromoted. Five observed cached eve
 do not prove an exhaustive player match list. Existing historical predictions,
 settlement, training, thresholds, staking and SHADOW/PROD roles remain unchanged.
 Evidence: `audits/donski_hemery_form_20261115.md`.
+Release prerequisite: provider ATP 2024 drift was separately reviewed as inactive
+archive candidate manifest v5, with original hashes retained. Official source
+receipts, exact 11,620-row derivation and ten numeric checks are recorded in
+`audits/tml_2024_review_20261115.json`; all prior exclusions and strict guard code
+remain unchanged. The runtime-integration decision stays false; 2024 is not added
+to current sources. Old raw bytes are unavailable, so equivalence is not claimed.
 
 
 Binary-probability repair (2026-11-11, release pending): the existing Symphony learning owner rejects nonfinite or rank-reversing Platt calibration; the existing engine owner projects complete supported yes/no pairs alongside winner/O/U pairs. Pre-coherence/raw/calibrated provenance remains available. Frontend displays these backend values without renormalization and avoids rounding non-boundary P to certainty. See `audits/binary_probability_incident_20261111.md`.

@@ -75,3 +75,28 @@ does not assert that the cached PBP subset is exhaustive or that any bet will wi
 Focused reproduction tests include missing results, tournament-week equivalence,
 identity conflicts, missing snapshots, stale source index, ambiguous overlaps,
 cache correction, deterministic round order and stale-composition rejection.
+
+## Release prerequisite: separately reviewed inactive archive snapshot
+
+PR #592's runtime, Symphony, browser/security and full 1968-test checks passed.
+Two independent 2024 archive checks rejected provider fingerprint drift. The
+canonical candidate audit (43701483806, artifact 14156283318) still proved all
+safety checks: 11,620 candidate rows, zero ID/score/shadow/visible-resolution or
+archive-only identity conflicts, and every frozen exclusion matched evidence.
+Only ATP 2024 and the derived candidate digest differ from the Nov 2 manifest.
+
+A fresh manual audit revision is recorded in `tml_2024_review_20261115.json`.
+All four official source receipts were downloaded and their exact logical hashes
+independently matched CI; canonical materialization reproduced the same candidate
+hash and all ten numeric consistency checks passed with zero violations. Source
+URLs, row counts, exclusions and guard code are unchanged. The old expected
+fingerprints are retained in the manifest basis and evidence; old raw bytes were
+not recoverable, so full old/new equivalence is explicitly NOT claimed.
+
+This review updates only the frozen audit candidate (manifest v5). Current
+TML_SOURCES still exclude 2024. The separate runtime-equivalence/integration gate
+remains false because old history would change shared priors. No archive is
+promoted, no source validator is weakened and no automatic re-lock is introduced.
+
+Validation: local full suite 1968 passed + 9 subtests; real CI Chromium passed
+user/moderator/admin and 320/412/1280px layouts, including blocked-history UI.

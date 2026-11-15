@@ -30,7 +30,7 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   recommendations (follow-up after the investigation). No real bet execution.
 - AUDITED MAIN: `0387b698f8b89cbcf90ebb2d6ac9fd65deb62bb1`;
   rebased onto fresh `b1b961c3a2c38036567a600435bf5c532ea9c2fd` (data-only advances);
-  branch `fix/player-form-history-20261115`; PR pending.
+  branch `fix/player-form-history-20261115`; PR #592: https://github.com/Abeel87/tenis-ai/pull/592.
 - [x] Exact source diagnosis: TML Challenger source omits qualifying results;
   current PBP contains them. Hemery's Nov 13 result is present under tournament
   week Nov 9, so the former "6 days stale" interpretation is NOT a missing match.
@@ -41,10 +41,13 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   no scoring/compositions/final signals for those fixtures. UI explains the
   decision and labels SHADOW/surface/window samples truthfully.
 - [x] Eleven focused positive/negative backend regressions pass, plus the existing
-  profile and final PLAYABLE tests. UI runtime/static, delivery projection (477 equivalence checks) and 29
-  existing targeted tests passed. Full suite assertions: 1967 passed; rerun
-  required after sequentializing the local publication builder/fixture guard.
-  Local Chromium cannot start (sandbox socket restriction); CI browser required.
+  profile and final PLAYABLE tests. UI runtime/static, delivery projection (477 equivalence checks), full
+  local suite (1968 passed + 9 subtests) and real CI Chromium passed.
+- [x] Investigated two independent 2024 archive fingerprint failures. A fresh
+  audit-only candidate revision preserves every exclusion and strict guard;
+  11,620 rows, all identity safeguards and ten numeric consistency checks pass.
+  Evidence: audits/tml_2024_review_20261115.json. Prior hashes retained; no old/new
+  byte equivalence claimed. No 2024 history is enabled in production.
 - [ ] Full CI, fresh-main integration, green merge and production verification.
 - LIMIT: no PBP-derived statistics promoted into canonical training. Comparison
   covers five latest *observed* results, not guaranteed complete player history.
