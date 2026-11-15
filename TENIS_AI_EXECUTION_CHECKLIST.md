@@ -25,41 +25,54 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
-**CURRENT REPAIR — Donski / Hemery history and publication, 2026-11-15**
-- AUTHORIZATION: owner explicitly requested repairing the bug affecting published
-  recommendations (follow-up after the investigation). No real bet execution.
-- AUDITED MAIN: `0387b698f8b89cbcf90ebb2d6ac9fd65deb62bb1`;
-  rebased onto fresh `6e843f7a282479efb5e992f8a48bc27e8c32d9d2` (data-only advances);
-  branch `fix/player-form-history-20261115`; PR #592: https://github.com/Abeel87/tenis-ai/pull/592.
-- [x] Exact source diagnosis: TML Challenger source omits qualifying results;
-  current PBP contains them. Hemery's Nov 13 result is present under tournament
-  week Nov 9, so the former "6 days stale" interpretation is NOT a missing match.
-- [x] Core retains round/match ordering and exact model sample; SHADOW profile
-  cache invalidates on content changes and publishes sample/date provenance.
-- [x] Canonical history coverage owner checks observed PBP results against exact
-  model sample. Symphony publication fails closed on missing/unknown coverage;
-  no scoring/compositions/final signals for those fixtures. UI explains the
-  decision and labels SHADOW/surface/window samples truthfully.
-- [x] Eleven focused positive/negative backend regressions pass, plus the existing
-  profile and final PLAYABLE tests. UI runtime/static, delivery projection (477 equivalence checks), full
-  local suite (1968 passed + 9 subtests) and real CI Chromium passed.
-- [x] Investigated two independent 2024 archive fingerprint failures. A fresh
-  audit-only candidate revision preserves every exclusion and strict guard;
-  11,620 rows, all identity safeguards and ten numeric consistency checks pass.
-  Evidence: audits/tml_2024_review_20261115.json. Prior hashes retained; no old/new
-  byte equivalence claimed. No 2024 history is enabled in production.
-- [x] Fresh-main integration: the only later commit changes meta/readiness data;
-  source changes rebase cleanly and preserve both updated data files.
-- [~] Full CI on the refreshed integration head; green merge and actual production
-  verification still pending. Prior head b19149e already passed browser/security,
-  Symphony, CodeQL and the inactive-archive integration safety gate.
-- LIMIT: no PBP-derived statistics promoted into canonical training. Comparison
-  covers five latest *observed* results, not guaranteed complete player history.
-  Raw/frozen probabilities remain auditable; never swap players or invent P.
-- DO NOT REDO: screenshot diagnosis, provider/date audit, prior binary repair.
-- NEXT EXACT ACTION: finish CI for PR #592's fresh-main integration, recheck main,
-  merge only green and inspect actual regenerated fixture/publication evidence.
-- Evidence: `audits/donski_hemery_form_20261115.md`.
+**COMPLETED REPAIR — Donski / Hemery history publication, verified 2026-11-15**
+- AUTHORIZATION: owner explicitly requested correcting publication based on
+  incomplete history. No real bet execution, invented probability or SHADOW promotion.
+- MERGED: PR #592 https://github.com/Abeel87/tenis-ai/pull/592 as
+  `c33311941d57da05d72d127c6b820af0eb012788`.
+- [x] Source diagnosis: TML Challenger history omits qualifying results observed
+  in cached PBP. Hemery's Nov 13 loss exists under tournament week Nov 9; source
+  dates must not be interpreted as exact match dates or actual inactivity.
+- [x] Core preserves round order and exact input rows; profile cache hashes source
+  content. UI exposes actual sample size, tournament dates and SHADOW surface scope.
+- [x] Canonical history coverage checks five latest observed completed provider
+  outcomes against the actual model sample. Missing/stale/ambiguous/unverified
+  evidence prevents Symphony scoring, compositions and final PLAYABLE/iNeed signals.
+  The UI withholds recommendation percentages and displays the evidence/reason.
+- [x] Exact PR head `909de754783814f7a9a8549d5b16f2ae440e4e73`: all 29 checks
+  successful, one expected PR-only Neuron deployment skip. Includes full 1968 tests
+  plus 9 subtests and real Chromium at 320/412/1280px for user/moderator/admin.
+- [x] Fresh-main integration after three data-only bot commits on
+  `03a50035db7700aefea7fa4fcaf9293ded26ae8c`: full suite rerun (1968 + 9),
+  delivery/Stage 2 contracts, 1305 PLAYABLE equivalence checks, 581983-byte index.
+  GitHub and local candidate tree `2f4857a6857269b8c6c8368f56537b71eea649ec`
+  exactly equals the actual merge tree. No source overlap or conflicts.
+- [x] Separately reviewed inactive 2024 candidate manifest v5 preserves all
+  exclusions, 11620 rows and strict safeguards. All archive CI gates pass.
+  Evidence: audits/tml_2024_review_20261115.json. Old hashes retained; original
+  raw bytes unavailable, no old/new equivalence claimed, no 2024 PROD integration.
+- [x] Production data rebuild and Pages publication succeeded:
+  https://github.com/Abeel87/tenis-ai/actions/runs/43713090541 .
+  Public verification at 12:44 UTC: source 00372d27fdde7d17d808822c4d0668660d030ce7,
+  296 matches, 293 withheld and 3 history-checked. Of 61 model-ready matches,
+  58 were withheld. Zero blocked compositions, final signals, index forecasts,
+  or admissions to either iNeed economic unit. Public source hashes/SW match.
+  Original fixture 220525 is no longer present after the schedule refresh;
+  no claim of a newly verified live prediction for that finished/started fixture.
+  Frozen evidence: audits/donski_hemery_release_20261115.json.
+- FILES: backend/model_core.py, player_intelligence_v85.py, history_coverage_audit.py,
+  symphony2_engine.py; frontend/app.js, presentation-data.js, match-detail-data.js,
+  sw.js; scripts/build_delivery.mjs; focused Python/JS/browser regressions;
+  canonical registry/architecture/readiness matrix and archive audit evidence.
+- LIMIT: no experimental PBP statistical conversion enters canonical training.
+  Five observed results are a bounded cross-check, not proof of exhaustive history.
+  Raw/frozen probabilities remain evidence; no player swap or promised accuracy gain.
+- DO NOT REDO: source diagnosis, canonical repair, 2024 revalidation or long PR CI.
+- NEXT EXACT ACTION: this publication repair is deployed and verified. Continue
+  ordinary scheduled refreshes; current source coverage still omits qualifiers.
+  Any canonical history expansion needs verified source data and the existing
+  validation process. Do not invent probabilities or re-enable blocked inputs.
+- Evidence: audits/donski_hemery_form_20261115.md.
 
 
 **CURRENT TASK — reported contradictory binary probabilities, 2026-11-11**
