@@ -98,8 +98,26 @@ def runs(workflow):
     return rows
 
 
+def check_pbp_cache(root: Path):
+    index_path = root / 'players.json'
+    try:
+        index = json.loads(index_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError) as exc:
+        raise SystemExit(f'Cannot read restored PBP index {index_path}: {exc}') from exc
+    players = index.get('players') if isinstance(index, dict) else None
+    if not isinstance(players, dict) or not players:
+        raise SystemExit(f'Empty or invalid player index in {index_path}')
+    tapes = root / 'matches'
+    if not any(path.is_file() for path in tapes.glob('*.json.gz')):
+        raise SystemExit(f'No restored PBP match tapes in {tapes}')
+    print(f'Restored PBP cache contains {len(players)} indexed players and match tapes.')
+
+
 def main():
     mode = sys.argv[1]
+    if mode == 'check-pbp-cache':
+        check_pbp_cache(Path('data/cache/pbp_v7'))
+        return
     now = datetime.now(timezone.utc)
     event_name = os.environ['GITHUB_EVENT_NAME']
     reason, after = None, None

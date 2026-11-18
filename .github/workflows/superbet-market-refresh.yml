@@ -69,6 +69,7 @@ on:
       - '.github/workflows/superbet-market-refresh.yml'
       - '.github/scripts/superbet_refresh_guard.py'
       - 'tests/test_superbet_refresh_guard.py'
+      - 'tests/test_market_refresh_history.py'
 
 permissions:
   contents: write
@@ -98,7 +99,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           python -m pip install pytest -c requirements.lock
-          python -m pytest -q tests/test_superbet_refresh_guard.py
+          python -m pytest -q tests/test_superbet_refresh_guard.py tests/test_market_refresh_history.py
       - name: Test quote evidence archival isolation on PR
         if: github.event_name == 'pull_request'
         run: python -m pytest -q tests/test_superbet_quote_evidence.py
@@ -111,9 +112,20 @@ jobs:
       - name: Install bounded runtime dependencies
         if: steps.freshness.outputs.refresh == 'true'
         run: pip install -r requirements.txt -c requirements.lock
+      - name: Restore point-by-point history from the full tennis update
+        if: steps.freshness.outputs.refresh == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: data/cache
+          key: tennis-history-${{ runner.os }}-market-read-${{ github.run_id }}
+          restore-keys: |
+            tennis-history-${{ runner.os }}-
+          fail-on-cache-miss: true
       - name: Restore exact history before model consumers
         if: steps.freshness.outputs.refresh == 'true'
-        run: python scripts/history_publication_chunks.py restore
+        run: |
+          python .github/scripts/superbet_refresh_guard.py check-pbp-cache
+          python scripts/history_publication_chunks.py restore
       - name: Refresh Superbet Direct selected-match sidecar
         id: direct_refresh
         if: steps.freshness.outputs.refresh == 'true'

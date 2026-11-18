@@ -17,6 +17,12 @@ Każdy kolejny agent/czat ma aktualizować ten plik, gdy zmienia właściciela l
 
 # A. Mapa danych
 
+The full tennis update supplies the player index and point-by-point match files
+in the shared `data/cache` archive. Hourly Superbet refreshes restore this archive
+before recalculating Symphony. A missing archive, unreadable or empty player
+index, or missing match files stops the hourly publication. The existing
+`history_input` check decides which fixtures qualify using the restored data.
+
 **2026-11-15 current history publication repair (owner-authorized, release pending):**
 `model_core.normalize_matches/player_profile` retain tournament-week precision,
 round/match order and the exact 20-row source sample. Same-week sorting is by
