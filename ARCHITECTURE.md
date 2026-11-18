@@ -4,6 +4,10 @@
 
 ## 1. Produkcja danych
 
+The full tennis update writes the shared tennis-history Actions cache. The hourly
+Superbet workflow reads its PBP player index and match files before model
+evaluation. Repository chunks independently restore the model history and ledgers.
+
 **2026-11-15 current history publication repair (owner-authorized, release pending):**
 `model_core.normalize_matches/player_profile` retain tournament-week precision,
 round/match order and the exact 20-row source sample. Same-week sorting is by

@@ -25,6 +25,22 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**2026-11-18 — hourly Superbet refresh and Symphony history**
+
+- [x] Compared the full update and the following hourly refresh. All eight
+  fixtures previously marked PLAYABLE were still present when the hourly
+  refresh rejected the history of all 216 fixtures.
+  [Full update](https://github.com/Abeel87/tenis-ai/actions/runs/44274429202)
+  and [hourly refresh](https://github.com/Abeel87/tenis-ai/actions/runs/44280494829).
+- [x] Reproduced the missing PBP restore on `90537d4eef84e0a68b10da11f88306d268d3ece3`.
+  Branch `fix/hourly-symphony-pbp-cache` restores the full update's cache
+  read-only and checks its contents before refreshing offers. Four focused
+  tests passed locally, including both new regression cases.
+- [ ] Verify PR checks and the first production hourly refresh. Compare the
+  source cache key and fixture-level history decisions with the preceding full
+  update, accounting for changes to the offer, start times and history age.
+  Zero qualifying fixtures is a valid result with available input data.
+
 **COMPLETED REPAIR — Donski / Hemery history publication, verified 2026-11-15**
 - AUTHORIZATION: owner explicitly requested correcting publication based on
   incomplete history. No real bet execution, invented probability or SHADOW promotion.
