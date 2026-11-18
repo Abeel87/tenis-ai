@@ -36,10 +36,22 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   Branch `fix/hourly-symphony-pbp-cache` restores the full update's cache
   read-only and checks its contents before refreshing offers. Four focused
   tests passed locally, including both new regression cases.
-- [ ] Verify PR checks and the first production hourly refresh. Compare the
-  source cache key and fixture-level history decisions with the preceding full
-  update, accounting for changes to the offer, start times and history age.
-  Zero qualifying fixtures is a valid result with available input data.
+- [x] Merged [PR #596](https://github.com/Abeel87/tenis-ai/pull/596) at
+  `ee76ca8acd4ba07ee93dbf4be5137a7da636d5fe`. The full test suite passed
+  1,970 tests and nine subtests. [CI](https://github.com/Abeel87/tenis-ai/actions/runs/44287189759)
+- [x] The first production hourly refresh restored the archive written by full
+  update `44274429202` and read 893 indexed players. The engine qualified seven
+  of the original eight fixtures and withheld 179 of 186. Both provider indices
+  for fixture `222402` were last fetched at 22:24 UTC on November 17 and had
+  exceeded the 12-hour validity window when Symphony ran at 10:51 UTC.
+  [Hourly refresh](https://github.com/Abeel87/tenis-ai/actions/runs/44288206867)
+- [x] Verified the public delivery manifest against data commit
+  `06ee122da8590b7cc8a525665506132ac4799cd4`. The public index contained the
+  same seven PLAYABLE fixture IDs, each with checked history. iNeed received
+  14 signals, filtered all 14 outside its match-winner scope and produced zero
+  SHADOW tickets. Continue with the ordinary full and hourly refresh schedules.
+  [Pages](https://github.com/Abeel87/tenis-ai/actions/runs/44289604478) and
+  [iNeed](https://github.com/Abeel87/tenis-ai/actions/runs/44289595830).
 
 **COMPLETED REPAIR — Donski / Hemery history publication, verified 2026-11-15**
 - AUTHORIZATION: owner explicitly requested correcting publication based on
