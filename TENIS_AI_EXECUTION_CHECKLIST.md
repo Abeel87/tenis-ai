@@ -36,9 +36,23 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
   `fix/watchdog-stale-guard-heartbeat`, scheduled maintenance completion can
   wake the same watchdog as the existing sources. Five regression cases failed
   before the change. All 75 focused Pages, PBP and watchdog cases passed after it.
-- [ ] Release acceptance: verify full CI against current main, then confirm the
-  public manifest, source timestamps and next eligible scheduled wakeup. Record
-  whether the watchdog suppressed duplicate work or dispatched the right producer.
+- [x] Merged [PR #598](https://github.com/Abeel87/tenis-ai/pull/598) as `5fa10571f69c996ff5e5a961de7a4e46bd766868`.
+  [CI](https://github.com/Abeel87/tenis-ai/actions/runs/44516882767) passed 1,979 tests and nine subtests.
+  At 11:46 UTC the [watchdog on merge](https://github.com/Abeel87/tenis-ai/actions/runs/44517567582)
+  selected the full producer with `stale_core_snapshot`. At 12:06 UTC a
+  [second wakeup](https://github.com/Abeel87/tenis-ai/actions/runs/44520520598) returned `full_already_active`.
+- [x] [Full update and Pages](https://github.com/Abeel87/tenis-ai/actions/runs/44517869817) finished at
+  12:10 UTC. At 12:11 UTC the public manifest pointed to data commit
+  `a4388da3b3a3f7c5c155471e22af4423bcba7883`. Core age was 19 minutes
+  (11:51 UTC), operator time 11:53 UTC and Symphony time 12:05 UTC. The
+  published meta, Symphony and Neuron files matched the commit byte-for-byte.
+  The index contained 157 fixtures and all 4 PLAYABLE fixtures had checked history.
+  One detail file matched its content hash and fixture ID. Neuron reported
+  `SHADOW_RESEARCH` and `production_influence=false`.
+- [ ] Observe a successful scheduled `Tennis data stale-run guard` completion
+  and the corresponding watchdog decision. The recovery above was initiated
+  by the merge push. Compare generation gaps for seven days with the pre-release
+  24-hour sample (seven generations, six completed gaps of 126–259 minutes).
 
 **2026-11-18 — hourly Superbet refresh and Symphony history**
 
