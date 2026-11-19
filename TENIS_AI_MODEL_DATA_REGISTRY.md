@@ -1336,6 +1336,12 @@ current content, merge-base, name-only change classification and historical read
 
 ## Superbet watchdog completion wakeups — 2026-10-08
 
+The scheduled `Tennis data stale-run guard` on main is also a freshness signal.
+On 2026-11-19 it ran while the full snapshot was 156 minutes old. Its successful
+completion wakes the existing watchdog, which checks active runs and source
+timestamps before choosing a producer. Manual and PR maintenance runs do not
+wake production. The maintenance job does not start a data producer itself.
+
 `.github/workflows/superbet-market-watchdog.yml` now also wakes after successful main Neuron SHADOW research and Player DNA SHADOW refresh completion. This addresses a demonstrated scheduling gap where independent Neuron completed at 10:55 UTC but no market refresh followed the 07:51 publication. `.github/scripts/superbet_refresh_guard.py` rejects failed, non-main, PR and unrecognized completion sources before Actions lookup. Existing active-core/market exclusion, five-minute post-core grace, 40-minute work-start freshness and exact operator semantics remain unchanged. This is another trigger for the existing guard, not another refresh producer or a guarantee of GitHub scheduler availability.
 
 

@@ -3,7 +3,7 @@ name: Superbet market refresh watchdog
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ['Neuron SHADOW research', 'Player DNA SHADOW refresh']
+    workflows: ['Neuron SHADOW research', 'Player DNA SHADOW refresh', 'Tennis data stale-run guard']
     types: [completed]
   schedule:
     - cron: '20,50 * * * *'
@@ -27,10 +27,6 @@ permissions:
 
 env:
   STALE_AFTER_MINUTES: '40'
-
-concurrency:
-  group: superbet-market-refresh-watchdog
-  cancel-in-progress: true
 
 jobs:
   validate:
@@ -62,7 +58,17 @@ jobs:
           python -m pytest -q tests/test_superbet_refresh_guard.py
 
   watchdog:
-    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'))
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event != 'pull_request' &&
+        (github.event.workflow_run.name != 'Tennis data stale-run guard' ||
+         github.event.workflow_run.event == 'schedule')))
+    concurrency:
+      group: superbet-market-refresh-watchdog
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -124,9 +124,11 @@ def main():
     target, dispatch_reason = REFRESH, 'stale_refresh_required'
     if mode == 'watchdog' and event_name == 'workflow_run':
         source = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())['workflow_run']
+        source_name = source.get('name')
+        scheduled_maintenance = source_name == 'Tennis data stale-run guard' and source.get('event') == 'schedule'
         if (source.get('head_branch') != 'main' or source.get('conclusion') != 'success'
                 or source.get('event') == 'pull_request'
-                or source.get('name') not in {'Neuron SHADOW research', 'Player DNA SHADOW refresh'}):
+                or (source_name not in {'Neuron SHADOW research', 'Player DNA SHADOW refresh'} and not scheduled_maintenance)):
             reason = 'ineligible_watchdog_source'
     if event_name == 'pull_request':
         # PRs validate orchestration/tests only. Never run live operator/API refresh work.
