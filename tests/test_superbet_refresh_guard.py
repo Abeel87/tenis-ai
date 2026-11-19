@@ -187,10 +187,18 @@ def test_pull_request_refresh_guard_is_network_free(monkeypatch, tmp_path):
 def test_watchdog_wakes_after_independent_main_workflows():
     workflow = (ROOT / '.github/workflows/superbet-market-watchdog.yml').read_text()
     assert 'workflow_run:' in workflow
-    assert "workflows: ['Neuron SHADOW research', 'Player DNA SHADOW refresh']" in workflow
+    for name in ('Neuron SHADOW research', 'Player DNA SHADOW refresh', 'Tennis data stale-run guard'):
+        assert f"'{name}'" in workflow.split('    workflows: ', 1)[1].splitlines()[0]
     assert 'types: [completed]' in workflow
     assert "github.event.workflow_run.head_branch == 'main'" in workflow
     assert "github.event.workflow_run.conclusion == 'success'" in workflow
+    # A skipped PR or maintenance run must not take the production concurrency slot.
+    dispatcher = workflow.split('  watchdog:\n', 1)[1]
+    admission = dispatcher.split('    concurrency:', 1)[0]
+    assert "github.event.workflow_run.name != 'Tennis data stale-run guard'" in admission
+    assert "github.event.workflow_run.event == 'schedule'" in admission
+    assert 'group: superbet-market-refresh-watchdog' in dispatcher
+    assert '\nconcurrency:' not in workflow
 
 
 def test_market_publication_dispatches_consumers_without_workflow_run_depth_limit():
@@ -228,6 +236,11 @@ def test_market_publication_dispatches_consumers_without_workflow_run_depth_limi
     ('feature', 'success', 'push', False, 'Neuron SHADOW research'),
     ('main', 'failure', 'schedule', False, 'Neuron SHADOW research'),
     ('main', 'success', 'pull_request', False, 'Neuron SHADOW research'),
+    ('main', 'success', 'workflow_dispatch', False, 'Tennis data stale-run guard'),
+    ('main', 'success', 'push', False, 'Tennis data stale-run guard'),
+    ('main', 'success', 'pull_request', False, 'Tennis data stale-run guard'),
+    ('feature', 'success', 'schedule', False, 'Tennis data stale-run guard'),
+    ('main', 'failure', 'schedule', False, 'Tennis data stale-run guard'),
 ])
 def test_watchdog_completion_source_gate(monkeypatch, tmp_path, branch, conclusion, event, expected, name):
     import json
@@ -249,7 +262,7 @@ def test_watchdog_completion_source_gate(monkeypatch, tmp_path, branch, conclusi
     assert f'dispatch={str(expected).lower()}' in (tmp_path / 'output').read_text()
 
 
-def _watchdog_output(monkeypatch, tmp_path, core_timestamp, refreshes=(), fulls=()):
+def _watchdog_output(monkeypatch, tmp_path, core_timestamp, refreshes=(), fulls=(), source=None):
     import json
     class Clock(datetime):
         @classmethod
@@ -259,7 +272,11 @@ def _watchdog_output(monkeypatch, tmp_path, core_timestamp, refreshes=(), fulls=
     meta = tmp_path / 'meta.json'
     meta.write_text(json.dumps({'updated_at': core_timestamp}))
     monkeypatch.setattr(guard, 'META', meta, raising=False)
-    monkeypatch.setenv('GITHUB_EVENT_NAME', 'schedule')
+    monkeypatch.setenv('GITHUB_EVENT_NAME', 'workflow_run' if source else 'schedule')
+    if source:
+        event = tmp_path / 'event.json'
+        event.write_text(json.dumps({'workflow_run': source}))
+        monkeypatch.setenv('GITHUB_EVENT_PATH', str(event))
     monkeypatch.setenv('GITHUB_OUTPUT', str(tmp_path / 'output'))
     monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(tmp_path / 'summary'))
     monkeypatch.setattr('sys.argv', ['guard', 'watchdog'])
@@ -274,6 +291,23 @@ def test_fresh_market_cannot_hide_stale_core_snapshot(monkeypatch, tmp_path):
     assert out['dispatch'] == 'true'
     assert out['target_workflow'] == guard.FULL
     assert out['reason'] == 'stale_core_snapshot'
+
+
+@pytest.mark.parametrize('age,fulls,reason,dispatch', [
+    (155, [], 'stale_core_snapshot', True),
+    (119, [], 'fresh_completed_refresh_1', False),
+    (155, [run('in_progress', None)], 'full_already_active', False),
+    (155, [run(minutes=4)], 'successful_full_propagation_grace', False),
+])
+def test_scheduled_maintenance_uses_existing_freshness_decisions(monkeypatch, tmp_path, age, fulls, reason, dispatch):
+    source = {'name': 'Tennis data stale-run guard', 'head_branch': 'main',
+              'conclusion': 'success', 'event': 'schedule'}
+    out = _watchdog_output(monkeypatch, tmp_path, (NOW - timedelta(minutes=age)).isoformat(),
+                           refreshes=[run()], fulls=fulls, source=source)
+    assert out['reason'] == reason
+    assert out['dispatch'] == str(dispatch).lower()
+    if dispatch:
+        assert out['target_workflow'] == guard.FULL
 
 
 @pytest.mark.parametrize('minutes,expected', [(119, False), (120, True), (240, True)])

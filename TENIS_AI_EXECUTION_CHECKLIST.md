@@ -25,6 +25,21 @@ Element wolno oznaczyć `[x]` tylko wtedy, gdy istnieje odpowiedni dowód: commi
 
 # 1. LIVE CHECKPOINT - od tego miejsca ma zaczynac kolejny czat
 
+**2026-11-19 — delayed core and market updates**
+
+- [x] Public manifest matched main `fac3b11c3bf8811b2d0ae8f88127f21a7a2a4877`.
+  Core generation was at 08:06 UTC and operator generation at 08:39 UTC.
+  At 11:32 UTC the core was 206 minutes old. The successful [scheduled
+  maintenance run](https://github.com/Abeel87/tenis-ai/actions/runs/44508041210)
+  had completed while the core was already older than 120 minutes.
+- [x] Reproduced the missing wakeup on that commit. On
+  `fix/watchdog-stale-guard-heartbeat`, scheduled maintenance completion can
+  wake the same watchdog as the existing sources. Five regression cases failed
+  before the change. All 75 focused Pages, PBP and watchdog cases passed after it.
+- [ ] Release acceptance: verify full CI against current main, then confirm the
+  public manifest, source timestamps and next eligible scheduled wakeup. Record
+  whether the watchdog suppressed duplicate work or dispatched the right producer.
+
 **2026-11-18 — hourly Superbet refresh and Symphony history**
 
 - [x] Compared the full update and the following hourly refresh. All eight
