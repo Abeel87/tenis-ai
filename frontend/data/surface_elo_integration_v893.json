@@ -1,6 +1,6 @@
 {
   "version": "v8.9.3",
-  "generated_at": "2026-11-20T03:25:59.468852+00:00",
+  "generated_at": "2026-11-20T07:48:48.719655+00:00",
   "mode": "SHADOW",
   "status": "ACTIVE_SHADOW",
   "production_influence": false,
@@ -12,17 +12,17 @@
     "scale": 400.0,
     "surface_shrink_n": 12.0,
     "decay_half_life_days": 720.0,
-    "events": 26112,
+    "events": 26120,
     "players": 1810,
     "player_surface_timelines": 3319,
-    "rows_with_both_surface_history": 10973
+    "rows_with_both_surface_history": 10983
   },
   "training": {
-    "rows_total": 11250,
+    "rows_total": 11260,
     "matches_total": 2335,
     "train_rows": 8998,
     "train_matches": 1868,
-    "holdout_rows": 2252,
+    "holdout_rows": 2262,
     "holdout_matches": 467,
     "chronological_match_split": "80/20",
     "leakage_policy": "elo_strictly_before_match_day_and_fit_train_only_for_holdout"
@@ -33,35 +33,35 @@
   },
   "holdout": {
     "catboost_player": {
-      "n": 2252,
-      "selected_n": 1144,
-      "accuracy": 72.6,
-      "brier": 0.21969,
-      "log_loss": 0.63153,
+      "n": 2262,
+      "selected_n": 1159,
+      "accuracy": 72.3,
+      "brier": 0.21952,
+      "log_loss": 0.63137,
       "avg_probability": 60.1
     },
     "catboost_player_elo": {
-      "n": 2252,
-      "selected_n": 1152,
-      "accuracy": 72.8,
-      "brier": 0.2185,
-      "log_loss": 0.62863,
-      "avg_probability": 60.2
+      "n": 2262,
+      "selected_n": 1156,
+      "accuracy": 72.3,
+      "brier": 0.21881,
+      "log_loss": 0.62947,
+      "avg_probability": 60.3
     },
     "ensemble_player": {
-      "n": 2252,
+      "n": 2262,
       "selected_n": 1080,
-      "accuracy": 72.4,
-      "brier": 0.22032,
-      "log_loss": 0.6323,
+      "accuracy": 72.7,
+      "brier": 0.21962,
+      "log_loss": 0.63081,
       "avg_probability": 58.3
     },
     "ensemble_player_elo": {
-      "n": 2252,
+      "n": 2262,
       "selected_n": 1070,
-      "accuracy": 72.6,
-      "brier": 0.21993,
-      "log_loss": 0.6314,
+      "accuracy": 72.9,
+      "brier": 0.21922,
+      "log_loss": 0.62989,
       "avg_probability": 58.2
     },
     "tabpfn": {
@@ -83,19 +83,19 @@
   },
   "gates": {
     "catboost_player_elo": {
-      "status": "promising",
+      "status": "watch",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": 0.00119,
-      "log_loss_gain": 0.0029,
-      "accuracy_delta_pp": 0.2
+      "brier_gain": 0.00071,
+      "log_loss_gain": 0.0019,
+      "accuracy_delta_pp": 0.0
     },
     "ensemble_player_elo": {
       "status": "watch",
       "production_influence": false,
       "auto_promotion": false,
-      "brier_gain": 0.00039,
-      "log_loss_gain": 0.0009,
+      "brier_gain": 0.0004,
+      "log_loss_gain": 0.00092,
       "accuracy_delta_pp": 0.2
     },
     "tabpfn_elo": {
